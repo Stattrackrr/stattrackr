@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --brand-bg: #ffffff; --brand-fg: #0b1220; }
+.dark { --brand-bg: #0b1220; --brand-fg: #ffffff; }
