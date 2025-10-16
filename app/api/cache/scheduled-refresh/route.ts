@@ -1,6 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
-import { getAllPlayers } from '@/lib/nba';
+// import { getAllPlayers } from '@/lib/nba';
 
 // Security token for scheduled refresh (set in environment variables)
 const REFRESH_TOKEN = process.env.CACHE_REFRESH_TOKEN;
@@ -19,15 +19,6 @@ const REFRESH_JOBS: Record<string, RefreshJobConfig> = {
     enabled: true,
     cacheKeys: ['player_stats_*'], // Pattern - will match all player stats keys
     refreshFunction: async () => {
-      // Get all active players and refresh their stats
-      const players = await getAllPlayers();
-      const activePlayerIds = players
-        .filter(p => p.is_active)
-        .map(p => p.id)
-        .slice(0, 100); // Limit to prevent timeout
-      
-      console.log(`Refreshing stats for ${activePlayerIds.length} active players`);
-      
       // Clear existing player stats cache entries
       const cacheKeys = cache.keys();
       const playerStatsKeys = cacheKeys.filter(key => key.startsWith('player_stats_'));
@@ -64,24 +55,23 @@ const REFRESH_JOBS: Record<string, RefreshJobConfig> = {
   }
 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Verify authorization token
-  const authToken = req.headers.authorization?.replace('Bearer ', '') || req.body.token;
-  if (!REFRESH_TOKEN || authToken !== REFRESH_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const { job, jobs, dryRun = false } = req.body;
-
+export async function POST(request: NextRequest) {
   try {
+    // Verify authorization token
+    const authHeader = request.headers.get('authorization');
+    const authToken = authHeader?.replace('Bearer ', '');
+    
+    const body = await request.json().catch(() => ({}));
+    const tokenFromBody = body.token;
+    
+    const token = authToken || tokenFromBody;
+    
+    if (!REFRESH_TOKEN || token !== REFRESH_TOKEN) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { job, jobs, dryRun = false } = body;
+
     let jobsToRun: string[] = [];
     
     if (job && typeof job === 'string') {
@@ -177,7 +167,7 @@ export default async function handler(
     
     console.log(`Cache refresh completed. Total cache keys: ${totalCacheKeys}, Cache size: ${cacheSize}`);
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       cacheStats: {
@@ -189,9 +179,16 @@ export default async function handler(
 
   } catch (error) {
     console.error('Error in scheduled cache refresh:', error);
-    return res.status(500).json({
+    return NextResponse.json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    }, { status: 500 });
   }
+}
+
+// Handle GET requests (for potential webhook/cron services)
+export async function GET() {
+  return NextResponse.json({ 
+    error: 'Method not allowed. Use POST with authentication token.' 
+  }, { status: 405 });
 }

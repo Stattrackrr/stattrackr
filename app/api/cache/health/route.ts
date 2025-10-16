@@ -1,11 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function GET() {
   try {
     const allKeys = cache.keys();
     
@@ -27,12 +23,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       uptime: process.uptime()
     };
 
-    res.status(200).json(stats);
+    return NextResponse.json(stats);
   } catch (error) {
     console.error('Error getting cache health:', error);
-    res.status(500).json({ 
+    return NextResponse.json({ 
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    }, { status: 500 });
   }
 }

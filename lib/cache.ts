@@ -69,6 +69,20 @@ class ServerCache {
   }
   
   /**
+   * Get all cache keys (including expired ones)
+   */
+  keys(): string[] {
+    return Array.from(this.cache.keys());
+  }
+  
+  /**
+   * Get cache size
+   */
+  get size(): number {
+    return this.cache.size;
+  }
+  
+  /**
    * Get cache statistics
    */
   getStats() {
@@ -143,6 +157,7 @@ export const getCacheKey = {
     `injuries_${team.toUpperCase()}`,
 };
 
+export { cache };
 export default cache;
 
 // Auto-cleanup expired entries every 10 minutes
