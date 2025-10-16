@@ -1,0 +1,42 @@
+name: Scheduled Cache Refresh
+
+on:
+  schedule:
+    # Player stats at 3:30 AM ET (8:30 AM UTC)
+    - cron: '30 8 * * *'
+    # All caches at 5:30 AM ET (10:30 AM UTC)  
+    - cron: '30 10 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  refresh-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Refresh Player Stats (3:30 AM ET run)
+        if: github.event.schedule == '30 8 * * *'
+        env:
+          CACHE_REFRESH_TOKEN: ${{ secrets.CACHE_REFRESH_TOKEN }}
+          CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
+        run: node scripts/cache-refresh.js --job player_stats
+
+      - name: Refresh All Caches (5:30 AM ET run)
+        if: github.event.schedule == '30 10 * * *'
+        env:
+          CACHE_REFRESH_TOKEN: ${{ secrets.CACHE_REFRESH_TOKEN }}
+          CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
+        run: node scripts/cache-refresh.js
+
+      - name: Manual Refresh (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CACHE_REFRESH_TOKEN: ${{ secrets.CACHE_REFRESH_TOKEN }}
+          CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
+        run: node scripts/cache-refresh.js
