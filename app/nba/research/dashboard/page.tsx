@@ -83,19 +83,21 @@ function currentNbaSeason(): number {
   const m = now.getMonth();
   const d = now.getDate();
   
-  // NBA season starts around October 21st
-  // Until then, use previous season
-  if (m === 9 && d < 21) { // October is month 9 (0-indexed)
-    return now.getFullYear() - 1;
+  // NBA season starts around October 15th
+  // If we're in October and after the 15th, or any month after October, use current year
+  // If we're before October 15th, use previous year
+  if (m === 9 && d >= 15) { // October 15th or later
+    return now.getFullYear();
   }
   
-  return m >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+  return m >= 10 ? now.getFullYear() : now.getFullYear() - 1;
 }
 function parseMinutes(minStr: string): number {
   if (!minStr || minStr === '0:00') return 0;
   const [m, s] = minStr.split(':').map(Number);
   return (Number.isFinite(m) ? m : 0) + ((Number.isFinite(s) ? s : 0) / 60);
 }
+// Player stats from BallDontLie stats API
 function getStatValue(stats: BallDontLieStats, key: string): number {
   switch (key) {
     case 'min': return parseMinutes(stats.min);
@@ -125,6 +127,79 @@ function getStatValue(stats: BallDontLieStats, key: string): number {
   }
 }
 
+// Game-level stats from BallDontLie games API
+function getGameStatValue(game: any, key: string, teamAbbr: string): number {
+  if (!game) return 0;
+  
+  const homeScore = game.home_team_score || 0;
+  const visitorScore = game.visitor_team_score || 0;
+  const homeTeam = game.home_team?.abbreviation;
+  const visitorTeam = game.visitor_team?.abbreviation;
+  const normalizedTeam = normalizeAbbr(teamAbbr);
+  const isHome = normalizeAbbr(homeTeam || '') === normalizedTeam;
+  
+  switch (key) {
+    case 'total_pts':
+      return homeScore + visitorScore;
+    
+    case 'spread':
+      // Betting research logic: positive = team lost (failed to cover), negative = team won (covered spread)
+      return isHome ? visitorScore - homeScore : homeScore - visitorScore;
+    
+    case 'moneyline':
+      // 1 = win, 0 = loss
+      return isHome ? (homeScore > visitorScore ? 1 : 0) : (visitorScore > homeScore ? 1 : 0);
+    
+    case 'home_total':
+      return homeScore;
+    
+    case 'away_total':
+      return visitorScore;
+    
+    case 'first_half_total':
+      return (game.home_q1 || 0) + (game.home_q2 || 0) + (game.visitor_q1 || 0) + (game.visitor_q2 || 0);
+    
+    case 'second_half_total':
+      return (game.home_q3 || 0) + (game.home_q4 || 0) + (game.visitor_q3 || 0) + (game.visitor_q4 || 0);
+    
+    case 'q1_total':
+      return (game.home_q1 || 0) + (game.visitor_q1 || 0);
+    
+    case 'q2_total':
+      return (game.home_q2 || 0) + (game.visitor_q2 || 0);
+    
+    case 'q3_total':
+      return (game.home_q3 || 0) + (game.visitor_q3 || 0);
+    
+    case 'q4_total':
+      return (game.home_q4 || 0) + (game.visitor_q4 || 0);
+    
+    case 'q1_moneyline':
+      // 1 = won quarter, 0 = lost quarter
+      const homeQ1 = game.home_q1 || 0;
+      const visitorQ1 = game.visitor_q1 || 0;
+      return isHome ? (homeQ1 > visitorQ1 ? 1 : 0) : (visitorQ1 > homeQ1 ? 1 : 0);
+    
+    case 'q2_moneyline':
+      const homeQ2 = game.home_q2 || 0;
+      const visitorQ2 = game.visitor_q2 || 0;
+      return isHome ? (homeQ2 > visitorQ2 ? 1 : 0) : (visitorQ2 > homeQ2 ? 1 : 0);
+    
+    case 'q3_moneyline':
+      const homeQ3 = game.home_q3 || 0;
+      const visitorQ3 = game.visitor_q3 || 0;
+      return isHome ? (homeQ3 > visitorQ3 ? 1 : 0) : (visitorQ3 > homeQ3 ? 1 : 0);
+    
+    case 'q4_moneyline':
+      const homeQ4 = game.home_q4 || 0;
+      const visitorQ4 = game.visitor_q4 || 0;
+      return isHome ? (homeQ4 > visitorQ4 ? 1 : 0) : (visitorQ4 > homeQ4 ? 1 : 0);
+    
+    default:
+      return 0;
+  }
+}
+
 type BdlSearchResult = { id: number; full: string; team?: string; pos?: string };
  type EspnPlayerData = { name: string; jersey?: string; height?: string; weight?: number; team?: string; position?: string };
  
@@ -134,6 +209,7 @@ type BdlSearchResult = { id: number; full: string; team?: string; pos?: string }
    player: BdlSearchResult;
    selectedStat: string;
    selectedTimeframe: string;
+   propsMode: 'player' | 'team';
  };
 
 // Ball Don't Lie team ID to abbreviation mapping
@@ -409,22 +485,378 @@ const getPaceRank = (teamAbbr: string): number => {
 
 // Memoized chart: only re-renders when its props change
 // Label layer split out so it doesn't re-render on bettingLine changes
-const StaticLabelList = memo(function StaticLabelList({ isDark, formatChartLabel }: { isDark: boolean; formatChartLabel: (v: any) => string }) {
+const StaticLabelList = memo(function StaticLabelList({ isDark, formatChartLabel, fontSizePx = 12 }: { isDark: boolean; formatChartLabel: (v: any) => string; fontSizePx?: number }) {
   return (
     <LabelList
       dataKey="value"
       position={CHART_CONFIG.labelList.position}
-      isAnimationActive={false}
       style={{
-        fontSize: CHART_CONFIG.labelList.fontSize,
+        fontSize: `${fontSizePx}px`,
         fontWeight: CHART_CONFIG.labelList.fontWeight,
         fill: isDark ? '#ffffff' : '#000000'
       }}
       formatter={formatChartLabel}
     />
   );
-}, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel);
+}, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel && prev.fontSizePx === next.fontSizePx);
 
+// Static bars chart - never re-renders for betting line changes
+const StaticBarsChart = memo(function StaticBarsChart({
+  data,
+  yAxisConfig,
+  isDark,
+  bettingLine,
+  customTooltip,
+  formatChartLabel,
+  selectedStat,
+  compactMobile,
+}: {
+  data: any[];
+  yAxisConfig: { domain: [number, number]; ticks: number[] };
+  isDark: boolean;
+  bettingLine: number;
+  customTooltip: any;
+  formatChartLabel: (v: any) => string;
+  selectedStat: string;
+  compactMobile?: boolean;
+}) {
+  const colorMap = useMemo(() => {
+    return data.map(d => {
+      if (selectedStat === 'spread') {
+        // For spread: lower values are better (covered spread), so invert the logic
+        return d.value < bettingLine ? 'over' : d.value === bettingLine ? 'push' : 'under';
+      } else {
+        // For all other stats: higher values are better
+        return d.value > bettingLine ? 'over' : d.value === bettingLine ? 'push' : 'under';
+      }
+    });
+  }, [data, bettingLine, selectedStat]);
+  
+  // Detect mobile viewport for bar sizing only (does not affect desktop)
+  const [isMobileSB, setIsMobileSB] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobileSB(mq.matches);
+    update();
+    if (mq.addEventListener) {
+      mq.addEventListener('change', update);
+      return () => mq.removeEventListener('change', update);
+    } else {
+      // @ts-ignore legacy
+      mq.addListener(update);
+      return () => {
+        // @ts-ignore legacy
+        mq.removeListener(update);
+      };
+    }
+  }, []);
+
+  // Memoize axis styles to prevent recreating objects on every render
+  const xAxisTickStyle = useMemo(() => ({ fill: '#ffffff', fontSize: 12 }), [isDark]);
+  const yAxisTickStyle = useMemo(() => ({ fill: '#ffffff', fontSize: 12 }), [isDark]);
+  const xAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
+  const yAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
+
+  const computedBarCategoryGap = useMemo(() => {
+    const base = data.length <= 5 ? '2%' : data.length <= 10 ? '3%' : '5%';
+    return compactMobile ? '1.5%' : base; // small but visible category gap on mobile
+  }, [data.length, compactMobile]);
+  const computedMaxBarSize = useMemo(() => (compactMobile ? 120 : CHART_CONFIG.performance.maxBarSize), [compactMobile]);
+  
+  const chartMargin = useMemo(() => CHART_CONFIG.margin, []);
+
+  return (
+    <ResponsiveContainer 
+      width="100%" 
+      height="100%" 
+      debounceMs={CHART_CONFIG.performance.debounceMs}
+    >
+      <BarChart 
+        data={data} 
+        margin={chartMargin}
+        syncMethod="value"
+        maxBarSize={data.length <= 5 ? 250 : data.length <= 10 ? 250 : computedMaxBarSize}
+        barCategoryGap={computedBarCategoryGap}
+        barGap={selectedStat === 'fg3m' ? -40 : (compactMobile ? 2 : 2)}
+      >
+        <XAxis
+          dataKey="xKey"
+          tickFormatter={(_, i) => data[i]?.tickLabel ?? ""}
+          tick={xAxisTickStyle}
+          axisLine={xAxisLineStyle}
+          height={CHART_CONFIG.xAxis.height}
+          interval={CHART_CONFIG.xAxis.interval}
+          allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
+          hide={!!compactMobile}
+          padding={compactMobile ? { left: 8, right: 8 } : undefined as any}
+        />
+        <YAxis 
+          domain={yAxisConfig.domain}
+          ticks={yAxisConfig.ticks}
+          tick={yAxisTickStyle}
+          axisLine={yAxisLineStyle}
+          hide={!!compactMobile}
+          width={!isMobileSB ? CHART_CONFIG.yAxis.width : undefined}
+        />
+        <Tooltip 
+          isAnimationActive={false} 
+          content={customTooltip}
+          animationDuration={0}
+          wrapperStyle={{ zIndex: 9999 }}
+        />
+        <Bar 
+          dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"} 
+          radius={CHART_CONFIG.bar.radius} 
+          isAnimationActive={false} 
+          animationDuration={0}
+          background={false}
+          shape={selectedStat === 'fg3m' ? (props: any) => {
+            const { x, y, width, height, payload } = props;
+            const attempts = payload?.stats?.fg3a || 0;
+            const makes = payload?.stats?.fg3m || 0;
+            const makesHeight = attempts > 0 ? (makes / attempts) * height : 0;
+            
+            return (
+              <g>
+                <rect
+                  x={x}
+                  y={y}
+                  width={width}
+                  height={height}
+                  fill={isDark ? '#4b5563' : '#d1d5db'}
+                  fillOpacity={0.5}
+                  rx={CHART_CONFIG.bar.radius[0]}
+                  ry={CHART_CONFIG.bar.radius[0]}
+                />
+                
+                {attempts > 0 && makes === 0 && (
+                  <text
+                    x={x + width / 2}
+                    y={y + height / 2 + 4}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="bold"
+                    fill={isDark ? '#ffffff' : '#000000'}
+                  >
+                    {attempts}
+                  </text>
+                )}
+                
+                {attempts > 0 && makes > 0 && (
+                  <text
+                    x={x + width / 2}
+                    y={y + (height - makesHeight) / 2 + 4}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="bold"
+                    fill={isDark ? '#ffffff' : '#000000'}
+                  >
+                    {attempts}
+                  </text>
+                )}
+                
+                {makes > 0 && (
+                  <rect
+                    x={x}
+                    y={y + height - makesHeight}
+                    width={width}
+                    height={makesHeight}
+                    fill={makes > bettingLine ? CHART_CONFIG.colors.green : makes === bettingLine ? '#9ca3af' : CHART_CONFIG.colors.red}
+                    rx={CHART_CONFIG.bar.radius[0]}
+                    ry={CHART_CONFIG.bar.radius[0]}
+                  />
+                )}
+                
+                {makes > 0 && makesHeight > 15 && (
+                  <text
+                    x={x + width / 2}
+                    y={y + height - makesHeight / 2 + 4}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="bold"
+                    fill="#ffffff"
+                  >
+                    {makes}
+                  </text>
+                )}
+              </g>
+            );
+          } : undefined}
+        >
+          {data.map((e, i) => (
+            <Cell 
+              key={e.xKey || i} 
+              fill={colorMap[i] === 'over' ? CHART_CONFIG.colors.green : colorMap[i] === 'push' ? '#9ca3af' : CHART_CONFIG.colors.red}
+              data-bar-index={i}
+              style={{ 
+                transition: 'all 0.3s ease'
+              }}
+            />
+          ))}
+          {!['fg3m', 'moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat) && (
+            <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} />
+          )}
+        </Bar>
+        {/* NO ReferenceLine here - handled by separate chart */}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}, (prev, next) => (
+  // Only re-render when essential props change, ignore bettingLine
+  prev.data === next.data &&
+  prev.yAxisConfig === next.yAxisConfig &&
+  prev.isDark === next.isDark &&
+  prev.selectedStat === next.selectedStat &&
+  prev.customTooltip === next.customTooltip &&
+  prev.formatChartLabel === next.formatChartLabel
+));
+
+// Dynamic reference line chart - re-renders freely for betting line changes
+const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
+  yAxisConfig,
+  isDark,
+  bettingLine,
+  dataLength,
+  compactMobile,
+}: {
+  yAxisConfig: { domain: [number, number]; ticks: number[] };
+  isDark: boolean;
+  bettingLine: number;
+  dataLength: number;
+  compactMobile?: boolean;
+}) {
+  const clampedRefLine = useMemo(() => {
+    const maxY = Array.isArray(yAxisConfig?.domain) ? yAxisConfig.domain[1] : undefined;
+    const top = typeof maxY === 'number' ? maxY : bettingLine;
+    const y = Math.min(bettingLine, top);
+    return y;
+  }, [bettingLine, yAxisConfig]);
+  
+  const refLineColor = useMemo(() => isDark ? '#ffffff' : '#000000', [isDark]);
+  
+  // Create dummy data with same length as main chart to maintain coordinate system
+  const dummyData = useMemo(() => 
+    Array.from({ length: Math.max(dataLength, 1) }, (_, i) => ({ 
+      xKey: `dummy_${i}`, 
+      value: yAxisConfig.domain[0] + 0.1 // Tiny visible value to establish coordinate system
+    })), 
+    [dataLength, yAxisConfig]
+  );
+  
+  const chartMargin = useMemo(() => CHART_CONFIG.margin, []);
+  return (
+    <ResponsiveContainer 
+      width="100%" 
+      height="100%"
+    >
+      <BarChart 
+        data={dummyData} // Dummy data to maintain coordinate system
+        margin={chartMargin} // Same margins as static chart
+      >
+        <XAxis 
+          dataKey="xKey"
+          hide // Hidden - only for coordinate system
+        />
+        <YAxis 
+          domain={yAxisConfig.domain} // Same domain as static chart
+          ticks={yAxisConfig.ticks}   // Same ticks as static chart
+          hide // Hidden - only for coordinate system
+        />
+        <ReferenceLine y={clampedRefLine} stroke={refLineColor} strokeDasharray="6 6" strokeWidth={3} ifOverflow="extendDomain" />
+        <Bar 
+          dataKey="value" 
+          fill="transparent" 
+          isAnimationActive={false}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+});
+
+// Static betting line overlay (never re-renders, updated via DOM)
+const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark, isMobile }: { isDark: boolean; isMobile?: boolean }) {
+  const lineColor = isDark ? '#ffffff' : '#000000';
+  
+  return (
+    <div 
+      id="betting-line-container"
+      className="absolute pointer-events-none"
+      style={{
+        left: isMobile ? 8 : CHART_CONFIG.yAxis.width,
+        right: isMobile ? 8 : (CHART_CONFIG.margin.right + 10),
+        top: CHART_CONFIG.margin.top,
+        bottom: CHART_CONFIG.margin.bottom + 30,
+        zIndex: 5 // above bars but below tooltips
+      }}
+    >
+      <div
+        id="betting-line-fast"
+        className="absolute w-full"
+        style={{
+          bottom: '50%', // Initial position
+          opacity: 0.8,
+          height: '3px',
+          background: `repeating-linear-gradient(to right, ${lineColor} 0px, ${lineColor} 12px, transparent 12px, transparent 18px)`
+        }}
+      />
+    </div>
+  );
+}, (prev, next) => prev.isDark === next.isDark);
+
+// Direct DOM updater (no React re-renders)
+const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
+  const doUpdate = (el: HTMLElement) => {
+    if (!yAxisConfig?.domain) return;
+
+    // Mobile-only: fit overlay to actual bar bounds for exact alignment
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      const container = document.getElementById('betting-line-container') as HTMLElement | null;
+      const parent = container?.parentElement as HTMLElement | null;
+      const bars = Array.from(document.querySelectorAll('[data-bar-index]')) as HTMLElement[];
+      if (container && parent && bars.length) {
+        const parentRect = parent.getBoundingClientRect();
+        let minLeft = Infinity, maxRight = -Infinity, minTop = Infinity, maxBottom = -Infinity;
+        for (const b of bars) {
+          const r = b.getBoundingClientRect();
+          minLeft = Math.min(minLeft, r.left - parentRect.left);
+          maxRight = Math.max(maxRight, r.right - parentRect.left);
+          minTop = Math.min(minTop, r.top - parentRect.top);
+          maxBottom = Math.max(maxBottom, r.bottom - parentRect.top);
+        }
+        if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, Math.floor(minLeft))}px`;
+        if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, Math.floor(parentRect.width - maxRight))}px`;
+        if (Number.isFinite(minTop)) container.style.top = `${Math.max(0, Math.floor(minTop))}px`;
+        if (Number.isFinite(maxBottom)) container.style.bottom = `${Math.max(0, Math.floor(parentRect.height - maxBottom))}px`;
+      }
+    }
+
+    const [minY, maxY] = yAxisConfig.domain;
+    const range = maxY - minY;
+    const clampedLine = Math.max(minY, Math.min(bettingLine, maxY));
+    const percentage = range > 0 ? ((clampedLine - minY) / range) * 100 : 50;
+    el.style.bottom = `${percentage}%`;
+  };
+
+  const el = document.getElementById('betting-line-fast');
+  if (el) {
+    doUpdate(el as HTMLElement);
+  } else {
+    // If the line isn't mounted yet (e.g., after timeframe/stat remount), try again shortly
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => {
+        const el2 = document.getElementById('betting-line-fast');
+        if (el2) doUpdate(el2 as HTMLElement);
+      });
+      setTimeout(() => {
+        const el3 = document.getElementById('betting-line-fast');
+        if (el3) doUpdate(el3 as HTMLElement);
+      }, 50);
+    }
+  }
+};
+
+// Combined chart component
 const StatsBarChart = memo(function StatsBarChart({
   data,
   yAxisConfig,
@@ -442,172 +874,91 @@ const StatsBarChart = memo(function StatsBarChart({
   formatChartLabel: (v: any) => string;
   selectedStat: string;
 }) {
-  const colorMap = useMemo(() => data.map(d => (d.value > bettingLine ? 'over' : d.value === bettingLine ? 'push' : 'under')), [data, bettingLine]);
-  const clampedRefLine = useMemo(() => {
-    const maxY = Array.isArray(yAxisConfig?.domain) ? yAxisConfig.domain[1] : undefined;
-    const top = typeof maxY === 'number' ? maxY : bettingLine;
-    const y = Math.max(0, Math.min(bettingLine, top));
-    return y;
+  // Keep overlay in sync only with committed line (reduces updates during hold).
+  useEffect(() => {
+    updateBettingLinePosition(yAxisConfig, bettingLine);
   }, [bettingLine, yAxisConfig]);
-  
-  // Memoize axis styles to prevent recreating objects on every render
-  const xAxisTickStyle = useMemo(() => ({ fill: isDark ? '#d1d5db' : '#374151', fontSize: 12 }), [isDark]);
-  const yAxisTickStyle = useMemo(() => ({ fill: isDark ? '#d1d5db' : '#374151', fontSize: 12 }), [isDark]);
-  const xAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
-  const yAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
-  const refLineColor = useMemo(() => isDark ? '#ffffff' : '#000000', [isDark]);
-  
-  // For 3PM stat, create background data for 3PA (attempts)
-  const backgroundData = useMemo(() => {
-    if (selectedStat === 'fg3m') {
-      const bgData = data.map(d => ({
-        ...d,
-        backgroundValue: d.stats?.fg3a || 0 // 3PA value for background
-      }));
-      return bgData;
+
+  // Detect mobile only on client to avoid affecting desktop SSR
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    if (mq.addEventListener) {
+      mq.addEventListener('change', update);
+      return () => mq.removeEventListener('change', update);
+    } else {
+      // Safari/older
+      // @ts-ignore
+      mq.addListener(update);
+      return () => {
+        // @ts-ignore
+        mq.removeListener(update);
+      };
     }
-    return null;
-  }, [data, selectedStat]);
-  
+  }, []);
+
+  // Mobile transient line for live updates during hold (ReferenceLine follows this)
+  const [mobileLine, setMobileLine] = useState<number | null>(null);
+  useEffect(() => {
+    const handler = (e: any) => {
+      const v = e?.detail?.value;
+      if (typeof v === 'number') setMobileLine(v);
+    };
+    window.addEventListener('transient-line', handler as any);
+    return () => window.removeEventListener('transient-line', handler as any);
+  }, []);
+  useEffect(() => { setMobileLine(null); }, [bettingLine, selectedStat]);
+
   return (
-    <ResponsiveContainer 
-      width="100%" 
-      height="100%" 
-      debounceMs={CHART_CONFIG.performance.debounceMs} // Debounce resize events to reduce lag
-    >
-      <BarChart 
-        data={data} 
-        margin={CHART_CONFIG.margin}
-        syncMethod="value" // Performance optimization for synced charts
-        maxBarSize={CHART_CONFIG.performance.maxBarSize} // Limit bar width on large screens
-        barCategoryGap={selectedStat === 'fg3m' ? 0 : '10%'} // Overlap bars for 3PM view
-        barGap={selectedStat === 'fg3m' ? -60 : 4} // Force bars to overlap completely
+    <div className="relative w-full h-full chart-mobile-optimized">
+      {/* Static bars layer */}
+      <StaticBarsChart
+        key={`${selectedStat}-${yAxisConfig?.domain?.join?.(',') || ''}`}
+        data={data}
+        yAxisConfig={yAxisConfig}
+        isDark={isDark}
+        bettingLine={bettingLine}
+        customTooltip={customTooltip}
+        formatChartLabel={formatChartLabel}
+        selectedStat={selectedStat}
+        compactMobile={isMobile}
+      />
+      {/* Mobile-only: Reference line layer (SVG) for perfect alignment */}
+      {isMobile && (
+        <div className="absolute inset-0 pointer-events-none">
+          <DynamicReferenceLineChart
+            yAxisConfig={yAxisConfig}
+            isDark={isDark}
+            bettingLine={mobileLine ?? bettingLine}
+            dataLength={data.length}
+            compactMobile={isMobile}
+          />
+        </div>
+      )}
+      {/* Desktop-only: CSS overlay line */}
+      {!isMobile && <StaticBettingLineOverlay isDark={isDark} />}
+    </div>
+  );
+});
+
+// Home/Away dropdown (H/A)
+const HomeAwaySelect = memo(function HomeAwaySelect({ value, onChange, isDark }: { value: 'ALL' | 'HOME' | 'AWAY'; onChange: (v: 'ALL' | 'HOME' | 'AWAY') => void; isDark: boolean }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">H/A</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as 'ALL' | 'HOME' | 'AWAY')}
+        className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
       >
-        <XAxis
-          dataKey="xKey"
-          tickFormatter={(_, i) => data[i]?.tickLabel ?? ""}
-          tick={xAxisTickStyle}
-          axisLine={xAxisLineStyle}
-          height={CHART_CONFIG.xAxis.height}
-          interval={CHART_CONFIG.xAxis.interval}
-          allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
-        />
-        <YAxis 
-          domain={yAxisConfig.domain}
-          ticks={yAxisConfig.ticks}
-          tick={yAxisTickStyle}
-          axisLine={yAxisLineStyle}
-        />
-        <Tooltip 
-          isAnimationActive={false} 
-          content={customTooltip}
-          animationDuration={0} // Disable tooltip animations
-        />
-        <Bar 
-          dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"} 
-          radius={CHART_CONFIG.bar.radius} 
-          isAnimationActive={false} 
-          animationDuration={0}
-          background={false}
-          shape={selectedStat === 'fg3m' ? (props: any) => {
-            const { x, y, width, height, payload } = props;
-            const attempts = payload?.stats?.fg3a || 0; // This is now the main bar height
-            const makes = payload?.stats?.fg3m || 0; // Get makes from stats
-            
-            // Calculate makes height relative to attempts bar height
-            const makesHeight = attempts > 0 ? (makes / attempts) * height : 0;
-            
-            return (
-              <g>
-                {/* Background bar for attempts (gray) - this is the main bar */}
-                <rect
-                  x={x}
-                  y={y}
-                  width={width}
-                  height={height}
-                  fill={isDark ? '#4b5563' : '#d1d5db'}
-                  fillOpacity={0.5}
-                  rx={CHART_CONFIG.bar.radius[0]}
-                  ry={CHART_CONFIG.bar.radius[0]}
-                />
-                
-                {/* Label positioning: attempts number inside bar when no makes */}
-                {attempts > 0 && makes === 0 && (
-                  <text
-                    x={x + width / 2}
-                    y={y + height / 2 + 4} // Middle of the bar
-                    textAnchor="middle"
-                    fontSize="12"
-                    fontWeight="bold"
-                    fill={isDark ? '#ffffff' : '#000000'}
-                  >
-                    {attempts}
-                  </text>
-                )}
-                
-                {/* 3PA number in the attempts section (only when there are makes) */}
-                {attempts > 0 && makes > 0 && (
-                  <text
-                    x={x + width / 2}
-                    y={y + (height - makesHeight) / 2 + 4} // Middle of the attempts-only section
-                    textAnchor="middle"
-                    fontSize="12"
-                    fontWeight="bold"
-                    fill={isDark ? '#ffffff' : '#000000'}
-                  >
-                    {attempts}
-                  </text>
-                )}
-                
-                {/* Foreground bar for makes (colored) */}
-                {makes > 0 && (
-                  <rect
-                    x={x}
-                    y={y + height - makesHeight}
-                    width={width}
-                    height={makesHeight}
-                    fill={makes > bettingLine ? CHART_CONFIG.colors.green : makes === bettingLine ? '#9ca3af' : CHART_CONFIG.colors.red}
-                    rx={CHART_CONFIG.bar.radius[0]}
-                    ry={CHART_CONFIG.bar.radius[0]}
-                  />
-                )}
-                
-                {/* 3PM number in the makes (foreground) section */}
-                {makes > 0 && makesHeight > 15 && ( // Only show if makes section is tall enough
-                  <text
-                    x={x + width / 2}
-                    y={y + height - makesHeight / 2 + 4} // Middle of the makes section
-                    textAnchor="middle"
-                    fontSize="12"
-                    fontWeight="bold"
-                    fill="#ffffff" // White text on colored background
-                  >
-                    {makes}
-                  </text>
-                )}
-              </g>
-            );
-          } : undefined}
-        >
-          {data.map((e, i) => (
-            <Cell 
-              key={e.xKey || i} 
-              fill={colorMap[i] === 'over' ? CHART_CONFIG.colors.green : colorMap[i] === 'push' ? '#9ca3af' : CHART_CONFIG.colors.red} 
-            />
-          ))}
-          {/* Labels are memoized and independent from bettingLine - skip for 3PM since we have custom labels */}
-          {selectedStat !== 'fg3m' && <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} />}
-        </Bar>
-        <ReferenceLine 
-          y={clampedRefLine} 
-          stroke={refLineColor} 
-          strokeDasharray="4 4" 
-          strokeWidth={2} 
-          ifOverflow="discard"
-          isAnimationActive={false} // Disable reference line animations
-        />
-      </BarChart>
-    </ResponsiveContainer>
+        <option value="ALL">ALL</option>
+        <option value="HOME">HOME</option>
+        <option value="AWAY">AWAY</option>
+      </select>
+    </div>
   );
 });
 
@@ -620,8 +971,8 @@ const OverRatePill = memo(function OverRatePill({ overCount, total, isDark }: { 
     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
   return (
-    <span className={`px-2 py-1 rounded text-sm font-bold ${cls}`}>
-      {pct.toFixed(1)}%
+    <span className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`} data-over-rate>
+      {overCount}/{total} ({pct.toFixed(1)}%)
     </span>
   );
 });
@@ -861,15 +1212,28 @@ const PLAYER_STAT_OPTIONS = [
 ];
 
 const TEAM_STAT_OPTIONS = [
-  { key: "total_pts", label: "TOTAL PTS" }, { key: "spread", label: "SPREAD" }, { key: "moneyline", label: "MONEYLINE" },
-  { key: "total_reb", label: "TOTAL REB" }, { key: "total_ast", label: "TOTAL AST" }, { key: "fg_pct", label: "FG%" },
-  { key: "fg3_pct", label: "3P%" }, { key: "ft_pct", label: "FT%" }, { key: "total_to", label: "TOTAL TO" },
-  { key: "pace", label: "PACE" }, { key: "off_rating", label: "OFF RTG" }, { key: "def_rating", label: "DEF RTG" }
+  // Most important game props first
+  { key: "moneyline", label: "MONEYLINE" },
+  { key: "spread", label: "SPREAD" }, 
+  { key: "total_pts", label: "TOTAL PTS" },
+  // Other totals
+  { key: "home_total", label: "HOME TOTAL" },
+  { key: "away_total", label: "AWAY TOTAL" },
+  { key: "first_half_total", label: "1H TOTAL" },
+  { key: "second_half_total", label: "2H TOTAL" },
+  { key: "q1_moneyline", label: "Q1 ML" },
+  { key: "q1_total", label: "Q1 TOTAL" },
+  { key: "q2_moneyline", label: "Q2 ML" },
+  { key: "q2_total", label: "Q2 TOTAL" },
+  { key: "q3_moneyline", label: "Q3 ML" },
+  { key: "q3_total", label: "Q3 TOTAL" },
+  { key: "q4_moneyline", label: "Q4 ML" },
+  { key: "q4_total", label: "Q4 TOTAL" }
 ];
 
 // Static chart configuration - never recreated
 const CHART_CONFIG = {
-  margin: { top: 30, right: 20, left: 10, bottom: 30 },
+  margin: { top: 22, right: 14, left: 0, bottom: 18 },
   colors: {
     green: '#10b981',
     red: '#ef4444', 
@@ -881,8 +1245,11 @@ const CHART_CONFIG = {
     interval: 0,
     allowDuplicatedCategory: false
   },
+  yAxis: {
+    width: 32 // tiny bit further from the wall on tablet/desktop
+  },
   bar: {
-    radius: [8, 8, 0, 0] as [number, number, number, number]
+    radius: [10, 10, 10, 10] as [number, number, number, number]
   },
   labelList: {
     position: 'top' as const,
@@ -904,7 +1271,8 @@ const getUnifiedTooltipStyle = (isDarkMode: boolean) => ({
   border: '1px solid #9ca3af',
   borderRadius: '8px',
   padding: '12px',
-  fontSize: '14px'
+  fontSize: '14px',
+  zIndex: 9999 // High z-index to appear above betting line overlay
 });
 
 
@@ -949,6 +1317,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
   isDark: boolean;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
+  const [logoAttempts, setLogoAttempts] = useState<Record<string, number>>({});
   const gamesPerPage = 10;
   
   // Reset page when player changes
@@ -982,29 +1351,40 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
     );
   }
 
-  // Filter to current season and limit to 50 most recent games
+  // Prefer current season games; if none, gracefully fall back to last season, then all
   const currentSeason = currentNbaSeason();
-  const currentSeasonGames = playerStats.filter(game => {
+  const bySeason = (seasonYear: number) => playerStats.filter(game => {
     if (!game.game?.date) return false;
-    const gameDate = new Date(game.game.date);
-    const gameYear = gameDate.getFullYear();
-    const gameMonth = gameDate.getMonth();
-    
-    // NBA season spans two calendar years (e.g., 2024-25 season)
-    // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
-    const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-    return gameSeasonYear === currentSeason;
-  }).slice(0, 50); // Limit to 50 most recent games
+    const d = new Date(game.game.date);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const gameSeasonYear = m >= 9 ? y : y - 1; // Oct-Dec belong to current season year
+    return gameSeasonYear === seasonYear;
+  });
+
+  let displayGames = bySeason(currentSeason);
+  if (displayGames.length === 0) {
+    displayGames = bySeason(currentSeason - 1);
+  }
+  if (displayGames.length === 0) {
+    displayGames = playerStats;
+  }
+  // Remove games with 0 minutes played
+  displayGames = displayGames.filter(g => parseMinutes(g.min) > 0);
+  // Limit to 50 most recent games (playerStats are already newest-first)
+  displayGames = displayGames.slice(0, 50);
   
   // Pagination logic
-  const totalGames = currentSeasonGames.length;
+  const totalGames = displayGames.length;
   const totalPages = Math.ceil(totalGames / gamesPerPage);
   const startIndex = currentPage * gamesPerPage;
   const endIndex = Math.min(startIndex + gamesPerPage, totalGames);
-  const currentGames = currentSeasonGames.slice(startIndex, endIndex);
+  const currentGames = displayGames.slice(startIndex, endIndex);
   
   const canGoPrevious = currentPage > 0;
   const canGoNext = currentPage < totalPages - 1;
+  const rangeStart = totalGames ? startIndex + 1 : 0;
+  const rangeEnd = totalGames ? endIndex : 0;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
@@ -1012,7 +1392,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Game Log</h3>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Games {startIndex + 1}-{endIndex} of {totalGames}
+            Games {rangeStart}-{rangeEnd} of {totalGames}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -1123,11 +1503,22 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
                   <td className="py-2 px-2">
                     <div className="flex items-center gap-1">
                       <img 
-                        src={getEspnLogoUrl(playerTeam)}
+                        src={(() => {
+                          const candidates = getEspnLogoCandidates(playerTeam);
+                          const attempt = logoAttempts[`player-${playerTeam}`] || 0;
+                          return candidates[attempt] || candidates[0];
+                        })()}
                         alt={playerTeam}
                         className="w-4 h-4 object-contain"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          const candidates = getEspnLogoCandidates(playerTeam);
+                          const currentAttempt = logoAttempts[`player-${playerTeam}`] || 0;
+                          const nextAttempt = currentAttempt + 1;
+                          if (nextAttempt < candidates.length) {
+                            setLogoAttempts(prev => ({ ...prev, [`player-${playerTeam}`]: nextAttempt }));
+                          } else {
+                            e.currentTarget.style.display = 'none';
+                          }
                         }}
                       />
                       <span className="font-medium text-gray-900 dark:text-white">{playerTeam}</span>
@@ -1137,11 +1528,22 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 dark:text-gray-400 text-[10px]">{isHome ? 'vs' : '@'}</span>
                       <img 
-                        src={getEspnLogoUrl(opponent)}
+                        src={(() => {
+                          const candidates = getEspnLogoCandidates(opponent);
+                          const attempt = logoAttempts[`opponent-${opponent}`] || 0;
+                          return candidates[attempt] || candidates[0];
+                        })()}
                         alt={opponent}
                         className="w-4 h-4 object-contain"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          const candidates = getEspnLogoCandidates(opponent);
+                          const currentAttempt = logoAttempts[`opponent-${opponent}`] || 0;
+                          const nextAttempt = currentAttempt + 1;
+                          if (nextAttempt < candidates.length) {
+                            setLogoAttempts(prev => ({ ...prev, [`opponent-${opponent}`]: nextAttempt }));
+                          } else {
+                            e.currentTarget.style.display = 'none';
+                          }
                         }}
                       />
                       <span className="font-medium">{opponent}</span>
@@ -1188,41 +1590,11 @@ const PureChart = memo(function PureChart({
   currentStatOptions,
   apiError,
   selectedPlayer,
+  propsMode,
+  gamePropsTeam,
+  customTooltip,
 }: any) {
-  // Custom tooltip recreated only when selectedStat or isDark changes
-  const customTooltip = useCallback(({ active, payload }: any) => {
-    if (!active || !payload || !payload.length) return null;
-    const data = payload[0].payload;
-    const statMeta = currentStatOptions.find((s: any) => s.key === selectedStat);
-    const statLabel = statMeta ? statMeta.label : String(selectedStat).toUpperCase();
-    const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
-    const numValue = typeof data.value === 'number' ? data.value : parseFloat(data.value) || 0;
-    const formattedValue = isPercentageStat ? `${numValue.toFixed(1)}%` : `${numValue}`;
-    const gameStats = data.stats;
-    const correctMinutes = gameStats?.min ?? '0:00';
-    let correctDate = 'Unknown Date';
-    if (gameStats?.game?.date) {
-      correctDate = new Date(gameStats.game.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-    const tooltipStyle = getUnifiedTooltipStyle(isDark);
-    return (
-      <div style={tooltipStyle}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div>{statLabel}: {formattedValue}</div>
-          {(selectedStat === 'pra' || selectedStat === 'pr' || selectedStat === 'ra') && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {selectedStat !== 'ra' && <div>PTS: {Number(gameStats?.pts || 0)}</div>}
-              <div>REB: {Number(gameStats?.reb || 0)}</div>
-              {selectedStat !== 'pr' && <div>AST: {Number(gameStats?.ast || 0)}</div>}
-            </div>
-          )}
-          <div>MINS: {correctMinutes}</div>
-          <div>{data.game}</div>
-          <div>{correctDate}</div>
-        </div>
-      </div>
-    );
-  }, [selectedStat, isDark, currentStatOptions]);
+  // Use the main tooltip instead - this old one is removed
 
   const formatChartLabel = useCallback((value: any): string => {
     const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
@@ -1241,11 +1613,20 @@ const PureChart = memo(function PureChart({
         </div>
       ) : !chartData.length ? (
         <div className="flex items-center justify-center h-full">
-          <div className="text-center">
+          <div className="text-center max-w-md">
             {apiError && <div className="text-xs text-red-500 mb-2">{apiError}</div>}
-            <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">No Data Available</div>
+            <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">
+              {propsMode === 'player' ? 'No Player Selected' : 'No Team Selected'}
+            </div>
             <div className="text-gray-400 dark:text-gray-500 text-sm">
-              {selectedPlayer ? `No ${String(selectedStat).toUpperCase()} data found for ${selectedPlayer.full}` : 'Select a player to view stats'}
+              {propsMode === 'player' 
+                ? (selectedPlayer 
+                    ? `No ${String(selectedStat).toUpperCase()} data found for ${selectedPlayer.full}` 
+                    : 'Please search and select a player to research their statistics')
+                : (gamePropsTeam && gamePropsTeam !== 'N/A' 
+                    ? `No ${String(selectedStat).toUpperCase()} data found for ${gamePropsTeam}` 
+                    : 'Please search and select a team to research their game statistics')
+              }
             </div>
           </div>
         </div>
@@ -1271,7 +1652,10 @@ const PureChart = memo(function PureChart({
   prev.selectedStat === next.selectedStat &&
   prev.currentStatOptions === next.currentStatOptions &&
   prev.apiError === next.apiError &&
-prev.selectedPlayer === next.selectedPlayer
+  prev.selectedPlayer === next.selectedPlayer &&
+  prev.propsMode === next.propsMode &&
+  prev.gamePropsTeam === next.gamePropsTeam &&
+  prev.customTooltip === next.customTooltip
 ));
 
 // Per-button memoized components to prevent unrelated re-renders
@@ -1280,7 +1664,7 @@ const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, is
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+      className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
@@ -1294,41 +1678,252 @@ const TimeframeBtn = memo(function TimeframeBtn({ value, isSelected, onSelect }:
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+      className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
-      {value.replace('last','L')}
+      {value === 'h2h' ? 'H2H' : value === 'lastseason' ? 'Last Season' : value === 'thisseason' ? 'This Season' : value.replace('last','L')}
     </button>
   );
 }, (prev, next) => prev.isSelected === next.isSelected && prev.value === next.value);
 
-// Full chart container isolated from other UI
-const ChartContainer = memo(
-  function ChartContainer({
-    isDark,
-    currentStatOptions,
-    selectedStat,
-    onSelectStat,
-    bettingLine,
-    onChangeBettingLine,
-    selectedTimeframe,
-    onSelectTimeframe,
-    chartData,
-    yAxisConfig,
-    isLoading,
-    apiError,
-    selectedPlayer,
-    overCount,
-    totalCount,
-  }: any) {
+// Opponent selector component
+const OpponentSelector = memo(function OpponentSelector({ 
+  currentOpponent, 
+  manualOpponent, 
+  onOpponentChange, 
+  isDark,
+  propsMode,
+  currentTeam,
+  selectedTimeframe 
+}: { 
+  currentOpponent: string;
+  manualOpponent: string;
+  onOpponentChange: (opponent: string) => void;
+  isDark: boolean;
+  propsMode: string;
+  currentTeam: string;
+  selectedTimeframe: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [logoAttempts, setLogoAttempts] = useState<Record<string, number>>({});
+  const allTeams = Object.keys(ABBR_TO_TEAM_ID).filter(team => team !== normalizeAbbr(currentTeam));
+  
+  // Determine what to display: ALL by default, or specific opponent when H2H or manually selected
+  const displayValue = (() => {
+    if (manualOpponent) return manualOpponent;
+    if (selectedTimeframe === 'h2h' && currentOpponent) return currentOpponent;
+    return 'ALL';
+  })();
+  
+  // Create options list
+  const options = [
+    { value: 'ALL', label: 'ALL' },
+    ...(currentOpponent ? [{ value: currentOpponent, label: currentOpponent }] : []),
+    ...allTeams.sort().map(team => ({ value: team, label: team }))
+  ].filter((option, index, array) => 
+    // Remove duplicates (in case currentOpponent is already in allTeams)
+    array.findIndex(o => o.value === option.value) === index
+  );
+  
+  const handleSelect = (value: string) => {
+    onOpponentChange(value);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="flex items-center gap-1 relative">
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">VS</span>
+      <div className="relative">
+        {/* Custom dropdown trigger */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+        >
+          <div className="flex items-center gap-1">
+            {displayValue !== 'ALL' && (
+              <img 
+                src={(() => {
+                  const candidates = getEspnLogoCandidates(displayValue);
+                  const attempt = logoAttempts[`trigger-${displayValue}`] || 0;
+                  return candidates[attempt] || candidates[0];
+                })()} 
+                alt={displayValue}
+                className="w-5 h-5 object-contain"
+                onError={(e) => {
+                  const candidates = getEspnLogoCandidates(displayValue);
+                  const currentAttempt = logoAttempts[`trigger-${displayValue}`] || 0;
+                  const nextAttempt = currentAttempt + 1;
+                  if (nextAttempt < candidates.length) {
+                    setLogoAttempts(prev => ({ ...prev, [`trigger-${displayValue}`]: nextAttempt }));
+                  } else {
+                    e.currentTarget.style.display = 'none';
+                  }
+                }}
+              />
+            )}
+            <span className="text-sm font-medium">{displayValue}</span>
+          </div>
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {/* Custom dropdown menu */}
+        {isOpen && (
+          <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto custom-scrollbar">
+            {options.map(option => (
+              <button
+                key={option.value}
+                onClick={() => handleSelect(option.value)}
+                className="w-full px-2 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg flex items-center justify-center gap-1"
+              >
+                {option.value !== 'ALL' && (
+                  <img 
+                    src={(() => {
+                      const candidates = getEspnLogoCandidates(option.value);
+                      const attempt = logoAttempts[`option-${option.value}`] || 0;
+                      return candidates[attempt] || candidates[0];
+                    })()} 
+                    alt={option.value}
+                    className="w-5 h-5 object-contain"
+                    onError={(e) => {
+                      const candidates = getEspnLogoCandidates(option.value);
+                      const currentAttempt = logoAttempts[`option-${option.value}`] || 0;
+                      const nextAttempt = currentAttempt + 1;
+                      if (nextAttempt < candidates.length) {
+                        setLogoAttempts(prev => ({ ...prev, [`option-${option.value}`]: nextAttempt }));
+                      } else {
+                        e.currentTarget.style.display = 'none';
+                      }
+                    }}
+                  />
+                )}
+                <span className="text-sm font-medium">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Overlay to close dropdown when clicking outside */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
+}, (prev, next) => 
+  prev.currentOpponent === next.currentOpponent && 
+  prev.manualOpponent === next.manualOpponent && 
+  prev.isDark === next.isDark &&
+  prev.currentTeam === next.currentTeam &&
+  prev.selectedTimeframe === next.selectedTimeframe
+);
+
+// Chart controls (updates freely with betting line changes)
+const ChartControls = function ChartControls({
+  isDark,
+  currentStatOptions,
+  selectedStat,
+  onSelectStat,
+  bettingLine,
+  onChangeBettingLine,
+  selectedTimeframe,
+  onSelectTimeframe,
+  chartData,
+  currentOpponent,
+  manualOpponent,
+  onOpponentChange,
+  propsMode,
+  currentTeam,
+  homeAway,
+  onChangeHomeAway,
+  yAxisConfig,
+}: any) {
+  // Track the latest in-progress line while the user is holding +/-
+  const transientLineRef = useRef<number | null>(null);
+  const holdDelayRef = useRef<any>(null);
+  const holdRepeatRef = useRef<any>(null);
+
+  // Sync input and dashed line to the committed bettingLine value.
+  // Only track bettingLine/yAxisConfig to avoid racing with timeframe updates.
+  useEffect(() => {
+    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+    if (!input) return;
+    const val = Number.isFinite(bettingLine) ? bettingLine : 0;
+    input.value = String(val);
+    updateBettingLinePosition(yAxisConfig, val);
+  }, [bettingLine, yAxisConfig]);
+
+  // Fast recolor (no React) when the transient input value changes while holding +/-
+  const recolorBarsFast = (value: number) => {
+    const rects = document.querySelectorAll('[data-bar-index]');
+    rects.forEach((el: any) => {
+      const idxAttr = el.getAttribute('data-bar-index');
+      const i = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
+      if (!Number.isFinite(i) || !chartData[i]) return;
+      const barValue = chartData[i].value;
+      const isOver = selectedStat === 'spread' ? (barValue < value) : (barValue > value);
+      const isPush = barValue === value;
+      const newState = isOver ? 'over' : isPush ? 'push' : 'under';
+      if (el.getAttribute('data-state') === newState) return;
+      el.setAttribute('data-state', newState);
+      el.setAttribute('fill', newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444');
+    });
+  };
+
+  // Update Over Rate pill instantly for a given line value (no React rerender)
+  const updateOverRatePillFast = useCallback((value: number) => {
+    const overCount = selectedStat === 'spread'
+      ? chartData.filter(d => d.value < value).length
+      : chartData.filter(d => d.value > value).length;
+    const total = chartData.length;
+    const pct = total > 0 ? (overCount / total) * 100 : 0;
+
+    const nodes = document.querySelectorAll('[data-over-rate], [data-over-rate-inline]');
+    nodes.forEach((node) => {
+      const el = node as HTMLElement;
+      el.textContent = `${overCount}/${total} (${pct.toFixed(1)}%)`;
+      if (el.hasAttribute('data-over-rate')) {
+        const cls = pct >= 60
+          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+          : pct >= 40
+          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        el.className = `px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`;
+      }
+    });
+  }, [chartData, selectedStat]);
+
+  // On timeframe change, commit the most recent transient line (if any),
+  // otherwise keep the existing bettingLine. Avoid reading stale defaultValue.
+  useEffect(() => {
+    const commit = transientLineRef.current;
+    if (commit != null && commit !== bettingLine) {
+      onChangeBettingLine(commit);
+    }
+    // Always reposition overlay after the chart finishes its layout for new timeframe
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => updateBettingLinePosition(yAxisConfig, commit ?? bettingLine));
+    }
+  }, [selectedTimeframe]);
+  // Dropdown state for timeframe selector (moved outside useMemo to follow hooks rules)
+  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  
+  // Update Over Rate when committed line or data changes
+  useEffect(() => {
+    updateOverRatePillFast(bettingLine);
+  }, [updateOverRatePillFast, bettingLine]);
     const StatPills = useMemo(() => (
-      <div className="mb-4">
+      <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0 ml-2 sm:ml-0">
         <div
-          className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x"
+          className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x pl-2 sm:pl-0"
           style={{ scrollbarWidth: 'thin', scrollbarColor: isDark ? '#4b5563 transparent' : '#d1d5db transparent' }}
         >
-          <div className="inline-flex flex-nowrap gap-2">
+          <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1">
             {currentStatOptions.map((s: any) => (
               <StatPill key={s.key} label={s.label} value={s.key} isSelected={selectedStat === s.key} onSelect={onSelectStat} isDark={isDark} />
             ))}
@@ -1337,68 +1932,241 @@ const ChartContainer = memo(
       </div>
     ), [isDark, currentStatOptions, selectedStat, onSelectStat]);
 
-    const TimeframeButtons = useMemo(() => (
-      <div className="flex items-center gap-2">
-        {['last5','last10','last15','last20'].map((k: string) => (
-          <TimeframeBtn key={k} value={k} isSelected={selectedTimeframe === k} onSelect={onSelectTimeframe} />
-        ))}
-      </div>
-    ), [selectedTimeframe, onSelectTimeframe]);
+    const TimeframeButtons = useMemo(() => {
+      const timeframeOptions = [
+        { value: 'last5', label: 'L5' },
+        { value: 'last10', label: 'L10' },
+        { value: 'last15', label: 'L15' },
+        { value: 'last20', label: 'L20' },
+        { value: 'h2h', label: 'H2H' },
+        { value: 'lastseason', label: 'Last Season' },
+        { value: 'thisseason', label: 'This Season' }
+      ];
 
+      const selectedOption = timeframeOptions.find(opt => opt.value === selectedTimeframe);
+
+      return (
+        <>
+          {/* Desktop Layout - Only show on larger screens */}
+          <div className="hidden xl:flex flex-col gap-1 sm:gap-2">
+            {/* First row: L5, L10, L15, L20, H2H */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {['last5','last10','last15','last20','h2h'].map((k: string) => (
+                <TimeframeBtn key={k} value={k} isSelected={selectedTimeframe === k} onSelect={onSelectTimeframe} />
+              ))}
+            </div>
+            {/* Second row: Last Season, This Season */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {['lastseason','thisseason'].map((k: string) => (
+                <TimeframeBtn key={k} value={k} isSelected={selectedTimeframe === k} onSelect={onSelectTimeframe} />
+              ))}
+            </div>
+          </div>
+
+          {/* Compact/Mobile Dropdown - Show earlier */}
+          <div className="xl:hidden relative">
+            <button
+              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
+              className="w-16 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <span className="truncate">{selectedOption?.label || 'Timeframe'}</span>
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Dropdown Menu */}
+            {isTimeframeDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-16 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {timeframeOptions.map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      onSelectTimeframe(option.value);
+                      setIsTimeframeDropdownOpen(false);
+                    }}
+                    className={`w-full px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg ${
+                      selectedTimeframe === option.value
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Overlay to close dropdown when clicking outside */}
+            {isTimeframeDropdownOpen && (
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsTimeframeDropdownOpen(false)}
+              />
+            )}
+          </div>
+        </>
+      );
+    }, [selectedTimeframe, onSelectTimeframe, isTimeframeDropdownOpen, setIsTimeframeDropdownOpen]);
 
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 h-[600px] flex flex-col min-w-0 flex-shrink-0">
+      <>
         {StatPills}
+        {/* Responsive controls layout */}
+        <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+          {/* Top row: Line input (left), Over Rate (center-left), Team vs + Timeframes (right) */}
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3">
+            {/* Left: line input */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 -mt-1 sm:mt-0 ml-2 sm:ml-4 md:ml-8 lg:ml-10">
+              <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Line:</label>
+              <input
+                id="betting-line-input"
+                type="number" 
+                step="0.5" 
+                {...((['spread', 'moneyline'].includes(selectedStat)) ? {} : { min: "0" })}
+                key={selectedStat}
+                defaultValue={bettingLine}
+                onChange={(e) => {
+                  const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                  if (!Number.isFinite(v)) return;
+                  transientLineRef.current = v;
+                  updateBettingLinePosition(yAxisConfig, v);
+                  recolorBarsFast(v);
+                  updateOverRatePillFast(v);
+                  try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
+                }}
+                onBlur={(e) => {
+                  const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                  if (Number.isFinite(v)) {
+                    transientLineRef.current = v;
+                    onChangeBettingLine(v);
+                  }
+                }}
+                className="w-16 sm:w-16 md:w-18 lg:w-20 px-2 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+              {/* Mobile-only: show existing Over Rate pill under the line selector */}
+              <div className="sm:hidden mt-1">
+                <OverRatePill 
+                  overCount={chartData.filter(d => d.value > bettingLine).length} 
+                  total={chartData.length} 
+                  isDark={isDark} 
+                />
+              </div>
+            </div>
+            {/* Middle: Over Rate pill, centered within remaining space (appears slightly left due to right content) */}
+          <div className="hidden sm:flex flex-1 items-center justify-center">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">Over Rate:</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:hidden ml-1">Rate:</span>
+              <div className="ml-1">
+                <OverRatePill 
+                  overCount={chartData.filter(d => d.value > bettingLine).length} 
+                  total={chartData.length} 
+                  isDark={isDark} 
+                />
+              </div>
+            </div>
+            {/* Right: VS (opponent), H/A, and Timeframe inline */}
+            <div className="flex items-center flex-wrap gap-2 sm:gap-3 ml-auto">
+              <div className="mr-1 sm:mr-0">
+                <OpponentSelector
+                  currentOpponent={currentOpponent}
+                  manualOpponent={manualOpponent}
+                  onOpponentChange={onOpponentChange}
+                  isDark={isDark}
+                  propsMode={propsMode}
+                  currentTeam={currentTeam}
+                  selectedTimeframe={selectedTimeframe}
+                />
+              </div>
+              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
+              <div className="flex-shrink-0 mr-1 sm:mr-0">
+                {TimeframeButtons}
+              </div>
+            </div>
+          </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Line:</label>
-          <input
-            type="number" step="0.5" min="0" value={bettingLine}
-            onChange={(e) => onChangeBettingLine(Math.max(0, parseFloat(e.target.value) || 0))}
-            className="w-20 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-            <OverRatePill overCount={overCount} total={totalCount} isDark={isDark} />
-          </div>
-          {TimeframeButtons}
+          {/* Subtle divider under timeframe controls */}
+          <div className="w-full h-px bg-gray-300 dark:bg-gray-600/50 opacity-30 mt-1 sm:mt-2" />
+          
+          {/* Bottom row cleared - controls moved higher */}
         </div>
-
-        <div className="relative flex-1 min-h-0">
-          <div className="h-full w-full">
-            <PureChart
-              isLoading={isLoading}
-              chartData={chartData}
-              yAxisConfig={yAxisConfig}
-              isDark={isDark}
-              bettingLine={bettingLine}
-              selectedStat={selectedStat}
-              currentStatOptions={currentStatOptions}
-              apiError={apiError}
-              selectedPlayer={selectedPlayer}
-            />
-          </div>
-        </div>
-      </div>
+      </>
     );
-  },
-  (prev, next) => (
-    prev.isDark === next.isDark &&
-    prev.currentStatOptions === next.currentStatOptions &&
-    prev.selectedStat === next.selectedStat &&
-    prev.bettingLine === next.bettingLine &&
-    prev.selectedTimeframe === next.selectedTimeframe &&
-    prev.chartData === next.chartData &&
-    prev.yAxisConfig === next.yAxisConfig &&
-    prev.isLoading === next.isLoading &&
-    prev.apiError === next.apiError &&
-    prev.selectedPlayer === next.selectedPlayer &&
-    prev.overCount === next.overCount &&
-    prev.totalCount === next.totalCount
-  )
-);
+};
+
+
+
+
+// Container that combines controls and chart
+const ChartContainer = function ChartContainer({
+  isDark,
+  currentStatOptions,
+  selectedStat,
+  onSelectStat,
+  bettingLine,
+  onChangeBettingLine,
+  selectedTimeframe,
+  onSelectTimeframe,
+  chartData,
+  yAxisConfig,
+  isLoading,
+  apiError,
+  selectedPlayer,
+  propsMode,
+  gamePropsTeam,
+  customTooltip,
+  currentOpponent,
+  manualOpponent,
+  onOpponentChange,
+  currentTeam,
+  homeAway,
+  onChangeHomeAway,
+}: any) {
+  return (
+<div 
+className="relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-[6px] sm:pl-0 md:pt-1 md:pr-2 md:pb-[6px] md:pl-0 lg:pt-2 lg:pr-3 lg:pb-[6px] lg:pl-0 border border-gray-200 dark:border-gray-700 h-[460px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
+      style={{ outline: 'none' }}
+      onFocus={(e) => { if (e.target === e.currentTarget) (e.currentTarget as HTMLElement).blur(); }}
+      tabIndex={-1}
+    >
+      <ChartControls
+        isDark={isDark}
+        currentStatOptions={currentStatOptions}
+        selectedStat={selectedStat}
+        onSelectStat={onSelectStat}
+        bettingLine={bettingLine}
+        onChangeBettingLine={onChangeBettingLine}
+        selectedTimeframe={selectedTimeframe}
+        onSelectTimeframe={onSelectTimeframe}
+        chartData={chartData}
+        currentOpponent={currentOpponent}
+        manualOpponent={manualOpponent}
+        onOpponentChange={onOpponentChange}
+        propsMode={propsMode}
+        currentTeam={currentTeam}
+        homeAway={homeAway}
+        onChangeHomeAway={onChangeHomeAway}
+        yAxisConfig={yAxisConfig}
+      />
+      <div className="flex-1 min-h-0">
+        <PureChart
+          isLoading={isLoading}
+          chartData={chartData}
+          yAxisConfig={yAxisConfig}
+          isDark={isDark}
+          bettingLine={bettingLine}
+          selectedStat={selectedStat}
+          currentStatOptions={currentStatOptions}
+          apiError={apiError}
+          selectedPlayer={selectedPlayer}
+          propsMode={propsMode}
+          gamePropsTeam={gamePropsTeam}
+          customTooltip={customTooltip}
+        />
+      </div>
+    </div>
+  );
+};
 
 const OfficialOddsCard = memo(function OfficialOddsCard({
   isDark,
@@ -1414,13 +2182,13 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   fmtOdds,
 }: OfficialOddsCardProps) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full min-h-[120px] flex-shrink-0">
-      <div className="grid items-baseline mb-2" style={{ gridTemplateColumns: '1.2fr 1.8fr 1.2fr' }}>
+<div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-h-[120px] min-w-0 flex-shrink-0 overflow-hidden">
+      <div className="grid items-baseline mb-2" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
         <div className="text-sm text-white font-semibold justify-self-start">Official Odds</div>
-        <div className="text-sm text-white font-semibold justify-self-start text-left ml-3 sm:ml-5">Line Movement</div>
-        <div className="text-sm text-white font-semibold justify-self-start text-left ml-7">Matchup Odds</div>
+        <div className="text-sm text-white font-semibold justify-self-start text-left">Line Movement</div>
+        <div className="text-sm text-white font-semibold justify-self-start text-left">Matchup Odds</div>
       </div>
-      <div className="grid gap-10 sm:gap-12 items-start text-sm" style={{ gridTemplateColumns: '1.2fr 1.8fr 1.2fr' }}>
+      <div className="grid gap-10 sm:gap-12 items-start text-sm" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
         {/* Left column: stacked Opening/Current */}
         <div className="space-y-2">
           <div className="flex items-baseline gap-2">
@@ -1488,7 +2256,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
               if (Number.isNaN(v)) return s;
               const frac = Math.abs(v * 10) % 10;
               if (frac === 0) {
-                const adj = v > 0 ? v - 0.5 : v + 0.5; // toward zero by 0.5
+                // Allow negative spreads - subtract 0.5 from all values
+                const adj = v - 0.5;
                 return adj.toFixed(1);
               }
               return Number.isFinite(v) ? v.toFixed(1) : s;
@@ -1548,6 +2317,90 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     prev.books === next.books
   );
 });
+
+// Defense vs Position (isolated, memoized)
+const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponentTeam }: { isDark: boolean; opponentTeam: string }) {
+  const positions: Array<{ key: 'PG'|'SG'|'SF'|'PF'|'C'; label: string }> = [
+    { key: 'PG', label: 'Points vs PG' },
+    { key: 'SG', label: 'Points vs SG' },
+    { key: 'SF', label: 'Points vs SF' },
+    { key: 'PF', label: 'Points vs PF' },
+    { key: 'C',  label: 'Points vs C'  },
+  ];
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [perGame, setPerGame] = useState<Record<'PG'|'SG'|'SF'|'PF'|'C', number> | null>(null);
+  const [sample, setSample] = useState<number>(0);
+
+  useEffect(() => {
+    let abort = false;
+    const run = async () => {
+      setError(null);
+      setPerGame(null);
+      setSample(0);
+      if (!opponentTeam) return;
+      setLoading(true);
+      try {
+const url = new URL('/api/dvp', window.location.origin);
+        url.searchParams.set('team', opponentTeam);
+        url.searchParams.set('metric', 'pts');
+        url.searchParams.set('games', '82');
+        const res = await fetch(url.toString());
+        const j = await res.json().catch(() => ({}));
+        if (!abort) {
+          if (j?.success && j?.perGame) {
+            setPerGame(j.perGame);
+            setSample(Number(j?.sample_games) || 0);
+          } else {
+            setError(j?.error || 'Failed to load');
+          }
+        }
+      } catch (e: any) {
+        if (!abort) setError(e?.message || 'Failed to load');
+      } finally {
+        if (!abort) setLoading(false);
+      }
+    };
+    run();
+    return () => { abort = true; };
+  }, [opponentTeam]);
+
+  const fmt = (v?: number) => (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(1) : '—';
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
+        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+          {loading ? 'Loading…' : error ? 'Error' : 'Live'}{sample ? ` · ${sample}G` : ''}
+        </span>
+      </div>
+      <div className={`rounded-lg border ${isDark ? 'border-gray-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+        <div className={`px-3 py-2 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+          {opponentTeam ? (
+            <span>Opponent: <span className={`font-mono font-bold ${isDark ? 'text-white' : 'text-black'}`}>{opponentTeam}</span></span>
+          ) : (
+            <span>Select an opponent</span>
+          )}
+        </div>
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          {positions.map((p) => (
+            <div key={p.key} className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-purple-400' : 'bg-purple-600'}`} />
+                <span className={`text-xs font-mono ${isDark ? 'text-white' : 'text-black'}`}>{p.label}</span>
+              </div>
+              <div className={`text-xs font-bold font-mono ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                {fmt(perGame?.[p.key])}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}, (prev, next) => prev.isDark === next.isDark && prev.opponentTeam === next.opponentTeam);
 
 // Opponent Analysis (isolated, memoized)
 const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, opponentTeam, selectedTimeFilter }: { isDark: boolean; opponentTeam: string; selectedTimeFilter: string }) {
@@ -1647,6 +2500,28 @@ function NBADashboardContent() {
 
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
+  
+  // Ensure correct default stat is set when propsMode changes
+  useEffect(() => {
+    if (propsMode === 'player') {
+      // Clear opponent when switching to player mode (player props don't have opponents)
+      setOpponentTeam('');
+      
+      // Set default stat if needed
+      if (selectedStat !== 'pts') {
+        const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
+        if (!playerStatExists) {
+          setSelectedStat('pts');
+        }
+      }
+    } else if (propsMode === 'team' && selectedStat !== 'total_pts') {
+      // Only change if we're not already on total_pts to avoid unnecessary updates
+      const teamStatExists = TEAM_STAT_OPTIONS.find(s => s.key === selectedStat);
+      if (!teamStatExists) {
+        setSelectedStat('total_pts');
+      }
+    }
+  }, [propsMode]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
@@ -1727,6 +2602,7 @@ function NBADashboardContent() {
   const [searchResults, setSearchResults] = useState<BdlSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   // selection + data
   const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
@@ -1743,11 +2619,32 @@ function NBADashboardContent() {
   // Opponent team state
   const [opponentTeam, setOpponentTeam] = useState<string>('N/A');
   
-  // Selected team (player's team)
+  // Manual opponent selector (overrides automatic opponent detection)
+  const [manualOpponent, setManualOpponent] = useState<string>('ALL');
+  
+  // Home/Away filter
+  const [homeAway, setHomeAway] = useState<'ALL' | 'HOME' | 'AWAY'>('ALL');
+  
+  // Selected team (player's team - only for Player Props)
   const [selectedTeam, setSelectedTeam] = useState<string>('N/A');
+  
+  // Original player team (the team of the searched player - never changes during swaps)
+  const [originalPlayerTeam, setOriginalPlayerTeam] = useState<string>('N/A');
+  
+  // Separate team selection for Game Props mode
+  const [gamePropsTeam, setGamePropsTeam] = useState<string>('N/A');
+  const [gamePropsOpponent, setGamePropsOpponent] = useState<string>('N/A');
+  
+  // Depth chart display team (independent of selectedTeam - only affects depth chart)
+  const [depthChartTeam, setDepthChartTeam] = useState<string>('N/A');
 
   // Injury data state for depth chart integration
   const [teamInjuries, setTeamInjuries] = useState<Record<string, any[]>>({});
+  
+  // Store both team rosters for instant switching
+  const [playerTeamRoster, setPlayerTeamRoster] = useState<any[]>([]);
+  const [opponentTeamRoster, setOpponentTeamRoster] = useState<any[]>([]);
+  const [rostersLoading, setRostersLoading] = useState<{player: boolean, opponent: boolean}>({player: false, opponent: false});
 
   // Logo URLs (stateful to avoid onError flicker loops)
   const [selectedTeamLogoUrl, setSelectedTeamLogoUrl] = useState<string>('');
@@ -1758,6 +2655,10 @@ function NBADashboardContent() {
   // Games state
   const [todaysGames, setTodaysGames] = useState<any[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
+  
+  // Game stats for team props (separate from player stats)
+  const [gameStats, setGameStats] = useState<any[]>([]);
+  const [gameStatsLoading, setGameStatsLoading] = useState(false);
 
   // Determine today's matchup and tipoff time (no fetch; uses existing todaysGames)
   const matchupInfo = useMemo(() => {
@@ -1792,8 +2693,239 @@ function NBADashboardContent() {
   
   // Team comparison metric selector
   const [selectedComparison, setSelectedComparison] = useState<'offense_defense' | 'net_rating' | 'pace' | 'rebound_pct'>('offense_defense');
+  
+  // Pie chart display order (only affects visual display, not underlying data)
+  const [pieChartSwapped, setPieChartSwapped] = useState(false);
 
-  // Fetch games function
+
+  // Team game data cache for instant loading
+  const [teamGameCache, setTeamGameCache] = useState<Record<string, any[]>>({});
+  const [backgroundCacheLoading, setBackgroundCacheLoading] = useState(false);
+  const [cacheProgress, setCacheProgress] = useState({ current: 0, total: 0 });
+
+  // Background cache all teams function
+  const cacheAllTeamsInBackground = async () => {
+    if (backgroundCacheLoading) return; // Prevent multiple background loads
+    
+    setBackgroundCacheLoading(true);
+    console.log('🔄 Starting background cache of all team data...');
+    
+    // List of all NBA teams
+    const allTeams = Object.keys(ABBR_TO_TEAM_ID);
+    const teamsToCache = allTeams.filter(team => !teamGameCache[team]);
+    
+    setCacheProgress({ current: 0, total: teamsToCache.length });
+    
+    for (let i = 0; i < teamsToCache.length; i++) {
+      const teamAbbr = teamsToCache[i];
+      try {
+        // Use a simplified version without UI loading states
+        const games = await fetchTeamGamesData(teamAbbr, false); // false = no UI loading
+        
+        setTeamGameCache(prev => ({
+          ...prev,
+          [teamAbbr]: games
+        }));
+        
+        // Update progress
+        setCacheProgress({ current: i + 1, total: teamsToCache.length });
+        
+        // Small delay between teams to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (error) {
+        console.warn(`Background cache failed for ${teamAbbr}:`, error);
+      }
+    }
+    
+    console.log('✅ Background cache completed for all teams');
+    setBackgroundCacheLoading(false);
+    setCacheProgress({ current: 0, total: 0 });
+  };
+
+  // Core function to fetch team games (without UI state updates)
+  const fetchTeamGamesData = async (teamAbbr: string, showLoading: boolean = true) => {
+    if (!teamAbbr || teamAbbr === 'N/A') return [];
+    
+    if (showLoading) {
+      setGameStatsLoading(true);
+    }
+    try {
+      const season = currentNbaSeason();
+      const teamId = ABBR_TO_TEAM_ID[normalizeAbbr(teamAbbr)];
+      
+      if (!teamId) {
+        console.warn(`No team ID found for ${teamAbbr}`);
+        return [];
+      }
+      
+      console.log(`🏀 Fetching games for team ${teamAbbr} (ID: ${teamId})`);
+      
+      // Use aggregated, team-scoped fast path (no cursor), one call per season
+      const current = currentNbaSeason();
+      const targetSeasons = [String(current), String(current - 1), String(current - 2)];
+
+      const seasonResults = await Promise.all(
+        targetSeasons.map(async (s) => {
+          try {
+            const url = `/api/bdl/games?seasons[]=${s}&team_ids[]=${teamId}&per_page=100`;
+            const res = await fetch(url);
+            const js = await res.json();
+            const arr = Array.isArray(js?.data) ? js.data : [];
+            return arr;
+          } catch {
+            return [] as any[];
+          }
+        })
+      );
+
+      const seasonData = { data: seasonResults.flat() } as any;
+
+      if (seasonData?.data) {
+        console.log(`🔍 FILTERING: Starting with ${seasonData.data.length} total games`);
+        
+        // Filter for games involving our team and only completed games
+        let allTeamGames = seasonData.data.filter((game: any) => {
+          return game.home_team?.id === teamId || game.visitor_team?.id === teamId;
+        });
+        
+        console.log(`🔍 Found ${allTeamGames.length} total games involving ${teamAbbr} (before status filtering)`);
+        
+        // Check what statuses we have
+        const statusCounts = allTeamGames.reduce((acc: any, game: any) => {
+          const status = game.status || 'undefined';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+        
+        console.log(`🔍 Game statuses for ${teamAbbr}:`, statusCounts);
+        
+        let games = seasonData.data.filter((game: any) => {
+          const isTeamInvolved = game.home_team?.id === teamId || game.visitor_team?.id === teamId;
+          const isCompleted = game.status === 'Final';
+          const hasScores = game.home_team_score != null && game.visitor_team_score != null;
+          
+          const passes = isTeamInvolved && isCompleted && hasScores;
+          
+          // Debug first few games
+          if (seasonData.data.indexOf(game) < 5) {
+            console.log(`🔎 Game filter debug:`, {
+              id: game.id,
+              date: game.date,
+              home: game.home_team?.abbreviation + ` (ID: ${game.home_team?.id})`,
+              away: game.visitor_team?.abbreviation + ` (ID: ${game.visitor_team?.id})`,
+              status: game.status,
+              targetTeamId: teamId,
+              isTeamInvolved,
+              isCompleted,
+              hasScores,
+              passes
+            });
+          }
+          
+          return passes;
+        });
+        
+        // Sort by date (oldest first for full season display)
+        games = games
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.date || 0).getTime();
+            const dateB = new Date(b.date || 0).getTime();
+            return dateA - dateB; // Oldest first (season progression)
+          });
+          
+        console.log(`🏆 Full 2024-25 season: ${games.length} games`);
+        
+        // Break down games by month/type
+        const gamesByMonth = games.reduce((acc: any, game: any) => {
+          const date = game.date;
+          const month = date ? date.substring(0, 7) : 'unknown'; // YYYY-MM
+          acc[month] = (acc[month] || 0) + 1;
+          return acc;
+        }, {});
+        
+        console.log(`📅 Games breakdown by month:`, gamesByMonth);
+        
+        // Check for potential preseason (October before 15th) or playoff games (April after 15th)
+        const preseasonGames = games.filter(g => {
+          const date = g.date;
+          return date && date.startsWith('2024-10') && parseInt(date.split('-')[2]) < 15;
+        });
+        
+        const playoffGames = games.filter(g => {
+          const date = g.date;
+          return date && (date.startsWith('2025-04') && parseInt(date.split('-')[2]) > 15) || date.startsWith('2025-05') || date.startsWith('2025-06');
+        });
+        
+        console.log(`🏆 Potential preseason games: ${preseasonGames.length}`);
+        console.log(`🏆 Potential playoff games: ${playoffGames.length}`);
+        
+        console.log(`📊 Found ${games.length} games for ${teamAbbr}`);
+        if (games.length > 0) {
+          const newest = games[0]?.date;
+          const oldest = games[games.length - 1]?.date;
+          console.log(`📅 Date range: ${oldest} to ${newest}`);
+        }
+        
+        // Games are already in chronological order (oldest to newest)
+        if (showLoading) {
+          setGameStats(games);
+        }
+        return games;
+      }
+      
+      console.warn(`No games found for ${teamAbbr}`);
+      return [];
+    } catch (error) {
+      console.error(`Error fetching game data for ${teamAbbr}:`, error);
+      if (showLoading) {
+        setGameStats([]);
+      }
+      return [];
+    } finally {
+      if (showLoading) {
+        setGameStatsLoading(false);
+      }
+    }
+  };
+
+  // Priority fetch: load requested team immediately, then cache others in background
+  const fetchGameDataForTeam = async (teamAbbr: string) => {
+    if (!teamAbbr || teamAbbr === 'N/A') return [];
+    
+    // Check cache first
+    if (teamGameCache[teamAbbr]) {
+      console.log(`⚡ Using cached data for ${teamAbbr}`);
+      
+      // Add 20ms delay to make switching visible
+      setGameStatsLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      setGameStats(teamGameCache[teamAbbr]);
+      setGameStatsLoading(false);
+      
+      return teamGameCache[teamAbbr];
+    }
+    
+    console.log(`🏀 Priority loading ${teamAbbr}...`);
+    
+    // Load requested team immediately with UI loading state
+    const games = await fetchTeamGamesData(teamAbbr, true);
+    
+    // Cache the result
+    setTeamGameCache(prev => ({
+      ...prev,
+      [teamAbbr]: games
+    }));
+    
+    // Trigger background caching of all other teams (non-blocking)
+    setTimeout(() => {
+      cacheAllTeamsInBackground();
+    }, 500); // Small delay to let UI update first
+    
+    return games;
+  };
+
+  // Fetch games function (today ± 7 days)
   const fetchTodaysGames = async () => {
     try {
       setGamesLoading(true);
@@ -1802,37 +2934,24 @@ function NBADashboardContent() {
         return date.toISOString().split('T')[0];
       };
       
-      // Try multiple date ranges to find games
+      // Fetch only a small date range (today ± 7 days) to avoid season paging
       const today = new Date();
-      const dateRanges = [
-        // Next 2 weeks (for upcoming season start)
-        { start: formatDate(today), end: formatDate(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)) },
-        // Season opening week (Oct 21-28, 2025)
-        { start: '2025-10-21', end: '2025-10-28' },
-        // Today +/- 3 days
-        { start: formatDate(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)), end: formatDate(new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)) },
-      ];
-      
-      for (const range of dateRanges) {
-        console.log(`🔍 Trying to fetch games from ${range.start} to ${range.end}`);
-        
-        try {
-          const response = await fetch(`/api/bdl/games?start_date=${range.start}&end_date=${range.end}&per_page=100`);
-          const data = await response.json();
-          
-          if (data?.data?.length > 0) {
-            console.log(`✅ Found ${data.data.length} games for ${range.start} to ${range.end}`);
-            setTodaysGames(data.data);
-            return; // Success, exit the loop
-          } else {
-            console.log(`❌ No games found for ${range.start} to ${range.end}`);
-          }
-        } catch (rangeError) {
-          console.error(`Error fetching games for ${range.start}-${range.end}:`, rangeError);
+      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+      const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+
+      try {
+        const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
+        const data = await response.json();
+        const arr = Array.isArray(data?.data) ? data.data : [];
+        if (arr.length > 0) {
+          setTodaysGames(arr);
+          return;
         }
+      } catch (e) {
+        console.error('Error fetching date-range games:', e);
       }
-      
-      console.log('❌ No games found in any date range');
+
+      console.log('❌ No games found in date range');
       setTodaysGames([]);
       
     } catch (error) {
@@ -1845,28 +2964,109 @@ function NBADashboardContent() {
 
   // Update opponent when games or selected team changes
   useEffect(() => {
-    if (selectedTeam && selectedTeam !== 'N/A' && todaysGames.length > 0) {
-      const opponent = getOpponentTeam(selectedTeam, todaysGames);
-      console.log(`🎯 Setting opponent team: ${opponent} for player team: ${selectedTeam}`);
+    // If manual opponent is set and not ALL, use that instead of automatic detection
+    if (manualOpponent && manualOpponent !== '' && manualOpponent !== 'ALL') {
+      console.log(`🎯 Using manual opponent: ${manualOpponent}`);
+      setOpponentTeam(normalizeAbbr(manualOpponent));
+      return;
+    }
+    
+    // Otherwise, use automatic opponent detection
+    const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+    if (teamToCheck && teamToCheck !== 'N/A' && todaysGames.length > 0) {
+      const opponent = getOpponentTeam(teamToCheck, todaysGames);
+      console.log(`🎯 Setting opponent team: ${opponent} for ${propsMode} team: ${teamToCheck}`);
       setOpponentTeam(normalizeAbbr(opponent));
     } else {
-      console.log(`⏸️ Not updating opponent - selectedTeam: ${selectedTeam}, games: ${todaysGames.length}`);
+      console.log(`⏸️ Not updating opponent - ${propsMode} team: ${teamToCheck}, games: ${todaysGames.length}`);
+      if (propsMode === 'team' && (!gamePropsTeam || gamePropsTeam === 'N/A')) {
+        setOpponentTeam('');
+      }
     }
-  }, [selectedTeam, todaysGames]);
+  }, [selectedTeam, gamePropsTeam, todaysGames, propsMode, manualOpponent]);
 
-
-
-
-  // Keep logo URL in sync with selectedTeam and opponentTeam, once per change
+  // Load games on mount and refresh every 3 hours (reduced churn)
   useEffect(() => {
-    if (selectedTeam && selectedTeam !== 'N/A') {
+    fetchTodaysGames();
+    const id = setInterval(fetchTodaysGames, 3 * 60 * 60 * 1000); // 3 hours
+    return () => {
+      clearInterval(id);
+    };
+  }, []);
+
+  // When a team's game goes Final, immediately switch VS to next opponent (or ALL if none)
+  useEffect(() => {
+    const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+    if (!teamToCheck || teamToCheck === 'N/A' || todaysGames.length === 0) return;
+
+    const normTeam = normalizeAbbr(teamToCheck);
+    const now = Date.now();
+
+    // Find upcoming games for this team
+    const teamGames = todaysGames.filter((g: any) => {
+      const home = normalizeAbbr(g?.home_team?.abbreviation || '');
+      const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
+      return home === normTeam || away === normTeam;
+    });
+
+    // If any game is Final today, pick the next future game as opponent
+    const hasFinalToday = teamGames.some((g: any) => String(g.status).toLowerCase().includes('final'));
+    if (hasFinalToday) {
+      const upcoming = teamGames
+        .map((g: any) => ({ g, t: new Date(g.date || 0).getTime() }))
+        .filter(({ t }) => t > now)
+        .sort((a, b) => a.t - b.t)[0]?.g;
+      if (upcoming) {
+        const home = normalizeAbbr(upcoming?.home_team?.abbreviation || '');
+        const away = normalizeAbbr(upcoming?.visitor_team?.abbreviation || '');
+        const nextOpp = normTeam === home ? away : home;
+        setOpponentTeam(nextOpp || '');
+      } else {
+        // No upcoming game — default to ALL to avoid stale VS
+        setOpponentTeam('ALL');
+      }
+    }
+  }, [todaysGames, selectedTeam, gamePropsTeam, propsMode]);
+
+  // Auto-handle opponent selection when switching to H2H (less aggressive)
+  useEffect(() => {
+    if (selectedTimeframe === 'h2h') {
+      // When switching to H2H, only clear manual opponent if it's currently ALL
+      if (manualOpponent === 'ALL') {
+        setManualOpponent('');
+      }
+    }
+    // Don't auto-switch away from manual selections when leaving H2H
+  }, [selectedTimeframe, manualOpponent]);
+
+  // Fetch game data when in team mode and team is selected
+  useEffect(() => {
+    if (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A') {
+      console.log(`🏀 Fetching game data for team mode: ${gamePropsTeam}`);
+      fetchGameDataForTeam(gamePropsTeam);
+    } else if (propsMode === 'player') {
+      // Clear game data when switching back to player mode
+      setGameStats([]);
+    } else if (propsMode === 'team' && gamePropsTeam === 'N/A') {
+      // Clear game data when no team selected in Game Props
+      setGameStats([]);
+    }
+  }, [propsMode, gamePropsTeam]);
+
+
+
+
+  // Keep logo URL in sync with selectedTeam/gamePropsTeam and opponentTeam
+  useEffect(() => {
+    const teamToUse = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+    if (teamToUse && teamToUse !== 'N/A') {
       setSelectedTeamLogoAttempt(0);
-      setSelectedTeamLogoUrl(getEspnLogoUrl(selectedTeam));
+      setSelectedTeamLogoUrl(getEspnLogoUrl(teamToUse));
     } else {
       setSelectedTeamLogoUrl('');
       setSelectedTeamLogoAttempt(0);
     }
-  }, [selectedTeam]);
+  }, [selectedTeam, gamePropsTeam, propsMode]);
 
   useEffect(() => {
     if (opponentTeam) {
@@ -1878,16 +3078,132 @@ function NBADashboardContent() {
     }
   }, [opponentTeam]);
 
-  // Fetch injuries for depth chart integration
+  // Function to fetch a single team's depth chart
+  const fetchTeamDepthChart = async (team: string): Promise<DepthChartData | null> => {
+    try {
+      if (!team || team === 'N/A') return null;
+      const url = `/api/depth-chart?team=${encodeURIComponent(team)}`;
+      const res = await fetch(url);
+      const js = await res.json().catch(() => ({}));
+      if (!res.ok) return null;
+      return js?.depthChart as DepthChartData | null;
+    } catch (error) {
+      console.warn(`Failed to fetch depth chart for ${team}:`, error);
+      return null;
+    }
+  };
+
+  // Prefetch rosters for current teams (specific to current mode)
+  useEffect(() => {
+    const prefetchTeamRosters = async () => {
+      const playerTeam = propsMode === 'team' ? gamePropsTeam : originalPlayerTeam;
+      const oppTeam = opponentTeam;
+      
+      if (!playerTeam || playerTeam === 'N/A') return;
+      
+      // Fetch player team roster
+      if (playerTeam !== 'N/A') {
+        setRostersLoading(prev => ({ ...prev, player: true }));
+        const playerRoster = await fetchTeamDepthChart(playerTeam);
+        setPlayerTeamRoster(playerRoster || []);
+        setRostersLoading(prev => ({ ...prev, player: false }));
+      }
+      
+      // Fetch opponent team roster if available
+      if (oppTeam && oppTeam !== 'N/A' && oppTeam !== playerTeam) {
+        setRostersLoading(prev => ({ ...prev, opponent: true }));
+        const opponentRoster = await fetchTeamDepthChart(oppTeam);
+        setOpponentTeamRoster(opponentRoster || []);
+        setRostersLoading(prev => ({ ...prev, opponent: false }));
+      }
+    };
+    
+    prefetchTeamRosters();
+  }, [originalPlayerTeam, opponentTeam, propsMode, gamePropsTeam]);
+
+  // Comprehensive roster cache - preload ALL team rosters for instant switching
+  const [allTeamRosters, setAllTeamRosters] = useState<Record<string, DepthChartData>>({});
+  const [rosterCacheLoading, setRosterCacheLoading] = useState(false);
+
+  // Preload all team rosters when games are loaded (for instant team switching)
+  useEffect(() => {
+    const preloadAllRosters = async () => {
+      if (todaysGames.length === 0) return;
+      
+      setRosterCacheLoading(true);
+      console.log('🚀 Preloading all team rosters for instant switching...');
+      
+      // Get all unique teams from today's games
+      const allTeams = new Set<string>();
+      todaysGames.forEach(game => {
+        if (game.home_team?.abbreviation) allTeams.add(normalizeAbbr(game.home_team.abbreviation));
+        if (game.visitor_team?.abbreviation) allTeams.add(normalizeAbbr(game.visitor_team.abbreviation));
+      });
+      
+      console.log(`📋 Found ${allTeams.size} teams to preload:`, Array.from(allTeams));
+      
+      // Fetch all rosters in parallel
+      const rosterPromises = Array.from(allTeams).map(async (team) => {
+        try {
+          const roster = await fetchTeamDepthChart(team);
+          return { team, roster };
+        } catch (error) {
+          console.warn(`Failed to preload roster for ${team}:`, error);
+          return { team, roster: null };
+        }
+      });
+      
+      const results = await Promise.all(rosterPromises);
+      
+      // Build roster cache
+      const rosterCache: Record<string, DepthChartData> = {};
+      results.forEach(({ team, roster }) => {
+        if (roster) {
+          rosterCache[team] = roster;
+        }
+      });
+      
+      setAllTeamRosters(rosterCache);
+      setRosterCacheLoading(false);
+      
+      console.log(`✅ Preloaded ${Object.keys(rosterCache).length} team rosters for instant switching`);
+
+      // Preload injuries for all teams we just cached so swaps show injury badges instantly
+      try {
+        const teamsParam = Array.from(allTeams).join(',');
+        if (teamsParam) {
+          const res = await fetch(`/api/injuries?teams=${teamsParam}`);
+          const data = await res.json();
+          if (data?.success) {
+            setTeamInjuries((prev: any) => ({ ...prev, ...(data.injuriesByTeam || {}) }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to preload injuries for all teams:', err);
+      }
+    };
+    
+    preloadAllRosters();
+  }, [todaysGames]);
+
+  // Fetch injuries for depth chart integration (fetch both selected and opponent teams)
   useEffect(() => {
     const fetchTeamInjuries = async () => {
-      if (!selectedTeam || selectedTeam === 'N/A') {
+      const teamA = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+      const teamB = opponentTeam;
+      
+      if (!teamA || teamA === 'N/A') {
         setTeamInjuries({});
         return;
       }
 
       try {
-        const response = await fetch(`/api/injuries?teams=${selectedTeam}`);
+        const teamsParam = [teamA, teamB]
+          .filter(Boolean)
+          .filter((t, i, arr) => t !== 'N/A' && arr.indexOf(t as string) === i)
+          .join(',');
+        const url = teamsParam ? `/api/injuries?teams=${teamsParam}` : `/api/injuries?teams=${teamA}`;
+        const response = await fetch(url);
         const data = await response.json();
         if (data.success) {
           setTeamInjuries(data.injuriesByTeam || {});
@@ -1899,15 +3215,32 @@ function NBADashboardContent() {
     };
 
     fetchTeamInjuries();
-  }, [selectedTeam]);
+  }, [selectedTeam, propsMode, gamePropsTeam, opponentTeam]);
 
 
 
 
-  // On mount: restore from URL first; else sessionStorage; else default
+  // On mount: restore from sessionStorage and URL once
   useEffect(() => {
-    fetchTodaysGames(); // Fetch games on mount
+    let initialPropsMode: 'player' | 'team' = 'player';
+    let shouldLoadDefaultPlayer = true;
+    
 
+    // First, restore propsMode from session storage
+    try {
+      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<SavedSession>;
+        if (saved?.propsMode && (saved.propsMode === 'player' || saved.propsMode === 'team')) {
+          initialPropsMode = saved.propsMode;
+          setPropsMode(saved.propsMode);
+        }
+        if (saved?.selectedStat) setSelectedStat(saved.selectedStat);
+        if (saved?.selectedTimeframe) setSelectedTimeframe(saved.selectedTimeframe);
+      }
+    } catch {}
+
+    // Then check URL parameters (can override session storage)
     try {
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
@@ -1916,36 +3249,54 @@ function NBADashboardContent() {
         const team = url.searchParams.get('team') || undefined;
         const stat = url.searchParams.get('stat');
         const tf = url.searchParams.get('tf');
+        const mode = url.searchParams.get('mode');
+        
+        if (mode === 'team' || mode === 'player') {
+          initialPropsMode = mode;
+          setPropsMode(mode);
+        }
         if (stat) setSelectedStat(stat);
         if (tf) setSelectedTimeframe(tf);
         if (pid && name) {
           const r: BdlSearchResult = { id: Number(pid), full: name, team, pos: undefined };
-          handlePlayerSelectFromSearch(r);
-          return;
+          if (initialPropsMode === 'player') {
+            handlePlayerSelectFromSearch(r);
+            shouldLoadDefaultPlayer = false;
+            return;
+          }
         }
       }
     } catch {}
 
-    try {
-      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-      if (raw) {
-        const saved = JSON.parse(raw) as Partial<SavedSession>;
-        if (saved?.selectedStat) setSelectedStat(saved.selectedStat);
-        if (saved?.selectedTimeframe) setSelectedTimeframe(saved.selectedTimeframe);
-        const r = saved?.player as BdlSearchResult | undefined;
-        if (r && r.id && r.full) {
-          handlePlayerSelectFromSearch(r);
-          return;
+    // Finally, restore saved player if in player mode
+    if (initialPropsMode === 'player') {
+      try {
+        const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+        if (raw) {
+          const saved = JSON.parse(raw) as Partial<SavedSession & { playerCleared?: boolean }>;
+          
+          // If user deliberately cleared player data by switching modes, don't load default
+          if (saved?.playerCleared) {
+            shouldLoadDefaultPlayer = false;
+            return;
+          }
+          
+          // Only restore player data if the saved mode matches current mode
+          if (saved?.propsMode === 'player') {
+            const r = saved?.player as BdlSearchResult | undefined;
+            if (r && r.id && r.full) {
+              handlePlayerSelectFromSearch(r);
+              shouldLoadDefaultPlayer = false;
+              return;
+            }
+          }
         }
-      }
-    } catch {}
+      } catch {}
 
-    (async () => {
-      const p = getPlayerById('237');
-      if (!p) return;
-      await handlePlayerSelectFromLocal(p);
-    })();
-  }, []);
+      // Never auto-load any default player
+      // Players should only be loaded when explicitly searched for or from URL sharing
+    }
+  }, []); // Only run once on mount
 
   /* --------- Live search (debounced) using /api/bdl/players ---------- */
   useEffect(() => {
@@ -1956,13 +3307,32 @@ function NBADashboardContent() {
       if (q.length < 2) { setSearchResults([]); return; }
       setSearchBusy(true);
       try {
-        const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(q)}`);
+        // For full name searches (contains space) or short queries, use broader search + client filtering
+        const isFullNameSearch = q.includes(' ') || q.length < 3;
+        const searchQuery = isFullNameSearch ? q.split(' ')[0] : q; // Use first word for API search
+        
+        const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(searchQuery)}`);
         const json = await res.json().catch(() => ({}));
         const err = json?.error || null;
         setSearchError(err);
-        const arr: BdlSearchResult[] = Array.isArray(json?.results)
+        
+        let arr: BdlSearchResult[] = Array.isArray(json?.results)
           ? json.results.map((r: any) => ({ id: r.id, full: r.full, team: r.team, pos: r.pos }))
           : [];
+        
+        // Client-side fuzzy filtering for full name searches
+        if (isFullNameSearch && q.includes(' ')) {
+          const queryWords = q.toLowerCase().split(' ').filter(word => word.length > 0);
+          arr = arr.filter(player => {
+            const playerName = player.full.toLowerCase();
+            // Check if all query words are found in the player name
+            return queryWords.every(word => 
+              playerName.includes(word) || 
+              // Also check if any word in player name starts with the query word
+              playerName.split(' ').some(nameWord => nameWord.startsWith(word))
+            );
+          });
+        }
         // dedupe & cap
         const seen = new Set<string>();
         const dedup = arr.filter(r => {
@@ -1985,32 +3355,49 @@ function NBADashboardContent() {
   // Persist session when key state changes
   useEffect(() => {
     try {
-      if (selectedPlayer && selectedTeam) {
+      // Always save propsMode, selectedStat, and selectedTimeframe
+      const baseSave: Partial<SavedSession> = {
+        propsMode,
+        selectedStat,
+        selectedTimeframe,
+      };
+
+      // Add player data if in player mode and player is selected
+      if (selectedPlayer && selectedTeam && propsMode === 'player') {
         const r: BdlSearchResult = {
           id: Number(resolvedPlayerId || selectedPlayer.id),
           full: selectedPlayer.full,
           team: selectedTeam,
           pos: (selectedPlayer as any).position || undefined,
         };
-        const toSave: SavedSession = {
-          player: r,
-          selectedStat,
-          selectedTimeframe,
-        };
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify(toSave));
-          // Update URL for share/save
-          const url = new URL(window.location.href);
+        (baseSave as SavedSession).player = r;
+      }
+      
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
+        
+        // Update URL for share/save
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', propsMode);
+        
+        if (selectedPlayer && selectedTeam && propsMode === 'player') {
+          const r = baseSave.player as BdlSearchResult;
           url.searchParams.set('pid', String(r.id));
           url.searchParams.set('name', r.full);
           url.searchParams.set('team', selectedTeam);
-          url.searchParams.set('stat', selectedStat);
-          url.searchParams.set('tf', selectedTimeframe);
-          window.history.replaceState({}, '', url.toString());
+        } else {
+          // Remove player-specific params when not in player mode
+          url.searchParams.delete('pid');
+          url.searchParams.delete('name');
+          url.searchParams.delete('team');
         }
+        
+        url.searchParams.set('stat', selectedStat);
+        url.searchParams.set('tf', selectedTimeframe);
+        window.history.replaceState({}, '', url.toString());
       }
     } catch {}
-  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId]);
+  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode]);
 
   // Resolve playerId with best match (if needed)
   const resolvePlayerId = async (fullName: string, teamAbbr?: string): Promise<string | null> => {
@@ -2059,6 +3446,65 @@ function NBADashboardContent() {
 
   // Fetch ESPN player data (jersey, height, etc.)
   const fetchEspnPlayerData = async (playerName: string, team?: string): Promise<EspnPlayerData | null> => {
+    return await fetchEspnPlayerDataCore(playerName, team);
+  };
+
+
+  // Core function to fetch player stats (without UI state updates)
+  const fetchSortedStatsCore = async (playerId: string) => {
+    const season = currentNbaSeason();
+    const grab = async (yr: number, postseason = false) => {
+      const r = await fetch(`/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`);
+      const j = await r.json().catch(() => ({}));
+      return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+    };
+
+    // Fetch current + previous + prior, both regular and playoffs (3 seasons total)
+    const [currReg, currPO, prev1Reg, prev1PO, prev2Reg, prev2PO] = await Promise.all([
+      grab(season, false),        // 2024-25 regular
+      grab(season, true),         // 2024-25 playoffs
+      grab(season - 1, false),    // 2023-24 regular  
+      grab(season - 1, true),     // 2023-24 playoffs
+      grab(season - 2, false),    // 2022-23 regular
+      grab(season - 2, true)      // 2022-23 playoffs
+    ]);
+
+    // Merge then sort newest-first; downstream will dedupe and slice to timeframe
+    const rows = [...currReg, ...currPO, ...prev1Reg, ...prev1PO, ...prev2Reg, ...prev2PO];
+    const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
+    safe.sort((a, b) => {
+      const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+      const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+      return db - da; // newest first
+    });
+    return safe;
+  };
+
+  // Fetch game stats for a player
+  const fetchSortedStats = async (playerId: string) => {
+    return await fetchSortedStatsCore(playerId);
+  };
+  
+  // Core function to fetch advanced stats (without UI state updates)
+  const fetchAdvancedStatsCore = async (playerId: string) => {
+    const playerIdNum = parseInt(playerId);
+    if (isNaN(playerIdNum)) {
+      throw new Error('Invalid player ID');
+    }
+    
+    const season = currentNbaSeason();
+    let stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season));
+    
+    if (stats.length === 0) {
+      // If no current season stats, try previous season
+      stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season - 1));
+    }
+    
+    return stats.length > 0 ? stats[0] : null;
+  };
+
+  // Core function to fetch ESPN player data (without UI state updates) 
+  const fetchEspnPlayerDataCore = async (playerName: string, team?: string) => {
     try {
       const params = new URLSearchParams({ name: playerName });
       if (team) params.set('team', team.toLowerCase());
@@ -2071,58 +3517,19 @@ function NBADashboardContent() {
     }
   };
 
-  // Fetch stats (newest first); merge current + previous season so "last N" can span seasons
-  const fetchSortedStats = async (playerId: string) => {
-    const season = currentNbaSeason();
-    const grab = async (yr: number, postseason = false) => {
-      const r = await fetch(`/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`);
-      const j = await r.json().catch(() => ({}));
-      return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
-    };
-
-    // Fetch current + previous, both regular and playoffs
-    const [currReg, currPO, prevReg, prevPO] = await Promise.all([
-      grab(season, false),
-      grab(season, true),
-      grab(season - 1, false),
-      grab(season - 1, true)
-    ]);
-
-    // Merge then sort newest-first; downstream will dedupe and slice to timeframe
-    const rows = [...currReg, ...currPO, ...prevReg, ...prevPO];
-    const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
-    safe.sort((a, b) => {
-      const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
-      const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
-      return db - da; // newest first
-    });
-    return safe;
-  };
   
   // Fetch advanced stats for a player
   const fetchAdvancedStats = async (playerId: string) => {
     setAdvancedStatsLoading(true);
     setAdvancedStatsError(null);
     try {
-      const playerIdNum = parseInt(playerId);
-      if (isNaN(playerIdNum)) {
-        throw new Error('Invalid player ID');
-      }
+      const stats = await fetchAdvancedStatsCore(playerId);
       
-      // Use current NBA season, same as fetchSortedStats
-      const season = currentNbaSeason();
-      const stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season));
-      if (stats.length > 0) {
-        setAdvancedStats(stats[0]);
+      if (stats) {
+        setAdvancedStats(stats);
       } else {
-        // If no current season stats, try previous season
-        const statsPrevious = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season - 1));
-        if (statsPrevious.length > 0) {
-          setAdvancedStats(statsPrevious[0]);
-        } else {
-          setAdvancedStats(null);
-          setAdvancedStatsError('No advanced stats found for this player');
-        }
+        setAdvancedStats(null);
+        setAdvancedStatsError('No advanced stats found for this player');
       }
     } catch (error: any) {
       setAdvancedStatsError(error.message || 'Failed to fetch advanced stats');
@@ -2154,6 +3561,8 @@ function NBADashboardContent() {
       // Use sample data team directly for default players - NO GAME DATA FALLBACK
       const currentTeam = normalizeAbbr(player.teamAbbr);
       setSelectedTeam(currentTeam);
+      setOriginalPlayerTeam(currentTeam); // Track the original player's team
+      setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
       // Parse ESPN height data and merge with sample player data
       const heightData = parseEspnHeight(espnData?.height);
@@ -2164,6 +3573,9 @@ function NBADashboardContent() {
         heightFeet: heightData.feet || player.heightFeet,
         heightInches: heightData.inches || player.heightInches,
       });
+      
+      // Reset betting lines to default for new player
+      setBettingLines({});
       
       // Set opponent team based on games schedule (will update when games load)
       const opponent = getOpponentTeam(currentTeam, todaysGames);
@@ -2209,6 +3621,8 @@ function NBADashboardContent() {
       // Use the team from search API directly - NO FALLBACK TO GAME DATA
       const currentTeam = normalizeAbbr(r.team || '');
       setSelectedTeam(currentTeam);
+      setOriginalPlayerTeam(currentTeam); // Track the original player's team
+      setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
       // Parse ESPN height data
       const heightData = parseEspnHeight(espnData?.height);
@@ -2226,6 +3640,9 @@ function NBADashboardContent() {
         // Add raw height as fallback for debugging
         rawHeight: espnData?.height || null,
       });
+      
+      // Reset betting lines to default for new player
+      setBettingLines({});
       
       // Set opponent team based on games schedule
       const opponent = getOpponentTeam(currentTeam, todaysGames);
@@ -2252,22 +3669,158 @@ function NBADashboardContent() {
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  // header info - use dynamic team detection instead of static team data
-  const playerInfo = {
-    name: selectedPlayer?.full || 'Select a player',
-    jersey: selectedPlayer ? `#${(selectedPlayer as any).jersey || ''}` : '',
-    team: selectedTeam && selectedTeam !== 'N/A' ? selectedTeam : (selectedPlayer?.teamAbbr || ''),
-    teamName: selectedTeam && selectedTeam !== 'N/A' ? TEAM_FULL_NAMES[selectedTeam] || selectedTeam : (selectedPlayer?.teamAbbr ? TEAM_FULL_NAMES[selectedPlayer.teamAbbr] || selectedPlayer.teamAbbr : ''),
-    height: selectedPlayer ? (
-      formatHeight((selectedPlayer as any).heightFeet, (selectedPlayer as any).heightInches) !== 'N/A' 
-        ? formatHeight((selectedPlayer as any).heightFeet, (selectedPlayer as any).heightInches)
-        : (selectedPlayer as any).rawHeight || 'N/A'
-    ) : ''
-  };
+  // header info - dynamic based on props mode
+  const headerInfo = useMemo(() => {
+    if (propsMode === 'team') {
+      // Game Props mode - show team info or prompt
+      if (gamePropsTeam && gamePropsTeam !== 'N/A') {
+        return {
+          name: TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam,
+          jersey: '',
+          team: gamePropsTeam,
+          teamName: TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam,
+          height: ''
+        };
+      } else {
+        return {
+          name: 'Select a team',
+          jersey: '',
+          team: '',
+          teamName: '',
+          height: ''
+        };
+      }
+    } else {
+      // Player Props mode - show player info
+      return {
+        name: selectedPlayer?.full || 'Select a player',
+        jersey: selectedPlayer ? `#${(selectedPlayer as any).jersey || ''}` : '',
+        team: selectedTeam && selectedTeam !== 'N/A' ? selectedTeam : (selectedPlayer?.teamAbbr || ''),
+        teamName: selectedTeam && selectedTeam !== 'N/A' ? TEAM_FULL_NAMES[selectedTeam] || selectedTeam : (selectedPlayer?.teamAbbr ? TEAM_FULL_NAMES[selectedPlayer.teamAbbr] || selectedPlayer.teamAbbr : ''),
+        height: selectedPlayer ? (
+          formatHeight((selectedPlayer as any).heightFeet, (selectedPlayer as any).heightInches) !== 'N/A' 
+            ? formatHeight((selectedPlayer as any).heightFeet, (selectedPlayer as any).heightInches)
+            : (selectedPlayer as any).rawHeight || 'N/A'
+        ) : ''
+      };
+    }
+  }, [propsMode, gamePropsTeam, selectedPlayer, selectedTeam]);
+
+  // Keep the old variable name for compatibility
+  const playerInfo = headerInfo;
 
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
+    // Team mode: use game data instead of player stats
+    if (propsMode === 'team') {
+      if (!gameStats.length) return [];
+      
+      // Apply timeframe to games
+      let filteredTeamGames = gameStats;
+      
+      // First, apply opponent filtering if a specific opponent is selected (not ALL)
+      if (manualOpponent && manualOpponent !== 'ALL' && manualOpponent !== '') {
+        const normalizedOpponent = normalizeAbbr(manualOpponent);
+        filteredTeamGames = gameStats.filter(game => {
+          const homeTeam = normalizeAbbr(game.home_team?.abbreviation || '');
+          const visitorTeam = normalizeAbbr(game.visitor_team?.abbreviation || '');
+          const currentTeam = normalizeAbbr(gamePropsTeam || '');
+          
+          // Check if this game involves both the selected team and the manual opponent
+          const teamsInGame = [homeTeam, visitorTeam];
+          return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
+        });
+        console.log(`🎯 Manual Opponent Team: Filtered to ${filteredTeamGames.length} games vs ${manualOpponent}`);
+      }
+      
+      // Special case: H2H filtering for team mode (only if no manual opponent is set)
+      if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
+        if (opponentTeam && opponentTeam !== '') {
+          const normalizedOpponent = normalizeAbbr(opponentTeam);
+          filteredTeamGames = gameStats.filter(game => {
+            const homeTeam = normalizeAbbr(game.home_team?.abbreviation || '');
+            const visitorTeam = normalizeAbbr(game.visitor_team?.abbreviation || '');
+            const currentTeam = normalizeAbbr(gamePropsTeam || '');
+            
+            // Check if this game involves both the selected team and the opponent
+            const teamsInGame = [homeTeam, visitorTeam];
+            return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
+          }).slice(-6); // Limit to last 6 H2H games (most recent)
+          console.log(`🔥 H2H Team: Filtered to ${filteredTeamGames.length} games vs ${opponentTeam} (max 6)`);
+        } else {
+          filteredTeamGames = [];
+          console.log(`⚠️ H2H Team: No opponent available for filtering`);
+        }
+      } else if (selectedTimeframe === 'lastseason') {
+        // Filter to last season games only
+        const lastSeason = currentNbaSeason() - 1;
+        filteredTeamGames = gameStats.filter(game => {
+          if (!game.date) return false;
+          const gameDate = new Date(game.date);
+          const gameYear = gameDate.getFullYear();
+          const gameMonth = gameDate.getMonth();
+          
+          // NBA season spans two calendar years (e.g., 2023-24 season)
+          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+          return gameSeasonYear === lastSeason;
+        });
+        console.log(`📅 Last Season Team: Filtered to ${filteredTeamGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
+      } else if (selectedTimeframe === 'thisseason') {
+        // Filter to current season games only
+        const currentSeason = currentNbaSeason();
+        filteredTeamGames = gameStats.filter(game => {
+          if (!game.date) return false;
+          const gameDate = new Date(game.date);
+          const gameYear = gameDate.getFullYear();
+          const gameMonth = gameDate.getMonth();
+          
+          // NBA season spans two calendar years (e.g., 2024-25 season)
+          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+          return gameSeasonYear === currentSeason;
+        });
+        console.log(`📅 This Season Team: Filtered to ${filteredTeamGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
+      }
+      
+      // Home/Away filter
+      if (homeAway !== 'ALL') {
+        const currentNorm = normalizeAbbr(gamePropsTeam || selectedTeam || '');
+        filteredTeamGames = filteredTeamGames.filter(game => {
+          const homeAbbr = normalizeAbbr(game.home_team?.abbreviation || '');
+          const isHome = homeAbbr === currentNorm;
+          return homeAway === 'HOME' ? isHome : !isHome;
+        });
+      }
+      
+      const n = parseInt(selectedTimeframe.replace('last', ''));
+      const recentGames = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe) 
+        ? filteredTeamGames 
+        : (!Number.isNaN(n) ? filteredTeamGames.slice(-n) : filteredTeamGames); // Last N games
+      
+      return recentGames.map((game, index) => {
+        const homeTeam = game.home_team?.abbreviation || '';
+        const visitorTeam = game.visitor_team?.abbreviation || '';
+        const currentTeam = gamePropsTeam || selectedTeam; // Use gamePropsTeam for team mode
+        const isHome = normalizeAbbr(homeTeam) === normalizeAbbr(currentTeam);
+        const opponent = isHome ? visitorTeam : homeTeam;
+        
+        const iso = game.date;
+        const d = iso ? new Date(iso) : null;
+        const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+        
+        return {
+          gameData: game, // Keep reference to game data for value calculation
+          opponent,
+          gameNumber: index + 1,
+          game: opponent ? `vs ${opponent}` : "—",
+          date: shortDate,
+          xKey: String(game.id || `game-${index}`),
+          tickLabel: opponent || "—", // Show opponent abbreviation on x-axis for team mode
+        };
+      });
+    }
+    
+    // Player mode: use existing player stats logic
     if (!playerStats.length) return [];
     
     // Filter out games where player played 0 minutes FIRST
@@ -2277,8 +3830,145 @@ function NBADashboardContent() {
     });
     
     // THEN apply timeframe to get exact number of played games
+    let filteredGames = gamesPlayed;
+    
+    // First, apply opponent filtering if a specific opponent is selected (not ALL)
+    if (manualOpponent && manualOpponent !== 'ALL' && manualOpponent !== '') {
+      const normalizedOpponent = normalizeAbbr(manualOpponent);
+      filteredGames = gamesPlayed.filter(stats => {
+        const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+        const playerTeamNorm = normalizeAbbr(playerTeam);
+        
+        // Get opponent from game data
+        const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+        const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+        const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+        const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+        
+        // Determine opponent using team IDs/abbrs
+        const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+        let gameOpponent = "";
+        
+        if (playerTeamId && homeTeamId && visitorTeamId) {
+          if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+            gameOpponent = normalizeAbbr(visitorTeamAbbr);
+          } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+            gameOpponent = normalizeAbbr(homeTeamAbbr);
+          }
+        }
+        
+        // Fallback: compare abbreviations directly if IDs missing
+        if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+          const homeNorm = normalizeAbbr(homeTeamAbbr);
+          const awayNorm = normalizeAbbr(visitorTeamAbbr);
+          if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+          else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+        }
+        
+        return gameOpponent === normalizedOpponent;
+      });
+      console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent}`);
+    }
+    
+    // Special case filters
+    if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
+      // Filter games to only show those against the current opponent team
+      if (opponentTeam && opponentTeam !== '') {
+        const normalizedOpponent = normalizeAbbr(opponentTeam);
+        filteredGames = gamesPlayed.filter(stats => {
+          const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+          const playerTeamNorm = normalizeAbbr(playerTeam);
+          
+          // Get opponent from game data
+          const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+          const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+          const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          
+          // Determine opponent using team IDs/abbrs
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let gameOpponent = "";
+          
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              gameOpponent = normalizeAbbr(visitorTeamAbbr);
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              gameOpponent = normalizeAbbr(homeTeamAbbr);
+            }
+          }
+          
+          // Fallback: compare abbreviations directly if IDs missing
+          if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+            else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+          }
+          
+          return gameOpponent === normalizedOpponent;
+        }).slice(0, 6); // Limit to last 6 H2H games
+        console.log(`🔥 H2H: Filtered to ${filteredGames.length} games vs ${opponentTeam} (max 6)`);
+      } else {
+        // No opponent team available, show empty
+        filteredGames = [];
+        console.log(`⚠️ H2H: No opponent team available for filtering`);
+      }
+    } else if (selectedTimeframe === 'lastseason') {
+      // Filter to last season games only
+      const lastSeason = currentNbaSeason() - 1;
+      filteredGames = gamesPlayed.filter(stats => {
+        if (!stats.game?.date) return false;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        
+        // NBA season spans two calendar years (e.g., 2023-24 season)
+        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
+        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+        return gameSeasonYear === lastSeason;
+      });
+      console.log(`📅 Last Season: Filtered to ${filteredGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
+    } else if (selectedTimeframe === 'thisseason') {
+      // Filter to current season games only
+      const currentSeason = currentNbaSeason();
+      filteredGames = gamesPlayed.filter(stats => {
+        if (!stats.game?.date) return false;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        
+        // NBA season spans two calendar years (e.g., 2024-25 season)
+        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
+        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+        return gameSeasonYear === currentSeason;
+      });
+      console.log(`📅 This Season: Filtered to ${filteredGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
+    }
+    
+    // Apply Home/Away filter before slicing/time-ordering
+    if (homeAway !== 'ALL') {
+      filteredGames = filteredGames.filter(stats => {
+        const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || '';
+        const playerTeamNorm = normalizeAbbr(playerTeam);
+        const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+        const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+        const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+        const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+        const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+        let isHome = false;
+        if (playerTeamId && homeTeamId && visitorTeamId) {
+          isHome = playerTeamId === homeTeamId;
+        } else if (homeTeamAbbr && visitorTeamAbbr) {
+          isHome = playerTeamNorm === normalizeAbbr(homeTeamAbbr);
+        }
+        return homeAway === 'HOME' ? isHome : !isHome;
+      });
+    }
+    
     const n = parseInt(selectedTimeframe.replace('last', ''));
-    const newestFirst = !Number.isNaN(n) ? gamesPlayed.slice(0, n) : gamesPlayed;
+    const newestFirst = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe) 
+      ? filteredGames 
+      : (!Number.isNaN(n) ? filteredGames.slice(0, n) : filteredGames);
     
     // Deduplicate by gameId to fix API duplicate data issue
     const uniqueGames = [];
@@ -2347,16 +4037,18 @@ function NBADashboardContent() {
         tickLabel,              // what we show on the axis
       };
     });
-  }, [playerStats, selectedTimeframe, selectedPlayer]); // Removed selectedStat dependency!
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway]); // Added team mode dependencies, manual opponent, and home/away
   
   /* -------- Chart data with current stat values ----------
      Only recalculate values when selectedStat changes */
   const chartData = useMemo(() => {
     return baseGameData.map(game => ({
       ...game,
-      value: getStatValue(game.stats, selectedStat) ?? 0,
+      value: propsMode === 'team' 
+        ? getGameStatValue(game.gameData, selectedStat, gamePropsTeam) 
+        : getStatValue(game.stats, selectedStat) ?? 0,
     }));
-  }, [baseGameData, selectedStat]);
+  }, [baseGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam]);
 
   // Hit rate calculations - only recalculate when chartData or bettingLine changes
   const hitRateStats = useMemo(() => {
@@ -2382,19 +4074,55 @@ function NBADashboardContent() {
       const numValue = typeof data.value === 'number' ? data.value : parseFloat(data.value) || 0;
       const formattedValue = isPercentageStat ? `${numValue.toFixed(1)}%` : `${numValue}`;
       
-      // Always calculate fresh from the stats object
-      const gameStats = data.stats;
-      const correctMinutes = gameStats?.min ?? "0:00";
-      
+      // Handle both player and team mode data
       let correctDate = "Unknown Date";
-      if (gameStats?.game) {
-        const gameISO = gameStats.game.date;
+      let gameDetails = null;
+      
+      if (propsMode === 'team' && data.gameData) {
+        // Team mode: use game data
+        const gameData = data.gameData;
+        const gameISO = gameData.date;
         if (gameISO) {
           correctDate = new Date(gameISO).toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'short', 
             day: 'numeric' 
           });
+        }
+        // For quarter stats, show quarter-specific scores instead of full game
+        const isQuarterStat = ['q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline', 'q1_total', 'q2_total', 'q3_total', 'q4_total'].includes(selectedStat);
+        let homeScore, visitorScore;
+        
+        if (isQuarterStat) {
+          // Extract quarter number from stat name (e.g., 'q1_moneyline' -> 1)
+          const quarter = selectedStat.charAt(1); // Gets '1', '2', '3', or '4'
+          homeScore = gameData[`home_q${quarter}`] || 0;
+          visitorScore = gameData[`visitor_q${quarter}`] || 0;
+        } else {
+          homeScore = gameData.home_team_score || 0;
+          visitorScore = gameData.visitor_team_score || 0;
+        }
+        
+        gameDetails = {
+          homeScore,
+          visitorScore,
+          homeTeam: gameData.home_team?.abbreviation || '',
+          visitorTeam: gameData.visitor_team?.abbreviation || '',
+          isQuarterStat,
+          quarter: isQuarterStat ? selectedStat.charAt(1) : null
+        };
+      } else if (propsMode === 'player' && data.stats) {
+        // Player mode: use player stats
+        const gameStats = data.stats;
+        if (gameStats?.game) {
+          const gameISO = gameStats.game.date;
+          if (gameISO) {
+            correctDate = new Date(gameISO).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          }
         }
       }
       
@@ -2405,15 +4133,37 @@ function NBADashboardContent() {
         <div style={tooltipStyle}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div>{statLabel}: {formattedValue}</div>
-            {(selectedStat === 'pra' || selectedStat === 'pr' || selectedStat === 'ra') && (
+            
+            {/* Team mode: show game score details with proper home/away display */}
+            {propsMode === 'team' && gameDetails && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {selectedStat !== 'ra' && <div>PTS: {Number(gameStats?.pts || 0)}</div>}
-                <div>REB: {Number(gameStats?.reb || 0)}</div>
-                {selectedStat !== 'pr' && <div>AST: {Number(gameStats?.ast || 0)}</div>}
+                <div>
+                  {gameDetails.isQuarterStat && `Q${gameDetails.quarter}: `}
+                  {gameDetails.homeTeam} {gameDetails.homeScore} - {gameDetails.visitorScore} {gameDetails.visitorTeam}
+                </div>
               </div>
             )}
-            <div>MINS: {correctMinutes}</div>
-            <div>{data.game}</div>
+            
+            {/* Player mode: show composite stat breakdowns */}
+            {propsMode === 'player' && (selectedStat === 'pra' || selectedStat === 'pr' || selectedStat === 'ra') && data.stats && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {selectedStat !== 'ra' && <div>PTS: {Number(data.stats.pts || 0)}</div>}
+                <div>REB: {Number(data.stats.reb || 0)}</div>
+                {selectedStat !== 'pr' && <div>AST: {Number(data.stats.ast || 0)}</div>}
+              </div>
+            )}
+            
+            {/* Player mode: show minutes */}
+            {propsMode === 'player' && data.stats && (
+              <div>MINS: {data.stats.min || "0:00"}</div>
+            )}
+            
+            {/* Show team vs opponent for both modes */}
+            {propsMode === 'team' && gameDetails ? (
+              <div>vs {gameDetails.homeTeam === (gamePropsTeam || selectedTeam) ? gameDetails.visitorTeam : gameDetails.homeTeam}</div>
+            ) : (
+              <div>{data.game}</div>
+            )}
             <div>{correctDate}</div>
           </div>
         </div>
@@ -2426,6 +4176,10 @@ function NBADashboardContent() {
   const formatChartLabel = useMemo(() => {
     const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
     return (value: any): string => {
+      // Hide labels for moneyline stats (win/loss is clear from bar presence/absence)
+      if (['moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) {
+        return '';
+      }
       const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
       if (isPercentageStat) {
         return `${numValue.toFixed(1)}%`;
@@ -2442,37 +4196,69 @@ function NBADashboardContent() {
     const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'turnover', 'pf', 'stl', 'blk'];
     const isSmallIncrementStat = smallIncrementStats.includes(selectedStat);
     
+    // Get min and max values from data
+    const values = chartData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    
+    let minYAxis;
     let maxYAxis;
     let increment;
     
     if (isPercentageStat) {
+      minYAxis = 0;
       maxYAxis = 100;
       increment = 5; // Percentages use 5-increment ticks
+    } else if (['moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) {
+      // Special handling for moneyline: only 0 (loss) and 1 (win) values
+      // Set domain higher than 1 so win bars appear large
+      minYAxis = 0;
+      maxYAxis = 1.5; // Make 1 appear at about 2/3 height for bigger visual impact
+      return { domain: [minYAxis, maxYAxis], ticks: [0, 1] };
+    } else if (selectedStat === 'spread') {
+      // Special handling for spread: ensure minimum value is positioned higher to prevent bars going below container
+      const range = maxValue - minValue;
+      const padding = Math.max(5, Math.ceil(range * 0.15)); // At least 5 points padding, or 15% of range
+      
+      minYAxis = Math.floor((minValue - padding) / 5) * 5; // Round down to nearest 5-increment with padding
+      maxYAxis = Math.ceil((maxValue + padding) / 5) * 5; // Round up to nearest 5-increment with padding
+      increment = 5;
+      
+      // Generate ticks only for the visible data range (without showing padding ticks)
+      const visibleMinY = Math.floor(minValue / 5) * 5; // Actual data minimum without padding
+      const visibleMaxY = Math.ceil(maxValue / 5) * 5; // Actual data maximum without padding
+      const ticks = [];
+      for (let i = visibleMinY; i <= visibleMaxY; i += increment) {
+        ticks.push(i);
+      }
+      
+      return { domain: [minYAxis, maxYAxis], ticks };
     } else if (isSmallIncrementStat) {
       // For 3PM, use 3PA values for Y-axis calculation to show proper scale
-      let maxValue;
       if (selectedStat === 'fg3m') {
-        maxValue = Math.max(...chartData.map(d => d.stats?.fg3a || 0));
-        maxYAxis = Math.ceil(maxValue); // For 3PM, don't add extra increment - top bar should touch Y-axis max
+        const maxAttempts = Math.max(...chartData.map(d => d.stats?.fg3a || 0));
+        minYAxis = 0;
+        maxYAxis = Math.ceil(maxAttempts); // For 3PM, don't add extra increment - top bar should touch Y-axis max
       } else {
-        maxValue = Math.max(...chartData.map(d => d.value));
+        minYAxis = minValue < 0 ? Math.floor(minValue) - 1 : 0;
         maxYAxis = Math.ceil(maxValue) + 1; // Round up to next 1-increment
       }
       increment = 1; // Use 1-increment ticks for smaller stats
     } else {
-      const maxValue = Math.max(...chartData.map(d => d.value));
+      // Handle negative values by rounding down to nearest 5-increment
+      minYAxis = minValue < 0 ? Math.floor(minValue / 5) * 5 : 0;
       maxYAxis = Math.ceil((maxValue + 1) / 5) * 5; // Round up to next 5-increment
       increment = 5; // Use 5-increment ticks for larger stats like points, minutes
     }
-    
+
     // Generate ticks based on the increment
-    const ticks = [];
-    for (let i = 0; i <= maxYAxis; i += increment) {
+    let ticks: number[] = [];
+    for (let i = minYAxis; i <= maxYAxis; i += increment) {
       ticks.push(i);
     }
     
-    return { domain: [0, maxYAxis], ticks };
-  }, [chartData, selectedStat]);
+    return { domain: [minYAxis, maxYAxis], ticks };
+  }, [chartData, selectedStat, selectedTimeframe]);
 
   // Real odds data state
   const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
@@ -2497,7 +4283,15 @@ function NBADashboardContent() {
       const data = await response.json();
       
       if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch odds');
+        // If odds API key is not configured, treat as no-data without error noise
+        if (data.error && /odds api key not configured/i.test(data.error)) {
+          setRealOddsData([]);
+          setOddsError(null);
+          return;
+        }
+        setOddsError(data.error || 'Failed to fetch odds');
+        setRealOddsData([]);
+        return;
       }
       
       setRealOddsData(data.data || []);
@@ -2528,48 +4322,340 @@ function NBADashboardContent() {
   const fmtOdds = (odds: string): string => odds === 'N/A' ? 'N/A' : (oddsFormat === 'decimal' ? americanToDecimal(odds) : odds);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-      <div className="ml-64 mr-24 p-6 min-h-0">
-        <div className="flex gap-6 min-h-0">
-          {/* Left */}
+<div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-hidden">
+      <style jsx global>{`
+        .dashboard-container {
+          --sidebar-margin: 0px;
+          --sidebar-width: 0px;
+          --gap: 6px;
+          --inner-max: 1440px;
+          --app-max: calc(var(--sidebar-width) + var(--gap) + var(--inner-max));
+          --content-margin-right: 0px;
+          --content-padding-left: 0px;
+          --content-padding-right: 0px;
+        }
+
+
+@media (min-width: 1024px) {
+          .dashboard-container {
+            --sidebar-width: 340px;
+          }
+        }
+        
+        @media (min-width: 1500px) {
+          .dashboard-container {
+            --sidebar-margin: 0px;
+            --sidebar-width: 400px;
+            --content-margin-right: 0px;
+            --content-padding-left: 0px;
+            --content-padding-right: 0px;
+          }
+        }
+        
+        @media (min-width: 2200px) {
+          .dashboard-container {
+            --sidebar-margin: 0px;
+            --sidebar-width: 460px;
+            --content-margin-right: 0px;
+            --content-padding-left: 0px;
+            --content-padding-right: 0px;
+          }
+        }
+
+        /* Mobile-only: reduce outer gap to tighten left/right padding */
+        @media (max-width: 639px) {
+          .dashboard-container { --gap: 1px; }
+        }
+
+        /* Desktop scrollbar styling: fade until hovered */
+        @media (hover: hover) and (pointer: fine) {
+          .fade-scrollbar { scrollbar-color: transparent transparent; }
+          .fade-scrollbar:hover { scrollbar-color: #9ca3af1a transparent; }
+          .fade-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+          .fade-scrollbar::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; }
+          .fade-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.2); }
+        }
+
+        /* Mobile-only: hide X/Y axis ticks and lines inside the chart */
+        @media (max-width: 639px) {
+          /* Hide tick groups and text for both axes */
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-tick,
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-ticks,
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-line,
+          .chart-mobile-optimized .recharts-cartesian-axis text,
+          .chart-mobile-optimized .recharts-cartesian-axis-tick-value {
+            display: none !important;
+          }
+        }
+        @media (min-width: 640px) {
+          /* Ensure ticks/labels/lines reappear on tablets and larger */
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-tick,
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-ticks,
+          .chart-mobile-optimized .recharts-cartesian-axis .recharts-cartesian-axis-line,
+          .chart-mobile-optimized .recharts-cartesian-axis text,
+          .chart-mobile-optimized .recharts-cartesian-axis-tick-value {
+            display: initial !important;
+          }
+        }
+      `}</style>
+      {/* Main layout container with sidebar, chart, and right panel */}
+      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 6px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 6px)))' }}>
+        <div className="mx-auto w-full max-w-[1440px]">
           <div 
-className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 overscroll-contain"
+            className="pt-4 min-h-0 lg:h-full dashboard-container"
+          >
+        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+<div className="flex flex-col lg:flex-row gap-0 lg:gap-0 xl:gap-0 min-h-0" style={{}}>
+          {/* Main content area */}
+          <div 
+className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain pr-0 md:pr-2 lg:pr-1 lg:pl-0 xl:pl-1 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar"
             style={{
-              height: 'calc(100vh - 3rem)',
               scrollbarWidth: 'thin',
-              scrollbarColor: isDark ? '#4b5563 transparent' : '#d1d5db transparent'
+              scrollbarColor: isDark ? '#4b5563 transparent' : '#d1d5db transparent',
+              scrollbarGutter: 'stable both-edges'
             }}
           >
-            {/* Header */}
-<div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 h-32 flex-shrink-0">
+            {/* 1. Filter By Container (Mobile First) */}
+            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">Filter By</h3>
+              <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+                <button
+                  onClick={() => {
+                    setPropsMode('player');
+                    setSearchQuery(''); // Clear search when switching
+                    // Always set PTS as default for Player Props
+                    setSelectedStat('pts');
+                    
+                    // If we have a gamePropsTeam selected, use it as the player's team
+                    if (gamePropsTeam && gamePropsTeam !== 'N/A') {
+                      setSelectedTeam(gamePropsTeam);
+                      setOriginalPlayerTeam(gamePropsTeam);
+                      setDepthChartTeam(gamePropsTeam);
+                    }
+                    
+                    // Clear the playerCleared flag when switching back to Player Props
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const raw = sessionStorage.getItem('nba-dashboard-session');
+                        if (raw) {
+                          const saved = JSON.parse(raw);
+                          delete saved.playerCleared; // Remove the flag
+                          sessionStorage.setItem('nba-dashboard-session', JSON.stringify(saved));
+                        }
+                      } catch {}
+                    }
+                  }}
+                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+                    propsMode === 'player'
+                      ? "bg-purple-600 text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  Player Props
+                </button>
+                <button
+                  onClick={() => {
+                    setPropsMode('team');
+                    setSearchQuery(''); // Clear search when switching
+                    
+                    // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
+                    if (selectedTeam && selectedTeam !== 'N/A') {
+                      setGamePropsTeam(selectedTeam);
+                    } else {
+                      setGamePropsTeam('N/A'); // Reset team selection only if no team was selected
+                    }
+                    
+                    // Keep player data but don't display it in Game Props mode
+                    // DON'T clear: setSelectedPlayer, setSelectedTeam, setOriginalPlayerTeam, etc.
+                    // This preserves the data for when user switches back to Player Props
+                    
+                    // Clear URL parameters and update session storage
+                    if (typeof window !== 'undefined') {
+                      // Save minimal session with cleared player flag
+                      const clearedSession = {
+                        propsMode: 'team' as const,
+                        selectedStat,
+                        selectedTimeframe,
+                        playerCleared: true // Flag to indicate user deliberately cleared player data
+                      };
+                      sessionStorage.setItem('nba-dashboard-session', JSON.stringify(clearedSession));
+                      
+                      // Clear URL parameters
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('pid');
+                      url.searchParams.delete('name');
+                      url.searchParams.delete('team');
+                      // Keep stat and tf parameters as they're relevant to Game Props
+                      window.history.replaceState({}, '', url.toString());
+                    }
+                    
+                    // Always set TOTAL_PTS as default for Game Props
+                    setSelectedStat('total_pts');
+                  }}
+                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+                    propsMode === 'team'
+                      ? "bg-purple-600 text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  Game Props
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                {propsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
+              </p>
+            </div>
+
+            {/* Header (with search bar and team display) */}
+<div className="relative z-[60] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-28 md:h-32 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
               <div className="flex items-center justify-between h-full">
                 <div className="flex-shrink-0">
-                  <div className="flex items-baseline gap-3 mb-1">
-                    <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    Height: {playerInfo.height || "—"}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    {playerInfo.teamName || "—"}
-                  </div>
+                  {propsMode === 'team' ? (
+                    // Game Props mode - show team or prompt
+                    gamePropsTeam && gamePropsTeam !== 'N/A' ? (
+                      <div>
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <h1 className="text-lg font-bold text-gray-900 dark:text-white">{TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}</h1>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Team: {gamePropsTeam}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Game Props Mode
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Team</h1>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Search for a team above
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Game Props Mode
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    // Player Props mode - show player info
+                    <div>
+                      <div className="flex items-baseline gap-3 mb-1">
+                        <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
+                        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        Height: {playerInfo.height || "—"}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {playerInfo.teamName || "—"}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Search (live via /api/bdl/players) */}
-                <div className="flex-1 max-w-md mx-8">
-                  <div className="relative" ref={searchRef}>
-                    <input
-                      type="text"
-                      placeholder={searchBusy ? "Searching..." : "Search for a player..."}
-                      value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                      onFocus={() => setShowDropdown(true)}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                    />
-                    {showDropdown && searchQuery && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                {/* Dynamic Search - Player or Team based on props mode */}
+                <div className="flex-1 mx-2 sm:mx-6 md:mx-8">
+                  <div className="relative z-[70]" ref={searchRef}>
+                    {/* Desktop/Tablet input */}
+                    <div className="hidden sm:block">
+                      <input
+                        type="text"
+                        placeholder={
+                          propsMode === 'player' 
+                            ? (searchBusy ? "Searching..." : "Search for a player...") 
+                            : "Search for a team..."
+                        }
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          if (propsMode === 'player') {
+                            setShowDropdown(true);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (propsMode === 'player') setShowDropdown(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && propsMode === 'team') {
+                            const query = searchQuery.toLowerCase();
+                            if (query.length >= 2) {
+                              let foundTeam = '';
+                              if (Object.keys(TEAM_FULL_NAMES).some(abbr => abbr.toLowerCase().includes(query))) {
+                                foundTeam = Object.keys(TEAM_FULL_NAMES).find(abbr => abbr.toLowerCase().includes(query)) || '';
+                              }
+                              if (!foundTeam) {
+                                const matchingEntry = Object.entries(TEAM_FULL_NAMES).find(([abbr, fullName]) => fullName.toLowerCase().includes(query));
+                                if (matchingEntry) foundTeam = matchingEntry[0];
+                              }
+                              const nicknames: Record<string, string> = { 'lakers': 'LAL','warriors':'GSW','celtics':'BOS','heat':'MIA','bulls':'CHI','knicks':'NYK','nets':'BKN','sixers':'PHI','76ers':'PHI','mavs':'DAL','spurs':'SAS','rockets':'HOU' };
+                              if (!foundTeam && nicknames[query]) foundTeam = nicknames[query];
+                              if (foundTeam) {
+                                setGamePropsTeam(foundTeam);
+                                setSelectedStat('total_pts');
+                                const opponent = getOpponentTeam(foundTeam, todaysGames);
+                                setOpponentTeam(normalizeAbbr(opponent));
+                                setSearchQuery('');
+                              }
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      />
+                    </div>
+                    {/* Mobile icon button */}
+                    <div className="sm:hidden flex justify-end">
+                      <button onClick={() => setIsMobileSearchOpen(true)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 110-16 8 8 0 010 16z"/></svg>
+                      </button>
+                    </div>
+                    {/* Mobile search overlay */}
+                    {isMobileSearchOpen && (
+                      <div className="sm:hidden absolute top-0 right-0 mt-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder={propsMode === 'player' ? 'Search player...' : 'Search team...'}
+                            value={searchQuery}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              if (propsMode === 'player') setShowDropdown(true);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && propsMode === 'team') {
+                                const query = searchQuery.toLowerCase();
+                                if (query.length >= 2) {
+                                  let foundTeam = '';
+                                  if (Object.keys(TEAM_FULL_NAMES).some(abbr => abbr.toLowerCase().includes(query))) foundTeam = Object.keys(TEAM_FULL_NAMES).find(abbr => abbr.toLowerCase().includes(query)) || '';
+                                  if (!foundTeam) {
+                                    const m = Object.entries(TEAM_FULL_NAMES).find(([abbr, fullName]) => fullName.toLowerCase().includes(query));
+                                    if (m) foundTeam = m[0];
+                                  }
+                                  const nick: Record<string,string> = { 'lakers':'LAL','warriors':'GSW','celtics':'BOS','heat':'MIA','bulls':'CHI','knicks':'NYK','nets':'BKN','sixers':'PHI','76ers':'PHI','mavs':'DAL','spurs':'SAS','rockets':'HOU' };
+                                  if (!foundTeam && nick[query]) foundTeam = nick[query];
+                                  if (foundTeam) {
+                                    setGamePropsTeam(foundTeam);
+                                    setSelectedStat('total_pts');
+                                    const opponent = getOpponentTeam(foundTeam, todaysGames);
+                                    setOpponentTeam(normalizeAbbr(opponent));
+                                    setSearchQuery('');
+                                    setIsMobileSearchOpen(false);
+                                  }
+                                }
+                              }
+                            }}
+                            className="flex-1 px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          />
+                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Player search dropdown - only show in player mode */}
+                    {propsMode === 'player' && showDropdown && searchQuery && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
                         {searchResults.length === 0 ? (
                           <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                             {searchBusy ? "Searching..." : (searchError ? `Search error: ${searchError}` : `No players found for "${searchQuery}"`)}
@@ -2593,65 +4679,187 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                         ))}
                       </div>
                     )}
+                    
+                    {/* Team search dropdown - only show in game props mode */}
+                    {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
+                      const query = searchQuery.toLowerCase();
+                      const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
+                      
+                      // Find matching teams
+                      Object.entries(TEAM_FULL_NAMES).forEach(([abbr, fullName]) => {
+                        if (abbr.toLowerCase().includes(query) || fullName.toLowerCase().includes(query)) {
+                          matchingTeams.push({ abbr, fullName });
+                        }
+                      });
+                      
+                      // Check nicknames
+                      const nicknames: Record<string, string> = {
+                        'lakers': 'LAL', 'warriors': 'GSW', 'celtics': 'BOS', 'heat': 'MIA',
+                        'bulls': 'CHI', 'knicks': 'NYK', 'nets': 'BKN', 'sixers': 'PHI',
+                        '76ers': 'PHI', 'mavs': 'DAL', 'spurs': 'SAS', 'rockets': 'HOU'
+                      };
+                      
+                      if (nicknames[query] && !matchingTeams.find(t => t.abbr === nicknames[query])) {
+                        const abbr = nicknames[query];
+                        matchingTeams.push({ abbr, fullName: TEAM_FULL_NAMES[abbr] || abbr });
+                      }
+                      
+                      return matchingTeams.length > 0 ? (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                          {matchingTeams.slice(0, 10).map((team) => ( // Limit to 10 results
+                            <button
+                              key={team.abbr}
+                              onClick={() => {
+                                setGamePropsTeam(team.abbr);
+                                setSelectedStat('total_pts'); // Auto-select stat for Game Props mode
+                                // Fetch opponent team for Game Props mode
+                                const opponent = getOpponentTeam(team.abbr, todaysGames);
+                                setOpponentTeam(normalizeAbbr(opponent));
+                                console.log(`🏀 Selected team for Game Props: ${team.abbr}, opponent: ${opponent}`);
+                                setSearchQuery(''); // Clear search after selection
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">{team.fullName}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">{team.abbr}</div>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
 
-                {/* Team vs Team Display */}
+                {/* Team vs Team Display - Dynamic based on props mode */}
                 <div className="flex-shrink-0">
-                  {selectedTeam && opponentTeam && selectedTeam !== 'N/A' && opponentTeam !== '' ? (
-                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
-                      {/* Player Team */}
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
-                          alt={selectedTeam}
-                          className="w-8 h-8 object-contain"
-                          onError={(e) => {
-                            // Advance through ESPN candidates exactly once per team to avoid flicker
-                            const candidates = getEspnLogoCandidates(selectedTeam);
-                            const next = selectedTeamLogoAttempt + 1;
-                            if (next < candidates.length) {
-                              setSelectedTeamLogoAttempt(next);
-                              setSelectedTeamLogoUrl(candidates[next]);
-                            } else {
-                              // No more candidates; stop retrying
-                              e.currentTarget.onerror = null;
-                            }
-                          }}
-                        />
-                        <span className="font-bold text-gray-900 dark:text-white text-sm">{selectedTeam}</span>
+                  {propsMode === 'player' ? (
+                    // Player Props Mode - Show player's team vs opponent
+                    selectedTeam && opponentTeam && selectedTeam !== 'N/A' && opponentTeam !== '' ? (
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                        {/* Player Team */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <img 
+                            src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
+                            alt={selectedTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(selectedTeam);
+                              const next = selectedTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setSelectedTeamLogoAttempt(next);
+                                setSelectedTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{selectedTeam}</span>
+                        </div>
+                        
+                        {/* VS */}
+                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        
+                        {/* Opponent Team */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <img 
+                            src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                            alt={opponentTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(opponentTeam);
+                              const next = opponentTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setOpponentTeamLogoAttempt(next);
+                                setOpponentTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{opponentTeam}</span>
+                        </div>
                       </div>
-                      
-                      {/* VS */}
-                      <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
-                      
-                      {/* Opponent Team */}
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
-                          alt={opponentTeam}
-                          className="w-8 h-8 object-contain"
-                          onError={(e) => {
-                            // Advance through ESPN candidates exactly once per team to avoid flicker
-                            const candidates = getEspnLogoCandidates(opponentTeam);
-                            const next = opponentTeamLogoAttempt + 1;
-                            if (next < candidates.length) {
-                              setOpponentTeamLogoAttempt(next);
-                              setOpponentTeamLogoUrl(candidates[next]);
-                            } else {
-                              // No more candidates; stop retrying
-                              e.currentTarget.onerror = null;
-                            }
-                          }}
-                        />
-                        <span className="font-bold text-gray-900 dark:text-white text-sm">{opponentTeam}</span>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                        <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
                       </div>
-                    </div>
+                    )
                   ) : (
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                      <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
-                    </div>
+                    // Game Props Mode - Show selected team vs opponent or prompt
+                    gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                        {/* Selected Team */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <img 
+                            src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
+                            alt={gamePropsTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(gamePropsTeam);
+                              const next = selectedTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setSelectedTeamLogoAttempt(next);
+                                setSelectedTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{gamePropsTeam}</span>
+                        </div>
+                        
+                        {/* VS */}
+                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        
+                        {/* Opponent Team */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <img 
+                            src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                            alt={opponentTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(opponentTeam);
+                              const next = opponentTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setOpponentTeamLogoAttempt(next);
+                                setOpponentTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-sm">{opponentTeam}</span>
+                        </div>
+                      </div>
+                    ) : gamePropsTeam && gamePropsTeam !== 'N/A' ? (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <img 
+                          src={getEspnLogoUrl(gamePropsTeam)}
+                          alt={gamePropsTeam}
+                          className="w-8 h-8 object-contain"
+                        />
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">{gamePropsTeam}</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">No Game Today</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                        <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Team</span>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -2669,33 +4877,1217 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
               onSelectTimeframe={setSelectedTimeframe}
               chartData={chartData}
               yAxisConfig={yAxisConfig}
-              isLoading={isLoading}
-              apiError={apiError}
+              isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
+              apiError={propsMode === 'team' ? null : apiError}
               selectedPlayer={selectedPlayer}
-              overCount={hitRateStats.overCount}
-              totalCount={chartData.length}
+              propsMode={propsMode}
+              gamePropsTeam={gamePropsTeam}
+              customTooltip={customTooltip}
+              currentOpponent={opponentTeam}
+              manualOpponent={manualOpponent}
+              onOpponentChange={setManualOpponent}
+              currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+              homeAway={homeAway}
+              onChangeHomeAway={setHomeAway}
             />
 
-            {/* Under-chart container (memoized element to avoid parent re-evals) */}
+{/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
+            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
+              {/* Section 0: Defense vs Position (new) */}
+              <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} />
+
+              {/* Section 1: Opponent Analysis */}
+              <OpponentAnalysisCard 
+                isDark={isDark} 
+                opponentTeam={opponentTeam} 
+                selectedTimeFilter={selectedTimeFilter} 
+              />
+
+              {/* Section 2: Team Matchup with Pie Chart */}
+              <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h4 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">Team Matchup</h4>
+                  
+                  {/* Team Switcher - only show when both teams are available */}
+                  {((propsMode === 'player' && selectedTeam && selectedTeam !== 'N/A' && opponentTeam && opponentTeam !== '') || 
+                    (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
+                    <button
+                      onClick={() => {
+                        // Only toggle pie chart display order, don't change underlying team data
+                        setPieChartSwapped(!pieChartSwapped);
+                      }}
+                      className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      title="Switch teams in comparison"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m0 0l4-4" />
+                      </svg>
+                      Swap
+                    </button>
+                  )}
+                </div>
+                
+                {/* Comparison Metric Selector */}
+                <div className="mb-3 md:mb-4">
+                  <div className="grid grid-cols-2 gap-1 md:gap-2 lg:gap-3">
+                    <button
+                      onClick={() => setSelectedComparison('offense_defense')}
+                      className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+                        selectedComparison === 'offense_defense'
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      OFF vs DEF
+                    </button>
+                    <button
+                      onClick={() => setSelectedComparison('net_rating')}
+                      className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+                        selectedComparison === 'net_rating'
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      NET RTG
+                    </button>
+                    <button
+                      onClick={() => setSelectedComparison('pace')}
+                      className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+                        selectedComparison === 'pace'
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      PACE
+                    </button>
+                    <button
+                      onClick={() => setSelectedComparison('rebound_pct')}
+                      className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+                        selectedComparison === 'rebound_pct'
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      REB %
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats Preview Box - appears right after selector buttons */}
+                {(() => {
+                  const currentTeam = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+                  const currentOpponent = opponentTeam;
+                  
+                  if (!currentTeam || currentTeam === 'N/A') return null;
+                  
+                  let teamValue, opponentValue;
+                  
+                  if (propsMode === 'team' && !currentOpponent) {
+                    switch (selectedComparison) {
+                      case 'offense_defense':
+                        if (pieChartSwapped) {
+                          teamValue = 110;
+                          opponentValue = teamRatings[currentTeam]?.defensive || 0;
+                        } else {
+                          teamValue = teamRatings[currentTeam]?.offensive || 0;
+                          opponentValue = 110;
+                        }
+                        break;
+                      case 'net_rating':
+                        teamValue = teamRatings[currentTeam]?.net || 0;
+                        opponentValue = 0;
+                        break;
+                      case 'pace':
+                        teamValue = getTeamPace(currentTeam);
+                        opponentValue = 100;
+                        break;
+                      case 'rebound_pct':
+                        teamValue = getTeamReboundPct(currentTeam);
+                        opponentValue = 50;
+                        break;
+                      default:
+                        teamValue = 0;
+                        opponentValue = 0;
+                    }
+                  } else {
+                    switch (selectedComparison) {
+                      case 'offense_defense':
+                        if (pieChartSwapped) {
+                          teamValue = teamRatings[currentTeam]?.defensive || 0;
+                          opponentValue = teamRatings[currentOpponent]?.offensive || 0;
+                        } else {
+                          teamValue = teamRatings[currentTeam]?.offensive || 0;
+                          opponentValue = teamRatings[currentOpponent]?.defensive || 0;
+                        }
+                        break;
+                      case 'net_rating':
+                        teamValue = teamRatings[currentTeam]?.net || 0;
+                        opponentValue = teamRatings[currentOpponent]?.net || 0;
+                        break;
+                      case 'pace':
+                        teamValue = getTeamPace(currentTeam);
+                        opponentValue = getTeamPace(currentOpponent);
+                        break;
+                      case 'rebound_pct':
+                        teamValue = getTeamReboundPct(currentTeam);
+                        opponentValue = getTeamReboundPct(currentOpponent);
+                        break;
+                      default:
+                        teamValue = 0;
+                        opponentValue = 0;
+                    }
+                  }
+                  
+                  const teamDisplay = selectedComparison === 'rebound_pct' ? `${teamValue.toFixed(1)}%` : teamValue.toFixed(1);
+                  const oppDisplay = selectedComparison === 'rebound_pct' ? `${opponentValue.toFixed(1)}%` : opponentValue.toFixed(1);
+                  
+                  return (
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
+                      <div className="flex items-center justify-between gap-1 text-xs">
+                        <div className="flex-1 text-center text-green-600 dark:text-green-400">
+                          {selectedComparison === 'offense_defense' && (
+                            <span className="font-bold text-gray-900 dark:text-white mr-1">
+                              {pieChartSwapped ? 'DEF' : 'OFF'}
+                            </span>
+                          )}
+                          <span className="font-bold">{currentTeam}</span>
+                          <span className="font-bold ml-1">{teamDisplay}</span>
+                        </div>
+                        
+                        <div className="text-gray-400 font-bold px-1">VS</div>
+                        
+                        <div className="flex-1 text-center text-red-500 dark:text-red-400">
+                          {selectedComparison === 'offense_defense' && (
+                            <span className="font-bold text-gray-900 dark:text-white mr-1">
+                              {pieChartSwapped ? 'OFF' : 'DEF'}
+                            </span>
+                          )}
+                          <span className="font-bold">{(propsMode === 'team' && !currentOpponent) ? 'League Avg' : (currentOpponent || 'TBD')}</span>
+                          <span className="font-bold ml-1">{oppDisplay}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Pie Chart Visualization */}
+                <div className="mt-3 md:mt-4">
+                  {(() => {
+                    const currentTeam = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+                    const currentOpponent = opponentTeam;
+                    
+                    if (!currentTeam || currentTeam === 'N/A') return null;
+                    
+                    let teamValue, opponentValue, isInverted = false;
+                    
+                    if (propsMode === 'team' && !currentOpponent) {
+                      switch (selectedComparison) {
+                        case 'offense_defense':
+                          if (pieChartSwapped) {
+                            teamValue = 110;
+                            opponentValue = teamRatings[currentTeam]?.defensive || 0;
+                          } else {
+                            teamValue = teamRatings[currentTeam]?.offensive || 0;
+                            opponentValue = 110;
+                          }
+                          break;
+                        case 'net_rating':
+                          teamValue = teamRatings[currentTeam]?.net || 0;
+                          opponentValue = 0;
+                          break;
+                        case 'pace':
+                          teamValue = getTeamPace(currentTeam);
+                          opponentValue = 100;
+                          break;
+                        case 'rebound_pct':
+                          teamValue = getTeamReboundPct(currentTeam);
+                          opponentValue = 50;
+                          break;
+                        default:
+                          teamValue = 0;
+                          opponentValue = 0;
+                      }
+                    } else {
+                      switch (selectedComparison) {
+                        case 'offense_defense':
+                          if (pieChartSwapped) {
+                            teamValue = teamRatings[currentTeam]?.defensive || 0;
+                            opponentValue = teamRatings[currentOpponent]?.offensive || 0;
+                          } else {
+                            teamValue = teamRatings[currentTeam]?.offensive || 0;
+                            opponentValue = teamRatings[currentOpponent]?.defensive || 0;
+                          }
+                          break;
+                        case 'net_rating':
+                          teamValue = teamRatings[currentTeam]?.net || 0;
+                          opponentValue = teamRatings[currentOpponent]?.net || 0;
+                          break;
+                        case 'pace':
+                          teamValue = getTeamPace(currentTeam);
+                          opponentValue = getTeamPace(currentOpponent);
+                          break;
+                        case 'rebound_pct':
+                          teamValue = getTeamReboundPct(currentTeam);
+                          opponentValue = getTeamReboundPct(currentOpponent);
+                          break;
+                        default:
+                          teamValue = 0;
+                          opponentValue = 0;
+                      }
+                    }
+                    
+                    // For offense vs defense comparison, invert defensive rating for proper comparison
+                    let adjustedOpponentValue = opponentValue;
+                    if (selectedComparison === 'offense_defense') {
+                      adjustedOpponentValue = 220 - opponentValue;
+                      isInverted = true;
+                    }
+
+                    const pieData = createTeamComparisonPieData(
+                      teamValue,
+                      adjustedOpponentValue,
+                      currentTeam,
+                      (propsMode === 'team' && !currentOpponent) ? 'League Avg' : (currentOpponent || 'TBD'),
+                      isInverted,
+                      /* amplify */ (selectedComparison !== 'net_rating'),
+                      /* useAbs */ false,
+                      /* clampNegatives */ selectedComparison === 'net_rating',
+                      /* baseline */ selectedComparison === 'net_rating' ? 1 : (selectedComparison === 'offense_defense' ? 5 : 0),
+                      /* invertOppForShare */ false,
+                      /* invertMax */ selectedComparison === 'offense_defense' ? 180 : 130,
+                      /* ampBoost */ selectedComparison === 'rebound_pct' ? 3.0 : (selectedComparison === 'pace' ? 2.0 : 1.0)
+                    );
+                    
+                    // Fix display values for offense vs defense to show original ratings
+                    if (selectedComparison === 'offense_defense' && pieData) {
+                      pieData[0].displayValue = teamValue.toFixed(1);
+                      pieData[1].displayValue = opponentValue.toFixed(1);
+                    }
+
+                    // Handle swapped pie chart for offense/defense
+                    let pieDrawData;
+                    if (selectedComparison === 'offense_defense' && pieChartSwapped && pieData) {
+                      const invertedPieData = [
+                        { ...pieData[0], value: pieData[1].value },
+                        { ...pieData[1], value: pieData[0].value }
+                      ];
+                      pieDrawData = [invertedPieData[1], invertedPieData[0]];
+                    } else {
+                      pieDrawData = [pieData?.[1], pieData?.[0]];
+                    }
+
+                    const teamDisplayRaw = pieData?.[0]?.displayValue ?? '';
+                    const oppDisplayRaw = pieData?.[1]?.displayValue ?? '';
+                    const teamDisplay = selectedComparison === 'rebound_pct' ? `${teamDisplayRaw}%` : teamDisplayRaw;
+                    const oppDisplay = selectedComparison === 'rebound_pct' ? `${oppDisplayRaw}%` : oppDisplayRaw;
+                    const teamColor = pieData?.[0]?.fill || '#22c55e';
+                    const oppColor = pieData?.[1]?.fill || '#ef4444';
+                    
+                    return (
+                      <div className="flex flex-col items-center">
+                        {/* Mobile Pie Chart - Smaller and Simplified */}
+                        <div className="h-32 w-32 mb-2">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={pieDrawData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={20}
+                                outerRadius={60}
+                                paddingAngle={2}
+                                dataKey="value"
+                                startAngle={90}
+                                endAngle={-270}
+                              >
+                                {pieDrawData?.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry?.fill} />
+                                )) || []}
+                              </Pie>
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        
+                        {/* Mobile Legend - Compact */}
+                        <div className="flex items-center justify-center gap-3 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: teamColor }}></div>
+                            <span className="font-medium">{currentTeam} {teamDisplay}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: oppColor }}></div>
+                            <span className="font-medium">{(propsMode === 'team' && !currentOpponent) ? 'Avg' : (currentOpponent || 'TBD')} {oppDisplay}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {selectedComparison === 'offense_defense' && 'Player Team Offense vs Opponent Defense'}
+                  {selectedComparison === 'net_rating' && 'Net Rating Comparison (Offense - Defense)'}
+                  {selectedComparison === 'pace' && 'Pace of Play Comparison'}
+                  {selectedComparison === 'rebound_pct' && 'Rebounding Percentage Comparison'}
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Advanced Stats Container (Mobile) - Player Props mode only */}
+            {propsMode === 'player' && (
+<div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
+                </div>
+                {advancedStats ? (
+                  <div className="space-y-3">
+                    {/* Mobile: Single column layout with sections */}
+                    
+                    {/* Offensive Metrics */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>OFF RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.offensive_rating ? 'text-gray-400' :
+                            advancedStats.offensive_rating >= 115 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.offensive_rating >= 108 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.offensive_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>TS%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.true_shooting_percentage ? 'text-gray-400' :
+                            (advancedStats.true_shooting_percentage * 100) >= 58 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.true_shooting_percentage * 100) >= 54 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.true_shooting_percentage ? (advancedStats.true_shooting_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>eFG%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.effective_field_goal_percentage ? 'text-gray-400' :
+                            (advancedStats.effective_field_goal_percentage * 100) >= 55 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.effective_field_goal_percentage * 100) >= 50 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.effective_field_goal_percentage ? (advancedStats.effective_field_goal_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>USG%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.usage_percentage ? 'text-gray-400' :
+                            (advancedStats.usage_percentage * 100) >= 28 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.usage_percentage * 100) >= 22 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.usage_percentage ? (advancedStats.usage_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Impact & Defensive Metrics */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact & Defense</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>NET RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.net_rating ? 'text-gray-400' :
+                            advancedStats.net_rating >= 3 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.net_rating >= -2 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.net_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>DEF RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.defensive_rating ? 'text-gray-400' :
+                            advancedStats.defensive_rating <= 108 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.defensive_rating <= 112 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>PIE</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.pie ? 'text-gray-400' :
+                            (advancedStats.pie * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.pie * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.pie ? (advancedStats.pie * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>PACE</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.pace ? 'text-gray-400' :
+                            advancedStats.pace >= 102 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.pace >= 98 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.pace?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Rebounding & Playmaking */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding & Playmaking</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>REB%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.rebound_percentage ? 'text-gray-400' :
+                            (advancedStats.rebound_percentage * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.rebound_percentage * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.rebound_percentage ? (advancedStats.rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>AST%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.assist_percentage ? 'text-gray-400' :
+                            (advancedStats.assist_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.assist_percentage * 100) >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.assist_percentage ? (advancedStats.assist_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>OREB%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.offensive_rebound_percentage ? 'text-gray-400' :
+                            (advancedStats.offensive_rebound_percentage * 100) >= 8 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.offensive_rebound_percentage * 100) >= 4 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.offensive_rebound_percentage ? (advancedStats.offensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>AST/TO</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.assist_to_turnover ? 'text-gray-400' :
+                            advancedStats.assist_to_turnover >= 2.0 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.assist_to_turnover >= 1.5 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : advancedStatsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading advanced stats...</div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No advanced stats available</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 6. Depth Chart Container (Mobile) */}
+            {useMemo(() => {
+              // Determine which team to show based on mode
+              const currentTeam = propsMode === 'player' 
+                ? depthChartTeam 
+                : (depthChartTeam && depthChartTeam !== 'N/A' ? depthChartTeam : gamePropsTeam);
+              
+              // Don't render if no team selected
+              if (!currentTeam || currentTeam === 'N/A') return null;
+              
+              // Determine roster data based on mode
+              const currentTeamRoster = propsMode === 'player' 
+                ? (currentTeam === depthChartTeam ? playerTeamRoster : opponentTeamRoster)
+                : (allTeamRosters[currentTeam] || []);
+              const currentOpponentRoster = propsMode === 'player' 
+                ? (currentTeam === depthChartTeam ? opponentTeamRoster : playerTeamRoster)
+                : (opponentTeam ? (allTeamRosters[opponentTeam] || []) : []);
+              
+              // Determine loading state based on mode
+              const currentRostersLoading = propsMode === 'player' 
+                ? rostersLoading 
+                : { player: rosterCacheLoading, opponent: rosterCacheLoading };
+              
+              return (
+                <div className="lg:hidden">
+                  <DepthChartContainer
+                    selectedTeam={currentTeam}
+                    teamInjuries={teamInjuries}
+                    isDark={isDark}
+                    onPlayerSelect={propsMode === 'player' ? setSelectedPlayer : () => {}}
+                    selectedPlayerName={propsMode === 'player' && selectedPlayer ? (
+                      (() => {
+                        const fullName = selectedPlayer.full;
+                        const constructedName = `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
+                        return fullName || constructedName;
+                      })()
+                    ) : ''}
+                    opponentTeam={opponentTeam}
+                    originalPlayerTeam={propsMode === 'player' ? originalPlayerTeam : gamePropsTeam}
+                    playerTeamRoster={currentTeamRoster}
+                    opponentTeamRoster={currentOpponentRoster}
+                    rostersLoading={currentRostersLoading}
+                    onTeamSwap={(team) => {
+                      console.log(`🔄 Mobile depth chart team swap: ${team}`);
+                      if (propsMode === 'player') {
+                        setDepthChartTeam(team);
+                      } else if (propsMode === 'team') {
+                        setDepthChartTeam(team);
+                      }
+                    }}
+                    allTeamRosters={propsMode === 'team' ? allTeamRosters : undefined}
+                  />
+                </div>
+              );
+            }, [
+              propsMode, 
+              depthChartTeam, 
+              gamePropsTeam, 
+              teamInjuries, 
+              isDark, 
+              selectedPlayer?.full, 
+              selectedPlayer?.firstName, 
+              selectedPlayer?.lastName, 
+              opponentTeam, 
+              originalPlayerTeam, 
+              playerTeamRoster, 
+              opponentTeamRoster, 
+              rostersLoading, 
+              allTeamRosters, 
+              rosterCacheLoading, 
+              todaysGames
+            ])}
+
+            {/* 7. Official Odds Card Container (Mobile) */}
             {useMemo(() => (
-              <OfficialOddsCard
+<div className="lg:hidden">
+                <OfficialOddsCard
+                  isDark={isDark}
+                  derivedOdds={derivedOdds}
+                  intradayMovements={intradayMovements}
+                  selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+                  opponentTeam={opponentTeam}
+                  selectedTeamLogoUrl={selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)}
+                  opponentTeamLogoUrl={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                  matchupInfo={matchupInfo}
+                  oddsFormat={oddsFormat}
+                  books={realOddsData}
+                  fmtOdds={fmtOdds}
+                />
+              </div>
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
+
+            {/* Value Rating (Mobile) */}
+            {useMemo(() => {
+              const statToMarket = (s: string) => ({ pts: 'PTS', reb: 'REB', ast: 'AST', total_pts: 'Total', spread: 'Spread', moneyline: 'H2H' } as any)[s] || null;
+              const market = statToMarket(selectedStat);
+
+              const toNum = (s: string) => {
+                const n = parseInt(String(s).replace(/[^+\-\d]/g, ''), 10);
+                return Number.isFinite(n) ? n : NaN;
+              };
+              const americanToDecimalNum = (odds: string): number | null => {
+                if (!odds || odds === 'N/A') return null;
+                const n = toNum(odds);
+                if (!Number.isFinite(n)) return null;
+                return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
+              };
+              const impliedFromPair = (over: string, under: string) => {
+                const pO = (() => {
+                  const n = toNum(over); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+                })();
+                const pU = (() => {
+                  const n = toNum(under); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+                })();
+                if (pO == null || pU == null) return { pOver: null, pUnder: null };
+                const z = pO + pU; if (z <= 0) return { pOver: null, pUnder: null };
+                return { pOver: pO / z, pUnder: pU / z };
+              };
+              const parseBookLine = (s: string | null): number | null => {
+                if (!s) return null;
+                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+                return Number.isFinite(v) ? v : null;
+              };
+
+              // Determine best available odds for current market
+              let line: string | null = null;
+              let bestOver: string | null = null;
+              let bestUnder: string | null = null;
+
+              if (market && realOddsData.length > 0) {
+                for (const b of realOddsData) {
+                  const m: any = (b as any)[market];
+                  if (!m) continue;
+                  if (!line && typeof m.line !== 'undefined') line = m.line;
+                  if (m.over && (!bestOver || toNum(m.over) > toNum(bestOver))) bestOver = m.over;
+                  if (m.under && (!bestUnder || toNum(m.under) > toNum(bestUnder))) bestUnder = m.under;
+                }
+              }
+
+              // Fair probabilities from chartData, computed ONLY at bookmaker line
+              const total = chartData.length;
+              const bookLineVal = parseBookLine(line);
+              let fairOver: number | null = null;
+              let fairUnder: number | null = null;
+              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
+                const overCount = selectedStat === 'spread'
+                  ? chartData.filter(d => d.value < bookLineVal).length
+                  : chartData.filter(d => d.value > bookLineVal).length;
+                fairOver = overCount / total;
+                fairUnder = 1 - fairOver;
+              }
+
+              // Market implied
+              const { pOver, pUnder } = (bestOver && bestUnder) ? impliedFromPair(bestOver, bestUnder) : { pOver: null, pUnder: null };
+
+              // EV calc (per $1)
+              const decOver = bestOver ? americanToDecimalNum(bestOver) : null;
+              const decUnder = bestUnder ? americanToDecimalNum(bestUnder) : null;
+              const evOver = fairOver != null && decOver != null ? fairOver * decOver - 1 : null;
+              const evUnder = fairUnder != null && decUnder != null ? fairUnder * decUnder - 1 : null;
+
+              // Confidence (binomial 95% CI on fairOver, z vs implied)
+              const ci = (() => {
+                if (fairOver != null && total > 0) {
+                  const se = Math.sqrt(fairOver * (1 - fairOver) / total);
+                  const lo = Math.max(0, fairOver - 1.96 * se);
+                  const hi = Math.min(1, fairOver + 1.96 * se);
+                  return { se, lo, hi };
+                }
+                return null;
+              })();
+              const zOver = (fairOver != null && pOver != null && ci && ci.se > 0) ? (fairOver - pOver) / ci.se : null;
+              const zUnder = (fairUnder != null && pUnder != null && ci && ci.se > 0) ? (fairUnder - pUnder) / ci.se : null;
+              const confLabel = (() => {
+                if (!ci) return null;
+                let level = 'Low';
+                if (zOver != null && total >= 20) {
+                  const a = Math.abs(zOver);
+                  if (a >= 2.0) level = 'High';
+                  else if (a >= 1.3) level = 'Moderate';
+                  else level = 'Low';
+                } else if (total >= 30) level = 'Moderate';
+                return level;
+              })();
+              const confLabelUnder = (() => {
+                if (!ci) return null;
+                let level = 'Low';
+                if (zUnder != null && total >= 20) {
+                  const a = Math.abs(zUnder);
+                  if (a >= 2.0) level = 'High';
+                  else if (a >= 1.3) level = 'Moderate';
+                  else level = 'Low';
+                } else if (total >= 30) level = 'Moderate';
+                return level;
+              })();
+              const confPctFromZ = (z: number | null) => z==null ? null : Math.min(99, Math.max(0, Math.round(Math.abs(z) * 50)));
+              const confPctOver = confPctFromZ(zOver);
+              const confPctUnder = confPctFromZ(zUnder);
+
+              const notSupported = !market || (propsMode === 'player' && !['PTS','REB','AST'].includes(market)) || (propsMode === 'team' && !['Total','Spread','H2H'].includes(market));
+
+              // Edge helpers
+              const edgeOver = (fairOver!=null && pOver!=null) ? (fairOver - pOver) : null;
+              const edgeUnder = (fairUnder!=null && pUnder!=null) ? (fairUnder - pUnder) : null;
+              const edgePill = (v: number | null) => {
+                if (v == null) return { text: 'EDGE N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
+                const pct = (v*100).toFixed(1) + '%';
+                return v >= 0
+                  ? { text: `EDGE +${pct}`, cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' }
+                  : { text: `EDGE ${pct}`, cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' };
+              };
+              const evDisplay = (v: number | null) => v==null ? '—' : `${(v*100).toFixed(1)}%`;
+              const pct = (v: number | null) => v==null ? 'N/A' : `${(v*100).toFixed(1)}%`;
+              const confPill = (() => {
+                if (!confLabel) return { text: 'Confidence N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
+                if (confLabel === 'High') return { text: 'High Confidence', cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' };
+                if (confLabel === 'Moderate') return { text: 'Moderate Confidence', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' };
+                return { text: 'Low Confidence', cls: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' };
+              })();
+
+              return (
+                <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="text-base text-gray-900 dark:text-white font-semibold mb-3">Value Rating</div>
+                  {notSupported ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Not available for this stat.</div>
+                  ) : (
+                    <>
+                      {line && (
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-mono">Line: {line}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-bold">O {bestOver || 'N/A'}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] font-bold">U {bestUnder || 'N/A'}</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
+                        {/* OVER card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">OVER</div>
+                            {(() => { const pill = edgePill(edgeOver); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
+                          </div>
+                          <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evOver)}</div>
+                          <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">Fair {pct(fairOver)} • Implied {pct(pOver)}</div>
+                        </div>
+                        {/* UNDER card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">UNDER</div>
+                            {(() => { const pill = edgePill(edgeUnder); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
+                          </div>
+                          <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evUnder)}</div>
+                          <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">Fair {pct(fairUnder)} • Implied {pct(pUnder)}</div>
+                        </div>
+                        {/* CONFIDENCE card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
+                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">CONFIDENCE</div>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400">OVER</div>
+                            <div className="flex items-center gap-2">
+                              {(() => { const lbl = confLabel; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">{confPctOver!=null ? `${confPctOver}%` : '—'}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400">UNDER</div>
+                            <div className="flex items-center gap-2">
+                              {(() => { const lbl = confLabelUnder; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">{confPctUnder!=null ? `${confPctUnder}%` : '—'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            }, [propsMode, selectedStat, chartData, realOddsData, isDark])}
+
+            {/* 8. Best Odds Container (Mobile) */}
+            {useMemo(() => (
+<div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">BEST ODDS</div>
+                
+                {/* Loading indicator */}
+                {oddsLoading && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
+                )}
+                {oddsError && (
+                  <div className="text-xs text-red-500 mb-2">Error: {oddsError}</div>
+                )}
+                
+                {/* Mobile-optimized odds table */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs border-collapse">
+                    <thead>
+                      <tr className={(isDark ? 'bg-slate-900' : 'bg-slate-100') + ' sticky top-0'}>
+                        <th className="text-left py-2 pr-2 font-semibold text-gray-700 dark:text-gray-300">Book</th>
+                        {['H2H','Spread','Total','PTS','REB','AST'].map((market) => (
+                          <th key={market} className="text-left py-2 px-1 font-semibold text-gray-700 dark:text-gray-300 text-xs">{market}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {(() => {
+                      const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
+                      const away = opponentTeam || 'AWAY';
+                      
+                      // Use real data if available, otherwise show default bookmakers with N/A
+                      const books = realOddsData.length > 0 ? realOddsData : [
+                        { name: 'DraftKings', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+                        { name: 'FanDuel', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+                        { name: 'BetMGM', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+                        { name: 'Caesars', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } }
+                      ];
+
+                      const americanToNumber = (s: string) => {
+                        if (s === 'N/A') return 0;
+                        return parseInt(s.replace(/[^+\-\d]/g, ''), 10);
+                      };
+                      const displayHalfLine = (s: string) => {
+                        if (s === 'N/A') return 'N/A';
+                        const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+                        if (Number.isNaN(v)) return s;
+                        const frac = Math.abs(v * 10) % 10; // tenths
+                        if (frac === 0) {
+                          const adj = v > 0 ? v - 0.5 : v + 0.5; // move toward 0 by 0.5
+                          return adj.toFixed(1);
+                        }
+                        return Number.isFinite(v) ? v.toFixed(1) : s;
+                      };
+
+                      const maxIdx = (get: (b: any) => string) => {
+                        let bi = 0;
+                        for (let i = 1; i < books.length; i++) {
+                          if (americanToNumber(get(books[i])) > americanToNumber(get(books[bi]))) bi = i;
+                        }
+                        return bi;
+                      };
+
+                      // Helpers to choose best lines/odds per rules
+                      const parseLine = (s: string) => {
+                        if (s === 'N/A') return NaN;
+                        return parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+                      };
+                      const pickBest = (
+                        preferLowLine: boolean,
+                        getLine: (b: any) => string,
+                        getOdds: (b: any) => string,
+                      ) => {
+                        // 1) pick best line first (lowest for overs, highest for unders)
+                        let bestLine = preferLowLine ? Infinity : -Infinity;
+                        for (let i = 0; i < books.length; i++) {
+                          const v = parseLine(getLine(books[i]));
+                          if (Number.isNaN(v)) continue;
+                          if (preferLowLine ? v < bestLine : v > bestLine) bestLine = v;
+                        }
+                        // gather candidates with that line (handle floats)
+                        const EPS = 1e-6;
+                        const candIdx: number[] = [];
+                        for (let i = 0; i < books.length; i++) {
+                          const v = parseLine(getLine(books[i]));
+                          if (!Number.isNaN(v) && Math.abs(v - bestLine) < EPS) candIdx.push(i);
+                        }
+                        if (candIdx.length <= 1) return new Set(candIdx);
+                        // 2) tie-break by highest odds (american)
+                        let maxOdds = -Infinity;
+                        for (const i of candIdx) {
+                          const o = americanToNumber(getOdds(books[i]));
+                          if (o > maxOdds) maxOdds = o;
+                        }
+                        const winners = candIdx.filter(i => americanToNumber(getOdds(books[i])) === maxOdds);
+                        return new Set(winners);
+                      };
+
+                      const bestH2H = {
+                        home: maxIdx((b: any) => b.H2H.home),
+                        away: maxIdx((b: any) => b.H2H.away),
+                      };
+
+                      const bestSets = {
+                        Spread: {
+                          over: pickBest(true, (b: any) => b.Spread.line, (b: any) => b.Spread.over),
+                          under: pickBest(false, (b: any) => b.Spread.line, (b: any) => b.Spread.under),
+                        },
+                        Total: {
+                          over: pickBest(true, (b: any) => b.Total.line, (b: any) => b.Total.over),
+                          under: pickBest(false, (b: any) => b.Total.line, (b: any) => b.Total.under),
+                        },
+                        PTS: {
+                          over: pickBest(true, (b: any) => b.PTS.line, (b: any) => b.PTS.over),
+                          under: pickBest(false, (b: any) => b.PTS.line, (b: any) => b.PTS.under),
+                        },
+                        REB: {
+                          over: pickBest(true, (b: any) => b.REB.line, (b: any) => b.REB.over),
+                          under: pickBest(false, (b: any) => b.REB.line, (b: any) => b.REB.under),
+                        },
+                        AST: {
+                          over: pickBest(true, (b: any) => b.AST.line, (b: any) => b.AST.over),
+                          under: pickBest(false, (b: any) => b.AST.line, (b: any) => b.AST.under),
+                        },
+                      } as const;
+
+                      const green = isDark ? 'text-green-400' : 'text-green-600';
+                      const grey = isDark ? 'text-slate-300' : 'text-slate-600';
+
+                      return books.map((row, i) => (
+                        <tr key={row.name} className={isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
+                          <td className="py-2 pr-2 text-gray-700 dark:text-gray-300 text-xs truncate">{row.name}</td>
+                          {/* H2H both teams - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className="font-mono text-gray-900 dark:text-white text-xs">
+                              <div className="truncate">{home} <span className={i === bestH2H.home ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.home) : row.H2H.home}</span></div>
+                              <div className="truncate opacity-80">{away} <span className={i === bestH2H.away ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.away) : row.H2H.away}</span></div>
+                            </div>
+                          </td>
+                          {/* Spread O/U - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className={`font-mono text-xs ${bestSets.Spread.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Spread.line)}</div>
+                            <div className={`font-mono text-xs ${bestSets.Spread.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Spread.line)}</div>
+                          </td>
+                          {/* Total O/U - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className={`font-mono text-xs ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)}</div>
+                            <div className={`font-mono text-xs ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)}</div>
+                          </td>
+                          {/* PTS O/U - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className={`font-mono text-xs ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)}</div>
+                            <div className={`font-mono text-xs ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)}</div>
+                          </td>
+                          {/* REB O/U - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className={`font-mono text-xs ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)}</div>
+                            <div className={`font-mono text-xs ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)}</div>
+                          </td>
+                          {/* AST O/U - Mobile compact */}
+                          <td className="py-2 px-1">
+                            <div className={`font-mono text-xs ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)}</div>
+                            <div className={`font-mono text-xs ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)}</div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ), [isDark, oddsLoading, oddsError, realOddsData, selectedTeam, gamePropsTeam, propsMode, opponentTeam, oddsFormat, fmtOdds])}
+
+            {/* 9. Injury Container (Mobile) */}
+<div className="lg:hidden">
+              <InjuryContainer
+                selectedTeam={propsMode === 'team' ? (gamePropsTeam && gamePropsTeam !== 'N/A' ? gamePropsTeam : '') : selectedTeam}
+                opponentTeam={opponentTeam}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* 10. Player Box Score Container (Mobile) - Final container! */}
+            {useMemo(() => {
+              if (propsMode !== 'player') return null;
+              
+              return (
+<div className="lg:hidden">
+                  <PlayerBoxScore
+                    selectedPlayer={selectedPlayer}
+                    playerStats={playerStats}
+                    isDark={isDark}
+                  />
+                </div>
+              );
+            }, [propsMode, selectedPlayer, playerStats, isDark])}
+
+            {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
+            {useMemo(() => (
+<div className="hidden lg:block">
+                <OfficialOddsCard
                 isDark={isDark}
                 derivedOdds={derivedOdds}
                 intradayMovements={intradayMovements}
-                selectedTeam={selectedTeam}
+                selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
                 opponentTeam={opponentTeam}
-                selectedTeamLogoUrl={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
+                selectedTeamLogoUrl={selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)}
                 opponentTeamLogoUrl={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
                 matchupInfo={matchupInfo}
                 oddsFormat={oddsFormat}
                 books={realOddsData}
                 fmtOdds={fmtOdds}
               />
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
+              </div>
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
 
-            {/* BEST ODDS - Memoized to prevent re-renders from betting line changes */}
+            {/* Value Rating (Desktop) */}
+            {useMemo(() => {
+              const statToMarket = (s: string) => ({ pts: 'PTS', reb: 'REB', ast: 'AST', total_pts: 'Total', spread: 'Spread', moneyline: 'H2H' } as any)[s] || null;
+              const market = statToMarket(selectedStat);
+
+              const toNum = (s: string) => {
+                const n = parseInt(String(s).replace(/[^+\-\d]/g, ''), 10);
+                return Number.isFinite(n) ? n : NaN;
+              };
+              const americanToDecimalNum = (odds: string): number | null => {
+                if (!odds || odds === 'N/A') return null;
+                const n = toNum(odds);
+                if (!Number.isFinite(n)) return null;
+                return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
+              };
+              const impliedFromPair = (over: string, under: string) => {
+                const pO = (() => {
+                  const n = toNum(over); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+                })();
+                const pU = (() => {
+                  const n = toNum(under); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+                })();
+                if (pO == null || pU == null) return { pOver: null, pUnder: null };
+                const z = pO + pU; if (z <= 0) return { pOver: null, pUnder: null };
+                return { pOver: pO / z, pUnder: pU / z };
+              };
+              const parseBookLine = (s: string | null): number | null => {
+                if (!s) return null;
+                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+                return Number.isFinite(v) ? v : null;
+              };
+
+              // Determine best available odds for current market
+              let line: string | null = null;
+              let bestOver: string | null = null;
+              let bestUnder: string | null = null;
+
+              if (market && realOddsData.length > 0) {
+                for (const b of realOddsData) {
+                  const m: any = (b as any)[market];
+                  if (!m) continue;
+                  if (!line && typeof m.line !== 'undefined') line = m.line;
+                  if (m.over && (!bestOver || toNum(m.over) > toNum(bestOver))) bestOver = m.over;
+                  if (m.under && (!bestUnder || toNum(m.under) > toNum(bestUnder))) bestUnder = m.under;
+                }
+              }
+
+              // Fair probabilities from chartData, computed ONLY at bookmaker line
+              const total = chartData.length;
+              const bookLineVal = parseBookLine(line);
+              let fairOver: number | null = null;
+              let fairUnder: number | null = null;
+              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
+                const overCount = selectedStat === 'spread'
+                  ? chartData.filter(d => d.value < bookLineVal).length
+                  : chartData.filter(d => d.value > bookLineVal).length;
+                fairOver = overCount / total;
+                fairUnder = 1 - fairOver;
+              }
+              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
+                const overCount = selectedStat === 'spread'
+                  ? chartData.filter(d => d.value < bookLineVal).length
+                  : chartData.filter(d => d.value > bookLineVal).length;
+                fairOver = overCount / total;
+                fairUnder = 1 - fairOver;
+              }
+
+              // Market implied
+              const { pOver, pUnder } = (bestOver && bestUnder) ? impliedFromPair(bestOver, bestUnder) : { pOver: null, pUnder: null };
+
+              // EV calc (per $1)
+              const decOver = bestOver ? americanToDecimalNum(bestOver) : null;
+              const decUnder = bestUnder ? americanToDecimalNum(bestUnder) : null;
+              const evOver = fairOver != null && decOver != null ? fairOver * decOver - 1 : null;
+              const evUnder = fairUnder != null && decUnder != null ? fairUnder * decUnder - 1 : null;
+
+              // Confidence (binomial 95% CI on fairOver, z vs implied)
+              const ci = (() => {
+                if (fairOver != null && total > 0) {
+                  const se = Math.sqrt(fairOver * (1 - fairOver) / total);
+                  const lo = Math.max(0, fairOver - 1.96 * se);
+                  const hi = Math.min(1, fairOver + 1.96 * se);
+                  return { se, lo, hi };
+                }
+                return null;
+              })();
+              const zOver = (fairOver != null && pOver != null && ci && ci.se > 0) ? (fairOver - pOver) / ci.se : null;
+              const zUnder = (fairUnder != null && pUnder != null && ci && ci.se > 0) ? (fairUnder - pUnder) / ci.se : null;
+              const confLabel = (() => {
+                if (!ci) return null;
+                let level = 'Low';
+                if (zOver != null && total >= 20) {
+                  const a = Math.abs(zOver);
+                  if (a >= 2.0) level = 'High';
+                  else if (a >= 1.3) level = 'Moderate';
+                  else level = 'Low';
+                } else if (total >= 30) level = 'Moderate';
+                return level;
+              })();
+              const confLabelUnder = (() => {
+                if (!ci) return null;
+                let level = 'Low';
+                if (zUnder != null && total >= 20) {
+                  const a = Math.abs(zUnder);
+                  if (a >= 2.0) level = 'High';
+                  else if (a >= 1.3) level = 'Moderate';
+                  else level = 'Low';
+                } else if (total >= 30) level = 'Moderate';
+                return level;
+              })();
+              const confPctFromZ = (z: number | null) => z==null ? null : Math.min(99, Math.max(0, Math.round(Math.abs(z) * 50)));
+              const confPctOver = confPctFromZ(zOver);
+              const confPctUnder = confPctFromZ(zUnder);
+
+              const notSupported = !market || (propsMode === 'player' && !['PTS','REB','AST'].includes(market)) || (propsMode === 'team' && !['Total','Spread','H2H'].includes(market));
+
+              // Edge helpers
+              const edgeOver = (fairOver!=null && pOver!=null) ? (fairOver - pOver) : null;
+              const edgeUnder = (fairUnder!=null && pUnder!=null) ? (fairUnder - pUnder) : null;
+              const edgePill = (v: number | null) => {
+                if (v == null) return { text: 'EDGE N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
+                const pct = (v*100).toFixed(1) + '%';
+                return v >= 0
+                  ? { text: `EDGE +${pct}`, cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' }
+                  : { text: `EDGE ${pct}`, cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' };
+              };
+              const evDisplay = (v: number | null) => v==null ? '—' : `${(v*100).toFixed(1)}%`;
+              const pct = (v: number | null) => v==null ? 'N/A' : `${(v*100).toFixed(1)}%`;
+              const confPill = (() => {
+                if (!confLabel) return { text: 'Confidence N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
+                if (confLabel === 'High') return { text: 'High Confidence', cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' };
+                if (confLabel === 'Moderate') return { text: 'Moderate Confidence', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' };
+                return { text: 'Low Confidence', cls: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' };
+              })();
+
+              return (
+<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+                  <div className="text-base text-gray-900 dark:text-white font-semibold mb-3">Value Rating</div>
+                  {notSupported ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Not available for this stat.</div>
+                  ) : (
+                    <>
+                      {line && (
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-mono">Line: {line}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-bold">O {bestOver || 'N/A'}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] font-bold">U {bestUnder || 'N/A'}</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* OVER card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">OVER</div>
+                            {(() => { const pill = edgePill(edgeOver); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
+                          </div>
+                          <div className="text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evOver)}</div>
+                          <div className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Fair {pct(fairOver)} • Implied {pct(pOver)}</div>
+                        </div>
+                        {/* UNDER card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">UNDER</div>
+                            {(() => { const pill = edgePill(edgeUnder); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
+                          </div>
+                          <div className="text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evUnder)}</div>
+                          <div className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Fair {pct(fairUnder)} • Implied {pct(pUnder)}</div>
+                        </div>
+                        {/* CONFIDENCE card */}
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
+                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">CONFIDENCE</div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-[12px] text-gray-600 dark:text-gray-400">OVER</div>
+                            <div className="flex items-center gap-2">
+                              {(() => { const lbl = confLabel; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
+                              <span className="text-[11px] text-gray-600 dark:text-gray-400">{confPctOver!=null ? `${confPctOver}%` : '—'}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-[12px] text-gray-600 dark:text-gray-400">UNDER</div>
+                            <div className="flex items-center gap-2">
+                              {(() => { const lbl = confLabelUnder; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
+                              <span className="text-[11px] text-gray-600 dark:text-gray-400">{confPctUnder!=null ? `${confPctUnder}%` : '—'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            }, [propsMode, selectedStat, chartData, realOddsData, isDark])}
+
+            {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             {useMemo(() => (
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
               <div className="text-sm text-gray-900 dark:text-white font-semibold mb-2">BEST ODDS</div>
               
               {/* Loading indicator */}
@@ -2705,14 +6097,10 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
               {oddsError && (
                 <div className="text-xs text-red-500 mb-2">Error: {oddsError}</div>
               )}
-              {realOddsData.length === 0 && !oddsLoading && (
-                <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">Configure ODDS_API_KEY to enable live odds</div>
-              )}
               
               {/* Always show table */}
-              (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs border-collapse">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs border-collapse">
                     <thead>
                       <tr className={ (isDark ? 'bg-slate-900' : 'bg-slate-100') + ' sticky top-0'}>
                         <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
@@ -2723,7 +6111,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                     </thead>
                     <tbody>
                     {(() => {
-                      const home = selectedTeam || 'HOME';
+                      const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
                       const away = opponentTeam || 'AWAY';
                       
                       // Use real data if available, otherwise show default bookmakers with N/A
@@ -2868,58 +6256,144 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                   </table>
                 </div>
               </div>
-            ), [isDark, oddsLoading, oddsError, realOddsData, selectedTeam, opponentTeam, oddsFormat, fmtOdds])}
+            ), [isDark, oddsLoading, oddsError, realOddsData, selectedTeam, gamePropsTeam, propsMode, opponentTeam, oddsFormat, fmtOdds])}
 
-            {/* Depth Chart (ESPN) - Memoized to prevent re-renders from betting line changes */}
-            {useMemo(() => (
-              <DepthChartContainer
-                selectedTeam={selectedTeam}
-                teamInjuries={teamInjuries}
-                isDark={isDark}
-                onPlayerSelect={setSelectedPlayer}
-                selectedPlayerName={(() => {
-                  if (!selectedPlayer) return '';
-                  const fullName = selectedPlayer.full;
-                  const constructedName = `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
-                  const finalName = fullName || constructedName;
-                  return finalName;
-                })()}
-              />
-            ), [selectedTeam, teamInjuries, isDark, setSelectedPlayer, selectedPlayer])}
+            {/* Unified Depth Chart (Desktop) - optimized for both modes */}
+            {useMemo(() => {
+              // Determine which team to show based on mode
+              // For Game Props mode, use depthChartTeam for switching, fallback to gamePropsTeam
+              const currentTeam = propsMode === 'player' 
+                ? depthChartTeam 
+                : (depthChartTeam && depthChartTeam !== 'N/A' ? depthChartTeam : gamePropsTeam);
+              
+              // Don't render if no team selected
+              if (!currentTeam || currentTeam === 'N/A') return null;
+              
+              // Determine roster data based on mode
+              const currentTeamRoster = propsMode === 'player' 
+                ? (currentTeam === depthChartTeam ? playerTeamRoster : opponentTeamRoster)
+                : (allTeamRosters[currentTeam] || []);
+              const currentOpponentRoster = propsMode === 'player' 
+                ? (currentTeam === depthChartTeam ? opponentTeamRoster : playerTeamRoster)
+                : (opponentTeam ? (allTeamRosters[opponentTeam] || []) : []);
+              
+              // Determine loading state based on mode
+              const currentRostersLoading = propsMode === 'player' 
+                ? rostersLoading 
+                : { player: rosterCacheLoading, opponent: rosterCacheLoading };
+              
+              return (
+<div className="hidden lg:block">
+                  <DepthChartContainer
+                  selectedTeam={currentTeam}
+                  teamInjuries={teamInjuries}
+                  isDark={isDark}
+                  onPlayerSelect={propsMode === 'player' ? setSelectedPlayer : () => {}}
+                  selectedPlayerName={propsMode === 'player' && selectedPlayer ? (
+                    (() => {
+                      const fullName = selectedPlayer.full;
+                      const constructedName = `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
+                      return fullName || constructedName;
+                    })()
+                  ) : ''}
+                  opponentTeam={opponentTeam}
+                  originalPlayerTeam={propsMode === 'player' ? originalPlayerTeam : gamePropsTeam}
+                  playerTeamRoster={currentTeamRoster}
+                  opponentTeamRoster={currentOpponentRoster}
+                  rostersLoading={currentRostersLoading}
+                  onTeamSwap={(team) => {
+                    console.log(`🔄 Depth chart view only team swap: ${team}`);
+                    // Only update the depth chart display team, not the main stats container
+                    if (propsMode === 'player') {
+                      setDepthChartTeam(team);
+                    } else if (propsMode === 'team') {
+                      // In Game Props mode, allow depth chart team switching for roster viewing
+                      // but don't change the main gamePropsTeam or stats
+                      // We need a separate state for depth chart display team in game props mode
+                      setDepthChartTeam(team);
+                    }
+                  }}
+                  allTeamRosters={propsMode === 'team' ? allTeamRosters : undefined}
+                />
+                </div>
+              );
+            }, [
+              propsMode, 
+              depthChartTeam, 
+              gamePropsTeam, 
+              teamInjuries, 
+              isDark, 
+              selectedPlayer?.full, 
+              selectedPlayer?.firstName, 
+              selectedPlayer?.lastName, 
+              opponentTeam, 
+              originalPlayerTeam, 
+              playerTeamRoster, 
+              opponentTeamRoster, 
+              rostersLoading, 
+              allTeamRosters, 
+              rosterCacheLoading, 
+              todaysGames
+            ])}
 
-            {/* Player Box Score - Memoized to prevent re-renders from chart changes */}
-            {useMemo(() => (
-              <PlayerBoxScore
-                selectedPlayer={selectedPlayer}
-                playerStats={playerStats}
-                isDark={isDark}
-              />
-            ), [selectedPlayer, playerStats, isDark])}
+            {/* Player Box Score (Desktop) - conditionally rendered inside useMemo */}
+            {useMemo(() => {
+              if (propsMode !== 'player') return null;
+              
+              return (
+<div className="hidden lg:block">
+                  <PlayerBoxScore
+                    selectedPlayer={selectedPlayer}
+                    playerStats={playerStats}
+                    isDark={isDark}
+                  />
+                </div>
+              );
+            }, [propsMode, selectedPlayer, playerStats, isDark])}
 
           </div>
 
 
-          {/* Right Panel */}
+          {/* Right Panel - Mobile: Single column containers, Desktop: Right sidebar */}
           <div 
-            className="flex-[3] flex flex-col gap-6 h-screen max-h-screen overflow-y-auto pr-4" 
+className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:pl-0 xl:pl-0 lg:pr-1 xl:pr-2 fade-scrollbar"
             style={{
-              height: 'calc(100vh - 3rem)',
               scrollbarWidth: 'thin',
               scrollbarColor: isDark ? '#4b5563 transparent' : '#d1d5db transparent'
             }}
           >
 
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 pt-2 pb-4 border border-gray-200 dark:border-gray-700 h-32">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filter By</h3>
-              <div className="flex gap-3">
+            {/* Filter By Container (Desktop - in right panel) */}
+<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">Filter By</h3>
+              <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
                 <button
                   onClick={() => {
                     setPropsMode('player');
-                    if (!PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat)) {
-                      setSelectedStat('pts');
+                    setSearchQuery(''); // Clear search when switching
+                    // Always set PTS as default for Player Props
+                    setSelectedStat('pts');
+                    
+                    // If we have a gamePropsTeam selected, use it as the player's team
+                    if (gamePropsTeam && gamePropsTeam !== 'N/A') {
+                      setSelectedTeam(gamePropsTeam);
+                      setOriginalPlayerTeam(gamePropsTeam);
+                      setDepthChartTeam(gamePropsTeam);
+                    }
+                    
+                    // Clear the playerCleared flag when switching back to Player Props
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const raw = sessionStorage.getItem('nba-dashboard-session');
+                        if (raw) {
+                          const saved = JSON.parse(raw);
+                          delete saved.playerCleared; // Remove the flag
+                          sessionStorage.setItem('nba-dashboard-session', JSON.stringify(saved));
+                        }
+                      } catch {}
                     }
                   }}
-                  className={`px-6 py-3 rounded-lg text-base font-medium transition-colors ${
+                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
                     propsMode === 'player'
                       ? "bg-purple-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -2930,11 +6404,43 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                 <button
                   onClick={() => {
                     setPropsMode('team');
-                    if (!TEAM_STAT_OPTIONS.find(s => s.key === selectedStat)) {
-                      setSelectedStat('total_pts');
+                    setSearchQuery(''); // Clear search when switching
+                    
+                    // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
+                    if (selectedTeam && selectedTeam !== 'N/A') {
+                      setGamePropsTeam(selectedTeam);
+                    } else {
+                      setGamePropsTeam('N/A'); // Reset team selection only if no team was selected
                     }
+                    
+                    // Keep player data but don't display it in Game Props mode
+                    // DON'T clear: setSelectedPlayer, setSelectedTeam, setOriginalPlayerTeam, etc.
+                    // This preserves the data for when user switches back to Player Props
+                    
+                    // Clear URL parameters and update session storage
+                    if (typeof window !== 'undefined') {
+                      // Save minimal session with cleared player flag
+                      const clearedSession = {
+                        propsMode: 'team' as const,
+                        selectedStat,
+                        selectedTimeframe,
+                        playerCleared: true // Flag to indicate user deliberately cleared player data
+                      };
+                      sessionStorage.setItem('nba-dashboard-session', JSON.stringify(clearedSession));
+                      
+                      // Clear URL parameters
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('pid');
+                      url.searchParams.delete('name');
+                      url.searchParams.delete('team');
+                      // Keep stat and tf parameters as they're relevant to Game Props
+                      window.history.replaceState({}, '', url.toString());
+                    }
+                    
+                    // Always set TOTAL_PTS as default for Game Props
+                    setSelectedStat('total_pts');
                   }}
-                  className={`px-6 py-3 rounded-lg text-base font-medium transition-colors ${
+                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
                     propsMode === 'team'
                       ? "bg-purple-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -2943,27 +6449,53 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                   Game Props
                 </button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
                 {propsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
               </p>
             </div>
             
-            {/* Combined Opponent Analysis & Team Matchup - only shows for player mode */}
-            {propsMode === 'player' && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+{/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
+            <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
+                {/* Section 0: Defense vs Position (new) */}
+                <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} />
+
                 {/* Section 1: Opponent Analysis */}
-                <OpponentAnalysisCard isDark={isDark} opponentTeam={opponentTeam} selectedTimeFilter={selectedTimeFilter} />
+                <OpponentAnalysisCard 
+                  isDark={isDark} 
+                  opponentTeam={opponentTeam} 
+                  selectedTimeFilter={selectedTimeFilter} 
+                />
 
                 {/* Section 2: Team Matchup with Pie Chart */}
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                  <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">Team Matchup</h4>
+                <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between mb-3 md:mb-4">
+                    <h4 className="text-sm md:text-base font-medium text-gray-900 dark:text-white">Team Matchup</h4>
+                    
+                    {/* Team Switcher - only show when both teams are available */}
+                    {((propsMode === 'player' && selectedTeam && selectedTeam !== 'N/A' && opponentTeam && opponentTeam !== '') || 
+                      (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
+                      <button
+                        onClick={() => {
+                          // Only toggle pie chart display order, don't change underlying team data
+                          setPieChartSwapped(!pieChartSwapped);
+                        }}
+                        className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        title="Switch teams in comparison"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m0 0l4-4" />
+                        </svg>
+                        Swap
+                      </button>
+                    )}
+                  </div>
                   
                   {/* Comparison Metric Selector */}
-                  <div className="mb-4">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="mb-3 md:mb-4">
+                    <div className="grid grid-cols-2 gap-1 md:gap-1.5">
                       <button
                         onClick={() => setSelectedComparison('offense_defense')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                        className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'offense_defense'
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -2973,7 +6505,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                       </button>
                       <button
                         onClick={() => setSelectedComparison('net_rating')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                        className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'net_rating'
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -2983,7 +6515,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                       </button>
                       <button
                         onClick={() => setSelectedComparison('pace')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                        className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'pace'
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -2993,7 +6525,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                       </button>
                       <button
                         onClick={() => setSelectedComparison('rebound_pct')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                        className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'rebound_pct'
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -3004,55 +6536,313 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                     </div>
                   </div>
 
+                  {/* Stats Preview Box - appears right after selector buttons */}
+                  {(() => {
+                    const currentTeam = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+                    const currentOpponent = opponentTeam;
+                    
+                    if (!currentTeam || currentTeam === 'N/A') return null;
+                    
+                    let teamValue, opponentValue;
+                    
+                    if (propsMode === 'team' && !currentOpponent) {
+                      switch (selectedComparison) {
+                        case 'offense_defense':
+                          if (pieChartSwapped) {
+                            teamValue = 110;
+                            opponentValue = teamRatings[currentTeam]?.defensive || 0;
+                          } else {
+                            teamValue = teamRatings[currentTeam]?.offensive || 0;
+                            opponentValue = 110;
+                          }
+                          break;
+                        case 'net_rating':
+                          teamValue = teamRatings[currentTeam]?.net || 0;
+                          opponentValue = 0;
+                          break;
+                        case 'pace':
+                          teamValue = getTeamPace(currentTeam);
+                          opponentValue = 100;
+                          break;
+                        case 'rebound_pct':
+                          teamValue = getTeamReboundPct(currentTeam);
+                          opponentValue = 50;
+                          break;
+                        default:
+                          teamValue = 0;
+                          opponentValue = 0;
+                      }
+                    } else {
+                      switch (selectedComparison) {
+                        case 'offense_defense':
+                          if (pieChartSwapped) {
+                            teamValue = teamRatings[currentTeam]?.defensive || 0;
+                            opponentValue = teamRatings[currentOpponent]?.offensive || 0;
+                          } else {
+                            teamValue = teamRatings[currentTeam]?.offensive || 0;
+                            opponentValue = teamRatings[currentOpponent]?.defensive || 0;
+                          }
+                          break;
+                        case 'net_rating':
+                          teamValue = teamRatings[currentTeam]?.net || 0;
+                          opponentValue = teamRatings[currentOpponent]?.net || 0;
+                          break;
+                        case 'pace':
+                          teamValue = getTeamPace(currentTeam);
+                          opponentValue = getTeamPace(currentOpponent);
+                          break;
+                        case 'rebound_pct':
+                          teamValue = getTeamReboundPct(currentTeam);
+                          opponentValue = getTeamReboundPct(currentOpponent);
+                          break;
+                        default:
+                          teamValue = 0;
+                          opponentValue = 0;
+                      }
+                    }
+                    
+                    const teamDisplay = selectedComparison === 'rebound_pct' ? `${teamValue.toFixed(1)}%` : teamValue.toFixed(1);
+                    const oppDisplay = selectedComparison === 'rebound_pct' ? `${opponentValue.toFixed(1)}%` : opponentValue.toFixed(1);
+                    
+                    // Determine which team has the advantage based on comparison type
+                    let teamHasAdvantage = false;
+                    if (selectedComparison === 'offense_defense') {
+                      if (pieChartSwapped) {
+                        // Comparing defense: lower is better
+                        teamHasAdvantage = teamValue < opponentValue;
+                      } else {
+                        // Comparing offense: higher is better
+                        teamHasAdvantage = teamValue > opponentValue;
+                      }
+                    } else if (selectedComparison === 'rebound_pct' || selectedComparison === 'pace') {
+                      // For rebound % and pace: higher is better
+                      teamHasAdvantage = teamValue > opponentValue;
+                    } else {
+                      // For net rating: higher is better
+                      teamHasAdvantage = teamValue > opponentValue;
+                    }
+                    
+                    const teamColor = teamHasAdvantage ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+                    const oppColor = teamHasAdvantage ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+                    
+                    return (
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
+                        <div className="flex items-center justify-between gap-1 text-xs">
+                          <div className={`flex-1 text-center ${teamColor}`}>
+                            {selectedComparison === 'offense_defense' && (
+                              <span className="font-bold text-gray-900 dark:text-white mr-1">
+                                {pieChartSwapped ? 'DEF' : 'OFF'}
+                              </span>
+                            )}
+                            <span className="font-bold">{currentTeam}</span>
+                            <span className="font-bold ml-1">{teamDisplay}</span>
+                          </div>
+                          
+                          <div className="text-gray-400 font-bold px-1">VS</div>
+                          
+                          <div className={`flex-1 text-center ${oppColor}`}>
+                            {selectedComparison === 'offense_defense' && (
+                              <span className="font-bold text-gray-900 dark:text-white mr-1">
+                                {pieChartSwapped ? 'OFF' : 'DEF'}
+                              </span>
+                            )}
+                            <span className="font-bold">{(propsMode === 'team' && !currentOpponent) ? 'League Avg' : (currentOpponent || 'TBD')}</span>
+                            <span className="font-bold ml-1">{oppDisplay}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Pie Chart Visualization */}
                   <div className="space-y-4">
                       <div className="flex items-center justify-between h-48 w-full gap-10">
                         {(() => {
+                          // Get the correct team references based on mode
+                          const currentTeam = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+                          const currentOpponent = opponentTeam; // Use opponent team in both modes
+                          
+                          // If no team is selected, show neutral 50/50 grey pie
+                          if (!currentTeam || currentTeam === 'N/A') {
+                            const neutralPieData = [
+                              { name: 'N/A', value: 50, fill: '#9ca3af', displayValue: 'N/A' },
+                              { name: 'N/A', value: 50, fill: '#9ca3af', displayValue: 'N/A' }
+                            ];
+                            
+                            return (
+                              <div className="w-full">
+                                <div className="flex items-center justify-between h-48 w-full gap-6 md:gap-8">
+                                  {/* Left N/A */}
+                                  <div className="w-32 text-right text-sm font-semibold pr-2 md:pr-4 text-gray-400">
+                                    <div>N/A</div>
+                                    <div>N/A</div>
+                                    <div className="text-xs opacity-85">Rank: —</div>
+                                  </div>
+                                  
+                                  {/* Neutral Pie */}
+                                  <div className="h-44 w-44 md:w-56 md:h-56 flex-shrink-0 select-none">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <PieChart>
+                                        <Pie
+                                          data={neutralPieData}
+                                          cx="50%"
+                                          cy="50%"
+                                          innerRadius={40}
+                                          outerRadius={80}
+                                          paddingAngle={0}
+                                          dataKey="value"
+                                          startAngle={90}
+                                          endAngle={-270}
+                                        >
+                                          {neutralPieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                          ))}
+                                        </Pie>
+                                      </PieChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                  
+                                  {/* Right N/A */}
+                                  <div className="w-28 md:w-32 text-left text-sm font-semibold pl-2 md:pl-4 text-gray-400">
+                                    <div>N/A</div>
+                                    <div>N/A</div>
+                                    <div className="text-xs opacity-85">Rank: —</div>
+                                  </div>
+                                </div>
+                                
+                                {/* Neutral Legend */}
+                                <div className="flex items-center justify-center gap-4 text-xs mt-3">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                                    <span className="text-gray-500 dark:text-gray-400">No Team Selected</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
                           let teamValue, opponentValue, isInverted = false;
                           
-                          switch (selectedComparison) {
-                            case 'offense_defense':
-                              teamValue = teamRatings[selectedTeam]?.offensive || 0;
-                              opponentValue = teamRatings[opponentTeam]?.defensive || 0;
-                              break;
-                            case 'net_rating':
-                              teamValue = teamRatings[selectedTeam]?.net || 0;
-                              opponentValue = teamRatings[opponentTeam]?.net || 0;
-                              break;
-                            case 'pace':
-                              teamValue = getTeamPace(selectedTeam);
-                              opponentValue = getTeamPace(opponentTeam);
-                              break;
-                            case 'rebound_pct':
-                              teamValue = getTeamReboundPct(selectedTeam);
-                              opponentValue = getTeamReboundPct(opponentTeam);
-                              break;
-                            default:
-                              teamValue = 0;
-                              opponentValue = 0;
+                          if (propsMode === 'team' && !currentOpponent) {
+                            // In Game Props mode without opponent, show team stats vs league average
+                            switch (selectedComparison) {
+                              case 'offense_defense':
+                                if (pieChartSwapped) {
+                                  // Swapped: Show league avg offense vs team defense
+                                  teamValue = 110; // League average offensive rating
+                                  opponentValue = teamRatings[currentTeam]?.defensive || 0;
+                                } else {
+                                  // Normal: Show team offense vs league avg defense
+                                  teamValue = teamRatings[currentTeam]?.offensive || 0;
+                                  opponentValue = 110; // League average defensive rating
+                                }
+                                break;
+                              case 'net_rating':
+                                teamValue = teamRatings[currentTeam]?.net || 0;
+                                opponentValue = 0; // League average net rating
+                                break;
+                              case 'pace':
+                                teamValue = getTeamPace(currentTeam);
+                                opponentValue = 100; // League average pace
+                                break;
+                              case 'rebound_pct':
+                                teamValue = getTeamReboundPct(currentTeam);
+                                opponentValue = 50; // Neutral rebound percentage
+                                break;
+                              default:
+                                teamValue = 0;
+                                opponentValue = 0;
+                            }
+                          } else {
+                            // Player Props mode - original logic
+                            switch (selectedComparison) {
+                              case 'offense_defense':
+                                if (pieChartSwapped) {
+                                  // Swapped: Show team defense vs opponent offense (keep teams in same position)
+                                  teamValue = teamRatings[currentTeam]?.defensive || 0;
+                                  opponentValue = teamRatings[currentOpponent]?.offensive || 0;
+                                } else {
+                                  // Normal: Show team offense vs opponent defense
+                                  teamValue = teamRatings[currentTeam]?.offensive || 0;
+                                  opponentValue = teamRatings[currentOpponent]?.defensive || 0;
+                                }
+                                break;
+                              case 'net_rating':
+                                teamValue = teamRatings[currentTeam]?.net || 0;
+                                opponentValue = teamRatings[currentOpponent]?.net || 0;
+                                break;
+                              case 'pace':
+                                teamValue = getTeamPace(currentTeam);
+                                opponentValue = getTeamPace(currentOpponent);
+                                break;
+                              case 'rebound_pct':
+                                teamValue = getTeamReboundPct(currentTeam);
+                                opponentValue = getTeamReboundPct(currentOpponent);
+                                break;
+                              default:
+                                teamValue = 0;
+                                opponentValue = 0;
+                            }
+                          }
+                          
+                          // For offense vs defense comparison, invert defensive rating for proper comparison
+                          // Lower defensive rating is better defense, so we need to flip the scale
+                          let adjustedOpponentValue = opponentValue;
+                          if (selectedComparison === 'offense_defense') {
+                            // Convert defensive rating to "defensive strength" where higher = better defense
+                            // Use 220 - defensive_rating so that 110 def = 110 strength, creating balanced comparison
+                            adjustedOpponentValue = 220 - opponentValue;
                           }
 
                           if (selectedComparison === 'offense_defense') {
                             isInverted = true; // Lower defensive rating is better
+                          } else if (selectedComparison === 'rebound_pct') {
+                            isInverted = false; // Higher rebound percentage is better
                           }
 
                           const pieData = createTeamComparisonPieData(
                             teamValue,
-                            opponentValue,
-                            selectedTeam,
-                            opponentTeam,
+                            selectedComparison === 'rebound_pct' ? opponentValue : adjustedOpponentValue,
+                            currentTeam,
+                            (propsMode === 'team' && !currentOpponent) ? 'League Avg' : currentOpponent,
                             isInverted,
-                            /* amplify */ (selectedComparison !== 'net_rating' && selectedComparison !== 'offense_defense'),
+                            /* amplify */ (selectedComparison !== 'net_rating'),
                             /* useAbs */ false,
                             /* clampNegatives */ selectedComparison === 'net_rating',
                             /* baseline */ selectedComparison === 'net_rating' ? 1 : (selectedComparison === 'offense_defense' ? 5 : 0),
-                            /* invertOppForShare */ selectedComparison === 'offense_defense',
+                            /* invertOppForShare */ false, // No longer needed since we pre-invert
                             /* invertMax */ selectedComparison === 'offense_defense' ? 180 : 130,
                             /* ampBoost */ selectedComparison === 'rebound_pct' ? 3.0 : (selectedComparison === 'pace' ? 2.0 : 1.0)
                           );
+                          
+                          // Fix display values for offense vs defense to show original ratings
+                          if (selectedComparison === 'offense_defense' && pieData) {
+                            pieData[0].displayValue = teamValue.toFixed(1);
+                            pieData[1].displayValue = opponentValue.toFixed(1);
+                          }
 
-                          // Always draw player's team on LEFT: flip draw order so team slice renders second
-                          const pieDrawData = [pieData?.[1], pieData?.[0]];
+                          // When swapping offense/defense, we need to invert the pie chart values
+                          // so the visual proportions match the swapped comparison
+                          let pieDrawData;
+                          if (selectedComparison === 'offense_defense' && pieChartSwapped && pieData) {
+                            // Invert the pie values for swapped offense/defense comparison
+                            const totalValue = pieData[0].value + pieData[1].value;
+                            const invertedPieData = [
+                              {
+                                ...pieData[0],
+                                value: pieData[1].value, // Swap the visual proportions
+                              },
+                              {
+                                ...pieData[1], 
+                                value: pieData[0].value, // Swap the visual proportions
+                              }
+                            ];
+                            // Always draw player's team on LEFT: flip draw order so team slice renders second
+                            pieDrawData = [invertedPieData[1], invertedPieData[0]];
+                          } else {
+                            // Always draw player's team on LEFT: flip draw order so team slice renders second
+                            pieDrawData = [pieData?.[1], pieData?.[0]];
+                          }
 
                           const teamDisplayRaw = pieData?.[0]?.displayValue ?? '';
                           const oppDisplayRaw = pieData?.[1]?.displayValue ?? '';
@@ -3064,54 +6854,109 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                           // Compute ranks for current comparison
                           let teamRank: number | null = null;
                           let oppRank: number | null = null;
-                          switch (selectedComparison) {
-                            case 'offense_defense':
-                              teamRank = getTeamRank(selectedTeam, 'offensive');
-                              oppRank = getTeamRank(opponentTeam, 'defensive');
-                              break;
-                            case 'net_rating':
-                              teamRank = getTeamRank(selectedTeam, 'net');
-                              oppRank = getTeamRank(opponentTeam, 'net');
-                              break;
-                            case 'pace':
-                              teamRank = getPaceRank(selectedTeam);
-                              oppRank = getPaceRank(opponentTeam);
-                              break;
-                            case 'rebound_pct':
-                              teamRank = getReboundRank(selectedTeam);
-                              oppRank = getReboundRank(opponentTeam);
-                              break;
-                            default:
-                              teamRank = null; oppRank = null;
+                          
+                          if (propsMode === 'team' && !currentOpponent) {
+                            // In Game Props mode without opponent, only show team rank
+                            switch (selectedComparison) {
+                              case 'offense_defense':
+                                if (pieChartSwapped) {
+                                  // Swapped: League avg offense (no rank) vs team defense
+                                  teamRank = null; // No rank for league average
+                                  oppRank = getTeamRank(currentTeam, 'defensive');
+                                } else {
+                                  // Normal: Team offense vs league avg defense (no rank)
+                                  teamRank = getTeamRank(currentTeam, 'offensive');
+                                  oppRank = null; // No opponent rank for league average
+                                }
+                                break;
+                              case 'net_rating':
+                                teamRank = getTeamRank(currentTeam, 'net');
+                                oppRank = null;
+                                break;
+                              case 'pace':
+                                teamRank = getPaceRank(currentTeam);
+                                oppRank = null;
+                                break;
+                              case 'rebound_pct':
+                                teamRank = getReboundRank(currentTeam);
+                                oppRank = null;
+                                break;
+                              default:
+                                teamRank = null; oppRank = null;
+                            }
+                          } else {
+                            // Player Props mode - original logic
+                            switch (selectedComparison) {
+                              case 'offense_defense':
+                                if (pieChartSwapped) {
+                                  // Swapped: Team defense vs opponent offense (keep teams in same position)
+                                  teamRank = getTeamRank(currentTeam, 'defensive');
+                                  oppRank = getTeamRank(currentOpponent, 'offensive');
+                                } else {
+                                  // Normal: Team offense vs opponent defense
+                                  teamRank = getTeamRank(currentTeam, 'offensive');
+                                  oppRank = getTeamRank(currentOpponent, 'defensive');
+                                }
+                                break;
+                              case 'net_rating':
+                                teamRank = getTeamRank(currentTeam, 'net');
+                                oppRank = getTeamRank(currentOpponent, 'net');
+                                break;
+                              case 'pace':
+                                teamRank = getPaceRank(currentTeam);
+                                oppRank = getPaceRank(currentOpponent);
+                                break;
+                              case 'rebound_pct':
+                                teamRank = getReboundRank(currentTeam);
+                                oppRank = getReboundRank(currentOpponent);
+                                break;
+                              default:
+                                teamRank = null; oppRank = null;
+                            }
                           }
 
+                          // Always keep selected team on LEFT, opponent on RIGHT
+                          // Only swap the stats/colors based on what comparison is being made
+                          const leftTeam = currentTeam; // Selected team always on left
+                          const leftDisplay = teamDisplay; // Selected team's current stat display
+                          const leftRank = teamRank; // Selected team's current rank
+                          const leftColor = teamColor; // Color based on advantage
+                          
+                          const rightTeam = currentOpponent; // Opponent always on right
+                          const rightDisplay = oppDisplay; // Opponent's current stat display  
+                          const rightRank = oppRank; // Opponent's current rank
+                          const rightColor = oppColor; // Color based on advantage
+                          
                           return (
                             <div className="w-full">
-                              <div className="flex items-center justify-between h-48 w-full gap-6 md:gap-8">
-                                {/* Left value */}
-                                <div className="w-32 text-right text-sm font-semibold pr-2 md:pr-4" style={{ color: teamColor }}>
-                                  <div className="truncate">{selectedTeam}</div>
-                                  <div>{teamDisplay}</div>
-                                  <div className="text-xs" style={{ color: teamColor, opacity: 0.85 }}>
-                                    {teamRank ? `Rank: ${getOrdinalSuffix(teamRank)}` : 'Rank: —'}
-                                  </div>
-                                </div>
-
-                                {/* Pie */}
-                                <div className="h-44 w-44 md:w-56 md:h-56 flex-shrink-0 select-none"
-                                  onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                  onClickCapture={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                  onMouseUpCapture={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                  style={{ userSelect: 'none' }}
+                              {/* Centered Pie Chart */}
+                              <div className="flex justify-center">
+                                <div className="flex-shrink-0 select-none"
+                                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                  onMouseUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                  onFocus={(e) => { e.preventDefault(); e.target.blur(); }}
+                                  style={{ 
+                                    width: 'min(20vw, 150px)',
+                                    height: 'min(20vw, 150px)',
+                                    minWidth: '100px',
+                                    minHeight: '100px',
+                                    maxWidth: '150px',
+                                    maxHeight: '150px',
+                                    userSelect: 'none', 
+                                    outline: 'none',
+                                    border: 'none',
+                                    boxShadow: 'none'
+                                  }}
                                 >
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
+                                  <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
+                                    <PieChart style={{ outline: 'none', border: 'none' }}>
                                       <Pie
                                         data={pieDrawData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={80}
+                                        innerRadius={"30%"}
+                                        outerRadius={"85%"}
                                         paddingAngle={5}
                                         dataKey="value"
                                         startAngle={90}
@@ -3123,7 +6968,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                                       </Pie>
                                       <Tooltip
                                         contentStyle={getUnifiedTooltipStyle(isDark)}
-                                        wrapperStyle={{ outline: 'none' }}
+                                        wrapperStyle={{ outline: 'none', zIndex: 9999 }}
                                         labelStyle={{ color: '#FFFFFF' }}
                                         itemStyle={{ color: '#FFFFFF' }}
                                         formatter={(value: any, name: string, props: any) => [
@@ -3134,13 +6979,89 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                                     </PieChart>
                                   </ResponsiveContainer>
                                 </div>
+                              </div>
 
-                                {/* Right value */}
-                                <div className="w-28 md:w-32 text-left text-sm font-semibold pl-2 md:pl-4" style={{ color: oppColor }}>
-                                  <div className="truncate">{opponentTeam || 'TBD'}</div>
-                                  <div>{oppDisplay}</div>
-                                  <div className="text-xs" style={{ color: oppColor, opacity: 0.85 }}>
-                                    {oppRank ? `Rank: ${getOrdinalSuffix(oppRank)}` : 'Rank: —'}
+                              {/* Mobile Layout - stats below pie */}
+                              <div className="sm:hidden space-y-4">
+                                {/* Centered Pie */}
+                                <div className="flex justify-center">
+                                  <div className="h-32 w-32 md:h-40 md:w-40 flex-shrink-0 select-none"
+                                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onMouseUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onFocus={(e) => { e.preventDefault(); e.target.blur(); }}
+                                    style={{ 
+                                      userSelect: 'none', 
+                                      outline: 'none',
+                                      border: 'none',
+                                      boxShadow: 'none'
+                                    }}
+                                  >
+                                    <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
+                                      <PieChart style={{ outline: 'none', border: 'none' }}>
+                                        <Pie
+                                          data={pieDrawData}
+                                          cx="50%"
+                                          cy="50%"
+                                          innerRadius={35}
+                                          outerRadius={75}
+                                          paddingAngle={5}
+                                          dataKey="value"
+                                          startAngle={90}
+                                          endAngle={-270}
+                                        >
+                                          {pieDrawData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                          ))}
+                                        </Pie>
+                                        <Tooltip
+                                          contentStyle={getUnifiedTooltipStyle(isDark)}
+                                          wrapperStyle={{ outline: 'none', zIndex: 9999 }}
+                                          labelStyle={{ color: '#FFFFFF' }}
+                                          itemStyle={{ color: '#FFFFFF' }}
+                                          formatter={(value: any, name: string, props: any) => [
+                                            selectedComparison === 'rebound_pct' ? `${props.payload.displayValue}%` : `${props.payload.displayValue}`,
+                                            name
+                                          ]}
+                                        />
+                                      </PieChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
+
+                                {/* Stats Row Below */}
+                                <div className="flex items-center justify-between gap-4">
+                                  {/* Left value - Selected Team */}
+                                  <div className="flex-1 text-center text-sm font-semibold" style={{ color: leftColor }}>
+                                    {/* OFF/DEF label for offense_defense comparison */}
+                                    {selectedComparison === 'offense_defense' && (
+                                      <div className="text-xs font-bold mb-1 text-gray-900 dark:text-white">
+                                        {pieChartSwapped ? 'DEF' : 'OFF'}
+                                      </div>
+                                    )}
+                                    <div className="truncate text-base font-bold">{leftTeam}</div>
+                                    <div className="text-xl font-bold">{leftDisplay}</div>
+                                    <div className="text-xs" style={{ color: leftColor, opacity: 0.85 }}>
+                                      {leftRank ? `Rank: ${getOrdinalSuffix(leftRank)}` : 'Rank: —'}
+                                    </div>
+                                  </div>
+
+                                  {/* VS Separator */}
+                                  <div className="text-gray-400 text-sm font-bold px-2">VS</div>
+
+                                  {/* Right value - Opponent */}
+                                  <div className="flex-1 text-center text-sm font-semibold" style={{ color: rightColor }}>
+                                    {/* OFF/DEF label for offense_defense comparison */}
+                                    {selectedComparison === 'offense_defense' && (
+                                      <div className="text-xs font-bold mb-1 text-gray-900 dark:text-white">
+                                        {pieChartSwapped ? 'OFF' : 'DEF'}
+                                      </div>
+                                    )}
+                                    <div className="truncate text-base font-bold">{(propsMode === 'team' && !currentOpponent) ? 'League Avg' : (rightTeam || 'TBD')}</div>
+                                    <div className="text-xl font-bold">{rightDisplay}</div>
+                                    <div className="text-xs" style={{ color: rightColor, opacity: 0.85 }}>
+                                      {rightRank ? `Rank: ${getOrdinalSuffix(rightRank)}` : ((propsMode === 'team' && !currentOpponent) ? '' : 'Rank: —')}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -3148,13 +7069,13 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                               {/* Dynamic Legend matching slice colors */}
                               <div className="flex items-center justify-center gap-4 text-xs mt-3">
                                 <div className="flex items-center gap-1">
-                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: teamColor }}></div>
-                                  <span className="text-gray-600 dark:text-gray-300">{selectedTeam}</span>
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: leftColor }}></div>
+                                  <span className="text-gray-600 dark:text-gray-300">{leftTeam}</span>
                                 </div>
                                 <div className="text-gray-400">vs</div>
                                 <div className="flex items-center gap-1">
-                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: oppColor }}></div>
-                                  <span className="text-gray-600 dark:text-gray-300">{opponentTeam || 'TBD'}</span>
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: rightColor }}></div>
+                                  <span className="text-gray-600 dark:text-gray-300">{(propsMode === 'team' && !currentOpponent) ? 'League Avg' : (rightTeam || 'TBD')}</span>
                                 </div>
                               </div>
                             </div>
@@ -3173,19 +7094,20 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Advanced Player Stats */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Advanced Analytics</h3>
-              <div className="space-y-4">
-                {advancedStats ? (
-                  <div className="grid grid-cols-2 gap-4">
+            {/* Advanced Player Stats (Desktop) - only in Player Props mode */}
+            {propsMode === 'player' && (
+              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
+                </div>
+              {advancedStats ? (
+                  <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
                     {/* Left Column: Offensive & Defensive */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 md:space-y-4">
                       {/* Offensive Metrics */}
                       <div>
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
+                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
                         <div className="space-y-1">
                           <StatTooltip statName="OFF RTG" value={
                             <span className={`text-xs font-semibold ${
@@ -3228,7 +7150,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
 
                       {/* Defensive Metrics */}
                       <div>
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Defensive</h4>
+                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Defensive</h4>
                         <div className="space-y-1">
                           <StatTooltip statName="DEF RTG" value={
                             <span className={`text-xs font-semibold ${
@@ -3238,7 +7160,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                             }`}>
                               {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
                             </span>
-                          } definition="Points allowed per 100 possessions. NBA avg: 112. Elite: ≤108" />
+                          } definition="Points allowed per 100 possessions. NBA avg: 112. Elite: &le;108" />
                           <StatTooltip statName="DREB%" value={
                             <span className={`text-xs font-semibold ${
                               !advancedStats.defensive_rebound_percentage ? 'text-gray-400' :
@@ -3253,10 +7175,10 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                     </div>
 
                     {/* Right Column: Impact, Rebounding, Playmaking */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 md:space-y-4">
                       {/* Overall Impact */}
                       <div>
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact</h4>
+                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact</h4>
                         <div className="space-y-1">
                           <StatTooltip statName="NET RTG" value={
                             <span className={`text-xs font-semibold ${
@@ -3290,7 +7212,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
 
                       {/* Rebounding Metrics */}
                       <div>
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding</h4>
+                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding</h4>
                         <div className="space-y-1">
                           <StatTooltip statName="REB%" value={
                             <span className={`text-xs font-semibold ${
@@ -3315,7 +7237,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
 
                       {/* Playmaking Metrics */}
                       <div>
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Playmaking</h4>
+                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Playmaking</h4>
                         <div className="space-y-1">
                           <StatTooltip statName="AST%" value={
                             <span className={`text-xs font-semibold ${
@@ -3343,7 +7265,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                             }`}>
                               {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
                             </span>
-                          } definition="Assists ÷ turnovers. NBA avg: 1.8. Elite: 2.0+" />
+                          } definition="Assists &divide; turnovers. NBA avg: 1.8. Elite: 2.0+" />
                           <StatTooltip statName="TO RATIO" value={
                             <span className={`text-xs font-semibold ${
                               !advancedStats.turnover_ratio ? 'text-gray-400' :
@@ -3352,7 +7274,7 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                             }`}>
                               {advancedStats.turnover_ratio?.toFixed(1) || 'N/A'}
                             </span>
-                          } definition="Turnovers per 100 possessions. NBA avg: 14. Elite: ≤12" />
+                          } definition="Turnovers per 100 possessions. NBA avg: 14. Elite: &le;12" />
                         </div>
                       </div>
                     </div>
@@ -3367,16 +7289,22 @@ className="flex-[7] min-w-0 min-h-0 flex flex-col gap-6 overflow-y-auto pr-4 ove
                   </div>
                 )}
               </div>
+            )}
+            
+            {/* ESP Injury Report (Desktop) - always visible in both modes */}
+            <div className="hidden lg:block">
+              <InjuryContainer
+                selectedTeam={propsMode === 'team' ? (gamePropsTeam && gamePropsTeam !== 'N/A' ? gamePropsTeam : '') : selectedTeam}
+                opponentTeam={opponentTeam}
+                isDark={isDark}
+              />
+            </div>
             </div>
 
-            {/* ESPN Injury Report */}
-            <InjuryContainer
-              selectedTeam={selectedTeam}
-              opponentTeam={opponentTeam}
-              isDark={isDark}
-            />
-          </div>
 
+          </div>
+          
+        </div>
         </div>
       </div>
     </div>
