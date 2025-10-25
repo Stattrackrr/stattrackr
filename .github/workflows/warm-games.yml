@@ -1,0 +1,29 @@
+name: Warm Games Cache
+
+on:
+  schedule:
+    # 07:30 and 09:30 UTC ≈ 03:30 and 05:30 ET during EDT
+    - cron: '30 7,9 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+    steps:
+      - name: Compute seasons
+        id: seasons
+        run: |
+          CURR=$(date -u +%Y)
+          echo "CURR=$CURR" >> $GITHUB_ENV
+      - name: Skip if PROD_URL not set
+        if: env.PROD_URL == ''
+        run: |
+          echo "PROD_URL secret is not set; skipping warm-games." && exit 0
+      - name: Warm current season
+        if: env.PROD_URL != ''
+        env:
+          CURR: ${{ env.CURR }}
+        run: |
+curl -sSL -X POST "$PROD_URL/api/cache/warm-games?seasons[]=$CURR&per_page=100" -H 'Accept: application/json' || true

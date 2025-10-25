@@ -1,0 +1,28 @@
+name: Nightly DvP Ingest
+
+on:
+  schedule:
+    # 08:30 and 10:30 UTC (~04:30 and 06:30 ET during EDT)
+    - cron: '30 8,10 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+    steps:
+      - name: Skip if PROD_URL not set
+        if: env.PROD_URL == ''
+        run: |
+          echo "PROD_URL secret is not set; skipping DvP ingest." && exit 0
+
+      - name: Trigger ingest-nba-all (depth-chart based)
+        if: env.PROD_URL != ''
+        run: |
+curl -sSL "$PROD_URL/api/dvp/ingest-nba-all?season=$(date -u +%Y)&games=82&refresh=1" -H 'Accept: application/json' || true
+
+      - name: Trigger legacy ingest-all (bdl+nba fallback)
+        if: env.PROD_URL != ''
+        run: |
+curl -sSL "$PROD_URL/api/dvp/ingest-all?season=$(date -u +%Y)&games=82&refresh=1" -H 'Accept: application/json' || true
