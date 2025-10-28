@@ -1,9 +1,9 @@
 name: Warm Games Cache
 
 on:
-  schedule:
-    # 07:30 and 09:30 UTC ≈ 03:30 and 05:30 ET during EDT
-    - cron: '30 7,9 * * *'
+  # schedule:
+  #   # 07:30 and 09:30 UTC ≈ 03:30 and 05:30 ET during EDT
+  #   - cron: '30 7,9 * * *'
   workflow_dispatch: {}
 
 jobs:

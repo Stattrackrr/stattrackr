@@ -1,9 +1,9 @@
 name: Nightly DvP Ingest
 
 on:
-  schedule:
-    # 08:30 and 10:30 UTC (~04:30 and 06:30 ET during EDT)
-    - cron: '30 8,10 * * *'
+  # schedule:
+  #   # 08:30 and 10:30 UTC (~04:30 and 06:30 ET during EDT)
+  #   - cron: '30 8,10 * * *'
   workflow_dispatch: {}
 
 jobs:
