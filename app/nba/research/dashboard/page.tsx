@@ -18,6 +18,8 @@ import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
 import ShotChart from './ShotChart';
+import TrackPlayerModal from '@/components/TrackPlayerModal';
+import AddToJournalModal from '@/components/AddToJournalModal';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -1995,10 +1997,10 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     updateOverRatePillFast(bettingLine);
   }, [updateOverRatePillFast, bettingLine]);
-    const StatPills = useMemo(() => (
-      <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0 ml-2 sm:ml-0">
+   const StatPills = useMemo(() => (
+      <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0">
         <div
-          className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x pl-2 sm:pl-0 custom-scrollbar"
+          className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x custom-scrollbar"
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1">
             {currentStatOptions.map((s: any) => (
@@ -2094,7 +2096,7 @@ const ChartControls = function ChartControls({
           {/* Top row: Line input (left), Over Rate (center-left), Team vs + Timeframes (right) */}
           <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3">
             {/* Left: line input */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 -mt-1 sm:mt-0 ml-2 sm:ml-4 md:ml-8 lg:ml-10">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 -mt-1 sm:mt-0">
               <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Line:</label>
               <input
                 id="betting-line-input"
@@ -3741,6 +3743,15 @@ function NBADashboardContent() {
   
   // Pie chart display order (only affects visual display, not underlying data)
   const [pieChartSwapped, setPieChartSwapped] = useState(false);
+  
+  // Tracking modals state
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [showJournalModal, setShowJournalModal] = useState(false);
+  
+  // Next game info for tracking (separate from chart filter)
+  const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
+  const [nextGameDate, setNextGameDate] = useState<string>('');
+  const [isGameInProgress, setIsGameInProgress] = useState(false);
 
 
   // Team game data cache for instant loading
@@ -4040,9 +4051,15 @@ function NBADashboardContent() {
   }, []);
 
   // When a team's game goes Final, immediately switch VS to next opponent (or ALL if none)
+  // Also track next game for prop tracking/journal
   useEffect(() => {
     const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-    if (!teamToCheck || teamToCheck === 'N/A' || todaysGames.length === 0) return;
+    if (!teamToCheck || teamToCheck === 'N/A' || todaysGames.length === 0) {
+      setNextGameOpponent('');
+      setNextGameDate('');
+      setIsGameInProgress(false);
+      return;
+    }
 
     const normTeam = normalizeAbbr(teamToCheck);
     const now = Date.now();
@@ -4054,7 +4071,56 @@ function NBADashboardContent() {
       return home === normTeam || away === normTeam;
     });
 
-    // If any game is Final today, pick the next future game as opponent
+    // Find next game (sorted by time)
+    const nextGame = teamGames
+      .map((g: any) => ({ 
+        g, 
+        t: new Date(g.date || 0).getTime(), 
+        status: String(g.status || '').toLowerCase() 
+      }))
+      .sort((a, b) => a.t - b.t)
+      .find(({ status }) => !status.includes('final') && !status.includes('completed'));
+    
+    if (nextGame) {
+      const home = normalizeAbbr(nextGame.g?.home_team?.abbreviation || '');
+      const away = normalizeAbbr(nextGame.g?.visitor_team?.abbreviation || '');
+      const opponent = normTeam === home ? away : home;
+      const gameDate = nextGame.g?.date ? new Date(nextGame.g.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      
+      // Check if game is in progress (game time passed but not final)
+      const status = nextGame.status;
+      
+      // API sometimes returns date strings as status - ignore these
+      const isDateStatus = status.includes('T') || status.includes('+') || status.match(/\d{4}-\d{2}-\d{2}/);
+      const gameStarted = nextGame.t <= now; // Game time has actually passed
+      
+      // Only mark as in progress if:
+      // 1. Game time has passed
+      // 2. Status is NOT empty, 'scheduled', or a date string
+      // 3. Status doesn't include 'final' or 'completed'
+      const inProgress = !isDateStatus && gameStarted && status !== '' && status !== 'scheduled' && !status.includes('final') && !status.includes('completed');
+      
+      console.log('Game progress check:', { 
+        opponent, 
+        gameDate, 
+        status, 
+        isDateStatus,
+        gameTime: new Date(nextGame.t).toISOString(), 
+        now: new Date(now).toISOString(),
+        gameStarted, 
+        inProgress 
+      });
+      
+      setNextGameOpponent(opponent || '');
+      setNextGameDate(gameDate);
+      setIsGameInProgress(inProgress);
+    } else {
+      setNextGameOpponent('');
+      setNextGameDate('');
+      setIsGameInProgress(false);
+    }
+
+    // If any game is Final today, pick the next future game as opponent FOR CHART FILTER
     const hasFinalToday = teamGames.some((g: any) => String(g.status).toLowerCase().includes('final'));
     if (hasFinalToday) {
       const upcoming = teamGames
@@ -5525,6 +5591,7 @@ function NBADashboardContent() {
 @media (min-width: 1024px) {
           .dashboard-container {
             --sidebar-width: 340px;
+            --right-panel-width: 340px;
           }
         }
         
@@ -5532,6 +5599,7 @@ function NBADashboardContent() {
           .dashboard-container {
             --sidebar-margin: 0px;
             --sidebar-width: 400px;
+            --right-panel-width: 400px;
             --content-margin-right: 0px;
             --content-padding-left: 0px;
             --content-padding-right: 0px;
@@ -5542,6 +5610,7 @@ function NBADashboardContent() {
           .dashboard-container {
             --sidebar-margin: 0px;
             --sidebar-width: 460px;
+            --right-panel-width: 460px;
             --content-margin-right: 0px;
             --content-padding-left: 0px;
             --content-padding-right: 0px;
@@ -5550,7 +5619,7 @@ function NBADashboardContent() {
 
         /* Mobile-only: reduce outer gap to tighten left/right padding */
         @media (max-width: 639px) {
-          .dashboard-container { --gap: 1px; }
+          .dashboard-container { --gap: 6px; }
         }
 
         /* Custom scrollbar colors for light/dark mode */
@@ -5613,18 +5682,19 @@ function NBADashboardContent() {
         }
       `}</style>
       {/* Main layout container with sidebar, chart, and right panel */}
-      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 6px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 6px)))' }}>
-        <div className="mx-auto w-full max-w-[1440px]">
+      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 6px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 6px)))', paddingLeft: 0 }}>
+        <div className="mx-auto w-full max-w-[1440px]" style={{ paddingLeft: 0 }}>
           <div 
             className="pt-4 min-h-0 lg:h-full dashboard-container"
+            style={{ paddingLeft: 0 }}
           >
         <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-<div className="flex flex-col lg:flex-row gap-0 lg:gap-0 xl:gap-0 min-h-0" style={{}}>
+<div className="flex flex-col lg:flex-row gap-0 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
-className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain pr-0 md:pr-2 lg:pr-1 lg:pl-0 xl:pl-1 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar"
+ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar"
             style={{
-              scrollbarGutter: 'stable both-edges'
+              scrollbarGutter: 'stable'
             }}
           >
             {/* 1. Filter By Container (Mobile First) */}
@@ -5719,8 +5789,9 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
             </div>
 
             {/* Header (with search bar and team display) */}
-<div className="relative z-[60] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-28 md:h-32 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
-              <div className="flex items-center justify-between h-full">
+<div className="relative z-[60] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-36 md:h-40 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
+              <div className="flex flex-col h-full gap-3">
+              <div className="flex items-center justify-between flex-1">
                 <div className="flex-shrink-0">
                   {propsMode === 'team' ? (
                     // Game Props mode - show team or prompt
@@ -5949,8 +6020,8 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
                 {/* Team vs Team Display - Dynamic based on props mode */}
                 <div className="flex-shrink-0">
                   {propsMode === 'player' ? (
-                    // Player Props Mode - Show player's team vs opponent
-                    selectedTeam && opponentTeam && selectedTeam !== 'N/A' && opponentTeam !== '' ? (
+                    // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
+                    selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
                       <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
                         {/* Player Team */}
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -5977,26 +6048,26 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
                         {/* VS */}
                         <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
                         
-                        {/* Opponent Team */}
+                        {/* Next Game Opponent */}
                         <div className="flex items-center gap-1.5 min-w-0">
                           <img 
-                            src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
-                            alt={opponentTeam}
+                            src={getEspnLogoUrl(nextGameOpponent)}
+                            alt={nextGameOpponent}
                             className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
                             onError={(e) => {
                               // Advance through ESPN candidates exactly once per team to avoid flicker
-                              const candidates = getEspnLogoCandidates(opponentTeam);
+                              const candidates = getEspnLogoCandidates(nextGameOpponent);
                               const next = opponentTeamLogoAttempt + 1;
                               if (next < candidates.length) {
                                 setOpponentTeamLogoAttempt(next);
-                                setOpponentTeamLogoUrl(candidates[next]);
+                                e.currentTarget.src = candidates[next];
                               } else {
                                 // No more candidates; stop retrying
                                 e.currentTarget.onerror = null;
                               }
                             }}
                           />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{opponentTeam}</span>
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{nextGameOpponent}</span>
                         </div>
                       </div>
                     ) : (
@@ -6074,6 +6145,44 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
                     )
                   )}
                 </div>
+              </div>
+              
+              {/* Tracking Buttons - Only show in Player Props mode when player is selected */}
+              {propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A' && (
+                <div className="flex gap-2 px-0">
+                  <button
+                    onClick={() => !isGameInProgress && setShowTrackModal(true)}
+                    disabled={isGameInProgress}
+                    className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                      isGameInProgress 
+                        ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                    title={isGameInProgress ? 'Game in progress - tracking disabled' : 'Track player prop'}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Track
+                  </button>
+                  <button
+                    onClick={() => !isGameInProgress && setShowJournalModal(true)}
+                    disabled={isGameInProgress}
+                    className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                      isGameInProgress 
+                        ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
+                    title={isGameInProgress ? 'Game in progress - journal disabled' : 'Add to journal'}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Journal
+                  </button>
+                </div>
+              )}
               </div>
             </div>
 
@@ -6831,7 +6940,7 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
 
           {/* Right Panel - Mobile: Single column containers, Desktop: Right sidebar */}
           <div 
-className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:pl-0 xl:pl-0 lg:pr-1 xl:pr-2 fade-scrollbar custom-scrollbar"
+ className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto px-0 fade-scrollbar custom-scrollbar"
           >
 
             {/* Filter By Container (Desktop - in right panel) */}
@@ -7663,6 +7772,32 @@ className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:
         </div>
         </div>
       </div>
+      
+      {/* Tracking Modals */}
+      {selectedPlayer && opponentTeam && (
+        <>
+          <TrackPlayerModal
+            isOpen={showTrackModal}
+            onClose={() => setShowTrackModal(false)}
+            playerName={selectedPlayer.full}
+            playerId={String(selectedPlayer.id)}
+            team={selectedTeam}
+            opponent={nextGameOpponent}
+            gameDate={nextGameDate}
+            oddsFormat={oddsFormat}
+          />
+          <AddToJournalModal
+            isOpen={showJournalModal}
+            onClose={() => setShowJournalModal(false)}
+            playerName={selectedPlayer.full}
+            playerId={String(selectedPlayer.id)}
+            team={selectedTeam}
+            opponent={nextGameOpponent}
+            gameDate={nextGameDate}
+            oddsFormat={oddsFormat}
+          />
+        </>
+      )}
     </div>
   );
 }

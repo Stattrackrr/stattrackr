@@ -31,6 +31,9 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import Navigation from "@/components/navigation";
+import LeftSidebar from "@/components/LeftSidebar";
+import RightSidebar from "@/components/RightSidebar";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 /* =========================================================
    StatTrackr Journal – Full Page
@@ -136,8 +139,8 @@ type Bet = {
   result: (typeof RESULTS)[number];
 };
 
-const NAVY_DARK = "bg-[#050f1f] text-white";
-const NAVY_CARD = "bg-[#0b1d3a] text-white";
+const NAVY_DARK = "bg-gray-900 text-white";
+const NAVY_CARD = "bg-gray-800 text-white";
 const LIGHT_BG = "bg-white text-slate-900";
 const LIGHT_CARD = "bg-slate-50 text-slate-900";
 
@@ -360,6 +363,9 @@ function JournalPageContent() {
   const [graphSport, setGraphSport] = useState<"All" | (typeof SPORTS)[number]>("All");
   const [plMode, setPlMode] = useState<"cumulative" | "perBet">("cumulative");
   const [currencyFilter, setCurrencyFilter] = useState<Currency | "All">("AUD");
+  
+  // Odds format state for sidebar
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
 
   const [calView, setCalView] = useState<"Days" | "Weeks" | "Months" | "Years">("Days");
   const [anchorDate, setAnchorDate] = useState<Date | null>(null);
@@ -697,14 +703,113 @@ function JournalPageContent() {
   };
 
   return (
-    <div className={`${bg} min-h-[100dvh]`}>
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+    <div className={`${bg} min-h-screen lg:h-screen transition-colors lg:overflow-hidden`}>
+      <style jsx global>{`
+        .journal-container {
+          --sidebar-margin: 0px;
+          --sidebar-width: 0px;
+          --gap: 6px;
+          --right-panel-width: 0px;
+          --inner-max: 1440px;
+          --app-max: calc(var(--sidebar-width) + var(--gap) + var(--inner-max) + var(--gap) + var(--right-panel-width));
+          --content-margin-right: 0px;
+          --content-padding-left: 0px;
+          --content-padding-right: 0px;
+        }
+
+        @media (min-width: 1024px) {
+          .journal-container {
+            --sidebar-width: 340px;
+            --right-panel-width: 280px;
+          }
+        }
+        
+        @media (min-width: 1500px) {
+          .journal-container {
+            --sidebar-margin: 0px;
+            --sidebar-width: 400px;
+            --right-panel-width: 320px;
+            --content-margin-right: 0px;
+            --content-padding-left: 0px;
+            --content-padding-right: 0px;
+          }
+        }
+        
+        @media (min-width: 2200px) {
+          .journal-container {
+            --sidebar-margin: 0px;
+            --sidebar-width: 460px;
+            --right-panel-width: 360px;
+            --content-margin-right: 0px;
+            --content-padding-left: 0px;
+            --content-padding-right: 0px;
+          }
+        }
+
+        /* Mobile-only: reduce outer gap to tighten left/right padding */
+        @media (max-width: 639px) {
+          .journal-container { --gap: 6px; }
+        }
+
+        /* Custom scrollbar colors for light/dark mode */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
+        
+        .dark .custom-scrollbar {
+          scrollbar-color: #4b5563 transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #d1d5db;
+          border-radius: 8px;
+        }
+        
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #4b5563;
+        }
+
+        /* Desktop scrollbar styling: fade until hovered */
+        @media (hover: hover) and (pointer: fine) {
+          .fade-scrollbar { scrollbar-color: transparent transparent; }
+          .fade-scrollbar:hover { scrollbar-color: #9ca3af1a transparent; }
+          .fade-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+          .fade-scrollbar::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; }
+          .fade-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.2); }
+        }
+      `}</style>
+      
+      <div 
+        className="px-0 journal-container" 
+        style={{ 
+          marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 6px))', 
+          marginRight: 'calc(var(--right-panel-width, 0px) + var(--gap, 6px))',
+          width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 6px) + var(--right-panel-width, 0px) + var(--gap, 6px)))' 
+        }}
+      >
+        <div className="mx-auto w-full max-w-[1440px]">
+          <div className="pt-4 min-h-0 lg:h-full journal-container">
+            <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+            <RightSidebar />
+            <div
+              className="relative z-50 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-3 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar"
+              style={{ scrollbarGutter: 'stable both-edges' }}
+            >
         {/* Header */}
-        <header className="flex items-center justify-between gap-4 mb-8">
+<header className="flex items-center justify-between gap-3 mb-4">
           {/* LEFT: Brand + tagline with logo */}
           <div>
-            <div className="flex items-center gap-3 mb-2">
+<div className="flex items-center gap-2 mb-1.5">
               <StatTrackrLogoWithText 
                 logoSize="w-10 h-10" 
                 textSize="text-2xl md:text-3xl" 
@@ -766,7 +871,7 @@ function JournalPageContent() {
                 <div
                   role="menu"
                   className={`absolute right-0 mt-2 w-56 rounded-xl border z-50 ${
-                    themeDark ? "border-white/10 bg-[#0b1d3a] text-white" : "border-slate-200 bg-white text-slate-900"
+                  themeDark ? "border-white/10 bg-gray-800 text-white" : "border-slate-200 bg-white text-slate-900"
                   } shadow-2xl overflow-hidden`}
                 >
                   <button
@@ -807,8 +912,8 @@ function JournalPageContent() {
         </header>
 
         {/* Filters */}
-        <section className={`rounded-2xl ${card} shadow-lg border ${border} backdrop-blur-sm`}>
-          <div className="px-4 py-3 space-y-3">
+<section className={`rounded-xl ${card} shadow-lg border ${border} backdrop-blur-sm`}>
+<div className="px-3 py-2 space-y-2">
             {/* Header */}
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 opacity-70" />
@@ -842,7 +947,7 @@ function JournalPageContent() {
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
                   className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
-                    themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"
+                    themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"
                   }`}
                   aria-label="Custom start date"
                 />
@@ -852,7 +957,7 @@ function JournalPageContent() {
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
                   className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
-                    themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"
+                    themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"
                   }`}
                   aria-label="Custom end date"
                 />
@@ -860,12 +965,12 @@ function JournalPageContent() {
             )}
 
             {/* Additional filters - Mobile stacked */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* Currency */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs opacity-80">Currency</label>
                 <select
-                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                   value={currencyFilter}
                   onChange={(e) => {
                     const v = e.target.value as any;
@@ -886,7 +991,7 @@ function JournalPageContent() {
               <div className="flex flex-col gap-1">
                 <label className="text-xs opacity-80">Sport</label>
                 <select
-                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                   value={sportFilter}
                   onChange={(e) => setSportFilter(e.target.value as any)}
                 >
@@ -901,7 +1006,7 @@ function JournalPageContent() {
               <div className="flex flex-col gap-1">
                 <label className="text-xs opacity-80">Result</label>
                 <select
-                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                  className={`h-9 px-2 rounded-lg border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                   value={resultFilter}
                   onChange={(e) => setResultFilter(e.target.value as any)}
                 >
@@ -916,10 +1021,10 @@ function JournalPageContent() {
         </section>
 
         {/* ===== Stats row - Mobile friendly ===== */}
-        <section className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+<section className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-3">
           <StatCard className={card + " border " + border} icon={<TrendingUp className="w-5 h-5" />} label={`P&L (${showCCY})`} value={formatCurrency(stats.pnl, showCCY)} emphasis={stats.pnl} />
 
-          <div className={card + " border " + border + " rounded-2xl p-4 shadow-sm"}>
+<div className={card + " border " + border + " rounded-xl p-3 shadow-sm"}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm opacity-80">ROI</span>
               <BarChart3 className="opacity-80 w-4 h-4" />
@@ -931,7 +1036,7 @@ function JournalPageContent() {
           <StatCard className={card + " border " + border} icon={<BarChart3 className="w-5 h-5" />} label="Win rate" value={`${stats.winRate.toFixed(2)}%`} />
           <StatCard className={card + " border " + border} icon={<CalendarDays className="w-5 h-5" />} label={`Total staked (${showCCY})`} value={formatCurrency(stats.staked, showCCY)} />
 
-          <div className={card + " border " + border + " rounded-2xl p-4 shadow-sm"}>
+<div className={card + " border " + border + " rounded-xl p-3 shadow-sm"}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm opacity-80">Streaks</span>
             </div>
@@ -943,9 +1048,9 @@ function JournalPageContent() {
         </section>
 
         {/* ===== Mobile-friendly layout ===== */}
-        <section className="mt-4 space-y-4">
+<section className="mt-3 space-y-2">
           {/* Mobile: Add Bet - Full Width */}
-          <div className={`xl:hidden rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+<div className={`xl:hidden rounded-xl p-3 ${card} shadow-sm border ${border}`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">Add Bet</h3>
             </div>
@@ -992,9 +1097,9 @@ function JournalPageContent() {
           </div>
 
           {/* Desktop Layout */}
-          <div className="hidden xl:grid xl:grid-cols-4 xl:gap-4 xl:items-start">
+<div className="hidden xl:grid xl:grid-cols-4 xl:gap-2 xl:items-start">
             {/* Add Bet - Desktop */}
-            <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+<div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold">Add Bet</h3>
               </div>
@@ -1041,9 +1146,9 @@ function JournalPageContent() {
             </div>
 
             {/* Center: Chart + Profit by Sport */}
-            <div className="xl:col-span-2 flex flex-col gap-4">
+<div className="xl:col-span-2 flex flex-col gap-2">
               {/* Chart */}
-              <div className={`relative rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+<div className={`relative rounded-xl p-3 ${card} shadow-sm border ${border}`}>
               <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                 <div className="flex flex-col gap-1">
                   <h3 className="font-semibold">Performance ({windowLabel})</h3>
@@ -1054,7 +1159,7 @@ function JournalPageContent() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-xs opacity-80">Sport</label>
                   <select
-                    className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                    className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                     value={graphSport}
                     onChange={(e) => setGraphSport(e.target.value as any)}
                   >
@@ -1091,7 +1196,7 @@ function JournalPageContent() {
             </div>
 
             {/* Profit by Sport */}
-            <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+            <div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">Profit by Sport</h3>
                 <div className="text-xs opacity-70">Best: {bySport.best ?? "-"} • Worst: {bySport.worst ?? "-"}</div>
@@ -1119,8 +1224,8 @@ function JournalPageContent() {
           </div>
 
             {/* Right: Calendar + Market - Desktop */}
-            <div className="flex flex-col gap-4">
-              <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+            <div className="flex flex-col gap-2">
+              <div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
               <div className="flex gap-1 mb-2 flex-wrap">
                 {(["Days", "Weeks", "Months", "Years"] as const).map((v) => (
                   <button
@@ -1187,7 +1292,7 @@ function JournalPageContent() {
               )}
             </div>
 
-            <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+            <div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">
                   {hasAnyProfit ? "Profit by Market" : hasAnyLoss ? "Loss by Market" : "Profit by Market"}
@@ -1198,7 +1303,7 @@ function JournalPageContent() {
               </div>
 
               {hasAnyProfit && (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="w-full h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -1329,11 +1434,11 @@ function JournalPageContent() {
           </div>
           
           {/* Mobile Layout - Stacked */}
-          <div className="xl:hidden space-y-4">
+          <div className="xl:hidden space-y-2">
             {/* Chart + Profit by Sport - Mobile */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               {/* Chart */}
-              <div className={`relative rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+              <div className={`relative rounded-xl p-3 ${card} shadow-sm border ${border}`}>
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <div className="flex flex-col gap-1">
                     <h3 className="font-semibold">Performance ({windowLabel})</h3>
@@ -1344,7 +1449,7 @@ function JournalPageContent() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <label className="text-xs opacity-80">Sport</label>
                     <select
-                      className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                      className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                       value={graphSport}
                       onChange={(e) => setGraphSport(e.target.value as any)}
                     >
@@ -1381,7 +1486,7 @@ function JournalPageContent() {
               </div>
 
               {/* Profit by Sport - Mobile */}
-              <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+              <div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold">Profit by Sport</h3>
                   <div className="text-xs opacity-70">Best: {bySport.best ?? "-"} • Worst: {bySport.worst ?? "-"}</div>
@@ -1409,8 +1514,8 @@ function JournalPageContent() {
             </div>
 
             {/* Calendar + Market - Mobile - Side by side on mobile */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`rounded-2xl p-4 ${card} shadow-sm border ${border}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`rounded-xl p-3 ${card} shadow-sm border ${border}`}>
                 <div className="flex gap-1 mb-2 flex-wrap">
                   {(["Days", "Weeks", "Months", "Years"] as const).map((v) => (
                     <button
@@ -1620,7 +1725,7 @@ function JournalPageContent() {
         </section>
 
         {/* ===== History ===== */}
-        <section className={`mt-4 rounded-2xl ${card} shadow-sm overflow-hidden border ${border}`}>
+        <section className={`mt-3 rounded-xl ${card} shadow-sm overflow-hidden border ${border}`}>
           <div className="px-4 py-3 border-b border-white/10">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">Bets</h3>
@@ -1680,7 +1785,7 @@ function JournalPageContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full h-10 pl-10 pr-4 rounded-xl border ${border} transition-colors duration-200 focus:ring-2 focus:ring-emerald-400 focus:border-transparent ${
-                  themeDark ? "bg-[#0b1d3a] text-white placeholder-white/60" : "bg-white text-slate-900 placeholder-slate-400"
+                  themeDark ? "bg-gray-800 text-white placeholder-white/60" : "bg-white text-slate-900 placeholder-slate-400"
                 }`}
               />
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -1714,7 +1819,7 @@ function JournalPageContent() {
               const payout = b.result === "win" ? stake * odds : b.result === "loss" ? 0 : stake;
               const profit = b.result === "win" ? stake * odds - stake : b.result === "loss" ? -stake : 0;
               return (
-                <div key={b.id} className={`rounded-xl p-4 ${themeDark ? "bg-[#0b1d3a]" : "bg-slate-50"} border ${border}`}>
+                <div key={b.id} className={`rounded-xl p-3 ${themeDark ? "bg-gray-800" : "bg-slate-50"} border ${border}`}>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm mb-1">{b.selection}</div>
@@ -1799,7 +1904,7 @@ function JournalPageContent() {
           {/* Desktop: Table view */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className={themeDark ? "bg-[#0c244a]" : "bg-slate-100"}>
+              <thead className={themeDark ? "bg-gray-800/50" : "bg-slate-100"}>
                 <tr className="text-left">
                   <Th>Date</Th>
                   <Th>Sport</Th>
@@ -1916,6 +2021,9 @@ function JournalPageContent() {
             </table>
           </div>
         </section>
+            </div>
+          </div>
+        </div>
       </div>
 
       {chartFull && (
@@ -1935,7 +2043,7 @@ function JournalPageContent() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <select
-                  className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-[#0b1d3a] text-white" : "bg-white text-slate-900"}`}
+                  className={`h-9 px-2 rounded-lg border ${border} ${themeDark ? "bg-gray-800 text-white" : "bg-white text-slate-900"}`}
                   value={graphSport}
                   onChange={(e) => setGraphSport(e.target.value as any)}
                 >
@@ -2119,13 +2227,13 @@ function InlineAddBet({
 
   const inputBase = `w-full h-12 px-3 rounded-xl border ${
     themeDark
-      ? "bg-[#0b1d3a] border-white/20 text-white placeholder-white/60"
+      ? "bg-gray-800 border-white/20 text-white placeholder-white/60"
       : "bg-white border-slate-300 text-slate-900 placeholder-slate-400"
   }`;
   const selectBase = inputBase + " appearance-none";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       {justAdded && (
         <div role="status" className="text-xs rounded-lg px-3 py-2 bg-emerald-500/15 text-emerald-200 border border-emerald-400/30">
           Added!
@@ -2167,7 +2275,7 @@ function InlineAddBet({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <label className="text-xs opacity-80 block mb-1">Stake</label>
           <div className="grid grid-rows-2 gap-2">
@@ -2253,7 +2361,7 @@ function EditBetDialog({
 
   const inputBase = `w-full h-11 px-3 rounded-xl border ${
     themeDark
-      ? "bg-[#0b1d3a] border-white/20 text-white placeholder-white/60"
+      ? "bg-gray-800 border-white/20 text-white placeholder-white/60"
       : "bg-white border-slate-300 text-slate-900 placeholder-slate-400"
   }`;
   const selectBase = inputBase + " appearance-none";
@@ -2425,7 +2533,7 @@ function MiniCalendar({
           const color =
             pnl > 0 ? "bg-emerald-600 text-white"
             : pnl < 0 ? "bg-rose-600 text-white"
-            : themeDark ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-900";
+            : themeDark ? "bg-gray-700 text-white" : "bg-slate-200 text-slate-900";
 
           return (
             <button
@@ -2512,7 +2620,7 @@ function YearWeeks({
             showFirstHalf
               ? "bg-emerald-500 text-white shadow-md"
               : themeDark
-              ? "bg-black/20 text-white hover:bg-black/40"
+              ? "bg-gray-700 text-white hover:bg-gray-600"
               : "bg-white text-slate-900 hover:bg-slate-50 border border-slate-200"
           }`}
         >
@@ -2524,7 +2632,7 @@ function YearWeeks({
             !showFirstHalf
               ? "bg-emerald-500 text-white shadow-md"
               : themeDark
-              ? "bg-black/20 text-white hover:bg-black/40"
+              ? "bg-gray-700 text-white hover:bg-gray-600"
               : "bg-white text-slate-900 hover:bg-slate-50 border border-slate-200"
           }`}
         >
@@ -2539,7 +2647,7 @@ function YearWeeks({
           const color =
             pnl > 0 ? "bg-emerald-600 text-white"
             : pnl < 0 ? "bg-rose-600 text-white"
-            : themeDark ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-900";
+            : themeDark ? "bg-gray-700 text-white" : "bg-slate-200 text-slate-900";
           const selected = selectedWeekKey === key;
           return (
             <button
@@ -2608,7 +2716,7 @@ function YearMonths({
           const color =
             pnl > 0 ? "bg-emerald-600 text-white"
             : pnl < 0 ? "bg-rose-600 text-white"
-            : themeDark ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-900";
+            : themeDark ? "bg-gray-700 text-white" : "bg-slate-200 text-slate-900";
           const selected = selectedMonthKey === key;
           return (
             <button
@@ -2651,7 +2759,7 @@ function YearGrid({
         const color =
           pnl > 0 ? "bg-emerald-600 text-white"
           : pnl < 0 ? "bg-rose-600 text-white"
-          : themeDark ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-900";
+          : themeDark ? "bg-gray-700 text-white" : "bg-slate-200 text-slate-900";
         const selected = selectedYear === key;
         return (
           <button
@@ -2761,7 +2869,7 @@ function StatCard({
   const positive = (emphasis ?? 0) > 0;
   const negative = (emphasis ?? 0) < 0;
   return (
-    <div className={`${className} rounded-2xl p-4 shadow-sm`}>
+    <div className={`${className} rounded-xl p-3 shadow-sm`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm opacity-80">{label}</span>
         {icon}
@@ -2826,9 +2934,11 @@ const ColoredTooltip = (props: any) => {
 // Wrapper with Suspense for useSearchParams
 export default function JournalPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-      <JournalPageContent />
-    </Suspense>
+    <ThemeProvider>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">Loading journal...</div>}>
+        <JournalPageContent />
+      </Suspense>
+    </ThemeProvider>
   );
 }
 

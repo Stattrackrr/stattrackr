@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS tracked_props (
   over_under TEXT NOT NULL CHECK (over_under IN ('over', 'under')),
   game_date DATE NOT NULL,
   opponent TEXT,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'hit', 'missed', 'void')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'void')),
+  result TEXT CHECK (result IN ('win', 'loss', 'pending')),
   actual_value DECIMAL(10,2),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
