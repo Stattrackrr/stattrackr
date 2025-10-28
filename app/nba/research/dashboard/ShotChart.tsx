@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ShotZone {
   name: string;
@@ -41,6 +41,8 @@ interface ShotChartProps {
 }
 
 const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
   // Process shot data into zones
   const zones: ShotZone[] = shotData ? [
     {
@@ -104,138 +106,213 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
     );
   }
 
+  // NBA court dimensions (in feet, scaled to fit viewBox)
+  // Court is 50ft wide × 47ft half-court
+  // Scale: 10px = 1ft
+  const scale = 10;
+  const courtWidth = 50 * scale; // 500px
+  const courtHeight = 38 * scale; // 380px (reduced to minimize top space)
+  const paintWidth = 16 * scale; // 160px
+  const threePointRadius = 23.75 * scale; // 237.5px from hoop
+  const threePointCorner = 14 * scale; // 140px from baseline (NBA: 14ft corners)
+  const freeThrowRadius = 6 * scale; // 60px
+  const restrictedRadius = 4 * scale; // 40px
+  
+  const centerX = courtWidth / 2; // 250
+  const baseline = courtHeight; // 470
+  const paintLeft = centerX - paintWidth / 2; // 170
+  const paintRight = centerX + paintWidth / 2; // 330
+  const freeThrowLine = baseline - 21 * scale; // 210 (moved higher up)
+  const midRangeWidth = 80; // Width of mid-range zone
+
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-800">
-      <svg viewBox="0 0 500 470" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-        {/* Background */}
-        <rect x="0" y="0" width="500" height="470" fill={isDark ? '#1e293b' : '#2d3748'} />
+    <div className="w-full h-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 p-4 gap-4">
+      {/* Title with Info Button and Season Label */}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2 relative">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+          <button
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+          >
+            ?
+          </button>
+          {showTooltip && (
+            <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+              <strong>Shot Distribution</strong><br/>
+              Percentages show where the player takes their shots from, not shooting accuracy.<br/><br/>
+              Example: 10% means 10% of total shots are taken from that zone.
+            </div>
+          )}
+        </div>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
+      </div>
+      
+      {/* SVG Chart */}
+      <svg viewBox="0 0 500 380" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        {/* Define clip path for rounded corners */}
+        <defs>
+          <clipPath id="roundedCourt">
+            <rect x="0" y="0" width="500" height="380" rx="15" ry="15" />
+          </clipPath>
+        </defs>
         
-        {/* Outer boundary - court edge */}
-        <rect x="85" y="0" width="330" height="470" fill="none" stroke="#000" strokeWidth="3" />
+        {/* Court background with rounded corners */}
+        <rect x="0" y="0" width="500" height="380" rx="15" ry="15" fill={isDark ? '#1e293b' : '#d4a574'} />
         
-        {/* 3-Point Zone - Above the arc */}
-        <path 
-          d="M 85 0 L 85 300 A 200 200 0 0 0 415 300 L 415 0 Z" 
-          fill={getColorForDistribution(distributions[4] || 0)}
-        />
+        {/* Group with clip path for all zones */}
+        <g clipPath="url(#roundedCourt)">
+        {/* ===== ZONE FILLS (drawn first, behind lines) ===== */}
         
-        {/* Corner 3s - Left */}
-        <rect 
-          x="85" 
-          y="300" 
-          width="70" 
-          height="170" 
-          fill={getColorForDistribution(distributions[4] || 0)}
-        />
-        
-        {/* Corner 3s - Right */}
-        <rect 
-          x="345" 
-          y="300" 
-          width="70" 
-          height="170" 
-          fill={getColorForDistribution(distributions[4] || 0)}
-        />
-        
-        {/* Mid-Range Arc - Between 3pt line and free throw area */}
-        <path 
-          d="M 155 300 A 200 200 0 0 0 345 300 A 90 90 0 0 1 155 300 Z" 
-          fill={getColorForDistribution(distributions[2] || 0)}
-        />
-        
-        {/* Short Mid - Free throw circle area */}
-        <path 
-          d="M 155 300 A 90 90 0 0 0 345 300 L 345 380 A 95 95 0 0 1 155 380 Z" 
+        {/* Paint zone (5-9ft shots) */}
+        <rect
+          x={paintLeft}
+          y={freeThrowLine}
+          width={paintWidth}
+          height={baseline - freeThrowLine}
           fill={getColorForDistribution(distributions[1] || 0)}
+          stroke="none"
         />
         
-        {/* Paint - The key */}
-        <rect 
-          x="190" 
-          y="380" 
-          width="120" 
-          height="90" 
-          fill={getColorForDistribution(distributions[1] || 0)}
-        />
-        
-        {/* Restricted Area - Inside paint */}
-        <path 
-          d="M 210 470 L 210 430 A 40 40 0 0 1 290 430 L 290 470 Z" 
+        {/* Restricted area zone - less than 5ft (77% paint shots) */}
+        <path
+          d={`M ${centerX - 60} ${baseline} 
+              L ${centerX - 60} ${baseline - 60} 
+              Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
+              L ${centerX + 60} ${baseline} Z`}
           fill={getColorForDistribution(distributions[0] || 0)}
-        />
-        
-        {/* 3-Point Arc */}
-        <path 
-          d="M 85 300 A 200 200 0 0 0 415 300" 
-          fill="none" 
-          stroke="#000" 
+          stroke="#000"
           strokeWidth="3"
         />
         
-        {/* Free Throw Circle - Top half */}
-        <path 
-          d="M 155 380 A 95 95 0 0 0 345 380" 
-          fill="none" 
-          stroke="#000" 
-          strokeWidth="2"
+        {/* Mid-range zone - Complete border around paint with rounded bottom corners */}
+        <path
+          d={`M ${paintLeft - midRangeWidth} ${baseline - 15} 
+              Q ${paintLeft - midRangeWidth} ${baseline} ${paintLeft - midRangeWidth + 15} ${baseline} 
+              L 15 ${baseline} 
+              Q 0 ${baseline} 0 ${baseline - 15} 
+              L 0 ${baseline - 15} 
+              Q 0 ${baseline} 15 ${baseline} 
+              L ${paintLeft} ${baseline} 
+              L ${paintLeft} ${freeThrowLine} 
+              L ${paintRight} ${freeThrowLine} 
+              L ${paintRight} ${baseline} 
+              L ${courtWidth - 15} ${baseline} 
+              Q ${courtWidth} ${baseline} ${courtWidth} ${baseline - 15} 
+              L ${courtWidth} ${baseline - 15} 
+              Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+              L ${paintRight + midRangeWidth - 15} ${baseline} 
+              Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} 
+              L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+              Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
+          fill={getColorForDistribution(distributions[2] || 0)}
+          stroke="none"
         />
         
-        {/* Free Throw Circle - Bottom half (dashed effect with small circle) */}
-        <circle cx="250" cy="380" r="95" fill="none" stroke="#000" strokeWidth="2" />
-        
-        {/* Paint box outline */}
-        <rect 
-          x="190" 
-          y="380" 
-          width="120" 
-          height="90" 
-          fill="none" 
-          stroke="#000" 
-          strokeWidth="2"
+        {/* 3-point zone - entire area above mid-range with all rounded corners */}
+        <path
+          d={`M 15 0 
+              L ${courtWidth - 15} 0 
+              Q ${courtWidth} 0 ${courtWidth} 15 
+              L ${courtWidth} ${baseline - 15} 
+              Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+              L ${paintRight + midRangeWidth} ${baseline} 
+              L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+              Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+              L ${paintLeft - midRangeWidth} ${baseline} 
+              L 15 ${baseline} 
+              Q 0 ${baseline} 0 ${baseline - 15} 
+              L 0 15 
+              Q 0 0 15 0 Z`}
+          fill={getColorForDistribution(distributions[4] || 0)}
         />
         
-        {/* Baseline */}
-        <line x1="85" y1="470" x2="415" y2="470" stroke="#000" strokeWidth="3" />
+        {/* ===== COURT LINES ===== */}
         
-        {/* Restricted area arc */}
-        <path 
-          d="M 210 430 A 40 40 0 0 1 290 430" 
-          fill="none" 
-          stroke="#000" 
-          strokeWidth="2"
+        {/* Court boundary with rounded corners */}
+        <rect x="0" y="0" width={courtWidth} height={courtHeight} rx="15" ry="15" fill="none" stroke="#000" strokeWidth="3" />
+        
+        {/* Paint */}
+        <rect
+          x={paintLeft}
+          y={freeThrowLine}
+          width={paintWidth}
+          height={baseline - freeThrowLine}
+          fill="none"
+          stroke="#000"
+          strokeWidth="3"
         />
         
-        {/* Percentages on zones */}
-        {/* 3-Point percentage (top) */}
-        <text x="250" y="120" textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold">
+        {/* Mid-range outer border */}
+        <path
+          d={`M ${paintLeft - midRangeWidth} ${baseline} 
+              L ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+              Q ${centerX} ${freeThrowLine - 120} ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+              L ${paintRight + midRangeWidth} ${baseline}`}
+          fill="none"
+          stroke="#000"
+          strokeWidth="3"
+        />
+        
+        {/* Restricted area */}
+        <path
+          d={`M ${centerX - restrictedRadius} ${baseline} A ${restrictedRadius} ${restrictedRadius} 0 0 0 ${centerX + restrictedRadius} ${baseline}`}
+          fill="none"
+          stroke="#000"
+          strokeWidth="3"
+        />
+        
+        {/* Hoop */}
+        <circle cx={centerX} cy={baseline - 5} r="9" fill="none" stroke="#000" strokeWidth="2.5" />
+        
+        {/* Free throw mark */}
+        <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
+        
+        {/* ===== PERCENTAGES ===== */}
+        
+        {/* 3PT percentage */}
+        <text x={centerX} y="60" textAnchor="middle" fill="#fff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
           {distributions[4]?.toFixed(0) || 0}%
         </text>
         
-        {/* Mid-Range percentage */}
-        <text x="250" y="250" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="bold">
+        {/* Mid-Range percentage - top */}
+        <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
           {distributions[2]?.toFixed(0) || 0}%
         </text>
         
-        {/* Short Mid percentage */}
-        <text x="250" y="340" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="bold">
-          {distributions[1]?.toFixed(0) || 0}%
-        </text>
-        
-        {/* Paint percentage */}
-        <text x="250" y="440" textAnchor="middle" fill="#fff" fontSize="26" fontWeight="bold">
+        {/* Paint percentage - in restricted area */}
+        <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
           {distributions[0]?.toFixed(0) || 0}%
         </text>
         
-        {/* Corner 3s - Left */}
-        <text x="120" y="390" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold">
-          {(distributions[4] / 4)?.toFixed(0) || 0}%
+        {/* 5-9ft percentage - in middle of paint */}
+        <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+          {distributions[1]?.toFixed(0) || 0}%
         </text>
-        
-        {/* Corner 3s - Right */}
-        <text x="380" y="390" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold">
-          {(distributions[4] / 4)?.toFixed(0) || 0}%
-        </text>
+        </g>
       </svg>
+      
+      {/* Color Legend */}
+      <div className="flex items-center gap-4 text-sm font-medium">
+        <span className="text-gray-700 dark:text-gray-300">Shot Distribution:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
+          <span className="text-gray-600 dark:text-gray-400">≥30%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#22c55e' }}></div>
+          <span className="text-gray-600 dark:text-gray-400">25-29%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
+          <span className="text-gray-600 dark:text-gray-400">10-24%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+          <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
+        </div>
+      </div>
     </div>
   );
 };

@@ -2691,7 +2691,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         if (!dvpRankCache.has(rankCacheKey)) {
           promises.push(
             cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${p}&metrics=${metricsStr}&games=82`,
+              `/api/dvp/rank/batch?pos=${p}&metrics=${metricsStr}&games=10`,
               undefined,
               300000
             ).then(data => ({ type: 'rank', data }))
@@ -2734,9 +2734,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
-        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
-          {loading ? 'Loading…' : error ? 'Error' : 'Live'}{sample ? ` · ${sample}G` : ''}
-        </span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
       </div>
       <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
         {/* Controls row */}
@@ -2904,7 +2902,10 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
 
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Opponent Analysis</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Opponent Analysis</h3>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
+      </div>
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -2912,9 +2913,6 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             <h4 className={`text-sm font-semibold font-mono tracking-wider ${mounted && isDark ? "text-white" : "text-slate-900"}`}>
               OPPONENT BREAKDOWN
             </h4>
-            <span className={`text-xs font-mono ${mounted && isDark ? "text-slate-400" : "text-slate-500"}`}>
-              {selectedTimeFilter.toUpperCase()}
-            </span>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
@@ -6407,6 +6405,7 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
 <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
                 </div>
                 {advancedStats ? (
                   <div className="space-y-3">
@@ -6660,194 +6659,6 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
               </div>
             ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
 
-            {/* Value Rating (Mobile) */}
-            {useMemo(() => {
-              const statToMarket = (s: string) => ({ pts: 'PTS', reb: 'REB', ast: 'AST', total_pts: 'Total', spread: 'Spread', moneyline: 'H2H' } as any)[s] || null;
-              const market = statToMarket(selectedStat);
-
-              const toNum = (s: string) => {
-                const n = parseInt(String(s).replace(/[^+\-\d]/g, ''), 10);
-                return Number.isFinite(n) ? n : NaN;
-              };
-              const americanToDecimalNum = (odds: string): number | null => {
-                if (!odds || odds === 'N/A') return null;
-                const n = toNum(odds);
-                if (!Number.isFinite(n)) return null;
-                return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
-              };
-              const impliedFromPair = (over: string, under: string) => {
-                const pO = (() => {
-                  const n = toNum(over); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
-                })();
-                const pU = (() => {
-                  const n = toNum(under); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
-                })();
-                if (pO == null || pU == null) return { pOver: null, pUnder: null };
-                const z = pO + pU; if (z <= 0) return { pOver: null, pUnder: null };
-                return { pOver: pO / z, pUnder: pU / z };
-              };
-              const parseBookLine = (s: string | null): number | null => {
-                if (!s) return null;
-                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-                return Number.isFinite(v) ? v : null;
-              };
-
-              // Determine best available odds for current market
-              let line: string | null = null;
-              let bestOver: string | null = null;
-              let bestUnder: string | null = null;
-
-              if (market && realOddsData.length > 0) {
-                for (const b of realOddsData) {
-                  const m: any = (b as any)[market];
-                  if (!m) continue;
-                  if (!line && typeof m.line !== 'undefined') line = m.line;
-                  if (m.over && (!bestOver || toNum(m.over) > toNum(bestOver))) bestOver = m.over;
-                  if (m.under && (!bestUnder || toNum(m.under) > toNum(bestUnder))) bestUnder = m.under;
-                }
-              }
-
-              // Fair probabilities from chartData, computed ONLY at bookmaker line
-              const total = chartData.length;
-              const bookLineVal = parseBookLine(line);
-              let fairOver: number | null = null;
-              let fairUnder: number | null = null;
-              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
-                const overCount = selectedStat === 'spread'
-                  ? chartData.filter(d => d.value < bookLineVal).length
-                  : chartData.filter(d => d.value > bookLineVal).length;
-                fairOver = overCount / total;
-                fairUnder = 1 - fairOver;
-              }
-
-              // Market implied
-              const { pOver, pUnder } = (bestOver && bestUnder) ? impliedFromPair(bestOver, bestUnder) : { pOver: null, pUnder: null };
-
-              // EV calc (per $1)
-              const decOver = bestOver ? americanToDecimalNum(bestOver) : null;
-              const decUnder = bestUnder ? americanToDecimalNum(bestUnder) : null;
-              const evOver = fairOver != null && decOver != null ? fairOver * decOver - 1 : null;
-              const evUnder = fairUnder != null && decUnder != null ? fairUnder * decUnder - 1 : null;
-
-              // Confidence (binomial 95% CI on fairOver, z vs implied)
-              const ci = (() => {
-                if (fairOver != null && total > 0) {
-                  const se = Math.sqrt(fairOver * (1 - fairOver) / total);
-                  const lo = Math.max(0, fairOver - 1.96 * se);
-                  const hi = Math.min(1, fairOver + 1.96 * se);
-                  return { se, lo, hi };
-                }
-                return null;
-              })();
-              const zOver = (fairOver != null && pOver != null && ci && ci.se > 0) ? (fairOver - pOver) / ci.se : null;
-              const zUnder = (fairUnder != null && pUnder != null && ci && ci.se > 0) ? (fairUnder - pUnder) / ci.se : null;
-              const confLabel = (() => {
-                if (!ci) return null;
-                let level = 'Low';
-                if (zOver != null && total >= 20) {
-                  const a = Math.abs(zOver);
-                  if (a >= 2.0) level = 'High';
-                  else if (a >= 1.3) level = 'Moderate';
-                  else level = 'Low';
-                } else if (total >= 30) level = 'Moderate';
-                return level;
-              })();
-              const confLabelUnder = (() => {
-                if (!ci) return null;
-                let level = 'Low';
-                if (zUnder != null && total >= 20) {
-                  const a = Math.abs(zUnder);
-                  if (a >= 2.0) level = 'High';
-                  else if (a >= 1.3) level = 'Moderate';
-                  else level = 'Low';
-                } else if (total >= 30) level = 'Moderate';
-                return level;
-              })();
-              const confPctFromZ = (z: number | null) => z==null ? null : Math.min(99, Math.max(0, Math.round(Math.abs(z) * 50)));
-              const confPctOver = confPctFromZ(zOver);
-              const confPctUnder = confPctFromZ(zUnder);
-
-              const notSupported = !market || (propsMode === 'player' && !['PTS','REB','AST'].includes(market)) || (propsMode === 'team' && !['Total','Spread','H2H'].includes(market));
-
-              // Edge helpers
-              const edgeOver = (fairOver!=null && pOver!=null) ? (fairOver - pOver) : null;
-              const edgeUnder = (fairUnder!=null && pUnder!=null) ? (fairUnder - pUnder) : null;
-              const edgePill = (v: number | null) => {
-                if (v == null) return { text: 'EDGE N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
-                const pct = (v*100).toFixed(1) + '%';
-                return v >= 0
-                  ? { text: `EDGE +${pct}`, cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' }
-                  : { text: `EDGE ${pct}`, cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' };
-              };
-              const evDisplay = (v: number | null) => v==null ? '—' : `${(v*100).toFixed(1)}%`;
-              const pct = (v: number | null) => v==null ? 'N/A' : `${(v*100).toFixed(1)}%`;
-              const confPill = (() => {
-                if (!confLabel) return { text: 'Confidence N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
-                if (confLabel === 'High') return { text: 'High Confidence', cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' };
-                if (confLabel === 'Moderate') return { text: 'Moderate Confidence', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' };
-                return { text: 'Low Confidence', cls: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' };
-              })();
-
-              return (
-                <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="text-base text-gray-900 dark:text-white font-semibold mb-3">Value Rating</div>
-                  {notSupported ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Not available for this stat.</div>
-                  ) : (
-                    <>
-                      {line && (
-                        <div className="mb-3 flex items-center justify-between">
-                          <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-mono">Line: {line}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-bold">O {bestOver || 'N/A'}</span>
-                            <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] font-bold">U {bestUnder || 'N/A'}</span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
-                        {/* OVER card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">OVER</div>
-                            {(() => { const pill = edgePill(edgeOver); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
-                          </div>
-                          <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evOver)}</div>
-                          <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">Fair {pct(fairOver)} • Implied {pct(pOver)}</div>
-                        </div>
-                        {/* UNDER card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">UNDER</div>
-                            {(() => { const pill = edgePill(edgeUnder); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
-                          </div>
-                          <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evUnder)}</div>
-                          <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">Fair {pct(fairUnder)} • Implied {pct(pUnder)}</div>
-                        </div>
-                        {/* CONFIDENCE card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/60 dark:bg-slate-800/60">
-                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">CONFIDENCE</div>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-[11px] text-gray-600 dark:text-gray-400">OVER</div>
-                            <div className="flex items-center gap-2">
-                              {(() => { const lbl = confLabel; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
-                              <span className="text-[10px] text-gray-600 dark:text-gray-400">{confPctOver!=null ? `${confPctOver}%` : '—'}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-[11px] text-gray-600 dark:text-gray-400">UNDER</div>
-                            <div className="flex items-center gap-2">
-                              {(() => { const lbl = confLabelUnder; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
-                              <span className="text-[10px] text-gray-600 dark:text-gray-400">{confPctUnder!=null ? `${confPctUnder}%` : '—'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            }, [propsMode, selectedStat, chartData, realOddsData, isDark])}
-
             {/* 8. Best Odds Container (Mobile) */}
             <BestOddsTable
               isDark={isDark}
@@ -6904,201 +6715,6 @@ className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex f
               />
               </div>
             ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
-
-            {/* Value Rating (Desktop) */}
-            {useMemo(() => {
-              const statToMarket = (s: string) => ({ pts: 'PTS', reb: 'REB', ast: 'AST', total_pts: 'Total', spread: 'Spread', moneyline: 'H2H' } as any)[s] || null;
-              const market = statToMarket(selectedStat);
-
-              const toNum = (s: string) => {
-                const n = parseInt(String(s).replace(/[^+\-\d]/g, ''), 10);
-                return Number.isFinite(n) ? n : NaN;
-              };
-              const americanToDecimalNum = (odds: string): number | null => {
-                if (!odds || odds === 'N/A') return null;
-                const n = toNum(odds);
-                if (!Number.isFinite(n)) return null;
-                return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
-              };
-              const impliedFromPair = (over: string, under: string) => {
-                const pO = (() => {
-                  const n = toNum(over); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
-                })();
-                const pU = (() => {
-                  const n = toNum(under); if (!Number.isFinite(n)) return null; return n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
-                })();
-                if (pO == null || pU == null) return { pOver: null, pUnder: null };
-                const z = pO + pU; if (z <= 0) return { pOver: null, pUnder: null };
-                return { pOver: pO / z, pUnder: pU / z };
-              };
-              const parseBookLine = (s: string | null): number | null => {
-                if (!s) return null;
-                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-                return Number.isFinite(v) ? v : null;
-              };
-
-              // Determine best available odds for current market
-              let line: string | null = null;
-              let bestOver: string | null = null;
-              let bestUnder: string | null = null;
-
-              if (market && realOddsData.length > 0) {
-                for (const b of realOddsData) {
-                  const m: any = (b as any)[market];
-                  if (!m) continue;
-                  if (!line && typeof m.line !== 'undefined') line = m.line;
-                  if (m.over && (!bestOver || toNum(m.over) > toNum(bestOver))) bestOver = m.over;
-                  if (m.under && (!bestUnder || toNum(m.under) > toNum(bestUnder))) bestUnder = m.under;
-                }
-              }
-
-              // Fair probabilities from chartData, computed ONLY at bookmaker line
-              const total = chartData.length;
-              const bookLineVal = parseBookLine(line);
-              let fairOver: number | null = null;
-              let fairUnder: number | null = null;
-              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
-                const overCount = selectedStat === 'spread'
-                  ? chartData.filter(d => d.value < bookLineVal).length
-                  : chartData.filter(d => d.value > bookLineVal).length;
-                fairOver = overCount / total;
-                fairUnder = 1 - fairOver;
-              }
-              if (bookLineVal != null && total > 0 && market && market !== 'H2H') {
-                const overCount = selectedStat === 'spread'
-                  ? chartData.filter(d => d.value < bookLineVal).length
-                  : chartData.filter(d => d.value > bookLineVal).length;
-                fairOver = overCount / total;
-                fairUnder = 1 - fairOver;
-              }
-
-              // Market implied
-              const { pOver, pUnder } = (bestOver && bestUnder) ? impliedFromPair(bestOver, bestUnder) : { pOver: null, pUnder: null };
-
-              // EV calc (per $1)
-              const decOver = bestOver ? americanToDecimalNum(bestOver) : null;
-              const decUnder = bestUnder ? americanToDecimalNum(bestUnder) : null;
-              const evOver = fairOver != null && decOver != null ? fairOver * decOver - 1 : null;
-              const evUnder = fairUnder != null && decUnder != null ? fairUnder * decUnder - 1 : null;
-
-              // Confidence (binomial 95% CI on fairOver, z vs implied)
-              const ci = (() => {
-                if (fairOver != null && total > 0) {
-                  const se = Math.sqrt(fairOver * (1 - fairOver) / total);
-                  const lo = Math.max(0, fairOver - 1.96 * se);
-                  const hi = Math.min(1, fairOver + 1.96 * se);
-                  return { se, lo, hi };
-                }
-                return null;
-              })();
-              const zOver = (fairOver != null && pOver != null && ci && ci.se > 0) ? (fairOver - pOver) / ci.se : null;
-              const zUnder = (fairUnder != null && pUnder != null && ci && ci.se > 0) ? (fairUnder - pUnder) / ci.se : null;
-              const confLabel = (() => {
-                if (!ci) return null;
-                let level = 'Low';
-                if (zOver != null && total >= 20) {
-                  const a = Math.abs(zOver);
-                  if (a >= 2.0) level = 'High';
-                  else if (a >= 1.3) level = 'Moderate';
-                  else level = 'Low';
-                } else if (total >= 30) level = 'Moderate';
-                return level;
-              })();
-              const confLabelUnder = (() => {
-                if (!ci) return null;
-                let level = 'Low';
-                if (zUnder != null && total >= 20) {
-                  const a = Math.abs(zUnder);
-                  if (a >= 2.0) level = 'High';
-                  else if (a >= 1.3) level = 'Moderate';
-                  else level = 'Low';
-                } else if (total >= 30) level = 'Moderate';
-                return level;
-              })();
-              const confPctFromZ = (z: number | null) => z==null ? null : Math.min(99, Math.max(0, Math.round(Math.abs(z) * 50)));
-              const confPctOver = confPctFromZ(zOver);
-              const confPctUnder = confPctFromZ(zUnder);
-
-              const notSupported = !market || (propsMode === 'player' && !['PTS','REB','AST'].includes(market)) || (propsMode === 'team' && !['Total','Spread','H2H'].includes(market));
-
-              // Edge helpers
-              const edgeOver = (fairOver!=null && pOver!=null) ? (fairOver - pOver) : null;
-              const edgeUnder = (fairUnder!=null && pUnder!=null) ? (fairUnder - pUnder) : null;
-              const edgePill = (v: number | null) => {
-                if (v == null) return { text: 'EDGE N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
-                const pct = (v*100).toFixed(1) + '%';
-                return v >= 0
-                  ? { text: `EDGE +${pct}`, cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' }
-                  : { text: `EDGE ${pct}`, cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' };
-              };
-              const evDisplay = (v: number | null) => v==null ? '—' : `${(v*100).toFixed(1)}%`;
-              const pct = (v: number | null) => v==null ? 'N/A' : `${(v*100).toFixed(1)}%`;
-              const confPill = (() => {
-                if (!confLabel) return { text: 'Confidence N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' };
-                if (confLabel === 'High') return { text: 'High Confidence', cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' };
-                if (confLabel === 'Moderate') return { text: 'Moderate Confidence', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' };
-                return { text: 'Low Confidence', cls: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' };
-              })();
-
-              return (
-<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-                  <div className="text-base text-gray-900 dark:text-white font-semibold mb-3">Value Rating</div>
-                  {notSupported ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Not available for this stat.</div>
-                  ) : (
-                    <>
-                      {line && (
-                        <div className="mb-3 flex items-center justify-between">
-                          <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-mono">Line: {line}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-bold">O {bestOver || 'N/A'}</span>
-                            <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] font-bold">U {bestUnder || 'N/A'}</span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {/* OVER card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">OVER</div>
-                            {(() => { const pill = edgePill(edgeOver); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
-                          </div>
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evOver)}</div>
-                          <div className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Fair {pct(fairOver)} • Implied {pct(pOver)}</div>
-                        </div>
-                        {/* UNDER card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">UNDER</div>
-                            {(() => { const pill = edgePill(edgeUnder); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pill.cls}`}>{pill.text}</span>); })()}
-                          </div>
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">EV {evDisplay(evUnder)}</div>
-                          <div className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Fair {pct(fairUnder)} • Implied {pct(pUnder)}</div>
-                        </div>
-                        {/* CONFIDENCE card */}
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white/60 dark:bg-slate-800/60">
-                          <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">CONFIDENCE</div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-[12px] text-gray-600 dark:text-gray-400">OVER</div>
-                            <div className="flex items-center gap-2">
-                              {(() => { const lbl = confLabel; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
-                              <span className="text-[11px] text-gray-600 dark:text-gray-400">{confPctOver!=null ? `${confPctOver}%` : '—'}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-[12px] text-gray-600 dark:text-gray-400">UNDER</div>
-                            <div className="flex items-center gap-2">
-                              {(() => { const lbl = confLabelUnder; const chip = !lbl ? { text: 'N/A', cls: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' } : (lbl==='High' ? { text:'High', cls:'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'} : lbl==='Moderate' ? { text:'Moderate', cls:'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'} : { text:'Low', cls:'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}); return (<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${chip.cls}`}>{chip.text}</span>) })()}
-                              <span className="text-[11px] text-gray-600 dark:text-gray-400">{confPctUnder!=null ? `${confPctUnder}%` : '—'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            }, [propsMode, selectedStat, chartData, realOddsData, isDark])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
@@ -7839,6 +7455,7 @@ className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:
               <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
                 </div>
               {advancedStats ? (
                   <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
