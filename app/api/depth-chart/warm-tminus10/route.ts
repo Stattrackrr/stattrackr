@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 function toYMD(d = new Date()){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}${m}${da}`; }
 const toISO = (ymd: string) => `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
@@ -14,6 +15,18 @@ async function fetchEspnScoreboard(ymd: string){
     try{ const r = await fetch(u, { cache: 'no-store' }); if (r && r.ok) return await r.json(); }catch{}
   }
   return null;
+}
+
+function getOrigin(req: NextRequest): string {
+  try {
+    if (req?.nextUrl?.origin) return req.nextUrl.origin;
+  } catch {}
+  const xfProto = req.headers.get('x-forwarded-proto');
+  const xfHost = req.headers.get('x-forwarded-host');
+  if (xfProto && xfHost) return `${xfProto}://${xfHost}`;
+  const host = req.headers.get('host') || 'localhost:3000';
+  const proto = (process.env.NODE_ENV === 'production') ? 'https' : 'http';
+  return `${proto}://${host}`;
 }
 
 async function fetchBdlGamesByDate(ymd: string){
@@ -53,8 +66,9 @@ export async function GET(req: NextRequest){
         if (!home || !away || !tip) continue;
         const minsToTip = (tip - now) / 60000;
         if (minsToTip <= windowMin && minsToTip >= -10){
-          try{ await fetch(`/api/depth-chart?team=${encodeURIComponent(home)}&refresh=1`); warmed.push(home); }catch{}
-          try{ await fetch(`/api/depth-chart?team=${encodeURIComponent(away)}&refresh=1`); warmed.push(away); }catch{}
+          const origin = getOrigin(req);
+          try{ const r = await fetch(`${origin}/api/depth-chart?team=${encodeURIComponent(home)}&refresh=1`, { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (j?.changed) warmed.push(home); }catch{}
+          try{ const r = await fetch(`${origin}/api/depth-chart?team=${encodeURIComponent(away)}&refresh=1`, { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (j?.changed) warmed.push(away); }catch{}
         }
       }
       return NextResponse.json({ success:true, date: ymd, warmed: Array.from(new Set(warmed)), source: 'espn' });
@@ -71,8 +85,9 @@ export async function GET(req: NextRequest){
         if (!home || !away || !tip) continue;
         const minsToTip = (tip - now) / 60000;
         if (minsToTip <= windowMin && minsToTip >= -10){
-          try{ await fetch(`/api/depth-chart?team=${encodeURIComponent(home)}&refresh=1`); warmed.push(home); }catch{}
-          try{ await fetch(`/api/depth-chart?team=${encodeURIComponent(away)}&refresh=1`); warmed.push(away); }catch{}
+          const origin = getOrigin(req);
+          try{ const r = await fetch(`${origin}/api/depth-chart?team=${encodeURIComponent(home)}&refresh=1`, { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (j?.changed) warmed.push(home); }catch{}
+          try{ const r = await fetch(`${origin}/api/depth-chart?team=${encodeURIComponent(away)}&refresh=1`, { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (j?.changed) warmed.push(away); }catch{}
         }
       }
       return NextResponse.json({ success:true, date: ymd, warmed: Array.from(new Set(warmed)), source: 'bdl' });

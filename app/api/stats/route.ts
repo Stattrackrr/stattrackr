@@ -1,5 +1,7 @@
 // app/api/stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { BdlPlayerStats, BdlPaginatedResponse } from "@/lib/types/apiResponses";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -28,7 +30,7 @@ async function bdlFetch(url: URL) {
   const headers: Record<string, string> = {};
   if (API_KEY) headers["Authorization"] = `Bearer ${API_KEY}`;
 
-  const res = await fetch(url, { headers, cache: "no-store" });
+  const res = await fetch(url, { headers });
   // If BDL returns a rate-limit message or 4xx, surface it gracefully
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
@@ -38,6 +40,12 @@ async function bdlFetch(url: URL) {
 }
 
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const playerId = searchParams.get("player_id");
@@ -56,19 +64,19 @@ export async function GET(req: NextRequest) {
     // Default to a safe recent season if not provided
     const season = Number(seasonParam || 2023);
 
-    const all: any[] = [];
+    const all: BdlPlayerStats[] = [];
     let page = 1;
 
     while (page <= maxPages) {
       const url = buildStatsUrl(playerId, season, page, perPageParam, postseason);
-      const json = await bdlFetch(url);
+      const json = await bdlFetch(url) as BdlPaginatedResponse<BdlPlayerStats>;
 
       // Expect shape: { data: [], meta: { next_page, total_pages, current_page } }
       const batch = Array.isArray(json?.data) ? json.data : [];
       all.push(...batch);
 
       const nextPage =
-        json?.meta?.next_page ?? (json?.meta?.current_page < json?.meta?.total_pages ? page + 1 : null);
+        (json?.meta as any)?.next_page ?? ((json?.meta?.current_page ?? 0) < (json?.meta?.total_pages ?? 0) ? page + 1 : null);
 
       if (!nextPage) break;
       page = nextPage;
@@ -76,10 +84,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data: all }, { status: 200 });
   } catch (err: any) {
-    // Never throw raw – always return a JSON error so the client can show it
+    console.error('Stats API error:', err);
     return NextResponse.json(
-      { error: err?.message || "Internal error fetching stats" },
-      { status: 200 } // Return 200 with an error payload so your client can render “No data”
+      { error: err?.message || "Internal error fetching stats", data: [] },
+      { status: 500 }
     );
   }
 }

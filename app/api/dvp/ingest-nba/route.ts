@@ -377,9 +377,9 @@ for (const r of oppRows2){
         const lookup = teamCustom.aliases[key] || key;
         const keys = altKeys(lookup);
         // Starters override first, then effective best mapping (try alt keys for apostrophes)
-        let starterPos: any = undefined;
+        let starterPos: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         for (const kv of keys){ if ((startersMap as any)[kv] && activeSet.has(kv)) { starterPos = (startersMap as any)[kv]; break; } }
-        let bucket: any = starterPos;
+        let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = starterPos;
         if (!bucket){ for (const kv of keys){ if ((effectiveMap as any)[kv]) { bucket = (effectiveMap as any)[kv]; break; } }
         }
         if (!bucket){
@@ -388,7 +388,12 @@ for (const r of oppRows2){
           if (last){
             const entries = Object.entries(effectiveMap as any) as Array<[string,string]>;
             const matches = entries.filter(([k])=> k.endsWith(` ${last}`) || k===last);
-            if (matches.length===1) bucket = matches[0][1];
+            if (matches.length===1) {
+              const pos = matches[0][1];
+              if (['PG','SG','SF','PF','C'].includes(pos)) {
+                bucket = pos as 'PG'|'SG'|'SF'|'PF'|'C';
+              }
+            }
           }
         }
         // Final fallback for blowout/garbage-time players: use ESPN primary pos (G/F/C) and map to PG/SG or SF/PF

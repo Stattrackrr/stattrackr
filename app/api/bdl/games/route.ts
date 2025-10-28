@@ -1,75 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import sharedCache from '@/lib/sharedCache';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const startDate = searchParams.get('start_date') || '';
   const endDate = searchParams.get('end_date') || '';
+  const seasons = searchParams.getAll('seasons[]').join(',') || '';
+  const page = searchParams.get('page') || '1';
+  const cursor = searchParams.get('cursor') || '';
+  const perPage = searchParams.get('per_page') || '25';
   
-  // Create cache key for this games request
-  const cacheKey = getCacheKey.games(startDate, endDate);
-  
-  // Check cache first
-  const cachedData = cache.get(cacheKey);
-  if (cachedData) {
-    return NextResponse.json(cachedData);
+  // Stable aggregated key (no cursor) when team_ids[] is provided
+  const seasonsParams = searchParams.getAll('seasons[]');
+  const teamParams = searchParams.getAll('team_ids[]');
+  const seasonsCsv = seasonsParams.join(',');
+  const teamsCsv = teamParams.join(',');
+  const hasTeamFilter = teamParams.length > 0;
+
+  const stableKey = hasTeamFilter
+    ? `games:agg:seasons:${seasonsCsv || `${startDate}_${endDate}`}:teams:${teamsCsv}:per_page:${perPage}`
+    : null;
+
+  // Check shared cache first (Redis/Upstash) then process cache
+  // TTL policy: prior seasons get very long TTL, current season shorter (overwritten by warm)
+  const now = new Date();
+  const month = now.getMonth();
+  const currSeasonYear = (month === 9 ? now.getFullYear() : (month >= 10 ? now.getFullYear() : now.getFullYear() - 1));
+  const seasonYears = seasonsParams.map((s) => parseInt(s, 10)).filter((n) => !Number.isNaN(n));
+  const includesCurrentSeason = seasonYears.includes(currSeasonYear);
+  const LONG_TTL_SEC = 180 * 24 * 60 * 60; // 180 days for immutable seasons
+  const DEFAULT_TTL_SEC = parseInt(process.env.SHARED_GAMES_TTL_SEC || String(CACHE_TTL.GAMES * 60), 10);
+  const ttlForStable = includesCurrentSeason ? DEFAULT_TTL_SEC : LONG_TTL_SEC;
+
+  if (stableKey) {
+    const sharedHit = await sharedCache.getJSON<any>(stableKey);
+    if (sharedHit) return NextResponse.json(sharedHit);
+    const memHit = cache.get(stableKey);
+    if (memHit) {
+      sharedCache.setJSON(stableKey, memHit, ttlForStable).catch(() => {});
+      return NextResponse.json(memHit);
+    }
+  } else {
+    // Fallback to legacy key when no team filter provided
+    const legacyKey = seasons 
+      ? `games:seasons:${seasons}:cursor:${cursor}:per_page:${perPage}` 
+      : getCacheKey.games(startDate, endDate);
+    const sharedHit = await sharedCache.getJSON<any>(legacyKey);
+    if (sharedHit) return NextResponse.json(sharedHit);
+    const memHit = cache.get(legacyKey);
+    if (memHit) return NextResponse.json(memHit);
   }
   
   try {
-    console.log(`🌐 Fresh API call for games: ${startDate} to ${endDate}`);
+    const logParams = seasons ? `seasons: ${seasons}` : `${startDate} to ${endDate}`;
+    console.log(`🌐 Fresh API call for games: ${logParams}`);
     
-    // Build Ball Don't Lie API URL
-    const upstream = new URL("https://api.balldontlie.io/v1/games");
-    
-    // Forward all query parameters
-    searchParams.forEach((value, key) => {
-      upstream.searchParams.append(key, value);
+    // Build BDL URL base
+    const base = new URL("https://api.balldontlie.io/v1/games");
+
+    // Helper to trim payload
+    const trimGame = (g: any) => ({
+      id: g.id,
+      date: g.date,
+      season: g.season,
+      status: g.status,
+      datetime: g.datetime || g.date,
+      home_team_score: g.home_team_score,
+      visitor_team_score: g.visitor_team_score,
+      home_team: g.home_team ? { id: g.home_team.id, abbreviation: g.home_team.abbreviation } : undefined,
+      visitor_team: g.visitor_team ? { id: g.visitor_team.id, abbreviation: g.visitor_team.abbreviation } : undefined,
     });
+
+    let finalData: any;
+
+    if (stableKey) {
+      // Aggregated, stable (team-scoped) path: single page is enough with per_page=100
+      const p = new URLSearchParams();
+      seasonsParams.forEach((v) => p.append('seasons[]', v));
+      teamParams.forEach((v) => p.append('team_ids[]', v));
+      p.set('per_page', perPage);
+      const url = `${base.toString()}?${p.toString()}`;
+      const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+      const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
+      
+      console.log('🏀 Fetching (aggregated, team) from BDL:', url);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'StatTrackr/1.0',
+          'Authorization': authHeader,
+        },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🏀 Games API Error:', errorText);
+        return NextResponse.json({ error: 'BDL error', message: errorText }, { status: response.status });
+      }
+      const json = await response.json();
+      const trimmed = Array.isArray(json?.data) ? json.data.map(trimGame) : [];
+      finalData = { data: trimmed, meta: { per_page: Number(perPage), total_count: trimmed.length } };
+
+      // Cache under stable key
+      cache.set(stableKey, finalData, CACHE_TTL.GAMES);
+      await sharedCache.setJSON(stableKey, finalData, ttlForStable);
+      console.log(`✅ Games cached (stable key) memory:${CACHE_TTL.GAMES}m shared:${Math.round(ttlForStable/60)}m`);
+      return NextResponse.json(finalData);
+    }
+
+    // Legacy fallback (no team filter): forward query as is
+    searchParams.forEach((value, key) => base.searchParams.append(key, value));
+    const url = base.toString();
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+    const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
     
-    console.log('🏀 Fetching games from Ball Don\'t Lie:', upstream.toString());
-    
-    const response = await fetch(upstream.toString(), {
+    console.log('🏀 Fetching (legacy) from BDL:', url);
+    const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'StatTrackr/1.0',
-        'Authorization': 'Bearer 9823adcf-57dc-4036-906d-aeb9f0003cfd',
+        'Authorization': authHeader,
       },
     });
-    
-    console.log('🏀 Games API Response status:', response.status);
-    
     if (!response.ok) {
       const errorText = await response.text();
       console.error('🏀 Games API Error:', errorText);
-      
-      // If Ball Don't Lie fails, return mock schedule for upcoming games
-      if (response.status === 404) {
-        console.log('🏀 Ball Don\'t Lie games not available, using mock schedule');
-        return NextResponse.json({
-          data: generateMockSchedule(),
-          meta: {
-            total_pages: 1,
-            current_page: 1,
-            next_page: null,
-            per_page: 25,
-            total_count: 15
-          }
-        });
-      }
-      
-      return NextResponse.json({
-        error: `Games API error! status: ${response.status}`,
-        message: errorText
-      }, { status: response.status });
+      return NextResponse.json({ error: 'BDL error', message: errorText }, { status: response.status });
     }
-    
     const data = await response.json();
-    console.log('🏀 Games API Response:', JSON.stringify(data, null, 2));
-    
-    // Cache the successful response
-    cache.set(cacheKey, data, CACHE_TTL.GAMES);
-    console.log(`✅ Games cached for ${CACHE_TTL.GAMES} minutes`);
-    
+    // Cache legacy result with legacy key
+    const legacyKey = seasons 
+      ? `games:seasons:${seasons}:cursor:${cursor}:per_page:${perPage}` 
+      : getCacheKey.games(startDate, endDate);
+    cache.set(legacyKey, data, CACHE_TTL.GAMES);
+    await sharedCache.setJSON(legacyKey, data, DEFAULT_TTL_SEC);
+    console.log(`✅ Games cached (legacy key) memory:${CACHE_TTL.GAMES}m shared:${Math.round(DEFAULT_TTL_SEC/60)}m`);
     return NextResponse.json(data);
   } catch (error) {
     console.error('🏀 Error in games API:', error);

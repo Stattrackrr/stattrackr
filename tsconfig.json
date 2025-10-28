@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/research/dashboard/dashboard-page backup"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/*_backup_*.tsx", "**/*_backup_*.ts", "**/*-backup.tsx", "**/*-backup.ts", "**/dashboard-page backup"]
 }

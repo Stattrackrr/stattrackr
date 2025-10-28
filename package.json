@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "warm:games": "node scripts/warm-games.js",
+    "warm:rosters": "node scripts/warm-rosters.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.3",

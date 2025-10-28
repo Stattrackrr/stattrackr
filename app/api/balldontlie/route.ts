@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -17,7 +18,17 @@ export async function GET(request: NextRequest) {
     }
   });
 
-  console.log(`Proxying Ball Don't Lie API: ${endpoint} with params:`, forwardParams.toString());
+  // Generate cache key for this request
+  const cacheKey = `bdl:${endpoint}:${forwardParams.toString()}`;
+  
+  // Check cache first
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    console.log(`🚀 Cache HIT for Ball Don't Lie: ${endpoint}`);
+    return NextResponse.json(cachedData);
+  }
+
+  console.log(`🌐 Fresh Ball Don't Lie API call: ${endpoint} with params:`, forwardParams.toString());
   
   try {
     // Construct the Ball Don't Lie API URL
@@ -46,6 +57,19 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     console.log('Ball Don\'t Lie API Response:', JSON.stringify(data, null, 2));
+    
+    // Cache successful response - use appropriate TTL based on endpoint
+    let ttl = CACHE_TTL.PLAYER_STATS; // Default to player stats TTL
+    if (endpoint.includes('/players')) {
+      ttl = CACHE_TTL.PLAYER_SEARCH; // Player search changes less frequently
+    } else if (endpoint.includes('/stats')) {
+      ttl = CACHE_TTL.PLAYER_STATS; // Game stats
+    } else if (endpoint.includes('/season_averages')) {
+      ttl = CACHE_TTL.PLAYER_STATS; // Season averages
+    }
+    
+    cache.set(cacheKey, data, ttl);
+    console.log(`✅ Ball Don't Lie response cached for ${ttl} minutes`);
     
     return NextResponse.json(data);
   } catch (error) {

@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export function StatTrackrLogo({ className = "w-16 h-16" }: { className?: string }) {
   return (
@@ -27,12 +30,17 @@ export function StatTrackrLogoWithText({
   className?: string;
   isDark?: boolean;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       <StatTrackrLogo className={logoSize} />
       <span 
-        className={`font-bold ${textSize}`} 
-        style={{ color: isDark ? 'white' : 'black' }}
+        className={`font-bold ${textSize} ${mounted && isDark ? 'text-white' : 'text-black'}`}
       >
         StatTrackr
       </span>

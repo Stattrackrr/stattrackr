@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
   }
 
   const season = seasons[0] || 'current';
-  const cacheKey = getCacheKey.playerStats(playerId, season);
+  const seasonNum = season === 'current' ? undefined : parseInt(season, 10);
+  const cacheKey = getCacheKey.playerStats(playerId, seasonNum);
   
   // Check cache first
   const cachedData = cache.get(cacheKey);
@@ -31,9 +32,12 @@ export async function GET(request: NextRequest) {
     }
     bdlUrl.searchParams.set('per_page', perPage);
 
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+    const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
+    
     const response = await fetch(bdlUrl.toString(), {
       headers: {
-        'Authorization': process.env.BALL_DONT_LIE_API_KEY || '',
+        'Authorization': authHeader,
       },
     });
 

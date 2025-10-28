@@ -40,9 +40,16 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
 
   return (
     <>
-    <div className="fixed left-0 top-0 h-full w-64 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex flex-col rounded-r-2xl shadow-lg">
+    <div 
+      className="hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl"
+      style={{
+        marginLeft: '0px',
+        width: 'var(--sidebar-width, 360px)',
+        left: 'clamp(0px, calc((100vw - var(--app-max, 1800px)) / 2), 9999px)'
+      }}
+    >
       {/* Logo at top */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 text-black dark:text-white">
         <StatTrackrLogoWithText 
           logoSize="w-10 h-10" 
           textSize="text-2xl" 
@@ -51,16 +58,16 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
       </div>
 
       {/* Navigation links */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-3 text-black dark:text-white">
         <ul className="space-y-2">
           {sports.map((sport) => (
             <li key={sport.name}>
               <Link
                 href={sport.href}
-                className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname === sport.href
                     ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                    : "text-black dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                    : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
                 }`}
               >
                 {sport.name}
@@ -70,13 +77,13 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
         </ul>
         
         {/* Journal section with spacing */}
-        <div className="mt-6">
+        <div className="mt-4">
           <Link
             href="/journal"
-            className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               pathname === "/journal"
                 ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                : "text-black dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
             }`}
           >
             Journal
@@ -85,10 +92,10 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
       </nav>
 
       {/* Settings section at bottom */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white">
         <button 
           onClick={() => setShowSettings(true)}
-          className="w-full px-4 py-3 text-left rounded-xl text-sm font-medium text-black dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition-colors flex items-center gap-3"
+className="w-full px-3 py-2 text-left rounded-lg text-sm font-medium text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -109,7 +116,7 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
         ></div>
         
         {/* Modal content - positioned like sidebar */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-10 flex flex-col">
+        <div className="fixed left-0 top-0 h-full w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-10 flex flex-col">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
             <button

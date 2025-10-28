@@ -27,6 +27,7 @@ import {
   Filter,
   Share2,
 } from "lucide-react";
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import Navigation from "@/components/navigation";
@@ -344,7 +345,7 @@ async function handleQuickResultUpdate(id: string, newResult: Bet["result"], set
 
 type Range = "Daily" | "Weekly" | "Monthly" | "Yearly" | "Last30" | "Last90" | "Last365" | "Custom";
 
-export default function JournalPage() {
+function JournalPageContent() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -2821,4 +2822,13 @@ const ColoredTooltip = (props: any) => {
     </div>
   );
 };
+
+// Wrapper with Suspense for useSearchParams
+export default function JournalPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <JournalPageContent />
+    </Suspense>
+  );
+}
 

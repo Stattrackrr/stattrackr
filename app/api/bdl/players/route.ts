@@ -4,11 +4,11 @@ import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
 export const runtime = "nodejs";
 
 const BDL_BASE = "https://api.balldontlie.io/v1";
-const API_KEY = process.env.BALLDONTLIE_API_KEY;
+const API_KEY = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
 
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {};
-  if (API_KEY) h["Authorization"] = `Bearer ${API_KEY}`;
+  if (API_KEY) h["Authorization"] = API_KEY.startsWith('Bearer ') ? API_KEY : `Bearer ${API_KEY}`;
   return h;
 }
 

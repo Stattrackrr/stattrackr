@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,12 @@ function normalizeEspnTeamCode(s: string | null | undefined): string {
 
 // ESPN player lookup by name
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
+  }
+  
   const { searchParams } = new URL(req.url);
   
   const playerName = searchParams.get("name")?.trim();

@@ -16,6 +16,13 @@ interface DepthChartContainerProps {
   isDark: boolean;
   onPlayerSelect?: (playerName: string) => void;
   selectedPlayerName?: string;
+  opponentTeam?: string;
+  originalPlayerTeam?: string;
+  onTeamSwap?: (team: string) => void;
+  // Preloaded roster data for instant swapping
+  playerTeamRoster?: DepthChartData | null;
+  opponentTeamRoster?: DepthChartData | null;
+  rostersLoading?: {player: boolean, opponent: boolean};
 }
 
 const DepthChartContainer = memo(function DepthChartContainer({
@@ -23,7 +30,13 @@ const DepthChartContainer = memo(function DepthChartContainer({
   teamInjuries,
   isDark,
   onPlayerSelect,
-  selectedPlayerName
+  selectedPlayerName,
+  opponentTeam,
+  originalPlayerTeam,
+  onTeamSwap,
+  playerTeamRoster,
+  opponentTeamRoster,
+  rostersLoading
 }: DepthChartContainerProps) {
   const [depthChart, setDepthChart] = useState<DepthChartData | null>(null);
   const [depthLoading, setDepthLoading] = useState<boolean>(false);
@@ -87,44 +100,37 @@ const DepthChartContainer = memo(function DepthChartContainer({
     return null;
   };
 
-  // Fetch ESPN depth chart whenever selectedTeam changes
+  // Use preloaded data for instant switching - no fetching needed
   useEffect(() => {
-    let aborted = false;
-    (async () => {
-      try {
-        setDepthError(null);
-        setDepthChart(null);
-        if (!selectedTeam || selectedTeam === 'N/A') return;
-        setDepthLoading(true);
-        const url = `/api/depth-chart?team=${encodeURIComponent(selectedTeam)}`;
-        const res = await fetch(url);
-        const js = await res.json().catch(() => ({}));
-        if (aborted) return;
-        // Log for debugging
-        console.log('[DepthChart] fetch', { status: res.status, ok: res.ok, url, payload: js });
-        if (!res.ok) {
-          setDepthError(js?.error || `Failed to load depth chart (HTTP ${res.status})`);
-          setDepthChart(null);
-          return;
-        }
-        const dc: DepthChartData | undefined = js?.depthChart as DepthChartData | undefined;
-        setDepthChart(dc || null);
-        setDepthError(null);
-      } catch (e: any) {
-        if (!aborted) setDepthError(e?.message || 'Failed to load depth chart');
-      } finally {
-        if (!aborted) setDepthLoading(false);
-      }
-    })();
-    return () => { aborted = true; };
-  }, [selectedTeam]);
+    const playerTeam = originalPlayerTeam || 'N/A';
+    const isShowingPlayerTeam = selectedTeam === playerTeam;
+    
+    setDepthError(null);
+    
+    if (!selectedTeam || selectedTeam === 'N/A') {
+      setDepthChart(null);
+      setDepthLoading(false);
+      return;
+    }
+    
+    // Use preloaded roster data for instant switching
+    if (isShowingPlayerTeam) {
+      // Show player team roster
+      setDepthChart(playerTeamRoster || null);
+      setDepthLoading(rostersLoading?.player || false);
+    } else {
+      // Show opponent team roster
+      setDepthChart(opponentTeamRoster || null);
+      setDepthLoading(rostersLoading?.opponent || false);
+    }
+  }, [selectedTeam, originalPlayerTeam, playerTeamRoster, opponentTeamRoster, rostersLoading]);
 
   const mappedDepthChart = createDepthChart(depthChart);
   
   if (!selectedTeam || selectedTeam === 'N/A') {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart (ESPN)</div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">Select a player/team to load depth chart.</div>
       </div>
     );
@@ -133,7 +139,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (depthLoading) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart (ESPN)</div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">Loading depth chart…</div>
       </div>
     );
@@ -142,7 +148,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (depthError) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart (ESPN)</div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-red-500">{depthError}</div>
       </div>
     );
@@ -151,7 +157,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (!mappedDepthChart) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart (ESPN)</div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-center py-6 text-gray-500 dark:text-gray-400">
           <div className="text-sm font-bold mb-2">No Live Roster Available</div>
           <div className="text-xs">Unable to load current depth chart data from ESPN</div>
@@ -178,7 +184,64 @@ const DepthChartContainer = memo(function DepthChartContainer({
   
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart (ESPN)</div>
+      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
+      
+      {/* Team Swapper */}
+      {selectedTeam && selectedTeam !== 'N/A' && (
+        <div className="flex items-center justify-center gap-2 mb-3">
+          {(() => {
+            // Get the original player's team and opponent team
+            const playerTeam = originalPlayerTeam || 'N/A';
+            const oppTeam = opponentTeam || 'N/A';
+            const hasOpponent = oppTeam && oppTeam !== 'N/A' && oppTeam !== playerTeam;
+            
+            if (!hasOpponent) {
+              // Only one team available - show it as selected
+              return (
+                <button
+                  className="px-3 py-1 rounded text-xs font-bold transition-colors bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600"
+                >
+                  {playerTeam.toUpperCase()}
+                </button>
+              );
+            }
+            
+            // Team A (Player's Team) always on left, Team B (Opponent) always on right
+            const teamA = playerTeam;
+            const teamB = oppTeam;
+            
+            return (
+              <>
+                {/* Team A - Always on Left (Player's Team) */}
+                <button
+                  onClick={() => onTeamSwap?.(teamA)}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                    selectedTeam === teamA
+                      ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600 hover:opacity-80'
+                  }`}
+                >
+                  {teamA.toUpperCase()}
+                </button>
+                
+                <span className="text-slate-400 dark:text-slate-500 text-xs">vs</span>
+                
+                {/* Team B - Always on Right (Opponent Team) */}
+                <button
+                  onClick={() => onTeamSwap?.(teamB)}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                    selectedTeam === teamB
+                      ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600 hover:opacity-80'
+                  }`}
+                >
+                  {teamB.toUpperCase()}
+                </button>
+              </>
+            );
+          })()} 
+        </div>
+      )}
       <div className="overflow-x-auto">
         <div className="min-w-full">
           {/* Depth Headers (top row) */}
@@ -205,11 +268,40 @@ const DepthChartContainer = memo(function DepthChartContainer({
                 return (
                   <div key={depthIndex} className="flex justify-center">
                     {player ? (() => {
-                      // Check if player is injured
+                      // Check if player is injured (robust name/jersey matching)
                       const playerInjuries = teamInjuries[selectedTeam] || [];
+
+                      const normalizeName = (s: string) => {
+                        return s
+                          .toLowerCase()
+                          .normalize('NFD')
+                          .replace(/\p{Diacritic}/gu, '')
+                          .replace(/[^a-z0-9\s]/g, '')
+                          .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
+                          .replace(/\s+/g, ' ')
+                          .trim();
+                      };
+
+                      const playerNameNorm = normalizeName(player.name || '');
+                      const playerLastNameNorm = playerNameNorm.split(' ').slice(-1)[0] || '';
+                      const playerFirstInitial = playerNameNorm[0] || '';
+                      const playerJersey = String(player.jersey || '').replace(/[^0-9]/g, '');
+
                       const injury = playerInjuries.find(inj => {
-                        const injuryName = `${inj.player?.first_name || ''} ${inj.player?.last_name || ''}`.trim();
-                        return injuryName.toLowerCase() === player.name.toLowerCase();
+                        const injFull = `${inj.player?.first_name || ''} ${inj.player?.last_name || ''}`.trim();
+                        const injNorm = normalizeName(injFull);
+                        const injLast = normalizeName(inj.player?.last_name || '');
+                        const injFirst = normalizeName(inj.player?.first_name || '');
+                        const injFirstInitial = injFirst[0] || '';
+                        const injJersey = String(inj.player?.jersey_number || '').replace(/[^0-9]/g, '');
+
+                        // Exact normalized match
+                        if (injNorm && injNorm === playerNameNorm) return true;
+                        // First initial + last name match (e.g., "S Curry" vs "Stephen Curry")
+                        if (injLast && playerLastNameNorm === injLast && playerFirstInitial && injFirstInitial && playerFirstInitial === injFirstInitial) return true;
+                        // Last name + jersey match as fallback
+                        if (injLast && playerLastNameNorm === injLast && playerJersey && injJersey && playerJersey === injJersey) return true;
+                        return false;
                       });
                       
                       const getInjuryBadge = (status: string) => {

@@ -1,5 +1,6 @@
 // app/api/advanced-stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,12 @@ async function bdlFetch(url: URL) {
 }
 
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
+const DBG = process.env.DEBUG_DEPTH_CHART === '1';
 
 // ESPN abbreviation alias map for matching quirks
 const ESPN_ABBR_ALIASES: Record<string, string[]> = {
@@ -68,13 +71,27 @@ const ALT: Record<'PG'|'SG'|'SF'|'PF'|'C', Array<'PG'|'SG'|'SF'|'PF'|'C'>> = {
 };
 
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
+  }
+  
   try {
     const { searchParams } = new URL(req.url);
     const inputTeam = (searchParams.get('team') || '').toUpperCase();
     const playerName = searchParams.get('player') || '';
+    const forceRefresh = searchParams.get('refresh') === '1';
 
     if (!inputTeam) {
       return NextResponse.json({ success: false, error: 'Missing team' }, { status: 400 });
+    }
+
+    // Try cache first unless forced refresh
+    const cacheKey = getCacheKey.depthChart(inputTeam);
+    if (!forceRefresh) {
+      const hit = cache.get<any>(cacheKey);
+      if (hit) return NextResponse.json(hit, { status: 200 });
     }
 
     // Resolve ESPN team by abbreviation
@@ -204,7 +221,7 @@ export async function GET(req: NextRequest) {
               const key = toKey(g?.position?.abbreviation || g?.positionAbbr || g?.abbr || g?.position || g?.name);
               if (!key) continue;
               const names = stableUnique(extractGroupOrdered(g));
-              if (names.length) out[key] = names.slice(0, 4);
+              if (names.length) out[key] = names.slice(0, 5);
             }
             debug.endpoints[keyName].extracted = { PG: out.PG.length, SG: out.SG.length, SF: out.SF.length, PF: out.PF.length, C: out.C.length };
             if (Object.values(out).some(v => v.length)) return true;
@@ -228,15 +245,15 @@ export async function GET(req: NextRequest) {
       if (htmlResp.ok) {
         const html = await htmlResp.text();
         const compact = html.replace(/\n|\r/g, ' ').replace(/\s+/g, ' ');
-        console.log('HTML content length:', html.length);
-        console.log('Contains STARTER:', /(STARTER)/i.test(html));
-        console.log('Contains positions:', /(\bPG\b|\bSG\b|\bSF\b|\bPF\b|\bC\b)/i.test(html));
+        if (DBG) console.log('HTML content length:', html.length);
+        if (DBG) console.log('Contains STARTER:', /(STARTER)/i.test(html));
+        if (DBG) console.log('Contains positions:', /(\bPG\b|\bSG\b|\bSF\b|\bPF\b|\bC\b)/i.test(html));
 
         // Try to locate the depth chart table by headers  
         const tableMatches = Array.from(compact.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi));
         let parsed = false;
         
-        console.log(`Found ${tableMatches.length} tables for ${team?.abbreviation}`);
+        if (DBG) console.log(`Found ${tableMatches.length} tables for ${team?.abbreviation}`);
         
         // Add detailed debug info
         if (!debug.htmlParsingDetails) debug.htmlParsingDetails = {};
@@ -257,20 +274,20 @@ export async function GET(req: NextRequest) {
           const hasStarters = /(STARTER|2ND|3RD|4TH|5TH)/i.test(tbl);
           const hasPositions = /(\bPG\b|\bSG\b|\bSF\b|\bPF\b|\bC\b)/i.test(tbl);
           
-          console.log(`Table ${tableIndex}: hasStarters=${hasStarters}, hasPositions=${hasPositions}`);
+          if (DBG) console.log(`Table ${tableIndex}: hasStarters=${hasStarters}, hasPositions=${hasPositions}`);
           
           if (hasPositions && !hasStarters) {
             positionTable = { index: tableIndex, content: tbl };
-            console.log(`Found position table at index ${tableIndex}`);
+            if (DBG) console.log(`Found position table at index ${tableIndex}`);
           } else if (hasStarters && !hasPositions) {
             playersTable = { index: tableIndex, content: tbl };
-            console.log(`Found players table at index ${tableIndex}`);
+            if (DBG) console.log(`Found players table at index ${tableIndex}`);
           }
         }
         
         // Try to parse split tables
         if (positionTable && playersTable) {
-          console.log('Using split-table parsing approach');
+          if (DBG) console.log('Using split-table parsing approach');
           
           // Extract positions in order from position table
           const positionRows = Array.from(positionTable.content.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
@@ -284,7 +301,7 @@ export async function GET(req: NextRequest) {
               const cellText = cellMatch[1].replace(/<[^>]*>/g, '').trim().toUpperCase();
               if (['PG', 'SG', 'SF', 'PF', 'C'].includes(cellText)) {
                 positions.push(cellText as any);
-                console.log(`Found position: ${cellText} at index ${positions.length - 1}`);
+                if (DBG) console.log(`Found position: ${cellText} at index ${positions.length - 1}`);
                 break;
               }
             }
@@ -292,7 +309,7 @@ export async function GET(req: NextRequest) {
           
           // Extract player data from players table
           const playerRows = Array.from(playersTable.content.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
-          console.log(`Players table has ${playerRows.length} rows, positions array has ${positions.length} positions`);
+          if (DBG) console.log(`Players table has ${playerRows.length} rows, positions array has ${positions.length} positions`);
           
           // Map positions to player rows (skip header row)
           let dataRowIndex = 0;
@@ -313,11 +330,11 @@ export async function GET(req: NextRequest) {
             }
             
             if (!foundRow) {
-              console.log(`No data row found for position ${position}`);
+            if (DBG) console.log(`No data row found for position ${position}`);
               continue;
             }
             
-            console.log(`Processing position ${position} with row: ${foundRow.substring(0, 100)}`);
+            if (DBG) console.log(`Processing position ${position} with row: ${foundRow.substring(0, 100)}`);
             
             // Extract players from this row
             const cellMatches = Array.from(foundRow.matchAll(/<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi));
@@ -351,21 +368,21 @@ export async function GET(req: NextRequest) {
               
               if (playerName && playerName.length > 1 && !playerName.match(/^\d+$/)) {
                 players.push(playerName);
-                console.log(`  Added player to ${position}: ${playerName}`);
+                if (DBG) console.log(`  Added player to ${position}: ${playerName}`);
               }
             }
             
             if (players.length > 0) {
               out[position] = stableUnique(players);
               parsed = true;
-              console.log(`Position ${position}: Final players = [${players.join(', ')}]`);
+              if (DBG) console.log(`Position ${position}: Final players = [${players.join(', ')}]`);
             }
           }
         }
         
         // Fallback to original single-table approach if split tables not found
         if (!parsed) {
-          console.log('Split-table parsing failed, trying single-table approach');
+          if (DBG) console.log('Split-table parsing failed, trying single-table approach');
           for (let tableIndex = 0; tableIndex < tableMatches.length; tableIndex++) {
             const tm = tableMatches[tableIndex];
             const tbl = tm[0];
@@ -378,7 +395,7 @@ export async function GET(req: NextRequest) {
               continue;
             }
           
-            console.log(`Single-table approach for table ${tableIndex}`);
+            if (DBG) console.log(`Single-table approach for table ${tableIndex}`);
             
             // Extract all table rows
             const rowMatches = Array.from(tbl.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
@@ -460,22 +477,22 @@ export async function GET(req: NextRequest) {
             const posAlt = k === 'PG' ? 'Point Guard' : k === 'SG' ? 'Shooting Guard' : k === 'SF' ? 'Small Forward' : k === 'PF' ? 'Power Forward' : 'Center';
             const rowRe = new RegExp(`(<tr[^>]*>[\n\r\t\s\S]*?(?:${k}|${posAlt})[\n\r\t\s\S]*?<\/tr>)`, 'i');
             const m = compact.match(rowRe);
-            console.log(`Fallback - Position ${k}: Found row = ${!!m}`);
+            if (DBG) console.log(`Fallback - Position ${k}: Found row = ${!!m}`);
             if (!m) continue;
             
             const rowHtml = m[1];
             const cells = Array.from(rowHtml.matchAll(/<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi)).map(x => x[1]);
-            console.log(`Fallback - Position ${k}: Found ${cells.length} cells`);
+            if (DBG) console.log(`Fallback - Position ${k}: Found ${cells.length} cells`);
             
             const names: string[] = [];
             for (let i = 1; i < cells.length; i++) {
               const cell = cells[i];
-              console.log(`  Fallback - Position ${k} Cell ${i}: ${cell.substring(0, 150)}`);
+              if (DBG) console.log(`  Fallback - Position ${k} Cell ${i}: ${cell.substring(0, 150)}`);
               
               const mm = cell.match(/<a\b[^>]*>([^<]+)<\/a>/i);
               const nm = (mm?.[1] || '').trim();
               if (nm) {
-                console.log(`    Fallback - Found player: ${nm}`);
+                if (DBG) console.log(`    Fallback - Found player: ${nm}`);
                 names.push(nm);
               } else {
                 // Try plain text for fallback too
@@ -483,21 +500,21 @@ export async function GET(req: NextRequest) {
                 plainText = plainText.replace(/\b(STARTER|2ND|3RD|4TH|5TH)\b/gi, ' ').replace(/\s+/g, ' ').trim();
                 plainText = plainText.replace(/^[-,\s]+|[-,\s]+$/g, '');
                 if (plainText && plainText !== '-' && plainText.length > 1 && !/^\d+$/.test(plainText)) {
-                  console.log(`    Fallback - Found player via plain text: ${plainText}`);
+                  if (DBG) console.log(`    Fallback - Found player via plain text: ${plainText}`);
                   names.push(plainText);
                 }
               }
             }
             
             const ordered = stableUnique(names);
-            console.log(`Fallback - Position ${k}: Final players = [${ordered.join(', ')}]`);
+            if (DBG) console.log(`Fallback - Position ${k}: Final players = [${ordered.join(', ')}]`);
             if (ordered.length) out[k] = ordered.slice(0, 5);
           }
         }
 
         // Method 2: Try modern ESPN structure (div-based or React components)
         if (!parsed) {
-          console.log('Table parsing failed, trying modern ESPN structure...');
+          if (DBG) console.log('Table parsing failed, trying modern ESPN structure...');
           
           // Look for position headers followed by player names
           for (const k of KEYS) {
@@ -517,7 +534,7 @@ export async function GET(req: NextRequest) {
               }
               
               if (playerNames.length > 0) {
-                console.log(`Found ${playerNames.length} players for ${k}:`, playerNames);
+                if (DBG) console.log(`Found ${playerNames.length} players for ${k}:`, playerNames);
                 out[k] = stableUnique([...out[k], ...playerNames]);
                 parsed = true;
               }
@@ -539,7 +556,7 @@ export async function GET(req: NextRequest) {
           }
           
           if (playerNames.length > 0) {
-            console.log('Found player links:', playerNames.slice(0, 10));
+            if (DBG) console.log('Found player links:', playerNames.slice(0, 10));
             // Distribute players across positions (basic fallback)
             const perPosition = Math.ceil(playerNames.length / 5);
             KEYS.forEach((k, i) => {
@@ -566,7 +583,7 @@ export async function GET(req: NextRequest) {
 
     // Build response with jerseys and optional player alignment
     const depthChart = KEYS.reduce((acc, k) => {
-      const uniq = Array.from(new Set(out[k] || [])).slice(0, 4);
+      const uniq = Array.from(new Set(out[k] || [])).slice(0, 5);
       acc[k] = uniq.map(name => ({ name, jersey: findJersey(name) }));
       return acc;
     }, {} as Record<'PG'|'SG'|'SF'|'PF'|'C', { name: string; jersey: string }[]>);
@@ -583,7 +600,17 @@ export async function GET(req: NextRequest) {
     // Add basic debug info
     debug.finalExtracted = { PG: out.PG.length, SG: out.SG.length, SF: out.SF.length, PF: out.PF.length, C: out.C.length };
     
-    return NextResponse.json({ success: ok, team: team?.abbreviation, depthChart, highlight, debug }, { status: ok ? 200 : 206 });
+    const newHash = JSON.stringify(depthChart);
+    let changed = true;
+    try {
+      const prev = cache.get<any>(cacheKey);
+      const prevHash = prev?.__hash;
+      if (prevHash && prevHash === newHash) changed = false;
+    } catch {}
+
+    const payload = { success: ok, team: team?.abbreviation, depthChart, highlight, debug, changed, __hash: newHash };
+    cache.set(cacheKey, payload, CACHE_TTL.DEPTH_CHART);
+    return NextResponse.json(payload, { status: ok ? 200 : 206 });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Unexpected error' }, { status: 500 });
   }

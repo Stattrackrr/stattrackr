@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
+export const revalidate = 3600; // Cache for 1 hour
 
 const BDL_BASE = "https://api.balldontlie.io/v1";
 const API_KEY = process.env.BALLDONTLIE_API_KEY;
@@ -85,11 +87,19 @@ async function fetchInjuriesPaged(teamIds: number[], maxPages = 10) {
 
     const res = await fetch(url, { 
       headers: authHeaders(), 
-      cache: "no-store" 
+      next: { revalidate: 3600 } // Cache for 1 hour
     });
 
     if (!res.ok) {
       const text = await res.text();
+      
+      // Handle rate limiting gracefully
+      if (res.status === 429) {
+        console.warn(`Rate limited by BDL API. Returning partial data if available.`);
+        // Return what we have so far instead of throwing
+        return allInjuries;
+      }
+      
       throw new Error(`BDL ${res.status}: ${text || res.statusText}`);
     }
 
@@ -113,6 +123,12 @@ async function fetchInjuriesPaged(teamIds: number[], maxPages = 10) {
 }
 
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
+  }
+  
   const { searchParams } = new URL(req.url);
   
   // Support both team abbreviations and team IDs
@@ -174,12 +190,19 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error("Injuries fetch error:", error);
+    
+    // Check if it's a rate limit error
+    const isRateLimit = error?.message?.includes('429');
+    
     return NextResponse.json({
       success: false,
-      error: error?.message || "Failed to fetch injuries",
+      error: isRateLimit 
+        ? "Rate limit reached. Please try again in a few moments." 
+        : error?.message || "Failed to fetch injuries",
       injuries: [],
       injuriesByTeam: {},
-      requestedTeams: []
-    }, { status: 500 });
+      requestedTeams: [],
+      rateLimited: isRateLimit
+    }, { status: isRateLimit ? 429 : 500 });
   }
 }

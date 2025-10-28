@@ -853,7 +853,7 @@ const [selectedTeamAbbr, setSelectedTeamAbbr] = useState<string | null>(null);
         url.searchParams.set(k, String(v));
       }
     }
-    const res = await fetch(url.toString(), { cache: 'no-store' });
+    const res = await fetch(url.toString());
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   }, []);
@@ -872,7 +872,7 @@ const [selectedTeamAbbr, setSelectedTeamAbbr] = useState<string | null>(null);
         if (attempt > 0) {
           await sleep(rateLimitDelay(attempt));
         }
-        const response = await fetch(url, { cache: 'no-store' });
+        const response = await fetch(url);
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After');
           const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : rateLimitDelay(attempt + 1);
@@ -1563,7 +1563,7 @@ const [selectedTeamAbbr, setSelectedTeamAbbr] = useState<string | null>(null);
         u.searchParams.set('action', 'games-window');
         u.searchParams.set('opening', opening);
         u.searchParams.set('days', '2');
-        const resp = await fetch(u.toString(), { cache: 'no-store' });
+        const resp = await fetch(u.toString());
         if (resp.ok) {
           const js = await resp.json();
           windowGames = Array.isArray(js?.data) ? js.data : [];
@@ -1590,7 +1590,7 @@ const [selectedTeamAbbr, setSelectedTeamAbbr] = useState<string | null>(null);
       sched.searchParams.set('season', String(seasonYear));
       sched.searchParams.set('startDate', startStr);
       sched.searchParams.set('teamAbbr', String(teamAbbr));
-      const resp = await fetch(sched.toString(), { cache: 'no-store' });
+      const resp = await fetch(sched.toString());
       if (!resp.ok) return null;
       const js = await resp.json();
       const d = js?.data || null;
@@ -2703,8 +2703,94 @@ const [selectedTeamAbbr, setSelectedTeamAbbr] = useState<string | null>(null);
                     <div className={(themeDark ? 'text-slate-200' : 'text-slate-800') + ' text-lg font-bold font-mono mb-2'}>
                       DEPTH CHART
                     </div>
-                    <div className={(themeDark ? 'text-slate-400' : 'text-slate-600') + ' text-xs font-mono'}>
-                      Team: <span className="font-bold uppercase">{playerTeam || 'N/A'}</span>
+                    
+                    {/* Team Swapper */}
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      {/* Debug info */}
+                      {console.log('[Debug] Team states:', { playerTeam, opponentTeam, selectedTeamAbbr })}
+                      
+                      {/* TEST: Hardcoded team swapper - remove this after testing */}
+                      <div className="flex items-center gap-2 mb-2 p-2 border border-yellow-400 rounded">
+                        <span className="text-yellow-600 text-xs font-bold">TEST SWAPPER:</span>
+                        <button
+                          className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                            themeDark
+                              ? 'bg-purple-800 text-purple-200 border border-purple-600'
+                              : 'bg-purple-100 text-purple-800 border border-purple-300'
+                          }`}
+                        >
+                          LAL
+                        </button>
+                        <span className={(themeDark ? 'text-slate-400' : 'text-slate-500') + ' text-xs'}>vs</span>
+                        <button
+                          className={`px-3 py-1 rounded text-xs font-bold transition-colors hover:opacity-80 ${
+                            themeDark
+                              ? 'bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600'
+                              : 'bg-slate-200 text-slate-700 border border-slate-300 hover:bg-slate-300'
+                          }`}
+                        >
+                          GSW
+                        </button>
+                      </div>
+                      
+                      {playerTeam ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              // Swap to original player's team depth chart
+                              if (selectedTeamAbbr && selectedTeamAbbr !== playerTeam) {
+                                setPlayerTeam(selectedTeamAbbr);
+                                fetchRealDepthChart(selectedTeamAbbr);
+                                fetchTeamRoster(selectedTeamAbbr);
+                              }
+                            }}
+                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                              playerTeam === selectedTeamAbbr
+                                ? themeDark
+                                  ? 'bg-purple-800 text-purple-200 border border-purple-600'
+                                  : 'bg-purple-100 text-purple-800 border border-purple-300'
+                                : themeDark
+                                ? 'bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 hover:opacity-80'
+                                : 'bg-slate-200 text-slate-700 border border-slate-300 hover:bg-slate-300 hover:opacity-80'
+                            }`}
+                          >
+                            {(selectedTeamAbbr || playerTeam).toUpperCase()}
+                          </button>
+                          
+                          {opponentTeam && opponentTeam !== playerTeam ? (
+                            <>
+                              <span className={(themeDark ? 'text-slate-400' : 'text-slate-500') + ' text-xs'}>vs</span>
+                              <button
+                                onClick={async () => {
+                                  // Swap to opponent's team depth chart
+                                  setPlayerTeam(opponentTeam);
+                                  fetchRealDepthChart(opponentTeam);
+                                  fetchTeamRoster(opponentTeam);
+                                }}
+                                className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                                  playerTeam === opponentTeam
+                                    ? themeDark
+                                      ? 'bg-purple-800 text-purple-200 border border-purple-600'
+                                      : 'bg-purple-100 text-purple-800 border border-purple-300'
+                                    : themeDark
+                                    ? 'bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 hover:opacity-80'
+                                    : 'bg-slate-200 text-slate-700 border border-slate-300 hover:bg-slate-300 hover:opacity-80'
+                                }`}
+                              >
+                                {opponentTeam.toUpperCase()}
+                              </button>
+                            </>
+                          ) : (
+                            <span className={(themeDark ? 'text-slate-500' : 'text-slate-400') + ' text-xs'}>
+                              (No upcoming opponent)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className={(themeDark ? 'text-slate-400' : 'text-slate-600') + ' text-xs font-mono'}>
+                          Team: <span className="font-bold uppercase">N/A</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   

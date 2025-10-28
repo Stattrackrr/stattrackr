@@ -1,6 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "StatTrackr",
@@ -14,8 +15,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Devtools disabled */}
       </head>
       <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]">
-        {/* Devtools fully disabled */}
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );
