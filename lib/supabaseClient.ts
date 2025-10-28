@@ -1,8 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
-import { getEnv } from './env'
 
-const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL')
-const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+// Access NEXT_PUBLIC_ vars directly - they're injected at build time
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+// Validate on initialization
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase URL:', supabaseUrl ? 'Present' : 'MISSING');
+  console.error('Supabase Key:', supabaseAnonKey ? 'Present' : 'MISSING');
+  throw new Error(
+    'Missing Supabase environment variables. ' +
+    'Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in .env.local'
+  )
+}
+
+console.log('✅ Supabase client initialized:', { url: supabaseUrl, keyLength: supabaseAnonKey.length });
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -46,6 +58,16 @@ export interface Database {
           odds: number
           result: 'win' | 'loss' | 'void'
           created_at: string
+          player_id?: string | null
+          player_name?: string | null
+          team?: string | null
+          opponent?: string | null
+          stat_type?: string | null
+          line?: number | null
+          over_under?: 'over' | 'under' | null
+          actual_value?: number | null
+          game_date?: string | null
+          status?: 'pending' | 'settled' | null
         }
         Insert: {
           id?: string
@@ -59,6 +81,16 @@ export interface Database {
           odds: number
           result: 'win' | 'loss' | 'void'
           created_at?: string
+          player_id?: string | null
+          player_name?: string | null
+          team?: string | null
+          opponent?: string | null
+          stat_type?: string | null
+          line?: number | null
+          over_under?: 'over' | 'under' | null
+          actual_value?: number | null
+          game_date?: string | null
+          status?: 'pending' | 'settled' | null
         }
         Update: {
           id?: string
@@ -72,6 +104,66 @@ export interface Database {
           odds?: number
           result?: 'win' | 'loss' | 'void'
           created_at?: string
+          player_id?: string | null
+          player_name?: string | null
+          team?: string | null
+          opponent?: string | null
+          stat_type?: string | null
+          line?: number | null
+          over_under?: 'over' | 'under' | null
+          actual_value?: number | null
+          game_date?: string | null
+          status?: 'pending' | 'settled' | null
+        }
+      }
+      tracked_props: {
+        Row: {
+          id: string
+          user_id: string
+          player_id: string
+          player_name: string
+          team: string
+          stat_type: string
+          line: number
+          over_under: 'over' | 'under'
+          game_date: string
+          opponent: string | null
+          status: 'pending' | 'hit' | 'missed' | 'void'
+          actual_value: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          player_id: string
+          player_name: string
+          team: string
+          stat_type: string
+          line: number
+          over_under: 'over' | 'under'
+          game_date: string
+          opponent?: string | null
+          status?: 'pending' | 'hit' | 'missed' | 'void'
+          actual_value?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          player_id?: string
+          player_name?: string
+          team?: string
+          stat_type?: string
+          line?: number
+          over_under?: 'over' | 'under'
+          game_date?: string
+          opponent?: string | null
+          status?: 'pending' | 'hit' | 'missed' | 'void'
+          actual_value?: number | null
+          created_at?: string
+          updated_at?: string
         }
       }
     }

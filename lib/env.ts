@@ -52,13 +52,16 @@ export function validateEnv(): void {
  */
 export function getEnv(key: keyof typeof REQUIRED_ENV_VARS): string {
   const value = process.env[key];
-  if (!value) {
+  
+  // Only throw on server-side or during build - client side might not have process.env
+  if (!value && typeof window === 'undefined') {
     throw new Error(
       `Missing required environment variable: ${key}\n` +
       `Description: ${REQUIRED_ENV_VARS[key]}`
     );
   }
-  return value;
+  
+  return value || '';
 }
 
 /**
