@@ -135,6 +135,9 @@ export default function TrackPlayerModal({
       const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
       const finalOdds = isManualMode ? null : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
       
+      // Determine bookmaker info
+      const bookmakerName = !isManualMode && selectedOdds ? getBookmakerInfo(selectedOdds.bookmaker).name : null;
+      
       // Insert into tracked_props
       const { data: insertedProp, error: insertError } = await supabase
         .from('tracked_props')
@@ -149,6 +152,8 @@ export default function TrackPlayerModal({
           over_under: overUnder,
           game_date: gameDate,
           status: 'pending',
+          bookmaker: bookmakerName,
+          odds: finalOdds,
         })
         .select()
         .single();
@@ -158,7 +163,6 @@ export default function TrackPlayerModal({
       // Add to tracked bets context for RightSidebar
       if (insertedProp) {
         const statLabel = STAT_OPTIONS.find(opt => opt.value === statType)?.label || statType;
-        const bookmakerName = !isManualMode && selectedOdds ? getBookmakerInfo(selectedOdds.bookmaker).name : null;
         const newBet = {
           id: insertedProp.id,
           selection: `${playerName} ${statLabel} ${overUnder === 'over' ? 'Over' : 'Under'} ${finalLine}`,

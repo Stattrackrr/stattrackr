@@ -13,11 +13,12 @@ export const maxDuration = 300; // 5 minutes
  * 3. GitHub Actions scheduled workflow
  */
 
-async function checkIfAllGamesComplete(): Promise<boolean> {
+async function checkIfAnyGamesComplete(): Promise<{ shouldIngest: boolean; completedCount: number; totalCount: number }> {
   try {
-    // Check BDL API for today's games
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    // Check BDL API for yesterday's games (NBA games happen in US evening, which is next day in Australia/Asia)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD
     
     const url = `https://api.balldontlie.io/v1/games?start_date=${dateStr}&end_date=${dateStr}`;
     const res = await fetch(url, {
@@ -28,53 +29,59 @@ async function checkIfAllGamesComplete(): Promise<boolean> {
       cache: 'no-store',
     });
 
-    if (!res.ok) return false;
+    if (!res.ok) return { shouldIngest: false, completedCount: 0, totalCount: 0 };
     
     const data = await res.json();
     const games = Array.isArray(data?.data) ? data.data : [];
     
     if (games.length === 0) {
       console.log('[auto-ingest] No games scheduled for today');
-      return false; // No games today, skip
+      return { shouldIngest: false, completedCount: 0, totalCount: 0 };
     }
 
-    // Check if all games have "Final" status
-    const allComplete = games.every((game: any) => {
-      const status = String(game?.status || '').toLowerCase();
-      return status.includes('final');
+    // Count completed games
+    const completedGames = games.filter((game: any) => {
+      const rawStatus = String(game?.status || '');
+      const status = rawStatus.toLowerCase();
+      console.log(`[auto-ingest] Game ${game.id}: ${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}, status: "${rawStatus}"`);
+      if (status.includes('final') || status.includes('completed')) return true;
+      // Some BDL responses return an ISO tipoff time in status; treat games older than ~3h as completed
+      const ts = Date.parse(rawStatus);
+      if (!Number.isNaN(ts)) {
+        const start = new Date(ts);
+        const now = new Date();
+        const threeHoursMs = 3 * 60 * 60 * 1000;
+        return now.getTime() - start.getTime() > threeHoursMs;
+      }
+      return false;
     });
 
-    console.log(`[auto-ingest] Games today: ${games.length}, All complete: ${allComplete}`);
-    return allComplete;
+    const completedCount = completedGames.length;
+    const totalCount = games.length;
+    const shouldIngest = completedCount > 0;
+
+    console.log(`[auto-ingest] Games today: ${totalCount}, Completed: ${completedCount}`);
+    return { shouldIngest, completedCount, totalCount };
   } catch (e: any) {
     console.error('[auto-ingest] Error checking games:', e.message);
-    return false;
+    return { shouldIngest: false, completedCount: 0, totalCount: 0 };
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    // Verify cron secret (for security)
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || 'your-secret-key-here';
-    
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     console.log('[auto-ingest] Cron job triggered');
 
-    // Check if all games are complete
-    const allComplete = await checkIfAllGamesComplete();
+    // Check if any games are complete
+    const { shouldIngest, completedCount, totalCount } = await checkIfAnyGamesComplete();
 
-    if (!allComplete) {
+    if (!shouldIngest) {
       return NextResponse.json({
         success: true,
-        message: 'Games not yet complete, skipping ingest',
+        message: 'No completed games yet, skipping ingest',
         ingested: false,
+        completedGames: completedCount,
+        totalGames: totalCount,
       });
     }
 

@@ -27,10 +27,13 @@ export default function RightSidebar() {
   const [isMounted, setIsMounted] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Prevent hydration mismatch by waiting for client mount
   useEffect(() => {
     setIsMounted(true);
+    // Load tracked bets from Supabase on mount
+    handleRefresh();
   }, []);
 
   // Debug: Log when trackedBets changes
@@ -39,9 +42,14 @@ export default function RightSidebar() {
   }, [trackedBets]);
 
   const handleRefresh = async () => {
+    setIsRefreshing(true);
+    
     // Fetch tracked bets from Supabase
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsRefreshing(false);
+      return;
+    }
 
     const { data: trackedProps, error } = await supabase
       .from('tracked_props')
@@ -51,6 +59,7 @@ export default function RightSidebar() {
 
     if (error) {
       console.error('Failed to fetch tracked props:', error);
+      setIsRefreshing(false);
       return;
     }
 
@@ -60,13 +69,13 @@ export default function RightSidebar() {
         id: prop.id,
         selection: `${prop.player_name} ${prop.stat_type.toUpperCase()} ${prop.over_under === 'over' ? 'Over' : 'Under'} ${prop.line}`,
         stake: 0,
-        odds: 0,
+        odds: prop.odds || 0,
         sport: 'NBA',
         playerName: prop.player_name,
         stat: prop.stat_type,
         line: prop.line,
-        bookmaker: null,
-        isCustom: true,
+        bookmaker: prop.bookmaker || null,
+        isCustom: !prop.bookmaker, // If no bookmaker, it's custom
         gameStatus: prop.status === 'completed' ? 'completed' as const : 'scheduled' as const,
         result: prop.result || 'pending' as const,
       }));
@@ -75,6 +84,8 @@ export default function RightSidebar() {
       localStorage.setItem('trackedBets', JSON.stringify(bets));
       refreshTrackedBets();
     }
+    
+    setIsRefreshing(false);
   };
 
   // Fetch journal bets from localStorage or API
@@ -89,12 +100,37 @@ export default function RightSidebar() {
     fetchJournalBets();
   }, []);
 
-  const removeBet = (id: string) => {
+  const removeBet = async (id: string) => {
+    // Remove from Supabase
+    const { error } = await supabase
+      .from('tracked_props')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to delete tracked prop:', error);
+    }
+
+    // Remove from context/localStorage
     removeTrackedBet(id);
     setConfirmRemoveId(null);
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Delete all from Supabase
+    const { error } = await supabase
+      .from('tracked_props')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Failed to clear tracked props:', error);
+    }
+
+    // Clear from context/localStorage
     clearAllTrackedBets();
     setConfirmClearAll(false);
   };
@@ -167,10 +203,11 @@ export default function RightSidebar() {
               <div className="flex gap-2">
                 <button
                   onClick={handleRefresh}
-                  className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 hover:bg-purple-500/20 transition-colors flex items-center gap-1"
+                  disabled={isRefreshing}
+                  className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 hover:bg-purple-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
                   title="Refresh tracked bets"
                 >
-                  <RefreshCw className="w-3 h-3" />
+                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
               {isMounted && trackedBets.length > 0 && (
@@ -270,16 +307,20 @@ export default function RightSidebar() {
                 <div className="text-sm font-semibold text-black dark:text-white mb-2 pr-6">{bet.selection}</div>
                 
                 <div className="flex items-center justify-between text-xs mb-2">
-                  {bet.odds > 0 && (
-                    <div className="text-gray-600 dark:text-gray-400">
-                      Odds: <span className="font-semibold text-black dark:text-white">{bet.odds.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {bet.isCustom ? (
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-xs font-medium">CUSTOM</span>
-                  ) : bet.bookmaker ? (
-                    <span className="font-semibold text-purple-600 dark:text-purple-400">{bet.bookmaker}</span>
-                  ) : null}
+                  <div className="text-gray-600 dark:text-gray-400">
+                    {bet.odds > 0 ? (
+                      <>Odds: <span className="font-semibold text-black dark:text-white">{bet.odds.toFixed(2)}</span></>
+                    ) : (
+                      <span>&nbsp;</span>
+                    )}
+                  </div>
+                  <div>
+                    {bet.isCustom ? (
+                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-xs font-medium">CUSTOM</span>
+                    ) : bet.bookmaker ? (
+                      <span className="font-semibold text-purple-600 dark:text-purple-400">{bet.bookmaker}</span>
+                    ) : null}
+                  </div>
                 </div>
                 
                 <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs flex items-center justify-between">
