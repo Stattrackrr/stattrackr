@@ -1969,3 +1969,214 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Wed 29/10/2025 14:18:40.97] warm-rosters end (exit 0) 
+[Wed 29/10/2025 14:48:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 14:48:39.81] warm-rosters end (exit 0) 
+[Wed 29/10/2025 15:18:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 15:18:39.91] warm-rosters end (exit 0) 
+[Wed 29/10/2025 15:48:37.20] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 15:48:39.44] warm-rosters end (exit 0) 
+[Wed 29/10/2025 16:18:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 16:18:39.90] warm-rosters end (exit 0) 
+[Wed 29/10/2025 16:48:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 16:48:39.36] warm-rosters end (exit 0) 
+[Wed 29/10/2025 17:18:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 17:18:40.17] warm-rosters end (exit 0) 
+[Wed 29/10/2025 17:48:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 17:48:39.85] warm-rosters end (exit 0) 
+[Wed 29/10/2025 18:18:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 18:18:39.89] warm-rosters end (exit 0) 
+[Wed 29/10/2025 18:48:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 18:48:39.23] warm-rosters end (exit 0) 
+[Wed 29/10/2025 19:18:37.24] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 19:18:40.08] warm-rosters end (exit 0) 
+[Wed 29/10/2025 19:48:37.28] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 19:48:40.11] warm-rosters end (exit 0) 
+[Wed 29/10/2025 20:18:37.26] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+^C[Wed 29/10/2025 20:48:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 20:48:39.32] warm-rosters end (exit 0) 
+[Wed 29/10/2025 21:18:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 21:18:40.06] warm-rosters end (exit 0) 
+[Wed 29/10/2025 21:48:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 21:48:40.07] warm-rosters end (exit 0) 
+[Wed 29/10/2025 22:18:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 22:18:40.02] warm-rosters end (exit 0) 
+[Wed 29/10/2025 22:48:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 22:48:39.38] warm-rosters end (exit 0) 
+[Wed 29/10/2025 23:18:37.26] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 23:18:40.16] warm-rosters end (exit 0) 
+[Wed 29/10/2025 23:48:37.22] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251029&window_min=180
+{
+    "success":  true,
+    "date":  "20251029",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 29/10/2025 23:48:39.90] warm-rosters end (exit 0) 
+[Thu 30/10/2025  0:18:37.21] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251030&window_min=180
+{
+    "success":  true,
+    "date":  "20251030",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Thu 30/10/2025  0:18:39.87] warm-rosters end (exit 0) 

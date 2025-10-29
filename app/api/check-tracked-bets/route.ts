@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;
 
@@ -14,15 +14,20 @@ interface PlayerStats {
 
 export async function GET() {
   try {
-    // Fetch all pending tracked props
-    const { data: trackedProps, error } = await supabase
+    // Fetch all pending and live tracked props
+    const { data: trackedProps, error } = await supabaseAdmin
       .from('tracked_props')
       .select('*')
-      .eq('status', 'pending');
+      .in('status', ['pending', 'live']);
 
-    if (error) throw error;
+    console.log('Fetched tracked props:', trackedProps?.length || 0);
+    if (error) {
+      console.error('Error fetching tracked props:', error);
+      throw error;
+    }
 
     if (!trackedProps || trackedProps.length === 0) {
+      console.log('No tracked props found with pending or live status');
       return NextResponse.json({ message: 'No pending tracked bets', updated: 0 });
     }
 
@@ -57,19 +62,50 @@ export async function GET() {
 
       // Process each prop for this date
       for (const prop of props as any[]) {
-        // Find the game with matching teams
-        const game = games.find((g: any) => 
-          (g.home_team.full_name === prop.team && g.visitor_team.full_name === prop.opponent) ||
-          (g.visitor_team.full_name === prop.team && g.home_team.full_name === prop.opponent)
-        );
+        // Find the game with matching teams (try both full name and abbreviation)
+        const game = games.find((g: any) => {
+          const homeMatch = g.home_team.full_name === prop.team || g.home_team.abbreviation === prop.team;
+          const visitorMatch = g.visitor_team.full_name === prop.team || g.visitor_team.abbreviation === prop.team;
+          const homeOppMatch = g.home_team.full_name === prop.opponent || g.home_team.abbreviation === prop.opponent;
+          const visitorOppMatch = g.visitor_team.full_name === prop.opponent || g.visitor_team.abbreviation === prop.opponent;
+          
+          return (homeMatch && visitorOppMatch) || (visitorMatch && homeOppMatch);
+        });
 
         if (!game) {
           console.log(`Game not found for ${prop.team} vs ${prop.opponent}`);
           continue;
         }
 
+        // Check game status
+        const rawStatus = String(game.status || '');
+        const gameStatus = rawStatus.toLowerCase();
+        
+        // Check if game is live by looking at tipoff time
+        let isLive = false;
+        const tipoffTime = Date.parse(rawStatus);
+        if (!Number.isNaN(tipoffTime)) {
+          const now = Date.now();
+          const timeSinceTipoff = now - tipoffTime;
+          const threeHoursMs = 3 * 60 * 60 * 1000;
+          // Game is live if it started and hasn't been 3 hours yet
+          isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+        }
+        
+        // If game is live, update to 'live' status
+        if (isLive && !gameStatus.includes('final')) {
+          await supabaseAdmin
+            .from('tracked_props')
+            .update({ status: 'live' })
+            .eq('id', prop.id)
+            .in('status', ['pending', 'live']); // Update if pending or already live
+          
+          console.log(`Game ${prop.team} vs ${prop.opponent} is live, updated status`);
+          continue;
+        }
+        
         // Check if game is final
-        if (game.status !== 'Final') {
+        if (!gameStatus.includes('final')) {
           console.log(`Game ${prop.team} vs ${prop.opponent} is ${game.status}, not final yet`);
           continue;
         }
@@ -150,7 +186,7 @@ export async function GET() {
         }
 
         // Update the tracked prop
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
           .from('tracked_props')
           .update({
             status: 'completed',

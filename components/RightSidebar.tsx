@@ -76,7 +76,7 @@ export default function RightSidebar() {
         line: prop.line,
         bookmaker: prop.bookmaker || null,
         isCustom: !prop.bookmaker, // If no bookmaker, it's custom
-        gameStatus: prop.status === 'completed' ? 'completed' as const : 'scheduled' as const,
+        gameStatus: prop.status === 'completed' ? 'completed' as const : prop.status === 'live' ? 'live' as const : 'scheduled' as const,
         result: prop.result || 'pending' as const,
       }));
 
