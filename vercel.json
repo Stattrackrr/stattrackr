@@ -5,12 +5,8 @@
       "schedule": "30 4 * * *"
     },
     {
-      "path": "/api/check-tracked-bets",
+      "path": "/api/check-bets",
       "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/check-journal-bets",
-      "schedule": "0 6 * * *"
     }
   ]
 }
