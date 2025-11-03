@@ -135,8 +135,8 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Navigation Links - Fixed Top Right */}
-      <div className="absolute top-6 right-6 z-10">
+      {/* Navigation Links - Fixed Top Right - Hidden on mobile */}
+      <div className="absolute top-6 right-6 z-10 hidden md:block">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/nba/research/dashboard')}
@@ -198,53 +198,57 @@ export default function PricingPage() {
           </h2>
           
           {/* Tab Switcher */}
-          <div className="flex gap-4 mb-6 justify-center">
+          <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-4 mb-6 justify-center">
             <button
               onClick={() => setActiveTab('charts')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
                 activeTab === 'charts'
                   ? 'bg-purple-600 text-white'
                   : 'bg-slate-800/60 text-gray-300 hover:bg-slate-700/60'
               }`}
             >
-              Analytics Charts
+              <span className="hidden sm:inline">Analytics Charts</span>
+              <span className="sm:hidden">Analytics</span>
             </button>
             <button
               onClick={() => setActiveTab('dvp')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
                 activeTab === 'dvp'
                   ? 'bg-purple-600 text-white'
                   : 'bg-slate-800/60 text-gray-300 hover:bg-slate-700/60'
               }`}
             >
-              Defense vs Position
+              <span className="hidden sm:inline">Defense vs Position</span>
+              <span className="sm:hidden">DvP</span>
             </button>
             <button
               onClick={() => setActiveTab('journal')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
                 activeTab === 'journal'
                   ? 'bg-purple-600 text-white'
                   : 'bg-slate-800/60 text-gray-300 hover:bg-slate-700/60'
               }`}
             >
-              Journal Analytics
+              <span className="hidden sm:inline">Journal Analytics</span>
+              <span className="sm:hidden">Journal</span>
             </button>
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-purple-500/20 ${
                 activeTab === 'calendar'
                   ? 'bg-purple-600 text-white'
                   : 'bg-slate-800/60 text-gray-300 hover:bg-slate-700/60'
               }`}
             >
-              Betting Calendar
+              <span className="hidden sm:inline">Betting Calendar</span>
+              <span className="sm:hidden">Calendar</span>
             </button>
           </div>
 
           {/* Dashboard Screenshot */}
-          <div className="flex gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
             {activeTab === 'charts' && (
-              <div style={{width: '1800px'}}>
+              <div className="w-full lg:flex-1">
                 <Image 
                   src="/images/dashboard/new-chart-web-display.png" 
                   alt="Dashboard Charts" 
@@ -255,16 +259,18 @@ export default function PricingPage() {
               </div>
             )}
             {activeTab === 'dvp' && (
-              <Image 
-                src="/images/dashboard/dashboard-dvp.png" 
-                alt="DvP Rankings" 
-                width={400} 
-                height={0}
-                className="rounded-lg h-auto"
-              />
+              <div className="w-full lg:w-[400px]">
+                <Image 
+                  src="/images/dashboard/dashboard-dvp.png" 
+                  alt="DvP Rankings" 
+                  width={400} 
+                  height={0}
+                  className="rounded-lg h-auto w-full"
+                />
+              </div>
             )}
             {activeTab === 'journal' && (
-              <div style={{width: '800px'}}>
+              <div className="w-full lg:w-[800px]">
                 <Image 
                   src="/images/dashboard/dashboard-journal.png" 
                   alt="Journal Analytics" 
@@ -275,15 +281,17 @@ export default function PricingPage() {
               </div>
             )}
             {activeTab === 'calendar' && (
-              <Image 
-                src="/images/dashboard/dashboard-calendar.png" 
-                alt="Betting Calendar" 
-                width={450} 
-                height={0}
-                className="rounded-lg h-auto"
-              />
+              <div className="w-full lg:w-[450px]">
+                <Image 
+                  src="/images/dashboard/dashboard-calendar.png" 
+                  alt="Betting Calendar" 
+                  width={450} 
+                  height={0}
+                  className="rounded-lg h-auto w-full"
+                />
+              </div>
             )}
-            <div className="text-white">
+            <div className="text-white w-full lg:w-auto">
               {activeTab === 'charts' && (
                 <>
                   <h3 className="text-2xl font-bold mb-2">Visualize Every Data Point</h3>
