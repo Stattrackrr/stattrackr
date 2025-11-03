@@ -3600,7 +3600,7 @@ function NBADashboardContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState(true); // Default to true to avoid flickering
+  const [isPro, setIsPro] = useState(false); // Default to false until verified
 
   // Check for success parameter from checkout
   useEffect(() => {
@@ -3645,6 +3645,9 @@ function NBADashboardContent() {
         const proStatus = isActive && isProTier;
         console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
         setIsPro(proStatus);
+      } else {
+        // No session - user is not logged in, so definitely not Pro
+        setIsPro(false);
       }
     };
     getUser();
@@ -6071,9 +6074,11 @@ function NBADashboardContent() {
               <div className="flex gap-3 md:gap-4 flex-wrap mb-3">
                 <button
                   disabled={!isPro}
-                  onClick={() => {
-                    // Check if user has Pro access
+                  onClick={(e) => {
+                    // Prevent click if not Pro
                     if (!isPro) {
+                      e.preventDefault();
+                      e.stopPropagation();
                       if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
                         router.push('/subscription');
                       }
@@ -6112,12 +6117,14 @@ function NBADashboardContent() {
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
-                  Player Props
-                  {!isPro && (
-                    <svg className="inline-block w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
+                  <span className="flex items-center gap-1 sm:gap-2">
+                    Player Props
+                    {!isPro && (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </span>
                 </button>
                 <button
                   onClick={() => {

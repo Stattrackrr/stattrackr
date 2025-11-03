@@ -1,16 +1,63 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/navigation';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
 
 export default function PricingPage() {
   const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [activeTab, setActiveTab] = useState<'charts' | 'dvp' | 'journal' | 'calendar'>('charts');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [hasPremium, setHasPremium] = useState(false);
+
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkPremiumStatus(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkPremiumStatus(session.user.id);
+      } else {
+        setHasPremium(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkPremiumStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking premium status:', error);
+        setHasPremium(false);
+        return;
+      }
+
+      setHasPremium(data?.status === 'active' || data?.status === 'trialing');
+    } catch (error) {
+      console.error('Error in checkPremiumStatus:', error);
+      setHasPremium(false);
+    }
+  };
 
   const plans = [
     {
@@ -135,9 +182,45 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Navigation Links - Fixed Top Right - Hidden on mobile */}
-      <div className="absolute top-6 right-6 z-10 hidden md:block">
-        <div className="flex items-center gap-4">
+      {/* Auth Section - Fixed Top Right */}
+      <div className="absolute top-6 right-6 z-10">
+        {user ? (
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold hover:bg-purple-700 transition-colors"
+            >
+              {user.email?.[0].toUpperCase() || 'U'}
+            </button>
+            
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 py-2 z-50">
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setShowProfileMenu(false);
+                    router.push('/login');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => router.push('/login')}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Log In
+          </button>
+        )}
+      </div>
+
+      {/* Desktop Navigation - Below Auth Button */}
+      <div className="hidden md:block absolute top-20 right-6 z-10">
+        <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => router.push('/nba/research/dashboard')}
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
@@ -145,10 +228,21 @@ export default function PricingPage() {
             Dashboard
           </button>
           <button
-            onClick={() => router.push('/journal')}
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            onClick={() => {
+              if (!hasPremium) {
+                const element = document.getElementById('pricing-cards');
+                element?.scrollIntoView({ behavior: 'smooth' });
+                return;
+              }
+              router.push('/journal');
+            }}
+            className={`text-sm font-medium transition-colors ${
+              !hasPremium
+                ? 'text-gray-500 cursor-not-allowed'
+                : 'text-gray-300 hover:text-white'
+            }`}
           >
-            Journal
+            Journal {!hasPremium && '🔒'}
           </button>
           <button
             onClick={() => {
@@ -163,7 +257,6 @@ export default function PricingPage() {
             onClick={() => {
               const element = document.getElementById('contact-support-faq');
               element?.scrollIntoView({ behavior: 'smooth' });
-              // Open the FAQ after scrolling
               setTimeout(() => setOpenFAQ(4), 500);
             }}
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
@@ -172,11 +265,78 @@ export default function PricingPage() {
           </button>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation - Only visible on mobile */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        <div className="grid grid-cols-3 h-16">
+          {/* Dashboard */}
+          <button
+            onClick={() => {
+              // Show popup with Player Props or Game Props options
+              if (window.confirm('Choose:\n\nOK = Player Props\nCancel = Game Props')) {
+                router.push('/nba/research/dashboard?mode=player');
+              } else {
+                router.push('/nba/research/dashboard?mode=team');
+              }
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <circle cx="12" cy="12" r="6" strokeWidth={2} />
+              <circle cx="12" cy="12" r="2" strokeWidth={2} />
+            </svg>
+            <span className="text-xs font-medium">Dashboard</span>
+          </button>
+          
+          {/* Journal */}
+          <button
+            onClick={() => {
+              if (!hasPremium) {
+                const element = document.getElementById('pricing-cards');
+                element?.scrollIntoView({ behavior: 'smooth' });
+                return;
+              }
+              router.push('/journal');
+            }}
+            className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
+              !hasPremium
+                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+            }`}
+          >
+            {!hasPremium ? (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            )}
+            <span className="text-xs font-medium">Journal</span>
+          </button>
+          
+          {/* Settings */}
+          <button
+            onClick={() => {
+              alert('Settings panel - coming soon!');
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-xs font-medium">Settings</span>
+          </button>
+        </div>
+      </div>
       
       <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 relative z-10">
         
         {/* Header */}
-        <div className="text-center mb-12 mt-16">
+        <div className="text-center mb-12 mt-12 lg:mt-8">
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
             Stop Guessing. Start Winning.
           </h2>
@@ -246,9 +406,9 @@ export default function PricingPage() {
           </div>
 
           {/* Dashboard Screenshot */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start justify-center">
             {/* Image container - all preloaded, toggle visibility */}
-            <div className="w-full lg:flex-1">
+            <div className="w-full lg:w-auto flex justify-center lg:justify-start">
               <div className={activeTab === 'charts' ? '' : 'hidden'}>
                 <Image 
                   src="/images/dashboard/new-chart-web-display.png" 
@@ -265,7 +425,7 @@ export default function PricingPage() {
                   alt="DvP Rankings" 
                   width={400} 
                   height={0}
-                  className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
+                  className="rounded-lg w-full h-auto max-h-[450px] lg:max-h-none lg:max-w-[400px]"
                   priority
                 />
               </div>
@@ -275,7 +435,7 @@ export default function PricingPage() {
                   alt="Journal Analytics" 
                   width={800} 
                   height={0}
-                  className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
+                  className="rounded-lg w-full h-auto max-h-[450px] lg:max-h-none lg:max-w-[700px]"
                   priority
                 />
               </div>
@@ -285,12 +445,12 @@ export default function PricingPage() {
                   alt="Betting Calendar" 
                   width={450} 
                   height={0}
-                  className="rounded-lg h-auto w-full"
+                  className="rounded-lg w-full h-auto lg:max-w-[450px]"
                   priority
                 />
               </div>
             </div>
-            <div className="text-white w-full lg:w-auto">
+            <div className="text-white w-full lg:w-[400px] lg:flex-shrink-0 lg:flex-grow-0">
               {activeTab === 'charts' && (
                 <>
                   <h3 className="text-2xl font-bold mb-2">Visualize Every Data Point</h3>
@@ -429,7 +589,7 @@ export default function PricingPage() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 lg:mt-24">
             <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-white/10 p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-purple-500/40">
               <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
