@@ -6,11 +6,11 @@
     },
     {
       "path": "/api/check-tracked-bets",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/check-journal-bets",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
