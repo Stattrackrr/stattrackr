@@ -40,19 +40,37 @@ export default function PricingPage() {
 
   const checkPremiumStatus = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', userId)
+      // Check Pro access - try profiles table first, fallback to subscriptions table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, subscription_tier')
+        .eq('id', userId)
         .single();
-
-      if (error) {
-        console.error('Error checking premium status:', error);
-        setHasPremium(false);
-        return;
+      
+      let isActive = false;
+      let isProTier = false;
+      
+      if (profile) {
+        // Use profiles table if available
+        isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
+        isProTier = profile.subscription_tier === 'pro';
+      } else {
+        // Fallback to subscriptions table
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('user_id', userId)
+          .single();
+        
+        if (subscription) {
+          isActive = subscription.status === 'active' || subscription.status === 'trialing';
+          isProTier = true; // Assume pro if in subscriptions table
+        }
       }
-
-      setHasPremium(data?.status === 'active' || data?.status === 'trialing');
+      
+      const premiumStatus = isActive && isProTier;
+      console.log('🔐 Premium Status Check (Pricing):', { isActive, isProTier, premiumStatus, profile });
+      setHasPremium(premiumStatus);
     } catch (error) {
       console.error('Error in checkPremiumStatus:', error);
       setHasPremium(false);

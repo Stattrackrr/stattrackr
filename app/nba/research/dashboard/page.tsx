@@ -6306,15 +6306,21 @@ function NBADashboardContent() {
                     </div>
                     {/* Mobile search overlay */}
                     {isMobileSearchOpen && (
-                      <div className="sm:hidden absolute top-0 right-0 mt-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2">
-                        <div className="flex items-center gap-2">
+                      <>
+                        {/* Backdrop */}
+                        <div 
+                          className="sm:hidden fixed inset-0 bg-black/20 z-[99]" 
+                          onClick={() => setIsMobileSearchOpen(false)}
+                        />
+                        {/* Search panel */}
+                        <div className="sm:hidden fixed inset-x-0 top-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-b-lg shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center gap-2 p-3 border-b border-gray-300 dark:border-gray-700">
                           <input
                             autoFocus={propsMode !== 'player' || isPro}
                             type="text"
                             placeholder={propsMode === 'player' ? (isPro ? 'Search player...' : 'Upgrade to Pro') : 'Search team...'}
                             value={searchQuery}
                             onChange={(e) => {
-                              // Block player search for non-Pro users
                               if (propsMode === 'player' && !isPro) {
                                 return;
                               }
@@ -6354,17 +6360,96 @@ function NBADashboardContent() {
                                 }
                               }
                             }}
-                            className="flex-1 px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
                           <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                           </button>
                         </div>
-                      </div>
+                        
+                        {/* Search results */}
+                        <div className="p-2">
+                          {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
+                            const query = searchQuery.toLowerCase();
+                            const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
+                            
+                            Object.entries(TEAM_FULL_NAMES).forEach(([abbr, fullName]) => {
+                              if (abbr.toLowerCase().includes(query) || fullName.toLowerCase().includes(query)) {
+                                matchingTeams.push({ abbr, fullName });
+                              }
+                            });
+                            
+                            const nicknames: Record<string, string> = {
+                              'lakers': 'LAL', 'warriors': 'GSW', 'celtics': 'BOS', 'heat': 'MIA',
+                              'bulls': 'CHI', 'knicks': 'NYK', 'nets': 'BKN', 'sixers': 'PHI',
+                              '76ers': 'PHI', 'mavs': 'DAL', 'spurs': 'SAS', 'rockets': 'HOU'
+                            };
+                            
+                            if (nicknames[query] && !matchingTeams.find(t => t.abbr === nicknames[query])) {
+                              const abbr = nicknames[query];
+                              matchingTeams.push({ abbr, fullName: TEAM_FULL_NAMES[abbr] || abbr });
+                            }
+                            
+                            return matchingTeams.length > 0 ? (
+                              <>
+                                {matchingTeams.slice(0, 10).map((team) => (
+                                  <button
+                                    key={team.abbr}
+                                    onClick={() => {
+                                      setGamePropsTeam(team.abbr);
+                                      setSelectedStat('total_pts');
+                                      const opponent = getOpponentTeam(team.abbr, todaysGames);
+                                      setOpponentTeam(normalizeAbbr(opponent));
+                                      setSearchQuery('');
+                                      setIsMobileSearchOpen(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
+                                  >
+                                    <div className="font-medium text-gray-900 dark:text-white">{team.fullName}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">{team.abbr}</div>
+                                  </button>
+                                ))}
+                              </>
+                            ) : null;
+                          })()}
+                          
+                          {propsMode === 'player' && isPro && searchQuery && (
+                            <>
+                              {searchResults.length === 0 ? (
+                                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                  {searchBusy ? "Searching..." : (searchError ? `Search error: ${searchError}` : `No players found for "${searchQuery}"`)}
+                                </div>
+                              ) : searchResults.map((r) => (
+                                <button
+                                  key={`${r.id}-${r.full}`}
+                                  onClick={() => {
+                                    if (!isPro) {
+                                      if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
+                                        router.push('/subscription');
+                                      }
+                                      return;
+                                    }
+                                    handlePlayerSelectFromSearch(r);
+                                    setSearchQuery('');
+                                    setIsMobileSearchOpen(false);
+                                  }}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
+                                >
+                                  <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                  </div>
+                                </button>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                        </div>
+                      </>
                     )}
-                    {/* Player search dropdown - only show in player mode and for Pro users */}
+                    {/* Player search dropdown - only show in player mode and for Pro users (Desktop only) */}
                     {propsMode === 'player' && isPro && showDropdown && searchQuery && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
+                      <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
                         {searchResults.length === 0 ? (
                           <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                             {searchBusy ? "Searching..." : (searchError ? `Search error: ${searchError}` : `No players found for "${searchQuery}"`)}
@@ -6398,7 +6483,7 @@ function NBADashboardContent() {
                       </div>
                     )}
                     
-                    {/* Team search dropdown - only show in game props mode */}
+                    {/* Team search dropdown - only show in game props mode (Desktop only) */}
                     {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
                       const query = searchQuery.toLowerCase();
                       const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
@@ -6423,7 +6508,7 @@ function NBADashboardContent() {
                       }
                       
                       return matchingTeams.length > 0 ? (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                        <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
                           {matchingTeams.slice(0, 10).map((team) => ( // Limit to 10 results
                             <button
                               key={team.abbr}
