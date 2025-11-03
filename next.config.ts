@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
     // use the environment variable: NEXT_TYPESCRIPT_IGNORE_BUILD_ERRORS=true
     ignoreBuildErrors: false,
   },
+  experimental: {
+    // Skip prerendering API routes to avoid build-time errors
+    isrFlushToDisk: false,
+  },
 };
 
 export default nextConfig;

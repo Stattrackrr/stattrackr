@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;
 
