@@ -247,48 +247,48 @@ export default function PricingPage() {
 
           {/* Dashboard Screenshot */}
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
-            {/* Image container - only show active */}
+            {/* Image container - all preloaded, toggle visibility */}
             <div className="w-full lg:flex-1">
-              {activeTab === 'charts' && (
+              <div className={activeTab === 'charts' ? '' : 'hidden'}>
                 <Image 
                   src="/images/dashboard/new-chart-web-display.png" 
                   alt="Dashboard Charts" 
                   width={1800} 
                   height={0}
                   className="rounded-lg h-auto w-full"
+                  priority
                 />
-              )}
-              {activeTab === 'dvp' && (
-                <div className="lg:max-w-[400px]">
-                  <Image 
-                    src="/images/dashboard/dashboard-dvp.png" 
-                    alt="DvP Rankings" 
-                    width={400} 
-                    height={0}
-                    className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
-                  />
-                </div>
-              )}
-              {activeTab === 'journal' && (
-                <div className="lg:max-w-[800px]">
-                  <Image 
-                    src="/images/dashboard/dashboard-journal.png" 
-                    alt="Journal Analytics" 
-                    width={800} 
-                    height={0}
-                    className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
-                  />
-                </div>
-              )}
-              {activeTab === 'calendar' && (
+              </div>
+              <div className={`lg:max-w-[400px] ${activeTab === 'dvp' ? '' : 'hidden'}`}>
+                <Image 
+                  src="/images/dashboard/dashboard-dvp.png" 
+                  alt="DvP Rankings" 
+                  width={400} 
+                  height={0}
+                  className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
+                  priority
+                />
+              </div>
+              <div className={`lg:max-w-[800px] ${activeTab === 'journal' ? '' : 'hidden'}`}>
+                <Image 
+                  src="/images/dashboard/dashboard-journal.png" 
+                  alt="Journal Analytics" 
+                  width={800} 
+                  height={0}
+                  className="rounded-lg h-auto w-full max-h-[450px] lg:max-h-none object-contain"
+                  priority
+                />
+              </div>
+              <div className={activeTab === 'calendar' ? '' : 'hidden'}>
                 <Image 
                   src="/images/dashboard/dashboard-calendar.png" 
                   alt="Betting Calendar" 
                   width={450} 
                   height={0}
                   className="rounded-lg h-auto w-full"
+                  priority
                 />
-              )}
+              </div>
             </div>
             <div className="text-white w-full lg:w-auto">
               {activeTab === 'charts' && (
