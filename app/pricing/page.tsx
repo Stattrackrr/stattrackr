@@ -259,24 +259,24 @@ export default function PricingPage() {
               </div>
             )}
             {activeTab === 'dvp' && (
-              <div className="w-full lg:w-[400px] max-h-[300px] lg:max-h-none overflow-hidden">
+              <div className="w-full lg:w-[400px]">
                 <Image 
                   src="/images/dashboard/dashboard-dvp.png" 
                   alt="DvP Rankings" 
                   width={400} 
                   height={0}
-                  className="rounded-lg h-auto w-full object-cover object-top"
+                  className="rounded-lg h-auto w-full"
                 />
               </div>
             )}
             {activeTab === 'journal' && (
-              <div className="w-full lg:w-[800px] max-h-[300px] lg:max-h-none overflow-hidden">
+              <div className="w-full lg:w-[800px]">
                 <Image 
                   src="/images/dashboard/dashboard-journal.png" 
                   alt="Journal Analytics" 
                   width={800} 
                   height={0}
-                  className="rounded-lg h-auto w-full object-cover object-top"
+                  className="rounded-lg h-auto w-full"
                 />
               </div>
             )}
