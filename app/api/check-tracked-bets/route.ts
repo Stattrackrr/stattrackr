@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;

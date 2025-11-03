@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;
 
 interface PlayerStats {
