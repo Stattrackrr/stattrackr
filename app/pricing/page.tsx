@@ -247,8 +247,9 @@ export default function PricingPage() {
 
           {/* Dashboard Screenshot */}
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
-            {activeTab === 'charts' && (
-              <div className="w-full lg:flex-1">
+            {/* Image container - only show active */}
+            <div className="w-full lg:flex-1">
+              {activeTab === 'charts' && (
                 <Image 
                   src="/images/dashboard/new-chart-web-display.png" 
                   alt="Dashboard Charts" 
@@ -256,32 +257,30 @@ export default function PricingPage() {
                   height={0}
                   className="rounded-lg h-auto w-full"
                 />
-              </div>
-            )}
-            {activeTab === 'dvp' && (
-              <div className="w-full lg:w-[400px]">
-                <Image 
-                  src="/images/dashboard/dashboard-dvp.png" 
-                  alt="DvP Rankings" 
-                  width={400} 
-                  height={0}
-                  className="rounded-lg h-auto w-full"
-                />
-              </div>
-            )}
-            {activeTab === 'journal' && (
-              <div className="w-full lg:w-[800px]">
-                <Image 
-                  src="/images/dashboard/dashboard-journal.png" 
-                  alt="Journal Analytics" 
-                  width={800} 
-                  height={0}
-                  className="rounded-lg h-auto w-full"
-                />
-              </div>
-            )}
-            {activeTab === 'calendar' && (
-              <div className="w-full lg:w-[450px]">
+              )}
+              {activeTab === 'dvp' && (
+                <div className="max-h-[400px] lg:max-h-none overflow-hidden">
+                  <Image 
+                    src="/images/dashboard/dashboard-dvp.png" 
+                    alt="DvP Rankings" 
+                    width={400} 
+                    height={0}
+                    className="rounded-lg h-auto w-full"
+                  />
+                </div>
+              )}
+              {activeTab === 'journal' && (
+                <div className="max-h-[400px] lg:max-h-none overflow-hidden">
+                  <Image 
+                    src="/images/dashboard/dashboard-journal.png" 
+                    alt="Journal Analytics" 
+                    width={800} 
+                    height={0}
+                    className="rounded-lg h-auto w-full"
+                  />
+                </div>
+              )}
+              {activeTab === 'calendar' && (
                 <Image 
                   src="/images/dashboard/dashboard-calendar.png" 
                   alt="Betting Calendar" 
@@ -289,8 +288,8 @@ export default function PricingPage() {
                   height={0}
                   className="rounded-lg h-auto w-full"
                 />
-              </div>
-            )}
+              )}
+            </div>
             <div className="text-white w-full lg:w-auto">
               {activeTab === 'charts' && (
                 <>
