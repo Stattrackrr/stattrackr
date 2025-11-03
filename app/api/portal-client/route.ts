@@ -6,8 +6,8 @@ import { getStripe } from '@/lib/stripe';
 
 // Create Supabase admin client
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key-' + 'x'.repeat(100)
 );
 
 export async function POST(request: NextRequest) {
