@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 // import { getAllPlayers } from '@/lib/nba';

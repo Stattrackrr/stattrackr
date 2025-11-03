@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // app/api/advanced-stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";

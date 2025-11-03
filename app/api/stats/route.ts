@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // app/api/stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { BdlPlayerStats, BdlPaginatedResponse } from "@/lib/types/apiResponses";
