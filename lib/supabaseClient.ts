@@ -1,20 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Access NEXT_PUBLIC_ vars directly - they're injected at build time
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key-' + 'x'.repeat(100)
 
-// Validate on initialization
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL:', supabaseUrl ? 'Present' : 'MISSING');
-  console.error('Supabase Key:', supabaseAnonKey ? 'Present' : 'MISSING');
-  throw new Error(
-    'Missing Supabase environment variables. ' +
-    'Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in .env.local'
-  )
+if (supabaseUrl !== 'https://placeholder.supabase.co') {
+  console.log('✅ Supabase client initialized:', { url: supabaseUrl, keyLength: supabaseAnonKey.length });
 }
-
-console.log('✅ Supabase client initialized:', { url: supabaseUrl, keyLength: supabaseAnonKey.length });
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
