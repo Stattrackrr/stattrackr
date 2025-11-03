@@ -259,7 +259,7 @@ export default function PricingPage() {
                   priority
                 />
               </div>
-              <div className={`lg:max-w-[400px] ${activeTab === 'dvp' ? '' : 'hidden'}`}>
+              <div className={activeTab === 'dvp' ? '' : 'hidden'}>
                 <Image 
                   src="/images/dashboard/dashboard-dvp.png" 
                   alt="DvP Rankings" 
@@ -269,7 +269,7 @@ export default function PricingPage() {
                   priority
                 />
               </div>
-              <div className={`lg:max-w-[800px] ${activeTab === 'journal' ? '' : 'hidden'}`}>
+              <div className={activeTab === 'journal' ? '' : 'hidden'}>
                 <Image 
                   src="/images/dashboard/dashboard-journal.png" 
                   alt="Journal Analytics" 
@@ -429,7 +429,7 @@ export default function PricingPage() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
             <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-white/10 p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-purple-500/40">
               <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,7 +460,7 @@ export default function PricingPage() {
           </div>
 
           {/* Section divider */}
-          <div className="mt-16 mb-8 max-w-4xl mx-auto">
+          <div className="mt-8 mb-8 max-w-4xl mx-auto">
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
           </div>
         </div>
@@ -471,7 +471,7 @@ export default function PricingPage() {
             Compare Plans
           </h2>
           <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-white/10 shadow-2xl p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            <div className="grid grid-cols-2 gap-0">
               {/* Free Plan Features */}
               <div className="flex flex-col md:pr-8">
                 <div className="flex items-center gap-2 mb-6 h-[38px] ml-8">
@@ -839,12 +839,12 @@ export default function PricingPage() {
         </div>
 
         {/* Section divider */}
-        <div className="mt-16 mb-8 max-w-4xl mx-auto">
+        <div className="mt-8 mb-8 max-w-4xl mx-auto">
           <div className="h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
         </div>
 
         {/* Testimonials Section */}
-        <div className="mt-20 max-w-6xl mx-auto">
+        <div className="mt-8 max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-white mb-12">
             Trusted by Winning Bettors
           </h2>
