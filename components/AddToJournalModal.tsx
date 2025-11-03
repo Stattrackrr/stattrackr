@@ -15,9 +15,10 @@ interface AddToJournalModalProps {
   opponent: string;
   gameDate: string;
   oddsFormat: 'american' | 'decimal';
+  isGameProp?: boolean;
 }
 
-const STAT_OPTIONS = [
+const PLAYER_STAT_OPTIONS = [
   { value: 'pts', label: 'Points' },
   { value: 'reb', label: 'Rebounds' },
   { value: 'ast', label: 'Assists' },
@@ -27,6 +28,24 @@ const STAT_OPTIONS = [
   { value: 'stl', label: 'Steals' },
   { value: 'blk', label: 'Blocks' },
   { value: 'fg3m', label: '3-Pointers Made' },
+];
+
+const GAME_PROP_STAT_OPTIONS = [
+  { value: 'moneyline', label: 'Moneyline' },
+  { value: 'spread', label: 'Spread' },
+  { value: 'total_pts', label: 'Total Points' },
+  { value: 'home_total', label: 'Home Total' },
+  { value: 'away_total', label: 'Away Total' },
+  { value: 'first_half_total', label: '1st Half Total' },
+  { value: 'second_half_total', label: '2nd Half Total' },
+  { value: 'q1_total', label: 'Q1 Total' },
+  { value: 'q2_total', label: 'Q2 Total' },
+  { value: 'q3_total', label: 'Q3 Total' },
+  { value: 'q4_total', label: 'Q4 Total' },
+  { value: 'q1_moneyline', label: 'Q1 Moneyline' },
+  { value: 'q2_moneyline', label: 'Q2 Moneyline' },
+  { value: 'q3_moneyline', label: 'Q3 Moneyline' },
+  { value: 'q4_moneyline', label: 'Q4 Moneyline' },
 ];
 
 const CURRENCIES = ['USD', 'AUD', 'GBP', 'EUR'] as const;
@@ -47,8 +66,10 @@ export default function AddToJournalModal({
   opponent,
   gameDate,
   oddsFormat,
+  isGameProp = false,
 }: AddToJournalModalProps) {
-  const [statType, setStatType] = useState('pts');
+  const STAT_OPTIONS = isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+  const [statType, setStatType] = useState(isGameProp ? 'moneyline' : 'pts');
   const [selectedOdds, setSelectedOdds] = useState<BookmakerOdds | null>(null);
   const [overUnder, setOverUnder] = useState<'over' | 'under'>('over');
   const [stake, setStake] = useState('');
@@ -146,7 +167,7 @@ export default function AddToJournalModal({
           stake: parseFloat(stake),
           currency,
           odds: finalOdds,
-          result: 'void', // Will be updated when game finishes
+          result: 'pending', // Will be updated when game finishes
           player_id: playerId,
           player_name: playerName,
           team,

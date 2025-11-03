@@ -14,11 +14,11 @@ interface PlayerStats {
 
 export async function GET() {
   try {
-    // Fetch all pending and live tracked props
+    // Fetch all pending, live tracked props, and completed ones missing individual stat breakdown
     const { data: trackedProps, error } = await supabaseAdmin
       .from('tracked_props')
       .select('*')
-      .in('status', ['pending', 'live']);
+      .or('status.in.(pending,live),and(status.eq.completed,actual_pts.is.null)');
 
     console.log('Fetched tracked props:', trackedProps?.length || 0);
     if (error) {
@@ -133,6 +133,38 @@ export async function GET() {
         }
 
         const playerStat = statsData.data[0];
+        
+        // Check if player played 0 minutes - if so, mark as void
+        const minutesPlayed = playerStat.min || '0:00';
+        const [mins, secs] = minutesPlayed.split(':').map(Number);
+        const totalMinutes = (mins || 0) + ((secs || 0) / 60);
+        
+        if (totalMinutes === 0) {
+          // Player didn't play - void the bet
+          const { error: updateError } = await supabaseAdmin
+            .from('tracked_props')
+            .update({
+              status: 'void',
+              result: null,
+              actual_value: 0,
+              actual_pts: 0,
+              actual_reb: 0,
+              actual_ast: 0,
+              actual_stl: 0,
+              actual_blk: 0,
+              actual_fg3m: 0,
+            })
+            .eq('id', prop.id);
+
+          if (updateError) {
+            console.error(`Failed to update prop ${prop.id}:`, updateError);
+          } else {
+            console.log(`Voided ${prop.player_name} ${prop.stat_type} ${prop.over_under} ${prop.line}: player played 0 minutes`);
+            updatedCount++;
+          }
+          continue;
+        }
+        
         const stats: PlayerStats = {
           pts: playerStat.pts || 0,
           reb: playerStat.reb || 0,
@@ -185,13 +217,19 @@ export async function GET() {
           result = actualValue < prop.line ? 'win' : 'loss';
         }
 
-        // Update the tracked prop
+        // Update the tracked prop with individual stat breakdown
         const { error: updateError } = await supabaseAdmin
           .from('tracked_props')
           .update({
             status: 'completed',
             result,
             actual_value: actualValue,
+            actual_pts: stats.pts,
+            actual_reb: stats.reb,
+            actual_ast: stats.ast,
+            actual_stl: stats.stl,
+            actual_blk: stats.blk,
+            actual_fg3m: stats.fg3m,
           })
           .eq('id', prop.id);
 

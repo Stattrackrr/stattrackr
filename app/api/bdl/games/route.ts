@@ -70,6 +70,15 @@ export async function GET(request: NextRequest) {
       visitor_team_score: g.visitor_team_score,
       home_team: g.home_team ? { id: g.home_team.id, abbreviation: g.home_team.abbreviation } : undefined,
       visitor_team: g.visitor_team ? { id: g.visitor_team.id, abbreviation: g.visitor_team.abbreviation } : undefined,
+      // Include quarter-level scores for Game Props (1H, 2H, Q1-Q4)
+      home_q1: g.home_q1,
+      visitor_q1: g.visitor_q1,
+      home_q2: g.home_q2,
+      visitor_q2: g.visitor_q2,
+      home_q3: g.home_q3,
+      visitor_q3: g.visitor_q3,
+      home_q4: g.home_q4,
+      visitor_q4: g.visitor_q4,
     });
 
     let finalData: any;

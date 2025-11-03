@@ -16,9 +16,10 @@ interface TrackPlayerModalProps {
   opponent: string;
   gameDate: string;
   oddsFormat: 'american' | 'decimal';
+  isGameProp?: boolean;
 }
 
-const STAT_OPTIONS = [
+const PLAYER_STAT_OPTIONS = [
   { value: 'pts', label: 'Points' },
   { value: 'reb', label: 'Rebounds' },
   { value: 'ast', label: 'Assists' },
@@ -28,6 +29,24 @@ const STAT_OPTIONS = [
   { value: 'stl', label: 'Steals' },
   { value: 'blk', label: 'Blocks' },
   { value: 'fg3m', label: '3-Pointers Made' },
+];
+
+const GAME_PROP_STAT_OPTIONS = [
+  { value: 'moneyline', label: 'Moneyline' },
+  { value: 'spread', label: 'Spread' },
+  { value: 'total_pts', label: 'Total Points' },
+  { value: 'home_total', label: 'Home Total' },
+  { value: 'away_total', label: 'Away Total' },
+  { value: 'first_half_total', label: '1st Half Total' },
+  { value: 'second_half_total', label: '2nd Half Total' },
+  { value: 'q1_total', label: 'Q1 Total' },
+  { value: 'q2_total', label: 'Q2 Total' },
+  { value: 'q3_total', label: 'Q3 Total' },
+  { value: 'q4_total', label: 'Q4 Total' },
+  { value: 'q1_moneyline', label: 'Q1 Moneyline' },
+  { value: 'q2_moneyline', label: 'Q2 Moneyline' },
+  { value: 'q3_moneyline', label: 'Q3 Moneyline' },
+  { value: 'q4_moneyline', label: 'Q4 Moneyline' },
 ];
 
 // Common bookmaker lines for NBA props
@@ -55,9 +74,11 @@ export default function TrackPlayerModal({
   opponent,
   gameDate,
   oddsFormat,
+  isGameProp = false,
 }: TrackPlayerModalProps) {
+  const STAT_OPTIONS = isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
   const { addTrackedBet } = useTrackedBets();
-  const [statType, setStatType] = useState('pts');
+  const [statType, setStatType] = useState(isGameProp ? 'moneyline' : 'pts');
   const [selectedOdds, setSelectedOdds] = useState<BookmakerOdds | null>(null);
   const [overUnder, setOverUnder] = useState<'over' | 'under'>('over');
   const [loading, setLoading] = useState(false);
@@ -176,6 +197,7 @@ export default function TrackPlayerModal({
           isCustom: isManualMode,
           gameStatus: 'scheduled' as const,
           result: 'pending' as const,
+          gameDate,
         };
         console.log('Adding tracked bet:', newBet);
         addTrackedBet(newBet);
@@ -206,7 +228,7 @@ export default function TrackPlayerModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Track Player</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{isGameProp ? 'Track Game Prop' : 'Track Player'}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {playerName} vs {opponent}
             </p>
@@ -419,7 +441,7 @@ export default function TrackPlayerModal({
               className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? 'Tracking...' : 'Track Player'}
+              {loading ? 'Tracking...' : (isGameProp ? 'Track Game Prop' : 'Track Player')}
             </button>
           </div>
         </form>

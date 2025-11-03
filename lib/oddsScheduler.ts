@@ -60,8 +60,8 @@ export function stopOddsScheduler() {
 
 // Auto-start in server environment (not in browser or during build)
 if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
-  // Only start if we're in a runtime environment, not during build
-  if (process.env.VERCEL_ENV || process.env.NODE_ENV === 'development') {
+  // Only start in production deployment, not during dev or build
+  if (process.env.VERCEL_ENV === 'production') {
     startOddsScheduler();
   }
 }

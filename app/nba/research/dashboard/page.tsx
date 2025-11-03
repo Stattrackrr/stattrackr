@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useRef, useEffect, memo, useCallback, Suspense } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, ReferenceLine, Cell, Tooltip, LabelList,
@@ -20,6 +21,7 @@ import { cachedFetch } from '@/lib/requestCache';
 import ShotChart from './ShotChart';
 import TrackPlayerModal from '@/components/TrackPlayerModal';
 import AddToJournalModal from '@/components/AddToJournalModal';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -251,13 +253,15 @@ const TEAM_FULL_NAMES: Record<string, string> = {
 const ESPN_LOGO_SLUG: Record<string, string> = {
   NOP: 'new-orleans-pelicans',
   UTA: 'utah-jazz',
+  SAS: 'san-antonio-spurs',
 };
 
 // ESPN filename exceptions for base 500/ path
-// Note: ESPN uses 'no.png' (not 'nop.png') for New Orleans; 'uta.png' exists for Jazz
+// Note: ESPN uses 'no.png' (not 'nop.png') for New Orleans; 'utah.png' for Jazz, 'sa.png' for Spurs
 const ESPN_FILE_ABBR: Record<string, string> = {
   NOP: 'no',
-  UTA: 'uta',
+  UTA: 'utah',
+  SAS: 'sa',
 };
 
 // Build ordered candidate URLs for ESPN logos for a team
@@ -277,15 +281,7 @@ const getEspnLogoCandidates = (abbr: string): string[] => {
     candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/${lc}.png`);
   }
 
-  // Team-specific extra variants for ESPN inconsistencies
-  if (normalized === 'UTA') {
-    // Try abbr and names across both folders
-    candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/uta.png`);
-    candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/utah.png`);
-    candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/jazz.png`);
-    candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/utah.png`);
-    candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/jazz.png`);
-  }
+  // Team-specific extra variants for ESPN inconsistencies (removed UTA fallbacks - utah.png works)
   if (normalized === 'NOP') {
     // Extra safety variants for Pelicans
     candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/no.png`);
@@ -511,6 +507,58 @@ const StaticLabelList = memo(function StaticLabelList({ isDark, formatChartLabel
   );
 }, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel && prev.fontSizePx === next.fontSizePx);
 
+// Custom tick component for X-axis with team logos
+const CustomXAxisTick = memo(function CustomXAxisTick({ x, y, payload, data }: any) {
+  const [logoError, setLogoError] = useState(false);
+  const [logoAttempt, setLogoAttempt] = useState(0);
+  
+  // Get the actual data point to extract team abbreviation
+  const dataPoint = data?.find((d: any) => d.xKey === payload.value);
+  const teamAbbr = dataPoint?.tickLabel || payload.value;
+  
+  // Get logo candidates
+  const logoCandidates = getEspnLogoCandidates(teamAbbr);
+  const logoUrl = logoCandidates[logoAttempt] || logoCandidates[0];
+  
+  if (logoError && logoAttempt >= logoCandidates.length - 1) {
+    // Fallback to text if all logo attempts fail
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          dy={16}
+          textAnchor="middle"
+          fill="currentColor"
+          fontSize={10}
+          fontWeight="600"
+        >
+          {teamAbbr}
+        </text>
+      </g>
+    );
+  }
+  
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <image
+        x={-12}
+        y={0}
+        width={24}
+        height={24}
+        xlinkHref={logoUrl}
+        onError={() => {
+          if (logoAttempt < logoCandidates.length - 1) {
+            setLogoAttempt(prev => prev + 1);
+          } else {
+            setLogoError(true);
+          }
+        }}
+      />
+    </g>
+  );
+}, (prev, next) => prev.x === next.x && prev.y === next.y && prev.payload?.value === next.payload?.value);
+
 // Static bars chart - never re-renders for betting line changes
 const StaticBarsChart = memo(function StaticBarsChart({
   data,
@@ -521,6 +569,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
   formatChartLabel,
   selectedStat,
   compactMobile,
+  selectedTimeframe,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[] };
@@ -530,6 +579,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
   formatChartLabel: (v: any) => string;
   selectedStat: string;
   compactMobile?: boolean;
+  selectedTimeframe?: string;
 }) {
   const colorMap = useMemo(() => {
     return data.map(d => {
@@ -573,8 +623,8 @@ const StaticBarsChart = memo(function StaticBarsChart({
   }, []);
 
   // Memoize axis styles to prevent recreating objects on every render
-  const xAxisTickStyle = useMemo(() => ({ fill: '#ffffff', fontSize: 12 }), [isDark]);
-  const yAxisTickStyle = useMemo(() => ({ fill: '#ffffff', fontSize: 12 }), [isDark]);
+  const xAxisTickStyle = useMemo(() => ({ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }), [isDark]);
+  const yAxisTickStyle = useMemo(() => ({ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }), [isDark]);
   const xAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
   const yAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
 
@@ -584,7 +634,17 @@ const StaticBarsChart = memo(function StaticBarsChart({
   }, [data.length, compactMobile]);
   const computedMaxBarSize = useMemo(() => (compactMobile ? 120 : CHART_CONFIG.performance.maxBarSize), [compactMobile]);
   
-  const chartMargin = useMemo(() => CHART_CONFIG.margin, []);
+  const chartMargin = useMemo(() => {
+    // Use smaller bottom margin on mobile to eliminate gap with X-axis line
+    // Add left/right padding for even spacing on mobile
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    return isMobile 
+      ? { ...CHART_CONFIG.margin, bottom: 0, left: 2, right: 2 }
+      : CHART_CONFIG.margin;
+  }, []);
+  
+  // Hide logos and labels for Last Season to reduce clutter
+  const hideLogosAndLabels = selectedTimeframe === 'lastseason';
 
   return (
     <ResponsiveContainer 
@@ -603,13 +663,12 @@ const StaticBarsChart = memo(function StaticBarsChart({
       >
         <XAxis
           dataKey="xKey"
-          tickFormatter={(_, i) => data[i]?.tickLabel ?? ""}
-          tick={xAxisTickStyle}
+          tick={hideLogosAndLabels ? false : <CustomXAxisTick data={data} />}
           axisLine={xAxisLineStyle}
           height={CHART_CONFIG.xAxis.height}
           interval={CHART_CONFIG.xAxis.interval}
           allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
-          hide={!!compactMobile}
+          hide={!!compactMobile || hideLogosAndLabels}
           padding={compactMobile ? { left: 8, right: 8 } : undefined as any}
         />
         <YAxis 
@@ -625,6 +684,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
           content={customTooltip}
           animationDuration={0}
           wrapperStyle={{ zIndex: 9999 }}
+          cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
         />
         <Bar 
           dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"} 
@@ -715,7 +775,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
               }}
             />
           ))}
-          {!['fg3m', 'moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat) && (
+          {!['fg3m', 'moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat) && !hideLogosAndLabels && (
             <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} />
           )}
         </Bar>
@@ -886,6 +946,7 @@ const StatsBarChart = memo(function StatsBarChart({
   customTooltip,
   formatChartLabel,
   selectedStat,
+  selectedTimeframe,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[] };
@@ -894,6 +955,7 @@ const StatsBarChart = memo(function StatsBarChart({
   customTooltip: any;
   formatChartLabel: (v: any) => string;
   selectedStat: string;
+  selectedTimeframe?: string;
 }) {
   // Keep overlay in sync only with committed line (reduces updates during hold).
   useEffect(() => {
@@ -952,28 +1014,29 @@ const StatsBarChart = memo(function StatsBarChart({
   const overPercent = total > 0 ? (overCount / total) * 100 : 0;
   const underPercent = total > 0 ? (underCount / total) * 100 : 0;
   
-  // Determine background glow based on predominant trend
+  // Determine background glow based on predominant trend (disabled for moneyline/spread)
   let backgroundGradient = '';
-  if (overPercent > 60) {
+  const disableGlow = ['moneyline', 'spread'].includes(selectedStat);
+  if (!disableGlow && overPercent > 60) {
     // Strong over trend - green glow
     backgroundGradient = isDark 
-      ? 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.28) 0%, rgba(34, 197, 94, 0.20) 20%, rgba(34, 197, 94, 0.12) 40%, rgba(34, 197, 94, 0.06) 60%, rgba(34, 197, 94, 0.015) 80%, transparent 100%)'
-      : 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.20) 0%, rgba(34, 197, 94, 0.14) 20%, rgba(34, 197, 94, 0.09) 40%, rgba(34, 197, 94, 0.045) 60%, rgba(34, 197, 94, 0.008) 80%, transparent 100%)';
-  } else if (underPercent > 60) {
+      ? 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.28) 0%, rgba(34, 197, 94, 0.20) 15%, rgba(34, 197, 94, 0.12) 30%, rgba(34, 197, 94, 0.06) 45%, rgba(34, 197, 94, 0.02) 60%, rgba(34, 197, 94, 0.008) 75%, rgba(34, 197, 94, 0.003) 85%, rgba(34, 197, 94, 0.001) 92%, rgba(34, 197, 94, 0.0002) 97%, transparent 100%)'
+      : 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.20) 0%, rgba(34, 197, 94, 0.14) 15%, rgba(34, 197, 94, 0.09) 30%, rgba(34, 197, 94, 0.045) 45%, rgba(34, 197, 94, 0.015) 60%, rgba(34, 197, 94, 0.006) 75%, rgba(34, 197, 94, 0.002) 85%, rgba(34, 197, 94, 0.0006) 92%, rgba(34, 197, 94, 0.0001) 97%, transparent 100%)';
+  } else if (!disableGlow && underPercent > 60) {
     // Strong under trend - red glow
     backgroundGradient = isDark
-      ? 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.28) 0%, rgba(239, 68, 68, 0.20) 20%, rgba(239, 68, 68, 0.12) 40%, rgba(239, 68, 68, 0.06) 60%, rgba(239, 68, 68, 0.015) 80%, transparent 100%)'
-      : 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.20) 0%, rgba(239, 68, 68, 0.14) 20%, rgba(239, 68, 68, 0.09) 40%, rgba(239, 68, 68, 0.045) 60%, rgba(239, 68, 68, 0.008) 80%, transparent 100%)';
-  } else if (overPercent > underPercent && overPercent > 40) {
+      ? 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.28) 0%, rgba(239, 68, 68, 0.20) 15%, rgba(239, 68, 68, 0.12) 30%, rgba(239, 68, 68, 0.06) 45%, rgba(239, 68, 68, 0.02) 60%, rgba(239, 68, 68, 0.008) 75%, rgba(239, 68, 68, 0.003) 85%, rgba(239, 68, 68, 0.001) 92%, rgba(239, 68, 68, 0.0002) 97%, transparent 100%)'
+      : 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.20) 0%, rgba(239, 68, 68, 0.14) 15%, rgba(239, 68, 68, 0.09) 30%, rgba(239, 68, 68, 0.045) 45%, rgba(239, 68, 68, 0.015) 60%, rgba(239, 68, 68, 0.006) 75%, rgba(239, 68, 68, 0.002) 85%, rgba(239, 68, 68, 0.0006) 92%, rgba(239, 68, 68, 0.0001) 97%, transparent 100%)'
+  } else if (!disableGlow && overPercent > underPercent && overPercent > 40) {
     // Slight over trend - subtle green glow
     backgroundGradient = isDark
-      ? 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.16) 0%, rgba(34, 197, 94, 0.11) 20%, rgba(34, 197, 94, 0.06) 40%, rgba(34, 197, 94, 0.03) 60%, rgba(34, 197, 94, 0.008) 80%, transparent 100%)'
-      : 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.085) 20%, rgba(34, 197, 94, 0.055) 40%, rgba(34, 197, 94, 0.024) 60%, rgba(34, 197, 94, 0.004) 80%, transparent 100%)';
-  } else if (underPercent > overPercent && underPercent > 40) {
+      ? 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.16) 0%, rgba(34, 197, 94, 0.11) 15%, rgba(34, 197, 94, 0.06) 30%, rgba(34, 197, 94, 0.03) 45%, rgba(34, 197, 94, 0.012) 60%, rgba(34, 197, 94, 0.005) 75%, rgba(34, 197, 94, 0.002) 85%, rgba(34, 197, 94, 0.0006) 92%, rgba(34, 197, 94, 0.0001) 97%, transparent 100%)'
+      : 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.085) 15%, rgba(34, 197, 94, 0.055) 30%, rgba(34, 197, 94, 0.024) 45%, rgba(34, 197, 94, 0.008) 60%, rgba(34, 197, 94, 0.003) 75%, rgba(34, 197, 94, 0.001) 85%, rgba(34, 197, 94, 0.0003) 92%, rgba(34, 197, 94, 0.00005) 97%, transparent 100%)';
+  } else if (!disableGlow && underPercent > overPercent && underPercent > 40) {
     // Slight under trend - subtle red glow
     backgroundGradient = isDark
-      ? 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.16) 0%, rgba(239, 68, 68, 0.11) 20%, rgba(239, 68, 68, 0.06) 40%, rgba(239, 68, 68, 0.03) 60%, rgba(239, 68, 68, 0.008) 80%, transparent 100%)'
-      : 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.085) 20%, rgba(239, 68, 68, 0.055) 40%, rgba(239, 68, 68, 0.024) 60%, rgba(239, 68, 68, 0.004) 80%, transparent 100%)';
+      ? 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.16) 0%, rgba(239, 68, 68, 0.11) 15%, rgba(239, 68, 68, 0.06) 30%, rgba(239, 68, 68, 0.03) 45%, rgba(239, 68, 68, 0.012) 60%, rgba(239, 68, 68, 0.005) 75%, rgba(239, 68, 68, 0.002) 85%, rgba(239, 68, 68, 0.0006) 92%, rgba(239, 68, 68, 0.0001) 97%, transparent 100%)'
+      : 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.085) 15%, rgba(239, 68, 68, 0.055) 30%, rgba(239, 68, 68, 0.024) 45%, rgba(239, 68, 68, 0.008) 60%, rgba(239, 68, 68, 0.003) 75%, rgba(239, 68, 68, 0.001) 85%, rgba(239, 68, 68, 0.0003) 92%, rgba(239, 68, 68, 0.00005) 97%, transparent 100%)';
   }
 
   return (
@@ -984,10 +1047,10 @@ const StatsBarChart = memo(function StatsBarChart({
           key={`glow-${activeLine}-${overPercent.toFixed(0)}`}
           className="absolute pointer-events-none" 
           style={{ 
-            top: '-20%',
-            left: '-20%',
-            right: '-20%',
-            bottom: '-20%',
+            top: '-5%',
+            left: '-30%',
+            right: '-30%',
+            bottom: '-30%',
             background: backgroundGradient,
             zIndex: 0,
             transition: 'background 0.1s ease-out'
@@ -1005,6 +1068,7 @@ const StatsBarChart = memo(function StatsBarChart({
         formatChartLabel={formatChartLabel}
         selectedStat={selectedStat}
         compactMobile={isMobile}
+        selectedTimeframe={selectedTimeframe}
       />
       {/* Mobile-only: Reference line layer (SVG) for perfect alignment */}
       {isMobile && (
@@ -1229,51 +1293,77 @@ const getPlayerCurrentTeam = (playerStats: BallDontLieStats[]): string => {
 
 // Get opponent team from games schedule
 const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
-  console.log(`\n🔍 === OPPONENT DETECTION START ===`);
-  console.log(`🔍 Looking for opponent for team: "${currentTeam}"`);
-  console.log(`🔍 Available games: ${todaysGames.length}`);
+  console.clear();
+  console.log(`%c🔍 === OPPONENT DETECTION START ===%c`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+  console.log(`%cSearching for opponent of: %c${currentTeam}`, 'color: #555', 'color: #e74c3c; font-weight: bold; font-size: 14px');
+  console.log(`%cTotal games available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
   
   if (!currentTeam || currentTeam === 'N/A' || !todaysGames.length) {
-    console.log(`⏸️ Early return - currentTeam: "${currentTeam}", games: ${todaysGames.length}`);
+    console.log(`%c⏸️ EARLY RETURN - Insufficient data%c`, 'color: #f39c12; font-weight: bold', '');
+    console.log(`  currentTeam: ${currentTeam}, games: ${todaysGames.length}`);
     return '';
   }
   
-  // Show first few games for debugging
-  console.log(`🔍 First few games:`);
-  for (let i = 0; i < Math.min(3, todaysGames.length); i++) {
-    const game = todaysGames[i];
-    console.log(`   ${i + 1}. ${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation} (${game.date})`);
-  }
+  // Normalize the current team for comparison
+  const normCurrentTeam = normalizeAbbr(currentTeam);
+  console.log(`%cNormalized input team: %c${normCurrentTeam}`, 'color: #555', 'color: #27ae60; font-weight: bold; font-size: 14px');
+  
+  // Create a table of all games
+  const gameTable = todaysGames.map((game, i) => ({
+    '#': i,
+    'Home (Raw)': game.home_team?.abbreviation || '?',
+    'Away (Raw)': game.visitor_team?.abbreviation || '?',
+    'Home (Norm)': normalizeAbbr(game.home_team?.abbreviation || ''),
+    'Away (Norm)': normalizeAbbr(game.visitor_team?.abbreviation || ''),
+    'Date': game.date,
+    'Status': game.status || 'unknown'
+  }));
+  
+  console.log(`%c📊 ALL GAMES:`, 'color: #2c3e50; font-weight: bold; font-size: 12px');
+  console.table(gameTable);
   
   let matchingGames = [];
   
-  for (const game of todaysGames) {
-    const homeTeam = game.home_team?.abbreviation;
-    const visitorTeam = game.visitor_team?.abbreviation;
+  for (let i = 0; i < todaysGames.length; i++) {
+    const game = todaysGames[i];
+    const homeTeam = normalizeAbbr(game.home_team?.abbreviation || '');
+    const visitorTeam = normalizeAbbr(game.visitor_team?.abbreviation || '');
     
-    if (homeTeam === currentTeam || visitorTeam === currentTeam) {
-      matchingGames.push({ homeTeam, visitorTeam, date: game.date });
-      console.log(`🎯 MATCH FOUND: ${homeTeam} vs ${visitorTeam} on ${game.date}`);
+    if (homeTeam === normCurrentTeam || visitorTeam === normCurrentTeam) {
+      const matchType = homeTeam === normCurrentTeam ? 'HOME' : 'AWAY';
+      const opponent = homeTeam === normCurrentTeam ? visitorTeam : homeTeam;
+      const status = String(game.status || '').toLowerCase();
+      const isFinal = status.includes('final') || status.includes('completed');
       
-      if (homeTeam === currentTeam && visitorTeam) {
-        console.log(`✅ Opponent found: "${visitorTeam}" (${currentTeam} is home)`);
-        console.log(`🔍 === OPPONENT DETECTION END ===\n`);
-        return visitorTeam;
-      }
-      if (visitorTeam === currentTeam && homeTeam) {
-        console.log(`✅ Opponent found: "${homeTeam}" (${currentTeam} is away)`);
-        console.log(`🔍 === OPPONENT DETECTION END ===\n`);
-        return homeTeam;
+      matchingGames.push({ homeTeam, visitorTeam, date: game.date, status: game.status, isFinal });
+      
+      console.log(`%c✅ MATCH FOUND [${i}]%c ${homeTeam} vs ${visitorTeam}`, 'color: #27ae60; font-weight: bold', 'color: #000');
+      console.log(`   ${normCurrentTeam} is ${matchType}, opponent is ${opponent}, status: ${status}, isFinal: ${isFinal}`);
+      
+      // Skip final games and look for upcoming games
+      if (!isFinal) {
+        if (homeTeam === normCurrentTeam && visitorTeam) {
+          console.log(`%c🎯 RETURNING: ${visitorTeam}%c (${normCurrentTeam} is HOME)`, 'color: #27ae60; font-weight: bold; font-size: 14px', '');
+          console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+          return visitorTeam;
+        }
+        if (visitorTeam === normCurrentTeam && homeTeam) {
+          console.log(`%c🎯 RETURNING: ${homeTeam}%c (${normCurrentTeam} is AWAY)`, 'color: #27ae60; font-weight: bold; font-size: 14px', '');
+          console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+          return homeTeam;
+        }
+      } else {
+        console.log(`   ⏭️ Skipping - this is a FINAL game, looking for upcoming...`);
       }
     }
   }
   
-  console.log(`❌ No opponent found for "${currentTeam}" in ${todaysGames.length} games`);
-  console.log(`🔍 Matching games found: ${matchingGames.length}`);
+  console.log(`%c❌ NO OPPONENT FOUND%c for ${normCurrentTeam}`, 'color: #e74c3c; font-weight: bold; font-size: 14px', '');
+  console.log(`   Searched ${todaysGames.length} games, found ${matchingGames.length} matches`);
   if (matchingGames.length > 0) {
-    console.log(`🔍 Matching games:`, matchingGames);
+    console.table(matchingGames);
   }
-  console.log(`🔍 === OPPONENT DETECTION END ===\n`);
+  console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
   return '';
 };
 
@@ -1346,8 +1436,8 @@ const CHART_CONFIG = {
 
 // Unified tooltip style so bars and pie use the same hover look
 const getUnifiedTooltipStyle = (isDarkMode: boolean) => ({
-  backgroundColor: isDarkMode ? '#4b5563' : '#6b7280', // match chart hover bg
-  color: '#FFFFFF',
+  backgroundColor: isDarkMode ? '#4b5563' : '#9ca3af', // match chart hover bg - grey in light mode
+  color: isDarkMode ? '#FFFFFF' : '#000000', // white text in dark mode, black text in light mode
   border: '1px solid #9ca3af',
   borderRadius: '8px',
   padding: '12px',
@@ -1673,6 +1763,7 @@ const PureChart = memo(function PureChart({
   propsMode,
   gamePropsTeam,
   customTooltip,
+  selectedTimeframe,
 }: any) {
   // Use the main tooltip instead - this old one is removed
 
@@ -1719,6 +1810,7 @@ const PureChart = memo(function PureChart({
           customTooltip={customTooltip}
           formatChartLabel={formatChartLabel}
           selectedStat={selectedStat}
+          selectedTimeframe={selectedTimeframe}
         />
       )}
     </div>
@@ -1735,7 +1827,8 @@ const PureChart = memo(function PureChart({
   prev.selectedPlayer === next.selectedPlayer &&
   prev.propsMode === next.propsMode &&
   prev.gamePropsTeam === next.gamePropsTeam &&
-  prev.customTooltip === next.customTooltip
+  prev.customTooltip === next.customTooltip &&
+  prev.selectedTimeframe === next.selectedTimeframe
 ));
 
 // Per-button memoized components to prevent unrelated re-renders
@@ -2002,7 +2095,7 @@ const ChartControls = function ChartControls({
         <div
           className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x custom-scrollbar"
         >
-          <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1">
+          <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
             {currentStatOptions.map((s: any) => (
               <StatPill key={s.key} label={s.label} value={s.key} isSelected={selectedStat === s.key} onSelect={onSelectStat} isDark={isDark} />
             ))}
@@ -2088,48 +2181,55 @@ const ChartControls = function ChartControls({
       );
     }, [selectedTimeframe, onSelectTimeframe, isTimeframeDropdownOpen, setIsTimeframeDropdownOpen]);
 
+    // Hide controls when no data
+    if (!chartData || chartData.length === 0) {
+      return null;
+    }
+
     return (
       <>
         {StatPills}
         {/* Responsive controls layout */}
         <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
           {/* Top row: Line input (left), Over Rate (center-left), Team vs + Timeframes (right) */}
-          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3">
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-2">
             {/* Left: line input */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 -mt-1 sm:mt-0">
               <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Line:</label>
-              <input
-                id="betting-line-input"
-                type="number" 
-                step="0.5" 
-                {...((['spread', 'moneyline'].includes(selectedStat)) ? {} : { min: "0" })}
-                key={selectedStat}
-                defaultValue={bettingLine}
-                onChange={(e) => {
-                  const v = parseFloat((e.currentTarget as HTMLInputElement).value);
-                  if (!Number.isFinite(v)) return;
-                  transientLineRef.current = v;
-                  updateBettingLinePosition(yAxisConfig, v);
-                  recolorBarsFast(v);
-                  updateOverRatePillFast(v);
-                  try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
-                }}
-                onBlur={(e) => {
-                  const v = parseFloat((e.currentTarget as HTMLInputElement).value);
-                  if (Number.isFinite(v)) {
+              <div className="flex items-center gap-2">
+                <input
+                  id="betting-line-input"
+                  type="number" 
+                  step="0.5" 
+                  {...((['spread', 'moneyline'].includes(selectedStat)) ? {} : { min: "0" })}
+                  key={selectedStat}
+                  defaultValue={bettingLine}
+                  onChange={(e) => {
+                    const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                    if (!Number.isFinite(v)) return;
                     transientLineRef.current = v;
-                    onChangeBettingLine(v);
-                  }
-                }}
-                className="w-16 sm:w-16 md:w-18 lg:w-20 px-2 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-              {/* Mobile-only: show existing Over Rate pill under the line selector */}
-              <div className="sm:hidden mt-1">
-                <OverRatePill 
-                  overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
-                  total={chartData.length} 
-                  isDark={isDark} 
+                    updateBettingLinePosition(yAxisConfig, v);
+                    recolorBarsFast(v);
+                    updateOverRatePillFast(v);
+                    try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
+                  }}
+                  onBlur={(e) => {
+                    const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                    if (Number.isFinite(v)) {
+                      transientLineRef.current = v;
+                      onChangeBettingLine(v);
+                    }
+                  }}
+                  className="w-[72px] sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
+                {/* Mobile-only: show existing Over Rate pill to the right of line selector */}
+                <div className="sm:hidden">
+                  <OverRatePill 
+                    overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
+                    total={chartData.length} 
+                    isDark={isDark} 
+                  />
+                </div>
               </div>
             </div>
             {/* Middle: Over Rate pill, centered within remaining space (appears slightly left due to right content) */}
@@ -2203,10 +2303,8 @@ const ChartContainer = function ChartContainer({
 }: any) {
   return (
 <div 
-className="relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-[6px] sm:pl-0 md:pt-1 md:pr-2 md:pb-[6px] md:pl-0 lg:pt-2 lg:pr-3 lg:pb-[6px] lg:pl-0 border border-gray-200 dark:border-gray-700 h-[460px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
-      style={{ outline: 'none' }}
-      onFocus={(e) => { if (e.target === e.currentTarget) (e.currentTarget as HTMLElement).blur(); }}
-      tabIndex={-1}
+className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
+      style={{ outline: 'none', boxShadow: 'none' }}
     >
       <ChartControls
         isDark={isDark}
@@ -2241,8 +2339,48 @@ className="relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:
           propsMode={propsMode}
           gamePropsTeam={gamePropsTeam}
           customTooltip={customTooltip}
+          selectedTimeframe={selectedTimeframe}
         />
       </div>
+      
+      {/* Mobile-only: X-axis line and team logos strip below chart */}
+      {/* Only show logos for L5, L10, and H2H on mobile */}
+      {!isLoading && chartData && chartData.length > 0 && (selectedTimeframe === 'last5' || selectedTimeframe === 'last10' || selectedTimeframe === 'h2h') && (
+        <div className="sm:hidden pb-3 overflow-x-auto custom-scrollbar">
+          {/* X-axis line */}
+          <div className="w-full h-0.5 bg-gray-300 dark:bg-gray-600 mb-1" style={{ paddingLeft: '6px', marginRight: '-2px' }}></div>
+          <div className="flex items-end justify-between gap-0" style={{ width: '100%', height: '40px', paddingLeft: '6px', marginRight: '-2px' }}>
+            {chartData.map((d: any, idx: number) => {
+              const teamAbbr = d.tickLabel || d.opponent || '';
+              if (!teamAbbr) return null;
+              // Add left offset for all logos to align with bars
+              const leftOffset = -4; // Shift all logos left by 4px to match bar padding
+              
+              return (
+                <div key={`mobile-logo-${idx}-${teamAbbr}`} className="flex flex-col items-center justify-end" style={{ flex: '1 1 0', minWidth: 0, height: '100%', transform: `translateX(${leftOffset}px)` }}>
+                  {/* Team logo */}
+                  <img
+                    src={getEspnLogoUrl(teamAbbr)}
+                    alt={teamAbbr}
+                    className="w-7 h-7 object-contain"
+                    onError={(e) => {
+                      const candidates = getEspnLogoCandidates(teamAbbr);
+                      const currentSrc = e.currentTarget.src;
+                      const currentIdx = candidates.indexOf(currentSrc);
+                      const nextIdx = currentIdx + 1;
+                      if (nextIdx < candidates.length) {
+                        e.currentTarget.src = candidates[nextIdx];
+                      } else {
+                        e.currentTarget.style.display = 'none';
+                      }
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -2268,52 +2406,62 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
 
   return (
     <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
-      <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
-        {/* Left side (50%): Matchup Odds & Official/Implied Odds */}
-        <div className="p-3 sm:p-4 md:p-6 border-r border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* First: Line Movement (most important) */}
+        <div className="p-3 sm:p-4 md:p-6 lg:border-r border-gray-200 dark:border-gray-700">
+          <div className={`text-sm sm:text-base font-semibold mb-2 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Line Movement</div>
+          <div className="border-b border-gray-300 dark:border-gray-600 mb-3"></div>
+          <div className="relative">
+            <div className="space-y-2.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 pb-8">
+            {intradayMovements.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 text-sm">
+                No line movement data available
+              </div>
+            ) : (
+              intradayMovements.map((m: any) => (
+                <div key={m.ts} className="grid grid-cols-[128px_auto_auto] gap-3 items-center text-xs">
+                  <span className={`font-mono ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.timeLabel}</span>
+                  <span className={
+                    (m.direction === 'up'
+                      ? (mounted && isDark ? 'text-green-400' : 'text-green-600')
+                      : m.direction === 'down'
+                      ? (mounted && isDark ? 'text-red-400' : 'text-red-600')
+                      : (mounted && isDark ? 'text-white' : 'text-gray-900')) + ' font-mono font-bold justify-self-end'
+                  }>
+                    {m.line.toFixed(1)} {m.direction === 'up' ? '↗' : m.direction === 'down' ? '↘' : '—'}
+                  </span>
+                  <span className={`text-[10px] font-mono justify-self-end ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.change}</span>
+                </div>
+              ))
+            )}
+            </div>
+            {/* Fade gradient at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-t from-white via-white/80 dark:from-slate-800 dark:via-slate-800/80 to-transparent"></div>
+          </div>
+        </div>
+        
+        {/* Second: Matchup Odds & Implied/Official Odds */}
+        <div className="p-3 sm:p-4 md:p-6 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Left: Matchup Odds */}
             <div>
-            <div className="text-sm text-white font-semibold mb-2">Matchup Odds</div>
-            <div className="flex items-center gap-1 mb-2">
-              <img src={selectedTeamLogoUrl} alt={selectedTeam} className="w-5 h-5 object-contain" />
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-sm font-bold'}>{selectedTeam || 'LAL'}</span>
-              <span className={'text-white text-xs'}>vs</span>
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-sm font-bold'}>{opponentTeam || 'GSW'}</span>
-              <img src={opponentTeamLogoUrl} alt={opponentTeam} className="w-5 h-5 object-contain" />
+            <div className="text-sm sm:text-base font-semibold mb-3 text-gray-900 dark:text-white">Matchup Odds</div>
+            <div className="flex items-center gap-1.5 mb-3">
+              {selectedTeamLogoUrl && <img src={selectedTeamLogoUrl} alt={selectedTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
+              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!selectedTeam || selectedTeam === 'N/A') ? '—' : selectedTeam}</span>
+              <span className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs'}>vs</span>
+              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!opponentTeam || opponentTeam === '') ? '—' : opponentTeam}</span>
+              {opponentTeamLogoUrl && <img src={opponentTeamLogoUrl} alt={opponentTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
             </div>
-            <div className={'text-white text-xs mb-2'}>
-              Tipoff: {matchupInfo?.tipoffLocal || '7:30 PM'}
+            <div className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs mb-3'}>
+              Tipoff: {matchupInfo?.tipoffLocal || '—'}
             </div>
             {(() => {
               const fd = (books || []).find(b => b.name.toLowerCase() === 'fanduel');
               if (!fd) {
                 return (
-                  <div className="space-y-2">
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">@ FanDuel</div>
-                    <div className="grid gap-x-4 gap-y-1 text-xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
-                      <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Moneyline</div>
-                      <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                        <div className="space-y-0.5">
-                          <div>LAL: <span className="font-semibold">-145</span></div>
-                          <div className="opacity-90">GSW: <span className="font-semibold">+120</span></div>
-                        </div>
-                      </div>
-                      <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Spread</div>
-                      <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                        <div className="space-y-0.5">
-                          <div>-3.5 (<span className="font-semibold">-110</span>)</div>
-                          <div>+3.5 (<span className="font-semibold">-110</span>)</div>
-                        </div>
-                      </div>
-                      <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Total</div>
-                      <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                        <div className="space-y-0.5">
-                          <div>O 225.5 (<span className="font-semibold">-108</span>)</div>
-                          <div>U 225.5 (<span className="font-semibold">-112</span>)</div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    No odds data available
                   </div>
                 );
               }
@@ -2331,8 +2479,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
 
               return (
                 <div className="space-y-2">
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">@ FanDuel</div>
-                  <div className="grid gap-x-4 gap-y-1 text-xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
+                  <div className="text-xs sm:text-[10px] text-gray-500 dark:text-gray-400 mb-2">@ FanDuel</div>
+                  <div className="grid gap-x-4 gap-y-2 text-sm sm:text-xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
                     <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Moneyline</div>
                     <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
                       <div className="space-y-0.5">
@@ -2366,126 +2514,38 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
             })()}
             </div>
 
-            {/* Right: Official Odds & Implied Odds Stacked */}
-            <div className="space-y-6">
+            {/* Right: Implied Odds + Official Odds Combined */}
+            <div className="space-y-4">
               {/* Implied Odds */}
               <div>
-                <div className="text-sm text-white font-semibold mb-2">Implied Odds</div>
-                <div className="space-y-2 text-sm">
+                <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Implied Odds</div>
+                <div className="space-y-2 text-base sm:text-sm">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-700 dark:text-gray-200">Over:</span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">52.4%</span>
+                    <span className="font-semibold text-gray-500 dark:text-gray-400">—</span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-700 dark:text-gray-200">Under:</span>
-                    <span className="font-semibold text-red-600 dark:text-red-400">47.6%</span>
+                    <span className="font-semibold text-gray-500 dark:text-gray-400">—</span>
                   </div>
                 </div>
               </div>
-
+              
               {/* Official Odds */}
               <div>
-                <div className="text-sm text-white font-semibold mb-2">Official Odds</div>
-                <div className="space-y-2 text-sm">
+                <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Official Odds</div>
+                <div className="space-y-2 text-base sm:text-sm">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
-                    <span className="text-gray-900 dark:text-white">{derivedOdds.openingLine != null ? derivedOdds.openingLine.toFixed(1) : '25.5'}</span>
+                    <span className="text-gray-900 dark:text-white">{derivedOdds.openingLine != null ? derivedOdds.openingLine.toFixed(1) : '—'}</span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
-                    <span className="text-gray-900 dark:text-white">{derivedOdds.currentLine != null ? derivedOdds.currentLine.toFixed(1) : '26.0'}</span>
+                    <span className="text-gray-900 dark:text-white">{derivedOdds.currentLine != null ? derivedOdds.currentLine.toFixed(1) : '—'}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-        
-        {/* Right side (50%): Line Movement */}
-        <div className="p-3 sm:p-4 md:p-6">
-          <div className="text-sm text-white font-semibold mb-1">Line Movement</div>
-          <div className="border-b border-gray-300 dark:border-gray-600 mb-3"></div>
-          <div className="relative">
-            <div className="space-y-2.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 pb-8">
-            {intradayMovements.length === 0 ? (
-              // Mock data for preview
-              <>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-                  <div className="text-left">
-                    <div className={'text-white font-mono text-sm font-bold'}>9:00 AM</div>
-                    <div className={(mounted && isDark ? 'text-slate-400' : 'text-slate-600') + ' font-mono text-xs'}>Oct 27, 2025</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">@ FanDuel</div>
-                  </div>
-                  <span className={(mounted && isDark ? 'text-green-400' : 'text-green-600') + ' font-mono font-bold text-lg justify-self-end'}>
-                    26.0 ↗
-                  </span>
-                  <span className={'text-white font-mono text-sm justify-self-end'}>+0.5</span>
-                </div>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-                  <div className="text-left">
-                    <div className={'text-white font-mono text-sm font-bold'}>11:30 AM</div>
-                    <div className={(mounted && isDark ? 'text-slate-400' : 'text-slate-600') + ' font-mono text-xs'}>Oct 27, 2025</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">@ DraftKings</div>
-                  </div>
-                  <span className={(mounted && isDark ? 'text-red-400' : 'text-red-600') + ' font-mono font-bold text-lg justify-self-end'}>
-                    25.5 ↘
-                  </span>
-                  <span className={'text-white font-mono text-sm justify-self-end'}>-0.5</span>
-                </div>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-                  <div className="text-left">
-                    <div className={'text-white font-mono text-sm font-bold'}>2:15 PM</div>
-                    <div className={(mounted && isDark ? 'text-slate-400' : 'text-slate-600') + ' font-mono text-xs'}>Oct 27, 2025</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">@ BetMGM</div>
-                  </div>
-                  <span className={(mounted && isDark ? 'text-green-400' : 'text-green-600') + ' font-mono font-bold text-lg justify-self-end'}>
-                    26.5 ↗
-                  </span>
-                  <span className={'text-white font-mono text-sm justify-self-end'}>+1.0</span>
-                </div>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-                  <div className="text-left">
-                    <div className={'text-white font-mono text-sm font-bold'}>4:45 PM</div>
-                    <div className={(mounted && isDark ? 'text-slate-400' : 'text-slate-600') + ' font-mono text-xs'}>Oct 27, 2025</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">@ Caesars</div>
-                  </div>
-                  <span className={'text-white font-mono font-bold text-lg justify-self-end'}>
-                    26.5 —
-                  </span>
-                  <span className={'text-white font-mono text-sm justify-self-end'}>0.0</span>
-                </div>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-                  <div className="text-left">
-                    <div className={'text-white font-mono text-sm font-bold'}>6:20 PM</div>
-                    <div className={(mounted && isDark ? 'text-slate-400' : 'text-slate-600') + ' font-mono text-xs'}>Oct 27, 2025</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">@ FanDuel</div>
-                  </div>
-                  <span className={(mounted && isDark ? 'text-red-400' : 'text-red-600') + ' font-mono font-bold text-lg justify-self-end'}>
-                    26.0 ↘
-                  </span>
-                  <span className={'text-white font-mono text-sm justify-self-end'}>-0.5</span>
-                </div>
-              </>
-            ) : (
-              intradayMovements.map((m: any) => (
-                <div key={m.ts} className="grid grid-cols-[128px_auto_auto] gap-3 items-center text-xs">
-                  <span className={'text-white font-mono'}>{m.timeLabel}</span>
-                  <span className={
-                    (m.direction === 'up'
-                      ? (mounted && isDark ? 'text-green-400' : 'text-green-600')
-                      : m.direction === 'down'
-                      ? (mounted && isDark ? 'text-red-400' : 'text-red-600')
-                      : 'text-white') + ' font-mono font-bold justify-self-end'
-                  }>
-                    {m.line.toFixed(1)} {m.direction === 'up' ? '↗' : m.direction === 'down' ? '↘' : '—'}
-                  </span>
-                  <span className={'text-white text-[10px] font-mono justify-self-end'}>{m.change}</span>
-                </div>
-              ))
-            )}
-            </div>
-            {/* Fade gradient at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-t from-white via-white/80 dark:from-slate-800 dark:via-slate-800/80 to-transparent"></div>
           </div>
         </div>
       </div>
@@ -2744,11 +2804,11 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           {/* Position switcher */}
           <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-600' : 'border-gray-300'} p-2`}>
             <div className={`text-[11px] font-semibold mb-2 ${mounted && isDark ? 'text-slate-200' : 'text-slate-800'}`}>Position</div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex gap-2 sm:gap-1.5">
               {(['PG','SG','SF','PF','C'] as const).map(p => (
                 <button key={p}
                   onClick={() => setPosSel(p)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${posLabel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200')}`}
+                  className={`flex-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-sm sm:text-xs font-bold transition-colors ${posLabel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200')}`}
                 >{p}</button>
               ))}
             </div>
@@ -2761,7 +2821,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
               className={`w-full flex items-center justify-between gap-2 px-2 py-1 rounded-md border text-sm ${mounted && isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
             >
               <span className="flex items-center gap-2">
-                <img src={getEspnLogoUrl(oppSel || opponentTeam || '')} alt={oppSel || opponentTeam || 'OPP'} className="w-6 h-6 object-contain" />
+                {(oppSel || opponentTeam) && <img src={getEspnLogoUrl(oppSel || opponentTeam || '')} alt={oppSel || opponentTeam || 'OPP'} className="w-6 h-6 object-contain" />}
                 <span className="font-semibold">{oppSel || opponentTeam || '—'}</span>
               </span>
               <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
@@ -3536,6 +3596,80 @@ function NBADashboardContent() {
   const router = useRouter();
   const searchParamsHook = useSearchParams();
   const { isDark } = useTheme();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isPro, setIsPro] = useState(true); // Default to true to avoid flickering
+
+  // Check for success parameter from checkout
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('success') === 'true') {
+      alert('✅ Subscription successful! Welcome to Pro! Your Player Props features are now unlocked.');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Get user info and subscription status on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email || null);
+        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+        setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
+        
+        // Check Pro access - try profiles table first, fallback to user_metadata
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status, subscription_tier')
+          .eq('id', session.user.id)
+          .single();
+        
+        let isActive = false;
+        let isProTier = false;
+        
+        if (profile) {
+          // Use profiles table if available
+          isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
+          isProTier = profile.subscription_tier === 'pro';
+        } else {
+          // Fallback to user_metadata for dev testing
+          const metadata = session.user.user_metadata || {};
+          isActive = metadata.subscription_status === 'active';
+          isProTier = metadata.subscription_plan === 'pro';
+        }
+        
+        const proStatus = isActive && isProTier;
+        console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
+        setIsPro(proStatus);
+      }
+    };
+    getUser();
+  }, []);
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const profileButton = document.querySelector('[data-profile-button]');
+      const profileMenu = document.querySelector('[data-profile-menu]');
+      if (showProfileMenu && profileButton && profileMenu && !profileButton.contains(event.target as Node) && !profileMenu.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showProfileMenu]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
 
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
@@ -3543,6 +3677,13 @@ function NBADashboardContent() {
   // Ensure correct default stat is set when propsMode changes
   useEffect(() => {
     if (propsMode === 'player') {
+      // Force non-Pro users back to Game Props mode
+      if (!isPro) {
+        setPropsMode('team');
+        setSelectedStat('total_pts');
+        return;
+      }
+      
       // Clear opponent when switching to player mode (player props don't have opponents)
       setOpponentTeam('');
       
@@ -3560,7 +3701,7 @@ function NBADashboardContent() {
         setSelectedStat('total_pts');
       }
     }
-  }, [propsMode]);
+  }, [propsMode, isPro]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
@@ -3747,6 +3888,12 @@ function NBADashboardContent() {
   // Tracking modals state
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
+  
+  // Subscription/paywall state
+  const { 
+    hasPremium, 
+    checkFeatureAccess
+  } = useSubscription();
   
   // Next game info for tracking (separate from chart filter)
   const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
@@ -4000,6 +4147,8 @@ function NBADashboardContent() {
         const data = await response.json();
         const arr = Array.isArray(data?.data) ? data.data : [];
         if (arr.length > 0) {
+          console.log(`✅ Fetched ${arr.length} games from ${start} to ${end}`);
+          console.log(`   Games: ${arr.map((g: any) => `${g.home_team?.abbreviation} vs ${g.visitor_team?.abbreviation}`).join(', ')}`);
           setTodaysGames(arr);
           return;
         }
@@ -4020,25 +4169,35 @@ function NBADashboardContent() {
 
   // Update opponent when games or selected team changes
   useEffect(() => {
+    console.log(`%c🔍 === OPPONENT USEEFFECT TRIGGERED ===%c`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
+    console.log(`%cDependency changes: propsMode=${propsMode}, manualOpponent="${manualOpponent}"`, 'color: #555', '');
+    
     // If manual opponent is set and not ALL, use that instead of automatic detection
     if (manualOpponent && manualOpponent !== '' && manualOpponent !== 'ALL') {
-      console.log(`🎯 Using manual opponent: ${manualOpponent}`);
+      console.log(`%c🎯 MANUAL OPPONENT OVERRIDE: ${manualOpponent}%c`, 'color: #f39c12; font-weight: bold; font-size: 12px', '');
       setOpponentTeam(normalizeAbbr(manualOpponent));
+      console.log(`%c🔍 === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
       return;
     }
     
     // Otherwise, use automatic opponent detection
     const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+    console.log(`%cTeam to check: %c${teamToCheck}%c (mode: ${propsMode})`, 'color: #555', 'color: #e74c3c; font-weight: bold', 'color: #555');
+    console.log(`%cGames available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
+    
     if (teamToCheck && teamToCheck !== 'N/A' && todaysGames.length > 0) {
       const opponent = getOpponentTeam(teamToCheck, todaysGames);
-      console.log(`🎯 Setting opponent team: ${opponent} for ${propsMode} team: ${teamToCheck}`);
+      console.log(`%c🎯 SETTING OPPONENT: ${opponent}%c (for ${teamToCheck})`, 'color: #27ae60; font-weight: bold; font-size: 12px', 'color: #555');
       setOpponentTeam(normalizeAbbr(opponent));
     } else {
-      console.log(`⏸️ Not updating opponent - ${propsMode} team: ${teamToCheck}, games: ${todaysGames.length}`);
+      console.log(`%c⏸️ SKIPPING OPPONENT UPDATE%c - Insufficient data`, 'color: #f39c12; font-weight: bold', 'color: #555');
+      console.log(`  teamToCheck: ${teamToCheck}, todaysGames: ${todaysGames.length}`);
       if (propsMode === 'team' && (!gamePropsTeam || gamePropsTeam === 'N/A')) {
+        console.log(`  -> Clearing opponent (team mode with no team selected)`);
         setOpponentTeam('');
       }
     }
+    console.log(`%c🔍 === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
   }, [selectedTeam, gamePropsTeam, todaysGames, propsMode, manualOpponent]);
 
   // Load games on mount and refresh every 3 hours (reduced churn)
@@ -4120,35 +4279,52 @@ function NBADashboardContent() {
       setIsGameInProgress(false);
     }
 
-    // If any game is Final today, pick the next future game as opponent FOR CHART FILTER
-    const hasFinalToday = teamGames.some((g: any) => String(g.status).toLowerCase().includes('final'));
-    if (hasFinalToday) {
-      const upcoming = teamGames
-        .map((g: any) => ({ g, t: new Date(g.date || 0).getTime() }))
-        .filter(({ t }) => t > now)
-        .sort((a, b) => a.t - b.t)[0]?.g;
-      if (upcoming) {
-        const home = normalizeAbbr(upcoming?.home_team?.abbreviation || '');
-        const away = normalizeAbbr(upcoming?.visitor_team?.abbreviation || '');
-        const nextOpp = normTeam === home ? away : home;
-        setOpponentTeam(nextOpp || '');
-      } else {
-        // No upcoming game — default to ALL to avoid stale VS
-        setOpponentTeam('ALL');
+    // SMART AUTO-SWITCH: Only switch when the CURRENT opponent's game goes final
+    // This prevents unnecessary re-renders when unrelated games finish
+    if (opponentTeam && opponentTeam !== '' && opponentTeam !== 'N/A' && opponentTeam !== 'ALL') {
+      // Find the game between current team and current opponent
+      const currentGame = teamGames.find((g: any) => {
+        const home = normalizeAbbr(g?.home_team?.abbreviation || '');
+        const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
+        return (home === normTeam && away === opponentTeam) || (away === normTeam && home === opponentTeam);
+      });
+      
+      if (currentGame) {
+        const status = String(currentGame.status || '').toLowerCase();
+        const isCurrentGameFinal = status.includes('final') || status.includes('completed');
+        
+        console.log(`  Current game (${normTeam} vs ${opponentTeam}): status=${status}, final=${isCurrentGameFinal}`);
+        
+        if (isCurrentGameFinal) {
+          console.log(`  -> Current game is final, finding next opponent...`);
+          const nextOpponent = getOpponentTeam(normTeam, todaysGames);
+          if (nextOpponent && nextOpponent !== opponentTeam) {
+            console.log(`  -> Auto-switching from ${opponentTeam} to ${nextOpponent}`);
+            setOpponentTeam(nextOpponent);
+          } else {
+            console.log(`  -> No next opponent found, keeping current`);
+          }
+        }
       }
     }
-  }, [todaysGames, selectedTeam, gamePropsTeam, propsMode]);
+  }, [todaysGames, selectedTeam, gamePropsTeam, propsMode, manualOpponent, opponentTeam]);
 
-  // Auto-handle opponent selection when switching to H2H (less aggressive)
+  // Auto-handle opponent selection when switching to H2H
   useEffect(() => {
     if (selectedTimeframe === 'h2h') {
       // When switching to H2H, only clear manual opponent if it's currently ALL
       if (manualOpponent === 'ALL') {
         setManualOpponent('');
       }
+      
+      // If opponentTeam is not set (empty, N/A, or ALL), use the nextGameOpponent that's already calculated
+      if ((!opponentTeam || opponentTeam === 'N/A' || opponentTeam === 'ALL' || opponentTeam === '') && nextGameOpponent && nextGameOpponent !== '') {
+        console.log(`🔄 H2H: Setting opponent to next game opponent: ${nextGameOpponent}`);
+        setOpponentTeam(nextGameOpponent);
+      }
     }
     // Don't auto-switch away from manual selections when leaving H2H
-  }, [selectedTimeframe, manualOpponent]);
+  }, [selectedTimeframe, manualOpponent, opponentTeam, nextGameOpponent]);
 
   // Fetch game data when in team mode and team is selected
   useEffect(() => {
@@ -4440,10 +4616,15 @@ function NBADashboardContent() {
     try {
       const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
       if (raw) {
-        const saved = JSON.parse(raw) as Partial<SavedSession>;
+        const saved = JSON.parse(raw) as Partial<SavedSession> & { gamePropsTeam?: string };
         if (saved?.propsMode && (saved.propsMode === 'player' || saved.propsMode === 'team')) {
           initialPropsMode = saved.propsMode;
           setPropsMode(saved.propsMode);
+          
+          // Restore gamePropsTeam if in team mode
+          if (saved.propsMode === 'team' && saved.gamePropsTeam && saved.gamePropsTeam !== 'N/A') {
+            setGamePropsTeam(saved.gamePropsTeam);
+          }
         }
         if (saved?.selectedStat) setSelectedStat(saved.selectedStat);
         if (saved?.selectedTimeframe) setSelectedTimeframe(saved.selectedTimeframe);
@@ -4583,6 +4764,11 @@ function NBADashboardContent() {
         (baseSave as SavedSession).player = r;
       }
       
+      // Add team data if in team mode and team is selected
+      if (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A') {
+        (baseSave as any).gamePropsTeam = gamePropsTeam;
+      }
+      
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
         
@@ -4607,7 +4793,7 @@ function NBADashboardContent() {
         window.history.replaceState({}, '', url.toString());
       }
     } catch {}
-  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode]);
+  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam]);
 
   // Resolve playerId with best match (if needed)
   const resolvePlayerId = async (fullName: string, teamAbbr?: string): Promise<string | null> => {
@@ -4730,6 +4916,11 @@ function NBADashboardContent() {
   
   // Fetch advanced stats for a player
   const fetchAdvancedStats = async (playerId: string) => {
+    // 🔒 PAYWALL CHECK
+    if (!checkFeatureAccess('premium')) {
+      return;
+    }
+    
     setAdvancedStatsLoading(true);
     setAdvancedStatsError(null);
     try {
@@ -4751,6 +4942,11 @@ function NBADashboardContent() {
   
   // Fetch shot distance stats for a player
   const fetchShotDistanceStats = async (playerId: string) => {
+    // 🔒 PAYWALL CHECK
+    if (!checkFeatureAccess('premium')) {
+      return;
+    }
+    
     setShotDistanceLoading(true);
     try {
       const season = currentNbaSeason();
@@ -4796,12 +4992,33 @@ function NBADashboardContent() {
       setOriginalPlayerTeam(currentTeam); // Track the original player's team
       setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
-      // Parse ESPN height data and merge with sample player data
+  // Parse ESPN height data and merge with sample player data
       const heightData = parseEspnHeight(espnData?.height);
+      
+      // Try to get jersey from ESPN, then from player data, then from depth chart roster
+      let jerseyNumber = Number(espnData?.jersey || player.jersey || 0);
+      if (!jerseyNumber && playerTeamRoster) {
+        // Search all positions in roster for this player
+        const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+        for (const pos of positions) {
+          const posPlayers = playerTeamRoster[pos];
+          if (Array.isArray(posPlayers)) {
+            const found = posPlayers.find(p => 
+              p.name && player.full && 
+              (p.name.toLowerCase().includes(player.full.toLowerCase()) || 
+               player.full.toLowerCase().includes(p.name.toLowerCase()))
+            );
+            if (found && found.jersey && found.jersey !== 'N/A') {
+              jerseyNumber = Number(found.jersey);
+              break;
+            }
+          }
+        }
+      }
       
       setSelectedPlayer({
         ...player,
-        jersey: Number(espnData?.jersey || player.jersey || 0),
+        jersey: jerseyNumber,
         heightFeet: Number(heightData.feet || player.heightFeet || 0),
         heightInches: Number(heightData.inches || player.heightInches || 0),
       });
@@ -4863,11 +5080,33 @@ function NBADashboardContent() {
       // Debug ESPN data
       console.log('🏀 Full ESPN data:', espnData);
       
+      // Try to get jersey from ESPN, then from depth chart roster
+      let jerseyNumber = Number(espnData?.jersey || 0);
+      if (!jerseyNumber && playerTeamRoster) {
+        // Search all positions in roster for this player
+        const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+        for (const pos of positions) {
+          const posPlayers = playerTeamRoster[pos];
+          if (Array.isArray(posPlayers)) {
+            const found = posPlayers.find(p => 
+              p.name && r.full && 
+              (p.name.toLowerCase().includes(r.full.toLowerCase()) || 
+               r.full.toLowerCase().includes(p.name.toLowerCase()))
+            );
+            if (found && found.jersey && found.jersey !== 'N/A') {
+              jerseyNumber = Number(found.jersey);
+              console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
+              break;
+            }
+          }
+        }
+      }
+      
       // Update player object with search API team + ESPN data
       setSelectedPlayer({
         ...tempPlayer,
         teamAbbr: currentTeam,
-        jersey: Number(espnData?.jersey || 0),
+        jersey: jerseyNumber,
         heightFeet: heightData.feet || null,
         heightInches: heightData.inches || null,
         // Add raw height as fallback for debugging
@@ -5574,13 +5813,13 @@ function NBADashboardContent() {
   const fmtOdds = (odds: string): string => odds === 'N/A' ? 'N/A' : (oddsFormat === 'decimal' ? americanToDecimal(odds) : odds);
 
   return (
-<div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-hidden">
+<div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
           --sidebar-width: 0px;
-          --gap: 6px;
-          --inner-max: 1440px;
+          --gap: 8px;
+          --inner-max: 1550px;
           --app-max: calc(var(--sidebar-width) + var(--gap) + var(--inner-max));
           --content-margin-right: 0px;
           --content-padding-left: 0px;
@@ -5619,7 +5858,7 @@ function NBADashboardContent() {
 
         /* Mobile-only: reduce outer gap to tighten left/right padding */
         @media (max-width: 639px) {
-          .dashboard-container { --gap: 6px; }
+          .dashboard-container { --gap: 8px; }
         }
 
         /* Custom scrollbar colors for light/dark mode */
@@ -5680,15 +5919,43 @@ function NBADashboardContent() {
             display: initial !important;
           }
         }
+        
+        /* Remove focus border from chart container and all children */
+        .chart-container-no-focus,
+        .chart-container-no-focus *,
+        .chart-container-no-focus:focus,
+        .chart-container-no-focus *:focus,
+        .chart-container-no-focus:focus-visible,
+        .chart-container-no-focus *:focus-visible,
+        .chart-container-no-focus:active,
+        .chart-container-no-focus *:active {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        .chart-container-no-focus {
+          border-color: rgb(229, 231, 235) !important;
+        }
+        
+        .dark .chart-container-no-focus {
+          border-color: rgb(55, 65, 81) !important;
+        }
+        
+        /* Prevent Recharts elements from getting focus */
+        .chart-container-no-focus .recharts-wrapper,
+        .chart-container-no-focus .recharts-surface,
+        .chart-container-no-focus svg {
+          outline: none !important;
+        }
       `}</style>
       {/* Main layout container with sidebar, chart, and right panel */}
-      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 6px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 6px)))', paddingLeft: 0 }}>
-        <div className="mx-auto w-full max-w-[1440px]" style={{ paddingLeft: 0 }}>
+      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))', paddingLeft: 0 }}>
+<div className="mx-auto w-full max-w-[1550px]" style={{ paddingLeft: 0 }}>
           <div 
             className="pt-4 min-h-0 lg:h-full dashboard-container"
             style={{ paddingLeft: 0 }}
           >
-        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} hasPremium={hasPremium} />
 <div className="flex flex-col lg:flex-row gap-0 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
@@ -5698,11 +5965,121 @@ function NBADashboardContent() {
             }}
           >
             {/* 1. Filter By Container (Mobile First) */}
-            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">Filter By</h3>
-              <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                {/* Profile Dropdown Button */}
+                <div className="relative">
+                  <button
+                    data-profile-button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+                  >
+                    {avatarUrl ? (
+                      /* Google Profile Picture */
+                      <img 
+                        src={avatarUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      /* Default Profile Icon */
+                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Profile Menu Dropdown */}
+                  {showProfileMenu && (
+                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {/* Username display */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <button
+                          type="button"
+                          onMouseDown={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Subscription clicked');
+                            setShowProfileMenu(false);
+                            
+                            // If Pro user, open Stripe portal directly
+                            if (isPro) {
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) {
+                                  router.push('/subscription');
+                                  return;
+                                }
+                                
+                                const response = await fetch('/api/portal-client', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`,
+                                  },
+                                });
+                                
+                                const data = await response.json();
+                                if (data.url) {
+                                  window.location.href = data.url;
+                                } else {
+                                  router.push('/subscription');
+                                }
+                              } catch (error) {
+                                console.error('Portal error:', error);
+                                router.push('/subscription');
+                              }
+                            } else {
+                              // Free users go to subscription page
+                              setTimeout(() => router.push('/subscription'), 100);
+                            }
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        >
+                          Subscription
+                        </button>
+                      </div>
+                      
+                      {/* Logout button */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Sign Out clicked');
+                            setShowProfileMenu(false);
+                            setTimeout(() => handleLogout(), 100);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-3 md:gap-4 flex-wrap mb-3">
                 <button
+                  disabled={!isPro}
                   onClick={() => {
+                    // Check if user has Pro access
+                    if (!isPro) {
+                      if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
+                        router.push('/subscription');
+                      }
+                      return;
+                    }
+                    
                     setPropsMode('player');
                     setSearchQuery(''); // Clear search when switching
                     // Always set PTS as default for Player Props
@@ -5727,13 +6104,20 @@ function NBADashboardContent() {
                       } catch {}
                     }
                   }}
-                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
-                    propsMode === 'player'
+                  className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all ${
+                    !isPro
+                      ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60"
+                      : propsMode === 'player'
                       ? "bg-purple-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
                   Player Props
+                  {!isPro && (
+                    <svg className="inline-block w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -5774,7 +6158,7 @@ function NBADashboardContent() {
                     // Always set TOTAL_PTS as default for Game Props
                     setSelectedStat('total_pts');
                   }}
-                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+                  className={`px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-colors ${
                     propsMode === 'team'
                       ? "bg-purple-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -5846,17 +6230,30 @@ function NBADashboardContent() {
                         type="text"
                         placeholder={
                           propsMode === 'player' 
-                            ? (searchBusy ? "Searching..." : "Search for a player...") 
+                            ? (isPro ? (searchBusy ? "Searching..." : "Search for a player...") : "Upgrade to Pro to search players")
                             : "Search for a team..."
                         }
                         value={searchQuery}
                         onChange={(e) => {
+                          // Block player search for non-Pro users
+                          if (propsMode === 'player' && !isPro) {
+                            e.target.blur();
+                            return;
+                          }
                           setSearchQuery(e.target.value);
                           if (propsMode === 'player') {
                             setShowDropdown(true);
                           }
                         }}
-                        onFocus={() => {
+                        onFocus={(e) => {
+                          // Block player search for non-Pro users
+                          if (propsMode === 'player' && !isPro) {
+                            e.target.blur();
+                            if (window.confirm('Player Props search is a Pro feature. Would you like to upgrade?')) {
+                              router.push('/subscription');
+                            }
+                            return;
+                          }
                           if (propsMode === 'player') setShowDropdown(true);
                         }}
                         onKeyDown={(e) => {
@@ -5888,7 +6285,15 @@ function NBADashboardContent() {
                     </div>
                     {/* Mobile icon button */}
                     <div className="sm:hidden flex justify-end">
-                      <button onClick={() => setIsMobileSearchOpen(true)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+                      <button onClick={() => {
+                        if (propsMode === 'player' && !isPro) {
+                          if (window.confirm('Player Props search is a Pro feature. Would you like to upgrade?')) {
+                            router.push('/subscription');
+                          }
+                          return;
+                        }
+                        setIsMobileSearchOpen(true);
+                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 110-16 8 8 0 010 16z"/></svg>
                       </button>
                     </div>
@@ -5897,13 +6302,27 @@ function NBADashboardContent() {
                       <div className="sm:hidden absolute top-0 right-0 mt-0 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2">
                         <div className="flex items-center gap-2">
                           <input
-                            autoFocus
+                            autoFocus={propsMode !== 'player' || isPro}
                             type="text"
-                            placeholder={propsMode === 'player' ? 'Search player...' : 'Search team...'}
+                            placeholder={propsMode === 'player' ? (isPro ? 'Search player...' : 'Upgrade to Pro') : 'Search team...'}
                             value={searchQuery}
                             onChange={(e) => {
+                              // Block player search for non-Pro users
+                              if (propsMode === 'player' && !isPro) {
+                                return;
+                              }
                               setSearchQuery(e.target.value);
                               if (propsMode === 'player') setShowDropdown(true);
+                            }}
+                            onFocus={(e) => {
+                              if (propsMode === 'player' && !isPro) {
+                                e.target.blur();
+                                setIsMobileSearchOpen(false);
+                                if (window.confirm('Player Props search is a Pro feature. Would you like to upgrade?')) {
+                                  router.push('/subscription');
+                                }
+                                return;
+                              }
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && propsMode === 'team') {
@@ -5936,8 +6355,8 @@ function NBADashboardContent() {
                         </div>
                       </div>
                     )}
-                    {/* Player search dropdown - only show in player mode */}
-                    {propsMode === 'player' && showDropdown && searchQuery && (
+                    {/* Player search dropdown - only show in player mode and for Pro users */}
+                    {propsMode === 'player' && isPro && showDropdown && searchQuery && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
                         {searchResults.length === 0 ? (
                           <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
@@ -5946,7 +6365,16 @@ function NBADashboardContent() {
                         ) : searchResults.map((r) => (
                           <button
                             key={`${r.id}-${r.full}`}
-                            onClick={() => handlePlayerSelectFromSearch(r)}
+                            onClick={() => {
+                              // Extra check: ensure Pro access before player selection
+                              if (!isPro) {
+                                if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
+                                  router.push('/subscription');
+                                }
+                                return;
+                              }
+                              handlePlayerSelectFromSearch(r);
+                            }}
                             className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                           >
                             <div className="flex items-center justify-between">
@@ -5993,13 +6421,25 @@ function NBADashboardContent() {
                             <button
                               key={team.abbr}
                               onClick={() => {
+                                console.log(`%c🎬 === TEAM SELECTION HANDLER ===%c`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
+                                console.log(`%cSelected Team: %c${team.abbr}`, 'color: #555', 'color: #e74c3c; font-weight: bold; font-size: 14px');
+                                console.log(`%cTeam Full Name: %c${team.fullName}`, 'color: #555', 'color: #3498db; font-weight: bold');
+                                console.log(`%cGames available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
+                                
                                 setGamePropsTeam(team.abbr);
-                                setSelectedStat('total_pts'); // Auto-select stat for Game Props mode
-                                // Fetch opponent team for Game Props mode
+                                setSelectedStat('total_pts');
+                                
                                 const opponent = getOpponentTeam(team.abbr, todaysGames);
-                                setOpponentTeam(normalizeAbbr(opponent));
-                                console.log(`🏀 Selected team for Game Props: ${team.abbr}, opponent: ${opponent}`);
-                                setSearchQuery(''); // Clear search after selection
+                                console.log(`%cOpponent Detection Result: %c"${opponent}"`, 'color: #555', 'color: #27ae60; font-weight: bold; font-size: 14px');
+                                
+                                const normalized = normalizeAbbr(opponent);
+                                console.log(`%cNormalized opponent: %c"${normalized}"`, 'color: #555', 'color: #27ae60; font-weight: bold; font-size: 14px');
+                                
+                                setOpponentTeam(normalized);
+                                console.log(`%c✅ State Updated%c - gamePropsTeam: ${team.abbr}, opponentTeam: ${normalized}`, 'color: #27ae60; font-weight: bold', 'color: #000');
+                                console.log(`%c🎬 === HANDLER END ===%c\n`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
+                                
+                                setSearchQuery('');
                               }}
                               className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                             >
@@ -6072,7 +6512,6 @@ function NBADashboardContent() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
-                        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
                       </div>
                     )
@@ -6139,7 +6578,6 @@ function NBADashboardContent() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
-                        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Team</span>
                       </div>
                     )
@@ -6147,8 +6585,9 @@ function NBADashboardContent() {
                 </div>
               </div>
               
-              {/* Tracking Buttons - Only show in Player Props mode when player is selected */}
-              {propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A' && (
+              {/* Tracking Buttons - Show for both Player Props and Game Props modes */}
+              {((propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A') ||
+                (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
                 <div className="flex gap-2 px-0">
                   <button
                     onClick={() => !isGameInProgress && setShowTrackModal(true)}
@@ -6158,7 +6597,7 @@ function NBADashboardContent() {
                         ? 'bg-gray-400 cursor-not-allowed opacity-50' 
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
-                    title={isGameInProgress ? 'Game in progress - tracking disabled' : 'Track player prop'}
+                    title={isGameInProgress ? 'Game in progress - tracking disabled' : `Track ${propsMode === 'team' ? 'team' : 'player'} prop`}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -6167,18 +6606,38 @@ function NBADashboardContent() {
                     Track
                   </button>
                   <button
-                    onClick={() => !isGameInProgress && setShowJournalModal(true)}
-                    disabled={isGameInProgress}
+                    onClick={() => {
+                      if (!hasPremium) {
+                        router.push('/subscription');
+                        return;
+                      }
+                      if (!isGameInProgress) {
+                        setShowJournalModal(true);
+                      }
+                    }}
+                    disabled={isGameInProgress || !hasPremium}
                     className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
-                      isGameInProgress 
+                      isGameInProgress || !hasPremium
                         ? 'bg-gray-400 cursor-not-allowed opacity-50' 
                         : 'bg-purple-600 hover:bg-purple-700'
                     }`}
-                    title={isGameInProgress ? 'Game in progress - journal disabled' : 'Add to journal'}
+                    title={
+                      !hasPremium 
+                        ? 'Journal is a Pro feature' 
+                        : isGameInProgress 
+                        ? 'Game in progress - journal disabled' 
+                        : 'Add to journal'
+                    }
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                    {!hasPremium ? (
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    )}
                     Journal
                   </button>
                 </div>
@@ -6214,8 +6673,8 @@ function NBADashboardContent() {
 
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
-              {/* Section 0: Defense vs Position (new) */}
-<PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam} />
+              {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
+              {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
 
               {/* Section 1: Opponent Analysis */}
               <OpponentAnalysisCard 
@@ -6758,8 +7217,8 @@ function NBADashboardContent() {
                   intradayMovements={intradayMovements}
                   selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
                   opponentTeam={opponentTeam}
-                  selectedTeamLogoUrl={selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)}
-                  opponentTeamLogoUrl={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                  selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                  opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
                   matchupInfo={matchupInfo}
                   oddsFormat={oddsFormat}
                   books={realOddsData}
@@ -6815,8 +7274,8 @@ function NBADashboardContent() {
                 intradayMovements={intradayMovements}
                 selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
                 opponentTeam={opponentTeam}
-                selectedTeamLogoUrl={selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)}
-                opponentTeamLogoUrl={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
                 matchupInfo={matchupInfo}
                 oddsFormat={oddsFormat}
                 books={realOddsData}
@@ -6944,11 +7403,116 @@ function NBADashboardContent() {
           >
 
             {/* Filter By Container (Desktop - in right panel) */}
-<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">Filter By</h3>
+<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                {/* Profile Dropdown Button */}
+                <div className="relative">
+                  <button
+                    data-profile-button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+                  >
+                    {avatarUrl ? (
+                      /* Google Profile Picture */
+                      <img 
+                        src={avatarUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      /* Default Profile Icon */
+                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Profile Menu Dropdown */}
+                  {showProfileMenu && (
+                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {/* Username display */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <button
+                          type="button"
+                          onMouseDown={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Subscription clicked');
+                            setShowProfileMenu(false);
+                            
+                            // If Pro user, open Stripe portal directly
+                            if (isPro) {
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) {
+                                  router.push('/subscription');
+                                  return;
+                                }
+                                
+                                const response = await fetch('/api/portal-client', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`,
+                                  },
+                                });
+                                
+                                const data = await response.json();
+                                if (data.url) {
+                                  window.location.href = data.url;
+                                } else {
+                                  router.push('/subscription');
+                                }
+                              } catch (error) {
+                                console.error('Portal error:', error);
+                                router.push('/subscription');
+                              }
+                            } else {
+                              // Free users go to subscription page
+                              setTimeout(() => router.push('/subscription'), 100);
+                            }
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        >
+                          Subscription
+                        </button>
+                      </div>
+                      
+                      {/* Logout button */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Sign Out clicked');
+                            setShowProfileMenu(false);
+                            setTimeout(() => handleLogout(), 100);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
                 <button
                   onClick={() => {
+                    if (!hasPremium) {
+                      router.push('/subscription');
+                      return;
+                    }
                     setPropsMode('player');
                     setSearchQuery(''); // Clear search when switching
                     // Always set PTS as default for Player Props
@@ -6973,13 +7537,23 @@ function NBADashboardContent() {
                       } catch {}
                     }
                   }}
-                  className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+                  disabled={!hasPremium}
+                  className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
                     propsMode === 'player'
                       ? "bg-purple-600 text-white"
+                      : !hasPremium
+                      ? "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
-                  Player Props
+                  <span className="flex items-center gap-2">
+                    Player Props
+                    {!hasPremium && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </span>
                 </button>
                 <button
                   onClick={() => {
@@ -7036,8 +7610,8 @@ function NBADashboardContent() {
             
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
             <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
-                {/* Section 0: Defense vs Position (new) */}
-<PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam} />
+                {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
+                {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
 
                 {/* Section 1: Opponent Analysis */}
                 <OpponentAnalysisCard 
@@ -7378,8 +7952,8 @@ function NBADashboardContent() {
                                       <Tooltip
                                         contentStyle={getUnifiedTooltipStyle(isDark)}
                                         wrapperStyle={{ outline: 'none', zIndex: 9999 }}
-                                        labelStyle={{ color: '#FFFFFF' }}
-                                        itemStyle={{ color: '#FFFFFF' }}
+                                        labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                                        itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                                         formatter={(value: any, name: string, props: any) => [
                                           isPercentage ? `${props.payload.displayValue}%` : `${props.payload.displayValue}`,
                                           name
@@ -7428,8 +8002,8 @@ function NBADashboardContent() {
                                         <Tooltip
                                           contentStyle={getUnifiedTooltipStyle(isDark)}
                                           wrapperStyle={{ outline: 'none', zIndex: 9999 }}
-                                          labelStyle={{ color: '#FFFFFF' }}
-                                          itemStyle={{ color: '#FFFFFF' }}
+                                          labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                                          itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                                           formatter={(value: any, name: string, props: any) => [
                                             isPercentage ? `${props.payload.displayValue}%` : `${props.payload.displayValue}`,
                                             name
@@ -7774,7 +8348,7 @@ function NBADashboardContent() {
       </div>
       
       {/* Tracking Modals */}
-      {selectedPlayer && opponentTeam && (
+      {propsMode === 'player' && selectedPlayer && opponentTeam && (
         <>
           <TrackPlayerModal
             isOpen={showTrackModal}
@@ -7798,6 +8372,98 @@ function NBADashboardContent() {
           />
         </>
       )}
+      
+      {/* Game Props Tracking Modals */}
+      {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && (
+        <>
+          <TrackPlayerModal
+            isOpen={showTrackModal}
+            onClose={() => setShowTrackModal(false)}
+            playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
+            playerId={gamePropsTeam}
+            team={gamePropsTeam}
+            opponent={opponentTeam}
+            gameDate={nextGameDate}
+            oddsFormat={oddsFormat}
+            isGameProp={true}
+          />
+          <AddToJournalModal
+            isOpen={showJournalModal}
+            onClose={() => setShowJournalModal(false)}
+            playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
+            playerId={gamePropsTeam}
+            team={gamePropsTeam}
+            opponent={opponentTeam}
+            gameDate={nextGameDate}
+            oddsFormat={oddsFormat}
+            isGameProp={true}
+          />
+        </>
+      )}
+      
+      {/* Mobile Bottom Navigation - Only visible on mobile */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        <div className="grid grid-cols-3 h-16">
+          {/* Dashboard */}
+          <button
+            className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <circle cx="12" cy="12" r="6" strokeWidth={2} />
+              <circle cx="12" cy="12" r="2" strokeWidth={2} />
+            </svg>
+            <span className="text-xs font-medium">Dashboard</span>
+          </button>
+          
+          {/* Journal */}
+          <button
+            onClick={() => {
+              if (!hasPremium) {
+                router.push('/subscription');
+                return;
+              }
+              // Show popup with Journal or Tracking options
+              if (window.confirm('Choose:\n\nOK = View Journal\nCancel = View Tracking')) {
+                window.location.href = '/journal';
+              } else {
+                window.location.href = '/journal?tab=tracking';
+              }
+            }}
+            className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
+              !hasPremium
+                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+            }`}
+          >
+            {!hasPremium ? (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            )}
+            <span className="text-xs font-medium">Journal</span>
+          </button>
+          
+          {/* Settings */}
+          <button
+            onClick={() => {
+              // Toggle the LeftSidebar settings - you'll need to add state for this
+              alert('Settings panel - coming soon!');
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-xs font-medium">Settings</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

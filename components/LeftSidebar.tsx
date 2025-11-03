@@ -10,11 +10,13 @@ type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
   oddsFormat: OddsFormat;
   setOddsFormat: Dispatch<SetStateAction<OddsFormat>>;
+  hasPremium?: boolean;
 }
 
-export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarProps) {
+export default function LeftSidebar({ oddsFormat, setOddsFormat, hasPremium = true }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
+  const [showSportsDropdown, setShowSportsDropdown] = useState(false);
   const { theme, setTheme, isDark } = useTheme();
 
   const handleSaveSettings = () => {
@@ -30,12 +32,12 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
   };
 
   const sports = [
-    { name: "All Sports", href: "/research" },
     { name: "NBA", href: "/nba/research/dashboard" },
-    { name: "NFL", href: "/nfl/research/dashboard" },
-    { name: "NBL", href: "/nbl/research/dashboard" },
-    { name: "TENNIS", href: "/tennis/research/dashboard" },
-    { name: "SOCCER", href: "/soccer/research/dashboard" },
+    // Other sports coming soon
+    // { name: "NFL", href: "/nfl/research/dashboard" },
+    // { name: "NBL", href: "/nbl/research/dashboard" },
+    // { name: "TENNIS", href: "/tennis/research/dashboard" },
+    // { name: "SOCCER", href: "/soccer/research/dashboard" },
   ];
 
   return (
@@ -45,51 +47,97 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat }: LeftSidebarPr
       style={{
         marginLeft: '0px',
         width: 'var(--sidebar-width, 360px)',
-        left: 'clamp(0px, calc((100vw - var(--app-max, 1800px)) / 2), 9999px)'
+        left: 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)'
       }}
     >
       {/* Logo at top */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 text-black dark:text-white">
-        <StatTrackrLogoWithText 
-          logoSize="w-10 h-10" 
-          textSize="text-2xl" 
-          isDark={isDark}
-        />
+        <div className="flex items-center gap-2">
+          <StatTrackrLogoWithText 
+            logoSize="w-10 h-10" 
+            textSize="text-2xl" 
+            isDark={isDark}
+          />
+          {pathname === "/journal" && (
+            <span className="text-2xl font-light opacity-50">Journal</span>
+          )}
+        </div>
       </div>
 
       {/* Navigation links */}
-      <nav className="flex-1 p-3 text-black dark:text-white">
-        <ul className="space-y-2">
-          {sports.map((sport) => (
-            <li key={sport.name}>
-              <Link
-                href={sport.href}
-className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === sport.href
-                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                    : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
-                }`}
-              >
-                {sport.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <nav className="flex-1 p-3 text-black dark:text-white flex flex-col">
+        {/* Sports Dropdown */}
+        <div>
+          <button
+            onClick={() => setShowSportsDropdown(!showSportsDropdown)}
+            className="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+          >
+            <span>Sports</span>
+            <svg className={`w-4 h-4 transition-transform ${showSportsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+          
+          {/* Sports Dropdown Menu - Inline */}
+          {showSportsDropdown && (
+            <ul className="mt-1 space-y-1 pl-2">
+              {sports.map((sport) => (
+                <li key={sport.name}>
+                  <Link
+                    href={sport.href}
+                    onClick={() => setShowSportsDropdown(false)}
+                    className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+                  >
+                    {sport.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         
-        {/* Journal section with spacing */}
-        <div className="mt-4">
+        {/* Journal section - right under Sports */}
+        <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
           <Link
-            href="/journal"
-className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            href={hasPremium ? "/journal" : "/subscription"}
+            className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               pathname === "/journal"
                 ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
+                : !hasPremium
+                ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
                 : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
             }`}
+            onClick={(e) => {
+              if (!hasPremium) {
+                e.preventDefault();
+                window.location.href = '/subscription';
+              }
+            }}
           >
-            Journal
+            <span>Journal</span>
+            {!hasPremium && (
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            )}
           </Link>
         </div>
       </nav>
+      
+      {/* Coming Soon Section - Way further down */}
+      <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white mt-auto">
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
+        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <li className="flex items-center gap-2">
+            <span className="text-lg">⚽</span>
+            <span>More Sports</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-lg">💬</span>
+            <span>Discord</span>
+          </li>
+        </ul>
+      </div>
 
       {/* Settings section at bottom */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white">
@@ -108,7 +156,7 @@ className="w-full px-3 py-2 text-left rounded-lg text-sm font-medium text-black 
 
     {/* Settings Modal */}
     {showSettings && (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-[100]">
         {/* Backdrop with blur */}
         <div 
           className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -116,7 +164,7 @@ className="w-full px-3 py-2 text-left rounded-lg text-sm font-medium text-black 
         ></div>
         
         {/* Modal content - positioned like sidebar */}
-        <div className="fixed left-0 top-0 h-full w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-10 flex flex-col">
+        <div className="fixed left-0 top-4 h-[calc(100vh-1rem)] w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-[110] flex flex-col">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
             <button

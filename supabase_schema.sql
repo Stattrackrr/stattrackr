@@ -9,7 +9,7 @@ CREATE TABLE bets (
   stake DECIMAL(10,2) NOT NULL,
   currency TEXT NOT NULL CHECK (currency IN ('AUD', 'USD', 'GBP', 'EUR')),
   odds DECIMAL(10,3) NOT NULL,
-  result TEXT NOT NULL CHECK (result IN ('win', 'loss', 'void')),
+  result TEXT NOT NULL CHECK (result IN ('win', 'loss', 'void', 'pending')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

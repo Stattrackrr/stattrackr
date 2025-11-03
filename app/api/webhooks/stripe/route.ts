@@ -1,0 +1,214 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { getStripe } from '@/lib/stripe';
+import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
+
+// Create Supabase admin client (bypasses RLS)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: NextRequest) {
+  const body = await request.text();
+  const headersList = await headers();
+  const signature = headersList.get('stripe-signature');
+
+  if (!signature) {
+    return NextResponse.json(
+      { error: 'No signature' },
+      { status: 400 }
+    );
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    const stripe = getStripe();
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message);
+    return NextResponse.json(
+      { error: 'Invalid signature' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutCompleted(session);
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionUpdated(subscription);
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionDeleted(subscription);
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoicePaymentSucceeded(invoice);
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoicePaymentFailed(invoice);
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
+    console.error('Webhook handler error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.user_id;
+  const billingCycle = session.metadata?.billing_cycle;
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+
+  console.log('Checkout completed:', { userId, billingCycle, customerId, subscriptionId: session.subscription });
+
+  if (!userId) {
+    console.error('No user_id in session metadata');
+    return;
+  }
+
+  // Get subscription details
+  if (!session.subscription) {
+    console.error('No subscription in session');
+    return;
+  }
+
+  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+
+  // Update user profile with subscription info AND customer ID
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_status: 'active',
+      subscription_tier: 'pro',
+      subscription_billing_cycle: billingCycle,
+      stripe_subscription_id: subscriptionId,
+      stripe_customer_id: customerId, // ADD THIS LINE
+      subscription_current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Error updating profile:', error);
+  } else {
+    console.log('Profile updated successfully for user:', userId);
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const customerId = subscription.customer as string;
+  const subData = subscription as any;
+
+  // Find user by customer ID
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (!profile) {
+    console.error('No user found for customer:', customerId);
+    return;
+  }
+
+  // Determine subscription tier based on status
+  const tier = ['active', 'trialing'].includes(subscription.status) ? 'pro' : 'free';
+
+  // Update subscription details
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_status: subscription.status,
+      subscription_tier: tier,
+      subscription_current_period_end: subData.current_period_end 
+        ? new Date(subData.current_period_end * 1000).toISOString()
+        : null,
+      stripe_subscription_id: subscription.id,
+    })
+    .eq('id', profile.id);
+
+  if (error) {
+    console.error('Error updating subscription:', error);
+  } else {
+    console.log(`Subscription updated for user ${profile.id}: status=${subscription.status}, tier=${tier}`);
+  }
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const customerId = subscription.customer as string;
+
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (!profile) {
+    console.error('No user found for customer:', customerId);
+    return;
+  }
+
+  // Mark subscription as canceled
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_status: 'canceled',
+      subscription_tier: 'free',
+      stripe_subscription_id: null,
+    })
+    .eq('id', profile.id);
+
+  if (error) {
+    console.error('Error canceling subscription:', error);
+  }
+}
+
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  // Optional: Log successful payment, send receipt email, etc.
+  console.log('Invoice payment succeeded:', invoice.id);
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const customerId = invoice.customer as string;
+
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (profile) {
+    // Optional: Send payment failed notification
+    console.log('Payment failed for user:', profile.id);
+  }
+}

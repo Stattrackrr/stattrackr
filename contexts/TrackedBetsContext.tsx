@@ -15,6 +15,16 @@ interface TrackedBet {
   isCustom?: boolean;
   gameStatus?: 'scheduled' | 'live' | 'completed';
   result?: 'pending' | 'win' | 'loss';
+  gameDate?: string;
+  actualValue?: number;
+  actualPts?: number;
+  actualReb?: number;
+  actualAst?: number;
+  actualStl?: number;
+  actualBlk?: number;
+  actualFg3m?: number;
+  team?: string;
+  opponent?: string;
 }
 
 interface TrackedBetsContextType {

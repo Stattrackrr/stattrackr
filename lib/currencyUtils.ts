@@ -6,6 +6,28 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
 };
 
+// Exchange rates (base: USD)
+// These should ideally be fetched from an API, but using static rates for now
+export const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1.0,
+  AUD: 1.52,  // 1 USD = 1.52 AUD
+  GBP: 0.79,  // 1 USD = 0.79 GBP
+  EUR: 0.92,  // 1 USD = 0.92 EUR
+};
+
+// Convert currency
+export function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
+  if (fromCurrency === toCurrency) return amount;
+  
+  // Convert to USD first (if not already USD)
+  const amountInUSD = amount / (EXCHANGE_RATES[fromCurrency] || 1);
+  
+  // Convert from USD to target currency
+  const convertedAmount = amountInUSD * (EXCHANGE_RATES[toCurrency] || 1);
+  
+  return convertedAmount;
+}
+
 // Get currency symbol
 export function getCurrencySymbol(currency: string): string {
   return CURRENCY_SYMBOLS[currency] || '$';

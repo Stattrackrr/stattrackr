@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -19,13 +20,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleAvailable, setGoogleAvailable] = useState(true);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
-  // Check if user is already logged in
+  // Check if user is already logged in and get redirect param
   useEffect(() => {
+    // Get redirect parameter from URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectPath(redirect);
+    }
+
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.replace("/journal");
+        router.replace(redirect || "/journal");
       }
     };
     checkUser();
@@ -41,14 +50,15 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/journal`,
-            data: {
-              first_name: firstName,
-              last_name: lastName,
-              phone: phone || null,
+            options: {
+              emailRedirectTo: `${window.location.origin}/journal`,
+              data: {
+                username: username,
+                first_name: firstName,
+                last_name: lastName,
+                phone: phone || null,
+              }
             }
-          }
         });
         if (error) throw error;
         setError("Check your email for the confirmation link!");
@@ -69,7 +79,8 @@ export default function LoginPage() {
           localStorage.removeItem('stattrackr_remember_me');
         }
         
-        router.replace("/journal");
+        // Redirect to the original destination or default to journal
+        router.replace(redirectPath || "/journal");
       }
     } catch (error: any) {
       // Better error handling  
@@ -98,7 +109,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/journal`,
+          redirectTo: `${window.location.origin}${redirectPath || '/journal'}`,
           // Google OAuth will use persistent sessions by default
           // We'll handle remember me logic after redirect
         }
@@ -199,6 +210,24 @@ export default function LoginPage() {
               {/* Sign Up Additional Fields */}
               {isSignUp && (
                 <>
+                  {/* Username Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full h-12 pl-12 pr-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
+                        placeholder="Enter your username"
+                        required
+                      />
+                    </div>
+                  </div>
+
                   {/* First Name Input */}
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -369,6 +398,7 @@ export default function LoginPage() {
                     // Clear form fields when switching modes
                     setEmail("");
                     setPassword("");
+                    setUsername("");
                     setFirstName("");
                     setLastName("");
                     setPhone("");
