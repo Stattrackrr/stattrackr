@@ -137,9 +137,9 @@ export default function PricingPage() {
       }
       
       const priceIds = {
-        monthly: 'price_1SP5w3F6wa41EQohJs37xLa0',
-        semiannual: 'price_1SP5wdF6wa41EQoh5pixprlM',
-        annual: 'price_1SP5wtF6wa41EQohZ6wOJoqu',
+        monthly: 'price_1SPPbkF0aO6V0EHjOXoydTwT',
+        semiannual: 'price_1SPPdVF0aO6V0EHj3DM4hFqS',
+        annual: 'price_1SPPdvF0aO6V0EHjJAj8l0nO',
       };
       
       const priceId = priceIds[billingCycle];
