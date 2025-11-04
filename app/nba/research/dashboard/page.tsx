@@ -3601,6 +3601,8 @@ function NBADashboardContent() {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false); // Default to false until verified
+  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
+  const journalDropdownRef = useRef<HTMLDivElement>(null);
 
   // Check for success parameter from checkout
   useEffect(() => {
@@ -3661,12 +3663,21 @@ function NBADashboardContent() {
       if (showProfileMenu && profileButton && profileMenu && !profileButton.contains(event.target as Node) && !profileMenu.contains(event.target as Node)) {
         setShowProfileMenu(false);
       }
+      
+      const target = event.target as HTMLElement;
+      if (journalDropdownRef.current && !journalDropdownRef.current.contains(target) && 
+          !target.closest('[data-journal-button]')) {
+        setShowJournalDropdown(false);
+      }
     };
     
     if (showProfileMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProfileMenu]);
 
   const handleLogout = async () => {
@@ -8495,6 +8506,33 @@ function NBADashboardContent() {
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        {/* Journal Dropdown Menu - Shows above bottom nav */}
+        {showJournalDropdown && hasPremium && (
+          <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowJournalDropdown(false);
+                  router.push('/journal');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                View Journal
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowJournalDropdown(false);
+                  router.push('/journal?tab=tracking');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                View Tracking
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-3 h-16">
           {/* Dashboard */}
           <button
@@ -8510,17 +8548,13 @@ function NBADashboardContent() {
           
           {/* Journal */}
           <button
+            data-journal-button
             onClick={() => {
               if (!hasPremium) {
                 router.push('/subscription');
                 return;
               }
-              // Show popup with Journal or Tracking options
-              if (window.confirm('Choose:\n\nOK = View Journal\nCancel = View Tracking')) {
-                window.location.href = '/journal';
-              } else {
-                window.location.href = '/journal?tab=tracking';
-              }
+              setShowJournalDropdown(!showJournalDropdown);
             }}
             className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
               !hasPremium

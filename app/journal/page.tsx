@@ -94,6 +94,10 @@ function JournalContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
+  const journalDropdownRef = useRef<HTMLDivElement>(null);
+  const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
+  const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   
   // Save all filter preferences to localStorage
   useEffect(() => {
@@ -129,6 +133,14 @@ function JournalContent() {
           !target.closest('[data-profile-button]') && 
           !target.closest('[data-profile-menu]')) {
         setShowProfileMenu(false);
+      }
+      if (journalDropdownRef.current && !journalDropdownRef.current.contains(target) && 
+          !target.closest('[data-journal-button]')) {
+        setShowJournalDropdown(false);
+      }
+      if (dashboardDropdownRef.current && !dashboardDropdownRef.current.contains(target) && 
+          !target.closest('[data-dashboard-button]')) {
+        setShowDashboardDropdown(false);
       }
     };
     
@@ -2111,21 +2123,8 @@ function JournalContent() {
 
       {/* Right Sidebar - Hidden on mobile unless showMobileTracking is true */}
       {showMobileTracking ? (
-        <div className="block lg:hidden w-full h-full fixed inset-0 z-50 bg-white dark:bg-slate-900 overflow-y-auto pb-16">
-          <div className="mb-2 p-3">
-            <button
-              onClick={() => setShowMobileTracking(false)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Back to Journal</span>
-            </button>
-          </div>
-          <div className="h-[calc(100vh-160px)]">
-            <RightSidebar oddsFormat={oddsFormat} isMobileView={true} />
-          </div>
+        <div className="block lg:hidden w-full pb-16">
+          <RightSidebar oddsFormat={oddsFormat} isMobileView={true} />
         </div>
       ) : (
         <div className="hidden lg:block">
@@ -2184,10 +2183,86 @@ function JournalContent() {
       
       {/* Mobile Bottom Navigation - Always visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        {/* Dashboard Dropdown Menu - Shows above bottom nav */}
+        {showDashboardDropdown && (
+          <div ref={dashboardDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowDashboardDropdown(false);
+                  if (!isPro) {
+                    router.push('/subscription');
+                    return;
+                  }
+                  router.push('/nba/research/dashboard?mode=player');
+                }}
+                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors flex items-center gap-2 ${
+                  !isPro
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>Player Props</span>
+                {!isPro && (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowDashboardDropdown(false);
+                  router.push('/nba/research/dashboard?mode=team');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Game Props
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Journal Dropdown Menu - Shows above bottom nav */}
+        {showJournalDropdown && (
+          <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowMobileTracking(false);
+                  setShowJournalDropdown(false);
+                }}
+                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                  !showMobileTracking
+                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                View Journal
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowMobileTracking(true);
+                  setShowJournalDropdown(false);
+                }}
+                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                  showMobileTracking
+                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                View Tracking
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-3 h-16">
           {/* Dashboard */}
           <button
-            onClick={() => router.push('/nba/research/dashboard')}
+            data-dashboard-button
+            onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2200,14 +2275,8 @@ function JournalContent() {
           
           {/* Journal */}
           <button
-            onClick={() => {
-              // Show popup with Journal or Tracking options
-              if (window.confirm('Choose:\n\nOK = View Journal\nCancel = View Tracking')) {
-                router.push('/journal');
-              } else {
-                router.push('/journal?tab=tracking');
-              }
-            }}
+            data-journal-button
+            onClick={() => setShowJournalDropdown(!showJournalDropdown)}
             className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

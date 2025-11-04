@@ -44,14 +44,31 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe Customer Portal session
     const stripe = getStripe();
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
-      return_url: `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/subscription`,
-    });
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: profile.stripe_customer_id,
+        return_url: `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/pricing`,
+      });
 
-    console.log('Portal Client - Created session:', portalSession.id);
+      console.log('Portal Client - Created session:', portalSession.id);
 
-    return NextResponse.json({ url: portalSession.url });
+      return NextResponse.json({ url: portalSession.url });
+    } catch (stripeError: any) {
+      // If customer doesn't exist in Stripe (e.g., switching from test to live mode)
+      if (stripeError.code === 'resource_missing') {
+        console.log('Invalid Stripe customer ID, clearing from profile');
+        // Clear the invalid customer ID
+        await supabase
+          .from('profiles')
+          .update({ stripe_customer_id: null, subscription_status: 'inactive', subscription_tier: 'free' })
+          .eq('id', user.id);
+        
+        return NextResponse.json({ 
+          error: 'Please complete checkout to set up your subscription.' 
+        }, { status: 400 });
+      }
+      throw stripeError;
+    }
   } catch (error: any) {
     console.error('Portal client error:', error);
     return NextResponse.json(

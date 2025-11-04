@@ -15,6 +15,8 @@ export default function PricingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasPremium, setHasPremium] = useState(false);
+  const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
+  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
 
   useEffect(() => {
     // Check initial session
@@ -36,6 +38,28 @@ export default function PricingPage() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Close dashboard dropdown if clicking outside
+      if (!target.closest('[data-dashboard-button]') && 
+          !target.closest('.absolute.bottom-full')) {
+        setShowDashboardDropdown(false);
+      }
+      
+      // Close journal dropdown if clicking outside
+      if (!target.closest('[data-journal-button]') && 
+          !target.closest('.absolute.bottom-full')) {
+        setShowJournalDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const checkPremiumStatus = async (userId: string) => {
@@ -201,30 +225,15 @@ export default function PricingPage() {
       </div>
 
       {/* Auth Section - Fixed Top Right */}
-      <div className="absolute top-6 right-6 z-10">
+      <div className="absolute top-6 right-6 z-[60]">
         {user ? (
-          <div className="relative">
+          <div>
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold hover:bg-purple-700 transition-colors"
             >
               {user.email?.[0].toUpperCase() || 'U'}
             </button>
-            
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 py-2 z-50">
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    setShowProfileMenu(false);
-                    router.push('/login');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
           </div>
         ) : (
           <button
@@ -236,8 +245,52 @@ export default function PricingPage() {
         )}
       </div>
 
-      {/* Desktop Navigation - Below Auth Button */}
-      <div className="hidden md:block absolute top-20 right-6 z-10">
+      {/* Profile Dropdown Menu - Desktop & Mobile */}
+      {user && showProfileMenu && (
+        <div className="absolute top-16 right-6 z-[60] w-56 mb-2">
+          <div className="bg-slate-800 rounded-lg shadow-xl border border-white/10 overflow-hidden">
+            {/* User info with subscription status */}
+            <div className="px-4 py-3 border-b border-white/10">
+              <p className="text-xs text-gray-400">Logged in as</p>
+              <p className="text-sm font-medium text-white truncate">{user.email}</p>
+              <div className="mt-2 pt-2 border-t border-white/10">
+                <p className="text-xs text-gray-400">Plan</p>
+                <p className="text-sm font-semibold text-purple-400">{hasPremium ? 'Pro' : 'Free'}</p>
+              </div>
+            </div>
+            
+            {/* Subscription button */}
+            <div className="py-2">
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  router.push('/subscription');
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Subscription
+              </button>
+            </div>
+            
+            {/* Sign out button */}
+            <div className="border-t border-white/10 py-2">
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setShowProfileMenu(false);
+                  router.push('/login');
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Navigation - Below Auth Button and Dropdown */}
+      <div className="hidden md:block absolute right-6 z-10" style={{ top: user && showProfileMenu ? 'calc(5rem + 13rem)' : '5rem' }}>
         <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => router.push('/nba/research/dashboard')}
@@ -286,17 +339,79 @@ export default function PricingPage() {
 
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        {/* Dashboard Dropdown Menu - Shows above bottom nav */}
+        {showDashboardDropdown && (
+          <div className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowDashboardDropdown(false);
+                  if (!hasPremium) {
+                    const element = document.getElementById('pricing-cards');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                  }
+                  router.push('/nba/research/dashboard?mode=player');
+                }}
+                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors flex items-center gap-2 ${
+                  !hasPremium
+                    ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>Player Props</span>
+                {!hasPremium && (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowDashboardDropdown(false);
+                  router.push('/nba/research/dashboard?mode=team');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Game Props
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Journal Dropdown Menu - Shows above bottom nav */}
+        {showJournalDropdown && hasPremium && (
+          <div className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowJournalDropdown(false);
+                  router.push('/journal');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                View Journal
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowJournalDropdown(false);
+                  router.push('/journal?tab=tracking');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                View Tracking
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-3 h-16">
           {/* Dashboard */}
           <button
-            onClick={() => {
-              // Show popup with Player Props or Game Props options
-              if (window.confirm('Choose:\n\nOK = Player Props\nCancel = Game Props')) {
-                router.push('/nba/research/dashboard?mode=player');
-              } else {
-                router.push('/nba/research/dashboard?mode=team');
-              }
-            }}
+            data-dashboard-button
+            onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,13 +424,14 @@ export default function PricingPage() {
           
           {/* Journal */}
           <button
+            data-journal-button
             onClick={() => {
               if (!hasPremium) {
                 const element = document.getElementById('pricing-cards');
                 element?.scrollIntoView({ behavior: 'smooth' });
                 return;
               }
-              router.push('/journal');
+              setShowJournalDropdown(!showJournalDropdown);
             }}
             className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
               !hasPremium
@@ -362,9 +478,15 @@ export default function PricingPage() {
             Every bet deserves research — turn your guesses into data-driven insights and build your edge, backed by thousands of users.
           </p>
           <div className="mt-6">
-            <span className="inline-flex items-center px-6 py-2 rounded-full bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-semibold text-sm">
+            <button
+              onClick={() => {
+                const element = document.getElementById('pricing-cards');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center px-8 py-3 rounded-full bg-emerald-600/20 border-2 border-emerald-500/50 text-emerald-400 font-bold text-base hover:bg-emerald-600/30 hover:border-emerald-400 transition-all hover:scale-105 cursor-pointer"
+            >
               🎉 Start with a 7-day free trial
-            </span>
+            </button>
           </div>
         </div>
 
@@ -781,84 +903,8 @@ export default function PricingPage() {
 
         {/* Pricing cards - 3 options */}
         <div id="pricing-cards" className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* 6-Month Plan */}
-          <div className="relative rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/50">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">
-                6 Months
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">$49.99</span>
-              </div>
-              <div className="text-sm text-gray-400 mt-1">$8.33/month</div>
-              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 17% • 7-day free trial</span>
-            </div>
-            <button
-              onClick={() => handleSelectPlan('Pro', 'semiannual')}
-              className="w-full py-3 px-4 rounded-lg font-medium transition-colors mb-6 bg-white/10 text-white hover:bg-white/20"
-            >
-              Start Free Trial
-            </button>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Advanced Game Props</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Advanced Player Stats</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">DvP Rankings</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Real-time Odds</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Advanced Tracking</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Advanced Journaling</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Admin Picks</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Real-time Injuries/Depth Charts</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Priority Support</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Monthly Plan */}
-          <div className="relative rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/50">
+          {/* Monthly Plan - First on mobile */}
+          <div className="relative rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/50 md:order-1">
             <div className="mb-6">
               <h3 className="text-xl font-bold text-white mb-2">
                 Monthly
@@ -934,8 +980,84 @@ export default function PricingPage() {
             </div>
           </div>
 
+          {/* 6-Month Plan */}
+          <div className="relative rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/50 md:order-2">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-white mb-2">
+                6 Months
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-white">$49.99</span>
+              </div>
+              <div className="text-sm text-gray-400 mt-1">$8.33/month</div>
+              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 17% • 7-day free trial</span>
+            </div>
+            <button
+              onClick={() => handleSelectPlan('Pro', 'semiannual')}
+              className="w-full py-3 px-4 rounded-lg font-medium transition-colors mb-6 bg-white/10 text-white hover:bg-white/20"
+            >
+              Start Free Trial
+            </button>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Advanced Game Props</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Advanced Player Stats</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">DvP Rankings</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Real-time Odds</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Advanced Tracking</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Advanced Journaling</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Admin Picks</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Real-time Injuries/Depth Charts</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-gray-200">Priority Support</span>
+              </div>
+            </div>
+          </div>
+
           {/* Annual Plan - Highlighted */}
-          <div className="relative rounded-2xl border border-emerald-500 shadow-xl shadow-emerald-500/20 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/40">
+          <div className="relative rounded-2xl border border-emerald-500 shadow-xl shadow-emerald-500/20 bg-slate-900/60 backdrop-blur-md p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/40 md:order-3">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
               <span className="inline-flex items-center rounded-full bg-emerald-600 px-4 py-1 text-xs font-semibold text-white">
                 MOST POPULAR
