@@ -1,6 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+
+// Disable automatic trailing slash redirect for this route
+export const runtime = 'nodejs';
 import { headers } from 'next/headers';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';

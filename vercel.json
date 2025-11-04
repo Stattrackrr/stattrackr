@@ -8,5 +8,15 @@
       "path": "/api/check-bets",
       "schedule": "0 5 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/webhooks/stripe",
+      "destination": "/api/webhooks/stripe"
+    },
+    {
+      "source": "/api/webhooks/stripe/",
+      "destination": "/api/webhooks/stripe/"
+    }
   ]
 }
