@@ -36,7 +36,7 @@ interface RightSidebarProps {
   isPro?: boolean;
   onProfileMenuClick?: () => void;
   showProfileMenu?: boolean;
-  profileMenuRef?: React.RefObject<HTMLDivElement>;
+  profileMenuRef?: React.RefObject<HTMLDivElement | null>;
   onSubscriptionClick?: () => void;
   onSignOutClick?: () => void;
 }
