@@ -29,9 +29,32 @@ type TabType = 'tracked' | 'journal';
 interface RightSidebarProps {
   oddsFormat?: 'american' | 'decimal';
   isMobileView?: boolean;
+  showProfileIcon?: boolean;
+  avatarUrl?: string | null;
+  username?: string | null;
+  userEmail?: string | null;
+  isPro?: boolean;
+  onProfileMenuClick?: () => void;
+  showProfileMenu?: boolean;
+  profileMenuRef?: React.RefObject<HTMLDivElement>;
+  onSubscriptionClick?: () => void;
+  onSignOutClick?: () => void;
 }
 
-export default function RightSidebar({ oddsFormat = 'decimal', isMobileView = false }: RightSidebarProps = {}) {
+export default function RightSidebar({ 
+  oddsFormat = 'decimal', 
+  isMobileView = false,
+  showProfileIcon = false,
+  avatarUrl = null,
+  username = null,
+  userEmail = null,
+  isPro = false,
+  onProfileMenuClick,
+  showProfileMenu = false,
+  profileMenuRef,
+  onSubscriptionClick,
+  onSignOutClick
+}: RightSidebarProps = {}) {
   const { isDark } = useTheme();
   const { trackedBets, removeTrackedBet, clearAllTrackedBets, refreshTrackedBets } = useTrackedBets();
   const [activeTab, setActiveTab] = useState<TabType>('tracked');
@@ -610,6 +633,66 @@ export default function RightSidebar({ oddsFormat = 'decimal', isMobileView = fa
         right: 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)'
       }}
     >
+      {/* Profile Icon - Above Tabs */}
+      {showProfileIcon && !isMobileView && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Props</h2>
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              data-profile-button
+              onClick={onProfileMenuClick}
+              className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+            >
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+            
+            {/* Profile Menu Dropdown */}
+            {showProfileMenu && (
+              <div data-profile-menu className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                {/* Username display */}
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
+                </div>
+                
+                {/* Menu Items */}
+                <div className="py-2">
+                  <button
+                    type="button"
+                    onClick={onSubscriptionClick}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    Subscription
+                  </button>
+                </div>
+                
+                {/* Logout button */}
+                <div className="border-t border-gray-200 dark:border-gray-700 py-2">
+                  <button
+                    type="button"
+                    onClick={onSignOutClick}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Header with Tabs */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 text-black dark:text-white">
         {showAdvanced ? (

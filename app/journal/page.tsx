@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
-import React, { useEffect, useState, useMemo, Suspense } from "react";
+import React, { useEffect, useState, useMemo, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
@@ -88,6 +88,12 @@ function JournalContent() {
   const [betHistoryPage, setBetHistoryPage] = useState(0);
   const [showProfitableBookmakersOnly, setShowProfitableBookmakersOnly] = useState(false);
   const [showProfitableMarketsOnly, setShowProfitableMarketsOnly] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isPro, setIsPro] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   
   // Save all filter preferences to localStorage
   useEffect(() => {
@@ -114,6 +120,21 @@ function JournalContent() {
       setShowMobileTracking(true);
     }
   }, [searchParams]);
+  
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target) && 
+          !target.closest('[data-profile-button]') && 
+          !target.closest('[data-profile-menu]')) {
+        setShowProfileMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
@@ -147,6 +168,12 @@ function JournalContent() {
       
       console.log('🔐 Journal Pro Status Check:', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
       setHasProAccess(isActive && isPro);
+      
+      // Set user info for profile menu
+      setIsPro(isActive && isPro);
+      setAvatarUrl(session.user.user_metadata?.avatar_url || null);
+      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+      setUserEmail(session.user.email || null);
 
       // Fetch bets
       const { data, error } = await supabase
@@ -1364,11 +1391,107 @@ function JournalContent() {
         <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col">
           {/* Top half - StatTrackr logo and filters */}
           <div className="flex flex-col items-center px-4 pt-4 pb-3 space-y-3">
-            <StatTrackrLogoWithText 
-              logoSize="w-10 h-10" 
-              textSize="text-2xl" 
-              isDark={isDark}
-            />
+            {/* Logo and Profile Icon Row */}
+            <div className="flex items-center justify-between w-full">
+              <div className="flex-1"></div>
+              <StatTrackrLogoWithText 
+                logoSize="w-10 h-10" 
+                textSize="text-2xl" 
+                isDark={isDark}
+              />
+              <div className="flex-1 flex justify-end">
+                {/* Profile Dropdown Button */}
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    data-profile-button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+                  >
+                    {avatarUrl ? (
+                      <img 
+                        src={avatarUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Profile Menu Dropdown */}
+                  {showProfileMenu && (
+                    <div data-profile-menu className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {/* Username display */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setShowProfileMenu(false);
+                            
+                            if (isPro) {
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) {
+                                  router.push('/subscription');
+                                  return;
+                                }
+                                
+                                const response = await fetch('/api/portal-client', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`,
+                                  },
+                                });
+                                
+                                const data = await response.json();
+                                if (data.url) {
+                                  window.location.href = data.url;
+                                } else {
+                                  router.push('/subscription');
+                                }
+                              } catch (error) {
+                                console.error('Portal error:', error);
+                                router.push('/subscription');
+                              }
+                            } else {
+                              router.push('/subscription');
+                            }
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        >
+                          Subscription
+                        </button>
+                      </div>
+                      
+                      {/* Logout button */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setShowProfileMenu(false);
+                            await supabase.auth.signOut();
+                            router.push('/');
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             
             {/* Currency Converter Section */}
             <div className="flex items-center gap-2 w-full justify-center">
@@ -2006,7 +2129,56 @@ function JournalContent() {
         </div>
       ) : (
         <div className="hidden lg:block">
-          <RightSidebar oddsFormat={oddsFormat} isMobileView={false} />
+          <RightSidebar 
+            oddsFormat={oddsFormat} 
+            isMobileView={false}
+            showProfileIcon={true}
+            avatarUrl={avatarUrl}
+            username={username}
+            userEmail={userEmail}
+            isPro={isPro}
+            onProfileMenuClick={() => setShowProfileMenu(!showProfileMenu)}
+            showProfileMenu={showProfileMenu}
+            profileMenuRef={profileMenuRef}
+            onSubscriptionClick={async () => {
+              setShowProfileMenu(false);
+              
+              if (isPro) {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) {
+                    router.push('/subscription');
+                    return;
+                  }
+                  
+                  const response = await fetch('/api/portal-client', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
+                    },
+                  });
+                  
+                  const data = await response.json();
+                  if (data.url) {
+                    window.location.href = data.url;
+                  } else {
+                    router.push('/subscription');
+                  }
+                } catch (error) {
+                  console.error('Portal error:', error);
+                  router.push('/subscription');
+                }
+              } else {
+                router.push('/subscription');
+              }
+            }}
+            onSignOutClick={async () => {
+              setShowProfileMenu(false);
+              await supabase.auth.signOut();
+              router.push('/');
+            }}
+          />
         </div>
       )}
       

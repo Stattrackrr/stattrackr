@@ -3646,12 +3646,12 @@ function NBADashboardContent() {
         console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
         setIsPro(proStatus);
       } else {
-        // No session - user is not logged in, so definitely not Pro
-        setIsPro(false);
+        // No session - redirect to login
+        router.push('/login');
       }
     };
     getUser();
-  }, []);
+  }, [router]);
 
   // Close profile menu when clicking outside
   useEffect(() => {

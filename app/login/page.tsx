@@ -47,11 +47,14 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        // Use production domain if available, otherwise use current origin
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
             options: {
-              emailRedirectTo: `${window.location.origin}/journal`,
+              emailRedirectTo: `${baseUrl}/dashboard`,
               data: {
                 username: username,
                 first_name: firstName,
@@ -63,16 +66,14 @@ export default function LoginPage() {
         if (error) throw error;
         setError("Check your email for the confirmation link!");
       } else {
-        // Use different clients based on remember me setting
-        const authClient = rememberMe ? supabase : supabaseSessionOnly;
-        
-        const { error } = await authClient.auth.signInWithPassword({
+        // Always use persistent session for reliable login
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         
-        // Store remember me preference
+        // Store remember me preference for future use
         if (rememberMe) {
           localStorage.setItem('stattrackr_remember_me', 'true');
         } else {
@@ -106,10 +107,13 @@ export default function LoginPage() {
     setError("");
     
     try {
+      // Use production domain if available, otherwise use current origin
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${redirectPath || '/journal'}`,
+          redirectTo: `${baseUrl}${redirectPath || '/journal'}`,
           // Google OAuth will use persistent sessions by default
           // We'll handle remember me logic after redirect
         }
@@ -131,6 +135,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050f1f] via-[#0b1d3a] to-[#1e3a8a] flex items-center justify-center p-4">
+      {/* Back Button */}
+      <button
+        onClick={() => router.push('/pricing')}
+        className="fixed top-6 left-6 flex items-center gap-2 text-white hover:text-emerald-400 transition-colors z-50"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="font-medium">Back to Pricing</span>
+      </button>
+      
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
         
         {/* Left Side - Branding & Features */}
@@ -140,6 +155,7 @@ export default function LoginPage() {
               logoSize="w-16 h-16" 
               textSize="text-4xl" 
               className="mb-4"
+              isDark={true}
             />
             <p className="text-xl text-slate-300 mb-8">
               Track results. Master your game.
@@ -155,8 +171,8 @@ export default function LoginPage() {
             
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <BarChart3 className="w-8 h-8 text-blue-400 mb-3" />
-              <h3 className="font-semibold mb-2">Research & Analysis</h3>
-              <p className="text-sm text-slate-400">Research picks across Soccer, NBA, NBL, Tennis, AFL, NRL</p>
+              <h3 className="font-semibold mb-2">NBA Player Props</h3>
+              <p className="text-sm text-slate-400">Research NBA player prop and game prop performance</p>
             </div>
             
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -182,7 +198,8 @@ export default function LoginPage() {
               <div className="flex justify-center mb-4">
                 <StatTrackrLogoWithText 
                   logoSize="w-14 h-14" 
-                  textSize="text-2xl" 
+                  textSize="text-2xl"
+                  isDark={true}
                 />
               </div>
               <p className="text-slate-400">Track results. Master your game.</p>
