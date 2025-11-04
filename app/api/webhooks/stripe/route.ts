@@ -42,21 +42,49 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.log(`🔔 Webhook received: ${event.type}`);
+    
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        console.log('📦 Checkout session completed:', {
+          sessionId: session.id,
+          customer: session.customer,
+          subscription: session.subscription,
+          metadata: session.metadata
+        });
         await handleCheckoutCompleted(session);
+        break;
+      }
+
+      case 'customer.subscription.created': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('✨ Subscription created:', {
+          subscriptionId: subscription.id,
+          customer: subscription.customer,
+          status: subscription.status
+        });
+        await handleSubscriptionUpdated(subscription);
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+        console.log('🔄 Subscription updated:', {
+          subscriptionId: subscription.id,
+          customer: subscription.customer,
+          status: subscription.status
+        });
         await handleSubscriptionUpdated(subscription);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
+        console.log('🗑️ Subscription deleted:', {
+          subscriptionId: subscription.id,
+          customer: subscription.customer
+        });
         await handleSubscriptionDeleted(subscription);
         break;
       }
@@ -92,38 +120,49 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const billingCycle = session.metadata?.billing_cycle;
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
-  console.log('Checkout completed:', { userId, billingCycle, customerId, subscriptionId: session.subscription });
+  console.log('💳 Processing checkout:', { userId, billingCycle, customerId, subscriptionId: session.subscription });
 
   if (!userId) {
-    console.error('No user_id in session metadata');
+    console.error('❌ No user_id in session metadata');
     return;
   }
 
   // Get subscription details
   if (!session.subscription) {
-    console.error('No subscription in session');
+    console.error('❌ No subscription in session');
     return;
   }
 
   const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+  
+  // Fetch the actual subscription to get its status
+  const stripe = getStripe();
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  
+  console.log('📋 Subscription details:', {
+    id: subscription.id,
+    status: subscription.status,
+    trial_end: subscription.trial_end,
+    current_period_end: subscription.current_period_end
+  });
 
-  // Update user profile with subscription info AND customer ID
+  // Update user profile with subscription info
   const { error } = await supabaseAdmin
     .from('profiles')
     .update({
-      subscription_status: 'active',
-      subscription_tier: 'pro',
+      subscription_status: subscription.status,
+      subscription_tier: 'pro', // Pro access during trial AND after
       subscription_billing_cycle: billingCycle,
       stripe_subscription_id: subscriptionId,
-      stripe_customer_id: customerId, // ADD THIS LINE
-      subscription_current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      stripe_customer_id: customerId,
+      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     })
     .eq('id', userId);
 
   if (error) {
-    console.error('Error updating profile:', error);
+    console.error('❌ Error updating profile:', error);
   } else {
-    console.log('Profile updated successfully for user:', userId);
+    console.log('✅ Profile updated successfully for user:', userId, '- Status:', subscription.status);
   }
 }
 
