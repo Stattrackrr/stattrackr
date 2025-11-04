@@ -29,12 +29,21 @@ export default function LoginPage() {
     const redirect = searchParams.get('redirect');
     if (redirect) {
       setRedirectPath(redirect);
+      // Store in localStorage for OAuth flows
+      localStorage.setItem('stattrackr_login_redirect', redirect);
     }
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.replace(redirect || "/journal");
+        // Check for stored redirect from OAuth flow
+        const storedRedirect = localStorage.getItem('stattrackr_login_redirect');
+        if (storedRedirect) {
+          localStorage.removeItem('stattrackr_login_redirect');
+          router.replace(storedRedirect);
+        } else {
+          router.replace(redirect || "/journal");
+        }
       }
     };
     checkUser();
