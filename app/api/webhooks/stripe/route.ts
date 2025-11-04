@@ -137,32 +137,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   
   // Fetch the actual subscription to get its status
   const stripe = getStripe();
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId);
   
   console.log('📋 Subscription details:', {
-    id: subscription.id,
-    status: subscription.status,
-    trial_end: subscription.trial_end,
-    current_period_end: subscription.current_period_end
+    id: subscriptionData.id,
+    status: subscriptionData.status,
+    trial_end: subscriptionData.trial_end,
+    current_period_end: subscriptionData.current_period_end
   });
 
   // Update user profile with subscription info
   const { error } = await supabaseAdmin
     .from('profiles')
     .update({
-      subscription_status: subscription.status,
+      subscription_status: subscriptionData.status,
       subscription_tier: 'pro', // Pro access during trial AND after
       subscription_billing_cycle: billingCycle,
       stripe_subscription_id: subscriptionId,
       stripe_customer_id: customerId,
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscription_current_period_end: new Date((subscriptionData.current_period_end || 0) * 1000).toISOString(),
     })
     .eq('id', userId);
 
   if (error) {
     console.error('❌ Error updating profile:', error);
   } else {
-    console.log('✅ Profile updated successfully for user:', userId, '- Status:', subscription.status);
+    console.log('✅ Profile updated successfully for user:', userId, '- Status:', subscriptionData.status);
   }
 }
 
