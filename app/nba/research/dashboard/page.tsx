@@ -5972,7 +5972,7 @@ function NBADashboardContent() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
                 {/* Profile Dropdown Button */}
-                <div className="relative">
+                <div className="relative z-[101]">
                   <button
                     data-profile-button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -5996,7 +5996,7 @@ function NBADashboardContent() {
                   
                   {/* Profile Menu Dropdown */}
                   {showProfileMenu && (
-                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[101] overflow-hidden">
                       {/* Username display */}
                       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
@@ -6508,7 +6508,7 @@ function NBADashboardContent() {
                       }
                       
                       return matchingTeams.length > 0 ? (
-                        <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                        <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[100] max-h-72 overflow-y-auto">
                           {matchingTeams.slice(0, 10).map((team) => ( // Limit to 10 results
                             <button
                               key={team.abbr}

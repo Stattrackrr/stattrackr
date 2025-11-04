@@ -53,11 +53,13 @@ export default function LeftSidebar({ oddsFormat, setOddsFormat, hasPremium = tr
       {/* Logo at top */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 text-black dark:text-white">
         <div className="flex items-center gap-2">
-          <StatTrackrLogoWithText 
-            logoSize="w-10 h-10" 
-            textSize="text-2xl" 
-            isDark={isDark}
-          />
+          <Link href="/pricing" className="cursor-pointer hover:opacity-80 transition-opacity">
+            <StatTrackrLogoWithText 
+              logoSize="w-10 h-10" 
+              textSize="text-2xl" 
+              isDark={isDark}
+            />
+          </Link>
           {pathname === "/journal" && (
             <span className="text-2xl font-light opacity-50">Journal</span>
           )}
