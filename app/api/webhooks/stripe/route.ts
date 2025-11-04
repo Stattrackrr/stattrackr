@@ -135,34 +135,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
   
-  // Fetch the actual subscription to get its status
-  const stripe = getStripe();
-  const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
-  
-  console.log('📋 Subscription details:', {
-    id: subscriptionData.id,
-    status: subscriptionData.status,
-    trial_end: subscriptionData.trial_end,
-    current_period_end: subscriptionData.current_period_end
-  });
+  console.log('📋 Subscription ID:', subscriptionId);
 
   // Update user profile with subscription info
+  // Note: subscription.created webhook will handle setting the exact status
   const { error } = await supabaseAdmin
     .from('profiles')
     .update({
-      subscription_status: subscriptionData.status,
-      subscription_tier: 'pro', // Pro access during trial AND after
+      subscription_status: 'active', // Will be updated by subscription.created webhook
+      subscription_tier: 'pro',
       subscription_billing_cycle: billingCycle,
       stripe_subscription_id: subscriptionId,
       stripe_customer_id: customerId,
-      subscription_current_period_end: new Date((subscriptionData.current_period_end || 0) * 1000).toISOString(),
+      subscription_current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now (trial period)
     })
     .eq('id', userId);
 
   if (error) {
     console.error('❌ Error updating profile:', error);
   } else {
-    console.log('✅ Profile updated successfully for user:', userId, '- Status:', subscriptionData.status);
+    console.log('✅ Profile updated successfully for user:', userId);
   }
 }
 
