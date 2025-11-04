@@ -3646,8 +3646,8 @@ function NBADashboardContent() {
         console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
         setIsPro(proStatus);
       } else {
-        // No session - redirect to login
-        router.push('/login');
+        // No session - redirect to login with return path
+        router.push('/login?redirect=/nba/research/dashboard');
       }
     };
     getUser();
