@@ -137,7 +137,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   
   // Fetch the actual subscription to get its status
   const stripe = getStripe();
-  const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
   
   console.log('📋 Subscription details:', {
     id: subscriptionData.id,
