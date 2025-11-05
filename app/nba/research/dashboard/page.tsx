@@ -3903,6 +3903,9 @@ function NBADashboardContent() {
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   
+  // Sidebar toggle state for tablets/Macs
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
   // Subscription/paywall state
   const { 
     hasPremium, 
@@ -5995,17 +5998,49 @@ function NBADashboardContent() {
         }
       `}</style>
       {/* Main layout container with sidebar, chart, and right panel */}
-      <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))', paddingLeft: 0 }}>
-<div className="mx-auto w-full max-w-[1550px]" style={{ paddingLeft: 0 }}>
+      <div className="px-0 dashboard-container" style={{ 
+        marginLeft: sidebarOpen ? 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))' : '0px',
+        width: sidebarOpen ? 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))' : '100%',
+        paddingLeft: 0,
+        transition: 'margin-left 0.3s ease, width 0.3s ease'
+      }}>
+<div className={`mx-auto w-full ${sidebarOpen ? 'max-w-[1550px]' : 'max-w-[2000px]'}`} style={{ paddingLeft: sidebarOpen ? 0 : '2rem', paddingRight: sidebarOpen ? 0 : '1rem' }}>
           <div 
             className="pt-4 min-h-0 lg:h-full dashboard-container"
             style={{ paddingLeft: 0 }}
           >
-        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} hasPremium={hasPremium} />
+        {/* Left Sidebar - conditionally rendered based on sidebarOpen state */}
+        {sidebarOpen && (
+          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} hasPremium={hasPremium} />
+        )}
+        
+        {/* Sidebar Toggle Button - visible on tablets/Macs */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="hidden lg:flex fixed z-[60] items-center justify-center w-8 h-8 bg-gray-300 dark:bg-slate-900 hover:bg-gray-400 dark:hover:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg transition-all"
+          style={{
+            top: sidebarOpen ? '1rem' : '1.5rem',
+            left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width, 360px) + 8px)' : 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)',
+            transition: 'left 0.3s ease, top 0.3s ease'
+          }}
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        >
+          <svg 
+            className="w-4 h-4 text-gray-700 dark:text-gray-300 transition-transform"
+            style={{ transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 <div className="flex flex-col lg:flex-row gap-0 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
- className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar"
+ className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
+              sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
+            }`}
             style={{
               scrollbarGutter: 'stable'
             }}
@@ -7535,7 +7570,9 @@ function NBADashboardContent() {
 
           {/* Right Panel - Mobile: Single column containers, Desktop: Right sidebar */}
           <div 
- className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 fade-scrollbar custom-scrollbar"
+ className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 fade-scrollbar custom-scrollbar ${
+              sidebarOpen ? 'lg:flex-[3] xl:flex-[3.3]' : 'lg:flex-[4] xl:flex-[4]'
+            }`}
           >
 
             {/* Filter By Container (Desktop - in right panel) */}

@@ -939,7 +939,7 @@ export default function RightSidebar({
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {showAdvanced ? (
           // Advanced Stats View
-          <div className="p-3 flex flex-col gap-2 h-full">
+          <div className="p-3 flex flex-col gap-1 h-full">
             {/* Win Rate Progress Bar - At the top */}
             <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div className="flex items-center justify-between mb-2">

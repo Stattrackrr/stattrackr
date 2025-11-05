@@ -428,7 +428,7 @@ for (const r of oppRows2){
         const isStarter = Boolean(starterPos);
         const val = Number(r?.pts||0);
         buckets[bucket]+=val;
-        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00' });
+        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00' });
       }
       
       // Add zero-line entries for depth-chart players missing from BDL stats
@@ -438,7 +438,7 @@ for (const r of oppRows2){
           if (!seen.has(k)){
             const display = toTitle(k);
             const isStarter = Boolean((startersMap as any)[k]);
-            players.push({ playerId: 0, name: display, bucket: pos, isStarter, pts: 0, reb: 0, ast: 0, fg3m: 0, stl: 0, blk: 0, min: '0:00' });
+            players.push({ playerId: 0, name: display, bucket: pos, isStarter, pts: 0, reb: 0, ast: 0, fg3m: 0, fg3a: 0, fgm: 0, fga: 0, stl: 0, blk: 0, min: '0:00' });
           }
         }
       }catch{}

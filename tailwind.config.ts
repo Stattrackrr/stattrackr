@@ -9,6 +9,9 @@ const config: Config = {
   darkMode: 'class',
   theme: {
     extend: {
+      screens: {
+        'tablet': '1440px',  // MacBook 13" breakpoint
+      },
       colors: {
         'brand-bg': '#0b1220',
         'brand-fg': '#ffffff',
