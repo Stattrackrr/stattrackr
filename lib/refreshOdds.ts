@@ -1,7 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import cache, { CACHE_TTL } from './cache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
-import { supabase } from './supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+// Use service role for server-side operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 // Store all odds data in a single cache entry
 const ODDS_CACHE_KEY = 'all_nba_odds';
@@ -362,9 +374,9 @@ async function saveOddsSnapshots(games: GameOdds[]) {
     }
   }
 
-  // Batch insert snapshots
+  // Batch insert snapshots using service role (bypasses RLS)
   if (snapshots.length > 0) {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('odds_snapshots')
       .insert(snapshots);
 
