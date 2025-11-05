@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import cache, { CACHE_TTL } from './cache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
+import { supabase } from './supabaseClient';
 
 // Store all odds data in a single cache entry
 const ODDS_CACHE_KEY = 'all_nba_odds';
@@ -97,6 +98,15 @@ export async function refreshOddsData() {
 
     // Cache the data
     cache.set(ODDS_CACHE_KEY, oddsCache, CACHE_TTL.ODDS);
+
+    // Save snapshots to database for line movement tracking
+    try {
+      await saveOddsSnapshots(games);
+      console.log('📸 Odds snapshots saved to database');
+    } catch (error) {
+      console.error('❌ Failed to save odds snapshots:', error);
+      // Don't fail the whole refresh if snapshot saving fails
+    }
 
     const elapsed = Date.now() - startTime;
     console.log(`✅ Bulk odds refresh complete in ${elapsed}ms - ${games.length} games cached`);
@@ -294,4 +304,75 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
   }
 
   return games;
+}
+
+/**
+ * Save odds snapshots to database for line movement tracking
+ */
+async function saveOddsSnapshots(games: GameOdds[]) {
+  const snapshots: any[] = [];
+  const now = new Date().toISOString();
+
+  for (const game of games) {
+    // Save player prop snapshots
+    for (const [bookmakerName, playerProps] of Object.entries(game.playerPropsByBookmaker)) {
+      for (const [playerName, props] of Object.entries(playerProps)) {
+        // Map stat keys to market names
+        const statToMarket: Record<string, string> = {
+          'PTS': 'player_points',
+          'REB': 'player_rebounds',
+          'AST': 'player_assists',
+          'THREES': 'player_threes',
+          'BLK': 'player_blocks',
+          'STL': 'player_steals',
+          'TO': 'player_turnovers',
+          'PRA': 'player_points_rebounds_assists',
+          'PR': 'player_points_rebounds',
+          'PA': 'player_points_assists',
+          'RA': 'player_rebounds_assists',
+        };
+
+        for (const [statKey, propData] of Object.entries(props)) {
+          if (!propData || typeof propData !== 'object') continue;
+          
+          const market = statToMarket[statKey];
+          if (!market) continue;
+
+          // Only save if we have line and odds data
+          if ('line' in propData && 'over' in propData && 'under' in propData) {
+            const line = parseFloat(String(propData.line));
+            const overOdds = parseInt(String(propData.over));
+            const underOdds = parseInt(String(propData.under));
+
+            if (!isNaN(line) && !isNaN(overOdds) && !isNaN(underOdds)) {
+              snapshots.push({
+                game_id: game.gameId,
+                player_name: playerName,
+                bookmaker: bookmakerName,
+                market,
+                line,
+                over_odds: overOdds,
+                under_odds: underOdds,
+                snapshot_at: now,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Batch insert snapshots
+  if (snapshots.length > 0) {
+    const { error } = await supabase
+      .from('odds_snapshots')
+      .insert(snapshots);
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      throw error;
+    }
+
+    console.log(`💾 Saved ${snapshots.length} odds snapshots`);
+  }
 }

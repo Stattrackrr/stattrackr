@@ -4283,3 +4283,14 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Thu 06/11/2025  3:18:41.45] warm-rosters end (exit 0) 
+[Thu 06/11/2025  3:48:37.41] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251106&window_min=180
+{
+    "success":  true,
+    "date":  "20251106",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Thu 06/11/2025  3:48:41.24] warm-rosters end (exit 0) 
