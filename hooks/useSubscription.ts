@@ -33,8 +33,13 @@ export function useSubscription() {
   // Check if user has pro access
   const hasPro = subscriptionStatus.isActive && subscriptionStatus.tier === 'pro';
 
-  // Check feature access and redirect to pricing if needed
+  // Check feature access - don't redirect while loading
   const checkFeatureAccess = useCallback((requiredTier: 'premium' | 'pro' = 'premium'): boolean => {
+    // If still loading subscription, assume access is OK (UI will gate properly after load)
+    if (loading) {
+      return true;
+    }
+    
     if (requiredTier === 'premium' && hasPremium) {
       return true;
     }
@@ -42,12 +47,12 @@ export function useSubscription() {
       return true;
     }
     
-    // Redirect to pricing page if access denied
+    // Only redirect to pricing page if we've finished loading and access is actually denied
     if (typeof window !== 'undefined') {
       window.location.href = '/pricing';
     }
     return false;
-  }, [hasPremium, hasPro]);
+  }, [hasPremium, hasPro, loading]);
 
   // Manually trigger paywall
   const triggerPaywall = useCallback(() => {

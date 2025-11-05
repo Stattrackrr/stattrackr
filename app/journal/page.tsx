@@ -150,8 +150,8 @@ function JournalContent() {
 
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
-    async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Use onAuthStateChange to properly detect session on page load
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session) {
         router.push("/");
         return;
@@ -200,8 +200,12 @@ function JournalContent() {
       }
 
       setLoading(false);
-    }
-    loadData();
+    });
+    
+    // Cleanup listener on unmount
+    return () => {
+      authListener?.unsubscribe();
+    };
   }, [router]);
 
   // Currency conversion rates (base: USD)

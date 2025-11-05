@@ -119,7 +119,8 @@ export async function GET(req: NextRequest) {
     }
 
     const json = await res.json();
-    let results = (Array.isArray(json?.data) ? json.data : []).map(normalizePlayer).filter((p: any) => p.id && p.full);
+    // Limit to 20 results immediately for faster frontend rendering
+    let results = (Array.isArray(json?.data) ? json.data : []).slice(0, 20).map(normalizePlayer).filter((p: any) => p.id && p.full);
 
     if (team) {
       const T = team.toUpperCase();

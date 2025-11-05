@@ -4738,13 +4738,13 @@ function NBADashboardContent() {
             );
           });
         }
-        // dedupe & cap
+        // dedupe & cap (20 results for faster rendering)
         const seen = new Set<string>();
         const dedup = arr.filter(r => {
           if (seen.has(r.full)) return false;
           seen.add(r.full);
           return true;
-        }).slice(0, 30);
+        }).slice(0, 20);
         setSearchResults(dedup);
       } catch (e: any) {
         setSearchError(e?.message || "Search failed");
@@ -4753,7 +4753,7 @@ function NBADashboardContent() {
         setSearchBusy(false);
       }
     };
-    t = setTimeout(run, 250);
+    t = setTimeout(run, 100);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
@@ -4930,8 +4930,9 @@ function NBADashboardContent() {
   
   // Fetch advanced stats for a player
   const fetchAdvancedStats = async (playerId: string) => {
-    // 🔒 PAYWALL CHECK
-    if (!checkFeatureAccess('premium')) {
+    // Don't attempt to fetch if user doesn't have premium - just silently return
+    // The UI will already be gated by checkFeatureAccess elsewhere
+    if (!hasPremium) {
       return;
     }
     
@@ -4956,8 +4957,9 @@ function NBADashboardContent() {
   
   // Fetch shot distance stats for a player
   const fetchShotDistanceStats = async (playerId: string) => {
-    // 🔒 PAYWALL CHECK
-    if (!checkFeatureAccess('premium')) {
+    // Don't attempt to fetch if user doesn't have premium - just silently return
+    // The UI will already be gated by checkFeatureAccess elsewhere
+    if (!hasPremium) {
       return;
     }
     
@@ -4988,15 +4990,20 @@ function NBADashboardContent() {
       if (!pid) throw new Error(`Couldn't resolve player id for "${player.full}"`);
       setResolvedPlayerId(pid);
       
-      // Fetch game stats, advanced stats, shot distance stats, and ESPN data in parallel
+      // OPTIMIZATION: Lazy load premium stats
+      // Fetch critical path data first: game stats + ESPN data
+      // Then load premium features (advanced stats, shot distance) in background
       const [rows, espnData] = await Promise.all([
-        Promise.all([
-          fetchSortedStats(pid),
-          fetchAdvancedStats(pid),
-          fetchShotDistanceStats(pid)
-        ]).then(([stats]) => stats),
+        fetchSortedStats(pid),
         fetchEspnPlayerData(player.full, player.teamAbbr)
       ]);
+      
+      // Start premium fetches in background (don't await)
+      if (hasPremium) {
+        // Fire and forget - these will update state when ready
+        fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
+        fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+      }
       
       setPlayerStats(rows);
       
@@ -5070,15 +5077,20 @@ function NBADashboardContent() {
         position: r.pos || '',
       } as any;
       
-      // Fetch game stats, advanced stats, shot distance stats, and ESPN player data in parallel
+      // OPTIMIZATION: Lazy load premium stats
+      // Fetch critical path data first: game stats + ESPN data
+      // Then load premium features (advanced stats, shot distance) in background
       const [rows, espnData] = await Promise.all([
-        Promise.all([
-          fetchSortedStats(pid),
-          fetchAdvancedStats(pid),
-          fetchShotDistanceStats(pid)
-        ]).then(([stats]) => stats),
+        fetchSortedStats(pid),
         fetchEspnPlayerData(r.full, r.team)
       ]);
+      
+      // Start premium fetches in background (don't await)
+      if (hasPremium) {
+        // Fire and forget - these will update state when ready
+        fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
+        fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+      }
       
       setPlayerStats(rows);
       
@@ -5094,8 +5106,28 @@ function NBADashboardContent() {
       // Debug ESPN data
       console.log('🏀 Full ESPN data:', espnData);
       
-      // Try to get jersey from ESPN, then from depth chart roster
+      // Try to get jersey from ESPN, then from depth chart roster, then from sample data
       let jerseyNumber = Number(espnData?.jersey || 0);
+      let heightFeetData = heightData.feet;
+      let heightInchesData = heightData.inches;
+      
+      // Fallback to sample players data if ESPN doesn't have jersey or height
+      const samplePlayer = SAMPLE_PLAYERS.find(p => p.full.toLowerCase() === r.full.toLowerCase());
+      if (samplePlayer) {
+        if (!jerseyNumber && samplePlayer.jersey) {
+          jerseyNumber = samplePlayer.jersey;
+          console.log(`✅ Found jersey #${jerseyNumber} from sample data for ${r.full}`);
+        }
+        if (!heightFeetData && samplePlayer.heightFeet) {
+          heightFeetData = samplePlayer.heightFeet;
+          console.log(`✅ Found height feet ${heightFeetData} from sample data for ${r.full}`);
+        }
+        if (!heightInchesData && samplePlayer.heightInches) {
+          heightInchesData = samplePlayer.heightInches;
+          console.log(`✅ Found height inches ${heightInchesData} from sample data for ${r.full}`);
+        }
+      }
+      
       if (!jerseyNumber && playerTeamRoster) {
         // Search all positions in roster for this player
         const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
@@ -5121,8 +5153,8 @@ function NBADashboardContent() {
         ...tempPlayer,
         teamAbbr: currentTeam,
         jersey: jerseyNumber,
-        heightFeet: heightData.feet || null,
-        heightInches: heightData.inches || null,
+        heightFeet: heightFeetData || null,
+        heightInches: heightInchesData || null,
         // Add raw height as fallback for debugging
         rawHeight: espnData?.height || null,
       });
@@ -6499,7 +6531,7 @@ function NBADashboardContent() {
                       const query = searchQuery.toLowerCase();
                       const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
                       
-                      // Find matching teams
+                      // Find matching teams (memo-optimized)
                       Object.entries(TEAM_FULL_NAMES).forEach(([abbr, fullName]) => {
                         if (abbr.toLowerCase().includes(query) || fullName.toLowerCase().includes(query)) {
                           matchingTeams.push({ abbr, fullName });
@@ -6513,9 +6545,10 @@ function NBADashboardContent() {
                         '76ers': 'PHI', 'mavs': 'DAL', 'spurs': 'SAS', 'rockets': 'HOU'
                       };
                       
-                      if (nicknames[query] && !matchingTeams.find(t => t.abbr === nicknames[query])) {
-                        const abbr = nicknames[query];
-                        matchingTeams.push({ abbr, fullName: TEAM_FULL_NAMES[abbr] || abbr });
+                      // Add nickname match if not already present
+                      const nicknameMatch = nicknames[query];
+                      if (nicknameMatch && !matchingTeams.some(t => t.abbr === nicknameMatch)) {
+                        matchingTeams.unshift({ abbr: nicknameMatch, fullName: TEAM_FULL_NAMES[nicknameMatch] || nicknameMatch });
                       }
                       
                       return matchingTeams.length > 0 ? (

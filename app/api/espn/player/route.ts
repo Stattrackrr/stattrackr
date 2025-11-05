@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
+import cache, { CACHE_TTL } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,16 @@ export async function GET(req: NextRequest) {
     );
   }
   
+  // Check cache first
+  const cacheKey = `espn_player_${playerName.toLowerCase()}_${team || 'any'}`;
+  const cachedResult = cache.get(cacheKey);
+  if (cachedResult) {
+    console.log(`✅ ESPN player cache HIT for ${playerName}`);
+    return NextResponse.json({ data: cachedResult });
+  }
+  
   try {
+    console.log(`🌐 Fetching ESPN player data for ${playerName}`);
     // ESPN NBA teams endpoint to get roster data
     const teamsResponse = await fetch("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams");
     const teamsData = await teamsResponse.json();
@@ -53,61 +63,56 @@ export async function GET(req: NextRequest) {
     const teams = teamsData.sports[0].leagues[0].teams;
     let foundPlayer = null;
     
-    // Search through all team rosters
-    for (const teamData of teams) {
-      const teamInfo = teamData.team;
-      const teamAbbr = teamInfo?.abbreviation?.toLowerCase();
+    // Filter teams if team parameter provided
+    const teamsToSearch = team
+      ? teams.filter((teamData) => {
+          const filterCanon = normalizeEspnTeamCode(team);
+          const teamCanon = normalizeEspnTeamCode(teamData.team?.abbreviation);
+          return filterCanon && teamCanon && teamCanon === filterCanon;
+        })
+      : teams;
+    
+    // Fetch all rosters in parallel
+    const rosterPromises = teamsToSearch.map((teamData) =>
+      fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamData.team.id}/roster`)
+        .then((res) => res.json())
+        .catch(() => ({ athletes: [] }))
+        .then((rosterData) => ({
+          teamInfo: teamData.team,
+          athletes: rosterData?.athletes || [],
+        }))
+    );
+    
+    const rosterResults = await Promise.all(rosterPromises);
+    
+    // Search through all results for player
+    for (const { teamInfo, athletes } of rosterResults) {
+      if (foundPlayer) break;
       
-      // If team filter is provided, only search that team (with alias normalization)
-      if (team) {
-        const filterCanon = normalizeEspnTeamCode(team);
-        const teamCanon = normalizeEspnTeamCode(teamAbbr);
-        if (filterCanon && teamCanon && teamCanon !== filterCanon) {
-          continue;
-        }
-      }
-      
-      try {
-        // Get roster for this team
-        const rosterResponse = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamInfo.id}/roster`);
-        const rosterData = await rosterResponse.json();
+      for (const athlete of athletes) {
+        const fullName = athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
         
-        const athletes = rosterData?.athletes || [];
-        
-        // Search for player in this team's roster
-        for (const athlete of athletes) {
-          const fullName = athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+        if (fullName.toLowerCase().includes(playerName.toLowerCase()) || 
+            playerName.toLowerCase().includes(fullName.toLowerCase())) {
           
-          if (fullName.toLowerCase().includes(playerName.toLowerCase()) || 
-              playerName.toLowerCase().includes(fullName.toLowerCase())) {
-            
-            foundPlayer = {
-              name: fullName,
-              firstName: athlete.firstName,
-              lastName: athlete.lastName,
-              jersey: athlete.jersey,
-              height: athlete.height,
-              weight: athlete.weight,
-              team: teamInfo.abbreviation,
-              teamName: teamInfo.displayName,
-              position: athlete.position?.abbreviation,
-              espnId: athlete.id,
-            };
-            
-            // Exact match gets priority
-            if (fullName.toLowerCase() === playerName.toLowerCase()) {
-              break;
-            }
+          foundPlayer = {
+            name: fullName,
+            firstName: athlete.firstName,
+            lastName: athlete.lastName,
+            jersey: athlete.jersey,
+            height: athlete.height,
+            weight: athlete.weight,
+            team: teamInfo.abbreviation,
+            teamName: teamInfo.displayName,
+            position: athlete.position?.abbreviation,
+            espnId: athlete.id,
+          };
+          
+          // Exact match gets priority
+          if (fullName.toLowerCase() === playerName.toLowerCase()) {
+            break;
           }
         }
-        
-        if (foundPlayer) {
-          break;
-        }
-      } catch (teamError) {
-        // Continue to next team if this one fails
-        console.warn(`Failed to fetch roster for team ${teamInfo.id}:`, teamError);
-        continue;
       }
     }
     
@@ -117,6 +122,10 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       );
     }
+    
+    // Cache successful result for 24 hours
+    cache.set(cacheKey, foundPlayer, CACHE_TTL.ESPN_PLAYER);
+    console.log(`💾 ESPN player data cached for ${playerName}`);
     
     return NextResponse.json({
       data: foundPlayer
