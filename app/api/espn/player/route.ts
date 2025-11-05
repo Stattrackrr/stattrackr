@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     
     // Filter teams if team parameter provided
     const teamsToSearch = team
-      ? teams.filter((teamData) => {
+      ? teams.filter((teamData: any) => {
           const filterCanon = normalizeEspnTeamCode(team);
           const teamCanon = normalizeEspnTeamCode(teamData.team?.abbreviation);
           return filterCanon && teamCanon && teamCanon === filterCanon;
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       : teams;
     
     // Fetch all rosters in parallel
-    const rosterPromises = teamsToSearch.map((teamData) =>
+    const rosterPromises = teamsToSearch.map((teamData: any) =>
       fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamData.team.id}/roster`)
         .then((res) => res.json())
         .catch(() => ({ athletes: [] }))

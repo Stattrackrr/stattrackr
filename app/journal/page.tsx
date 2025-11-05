@@ -151,7 +151,7 @@ function JournalContent() {
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
     // Use onAuthStateChange to properly detect session on page load
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session) {
         router.push("/");
         return;
@@ -204,7 +204,7 @@ function JournalContent() {
     
     // Cleanup listener on unmount
     return () => {
-      authListener?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [router]);
 
