@@ -64,7 +64,7 @@ async function loadCustomPositions(team?: string): Promise<{ positions: Record<s
 async function reprocessTeam(team: string): Promise<{ success: boolean; team: string; games?: number; error?: string }> {
   try {
     const abbr = normalizeAbbr(team);
-    if (!abbr || !NBA_TEAMS[abbr]) {
+    if (!abbr || !(abbr in NBA_TEAMS)) {
       return { success: false, team, error: 'Invalid team' };
     }
     
