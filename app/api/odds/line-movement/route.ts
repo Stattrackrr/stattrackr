@@ -8,23 +8,26 @@ export const runtime = 'nodejs';
 /**
  * Get line movement for a player's stat in a specific game
  * Query params:
- * - gameId: The Odds API game ID
  * - player: Player name
  * - stat: 'pts', 'reb', 'ast', 'threes', etc.
+ * - date (optional): Game date in YYYY-MM-DD format, defaults to today
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const gameId = searchParams.get('gameId');
     const player = searchParams.get('player');
     const stat = searchParams.get('stat');
+    const dateParam = searchParams.get('date');
 
-    if (!gameId || !player || !stat) {
+    if (!player || !stat) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required parameters: gameId, player, stat'
+        error: 'Missing required parameters: player, stat'
       }, { status: 400 });
     }
+    
+    // Use provided date or default to today
+    const targetDate = dateParam || new Date().toISOString().split('T')[0];
 
     // Map stat key to market name
     const statToMarket: Record<string, string> = {
@@ -50,13 +53,18 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Fetch all snapshots for this player/game/stat, ordered by time
+    // Fetch all snapshots for this player/stat on the target date
+    // Query by player name and date range (snapshots from the target date)
+    const startOfDay = `${targetDate}T00:00:00Z`;
+    const endOfDay = `${targetDate}T23:59:59Z`;
+    
     const { data: snapshots, error } = await supabase
       .from('odds_snapshots')
       .select('*')
-      .eq('game_id', gameId)
       .eq('player_name', player)
       .eq('market', market)
+      .gte('snapshot_at', startOfDay)
+      .lte('snapshot_at', endOfDay)
       .order('snapshot_at', { ascending: true });
 
     if (error) {
@@ -125,17 +133,17 @@ export async function GET(request: NextRequest) {
       const prevLine = seenLines.get(snap.bookmaker);
       const currentLine = parseFloat(String(snap.line));
       
-      // Only add if this is a new line for this bookmaker
-      if (prevLine === undefined || prevLine !== currentLine) {
-        const change = prevLine !== undefined ? currentLine - prevLine : 0;
+      // Only add if this is an actual line change (not the opening line)
+      if (prevLine !== undefined && prevLine !== currentLine) {
+        const change = currentLine - prevLine;
         lineMovement.push({
           bookmaker: snap.bookmaker,
           line: currentLine,
           change,
           timestamp: snap.snapshot_at
         });
-        seenLines.set(snap.bookmaker, currentLine);
       }
+      seenLines.set(snap.bookmaker, currentLine);
     }
 
     return NextResponse.json({

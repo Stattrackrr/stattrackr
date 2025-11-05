@@ -37,7 +37,7 @@ export async function refreshOddsData() {
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
     const gamesParams = new URLSearchParams({
       apiKey: ODDS_API_KEY,
-      regions: 'us',
+      regions: 'us,us2,us_dfs', // us2 includes ReBet, us_dfs includes PrizePicks/Underdog/Pick6
       markets: 'h2h,spreads,totals',
       oddsFormat: 'american',
       dateFormat: 'iso',
@@ -67,13 +67,14 @@ export async function refreshOddsData() {
       console.log(`🏀 Sample games: ${upcomingGames.slice(0, 3).map((g: any) => `${g.home_team} vs ${g.away_team} at ${new Date(g.commence_time).toLocaleString()}`).join(', ')}`);
     }
     
-    const playerPropsMarkets = 'player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists';
+    // Include both standard and alternate markets for DFS sites (goblins/demons/multipliers)
+    const playerPropsMarkets = 'player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists,player_points_alternate,player_rebounds_alternate,player_assists_alternate,player_threes_alternate';
     const playerPropsPromises = upcomingGames.map(async (game: any) => {
       try {
         const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
         const eventParams = new URLSearchParams({
           apiKey: ODDS_API_KEY,
-          regions: 'us',
+          regions: 'us,us2,us_dfs', // us2 includes ReBet, us_dfs includes PrizePicks/Underdog/Pick6
           markets: playerPropsMarkets,
           oddsFormat: 'american',
           dateFormat: 'iso',

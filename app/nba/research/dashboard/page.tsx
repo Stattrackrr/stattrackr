@@ -59,6 +59,13 @@ export interface OfficialOddsCardProps {
   oddsFormat: OddsFormat;
   books: BookRow[];
   fmtOdds: (odds: string) => string;
+  lineMovementData?: {
+    openingLine: { line: number; bookmaker: string; time: string } | null;
+    currentLine: { line: number; bookmaker: string; time: string } | null;
+    impliedOdds: number | null;
+    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
+  } | null;
+  selectedStat?: string;
 }
 
 /* ==== Types (BDL) ==== */
@@ -2397,6 +2404,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   oddsFormat,
   books,
   fmtOdds,
+  lineMovementData,
+  selectedStat,
 }: OfficialOddsCardProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -2418,8 +2427,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                 No line movement data available
               </div>
             ) : (
-              intradayMovements.map((m: any) => (
-                <div key={m.ts} className="grid grid-cols-[128px_auto_auto] gap-3 items-center text-xs">
+              intradayMovements.map((m: any, idx: number) => (
+                <div key={`${m.ts}-${idx}`} className="grid grid-cols-[128px_auto_auto] gap-3 items-center text-xs">
                   <span className={`font-mono ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.timeLabel}</span>
                   <span className={
                     (m.direction === 'up'
@@ -2519,31 +2528,54 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
               {/* Implied Odds */}
               <div>
                 <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Implied Odds</div>
-                <div className="space-y-2 text-base sm:text-sm">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">Over:</span>
-                    <span className="font-semibold text-gray-500 dark:text-gray-400">—</span>
+                {lineMovementData?.impliedOdds ? (
+                  <div className="space-y-2 text-base sm:text-sm">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Over:</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{lineMovementData.impliedOdds.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Under:</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400">{(100 - lineMovementData.impliedOdds).toFixed(1)}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">Under:</span>
-                    <span className="font-semibold text-gray-500 dark:text-gray-400">—</span>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedStat ? `No ${selectedStat.toUpperCase()} odds available at this time, check back later!` : 'No odds available at this time'}
                   </div>
-                </div>
+                )}
               </div>
               
               {/* Official Odds */}
               <div>
                 <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Official Odds</div>
-                <div className="space-y-2 text-base sm:text-sm">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
-                    <span className="text-gray-900 dark:text-white">{derivedOdds.openingLine != null ? derivedOdds.openingLine.toFixed(1) : '—'}</span>
+                {lineMovementData?.openingLine || lineMovementData?.currentLine ? (
+                  <div className="space-y-2 text-base sm:text-sm">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {lineMovementData.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {lineMovementData.currentLine ? `${lineMovementData.currentLine.line.toFixed(1)} (${lineMovementData.currentLine.bookmaker})` : '—'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
-                    <span className="text-gray-900 dark:text-white">{derivedOdds.currentLine != null ? derivedOdds.currentLine.toFixed(1) : '—'}</span>
+                ) : (
+                  <div className="space-y-2 text-base sm:text-sm">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
+                      <span className="text-gray-900 dark:text-white">{derivedOdds.openingLine != null ? derivedOdds.openingLine.toFixed(1) : '—'}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
+                      <span className="text-gray-900 dark:text-white">{derivedOdds.currentLine != null ? derivedOdds.currentLine.toFixed(1) : '—'}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -3756,6 +3788,15 @@ function NBADashboardContent() {
   // Odds API placeholders (no fetch yet)
   const [oddsSnapshots, setOddsSnapshots] = useState<OddsSnapshot[]>([]);
   const marketKey = 'player_points';
+  
+  // Line movement data from API
+  const [lineMovementData, setLineMovementData] = useState<{
+    openingLine: { line: number; bookmaker: string; time: string } | null;
+    currentLine: { line: number; bookmaker: string; time: string } | null;
+    impliedOdds: number | null;
+    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
+  } | null>(null);
+  const [lineMovementLoading, setLineMovementLoading] = useState(false);
 
 
   // Odds display format
@@ -3768,12 +3809,39 @@ function NBADashboardContent() {
   }, []);
 
   const derivedOdds = useMemo(() => {
+    if (lineMovementData) {
+      return {
+        openingLine: lineMovementData.openingLine?.line ?? null,
+        currentLine: lineMovementData.currentLine?.line ?? null,
+      };
+    }
+    // Fallback to old snapshot logic for team mode
     const filtered = filterByMarket(oddsSnapshots, marketKey);
     return deriveOpeningCurrentMovement(filtered);
-  }, [oddsSnapshots, marketKey]);
+  }, [lineMovementData, oddsSnapshots, marketKey]);
 
-  // Build intraday movement rows from snapshots (sorted oldest -> newest)
+  // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
+    if (lineMovementData?.lineMovement && lineMovementData.lineMovement.length > 0) {
+      return lineMovementData.lineMovement
+        .map((movement) => {
+          const dt = new Date(movement.timestamp);
+          const timeLabel = dt.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+          });
+          const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
+          return {
+            ts: new Date(movement.timestamp).getTime(),
+            timeLabel: `${timeLabel} (${movement.bookmaker})`,
+            line: movement.line,
+            change: `${movement.change > 0 ? '+' : ''}${movement.change.toFixed(1)}`,
+            direction: direction as 'up' | 'down' | 'flat',
+          };
+        })
+        .reverse(); // Most recent first
+    }
+    
+    // Fallback to old snapshot logic for team mode
     const items = filterByMarket(oddsSnapshots, marketKey)
       .slice()
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -3796,17 +3864,7 @@ function NBADashboardContent() {
       });
     }
     return rows;
-  }, [oddsSnapshots, marketKey]);
-
-
-  // When wiring the real Odds API, populate oddsSnapshots here with live data.
-  // Example:
-  // useEffect(() => {
-  //   fetch('/api/odds?...').then(res => res.json()).then((payload) => {
-  //     const snapshots: OddsSnapshot[] = adaptPayloadToSnapshots(payload);
-  //     setOddsSnapshots(snapshots);
-  //   });
-  // }, [marketKey]);
+  }, [lineMovementData, oddsSnapshots, marketKey]);
 
   // search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -3904,6 +3962,59 @@ function NBADashboardContent() {
       return null;
     }
   }, [selectedTeam, opponentTeam, todaysGames]);
+  
+  // Fetch line movement data when game, player, and stat change
+  useEffect(() => {
+    const fetchLineMovement = async () => {
+      console.log('📊 Line Movement Fetch Check:', { propsMode, selectedPlayer: selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat });
+      
+      // Only fetch for player mode
+      if (propsMode !== 'player' || !selectedPlayer || !selectedTeam || !opponentTeam || opponentTeam === '' || opponentTeam === 'N/A') {
+        console.log('⏸️ Skipping line movement fetch - missing requirements');
+        setLineMovementData(null);
+        return;
+      }
+      
+      const playerName = selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
+      
+      // Get the game date from todaysGames if available
+      const teamA = normalizeAbbr(selectedTeam);
+      const teamB = normalizeAbbr(opponentTeam);
+      const game = todaysGames.find((g: any) => {
+        const home = normalizeAbbr(g?.home_team?.abbreviation || '');
+        const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
+        return (home === teamA && away === teamB) || (home === teamB && away === teamA);
+      });
+      
+      // Extract game date or use today's date
+      const gameDate = game?.date ? new Date(game.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      
+      console.log(`🎯 Fetching line movement for: ${playerName} (date: ${gameDate}, stat: ${selectedStat})`);
+      
+      setLineMovementLoading(true);
+      try {
+        const url = `/api/odds/line-movement?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(selectedStat)}&date=${gameDate}`;
+        console.log('📡 Fetching:', url);
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn('❌ Line movement fetch failed:', response.status);
+          setLineMovementData(null);
+          return;
+        }
+        const result = await response.json();
+        console.log('✅ Line movement data received:', result);
+        // Extract the nested data object from the API response
+        setLineMovementData(result.hasOdds ? result.data : null);
+      } catch (error) {
+        console.error('Error fetching line movement:', error);
+        setLineMovementData(null);
+      } finally {
+        setLineMovementLoading(false);
+      }
+    };
+    
+    fetchLineMovement();
+  }, [propsMode, selectedPlayer, selectedTeam, opponentTeam, selectedStat, todaysGames]);
   
   // Time filter for opponent breakdown display
   const [selectedTimeFilter] = useState('last10'); // Using existing selectedTimeframe as reference
@@ -7378,9 +7489,11 @@ function NBADashboardContent() {
                   oddsFormat={oddsFormat}
                   books={realOddsData}
                   fmtOdds={fmtOdds}
+                  lineMovementData={lineMovementData}
+                  selectedStat={selectedStat}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, lineMovementData, selectedStat])}
 
             {/* 8. Best Odds Container (Mobile) */}
             <BestOddsTable
@@ -7435,9 +7548,11 @@ function NBADashboardContent() {
                 oddsFormat={oddsFormat}
                 books={realOddsData}
                 fmtOdds={fmtOdds}
+                lineMovementData={lineMovementData}
+                selectedStat={selectedStat}
               />
               </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds])}
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, lineMovementData, selectedStat])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
