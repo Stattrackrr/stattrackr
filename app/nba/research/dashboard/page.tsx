@@ -6002,7 +6002,7 @@ function NBADashboardContent() {
             style={{ paddingLeft: 0 }}
           >
         <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} hasPremium={hasPremium} />
-<div className="flex flex-col lg:flex-row gap-0 min-h-0" style={{}}>
+        <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
  className="relative z-50 flex-1 lg:flex-[6] xl:flex-[6.2] min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar"
