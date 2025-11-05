@@ -7535,7 +7535,7 @@ function NBADashboardContent() {
 
           {/* Right Panel - Mobile: Single column containers, Desktop: Right sidebar */}
           <div 
- className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto px-0 fade-scrollbar custom-scrollbar"
+ className="relative z-0 flex-1 lg:flex-[3] xl:flex-[3.3] flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 fade-scrollbar custom-scrollbar"
           >
 
             {/* Filter By Container (Desktop - in right panel) */}
