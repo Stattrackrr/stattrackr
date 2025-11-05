@@ -42,6 +42,7 @@ export default function SubscriptionPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [billingEmail, setBillingEmail] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
+  const [hasTriedAutoRedirect, setHasTriedAutoRedirect] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -58,13 +59,14 @@ export default function SubscriptionPage() {
     }
   }, []);
 
-  // Auto-redirect to Stripe portal if user has active subscription
+  // Auto-redirect to Stripe portal if user has active subscription (only once)
   useEffect(() => {
     const hasActiveSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
-    if (!loading && hasActiveSubscription && profile?.stripe_customer_id) {
+    if (!loading && !hasTriedAutoRedirect && hasActiveSubscription && profile?.stripe_customer_id) {
+      setHasTriedAutoRedirect(true);
       handleOpenPortal();
     }
-  }, [loading, profile?.subscription_status, profile?.stripe_customer_id]);
+  }, [loading, profile?.subscription_status, profile?.stripe_customer_id, hasTriedAutoRedirect]);
 
   async function loadUserData() {
     try {
