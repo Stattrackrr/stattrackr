@@ -5910,10 +5910,11 @@ function NBADashboardContent() {
           .dashboard-container { --gap: 8px; }
         }
 
-        /* Custom scrollbar colors for light/dark mode */
+        /* Custom scrollbar colors for light/dark mode - force always visible */
         .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: #d1d5db transparent;
+          overflow-y: scroll; /* Force scrollbar to always show */
         }
         
         .dark .custom-scrollbar {
@@ -5921,8 +5922,9 @@ function NBADashboardContent() {
         }
         
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
+          -webkit-appearance: none; /* Disable macOS overlay scrollbar */
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -6041,6 +6043,9 @@ function NBADashboardContent() {
  className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
               sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
             }`}
+            style={{
+              scrollbarGutter: 'stable'
+            }}
           >
             {/* 1. Filter By Container (Mobile First) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
