@@ -2604,6 +2604,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
   const [oppSel, setOppSel] = useState<string>(opponentTeam || '');
   const [posSel, setPosSel] = useState<'PG'|'SG'|'SF'|'PF'|'C' | null>(selectedPosition || null);
   const [oppOpen, setOppOpen] = useState(false);
+  const [posOpen, setPosOpen] = useState(false);
   useEffect(() => { setOppSel(opponentTeam || ''); }, [opponentTeam]);
   useEffect(() => { if (selectedPosition) setPosSel(selectedPosition); }, [selectedPosition]);
 
@@ -2802,15 +2803,33 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         {/* Controls row */}
         <div className="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {/* Position switcher */}
-          <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-600' : 'border-gray-300'} p-2`}>
+          <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-600' : 'border-gray-300'} p-2 relative`}>
             <div className={`text-[11px] font-semibold mb-2 ${mounted && isDark ? 'text-slate-200' : 'text-slate-800'}`}>Position</div>
-            <div className="flex gap-2 sm:gap-1.5">
-              {(['PG','SG','SF','PF','C'] as const).map(p => (
-                <button key={p}
-                  onClick={() => setPosSel(p)}
-                  className={`flex-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-sm sm:text-xs font-bold transition-colors ${posLabel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200')}`}
-                >{p}</button>
-              ))}
+            
+            {/* Dropdown for all screen sizes to prevent overflow */}
+            <div>
+              <button
+                onClick={() => setPosOpen(o => !o)}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-sm font-bold ${mounted && isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} ${posLabel === (posSel || selectedPosition) ? 'bg-purple-600 border-purple-600 text-white' : ''}`}
+              >
+                <span>{posLabel}</span>
+                <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              
+              {posOpen && (
+                <>
+                  <div className={`absolute z-20 mt-1 left-2 right-2 rounded-md border shadow-lg overflow-hidden ${mounted && isDark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'}`}>
+                    {(['PG','SG','SF','PF','C'] as const).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => { setPosSel(p); setPosOpen(false); }}
+                        className={`w-full px-3 py-2 text-sm font-bold text-left ${posLabel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900')}`}
+                      >{p}</button>
+                    ))}
+                  </div>
+                  <div className="fixed inset-0 z-10" onClick={() => setPosOpen(false)} />
+                </>
+              )}
             </div>
           </div>
           {/* Opponent selector with logo (custom dropdown) */}
@@ -5996,7 +6015,7 @@ function NBADashboardContent() {
       `}</style>
       {/* Main layout container with sidebar, chart, and right panel */}
       <div className="px-0 dashboard-container" style={{ marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))', width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))', paddingLeft: 0 }}>
-<div className="mx-auto w-full max-w-[1550px]" style={{ paddingLeft: 0 }}>
+<div className="mx-auto w-full max-w-[1800px]" style={{ paddingLeft: 0 }}>
           <div 
             className="pt-4 min-h-0 lg:h-full dashboard-container"
             style={{ paddingLeft: 0 }}
