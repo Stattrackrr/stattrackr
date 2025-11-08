@@ -290,7 +290,7 @@ export default function PricingPage() {
       )}
 
       {/* Desktop Navigation - Below Auth Button and Dropdown */}
-      <div className="hidden md:block absolute right-6 z-10" style={{ top: user && showProfileMenu ? 'calc(5rem + 13rem)' : '5rem' }}>
+      <div className="hidden md:block fixed right-6 z-[70]" style={{ top: user && showProfileMenu ? 'calc(5rem + 13rem)' : '5rem' }}>
         <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => router.push('/nba/research/dashboard')}

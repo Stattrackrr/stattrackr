@@ -99,6 +99,11 @@ function JournalContent() {
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+  
   // Save all filter preferences to localStorage
   useEffect(() => {
     localStorage.setItem('journal-dateRange', dateRange);
@@ -147,6 +152,44 @@ function JournalContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Screen size detection and responsive sidebar logic
+  useEffect(() => {
+    const handleResize = () => {
+      const isLarge = window.innerWidth >= 1536; // 2xl breakpoint
+      setIsLargeScreen(isLarge);
+      
+      // On large screens, both sidebars are independent
+      if (!isLarge) {
+        // On smaller screens, manage dependent behavior
+      }
+    };
+    
+    // Initial check
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Handle left sidebar toggle with smart right sidebar behavior
+  const handleSidebarToggle = () => {
+    if (isLargeScreen) {
+      // Large screens: left sidebar toggles independently
+      setSidebarOpen(!sidebarOpen);
+    } else {
+      // Small/medium screens: opening left closes right, closing left opens right
+      if (sidebarOpen) {
+        // Currently open, closing it
+        setSidebarOpen(false);
+        setRightSidebarOpen(true);
+      } else {
+        // Currently closed, opening it
+        setSidebarOpen(true);
+        setRightSidebarOpen(false);
+      }
+    }
+  };
 
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
@@ -733,25 +776,39 @@ function JournalContent() {
         }
       `}</style>
       
-      {/* Left Sidebar - Hidden on mobile */}
-      <div className="hidden lg:block">
-        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-      </div>
+      {/* Left Sidebar - Collapsible */}
+      {sidebarOpen && (
+        <div className="hidden lg:block">
+          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+        </div>
+      )}
+      
+      {/* Sidebar Toggle Button - Visible on lg and up */}
+      <button
+        onClick={handleSidebarToggle}
+        className="hidden lg:fixed lg:flex top-8 left-8 z-50 w-10 h-10 items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+        </svg>
+      </button>
       
       {/* Center Content - Desktop */}
       <div 
-        className="custom-scrollbar hidden lg:block"
+        className="custom-scrollbar hidden md:block"
         style={{
           position: 'fixed',
-          left: 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))',
-          right: 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))',
+          left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))' : 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + 16px)',
+          right: isLargeScreen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : rightSidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : '16px',
           top: '16px',
           paddingTop: '0',
           paddingBottom: '2px',
           height: 'calc(100vh - 16px)',
           overflowY: 'auto',
           overflowX: 'hidden',
-          zIndex: 0
+          zIndex: 0,
+          transition: 'left 0.3s ease, right 0.3s ease'
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
@@ -1230,12 +1287,9 @@ function JournalContent() {
                     )}
                   </div>
                 </div>
-              </div>
 
-          </div>
-
-          {/* Bet History */}
-          <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 flex flex-col" style={{ height: '972px' }}>
+                {/* Container 3 - Bet History */}
+                <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 flex flex-col flex-shrink-0 overflow-hidden">
                 <div className="flex items-center justify-between mb-4 flex-shrink-0">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Bet History</h3>
                   <div className="flex items-center gap-2">
@@ -1327,9 +1381,10 @@ function JournalContent() {
                     })
                   )}
                 </div>
-          </div>
+                </div>
+              </div>
 
-        </div>
+          </div>
 
         {/* Full-Width Container Below - Spans entire width */}
         <div className="chart-container-no-focus w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 mt-2">
@@ -2131,7 +2186,7 @@ function JournalContent() {
           <RightSidebar oddsFormat={oddsFormat} isMobileView={true} />
         </div>
       ) : (
-        <div className="hidden lg:block">
+        <div className={isLargeScreen ? "hidden 2xl:block" : rightSidebarOpen ? "hidden lg:block" : "hidden"}> 
           <RightSidebar 
             oddsFormat={oddsFormat} 
             isMobileView={false}
@@ -2301,6 +2356,7 @@ function JournalContent() {
             <span className="text-xs font-medium">Settings</span>
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
