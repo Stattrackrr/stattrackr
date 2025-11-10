@@ -636,17 +636,21 @@ function JournalContent() {
         }
       `}</style>
       
-      {/* Left Sidebar - Hidden on mobile */}
-      <div className="hidden lg:block">
-        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-      </div>
+      {/* Left Sidebar - Visible only on wide desktops */}
+      {isWideDesktop && (
+        <div className="hidden 2xl:block">
+          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+        </div>
+      )}
       
       {/* Center Content - Desktop */}
       <div 
         className="custom-scrollbar hidden lg:block"
         style={{
           position: 'fixed',
-          left: 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))',
+          left: isWideDesktop
+            ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))'
+            : '16px',
           right: isWideDesktop
             ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))'
             : '16px',
