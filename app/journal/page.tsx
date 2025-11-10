@@ -807,7 +807,7 @@ function JournalContent() {
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
-            <div className="w-full h-48 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden">
+            <div className="w-full h-48 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-visible relative z-10">
              {/* Top half - StatTrackr logo and filters */}
              <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4">
                <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4">
@@ -835,7 +835,7 @@ function JournalContent() {
                  </div>
                  
                  {/* Filters */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1 flex-1">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1 flex-1 relative z-30">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white whitespace-nowrap">Filters</span>
                    <select
                      value={sport}
@@ -859,11 +859,11 @@ function JournalContent() {
                      <option value="PointsBet">PointsBet</option>
                      <option value="Bet365">Bet365</option>
                    </select>
-                   <div className="relative ml-auto" ref={timeframeDropdownRef}>
+                  <div className="relative ml-auto z-40" ref={timeframeDropdownRef}>
                      <button
                        data-timeframe-button
                        onClick={() => setShowTimeframeDropdown((prev) => !prev)}
-                       className="inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-transparent bg-white dark:bg-gray-800 px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                      className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-transparent bg-white dark:bg-gray-800 px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
                      >
                        <span className="hidden sm:inline">Timeframe</span>
                        <span className="capitalize">{dateRange}</span>
