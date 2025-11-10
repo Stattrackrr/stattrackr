@@ -796,7 +796,7 @@ function JournalContent() {
       
       {/* Center Content - Desktop */}
       <div 
-        className="custom-scrollbar hidden md:block"
+        className="custom-scrollbar hidden lg:block min-w-0 overflow-hidden"
         style={{
           position: 'fixed',
           left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))' : 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + 16px)',
@@ -812,25 +812,25 @@ function JournalContent() {
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
-            <div className="w-full h-48 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col">
+            <div className="w-full h-48 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden">
               {/* Top half - StatTrackr logo and filters */}
-              <div className="flex-1 flex items-center px-4 pt-2 pb-4">
+              <div className="flex-1 flex items-center px-2 md:px-3 lg:px-4 pt-2 pb-2 md:pb-3 lg:pb-4">
                 <StatTrackrLogoWithText 
-                  logoSize="w-8 h-8" 
-                  textSize="text-xl" 
+                  logoSize="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" 
+                  textSize="text-sm md:text-base lg:text-lg xl:text-xl" 
                   isDark={isDark}
                 />
                 
                 <div className="flex-1"></div>
                 
                 {/* Currency Converter Section */}
-                <div className="flex items-center gap-3 ml-6">
-                  <div className="h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
-                  <span className="text-sm font-medium text-slate-600 dark:text-white">Currency Converter</span>
+                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 ml-2 md:ml-4 lg:ml-6">
+                  <div className="h-6 md:h-7 lg:h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
+                  <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white hidden sm:inline">Currency</span>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as typeof currency)}
-                    className="h-8 px-2 rounded-lg text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
                   >
                     <option value="USD">USD</option>
                     <option value="AUD">AUD</option>
@@ -840,18 +840,18 @@ function JournalContent() {
                 </div>
                 
                 {/* Spacer */}
-                <div className="w-20"></div>
+                <div className="w-4 md:w-8 lg:w-12 xl:w-20"></div>
                 
                 {/* Filters Section */}
-                <div className="flex items-center gap-3 mr-8">
-                  <div className="h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
-                  <span className="text-sm font-medium text-slate-600 dark:text-white">Filters</span>
+                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 mr-2 md:mr-4 lg:mr-8">
+                  <div className="h-6 md:h-7 lg:h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
+                  <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white hidden sm:inline">Filters</span>
                   
                   {/* Sport Dropdown */}
                   <select
                     value={sport}
                     onChange={(e) => setSport(e.target.value)}
-                    className="h-8 px-2 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   >
                     <option value="All">All Sports</option>
                     <option value="NBA">NBA</option>
@@ -861,7 +861,7 @@ function JournalContent() {
                   <select
                     value={bookmaker}
                     onChange={(e) => setBookmaker(e.target.value)}
-                    className="h-8 px-2 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   >
                     <option value="All">All Bookmakers</option>
                     <option value="DraftKings">DraftKings</option>
@@ -875,15 +875,15 @@ function JournalContent() {
                 </div>
                 
                 {/* Date Range Filter Buttons */}
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
-                  <span className="text-sm font-medium text-slate-600 dark:text-white">Timeframe</span>
-                  <div className="flex gap-2">
+                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3">
+                  <div className="h-6 md:h-7 lg:h-8 w-px bg-slate-300 dark:bg-gray-600"></div>
+                  <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white hidden sm:inline">Timeframe</span>
+                  <div className="flex gap-1 md:gap-1.5 lg:gap-2">
                   {(['all', 'daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => (
                     <button
                       key={range}
                       onClick={() => setDateRange(range)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 rounded-lg text-xs md:text-sm font-medium transition-all ${
                         dateRange === range
                           ? 'bg-purple-600 text-white shadow-md'
                           : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white'
@@ -897,45 +897,45 @@ function JournalContent() {
               </div>
               
               {/* Bottom half - 6 stat containers */}
-              <div className="h-1/2 flex border-t border-slate-200 dark:border-gray-700/50 gap-3 pb-3 px-3 py-1">
+              <div className="h-1/2 flex border-t border-slate-200 dark:border-gray-700/50 gap-1.5 md:gap-2 lg:gap-3 pb-2 md:pb-2.5 lg:pb-3 px-2 md:px-2.5 lg:px-3 py-1">
                 {/* Total P&L */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">Total P&L</span>
-                  <div className={`text-2xl font-semibold flex-1 flex items-center justify-center ${
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Total P&L</span>
+                  <div className={`text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex-1 flex items-center justify-center ${
                     stats.totalPL > 0 ? 'text-green-600 dark:text-green-400' :
                     stats.totalPL < 0 ? 'text-red-600 dark:text-red-400' :
                     'text-slate-900 dark:text-white'
                   }`}>
-                    <span className="mr-1">{currency}</span>
-                    <span>{stats.totalPL >= 0 ? '+' : ''}{currencySymbols[currency]}{Math.abs(stats.totalPL).toFixed(2)}</span>
+                    <span className="mr-0.5 md:mr-1 text-[10px] md:text-xs lg:text-sm">{currency}</span>
+                    <span className="break-all text-center">{stats.totalPL >= 0 ? '+' : ''}{currencySymbols[currency]}{Math.abs(stats.totalPL).toFixed(2)}</span>
                   </div>
                 </div>
                 
                 {/* Total Staked */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">Total Staked</span>
-                  <div className="text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">
-                    <span className="mr-1">{currency}</span>
-                    <span>${stats.totalStaked.toFixed(2)}</span>
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Total Staked</span>
+                  <div className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">
+                    <span className="mr-0.5 md:mr-1 text-[10px] md:text-xs lg:text-sm">{currency}</span>
+                    <span className="break-all text-center">${stats.totalStaked.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 {/* Average Stake */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">Avg Stake</span>
-                  <span className="text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">{currency} ${stats.avgStake.toFixed(2)}</span>
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Avg Stake</span>
+                  <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center break-all text-center">{currency} ${stats.avgStake.toFixed(2)}</span>
                 </div>
                 
                 {/* WIN % */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">WIN %</span>
-                  <span className="text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">{stats.winRate.toFixed(1)}%</span>
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">WIN %</span>
+                  <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">{stats.winRate.toFixed(1)}%</span>
                 </div>
                 
                 {/* ROI */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">ROI</span>
-                  <span className={`text-2xl font-semibold flex-1 flex items-center justify-center ${
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">ROI</span>
+                  <span className={`text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex-1 flex items-center justify-center ${
                     stats.roi > 0 ? 'text-green-600 dark:text-green-400' :
                     stats.roi < 0 ? 'text-red-600 dark:text-red-400' :
                     'text-slate-900 dark:text-white'
@@ -945,9 +945,9 @@ function JournalContent() {
                 </div>
                 
                 {/* Record */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-2 px-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-white">Record</span>
-                  <div className="text-2xl font-semibold flex items-center gap-1 flex-1 justify-center">
+                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                  <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Record</span>
+                  <div className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex items-center gap-0.5 md:gap-1 flex-1 justify-center">
                     <span className="text-green-600 dark:text-green-400">{stats.wins}</span>
                     <span className="text-slate-400 dark:text-slate-500">-</span>
                     <span className="text-red-600 dark:text-red-400">{stats.losses}</span>
@@ -958,313 +958,322 @@ function JournalContent() {
               </div>
             </div>
 
-            {/* Chart and Bet History Row */}
-            <div className="w-full mt-2 flex items-start gap-2">
-              {/* Left Column - Chart and Two Containers */}
-              <div className="flex-[3] flex flex-col gap-2">
-              {/* Profit/Loss Chart */}
-                <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Profit/Loss Over Time</h3>
-                <div className="w-full h-80 relative">
-                  {/* Faint StatTrackr Logo Watermark */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                    <StatTrackrLogoWithText 
-                      logoSize="w-32 h-32" 
-                      textSize="text-5xl" 
-                      isDark={isDark}
-                      className="opacity-[0.02]"
-                    />
+            {/* Main Content */}
+            <div className="w-full mt-2 grid gap-2 min-w-0 overflow-hidden lg:grid-cols-[minmax(0,2.1fr)_minmax(0,0.9fr)]">
+              {/* Left Column: Chart, Calendar, Profit sections */}
+              <div className="flex flex-col gap-2 min-w-0 overflow-hidden">
+                {/* Profit/Loss Chart */}
+                <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 overflow-hidden min-w-0">
+                  <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white mb-2 md:mb-3 lg:mb-4">Profit/Loss Over Time</h3>
+                  <div className="w-full h-48 md:h-64 lg:h-72 xl:h-80 relative min-w-0">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                      <StatTrackrLogoWithText 
+                        logoSize="w-32 h-32" 
+                        textSize="text-5xl" 
+                        isDark={isDark}
+                        className="opacity-[0.02]"
+                      />
+                    </div>
+                    <ResponsiveContainer width="100%" height="100%" className="relative z-10">
+                      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis 
+                          dataKey="bet" 
+                          stroke={isDark ? '#ffffff' : '#000000'}
+                          label={{ value: 'Number of Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
+                          tick={{ fill: isDark ? '#ffffff' : '#000000' }}
+                        />
+                        <YAxis 
+                          stroke={isDark ? '#ffffff' : '#000000'}
+                          label={{ value: `Profit/Loss (${currencySymbols[currency]})`, angle: -90, position: 'insideLeft', offset: -10, fill: isDark ? '#ffffff' : '#000000' }}
+                          tick={{ fill: isDark ? '#ffffff' : '#000000' }}
+                          tickCount={7}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: isDark ? '#4b5563' : '#9ca3af',
+                            border: `1px solid ${isDark ? '#9ca3af' : '#9ca3af'}`,
+                            borderRadius: '8px',
+                            color: isDark ? '#FFFFFF' : '#000000'
+                          }}
+                          labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                          labelFormatter={(value: number) => `Bet No: ${value}`}
+                          formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
+                          cursor={{ stroke: isDark ? '#4b5563' : '#9ca3af', strokeWidth: 1 }}
+                        />
+                        <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="3 3" />
+                        <Line 
+                          type="linear" 
+                          dataKey="profit" 
+                          stroke="#8b5cf6" 
+                          strokeWidth={3}
+                          dot={false}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                  <ResponsiveContainer width="100%" height="100%" className="relative z-10">
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis 
-                        dataKey="bet" 
-                        stroke={isDark ? '#ffffff' : '#000000'}
-                        label={{ value: 'Number of Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
-                        tick={{ fill: isDark ? '#ffffff' : '#000000' }}
-                      />
-                      <YAxis 
-                        stroke={isDark ? '#ffffff' : '#000000'}
-                        label={{ value: `Profit/Loss (${currencySymbols[currency]})`, angle: -90, position: 'insideLeft', offset: -10, fill: isDark ? '#ffffff' : '#000000' }}
-                        tick={{ fill: isDark ? '#ffffff' : '#000000' }}
-                        tickCount={7}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: isDark ? '#4b5563' : '#9ca3af',
-                          border: `1px solid ${isDark ? '#9ca3af' : '#9ca3af'}`,
-                          borderRadius: '8px',
-                          color: isDark ? '#FFFFFF' : '#000000'
-                        }}
-                        labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
-                        labelFormatter={(value: number) => `Bet No: ${value}`}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
-                        cursor={{ stroke: isDark ? '#4b5563' : '#9ca3af', strokeWidth: 1 }}
-                      />
-                      <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="3 3" />
-                      <Line 
-                        type="linear" 
-                        dataKey="profit" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={3}
-                        dot={false}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
                 </div>
-              </div>
 
-              {/* Two Containers Below Chart */}
-              <div className="flex gap-2" style={{ height: '550px' }}>
-                {/* Container 1 - Betting Calendar */}
-                <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Betting Calendar</h3>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => setCalendarView('day')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          calendarView === 'day' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Day
-                      </button>
-                      <button 
-                        onClick={() => setCalendarView('week')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          calendarView === 'week' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Week
-                      </button>
-                      <button 
-                        onClick={() => setCalendarView('month')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          calendarView === 'month' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Month
-                      </button>
-                      <button 
-                        onClick={() => setCalendarView('year')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          calendarView === 'year' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Year
-                      </button>
+                {/* Calendar + Profit by Bookmaker row */}
+                <div className="flex gap-1.5 md:gap-2 min-w-0 overflow-hidden flex-shrink-0" style={{ height: 'clamp(400px, 50vh, 550px)' }}>
+                  {/* Betting Calendar */}
+                  <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0">
+                    <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
+                      <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Betting Calendar</h3>
+                      <div className="flex gap-1 md:gap-1.5 lg:gap-2">
+                        {(['day','week','month','year'] as const).map(view => (
+                          <button
+                            key={view}
+                            onClick={() => setCalendarView(view)}
+                            className={`px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 text-[10px] md:text-xs font-medium rounded-lg ${
+                              calendarView === view
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
+                            }`}
+                          >
+                            {view === 'day' ? 'Day' : view === 'week' ? 'Week' : view === 'month' ? 'Month' : 'Year'}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Week Range Filter - only show when in week view */}
-                  {calendarView === 'week' && (
-                    <div className="flex justify-center gap-2 mb-3">
-                      <button 
-                        onClick={() => setWeekRange('1-26')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          weekRange === '1-26' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Weeks 1-26
-                      </button>
-                      <button 
-                        onClick={() => setWeekRange('27-52')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                          weekRange === '27-52' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                        }`}
-                      >
-                        Weeks 27-52
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Calendar Grid */}
-                  <div className="mb-3" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
-                    <div className="flex items-center justify-between mb-3">
-                      <button
-                        onClick={navigatePrevious}
-                        className="p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors"
-                        title="Previous"
-                      >
-                        <svg className="w-5 h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                      </button>
-                      <div className="text-center text-sm font-semibold text-slate-900 dark:text-white">{calendarData.monthName}</div>
-                      <button
-                        onClick={navigateNext}
-                        className="p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors"
-                        title="Next"
-                      >
-                        <svg className="w-5 h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    {/* Day headers - only for day view (shows days of month) */}
-                    {calendarView === 'day' && (
-                      <div className="grid grid-cols-7 gap-2 mb-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                          <div key={day} className="text-center text-xs font-medium text-slate-600 dark:text-slate-400">{day}</div>
+                    {calendarView === 'week' && (
+                      <div className="flex justify-center gap-2 mb-3">
+                        {(['1-26','27-52'] as const).map(range => (
+                          <button
+                            key={range}
+                            onClick={() => setWeekRange(range)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                              weekRange === range
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
+                            }`}
+                          >
+                            {range === '1-26' ? 'Weeks 1-26' : 'Weeks 27-52'}
+                          </button>
                         ))}
                       </div>
                     )}
-                    
-                    {/* Calendar days */}
-                    <div className={`grid h-full ${
-                      calendarView === 'day' ? 'grid-cols-7 grid-rows-5 gap-2' :
-                      calendarView === 'week' ? 'grid-cols-7 grid-rows-4 gap-2' :
-                      calendarView === 'month' ? 'grid-cols-3 grid-rows-4 gap-1' :
-                      'grid-cols-2 grid-rows-1 gap-2'
-                    }`}>
-                      {calendarData.calendar.map((item, idx) => {
-                        const handleClick = () => {
-                          if (!item.day) return;
-                          
-                          const year = calendarDate.getFullYear();
-                          const month = calendarDate.getMonth();
-                          
-                          if (calendarView === 'day') {
-                            const date = new Date(year, month, parseInt(item.day));
-                            setSelectedDate(date);
-                            setSelectedDateType('day');
-                          } else if (calendarView === 'week') {
-                            const weekNum = parseInt(item.day);
-                            const startOfYear = new Date(year, 0, 1);
-                            const weekStart = new Date(startOfYear);
-                            weekStart.setDate(startOfYear.getDate() + (weekNum - 1) * 7);
-                            setSelectedDate(weekStart);
-                            setSelectedDateType('week');
-                          } else if (calendarView === 'month') {
-                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            const monthIndex = monthNames.indexOf(item.day);
-                            if (monthIndex !== -1) {
-                              const date = new Date(year, monthIndex, 1);
-                              setSelectedDate(date);
-                              setSelectedDateType('month');
-                            }
-                          } else if (calendarView === 'year') {
-                            const selectedYear = parseInt(item.day);
-                            const date = new Date(selectedYear, 0, 1);
-                            setSelectedDate(date);
-                            setSelectedDateType('year');
-                          }
-                        };
-                        
-                        return (
-                        <div
-                          key={idx}
-                          onClick={handleClick}
-                          className={`flex flex-col items-center justify-center rounded-lg ${calendarView === 'month' ? 'text-xs' : 'text-xs'} font-medium cursor-pointer transition-all hover:scale-105 ${
-                            !item.day ? 'invisible' :
-                            item.profit === 0 ? 'bg-slate-200 dark:bg-gray-700 text-slate-600 dark:text-slate-400' :
-                            item.profit > 100 ? 'bg-green-600 dark:bg-green-500 text-white' :
-                            item.profit > 0 ? 'bg-green-400 dark:bg-green-600 text-white' :
-                            item.profit < -50 ? 'bg-red-600 dark:bg-red-500 text-white' :
-                            'bg-red-400 dark:bg-red-600 text-white'
-                          }`}
+                    <div className="mb-2 md:mb-3 flex-1 min-h-0 flex flex-col overflow-hidden">
+                      <div className="flex items-center justify-between mb-2 md:mb-3 flex-shrink-0">
+                        <button
+                          onClick={navigatePrevious}
+                          className="p-0.5 md:p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors"
+                          title="Previous"
                         >
-                          <span className={`${
-                            calendarView === 'month' ? 'text-base font-bold' :
-                            calendarView === 'year' ? 'text-base font-bold' :
-                            'text-base'
-                          }`}>{item.day}</span>
-                          {item.day && item.profit !== 0 && (
-                            <span className={`${
-                              calendarView === 'month' ? 'text-xl font-bold' :
-                              calendarView === 'year' ? 'text-xl font-bold' :
-                              calendarView === 'week' ? 'text-xs' :
-                              'text-xs'
-                            } mt-0.5`}>{currencySymbols[currency]}{
-                              (calendarView === 'day' || calendarView === 'week') && Math.abs(item.profit) >= 1000
-                                ? (Math.abs(item.profit) / 1000).toFixed(1) + 'K'
-                                : Math.abs(item.profit).toFixed(0)
-                            }</span>
-                          )}
+                          <svg className="w-4 h-4 md:w-5 md:h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <div className="text-center text-xs md:text-sm font-semibold text-slate-900 dark:text-white">{calendarData.monthName}</div>
+                        <button
+                          onClick={navigateNext}
+                          className="p-0.5 md:p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors"
+                          title="Next"
+                        >
+                          <svg className="w-4 h-4 md:w-5 md:h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                      {calendarView === 'day' && (
+                        <div className="grid grid-cols-7 gap-1 md:gap-1.5 lg:gap-2 mb-1 md:mb-2 flex-shrink-0">
+                          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => (
+                            <div key={day} className="text-center text-[10px] md:text-xs font-medium text-slate-600 dark:text-slate-400">{day}</div>
+                          ))}
                         </div>
-                        );
-                      })}
+                      )}
+                      <div className={`grid flex-1 min-h-0 overflow-hidden ${
+                        calendarView === 'day' ? 'grid-cols-7 grid-rows-5 gap-1 md:gap-1.5 lg:gap-2' :
+                        calendarView === 'week' ? 'grid-cols-7 grid-rows-4 gap-1 md:gap-1.5 lg:gap-2' :
+                        calendarView === 'month' ? 'grid-cols-3 grid-rows-4 gap-0.5 md:gap-1' :
+                        'grid-cols-2 grid-rows-1 gap-1 md:gap-2'
+                      }`}>
+                        {calendarData.calendar.map((item, idx) => {
+                          const handleClick = () => {
+                            if (!item.day) return;
+                            const year = calendarDate.getFullYear();
+                            const month = calendarDate.getMonth();
+                            if (calendarView === 'day') {
+                              setSelectedDate(new Date(year, month, parseInt(item.day)));
+                              setSelectedDateType('day');
+                            } else if (calendarView === 'week') {
+                              const weekNum = parseInt(item.day);
+                              const startOfYear = new Date(year, 0, 1);
+                              const weekStart = new Date(startOfYear);
+                              weekStart.setDate(startOfYear.getDate() + (weekNum - 1) * 7);
+                              setSelectedDate(weekStart);
+                              setSelectedDateType('week');
+                            } else if (calendarView === 'month') {
+                              const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              const monthIndex = monthNames.indexOf(item.day);
+                              if (monthIndex !== -1) {
+                                setSelectedDate(new Date(year, monthIndex, 1));
+                                setSelectedDateType('month');
+                              }
+                            } else if (calendarView === 'year') {
+                              const selectedYear = parseInt(item.day);
+                              setSelectedDate(new Date(selectedYear, 0, 1));
+                              setSelectedDateType('year');
+                            }
+                          };
+
+                          return (
+                            <div
+                              key={idx}
+                              onClick={handleClick}
+                              className={`flex flex-col items-center justify-center rounded-lg text-[10px] md:text-xs font-medium cursor-pointer transition-all hover:scale-105 overflow-hidden p-0.5 min-w-0 w-full h-full ${
+                                !item.day ? 'invisible' :
+                                item.profit === 0 ? 'bg-slate-200 dark:bg-gray-700 text-slate-600 dark:text-slate-400' :
+                                item.profit > 100 ? 'bg-green-600 dark:bg-green-500 text-white' :
+                                item.profit > 0 ? 'bg-green-400 dark:bg-green-600 text-white' :
+                                item.profit < -50 ? 'bg-red-600 dark:bg-red-500 text-white' :
+                                'bg-red-400 dark:bg-red-600 text-white'
+                              }`}
+                            >
+                              <span className={`truncate w-full text-center leading-tight ${
+                                calendarView === 'month' ? 'text-xs md:text-sm lg:text-base font-bold' :
+                                calendarView === 'year' ? 'text-xs md:text-sm lg:text-base font-bold' :
+                                'text-xs md:text-sm'
+                              }`}>{item.day}</span>
+                              {item.day && item.profit !== 0 && (
+                                <span className={`truncate w-full text-center leading-tight ${
+                                  calendarView === 'month' ? 'text-xs md:text-sm lg:text-base xl:text-xl font-bold' :
+                                  calendarView === 'year' ? 'text-xs md:text-sm lg:text-base xl:text-xl font-bold' :
+                                  calendarView === 'week' ? 'text-[8px] md:text-[10px]' :
+                                  'text-[8px] md:text-[10px]'
+                                } mt-0.5`}>{currencySymbols[currency]}{
+                                  (calendarView === 'day' || calendarView === 'week') && Math.abs(item.profit) >= 1000
+                                    ? (Math.abs(item.profit) / 1000).toFixed(1) + 'K'
+                                    : Math.abs(item.profit).toFixed(0)
+                                }</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 text-[10px] md:text-xs mt-auto pt-1 md:pt-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-green-600" />
+                        <span className="text-slate-600 dark:text-slate-400">Profit</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-red-600" />
+                        <span className="text-slate-600 dark:text-slate-400">Loss</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-slate-200 dark:bg-gray-700" />
+                        <span className="text-slate-600 dark:text-slate-400">No Bets</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Legend */}
-                  <div className="flex items-center justify-center gap-4 text-xs mt-auto pt-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 rounded bg-green-600"></div>
-                      <span className="text-slate-600 dark:text-slate-400">Profit</span>
+
+                  {/* Profit by Bookmaker */}
+                  <div className="chart-container-no-focus flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col min-w-0 overflow-hidden">
+                    <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
+                      <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">Profitable only</span>
+                        <button
+                          onClick={() => setShowProfitableBookmakersOnly(!showProfitableBookmakersOnly)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            showProfitableBookmakersOnly ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              showProfitableBookmakersOnly ? 'translate-x-5' : 'translate-x-0.5'
+                            }`}
+                          />
+                        </button>
+                      </label>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 rounded bg-red-600"></div>
-                      <span className="text-slate-600 dark:text-slate-400">Loss</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 rounded bg-slate-200 dark:bg-gray-700"></div>
-                      <span className="text-slate-600 dark:text-slate-400">No Bets</span>
+                    <div className="flex-1 w-full">
+                      {profitByBookmaker.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
+                          No bookmaker data available
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={profitByBookmaker} margin={{ top: 40, right: 20, left: 20, bottom: 5 }}>
+                            <XAxis 
+                              dataKey="bookmaker" 
+                              stroke={isDark ? '#ffffff' : '#000000'}
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                              tick={{ fontSize: 12, fill: isDark ? '#ffffff' : '#000000' }}
+                            />
+                            <YAxis 
+                              stroke={isDark ? '#ffffff' : '#000000'}
+                              label={{ value: `Profit (${currencySymbols[currency]})`, angle: -90, position: 'insideLeft', offset: -10, fill: isDark ? '#ffffff' : '#000000' }}
+                              tick={{ fill: isDark ? '#ffffff' : '#000000' }}
+                              tickCount={10}
+                            />
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: isDark ? '#4b5563' : '#9ca3af',
+                                border: `1px solid ${isDark ? '#9ca3af' : '#9ca3af'}`,
+                                borderRadius: '8px',
+                                color: isDark ? '#FFFFFF' : '#000000'
+                              }}
+                              formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
+                              cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
+                            />
+                            <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeWidth={2} />
+                            <Bar dataKey="profit" radius={[8, 8, 0, 0]}>
+                              {profitByBookmaker.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Container 2 - Profit by Bookmaker Bar Graph */}
-                <div className="chart-container-no-focus flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
+                {/* Profit by Market */}
+                <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0">
+                  <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
+                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Market</h3>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <span className="text-xs text-slate-600 dark:text-slate-400">Profitable only</span>
                       <button
-                        onClick={() => setShowProfitableBookmakersOnly(!showProfitableBookmakersOnly)}
+                        onClick={() => setShowProfitableMarketsOnly(!showProfitableMarketsOnly)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                          showProfitableBookmakersOnly ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+                          showProfitableMarketsOnly ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            showProfitableBookmakersOnly ? 'translate-x-5' : 'translate-x-0.5'
+                            showProfitableMarketsOnly ? 'translate-x-5' : 'translate-x-0.5'
                           }`}
                         />
                       </button>
                     </label>
                   </div>
-                  <div className="flex-1 w-full">
-                    {profitByBookmaker.length === 0 ? (
+                  <div className="flex-1 w-full min-h-0">
+                    {profitByMarket.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
-                        No bookmaker data available
+                        No market data available
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={profitByBookmaker}
-                          margin={{ top: 40, right: 20, left: 20, bottom: 5 }}
-                        >
+                        <BarChart data={profitByMarket} layout="vertical" margin={{ top: 5, right: 150, left: 80, bottom: 7 }}>
                           <XAxis 
-                            dataKey="bookmaker" 
+                            type="number"
                             stroke={isDark ? '#ffffff' : '#000000'}
-                            angle={-45}
-                            textAnchor="end"
-                            height={80}
-                            tick={{ fontSize: 12, fill: isDark ? '#ffffff' : '#000000' }}
-                          />
-                          <YAxis 
-                            stroke={isDark ? '#ffffff' : '#000000'}
-                            label={{ value: `Profit (${currencySymbols[currency]})`, angle: -90, position: 'insideLeft', offset: -10, fill: isDark ? '#ffffff' : '#000000' }}
+                            label={{ value: `Profit (${currencySymbols[currency]})`, position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
                             tick={{ fill: isDark ? '#ffffff' : '#000000' }}
                             tickCount={10}
+                          />
+                          <YAxis 
+                            type="category"
+                            dataKey="market"
+                            stroke={isDark ? '#ffffff' : '#000000'}
+                            width={90}
+                            tick={{ fill: isDark ? '#ffffff' : '#000000' }}
                           />
                           <Tooltip 
                             contentStyle={{
@@ -1276,9 +1285,9 @@ function JournalContent() {
                             formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
                             cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
                           />
-                          <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeWidth={2} />
-                          <Bar dataKey="profit" radius={[8, 8, 0, 0]}>
-                            {profitByBookmaker.map((entry, index) => (
+                          <ReferenceLine x={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeWidth={2} />
+                          <Bar dataKey="profit" radius={[0, 8, 8, 0]}>
+                            {profitByMarket.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
                             ))}
                           </Bar>
@@ -1287,58 +1296,57 @@ function JournalContent() {
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Container 3 - Bet History */}
-                <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 flex flex-col flex-shrink-0 overflow-hidden">
-                <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Bet History</h3>
-                  <div className="flex items-center gap-2">
+              {/* Right Column: Bet History */}
+              <div className="bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-2 md:p-3 lg:p-4 flex flex-col overflow-hidden min-w-0 max-w-sm lg:h-full">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2 flex-shrink-0">
+                  <h3 className="text-xs md:text-sm lg:text-base font-semibold text-slate-900 dark:text-white">Bet History</h3>
+                  <div className="flex items-center gap-1 md:gap-2">
                     <button
                       onClick={() => setBetHistoryPage(prev => Math.max(0, prev - 1))}
                       disabled={betHistoryPage === 0}
-                      className="p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+                      className="p-0.5 md:p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                       title="Previous"
                     >
-                      <svg className="w-5 h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/>
+                      <svg className="w-3 h-3 md:w-4 md:h-4 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {Math.min((betHistoryPage + 1) * 20, filteredBets.length)} of {filteredBets.length} bets
+                    <span className="text-[10px] md:text-xs text-slate-600 dark:text-slate-400">
+                      {Math.min((betHistoryPage + 1) * 20, filteredBets.length)} of {filteredBets.length}
                     </span>
                     <button
                       onClick={() => setBetHistoryPage(prev => prev + 1)}
                       disabled={betHistoryPage >= Math.floor(filteredBets.length / 20)}
-                      className="p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+                      className="p-0.5 md:p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                       title="Next"
                     >
-                      <svg className="w-5 h-5 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                      <svg className="w-3 h-3 md:w-4 md:h-4 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
                   </div>
                 </div>
-                <div className="space-y-3 overflow-y-auto flex-1">
+                <div className="space-y-1.5 md:space-y-2 overflow-y-auto flex-1 min-h-0">
                   {filteredBets.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                      <p className="text-lg mb-2">No bets found</p>
-                      <p className="text-sm">Add your first bet to get started!</p>
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <p className="text-sm md:text-base mb-1">No bets found</p>
+                      <p className="text-xs">Add your first bet to get started!</p>
                     </div>
                   ) : (
                     filteredBets.slice(betHistoryPage * 20, (betHistoryPage + 1) * 20).map((bet) => {
-                      // Convert bet amounts to selected currency
                       const convertedStake = convertCurrency(bet.stake, bet.currency, currency);
                       const profit = bet.result === 'win' 
                         ? convertedStake * (bet.odds - 1) 
                         : bet.result === 'loss' 
                         ? -convertedStake 
                         : 0;
-                      
                       const betDate = new Date(bet.date);
                       const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
                       return (
-                        <div key={bet.id} className={`p-3 rounded-lg border-2 ${
+                        <div key={bet.id} className={`p-1.5 md:p-2 rounded-lg border-2 ${
                           bet.result === 'pending' 
                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
                             : bet.result === 'win' 
@@ -1347,32 +1355,30 @@ function JournalContent() {
                             ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-500 dark:border-gray-400'
                             : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
                         }`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
                             {bet.result !== 'pending' && (
-                              <span className={`text-xs font-bold ${
+                              <span className={`text-[9px] md:text-[10px] font-bold ${
                                 bet.result === 'win' 
                                   ? 'text-green-600 dark:text-green-400'
                                   : bet.result === 'void'
                                   ? 'text-gray-600 dark:text-gray-400'
                                   : 'text-red-600 dark:text-red-400'
                               }`}>
-                                {bet.result === 'void' ? 'VOID' : 
-                                  `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
-                                }
+                                {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
                               </span>
                             )}
                             {bet.result === 'pending' && (
-                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                              <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
                             )}
                           </div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
-                          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                            <span>Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
-                            <span>Odds: {bet.odds.toFixed(2)}</span>
+                          <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
+                          <div className="flex items-center justify-between text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 flex-wrap gap-1">
+                            <span className="break-words">Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
+                            <span className="whitespace-nowrap">Odds: {bet.odds.toFixed(2)}</span>
                           </div>
                           {(bet.market || bet.opponent) && (
-                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                            <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-500 break-words">
                               {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
                             </div>
                           )}
@@ -1381,80 +1387,8 @@ function JournalContent() {
                     })
                   )}
                 </div>
-                </div>
               </div>
-
-          </div>
-
-        {/* Full-Width Container Below - Spans entire width */}
-        <div className="chart-container-no-focus w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-6 mt-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Profit by Market</h3>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xs text-slate-600 dark:text-slate-400">Profitable only</span>
-              <button
-                onClick={() => setShowProfitableMarketsOnly(!showProfitableMarketsOnly)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  showProfitableMarketsOnly ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    showProfitableMarketsOnly ? 'translate-x-5' : 'translate-x-0.5'
-                  }`}
-                />
-              </button>
-            </label>
-          </div>
-          <div className="w-full" style={{ height: '350px' }}>
-            {profitByMarket.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
-                No market data available
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={profitByMarket}
-                  layout="vertical"
-                  margin={{ top: 5, right: 150, left: 80, bottom: 7 }}
-                >
-                  <XAxis 
-                    type="number"
-                    stroke={isDark ? '#ffffff' : '#000000'}
-                    label={{ value: `Profit (${currencySymbols[currency]})`, position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
-                    tick={{ fill: isDark ? '#ffffff' : '#000000' }}
-                    tickCount={10}
-                  />
-                  <YAxis 
-                    type="category"
-                    dataKey="market"
-                    stroke={isDark ? '#ffffff' : '#000000'}
-                    width={90}
-                    tick={{ fill: isDark ? '#ffffff' : '#000000' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: isDark ? '#4b5563' : '#9ca3af',
-                      border: `1px solid ${isDark ? '#9ca3af' : '#9ca3af'}`,
-                      borderRadius: '8px',
-                      color: isDark ? '#FFFFFF' : '#000000'
-                    }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
-                    cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
-                  />
-                  <ReferenceLine x={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeWidth={2} />
-                  <Bar dataKey="profit" radius={[0, 8, 8, 0]}>
-                    {profitByMarket.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-      </div>
-
+            </div>
       {/* Mobile Content - Hidden when tracking is shown */}
       {!showMobileTracking && (
       <div className="lg:hidden w-full px-3 py-4 pb-20 space-y-2 overflow-y-auto">
@@ -1480,7 +1414,7 @@ function JournalContent() {
                   >
                     {avatarUrl ? (
                       <img 
-                        src={avatarUrl} 
+                        src={avatarUrl ?? undefined} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -1950,25 +1884,25 @@ function JournalContent() {
 
         {/* 4. Profit by Bookmaker */}
         <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
-            <label className="flex items-center gap-1.5 cursor-pointer">
+          <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
+            <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
+            <label className="flex items-center gap-2 cursor-pointer">
               <span className="text-xs text-slate-600 dark:text-slate-400">Profitable only</span>
               <button
                 onClick={() => setShowProfitableBookmakersOnly(!showProfitableBookmakersOnly)}
-                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   showProfitableBookmakersOnly ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <span
-                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                    showProfitableBookmakersOnly ? 'translate-x-4.5' : 'translate-x-0.5'
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    showProfitableBookmakersOnly ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
                 />
               </button>
             </label>
           </div>
-          <div className="w-full h-80">
+          <div className="flex-1 w-full">
             {profitByBookmaker.length === 0 ? (
               <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
                 No bookmaker data available
@@ -2357,7 +2291,7 @@ function JournalContent() {
           </button>
         </div>
       </div>
-      </div>
     </div>
+  </div>
   );
 }
