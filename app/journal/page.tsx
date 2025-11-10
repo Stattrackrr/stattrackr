@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
@@ -13,7 +13,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function JournalPage() {
   return (
     <ThemeProvider>
-      <JournalContent />
+      <Suspense fallback={<div className="min-h-screen bg-white dark:bg-gray-900" />}>
+        <JournalContent />
+      </Suspense>
     </ThemeProvider>
   );
 }
