@@ -100,6 +100,7 @@ function JournalContent() {
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   
   // Sidebar state
+  const [sidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   
@@ -171,7 +172,7 @@ function JournalContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Left sidebar is always visible on desktop in desktop-only mode
+  // Left sidebar remains open on desktop for the desktop-focused layout
 
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
@@ -694,25 +695,39 @@ function JournalContent() {
           --right-panel-width: 400px;
           --gap-size: 6px;
         }
-        /* Custom scrollbar colors for light/dark mode - force always visible */
+        /* Hide scrollbars globally except for custom-scrollbar class */
+        * {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        *::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+        
+        /* Custom scrollbar for center content */
         .custom-scrollbar {
           scrollbar-width: thin;
-          scrollbar-color: #d1d5db transparent;
-          overflow-y: scroll;
+          scrollbar-color: transparent transparent;
+        }
+        .custom-scrollbar:hover {
+          scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
         }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 10px;
-          height: 10px;
-          -webkit-appearance: none;
+          display: block;
+          width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 6px;
-          border: 2px solid transparent;
-          background-clip: content-box;
+          background-color: transparent;
+          border-radius: 4px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background-color: rgba(156, 163, 175, 0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(156, 163, 175, 0.7);
         }
         
         /* Remove focus border from chart container and all children */
@@ -744,17 +759,19 @@ function JournalContent() {
         }
       `}</style>
       
-      {/* Left Sidebar - Always visible on desktop */}
-      <div className="hidden lg:block">
-        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-      </div>
+      {/* Left Sidebar - Collapsible */}
+      {sidebarOpen && (
+        <div className="hidden lg:block">
+          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+        </div>
+      )}
       
       {/* Center Content - Desktop */}
       <div 
         className="custom-scrollbar hidden lg:block min-w-0 overflow-hidden"
         style={{
           position: 'fixed',
-          left: 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))',
+          left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))' : 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + 16px)',
           right: isLargeScreen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : rightSidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : '16px',
           top: '16px',
           paddingTop: '0',
