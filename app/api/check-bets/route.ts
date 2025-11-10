@@ -1,22 +1,26 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const authHeader = headers().get('authorization');
+    const authHeader = request.headers.get('authorization');
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('host') || '';
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
-      `${headers().get('x-forwarded-proto') || 'https'}://${headers().get('host')}`;
-    const authConfig = process.env.CRON_SECRET
-      ? { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }
-      : {};
+      (host ? `${forwardedProto}://${host}` : 'http://localhost:3000');
+
+    const authHeaders = process.env.CRON_SECRET
+      ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
+      : undefined;
+
+    const authConfig: RequestInit = authHeaders ? { headers: authHeaders } : {};
 
     const results = {
       trackedBets: { updated: 0, total: 0, error: null as string | null },
