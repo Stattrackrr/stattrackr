@@ -2,9 +2,22 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export async function GET() {
   try {
+    const authHeader = headers().get('authorization');
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      `${headers().get('x-forwarded-proto') || 'https'}://${headers().get('host')}`;
+    const authConfig = process.env.CRON_SECRET
+      ? { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }
+      : {};
+
     const results = {
       trackedBets: { updated: 0, total: 0, error: null as string | null },
       journalBets: { updated: 0, total: 0, error: null as string | null },
@@ -12,7 +25,7 @@ export async function GET() {
 
     // Check tracked bets
     try {
-      const trackedResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-tracked-bets`);
+      const trackedResponse = await fetch(`${baseUrl}/api/check-tracked-bets`, authConfig);
       if (trackedResponse.ok) {
         const data = await trackedResponse.json();
         results.trackedBets = { updated: data.updated || 0, total: data.total || 0, error: null };
@@ -25,7 +38,7 @@ export async function GET() {
 
     // Check journal bets
     try {
-      const journalResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-journal-bets`);
+      const journalResponse = await fetch(`${baseUrl}/api/check-journal-bets`, authConfig);
       if (journalResponse.ok) {
         const data = await journalResponse.json();
         results.journalBets = { updated: data.updated || 0, total: data.total || 0, error: null };

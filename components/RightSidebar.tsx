@@ -939,9 +939,10 @@ export default function RightSidebar({
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {showAdvanced ? (
           // Advanced Stats View
-          <div className="p-3 flex flex-col gap-1 h-full">
+          <div className="h-full overflow-y-auto custom-scrollbar px-4 md:px-6 py-5">
+            <div className="max-w-2xl mx-auto flex flex-col gap-4 pb-6">
             {/* Win Rate Progress Bar - At the top */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Overall Win Rate</h4>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -978,85 +979,73 @@ export default function RightSidebar({
             </div>
             
             {/* Over vs Under Performance */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <h4 className="text-xs font-semibold text-black dark:text-white mb-2 text-center">Over vs Under</h4>
-              <div className="flex items-start gap-2">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <h4 className="text-sm font-semibold text-black dark:text-white mb-3 text-center">Over vs Under</h4>
+              <div className="flex flex-col md:flex-row items-stretch gap-4">
                 {/* Over Side */}
-                <div className="flex-1 space-y-2">
-                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 text-center mb-1">Over</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Total:</span>
-                    <span className="text-xs font-bold text-black dark:text-white">{overBets.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Record:</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-green-600 dark:text-green-400">{overWins}</span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">-</span>
-                      <span className="text-xs font-bold text-red-600 dark:text-red-400">{overLosses}</span>
+                <div className="flex-1 space-y-3">
+                  <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 text-center">Over</div>
+                  <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
+                    <span>Total:</span>
+                    <span className="text-right text-black dark:text-white font-semibold">{overBets.length}</span>
+                    <span>Record:</span>
+                    <div className="flex items-center justify-end gap-1 text-black dark:text-white">
+                      <span className="font-bold text-green-600 dark:text-green-400">{overWins}</span>
+                      <span>-</span>
+                      <span className="font-bold text-red-600 dark:text-red-400">{overLosses}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Hit Rate:</span>
-                    <span className="text-sm font-bold text-black dark:text-white">{overWinRate}%</span>
+                    <span>Hit Rate:</span>
+                    <span className="text-right text-black dark:text-white font-bold">{overWinRate}%</span>
                   </div>
                 </div>
-                
-                {/* Divider with VS */}
-                <div className="flex-shrink-0 flex items-center justify-center px-2">
-                  <div className="relative">
-                    <div className="h-20 w-px bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold">
-                      VS
-                    </div>
+
+                <div className="hidden md:flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                    VS
                   </div>
                 </div>
-                
+
                 {/* Under Side */}
-                <div className="flex-1 space-y-2">
-                  <div className="text-xs font-medium text-purple-600 dark:text-purple-400 text-center mb-1">Under</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Total:</span>
-                    <span className="text-xs font-bold text-black dark:text-white">{underBets.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Record:</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-green-600 dark:text-green-400">{underWins}</span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">-</span>
-                      <span className="text-xs font-bold text-red-600 dark:text-red-400">{underLosses}</span>
+                <div className="flex-1 space-y-3">
+                  <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 text-center">Under</div>
+                  <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
+                    <span>Total:</span>
+                    <span className="text-right text-black dark:text-white font-semibold">{underBets.length}</span>
+                    <span>Record:</span>
+                    <div className="flex items-center justify-end gap-1 text-black dark:text-white">
+                      <span className="font-bold text-green-600 dark:text-green-400">{underWins}</span>
+                      <span>-</span>
+                      <span className="font-bold text-red-600 dark:text-red-400">{underLosses}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Hit Rate:</span>
-                    <span className="text-sm font-bold text-black dark:text-white">{underWinRate}%</span>
+                    <span>Hit Rate:</span>
+                    <span className="text-right text-black dark:text-white font-bold">{underWinRate}%</span>
                   </div>
                 </div>
               </div>
             </div>
             
             {/* Bookmaker Performance */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-gray-200 dark:border-gray-700 flex-[1.5] min-h-0 flex flex-col overflow-y-auto custom-scrollbar">
-              <h4 className="text-xs font-semibold text-black dark:text-white mb-1.5">Bookmaker Performance</h4>
-              <div className="space-y-0.5 flex-1 flex flex-col justify-around">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <h4 className="text-sm font-semibold text-black dark:text-white mb-3">Bookmaker Performance</h4>
+              <div className="space-y-2.5">
                 {bookmakerStats.map((stat) => (
-                  <div key={stat.bookmaker} className="flex items-center gap-14">
-                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400 truncate w-[70px] flex-shrink-0">
+                  <div key={stat.bookmaker} className="flex items-center gap-3">
+                    <span className="flex-1 text-xs font-semibold text-purple-600 dark:text-purple-400 truncate">
                       {stat.bookmaker === 'Manual Entry' ? 'Manual' : stat.bookmaker}
                     </span>
-                    <div className="flex items-center gap-1 text-xs w-[45px] flex-shrink-0">
+                    <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                       <span className="font-bold text-green-600 dark:text-green-400">{stat.wins}</span>
-                      <span className="text-gray-600 dark:text-gray-400">-</span>
+                      <span>-</span>
                       <span className="font-bold text-red-600 dark:text-red-400">{stat.losses}</span>
                     </div>
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 flex-shrink-0">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-emerald-600 h-1.5 rounded-full transition-all duration-300"
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-300"
                           style={{ width: `${stat.hitRate}%` }}
                         />
                       </div>
-                      <span className="text-xs font-bold text-black dark:text-white w-[38px] text-right flex-shrink-0">
+                      <span className="w-10 text-right text-xs font-bold text-black dark:text-white">
                         {stat.hitRate}%
                       </span>
                     </div>
@@ -1064,29 +1053,29 @@ export default function RightSidebar({
                 ))}
               </div>
             </div>
-            
+
             {/* Winners by Odds */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-gray-200 dark:border-gray-700 flex-[1.8] min-h-0 flex flex-col">
-              <h4 className="text-xs font-semibold text-black dark:text-white mb-1.5">Winners by Odds</h4>
-              <div className="space-y-0.5 flex-1 flex flex-col justify-around">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <h4 className="text-sm font-semibold text-black dark:text-white mb-3">Winners by Odds</h4>
+              <div className="space-y-2.5">
                 {oddsRanges.map((range) => {
                   const stats = getOddsRangeStats(range.min, range.max);
                   return (
-                    <div key={range.label} className="flex items-center gap-14">
-                      <span className="text-xs text-gray-600 dark:text-gray-400 w-[70px] flex-shrink-0">{range.label}:</span>
-                      <div className="flex items-center gap-1 text-xs w-[45px] flex-shrink-0">
+                    <div key={range.label} className="flex items-center gap-3">
+                      <span className="w-24 text-xs text-gray-600 dark:text-gray-400">{range.label}</span>
+                      <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                         <span className="font-bold text-green-600 dark:text-green-400">{stats.wins}</span>
-                        <span className="text-gray-600 dark:text-gray-400">-</span>
+                        <span>-</span>
                         <span className="font-bold text-red-600 dark:text-red-400">{stats.losses}</span>
                       </div>
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 flex-shrink-0">
-                          <div 
-                            className="bg-gradient-to-r from-green-500 to-emerald-600 h-1.5 rounded-full transition-all duration-300"
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-300"
                             style={{ width: `${stats.winRate}%` }}
                           />
                         </div>
-                        <span className="text-xs font-bold text-black dark:text-white w-[38px] text-right flex-shrink-0">
+                        <span className="w-10 text-right text-xs font-bold text-black dark:text-white">
                           {stats.winRate}%
                         </span>
                       </div>
@@ -1094,6 +1083,7 @@ export default function RightSidebar({
                   );
                 })}
               </div>
+            </div>
             </div>
           </div>
         ) : (
@@ -1105,11 +1095,11 @@ export default function RightSidebar({
           </div>
         ) : (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+           <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {paginatedBets.map((bet) => (
               <div
                 key={bet.id}
-                className={`bg-white dark:bg-slate-800 rounded-lg p-3 border-2 relative group ${
+                className={`bg-white dark:bg-slate-800 rounded-lg p-2.5 border-2 relative group ${
                   bet.result === 'win' 
                     ? 'border-green-500 dark:border-green-400' 
                     : bet.result === 'loss' 
