@@ -100,7 +100,6 @@ function JournalContent() {
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   
   // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   
@@ -172,24 +171,7 @@ function JournalContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Handle left sidebar toggle with smart right sidebar behavior
-  const handleSidebarToggle = () => {
-    if (isLargeScreen) {
-      // Large screens: left sidebar toggles independently
-      setSidebarOpen(!sidebarOpen);
-    } else {
-      // Small/medium screens: opening left closes right, closing left opens right
-      if (sidebarOpen) {
-        // Currently open, closing it
-        setSidebarOpen(false);
-        setRightSidebarOpen(true);
-      } else {
-        // Currently closed, opening it
-        setSidebarOpen(true);
-        setRightSidebarOpen(false);
-      }
-    }
-  };
+  // Left sidebar is always visible on desktop in desktop-only mode
 
   // Fetch bets from Supabase and check subscription
   useEffect(() => {
@@ -712,39 +694,25 @@ function JournalContent() {
           --right-panel-width: 400px;
           --gap-size: 6px;
         }
-        /* Hide scrollbars globally except for custom-scrollbar class */
-        * {
-          scrollbar-width: none; /* Firefox */
-          -ms-overflow-style: none; /* IE and Edge */
-        }
-        *::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-        }
-        
-        /* Custom scrollbar for center content */
+        /* Custom scrollbar colors for light/dark mode - force always visible */
         .custom-scrollbar {
           scrollbar-width: thin;
-          scrollbar-color: transparent transparent;
-        }
-        .custom-scrollbar:hover {
-          scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+          scrollbar-color: #d1d5db transparent;
+          overflow-y: scroll;
         }
         .custom-scrollbar::-webkit-scrollbar {
-          display: block;
-          width: 8px;
+          width: 10px;
+          height: 10px;
+          -webkit-appearance: none;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: transparent;
-          border-radius: 4px;
-        }
-        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-          background-color: rgba(156, 163, 175, 0.5);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(156, 163, 175, 0.7);
+          background-color: #cbd5e1;
+          border-radius: 6px;
+          border: 2px solid transparent;
+          background-clip: content-box;
         }
         
         /* Remove focus border from chart container and all children */
@@ -776,30 +744,17 @@ function JournalContent() {
         }
       `}</style>
       
-      {/* Left Sidebar - Collapsible */}
-      {sidebarOpen && (
-        <div className="hidden lg:block">
-          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
-        </div>
-      )}
-      
-      {/* Sidebar Toggle Button - Visible on lg and up */}
-      <button
-        onClick={handleSidebarToggle}
-        className="hidden lg:fixed lg:flex top-8 left-8 z-50 w-10 h-10 items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-        title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-        </svg>
-      </button>
+      {/* Left Sidebar - Always visible on desktop */}
+      <div className="hidden lg:block">
+        <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+      </div>
       
       {/* Center Content - Desktop */}
       <div 
         className="custom-scrollbar hidden lg:block min-w-0 overflow-hidden"
         style={{
           position: 'fixed',
-          left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))' : 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + 16px)',
+          left: 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width) + var(--gap-size))',
           right: isLargeScreen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : rightSidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--right-panel-width) + var(--gap-size))' : '16px',
           top: '16px',
           paddingTop: '0',
@@ -2295,3 +2250,4 @@ function JournalContent() {
   </div>
   );
 }
+``
