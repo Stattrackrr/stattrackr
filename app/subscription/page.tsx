@@ -165,11 +165,12 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleStartCheckout = async () => {
+  const handleStartCheckout = async (billingCycleOverride?: BillingCycle) => {
     setCheckoutLoading(true);
     
     try {
-      const priceId = PRICE_IDS.pro[selectedBillingCycle];
+      const cycle = billingCycleOverride ?? selectedBillingCycle;
+      const priceId = PRICE_IDS.pro[cycle];
       
       // Get session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -185,7 +186,7 @@ export default function SubscriptionPage() {
         },
         body: JSON.stringify({
           priceId,
-          billingCycle: selectedBillingCycle,
+          billingCycle: cycle,
         }),
       });
 
@@ -202,8 +203,8 @@ export default function SubscriptionPage() {
     } catch (error: any) {
       console.error('Checkout error:', error);
       alert(error.message || 'Failed to start checkout. Please try again.');
-      setCheckoutLoading(false);
     }
+    setCheckoutLoading(false);
   };
 
   if (loading) {
@@ -398,8 +399,9 @@ export default function SubscriptionPage() {
                   {/* Upgrade to Pro - Only show for free accounts */}
                   {!hasActiveSubscription && (
                     <button
-                      onClick={() => router.push('/pricing')}
-                      className="w-full flex items-center justify-between px-4 py-3 border-2 border-blue-500 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors mb-4"
+                      onClick={() => handleStartCheckout('monthly')}
+                      disabled={checkoutLoading}
+                      className={`w-full flex items-center justify-between px-4 py-3 border-2 border-blue-500 bg-blue-50 rounded-lg transition-colors mb-4 ${checkoutLoading ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-100'}`}
                     >
                       <div className="flex items-center gap-3">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,10 +409,10 @@ export default function SubscriptionPage() {
                         </svg>
                         <div className="text-left">
                           <p className="font-medium text-blue-900">Upgrade to Pro</p>
-                          <p className="text-sm text-blue-700">View plans and pricing</p>
+                          <p className="text-sm text-blue-700">Start 7-day free trial • Monthly plan</p>
                         </div>
                       </div>
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-5 h-5 text-blue-600 transition-transform ${checkoutLoading ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
