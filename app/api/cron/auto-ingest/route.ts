@@ -72,11 +72,6 @@ async function checkIfAnyGamesComplete(): Promise<{ shouldIngest: boolean; compl
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
     console.log('[auto-ingest] Cron job triggered');
 
     // Check if any games are complete
@@ -94,18 +89,11 @@ export async function GET(req: NextRequest) {
 
     // All games complete - trigger ingest
     const host = req.headers.get('host') || '';
-    const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${forwardedProto}://${host}`;
-    const ingestUrl = `${baseUrl}/api/dvp/ingest-nba-all?latest=1`;
+    const ingestUrl = `http://${host}/api/dvp/ingest-nba-all?latest=1`;
 
     console.log('[auto-ingest] Triggering ingest:', ingestUrl);
 
-    const ingestRes = await fetch(ingestUrl, {
-      cache: 'no-store',
-      headers: process.env.CRON_SECRET
-        ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
-        : undefined,
-    });
+    const ingestRes = await fetch(ingestUrl, { cache: 'no-store' });
     const ingestData = await ingestRes.json();
 
     console.log('[auto-ingest] Ingest result:', ingestData);

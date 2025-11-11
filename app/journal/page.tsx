@@ -101,6 +101,7 @@ function JournalContent() {
   const [showProfitableBookmakersOnly, setShowProfitableBookmakersOnly] = useState(false);
   const [showProfitableMarketsOnly, setShowProfitableMarketsOnly] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNavProfileMenu, setShowNavProfileMenu] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -112,6 +113,53 @@ function JournalContent() {
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  
+  const handleViewTrackingClick = () => {
+    router.push('/journal?tab=tracking');
+    setShowMobileTracking(true);
+  };
+
+  const handleSubscriptionClick = async () => {
+    setShowProfileMenu(false);
+    setShowNavProfileMenu(false);
+
+    if (isPro) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/subscription');
+          return;
+        }
+
+        const response = await fetch('/api/portal-client', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          router.push('/subscription');
+        }
+      } catch (error) {
+        console.error('Portal error:', error);
+        router.push('/subscription');
+      }
+    } else {
+      router.push('/subscription');
+    }
+  };
+
+  const handleSignOutClick = async () => {
+    setShowProfileMenu(false);
+    setShowNavProfileMenu(false);
+    await supabase.auth.signOut();
+    router.push('/');
+  };
   
   // Sidebar state
   const [sidebarOpen] = useState(true);
@@ -781,7 +829,19 @@ function JournalContent() {
       {/* Left Sidebar - Collapsible */}
       {sidebarOpen && hasDesktopSidebar && (
         <div className="hidden lg:block">
-          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} />
+          <LeftSidebar
+            oddsFormat={oddsFormat}
+            setOddsFormat={setOddsFormat}
+            hasPremium={hasProAccess ?? true}
+            avatarUrl={avatarUrl}
+            username={username}
+            userEmail={userEmail}
+            isPro={isPro}
+            onSubscriptionClick={handleSubscriptionClick}
+            onSignOutClick={handleSignOutClick}
+            showViewTrackingButton={hasDesktopSidebar && !isLargeScreen}
+            onViewTrackingClick={handleViewTrackingClick}
+          />
         </div>
       )}
       

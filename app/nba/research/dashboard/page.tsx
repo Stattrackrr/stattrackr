@@ -277,7 +277,7 @@ const getEspnLogoCandidates = (abbr: string): string[] => {
   const baseFile = (ESPN_FILE_ABBR[normalized] || normalized.toLowerCase());
   const lc = normalized.toLowerCase();
   const candidates: string[] = [];
-  // 1) Base 500 path with filename (works for most teams; includes 'no.png' and 'uta.png')
+  // 1) Base 500 path with filename (works for most teams; includes 'no.png' and 'utah.png')
   candidates.push(`https://a.espncdn.com/i/teamlogos/nba/500/${baseFile}.png`);
   // 2) Scoreboard slug path for known exceptions (Pelicans, Jazz)
   const exceptionSlug = ESPN_LOGO_SLUG[normalized];
@@ -565,7 +565,6 @@ const CustomXAxisTick = memo(function CustomXAxisTick({ x, y, payload, data }: a
     </g>
   );
 }, (prev, next) => prev.x === next.x && prev.y === next.y && prev.payload?.value === next.payload?.value);
-
 // Static bars chart - never re-renders for betting line changes
 const StaticBarsChart = memo(function StaticBarsChart({
   data,
@@ -1161,7 +1160,6 @@ const getRankColor = (rank: number, type: 'offensive' | 'defensive' | 'net' | 'p
     return 'text-red-500';                         // Bad (1st-6th best defense)
   }
 };
-
 // Helper function to create pie chart data for team comparisons with amplified differences
 const createTeamComparisonPieData = (
   teamValue: number,
@@ -1755,7 +1753,6 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
   prev.playerStats === next.playerStats &&
   prev.isDark === next.isDark
 ));
-
 // Memoized Official Odds card to avoid rerenders on chart state changes
 const PureChart = memo(function PureChart({
   isLoading,
@@ -2391,7 +2388,6 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
     </div>
   );
 };
-
 const OfficialOddsCard = memo(function OfficialOddsCard({
   isDark,
   derivedOdds,
@@ -2956,7 +2952,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
     </div>
   );
 }, (prev, next) => prev.isDark === next.isDark && prev.opponentTeam === next.opponentTeam && prev.selectedPosition === next.selectedPosition);
-
 // Opponent Analysis (isolated, memoized)
 const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, opponentTeam, selectedTimeFilter }: { isDark: boolean; opponentTeam: string; selectedTimeFilter: string }) {
   const [mounted, setMounted] = useState(false);
@@ -3736,6 +3731,39 @@ function NBADashboardContent() {
     router.push('/');
   };
 
+  const handleSidebarSubscription = async () => {
+    if (!isPro) {
+      router.push('/subscription');
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/subscription');
+        return;
+      }
+
+      const response = await fetch('/api/portal-client', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        router.push('/subscription');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      router.push('/subscription');
+    }
+  };
+
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
   
@@ -4238,7 +4266,6 @@ function NBADashboardContent() {
       }
     }
   };
-
   // Priority fetch: load requested team immediately, then cache others in background
   const fetchGameDataForTeam = async (teamAbbr: string) => {
     if (!teamAbbr || teamAbbr === 'N/A') return [];
@@ -5359,7 +5386,6 @@ function NBADashboardContent() {
 
   // Keep the old variable name for compatibility
   const playerInfo = headerInfo;
-
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
@@ -6143,7 +6169,17 @@ function NBADashboardContent() {
           >
         {/* Left Sidebar - conditionally rendered based on sidebarOpen state */}
         {sidebarOpen && (
-          <LeftSidebar oddsFormat={oddsFormat} setOddsFormat={setOddsFormat} hasPremium={hasPremium} />
+          <LeftSidebar
+            oddsFormat={oddsFormat}
+            setOddsFormat={setOddsFormat}
+            hasPremium={hasPremium}
+            avatarUrl={avatarUrl}
+            username={username}
+            userEmail={userEmail}
+            isPro={isPro}
+            onSubscriptionClick={handleSidebarSubscription}
+            onSignOutClick={handleLogout}
+          />
         )}
         
         {/* Sidebar Toggle Button - visible on tablets/Macs */}
@@ -6973,7 +7009,6 @@ function NBADashboardContent() {
               homeAway={homeAway}
               onChangeHomeAway={setHomeAway}
             />
-
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
               {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
@@ -7916,7 +7951,6 @@ function NBADashboardContent() {
                 {propsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
               </p>
             </div>
-            
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
             <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
                 {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
@@ -8441,204 +8475,6 @@ function NBADashboardContent() {
                 <ShotChart isDark={isDark} shotData={shotDistanceData} />
               </div>
             )}
-
-            {/* Advanced Player Stats (Desktop) - only in Player Props mode */}
-            {propsMode === 'player' && (
-              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
-                </div>
-              {advancedStats ? (
-                  <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
-                    {/* Left Column: Offensive & Defensive */}
-                    <div className="space-y-3 md:space-y-4">
-                      {/* Offensive Metrics */}
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
-                        <div className="space-y-1">
-                          <StatTooltip statName="OFF RTG" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.offensive_rating ? 'text-gray-400' :
-                              advancedStats.offensive_rating >= 115 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.offensive_rating >= 108 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.offensive_rating?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Points per 100 possessions. NBA avg: 110. Elite: 115+" />
-                          <StatTooltip statName="TS%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.true_shooting_percentage ? 'text-gray-400' :
-                              (advancedStats.true_shooting_percentage * 100) >= 58 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.true_shooting_percentage * 100) >= 54 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.true_shooting_percentage ? (advancedStats.true_shooting_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="Shooting efficiency (2pt + 3pt + FT). NBA avg: 56%. Elite: 58%+" />
-                          <StatTooltip statName="eFG%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.effective_field_goal_percentage ? 'text-gray-400' :
-                              (advancedStats.effective_field_goal_percentage * 100) >= 55 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.effective_field_goal_percentage * 100) >= 50 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.effective_field_goal_percentage ? (advancedStats.effective_field_goal_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="FG% adjusted for 3pt value. NBA avg: 53%. Elite: 55%+" />
-                          <StatTooltip statName="USG%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.usage_percentage ? 'text-gray-400' :
-                              (advancedStats.usage_percentage * 100) >= 28 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.usage_percentage * 100) >= 22 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.usage_percentage ? (advancedStats.usage_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="% of team plays used on court. NBA avg: 20%. Elite: 28%+" />
-                        </div>
-                      </div>
-
-                      {/* Defensive Metrics */}
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Defensive</h4>
-                        <div className="space-y-1">
-                          <StatTooltip statName="DEF RTG" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.defensive_rating ? 'text-gray-400' :
-                              advancedStats.defensive_rating <= 108 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.defensive_rating <= 112 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Points allowed per 100 possessions. NBA avg: 112. Elite: &le;108" />
-                          <StatTooltip statName="DREB%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.defensive_rebound_percentage ? 'text-gray-400' :
-                              (advancedStats.defensive_rebound_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.defensive_rebound_percentage * 100) >= 18 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.defensive_rebound_percentage ? (advancedStats.defensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="% of available defensive rebounds grabbed. NBA avg: 22%. Elite: 25%+" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Impact, Rebounding, Playmaking */}
-                    <div className="space-y-3 md:space-y-4">
-                      {/* Overall Impact */}
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact</h4>
-                        <div className="space-y-1">
-                          <StatTooltip statName="NET RTG" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.net_rating ? 'text-gray-400' :
-                              advancedStats.net_rating >= 3 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.net_rating >= -2 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.net_rating?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Point differential per 100 poss on court. NBA avg: 0. Elite: +3" />
-                          <StatTooltip statName="PIE" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.pie ? 'text-gray-400' :
-                              (advancedStats.pie * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.pie * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.pie ? (advancedStats.pie * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="Overall statistical contribution measure. NBA avg: 10%. Elite: 15%+" />
-                          <StatTooltip statName="PACE" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.pace ? 'text-gray-400' :
-                              advancedStats.pace >= 102 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.pace >= 98 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.pace?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Possessions per 48 min. NBA avg: 100. Elite: 102+" />
-                        </div>
-                      </div>
-
-                      {/* Rebounding Metrics */}
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding</h4>
-                        <div className="space-y-1">
-                          <StatTooltip statName="REB%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.rebound_percentage ? 'text-gray-400' :
-                              (advancedStats.rebound_percentage * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.rebound_percentage * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.rebound_percentage ? (advancedStats.rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="% of available rebounds grabbed. NBA avg: 10%. Elite: 15%+" />
-                          <StatTooltip statName="OREB%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.offensive_rebound_percentage ? 'text-gray-400' :
-                              (advancedStats.offensive_rebound_percentage * 100) >= 8 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.offensive_rebound_percentage * 100) >= 4 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.offensive_rebound_percentage ? (advancedStats.offensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="% of available offensive rebounds grabbed. NBA avg: 5%. Elite: 8%+" />
-                        </div>
-                      </div>
-
-                      {/* Playmaking Metrics */}
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 md:mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Playmaking</h4>
-                        <div className="space-y-1">
-                          <StatTooltip statName="AST%" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.assist_percentage ? 'text-gray-400' :
-                              (advancedStats.assist_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
-                              (advancedStats.assist_percentage * 100) >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.assist_percentage ? (advancedStats.assist_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                            </span>
-                          } definition="% of teammate FGs assisted on court. NBA avg: 15%. Elite: 25%+" />
-                          <StatTooltip statName="AST RATIO" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.assist_ratio ? 'text-gray-400' :
-                              advancedStats.assist_ratio >= 20 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.assist_ratio >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.assist_ratio?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Assists per 100 possessions used. NBA avg: 15. Elite: 20+" />
-                          <StatTooltip statName="AST/TO" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.assist_to_turnover ? 'text-gray-400' :
-                              advancedStats.assist_to_turnover >= 2.0 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.assist_to_turnover >= 1.5 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Assists &divide; turnovers. NBA avg: 1.8. Elite: 2.0+" />
-                          <StatTooltip statName="TO RATIO" value={
-                            <span className={`text-xs font-semibold ${
-                              !advancedStats.turnover_ratio ? 'text-gray-400' :
-                              advancedStats.turnover_ratio <= 12 ? 'text-green-600 dark:text-green-400' :
-                              advancedStats.turnover_ratio <= 16 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                            }`}>
-                              {advancedStats.turnover_ratio?.toFixed(1) || 'N/A'}
-                            </span>
-                          } definition="Turnovers per 100 possessions. NBA avg: 14. Elite: &le;12" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : advancedStatsLoading ? (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading advanced stats...</div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No advanced stats available</div>
-                  </div>
-                )}
-              </div>
-            )}
-            
             {/* ESP Injury Report (Desktop) - always visible in both modes */}
             <div className="hidden lg:block">
               <InjuryContainer

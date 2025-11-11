@@ -1,27 +1,10 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
-    const host = request.headers.get('host') || '';
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (host ? `${forwardedProto}://${host}` : 'http://localhost:3000');
-
-    const authHeaders = process.env.CRON_SECRET
-      ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
-      : undefined;
-
-    const authConfig: RequestInit = authHeaders ? { headers: authHeaders } : {};
-
     const results = {
       trackedBets: { updated: 0, total: 0, error: null as string | null },
       journalBets: { updated: 0, total: 0, error: null as string | null },
@@ -29,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Check tracked bets
     try {
-      const trackedResponse = await fetch(`${baseUrl}/api/check-tracked-bets`, authConfig);
+      const trackedResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-tracked-bets`);
       if (trackedResponse.ok) {
         const data = await trackedResponse.json();
         results.trackedBets = { updated: data.updated || 0, total: data.total || 0, error: null };
@@ -42,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Check journal bets
     try {
-      const journalResponse = await fetch(`${baseUrl}/api/check-journal-bets`, authConfig);
+      const journalResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-journal-bets`);
       if (journalResponse.ok) {
         const data = await journalResponse.json();
         results.journalBets = { updated: data.updated || 0, total: data.total || 0, error: null };

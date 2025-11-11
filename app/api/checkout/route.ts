@@ -84,14 +84,6 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      subscription_data: {
-        trial_period_days: 7,
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
-        },
-      },
       success_url: `${request.headers.get('origin')}/nba/research/dashboard?success=true`,
       cancel_url: `${request.headers.get('origin')}/pricing`,
       metadata: {
