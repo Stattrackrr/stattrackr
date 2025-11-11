@@ -2223,7 +2223,7 @@ function JournalContent() {
       )}
       
       {/* Mobile Bottom Navigation - Always visible on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+      <div className="lg:hidden fixed left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 pb-[max(env(safe-area-inset-bottom),16px)]" style={{ bottom: 'max(env(safe-area-inset-bottom), 0px)' }}>
         {/* Dashboard Dropdown Menu - Shows above bottom nav */}
         {showDashboardDropdown && (
           <div ref={dashboardDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
