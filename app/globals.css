@@ -5,6 +5,30 @@
 :root { --brand-bg: #ffffff; --brand-fg: #0b1220; }
 .dark { --brand-bg: #0b1220; --brand-fg: #ffffff; }
 
+@supports (padding: max(0px)) {
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 20px);
+  }
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 28px);
+  }
+}
+
+@supports not (padding: max(0px)) {
+  .pt-safe {
+    padding-top: 20px;
+  }
+  .pb-safe {
+    padding-bottom: 20px;
+  }
+  .safe-bottom {
+    padding-bottom: 28px;
+  }
+}
+
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);
