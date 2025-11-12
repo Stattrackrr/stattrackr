@@ -100,13 +100,10 @@ function JournalContent() {
   const [betHistoryPage, setBetHistoryPage] = useState(0);
   const [showProfitableBookmakersOnly, setShowProfitableBookmakersOnly] = useState(false);
   const [showProfitableMarketsOnly, setShowProfitableMarketsOnly] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNavProfileMenu, setShowNavProfileMenu] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const journalDropdownRef = useRef<HTMLDivElement>(null);
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
@@ -120,9 +117,6 @@ function JournalContent() {
   };
 
   const handleSubscriptionClick = async () => {
-    setShowProfileMenu(false);
-    setShowNavProfileMenu(false);
-
     if (isPro) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -155,8 +149,6 @@ function JournalContent() {
   };
 
   const handleSignOutClick = async () => {
-    setShowProfileMenu(false);
-    setShowNavProfileMenu(false);
     await supabase.auth.signOut();
     router.push('/');
   };
@@ -196,11 +188,6 @@ function JournalContent() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (profileMenuRef.current && !profileMenuRef.current.contains(target) && 
-          !target.closest('[data-profile-button]') && 
-          !target.closest('[data-profile-menu]')) {
-        setShowProfileMenu(false);
-      }
       if (journalDropdownRef.current && !journalDropdownRef.current.contains(target) && 
           !target.closest('[data-journal-button]')) {
         setShowJournalDropdown(false);
@@ -246,6 +233,8 @@ function JournalContent() {
     // Use onAuthStateChange to properly detect session on page load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session) {
+        setHasProAccess(false);
+        setLoading(false);
         router.push("/");
         return;
       }
@@ -280,19 +269,25 @@ function JournalContent() {
       setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
       setUserEmail(session.user.email || null);
 
-      // Fetch bets
-      const { data, error } = await supabase
-        .from('bets')
-        .select('*')
-        .order('date', { ascending: false });
+      try {
+        // Fetch bets
+        const { data, error } = await supabase
+          .from('bets')
+          .select('*')
+          .order('date', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching bets:', error);
-      } else {
-        setBets(data || []);
+        if (error) {
+          console.error('Error fetching bets:', error);
+          setBets([]);
+        } else {
+          setBets(data || []);
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching bets:', error);
+        setBets([]);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     });
     
     // Cleanup listener on unmount
@@ -867,7 +862,7 @@ function JournalContent() {
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
-            <div className="w-full h-48 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-visible relative z-10">
+            <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden relative z-10">
              {/* Top half - StatTrackr logo and filters */}
              <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4">
                <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4">
@@ -1102,22 +1097,20 @@ function JournalContent() {
                 <div className="flex gap-1.5 md:gap-2 min-w-0 overflow-hidden flex-shrink-0" style={{ height: 'clamp(400px, 50vh, 550px)' }}>
                   {/* Betting Calendar */}
                   <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0">
-                    <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
+                    <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4 gap-2">
                       <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Betting Calendar</h3>
-                      <div className="flex gap-1 md:gap-1.5 lg:gap-2">
-                        {(['day','week','month','year'] as const).map(view => (
-                          <button
-                            key={view}
-                            onClick={() => setCalendarView(view)}
-                            className={`px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 text-[10px] md:text-xs font-medium rounded-lg ${
-                              calendarView === view
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
-                            }`}
-                          >
-                            {view === 'day' ? 'Day' : view === 'week' ? 'Week' : view === 'month' ? 'Month' : 'Year'}
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2">
+                        <select
+                          value={calendarView}
+                          onChange={(e) => setCalendarView(e.target.value as 'day' | 'week' | 'month' | 'year')}
+                          className="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          aria-label="Select calendar timeframe"
+                        >
+                          <option value="day">Day</option>
+                          <option value="week">Week</option>
+                          <option value="month">Month</option>
+                          <option value="year">Year</option>
+                        </select>
                       </div>
                     </div>
                     {calendarView === 'week' && (
@@ -1479,109 +1472,16 @@ function JournalContent() {
       {!showMobileTracking && (
       <div className="lg:hidden w-full px-3 py-4 pb-20 space-y-2 overflow-y-auto">
         {/* 1. Top Stats Container */}
-        <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col">
+        <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col overflow-hidden">
           {/* Top half - StatTrackr logo and filters */}
           <div className="flex flex-col items-center px-4 pt-4 pb-3 space-y-3">
             {/* Logo and Profile Icon Row */}
-            <div className="flex items-center justify-between w-full">
-              <div className="flex-1"></div>
+            <div className="flex items-center justify-center w-full">
               <StatTrackrLogoWithText 
                 logoSize="w-10 h-10" 
                 textSize="text-2xl" 
                 isDark={isDark}
               />
-              <div className="flex-1 flex justify-end">
-                {/* Profile Dropdown Button */}
-                <div className="relative" ref={profileMenuRef}>
-                  <button
-                    data-profile-button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
-                  >
-                    {avatarUrl ? (
-                      <img 
-                        src={avatarUrl ?? undefined} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  {/* Profile Menu Dropdown */}
-                  {showProfileMenu && (
-                    <div data-profile-menu className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
-                      {/* Username display */}
-                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
-                      </div>
-                      
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setShowProfileMenu(false);
-                            
-                            if (isPro) {
-                              try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (!session) {
-                                  router.push('/subscription');
-                                  return;
-                                }
-                                
-                                const response = await fetch('/api/portal-client', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`,
-                                  },
-                                });
-                                
-                                const data = await response.json();
-                                if (data.url) {
-                                  window.location.href = data.url;
-                                } else {
-                                  router.push('/subscription');
-                                }
-                              } catch (error) {
-                                console.error('Portal error:', error);
-                                router.push('/subscription');
-                              }
-                            } else {
-                              router.push('/subscription');
-                            }
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                        >
-                          Subscription
-                        </button>
-                      </div>
-                      
-                      {/* Logout button */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setShowProfileMenu(false);
-                            await supabase.auth.signOut();
-                            router.push('/');
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
             
             {/* Currency Converter Section */}
@@ -2232,53 +2132,7 @@ function JournalContent() {
           <RightSidebar 
             oddsFormat={oddsFormat} 
             isMobileView={false}
-            showProfileIcon={true}
-            avatarUrl={avatarUrl}
-            username={username}
-            userEmail={userEmail}
-            isPro={isPro}
-            onProfileMenuClick={() => setShowProfileMenu(!showProfileMenu)}
-            showProfileMenu={showProfileMenu}
-            profileMenuRef={profileMenuRef}
-            onSubscriptionClick={async () => {
-              setShowProfileMenu(false);
-              
-              if (isPro) {
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session) {
-                    router.push('/subscription');
-                    return;
-                  }
-                  
-                  const response = await fetch('/api/portal-client', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${session.access_token}`,
-                    },
-                  });
-                  
-                  const data = await response.json();
-                  if (data.url) {
-                    window.location.href = data.url;
-                  } else {
-                    router.push('/subscription');
-                  }
-                } catch (error) {
-                  console.error('Portal error:', error);
-                  router.push('/subscription');
-                }
-              } else {
-                router.push('/subscription');
-              }
-            }}
-            onSignOutClick={async () => {
-              setShowProfileMenu(false);
-              await supabase.auth.signOut();
-              router.push('/');
-            }}
-          />
+           />
         </div>
       )}
       

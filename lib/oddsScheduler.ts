@@ -17,7 +17,7 @@ async function refreshOdds() {
     
     // Import and call the refresh function directly to share cache instance
     const { refreshOddsData } = await import('./refreshOdds');
-    const result = await refreshOddsData();
+    const result = await refreshOddsData({ source: 'scheduler' });
     
     console.log(`✅ Scheduled odds refresh complete: ${result.gamesCount} games, ${result.apiCalls} API calls`);
   } catch (error) {

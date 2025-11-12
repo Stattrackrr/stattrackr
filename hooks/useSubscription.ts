@@ -49,7 +49,7 @@ export function useSubscription() {
     
     // Only redirect to pricing page if we've finished loading and access is actually denied
     if (typeof window !== 'undefined') {
-      window.location.href = '/pricing';
+      window.location.href = '/home';
     }
     return false;
   }, [hasPremium, hasPro, loading]);

@@ -17,6 +17,7 @@ export default function PricingPage() {
   const [hasPremium, setHasPremium] = useState(false);
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
+  const isLoggedIn = Boolean(user);
 
   useEffect(() => {
     // Check initial session
@@ -156,7 +157,7 @@ export default function PricingPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         // Redirect to login with return path
-        router.push('/login?redirect=/pricing');
+        router.push('/login?redirect=/home');
         return;
       }
       
@@ -293,7 +294,13 @@ export default function PricingPage() {
       <div className="hidden md:block fixed right-6 z-[70]" style={{ top: user && showProfileMenu ? 'calc(5rem + 13rem)' : '5rem' }}>
         <div className="flex flex-col items-end gap-2">
           <button
-            onClick={() => router.push('/nba/research/dashboard')}
+            onClick={() => {
+              if (!isLoggedIn) {
+                router.push('/login?redirect=/nba/research/dashboard');
+                return;
+              }
+              router.push('/nba/research/dashboard');
+            }}
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
             Dashboard
@@ -346,6 +353,10 @@ export default function PricingPage() {
               <button
                 onClick={() => {
                   setShowDashboardDropdown(false);
+                  if (!isLoggedIn) {
+                    router.push('/login?redirect=/nba/research/dashboard');
+                    return;
+                  }
                   if (!hasPremium) {
                     const element = document.getElementById('pricing-cards');
                     element?.scrollIntoView({ behavior: 'smooth' });
@@ -370,6 +381,10 @@ export default function PricingPage() {
               <button
                 onClick={() => {
                   setShowDashboardDropdown(false);
+                  if (!isLoggedIn) {
+                    router.push('/login?redirect=/nba/research/dashboard');
+                    return;
+                  }
                   router.push('/nba/research/dashboard?mode=team');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -411,7 +426,13 @@ export default function PricingPage() {
           {/* Dashboard */}
           <button
             data-dashboard-button
-            onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
+            onClick={() => {
+              if (!isLoggedIn) {
+                router.push('/login?redirect=/nba/research/dashboard');
+                return;
+              }
+              setShowDashboardDropdown(!showDashboardDropdown);
+            }}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

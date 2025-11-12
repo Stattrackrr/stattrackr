@@ -22,22 +22,25 @@ const ODDS_CACHE_KEY = 'all_nba_odds';
  * Fetch all NBA odds from The Odds API
  * This function is called by the scheduler and the API route
  */
-export async function refreshOddsData() {
+type RefreshSource = 'scheduler' | 'api/odds/refresh';
+
+export async function refreshOddsData(options: { source: RefreshSource } = { source: 'scheduler' }) {
   const ODDS_API_KEY = process.env.ODDS_API_KEY;
   
   if (!ODDS_API_KEY) {
     throw new Error('Odds API key not configured');
   }
 
-  console.log('🔄 Starting bulk odds refresh...');
+    console.log(`🔄 Starting bulk odds refresh... (source: ${options.source})`);
   const startTime = Date.now();
   
   try {
     // Fetch all NBA games with game odds (H2H, spreads, totals)
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
+    const baseRegions = process.env.ODDS_REGIONS || 'us';
     const gamesParams = new URLSearchParams({
       apiKey: ODDS_API_KEY,
-      regions: 'us,us2,us_dfs', // us2 includes ReBet, us_dfs includes PrizePicks/Underdog/Pick6
+      regions: baseRegions,
       markets: 'h2h,spreads,totals',
       oddsFormat: 'american',
       dateFormat: 'iso',
@@ -50,31 +53,30 @@ export async function refreshOddsData() {
       throw new Error(`Odds API error: ${gamesData.message || 'Unknown error'}`);
     }
 
-    // Fetch player props for each game (requires separate call per game)
-    // Player props use /events/{eventId}/odds endpoint
-    // OPTIMIZATION: Only fetch props for games happening in the next 20 hours to save API calls
+    // Fetch player props for games starting soon (default: next 20 hours)
     const now = new Date();
-    const cutoffTime = new Date(now.getTime() + 20 * 60 * 60 * 1000);
+    const propsWindowHours = Number(process.env.ODDS_PROPS_WINDOW_HOURS || '20');
+    const cutoffTime = new Date(now.getTime() + propsWindowHours * 60 * 60 * 1000);
     
     const upcomingGames = gamesData.filter((game: any) => {
       const gameTime = new Date(game.commence_time);
       return gameTime >= now && gameTime <= cutoffTime;
     });
     
-    console.log(`📊 Fetching player props for ${upcomingGames.length}/${gamesData.length} games (next 20h)`);
+    console.log(`📊 Fetching player props for ${upcomingGames.length}/${gamesData.length} games (next ${propsWindowHours}h)`);
     console.log(`⏰ Cutoff: ${cutoffTime.toLocaleString()}`);
     if (upcomingGames.length > 0) {
       console.log(`🏀 Sample games: ${upcomingGames.slice(0, 3).map((g: any) => `${g.home_team} vs ${g.away_team} at ${new Date(g.commence_time).toLocaleString()}`).join(', ')}`);
     }
     
     // Include both standard and alternate markets for DFS sites (goblins/demons/multipliers)
-    const playerPropsMarkets = 'player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists,player_points_alternate,player_rebounds_alternate,player_assists_alternate,player_threes_alternate';
+    const playerPropsMarkets = 'player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists';
     const playerPropsPromises = upcomingGames.map(async (game: any) => {
       try {
         const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
         const eventParams = new URLSearchParams({
           apiKey: ODDS_API_KEY,
-          regions: 'us,us2,us_dfs', // us2 includes ReBet, us_dfs includes PrizePicks/Underdog/Pick6
+          regions: baseRegions,
           markets: playerPropsMarkets,
           oddsFormat: 'american',
           dateFormat: 'iso',
@@ -322,8 +324,21 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
 /**
  * Save odds snapshots to database for line movement tracking
  */
+type MovementSnapshot = {
+  compositeKey: string;
+  gameId: string;
+  playerName: string;
+  market: string;
+  bookmaker: string;
+  line: number;
+  overOdds: number;
+  underOdds: number;
+  recordedAt: string;
+};
+
 async function saveOddsSnapshots(games: GameOdds[]) {
   const snapshots: any[] = [];
+  const movementSnapshots: MovementSnapshot[] = [];
   const now = new Date().toISOString();
 
   for (const game of games) {
@@ -358,6 +373,13 @@ async function saveOddsSnapshots(games: GameOdds[]) {
             const underOdds = parseInt(String(propData.under));
 
             if (!isNaN(line) && !isNaN(overOdds) && !isNaN(underOdds)) {
+              const compositeKey = [
+                game.gameId,
+                playerName,
+                market,
+                bookmakerName
+              ].join('|');
+
               snapshots.push({
                 game_id: game.gameId,
                 player_name: playerName,
@@ -367,6 +389,18 @@ async function saveOddsSnapshots(games: GameOdds[]) {
                 over_odds: overOdds,
                 under_odds: underOdds,
                 snapshot_at: now,
+              });
+
+              movementSnapshots.push({
+                compositeKey,
+                gameId: game.gameId,
+                playerName,
+                market,
+                bookmaker: bookmakerName,
+                line,
+                overOdds,
+                underOdds,
+                recordedAt: now,
               });
             }
           }
@@ -387,5 +421,139 @@ async function saveOddsSnapshots(games: GameOdds[]) {
     }
 
     console.log(`💾 Saved ${snapshots.length} odds snapshots`);
+  }
+
+  if (movementSnapshots.length > 0) {
+    await saveLineMovementState(movementSnapshots);
+  }
+}
+
+async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
+  const keys = Array.from(new Set(movementSnapshots.map((m) => m.compositeKey)));
+
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    if (size <= 0) return [arr];
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const latestRows: any[] = [];
+  if (keys.length > 0) {
+    const keyChunks = chunkArray(keys, 10);
+    for (const chunk of keyChunks) {
+      const { data, error } = await supabaseAdmin
+        .from('line_movement_latest')
+        .select('composite_key, opening_line, opening_over_odds, opening_under_odds, opening_recorded_at, line_last_changed_at, current_line')
+        .in('composite_key', chunk);
+
+      if (error) {
+        console.error('Failed to load existing line movement state:', error);
+        throw error;
+      }
+
+      if (data) {
+        latestRows.push(...data);
+      }
+    }
+  }
+
+  const latestMap = new Map(
+    latestRows.map((row) => [
+      row.composite_key,
+      {
+        openingLine: typeof row.opening_line === 'number' ? row.opening_line : null,
+        openingOverOdds: typeof row.opening_over_odds === 'number' ? row.opening_over_odds : null,
+        openingUnderOdds: typeof row.opening_under_odds === 'number' ? row.opening_under_odds : null,
+        openingRecordedAt: row.opening_recorded_at as string | null,
+        currentLine: typeof row.current_line === 'number' ? row.current_line : null,
+        lineLastChangedAt: row.line_last_changed_at as string | null,
+      },
+    ])
+  );
+
+  const latestUpserts: any[] = [];
+  const movementEvents: any[] = [];
+
+  for (const snapshot of movementSnapshots) {
+    const prev = latestMap.get(snapshot.compositeKey);
+    const previousLine = prev?.currentLine ?? null;
+    const change = previousLine === null ? 0 : Number((snapshot.line - previousLine).toFixed(2));
+    const hasChanged = previousLine === null ? false : Math.abs(change) >= 0.01;
+
+    if (hasChanged) {
+      movementEvents.push({
+        composite_key: snapshot.compositeKey,
+        game_id: snapshot.gameId,
+        player_name: snapshot.playerName,
+        market: snapshot.market,
+        bookmaker: snapshot.bookmaker,
+        previous_line: previousLine,
+        new_line: snapshot.line,
+        change,
+        recorded_at: snapshot.recordedAt,
+      });
+    }
+
+    latestUpserts.push({
+      composite_key: snapshot.compositeKey,
+      game_id: snapshot.gameId,
+      player_name: snapshot.playerName,
+      market: snapshot.market,
+      bookmaker: snapshot.bookmaker,
+      opening_line: prev?.openingLine ?? snapshot.line,
+      opening_over_odds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
+      opening_under_odds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
+      opening_recorded_at: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
+      current_line: snapshot.line,
+      current_over_odds: snapshot.overOdds,
+      current_under_odds: snapshot.underOdds,
+      current_recorded_at: snapshot.recordedAt,
+      line_last_changed_at: hasChanged
+        ? snapshot.recordedAt
+        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
+      updated_at: snapshot.recordedAt,
+    });
+
+    latestMap.set(snapshot.compositeKey, {
+      openingLine: prev?.openingLine ?? snapshot.line,
+      openingOverOdds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
+      openingUnderOdds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
+      openingRecordedAt: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
+      currentLine: snapshot.line,
+      lineLastChangedAt: hasChanged
+        ? snapshot.recordedAt
+        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
+    });
+  }
+
+  if (latestUpserts.length > 0) {
+    const latestChunks = chunkArray(latestUpserts, 500);
+    for (const chunk of latestChunks) {
+      const { error: upsertError } = await supabaseAdmin
+        .from('line_movement_latest')
+        .upsert(chunk, { onConflict: 'composite_key' });
+
+      if (upsertError) {
+        console.error('Failed to upsert line movement latest rows:', upsertError);
+        throw upsertError;
+      }
+    }
+  }
+
+  if (movementEvents.length > 0) {
+    const eventChunks = chunkArray(movementEvents, 500);
+    for (const chunk of eventChunks) {
+      const { error: eventsError } = await supabaseAdmin
+        .from('line_movement_events')
+        .insert(chunk);
+
+      if (eventsError) {
+        console.error('Failed to insert line movement events:', eventsError);
+        throw eventsError;
+      }
+    }
   }
 }

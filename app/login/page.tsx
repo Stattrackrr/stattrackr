@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, TrendingUp, BarChart3, PieChart, Database, User, Phone } from "lucide-react";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 
+const HOME_ROUTE = "/home";
+
 export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -20,7 +22,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleAvailable, setGoogleAvailable] = useState(true);
-  const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
   // Check if user is already logged in and get redirect param
   useEffect(() => {
@@ -28,8 +29,7 @@ export default function LoginPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const redirect = searchParams.get('redirect');
     if (redirect) {
-      setRedirectPath(redirect);
-      // Store in localStorage for OAuth flows
+      // Maintain compatibility with any existing stored redirect by clearing it
       localStorage.setItem('stattrackr_login_redirect', redirect);
     }
 
@@ -37,13 +37,10 @@ export default function LoginPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         // Check for stored redirect from OAuth flow
-        const storedRedirect = localStorage.getItem('stattrackr_login_redirect');
-        if (storedRedirect) {
+        if (localStorage.getItem('stattrackr_login_redirect')) {
           localStorage.removeItem('stattrackr_login_redirect');
-          router.replace(storedRedirect);
-        } else {
-          router.replace(redirect || "/journal");
         }
+        router.replace(HOME_ROUTE);
       }
     };
     checkUser();
@@ -89,8 +86,8 @@ export default function LoginPage() {
           localStorage.removeItem('stattrackr_remember_me');
         }
         
-        // Redirect to the original destination or default to journal
-        router.replace(redirectPath || "/journal");
+        // Always send newly authenticated users to home
+        router.replace(HOME_ROUTE);
       }
     } catch (error: any) {
       // Better error handling  
@@ -122,7 +119,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${baseUrl}${redirectPath || '/journal'}`,
+          redirectTo: `${baseUrl}${HOME_ROUTE}`,
           // Google OAuth will use persistent sessions by default
           // We'll handle remember me logic after redirect
         }
@@ -146,13 +143,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#050f1f] via-[#0b1d3a] to-[#1e3a8a] flex items-center justify-center p-4">
       {/* Back Button */}
       <button
-        onClick={() => router.push('/pricing')}
+        onClick={() => router.push(HOME_ROUTE)}
         className="fixed top-6 left-6 flex items-center gap-2 text-white hover:text-emerald-400 transition-colors z-50"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
-        <span className="font-medium">Back to Pricing</span>
+        <span className="font-medium">Back to Home</span>
       </button>
       
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">

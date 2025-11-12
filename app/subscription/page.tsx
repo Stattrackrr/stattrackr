@@ -238,7 +238,7 @@ export default function SubscriptionPage() {
           <div className="relative flex items-center justify-center mb-8">
             {/* Back Button - Absolute positioned on left */}
             <button
-              onClick={() => router.push('/pricing')}
+              onClick={() => router.push('/home')}
               className="absolute left-0 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
       {/* Header with Logo */}
       <div className="border-b border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <button onClick={() => router.push('/pricing')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <button onClick={() => router.push('/home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Image 
               src="/images/stattrackr-icon.png" 
               alt="StatTrackr Logo" 

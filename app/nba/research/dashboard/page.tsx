@@ -60,8 +60,8 @@ export interface OfficialOddsCardProps {
   books: BookRow[];
   fmtOdds: (odds: string) => string;
   lineMovementData?: {
-    openingLine: { line: number; bookmaker: string; time: string } | null;
-    currentLine: { line: number; bookmaker: string; time: string } | null;
+  openingLine: { line: number; bookmaker: string; timestamp: string } | null;
+  currentLine: { line: number; bookmaker: string; timestamp: string } | null;
     impliedOdds: number | null;
     lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
   } | null;
@@ -578,7 +578,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
   selectedTimeframe,
 }: {
   data: any[];
-  yAxisConfig: { domain: [number, number]; ticks: number[] };
+  yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
   isDark: boolean;
   bettingLine: number;
   customTooltip: any;
@@ -776,6 +776,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
               key={e.xKey || i} 
               fill={colorMap[i] === 'over' ? CHART_CONFIG.colors.green : colorMap[i] === 'push' ? '#9ca3af' : CHART_CONFIG.colors.red}
               data-bar-index={i}
+              data-value={typeof e.value === 'number' ? e.value : ''}
               style={{ 
                 transition: 'all 0.3s ease'
               }}
@@ -807,7 +808,7 @@ const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
   dataLength,
   compactMobile,
 }: {
-  yAxisConfig: { domain: [number, number]; ticks: number[] };
+  yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
   isDark: boolean;
   bettingLine: number;
   dataLength: number;
@@ -896,6 +897,9 @@ const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
   const doUpdate = (el: HTMLElement) => {
     if (!yAxisConfig?.domain) return;
 
+    const [minY, maxY] = yAxisConfig.domain;
+    const range = maxY - minY;
+
     // Mobile-only: fit overlay to actual bar bounds for exact alignment
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
       const container = document.getElementById('betting-line-container') as HTMLElement | null;
@@ -903,25 +907,69 @@ const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
       const bars = Array.from(document.querySelectorAll('[data-bar-index]')) as HTMLElement[];
       if (container && parent && bars.length) {
         const parentRect = parent.getBoundingClientRect();
-        let minLeft = Infinity, maxRight = -Infinity, minTop = Infinity, maxBottom = -Infinity;
+        let minLeft = Infinity;
+        let maxRight = -Infinity;
+        let minTop = Infinity;
+        let maxBottom = -Infinity;
+        const barValues: number[] = [];
+
         for (const b of bars) {
           const r = b.getBoundingClientRect();
           minLeft = Math.min(minLeft, r.left - parentRect.left);
           maxRight = Math.max(maxRight, r.right - parentRect.left);
           minTop = Math.min(minTop, r.top - parentRect.top);
           maxBottom = Math.max(maxBottom, r.bottom - parentRect.top);
+          const valueAttr = b.getAttribute('data-value');
+          const parsed = valueAttr != null ? parseFloat(valueAttr) : NaN;
+          if (!Number.isNaN(parsed)) barValues.push(parsed);
         }
-        if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, Math.floor(minLeft))}px`;
-        if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, Math.floor(parentRect.width - maxRight))}px`;
-        if (Number.isFinite(minTop)) container.style.top = `${Math.max(0, Math.floor(minTop))}px`;
-        if (Number.isFinite(maxBottom)) container.style.bottom = `${Math.max(0, Math.floor(parentRect.height - maxBottom))}px`;
+
+        if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, minLeft)}px`;
+        if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, parentRect.width - maxRight)}px`;
+
+        if (Number.isFinite(minTop) && Number.isFinite(maxBottom)) {
+          const baselineValue = minY; // use actual minY baseline for chart alignment
+          const dataMax = typeof yAxisConfig.dataMax === 'number'
+            ? Math.max(yAxisConfig.dataMax, baselineValue)
+            : Math.max((barValues.length ? Math.max(...barValues) : maxY), baselineValue);
+          const dataMin = typeof yAxisConfig.dataMin === 'number'
+            ? Math.min(yAxisConfig.dataMin, baselineValue)
+            : Math.min((barValues.length ? Math.min(...barValues) : minY), baselineValue);
+
+          const barPixelHeight = maxBottom - minTop;
+          const barValueRange = Math.max(1e-6, dataMax - dataMin);
+          const pixelsPerUnit = barPixelHeight / barValueRange;
+          const topPaddingUnits = Math.max(0, maxY - dataMax);
+          const bottomPaddingUnits = Math.max(0, dataMin - minY);
+          const topOffset = topPaddingUnits * pixelsPerUnit;
+          const bottomOffset = bottomPaddingUnits * pixelsPerUnit;
+
+          container.style.top = `${Math.max(0, minTop - topOffset)}px`;
+          container.style.bottom = `${Math.max(0, parentRect.height - maxBottom - bottomOffset)}px`;
+        }
       }
     }
 
-    const [minY, maxY] = yAxisConfig.domain;
-    const range = maxY - minY;
     const clampedLine = Math.max(minY, Math.min(bettingLine, maxY));
-    const percentage = range > 0 ? ((clampedLine - minY) / range) * 100 : 50;
+
+    // Use actual bars range when available to prevent visual offset from axis padding
+    let effectiveMin = minY;
+    let effectiveMax = maxY;
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      if (typeof yAxisConfig.dataMin === 'number') {
+        effectiveMin = Math.min(minY, yAxisConfig.dataMin);
+      }
+      if (typeof yAxisConfig.dataMax === 'number') {
+        effectiveMax = Math.max(maxY, yAxisConfig.dataMax);
+      }
+    }
+    const effectiveRange = effectiveMax - effectiveMin;
+    let percentage = effectiveRange > 0 ? ((clampedLine - effectiveMin) / effectiveRange) * 100 : 50;
+
+    // Clamp for safety
+    if (!Number.isFinite(percentage)) percentage = 50;
+    percentage = Math.max(0, Math.min(100, percentage));
+
     el.style.bottom = `${percentage}%`;
   };
 
@@ -955,7 +1003,7 @@ const StatsBarChart = memo(function StatsBarChart({
   selectedTimeframe,
 }: {
   data: any[];
-  yAxisConfig: { domain: [number, number]; ticks: number[] };
+  yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
   isDark: boolean;
   bettingLine: number;
   customTooltip: any;
@@ -3642,7 +3690,6 @@ function NBADashboardContent() {
   const router = useRouter();
   const searchParamsHook = useSearchParams();
   const { isDark } = useTheme();
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -3704,27 +3751,19 @@ function NBADashboardContent() {
   // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const profileButton = document.querySelector('[data-profile-button]');
-      const profileMenu = document.querySelector('[data-profile-menu]');
-      if (showProfileMenu && profileButton && profileMenu && !profileButton.contains(event.target as Node) && !profileMenu.contains(event.target as Node)) {
-        setShowProfileMenu(false);
-      }
-      
       const target = event.target as HTMLElement;
-      if (journalDropdownRef.current && !journalDropdownRef.current.contains(target) && 
-          !target.closest('[data-journal-button]')) {
+      if (
+        journalDropdownRef.current &&
+        !journalDropdownRef.current.contains(target) &&
+        !target.closest('[data-journal-button]')
+      ) {
         setShowJournalDropdown(false);
       }
     };
-    
-    if (showProfileMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProfileMenu]);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -3818,13 +3857,15 @@ function NBADashboardContent() {
   const marketKey = 'player_points';
   
   // Line movement data from API
-  const [lineMovementData, setLineMovementData] = useState<{
-    openingLine: { line: number; bookmaker: string; time: string } | null;
-    currentLine: { line: number; bookmaker: string; time: string } | null;
-    impliedOdds: number | null;
-    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
-  } | null>(null);
-  const [lineMovementLoading, setLineMovementLoading] = useState(false);
+const [lineMovementData, setLineMovementData] = useState<{
+  openingLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
+  currentLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
+  impliedOdds: number | null;
+  lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
+} | null>(null);
+const [lineMovementLoading, setLineMovementLoading] = useState(false);
+const lastLineMovementRequestRef = useRef<{ key: string; fetchedAt: number } | null>(null);
+const lineMovementInFlightRef = useRef(false);
 
 
   // Odds display format
@@ -3850,23 +3891,68 @@ function NBADashboardContent() {
 
   // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
-    if (lineMovementData?.lineMovement && lineMovementData.lineMovement.length > 0) {
-      return lineMovementData.lineMovement
-        .map((movement) => {
-          const dt = new Date(movement.timestamp);
-          const timeLabel = dt.toLocaleString('en-US', {
-            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    if (lineMovementData) {
+      const { lineMovement = [], openingLine, currentLine } = lineMovementData;
+
+      if (lineMovement.length > 0) {
+        return lineMovement
+          .map((movement) => {
+            const dt = new Date(movement.timestamp);
+            const timeLabel = dt.toLocaleString('en-US', {
+              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+            });
+            const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
+            return {
+              ts: new Date(movement.timestamp).getTime(),
+              timeLabel: `${timeLabel} (${movement.bookmaker})`,
+              line: movement.line,
+              change: `${movement.change > 0 ? '+' : ''}${movement.change.toFixed(1)}`,
+              direction: direction as 'up' | 'down' | 'flat',
+            };
+          })
+          .reverse(); // Most recent first
+      }
+
+      const fallbackRows: { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' }[] = [];
+      const formatLabel = (entry: typeof openingLine, label: string) => {
+        if (!entry) return '';
+        const dt = new Date(entry.timestamp);
+        const time = dt.toLocaleString('en-US', {
+          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+        const suffix = entry.bookmaker ? ` (${entry.bookmaker})` : '';
+        return `${time}${suffix}${label ? ` — ${label}` : ''}`;
+      };
+
+      if (openingLine) {
+        fallbackRows.push({
+          ts: new Date(openingLine.timestamp).getTime(),
+          timeLabel: formatLabel(openingLine, 'Opening'),
+          line: openingLine.line,
+          change: '—',
+          direction: 'flat'
+        });
+      }
+
+      if (currentLine) {
+        const delta = openingLine ? currentLine.line - openingLine.line : 0;
+        const hasDifferentTimestamp = !openingLine || currentLine.timestamp !== openingLine.timestamp;
+        const hasDifferentLine = !openingLine || currentLine.line !== openingLine.line;
+
+        if (hasDifferentTimestamp || hasDifferentLine) {
+          fallbackRows.push({
+            ts: new Date(currentLine.timestamp).getTime(),
+            timeLabel: formatLabel(currentLine, 'Latest'),
+            line: currentLine.line,
+            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '—',
+            direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
           });
-          const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
-          return {
-            ts: new Date(movement.timestamp).getTime(),
-            timeLabel: `${timeLabel} (${movement.bookmaker})`,
-            line: movement.line,
-            change: `${movement.change > 0 ? '+' : ''}${movement.change.toFixed(1)}`,
-            direction: direction as 'up' | 'down' | 'flat',
-          };
-        })
-        .reverse(); // Most recent first
+        }
+      }
+
+      if (fallbackRows.length > 0) {
+        return fallbackRows.sort((a, b) => b.ts - a.ts);
+      }
     }
     
     // Fallback to old snapshot logic for team mode
@@ -4017,6 +4103,34 @@ function NBADashboardContent() {
       // Extract game date or use today's date
       const gameDate = game?.date ? new Date(game.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       
+      const requestKey = JSON.stringify({
+        mode: propsMode,
+        playerId: selectedPlayer.id,
+        team: selectedTeam,
+        opponent: opponentTeam,
+        stat: selectedStat,
+        gameDate,
+      });
+
+      const nowTs = Date.now();
+      const TTL_MS = 5 * 60 * 1000; // 5 minutes
+      if (
+        lastLineMovementRequestRef.current &&
+        lastLineMovementRequestRef.current.key === requestKey &&
+        nowTs - lastLineMovementRequestRef.current.fetchedAt < TTL_MS
+      ) {
+        console.log('⏩ Skipping duplicate line movement fetch', requestKey);
+        return;
+      }
+
+      if (lineMovementInFlightRef.current) {
+        console.log('⏳ Line movement fetch already in-flight, skipping new request');
+        return;
+      }
+
+      lastLineMovementRequestRef.current = { key: requestKey, fetchedAt: nowTs };
+      lineMovementInFlightRef.current = true;
+
       console.log(`🎯 Fetching line movement for: ${playerName} (date: ${gameDate}, stat: ${selectedStat})`);
       
       setLineMovementLoading(true);
@@ -4036,8 +4150,16 @@ function NBADashboardContent() {
       } catch (error) {
         console.error('Error fetching line movement:', error);
         setLineMovementData(null);
+        lastLineMovementRequestRef.current = null;
       } finally {
         setLineMovementLoading(false);
+        lineMovementInFlightRef.current = false;
+        if (lastLineMovementRequestRef.current) {
+          lastLineMovementRequestRef.current = {
+            key: requestKey,
+            fetchedAt: Date.now(),
+          };
+        }
       }
     };
     
@@ -5867,7 +5989,7 @@ function NBADashboardContent() {
 
   // Calculate Y-axis domain with appropriate tick increments
   const yAxisConfig = useMemo(() => {
-    if (!chartData.length) return { domain: [0, 50], ticks: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] };
+    if (!chartData.length) return { domain: [0, 50], ticks: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], dataMin: 0, dataMax: 0 };
     
     const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
     const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'turnover', 'pf', 'stl', 'blk'];
@@ -5891,7 +6013,7 @@ function NBADashboardContent() {
       // Set domain higher than 1 so win bars appear large
       minYAxis = 0;
       maxYAxis = 1.5; // Make 1 appear at about 2/3 height for bigger visual impact
-      return { domain: [minYAxis, maxYAxis], ticks: [0, 1] };
+      return { domain: [minYAxis, maxYAxis], ticks: [0, 1], dataMin: minValue, dataMax: maxValue };
     } else if (selectedStat === 'spread') {
       // Special handling for spread: ensure minimum value is positioned higher to prevent bars going below container
       const range = maxValue - minValue;
@@ -5909,7 +6031,7 @@ function NBADashboardContent() {
         ticks.push(i);
       }
       
-      return { domain: [minYAxis, maxYAxis], ticks };
+      return { domain: [minYAxis, maxYAxis], ticks, dataMin: minValue, dataMax: maxValue };
     } else if (isSmallIncrementStat) {
       // For 3PM, use 3PA values for Y-axis calculation to show proper scale
       if (selectedStat === 'fg3m') {
@@ -5934,7 +6056,7 @@ function NBADashboardContent() {
       ticks.push(i);
     }
     
-    return { domain: [minYAxis, maxYAxis], ticks };
+    return { domain: [minYAxis, maxYAxis], ticks, dataMin: minValue, dataMax: maxValue };
   }, [chartData, selectedStat, selectedTimeframe]);
 
   // Real odds data state
@@ -6215,107 +6337,8 @@ function NBADashboardContent() {
           >
             {/* 1. Filter By Container (Mobile First) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-start mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
-                {/* Profile Dropdown Button */}
-                <div className="relative z-[101]">
-                  <button
-                    data-profile-button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
-                  >
-                    {avatarUrl ? (
-                      /* Google Profile Picture */
-                      <img 
-                        src={avatarUrl} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      /* Default Profile Icon */
-                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  {/* Profile Menu Dropdown */}
-                  {showProfileMenu && (
-                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[101] overflow-hidden">
-                      {/* Username display */}
-                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
-                      </div>
-                      
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        <button
-                          type="button"
-                          onMouseDown={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('Subscription clicked');
-                            setShowProfileMenu(false);
-                            
-                            // If Pro user, open Stripe portal directly
-                            if (isPro) {
-                              try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (!session) {
-                                  router.push('/subscription');
-                                  return;
-                                }
-                                
-                                const response = await fetch('/api/portal-client', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`,
-                                  },
-                                });
-                                
-                                const data = await response.json();
-                                if (data.url) {
-                                  window.location.href = data.url;
-                                } else {
-                                  router.push('/subscription');
-                                }
-                              } catch (error) {
-                                console.error('Portal error:', error);
-                                router.push('/subscription');
-                              }
-                            } else {
-                              // Free users go to subscription page
-                              setTimeout(() => router.push('/subscription'), 100);
-                            }
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                        >
-                          Subscription
-                        </button>
-                      </div>
-                      
-                      {/* Logout button */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
-                        <button
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('Sign Out clicked');
-                            setShowProfileMenu(false);
-                            setTimeout(() => handleLogout(), 100);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
               <div className="flex gap-3 md:gap-4 flex-wrap mb-3">
                 <button
@@ -7747,108 +7770,9 @@ function NBADashboardContent() {
           >
 
             {/* Filter By Container (Desktop - in right panel) */}
-<div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-              <div className="flex items-center justify-between mb-3">
+            <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+              <div className="flex items-center justify-start mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
-                {/* Profile Dropdown Button */}
-                <div className="relative">
-                  <button
-                    data-profile-button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
-                  >
-                    {avatarUrl ? (
-                      /* Google Profile Picture */
-                      <img 
-                        src={avatarUrl} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      /* Default Profile Icon */
-                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  {/* Profile Menu Dropdown */}
-                  {showProfileMenu && (
-                    <div data-profile-menu className="absolute top-full right-0 w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
-                      {/* Username display */}
-                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{username || userEmail || 'User'}</p>
-                      </div>
-                      
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        <button
-                          type="button"
-                          onMouseDown={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('Subscription clicked');
-                            setShowProfileMenu(false);
-                            
-                            // If Pro user, open Stripe portal directly
-                            if (isPro) {
-                              try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (!session) {
-                                  router.push('/subscription');
-                                  return;
-                                }
-                                
-                                const response = await fetch('/api/portal-client', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`,
-                                  },
-                                });
-                                
-                                const data = await response.json();
-                                if (data.url) {
-                                  window.location.href = data.url;
-                                } else {
-                                  router.push('/subscription');
-                                }
-                              } catch (error) {
-                                console.error('Portal error:', error);
-                                router.push('/subscription');
-                              }
-                            } else {
-                              // Free users go to subscription page
-                              setTimeout(() => router.push('/subscription'), 100);
-                            }
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                        >
-                          Subscription
-                        </button>
-                      </div>
-                      
-                      {/* Logout button */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
-                        <button
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('Sign Out clicked');
-                            setShowProfileMenu(false);
-                            setTimeout(() => handleLogout(), 100);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
               <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
                 <button

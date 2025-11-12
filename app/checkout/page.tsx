@@ -130,7 +130,7 @@ function CheckoutContent() {
       <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16 relative z-10">
         <div className="mt-16 mb-8">
           <button
-            onClick={() => router.push('/pricing')}
+            onClick={() => router.push('/home')}
             className="text-gray-300 hover:text-white flex items-center gap-2 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -207,10 +207,9 @@ export const CACHE_TTL = {
   // Rationale: Advanced metrics are computationally expensive but need regular updates
   ADVANCED_STATS: 60,
   
-  // Odds data - 21 minutes
-  // Rationale: Betting lines move frequently but not every minute
-  // 21 minutes provides good balance (~2.9 updates per hour) with 5% API quota savings
-  ODDS: 21,
+  // Odds data - 60 minutes
+  // Rationale: Balance between freshness and external API quota usage
+  ODDS: 60,
   
   // Depth chart - 2 hours
   // Rationale: Starting lineups and rotations change daily but not hourly

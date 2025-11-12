@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         },
       },
       success_url: `${request.headers.get('origin')}/nba/research/dashboard?success=true`,
-      cancel_url: `${request.headers.get('origin')}/pricing`,
+      cancel_url: `${request.headers.get('origin')}/home`,
       metadata: {
         user_id: user.id,
         billing_cycle: billingCycle,
