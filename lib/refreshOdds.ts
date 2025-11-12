@@ -38,13 +38,19 @@ export async function refreshOddsData(options: { source: RefreshSource } = { sou
     // Fetch all NBA games with game odds (H2H, spreads, totals)
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
     const baseRegions = process.env.ODDS_REGIONS || 'us';
+    const defaultBookmakers = 'draftkings,fanduel,fanatics,caesars';
+    const baseBookmakers = (process.env.ODDS_BOOKMAKERS || defaultBookmakers).trim();
     const gamesParams = new URLSearchParams({
       apiKey: ODDS_API_KEY,
-      regions: baseRegions,
       markets: 'h2h,spreads,totals',
       oddsFormat: 'american',
       dateFormat: 'iso',
     });
+    if (baseBookmakers.length > 0) {
+      gamesParams.set('bookmakers', baseBookmakers);
+    } else {
+      gamesParams.set('regions', baseRegions);
+    }
 
     const gamesResponse = await fetch(`${gamesUrl}?${gamesParams}`);
     const gamesData = await gamesResponse.json();
@@ -76,11 +82,15 @@ export async function refreshOddsData(options: { source: RefreshSource } = { sou
         const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
         const eventParams = new URLSearchParams({
           apiKey: ODDS_API_KEY,
-          regions: baseRegions,
           markets: playerPropsMarkets,
           oddsFormat: 'american',
           dateFormat: 'iso',
         });
+        if (baseBookmakers.length > 0) {
+          eventParams.set('bookmakers', baseBookmakers);
+        } else {
+          eventParams.set('regions', baseRegions);
+        }
         
         const response = await fetch(`${eventUrl}?${eventParams}`);
         if (response.ok) {

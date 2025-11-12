@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "StatTrackr",
   description: "Track results. Master your game.",
   manifest: "/manifest.json",
-  themeColor: "#0b1221",
   icons: {
     icon: [
       { url: "/stattrackr-icon.png", sizes: "192x192", type: "image/png" },
@@ -27,6 +26,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#0b1221",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
