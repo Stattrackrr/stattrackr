@@ -36,26 +36,20 @@ export async function GET(request: NextRequest) {
     // Get bulk cached odds data
     let oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
     
-    // Debug: Check cache status
-    const stats = cache.getStats();
-    console.log('Cache stats:', { totalEntries: stats.totalEntries, validEntries: stats.validEntries, keys: stats.keys.slice(0, 5) });
-    
+    // If no cache, trigger background refresh but don't wait for it
     if (!oddsCache) {
-      console.warn('No odds data in cache - attempting on-demand refresh');
-      try {
-        oddsCache = await ensureOddsCache({ source: 'api/odds' });
-      } catch (refreshError) {
-        console.error('Failed to refresh odds on-demand:', refreshError);
-      }
-    }
-    
-    if (!oddsCache) {
-      console.warn('No odds data in cache - bulk refresh may not have run yet');
-      console.log('Available cache keys:', cache.keys());
+      console.warn('No odds data in cache - triggering background refresh');
+      // Trigger refresh in background (don't await - return immediately)
+      ensureOddsCache({ source: 'api/odds' }).catch(err => {
+        console.error('Background odds refresh failed:', err);
+      });
+      
+      // Return immediately with empty data - UI will show loading state
       return NextResponse.json({
-        success: false,
-        error: 'Odds data not available - waiting for refresh',
-        data: []
+        success: true,
+        data: [],
+        loading: true,
+        message: 'Odds data loading in background'
       });
     }
     

@@ -98,7 +98,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
 
   if (!shotData) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-800">
+      <div className="w-full h-full flex items-center justify-center p-6" style={{ minHeight: '200px' }}>
         <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
           No shot data available
         </div>

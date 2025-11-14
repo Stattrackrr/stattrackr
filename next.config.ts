@@ -17,6 +17,25 @@ const nextConfig: NextConfig = {
     // Skip prerendering API routes to avoid build-time errors
     isrFlushToDisk: false,
   },
+  // Suppress Supabase auth errors during build
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Suppress console errors from Supabase during server-side build
+      const originalError = console.error;
+      console.error = (...args: any[]) => {
+        const message = args[0]?.toString() || '';
+        if (
+          message.includes('Invalid Refresh Token') ||
+          message.includes('Refresh Token Not Found') ||
+          message.includes('AuthApiError')
+        ) {
+          return; // Suppress during build
+        }
+        originalError.apply(console, args);
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

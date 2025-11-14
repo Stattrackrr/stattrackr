@@ -56,7 +56,8 @@ export default function LoginPage() {
         // Use production domain if available, otherwise use current origin
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
         
-        const { error } = await supabase.auth.signUp({
+        // Sign up the user
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
             options: {
@@ -69,8 +70,24 @@ export default function LoginPage() {
               }
             }
         });
-        if (error) throw error;
-        setError("Check your email for the confirmation link!");
+        if (signUpError) throw signUpError;
+        
+        // Automatically sign in the user after successful signup (email verification disabled)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        
+        // Store remember me preference for future use
+        if (rememberMe) {
+          localStorage.setItem('stattrackr_remember_me', 'true');
+        } else {
+          localStorage.removeItem('stattrackr_remember_me');
+        }
+        
+        // Redirect to home immediately
+        router.replace(HOME_ROUTE);
       } else {
         // Always use persistent session for reliable login
         const { error } = await supabase.auth.signInWithPassword({
@@ -97,7 +114,26 @@ export default function LoginPage() {
       } else if (error.message.includes('Invalid login credentials')) {
         setError("Invalid email or password. Please check and try again.");
       } else if (error.message.includes('Email not confirmed')) {
-        setError("Please check your email and click the confirmation link first.");
+        // If email verification is disabled but this error appears, try to sign in directly
+        try {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (!signInError) {
+            // Successfully signed in, redirect
+            if (rememberMe) {
+              localStorage.setItem('stattrackr_remember_me', 'true');
+            } else {
+              localStorage.removeItem('stattrackr_remember_me');
+            }
+            router.replace(HOME_ROUTE);
+            return;
+          }
+        } catch (retryError) {
+          // If retry fails, show the original error
+        }
+        setError("Account exists but email verification is required. Please check your email.");
       } else if (error.message.includes('User already registered')) {
         setError("Email already in use. Please try a different email or sign in instead.");
       } else {

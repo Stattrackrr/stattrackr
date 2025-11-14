@@ -44,6 +44,24 @@ export default function LeftSidebar({
   const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
   const membershipLabel = isPro ? 'Pro Member' : 'Member';
   const showProfileCard = Boolean(avatarUrl || username || userEmail || onSubscriptionClick || onSignOutClick);
+  
+  // Generate a consistent random color based on user's name/email
+  const getAvatarColor = (name: string): string => {
+    // Use a hash of the name to generate a consistent color
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate a vibrant color (avoid too light or too dark)
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65 + (Math.abs(hash) % 20); // 65-85% saturation
+    const lightness = 45 + (Math.abs(hash) % 15); // 45-60% lightness
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+  
+  const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
 
   const handleSaveSettings = () => {
     // Save to localStorage for persistence
@@ -161,11 +179,14 @@ export default function LeftSidebar({
             className="w-full bg-white/85 dark:bg-gray-800/85 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 flex items-center gap-3 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
             aria-expanded={showProfileDetails}
           >
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 flex items.center justify-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <div 
+              className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-sm font-semibold text-white"
+              style={avatarColor ? { backgroundColor: avatarColor } : { backgroundColor: 'rgb(243, 244, 246)' }}
+            >
               {avatarUrl ? (
                 <img src={avatarUrl ?? undefined} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
-                fallbackInitial
+                <span className="flex items-center justify-center w-full h-full">{fallbackInitial}</span>
               )}
             </div>
             <div className="flex-1 min-w-0 text-left">

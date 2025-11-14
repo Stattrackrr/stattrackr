@@ -1211,7 +1211,8 @@ const StatsBarChart = memo(function StatsBarChart({
       return;
     }
     setIsDragging(false);
-    setMobileTooltipActive(true);
+    // Toggle tooltip: if open, close it; if closed, open it
+    setMobileTooltipActive(prev => !prev);
   }, [isMobile, clearMobileTooltipTimer, isDragging]);
 
   const handleChartMouseLeave = useCallback(() => {
@@ -5373,30 +5374,51 @@ const lineMovementInFlightRef = useRef(false);
   };
 
   
+  // Track current fetch to prevent race conditions
+  const advancedStatsFetchRef = useRef<string | null>(null);
+  const shotDistanceFetchRef = useRef<string | null>(null);
+  
   // Fetch advanced stats for a player
   const fetchAdvancedStats = async (playerId: string) => {
     // Don't attempt to fetch if user doesn't have premium - just silently return
     // The UI will already be gated by checkFeatureAccess elsewhere
     if (!hasPremium) {
+      setAdvancedStats(null);
+      setAdvancedStatsLoading(false);
       return;
     }
     
+    // Mark this fetch as the current one
+    advancedStatsFetchRef.current = playerId;
+    
+    // Clear old data immediately to prevent showing stale data
+    setAdvancedStats(null);
     setAdvancedStatsLoading(true);
     setAdvancedStatsError(null);
+    
     try {
       const stats = await fetchAdvancedStatsCore(playerId);
       
-      if (stats) {
-        setAdvancedStats(stats);
-      } else {
-        setAdvancedStats(null);
-        setAdvancedStatsError('No advanced stats found for this player');
+      // Only update if this is still the current fetch (prevent race conditions)
+      if (advancedStatsFetchRef.current === playerId) {
+        if (stats) {
+          setAdvancedStats(stats);
+        } else {
+          setAdvancedStats(null);
+          setAdvancedStatsError('No advanced stats found for this player');
+        }
       }
     } catch (error: any) {
-      setAdvancedStatsError(error.message || 'Failed to fetch advanced stats');
-      setAdvancedStats(null);
+      // Only update if this is still the current fetch
+      if (advancedStatsFetchRef.current === playerId) {
+        setAdvancedStatsError(error.message || 'Failed to fetch advanced stats');
+        setAdvancedStats(null);
+      }
     } finally {
-      setAdvancedStatsLoading(false);
+      // Only update loading state if this is still the current fetch
+      if (advancedStatsFetchRef.current === playerId) {
+        setAdvancedStatsLoading(false);
+      }
     }
   };
   
@@ -5405,31 +5427,55 @@ const lineMovementInFlightRef = useRef(false);
     // Don't attempt to fetch if user doesn't have premium - just silently return
     // The UI will already be gated by checkFeatureAccess elsewhere
     if (!hasPremium) {
+      setShotDistanceData(null);
+      setShotDistanceLoading(false);
       return;
     }
     
+    // Mark this fetch as the current one
+    shotDistanceFetchRef.current = playerId;
+    
+    // Clear old data immediately to prevent showing stale data
+    setShotDistanceData(null);
     setShotDistanceLoading(true);
+    
     try {
       const season = currentNbaSeason();
       const response = await fetch(`/api/bdl/shot-distance?player_id=${playerId}&season=${season}`);
       const data = await response.json();
       
-      if (data && Array.isArray(data.data) && data.data.length > 0) {
-        setShotDistanceData(data.data[0].stats);
-      } else {
-        setShotDistanceData(null);
+      // Only update if this is still the current fetch (prevent race conditions)
+      if (shotDistanceFetchRef.current === playerId) {
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          setShotDistanceData(data.data[0].stats);
+        } else {
+          setShotDistanceData(null);
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch shot distance stats:', error);
-      setShotDistanceData(null);
+      // Only update if this is still the current fetch
+      if (shotDistanceFetchRef.current === playerId) {
+        console.error('Failed to fetch shot distance stats:', error);
+        setShotDistanceData(null);
+      }
     } finally {
-      setShotDistanceLoading(false);
+      // Only update loading state if this is still the current fetch
+      if (shotDistanceFetchRef.current === playerId) {
+        setShotDistanceLoading(false);
+      }
     }
   };
 
   // Select from your local SAMPLE_PLAYERS (default) - but use API for team data
   const handlePlayerSelectFromLocal = async (player: NBAPlayer) => {
     setIsLoading(true); setApiError(null);
+    
+    // Clear premium stats immediately when switching players
+    setAdvancedStats(null);
+    setShotDistanceData(null);
+    setAdvancedStatsLoading(false);
+    setShotDistanceLoading(false);
+    
     try {
       const pid = /^\d+$/.test(String(player.id)) ? String(player.id) : await resolvePlayerId(player.full, player.teamAbbr);
       if (!pid) throw new Error(`Couldn't resolve player id for "${player.full}"`);
@@ -5506,6 +5552,13 @@ const lineMovementInFlightRef = useRef(false);
   // Select from live search results
   const handlePlayerSelectFromSearch = async (r: BdlSearchResult) => {
     setIsLoading(true); setApiError(null);
+    
+    // Clear premium stats immediately when switching players
+    setAdvancedStats(null);
+    setShotDistanceData(null);
+    setAdvancedStatsLoading(false);
+    setShotDistanceLoading(false);
+    
     try {
       const pid = String(r.id);
       setResolvedPlayerId(pid);
@@ -6228,7 +6281,7 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
   
   // Fetch real odds data - fetches player props or team game odds based on mode
-  const fetchOddsData = async () => {
+  const fetchOddsData = async (retryCount = 0) => {
     setOddsLoading(true);
     setOddsError(null);
     
@@ -6240,6 +6293,7 @@ const lineMovementInFlightRef = useRef(false);
         const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
         if (!playerName || !selectedPlayer) {
           setRealOddsData([]);
+          setOddsLoading(false);
           return;
         }
         params = new URLSearchParams({ player: playerName });
@@ -6247,6 +6301,7 @@ const lineMovementInFlightRef = useRef(false);
         // In team mode, fetch game odds by team
         if (!gamePropsTeam || gamePropsTeam === 'N/A') {
           setRealOddsData([]);
+          setOddsLoading(false);
           return;
         }
         params = new URLSearchParams({ team: gamePropsTeam });
@@ -6254,6 +6309,22 @@ const lineMovementInFlightRef = useRef(false);
       
       const response = await fetch(`/api/odds?${params}`);
       const data = await response.json();
+      
+      // Handle background loading state
+      if (data.loading) {
+        // Data is loading in background - retry with exponential backoff (max 5 retries)
+        if (retryCount < 5) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // 1s, 2s, 4s, 8s, 10s max
+          setTimeout(() => {
+            fetchOddsData(retryCount + 1);
+          }, delay);
+        } else {
+          // Max retries reached - stop loading
+          setOddsLoading(false);
+          setOddsError('Odds data taking longer than expected to load');
+        }
+        return;
+      }
       
       if (!data.success) {
         // If odds API key is not configured, treat as no-data without error noise
@@ -7486,15 +7557,15 @@ const lineMovementInFlightRef = useRef(false);
             </div>
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
-            {propsMode === 'player' && resolvedPlayerId && (
-              <div className="lg:hidden">
+            {propsMode === 'player' && (
+              <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
                 <ShotChart isDark={isDark} shotData={shotDistanceData} />
               </div>
             )}
 
             {/* 5. Advanced Stats Container (Mobile) - Player Props mode only */}
             {propsMode === 'player' && (
-<div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+              <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
@@ -8557,11 +8628,174 @@ const lineMovementInFlightRef = useRef(false);
               </div>
 
             {/* Shot Chart (Desktop) - only in Player Props mode */}
-            {propsMode === 'player' && resolvedPlayerId && (
-              <div className="hidden lg:block">
+            {propsMode === 'player' && (
+              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
                 <ShotChart isDark={isDark} shotData={shotDistanceData} />
               </div>
             )}
+            
+            {/* Advanced Stats Container (Desktop) - only in Player Props mode, below Shot Chart */}
+            {propsMode === 'player' && (
+              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Current season stats</span>
+                </div>
+                {advancedStats ? (
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Offensive Metrics */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>OFF RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.offensive_rating ? 'text-gray-400' :
+                            advancedStats.offensive_rating >= 115 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.offensive_rating >= 108 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.offensive_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>TS%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.true_shooting_percentage ? 'text-gray-400' :
+                            (advancedStats.true_shooting_percentage * 100) >= 58 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.true_shooting_percentage * 100) >= 54 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.true_shooting_percentage ? (advancedStats.true_shooting_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>eFG%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.effective_field_goal_percentage ? 'text-gray-400' :
+                            (advancedStats.effective_field_goal_percentage * 100) >= 55 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.effective_field_goal_percentage * 100) >= 50 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.effective_field_goal_percentage ? (advancedStats.effective_field_goal_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>USG%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.usage_percentage ? 'text-gray-400' :
+                            (advancedStats.usage_percentage * 100) >= 28 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.usage_percentage * 100) >= 22 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.usage_percentage ? (advancedStats.usage_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Impact & Defensive Metrics */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact & Defense</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>NET RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.net_rating ? 'text-gray-400' :
+                            advancedStats.net_rating >= 3 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.net_rating >= -2 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.net_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>DEF RTG</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.defensive_rating ? 'text-gray-400' :
+                            advancedStats.defensive_rating <= 108 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.defensive_rating <= 112 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>PIE</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.pie ? 'text-gray-400' :
+                            (advancedStats.pie * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.pie * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.pie ? (advancedStats.pie * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>PACE</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.pace ? 'text-gray-400' :
+                            advancedStats.pace >= 102 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.pace >= 98 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.pace?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Rebounding & Playmaking */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding & Playmaking</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span>REB%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.rebound_percentage ? 'text-gray-400' :
+                            (advancedStats.rebound_percentage * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.rebound_percentage * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.rebound_percentage ? (advancedStats.rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>AST%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.assist_percentage ? 'text-gray-400' :
+                            (advancedStats.assist_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.assist_percentage * 100) >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.assist_percentage ? (advancedStats.assist_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>OREB%</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.offensive_rebound_percentage ? 'text-gray-400' :
+                            (advancedStats.offensive_rebound_percentage * 100) >= 8 ? 'text-green-600 dark:text-green-400' :
+                            (advancedStats.offensive_rebound_percentage * 100) >= 4 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.offensive_rebound_percentage ? (advancedStats.offensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>AST/TO</span>
+                          <span className={`font-semibold ${
+                            !advancedStats.assist_to_turnover ? 'text-gray-400' :
+                            advancedStats.assist_to_turnover >= 2.0 ? 'text-green-600 dark:text-green-400' :
+                            advancedStats.assist_to_turnover >= 1.5 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : advancedStatsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading advanced stats...</div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No advanced stats available</div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* ESP Injury Report (Desktop) - always visible in both modes */}
             <div className="hidden lg:block">
               <InjuryContainer

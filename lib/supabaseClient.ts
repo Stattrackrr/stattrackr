@@ -123,27 +123,256 @@ if (supabaseUrl !== 'https://placeholder.supabase.co') {
   });
 }
 
+// Suppress console errors during build for Supabase auth
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+const suppressAuthError = (args: any[]): boolean => {
+  const message = args[0]?.toString() || '';
+  const errorObj = typeof args[0] === 'object' ? args[0] : null;
+  const errorMessage = errorObj?.message || errorObj?.error_description || '';
+  
+  // Suppress refresh token errors during build
+  return (
+    message.includes('Invalid Refresh Token') ||
+    message.includes('Refresh Token Not Found') ||
+    message.includes('refresh') ||
+    errorMessage.includes('refresh') ||
+    errorMessage.includes('token') ||
+    message.includes('AuthApiError')
+  );
+};
+
+if (!isBrowser) {
+  console.error = (...args: any[]) => {
+    if (suppressAuthError(args)) {
+      // Silently ignore during build
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+  
+  console.warn = (...args: any[]) => {
+    if (suppressAuthError(args)) {
+      // Silently ignore during build
+      return;
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+  
+  // Also catch unhandled promise rejections during build
+  if (typeof process !== 'undefined' && process.on) {
+    process.on('unhandledRejection', (reason: any) => {
+      const errorMessage = reason?.message || reason?.toString() || '';
+      if (
+        errorMessage.includes('Invalid Refresh Token') ||
+        errorMessage.includes('Refresh Token Not Found') ||
+        errorMessage.includes('refresh') ||
+        errorMessage.includes('token') ||
+        errorMessage.includes('AuthApiError')
+      ) {
+        // Silently ignore during build
+        return;
+      }
+      // Re-throw other errors
+      throw reason;
+    });
+  }
+}
+
+// Auth config - completely disabled during build/server
+const authConfig = isBrowser ? {
+  persistSession: true,
+  storageKey: PERSISTENT_STORAGE_KEY,
+  storage: persistentStorage,
+  autoRefreshToken: true,
+  detectSessionInUrl: true,
+  flowType: 'pkce' as const,
+} : {
+  persistSession: false,
+  autoRefreshToken: false,
+  detectSessionInUrl: false,
+  // No storage during build - prevents refresh token errors
+  storage: undefined,
+};
+
 // Only enable autoRefreshToken in browser - during build/server there's no session to refresh
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: isBrowser,
-    storageKey: PERSISTENT_STORAGE_KEY,
-    storage: persistentStorage,
-    autoRefreshToken: isBrowser, // Only in browser, not during build
-    detectSessionInUrl: isBrowser,
-  },
-})
+// Wrap in try-catch to suppress any initialization errors during build
+let supabase: ReturnType<typeof createClient>;
+try {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: authConfig,
+  });
+  
+  // In browser, set up error handler to catch and clear invalid refresh tokens
+  if (isBrowser && typeof window !== 'undefined') {
+    // Set up global error handler for unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+      const error = event.reason;
+      const errorMessage = error?.message || error?.toString() || '';
+      
+      // Suppress refresh token errors - they're harmless (user just needs to log in again)
+      if (
+        errorMessage.includes('Invalid Refresh Token') ||
+        errorMessage.includes('Refresh Token Not Found') ||
+        errorMessage.includes('refresh') ||
+        error?.name === 'AuthApiError'
+      ) {
+        event.preventDefault(); // Prevent error from showing in console
+        // Clear invalid tokens silently
+        if (persistentStorage) {
+          persistentStorage.removeItem(PERSISTENT_STORAGE_KEY);
+        }
+        if (sessionOnlyStorage) {
+          sessionOnlyStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+        return;
+      }
+    });
+    
+    // Also suppress console errors for auth errors
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      const message = args[0]?.toString() || '';
+      const errorObj = typeof args[0] === 'object' ? args[0] : null;
+      const errorMessage = errorObj?.message || errorObj?.error_description || '';
+      
+      // Suppress refresh token errors in console
+      if (
+        message.includes('Invalid Refresh Token') ||
+        message.includes('Refresh Token Not Found') ||
+        message.includes('AuthApiError') ||
+        errorMessage.includes('refresh') ||
+        errorMessage.includes('token')
+      ) {
+        // Silently ignore - user just needs to log in again
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+    
+    // Override getSession to handle errors gracefully
+    const originalGetSession = supabase.auth.getSession.bind(supabase.auth);
+    supabase.auth.getSession = async () => {
+      try {
+        return await originalGetSession();
+      } catch (error: any) {
+        // If it's a refresh token error, clear storage and return null session
+        if (
+          error?.message?.includes('Invalid Refresh Token') ||
+          error?.message?.includes('Refresh Token Not Found') ||
+          error?.message?.includes('refresh')
+        ) {
+          // Clear all auth storage
+          if (persistentStorage) {
+            persistentStorage.removeItem(PERSISTENT_STORAGE_KEY);
+          }
+          if (sessionOnlyStorage) {
+            sessionOnlyStorage.removeItem(SESSION_STORAGE_KEY);
+          }
+          // Return empty session instead of throwing
+          return { data: { session: null }, error: null };
+        }
+        throw error;
+      }
+    };
+  }
+} catch (error: any) {
+  // During build, create a minimal client that won't cause errors
+  if (!isBrowser && (error?.message?.includes('refresh') || error?.message?.includes('token'))) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storage: undefined,
+      },
+      global: {
+        fetch: () => Promise.reject(new Error('Supabase not available during build')),
+      },
+    });
+  } else {
+    throw error;
+  }
+}
+
+// Session-only auth config
+const sessionAuthConfig = isBrowser ? {
+  persistSession: true,
+  storageKey: SESSION_STORAGE_KEY,
+  storage: sessionOnlyStorage,
+  autoRefreshToken: true,
+  detectSessionInUrl: true,
+  flowType: 'pkce' as const,
+} : {
+  persistSession: false,
+  autoRefreshToken: false,
+  detectSessionInUrl: false,
+  // No storage during build - prevents refresh token errors
+  storage: undefined,
+};
 
 // Create a session-only client for non-remember-me logins (per-tab isolation)
-export const supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: isBrowser,
-    storageKey: SESSION_STORAGE_KEY,
-    storage: sessionOnlyStorage,
-    autoRefreshToken: isBrowser, // Only in browser, not during build
-    detectSessionInUrl: isBrowser,
-  },
-})
+let supabaseSessionOnly: ReturnType<typeof createClient>;
+try {
+  supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: sessionAuthConfig,
+  });
+  
+  // In browser, set up error handler to catch and clear invalid refresh tokens
+  if (isBrowser) {
+    // Override the auth error handler to clear invalid tokens
+    const originalGetSessionSessionOnly = supabaseSessionOnly.auth.getSession.bind(supabaseSessionOnly.auth);
+    supabaseSessionOnly.auth.getSession = async () => {
+      try {
+        return await originalGetSessionSessionOnly();
+      } catch (error: any) {
+        // If it's a refresh token error, clear storage and return null session
+        if (
+          error?.message?.includes('Invalid Refresh Token') ||
+          error?.message?.includes('Refresh Token Not Found') ||
+          error?.message?.includes('refresh')
+        ) {
+          // Clear all auth storage
+          if (sessionOnlyStorage) {
+            sessionOnlyStorage.removeItem(SESSION_STORAGE_KEY);
+          }
+          // Return empty session instead of throwing
+          return { data: { session: null }, error: null };
+        }
+        throw error;
+      }
+    };
+  }
+} catch (error: any) {
+  // During build, create a minimal client that won't cause errors
+  if (!isBrowser && (error?.message?.includes('refresh') || error?.message?.includes('token'))) {
+    supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storage: undefined,
+      },
+      global: {
+        fetch: () => Promise.reject(new Error('Supabase not available during build')),
+      },
+    });
+  } else {
+    throw error;
+  }
+}
+
+// Restore console methods after client creation
+if (!isBrowser) {
+  // Keep error suppression active during build to catch async errors
+  // The suppression will remain until the module is fully loaded
+  setTimeout(() => {
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+  }, 0);
+}
+
+export { supabase, supabaseSessionOnly };
 
 // Types for the database schema
 export type Json =

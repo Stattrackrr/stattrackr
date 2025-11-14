@@ -55,6 +55,25 @@ export default function RightSidebar({
   onSubscriptionClick,
   onSignOutClick
 }: RightSidebarProps = {}) {
+  // Generate a consistent random color based on user's name/email
+  const getAvatarColor = (name: string): string => {
+    // Use a hash of the name to generate a consistent color
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate a vibrant color (avoid too light or too dark)
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65 + (Math.abs(hash) % 20); // 65-85% saturation
+    const lightness = 45 + (Math.abs(hash) % 15); // 45-60% lightness
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+  
+  const displayName = username || userEmail || 'User';
+  const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'U';
+  const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
   const { isDark } = useTheme();
   const { trackedBets, removeTrackedBet, clearAllTrackedBets, refreshTrackedBets } = useTrackedBets();
   const [activeTab, setActiveTab] = useState<TabType>('tracked');
@@ -641,7 +660,8 @@ export default function RightSidebar({
             <button
               data-profile-button
               onClick={onProfileMenuClick}
-              className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+              className="w-10 h-10 rounded-full hover:opacity-90 transition-opacity border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden"
+              style={avatarColor ? { backgroundColor: avatarColor } : avatarUrl ? {} : { backgroundColor: 'rgb(243, 244, 246)' }}
             >
               {avatarUrl ? (
                 <img 
@@ -651,9 +671,9 @@ export default function RightSidebar({
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
+                <span className="flex items-center justify-center w-full h-full text-sm font-semibold text-white">
+                  {fallbackInitial}
+                </span>
               )}
             </button>
             
