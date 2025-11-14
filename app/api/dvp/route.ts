@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
     // Hot-load custom positions and aliases on every call
     const CUSTOM = await loadCustomPositions();
     const ALIASES = { ...(CUSTOM.aliases || {}) } as Record<string, string>;
+    const CUSTOM_POSITIONS = CUSTOM.positions || {} as Record<string, 'PG'|'SG'|'SF'|'PF'|'C'>;
 
     if (!team) {
       return NextResponse.json({ success: false, error: 'Missing team' }, { status: 400 });
@@ -138,7 +139,10 @@ export async function GET(req: NextRequest) {
       }
     })();
 
-    const cacheKey = `dvp:${team}:${seasonYear}:${metric}:${limitGames}:split=${wantSplit?1:0}`;
+    // Include custom positions in cache key so position changes invalidate cache
+    // Create a simple hash of custom positions for cache key
+    const positionsHash = Object.keys(CUSTOM_POSITIONS).sort().join(',');
+    const cacheKey = `dvp:${team}:${seasonYear}:${metric}:${limitGames}:split=${wantSplit?1:0}:pos=${positionsHash.substring(0, 20)}`;
     const hit = !forceRefresh ? cache.get<any>(cacheKey) : undefined;
     if (hit) return NextResponse.json(hit);
 
@@ -227,7 +231,25 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
           const gameAttBench = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
           
           for (const p of players){
-            const b = p?.bucket as 'PG'|'SG'|'SF'|'PF'|'C';
+            // Use custom position if available, otherwise use stored bucket
+            let b = p?.bucket as 'PG'|'SG'|'SF'|'PF'|'C';
+            
+            // Override with custom position if it exists
+            if (p?.name) {
+              const nameKey = normName(String(p.name));
+              const canonicalName = ALIASES[nameKey] || nameKey;
+              const lookupKey = ALIASES[canonicalName] || canonicalName;
+              
+              // Check custom positions (master or team-specific)
+              if (CUSTOM_POSITIONS[lookupKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[lookupKey])) {
+                b = CUSTOM_POSITIONS[lookupKey];
+              } else if (CUSTOM_POSITIONS[canonicalName] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[canonicalName])) {
+                b = CUSTOM_POSITIONS[canonicalName];
+              } else if (CUSTOM_POSITIONS[nameKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[nameKey])) {
+                b = CUSTOM_POSITIONS[nameKey];
+              }
+            }
+            
             if (!b) continue;
             
             if (isPercentageMetric) {
