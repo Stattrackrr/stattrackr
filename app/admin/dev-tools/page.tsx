@@ -94,7 +94,7 @@ export default function DevToolsPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(updates as any)
         .eq('id', user.id)
         .select();
 
@@ -130,7 +130,7 @@ export default function DevToolsPage() {
           subscription_tier: 'pro',
           subscription_billing_cycle: 'monthly',
           subscription_current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
+        } as any)
         .eq('id', user.id);
 
       if (error) throw error;
