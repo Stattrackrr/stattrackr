@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     const startOfWindow = startRangeDate.toISOString();
     const endOfWindow = endRangeDate.toISOString();
 
-    const { data: latestRows, error: latestError } = await supabase
-      .from('line_movement_latest')
+    const { data: latestRows, error: latestError } = await (supabase
+      .from('line_movement_latest') as any)
       .select('*')
       .eq('player_name', player)
       .eq('market', market)
@@ -80,10 +80,10 @@ export async function GET(request: NextRequest) {
       return await buildSnapshotResponse(targetDate, player, market, stat);
     }
 
-    const compositeKeys = latestRows.map((row) => row.composite_key);
+    const compositeKeys = (latestRows as any[]).map((row: any) => row.composite_key);
 
-    const { data: movementRows, error: movementError } = await supabase
-      .from('line_movement_events')
+    const { data: movementRows, error: movementError } = await (supabase
+      .from('line_movement_events') as any)
       .select('*')
       .in('composite_key', compositeKeys)
       .gte('recorded_at', startOfWindow)
@@ -179,8 +179,8 @@ async function buildSnapshotResponse(
   const startOfWindow = startRangeDate.toISOString();
   const endOfWindow = endRangeDate.toISOString();
 
-  const { data: snapshots, error } = await supabase
-    .from('odds_snapshots')
+  const { data: snapshots, error } = await (supabase
+    .from('odds_snapshots') as any)
     .select('*')
     .eq('player_name', player)
     .eq('market', market)
