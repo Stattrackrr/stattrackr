@@ -155,6 +155,9 @@ export default function AddToJournalModal({
       
       const selection = `${playerName} ${overUnder} ${finalLine} ${statLabel}`;
       const market = `Player ${statLabel}`;
+      
+      // Get bookmaker name if odds were selected from a bookmaker
+      const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
 
       const { error: insertError } = await supabase
         .from('bets')
@@ -177,6 +180,7 @@ export default function AddToJournalModal({
           over_under: overUnder,
           game_date: gameDate,
           status: 'pending',
+          bookmaker: bookmakerName,
         });
 
       if (insertError) throw insertError;

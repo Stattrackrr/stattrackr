@@ -5,8 +5,8 @@
  */
 
 export async function register() {
-  // Only run on server side
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
+  // Only run on server side and in production
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.VERCEL_ENV === 'production') {
     // Import and start the odds scheduler
     const { startOddsScheduler } = await import('./lib/oddsScheduler');
     startOddsScheduler();

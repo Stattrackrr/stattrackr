@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
+import { getBookmakerInfo } from '@/lib/bookmakers';
 
 export default function JournalPage() {
   return (
@@ -423,12 +424,19 @@ function JournalContent() {
         ? convertedStake * (bet.odds - 1) 
         : -convertedStake;
       
+      // Use bookmaker ID if available, otherwise 'Unknown'
       const bookmakerId = bet.bookmaker || 'Unknown';
       bookmakerData[bookmakerId] = (bookmakerData[bookmakerId] || 0) + profit;
     });
     
+    // Convert bookmaker IDs to display names
     let result = Object.entries(bookmakerData)
-      .map(([bookmaker, profit]) => ({ bookmaker, profit }))
+      .map(([bookmakerId, profit]) => {
+        // Get display name from bookmaker info if available
+        const bookmakerInfo = bookmakerId !== 'Unknown' ? getBookmakerInfo(bookmakerId) : null;
+        const displayName = bookmakerInfo ? bookmakerInfo.name : bookmakerId;
+        return { bookmaker: displayName, profit, bookmakerId };
+      })
       .sort((a, b) => b.profit - a.profit);
     
     if (showProfitableBookmakersOnly) {
@@ -1459,6 +1467,9 @@ function JournalContent() {
                               {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
                             </div>
                           )}
+                          <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400">
+                            Bookmaker: <span className="font-medium">{bet.bookmaker || 'Unknown'}</span>
+                          </div>
                         </div>
                       );
                     })

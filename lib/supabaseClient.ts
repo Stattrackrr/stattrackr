@@ -179,6 +179,7 @@ export interface Database {
           actual_value?: number | null
           game_date?: string | null
           status?: 'pending' | 'settled' | null
+          bookmaker?: string | null
         }
         Insert: {
           id?: string
@@ -202,6 +203,7 @@ export interface Database {
           actual_value?: number | null
           game_date?: string | null
           status?: 'pending' | 'settled' | null
+          bookmaker?: string | null
         }
         Update: {
           id?: string

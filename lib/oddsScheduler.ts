@@ -13,14 +13,20 @@ let refreshInterval: NodeJS.Timeout | null = null;
  */
 async function refreshOdds() {
   try {
-    console.log('🔄 Triggering scheduled odds refresh...');
+    // Only log in production to avoid console noise in development
+    if (process.env.VERCEL_ENV === 'production') {
+      console.log('🔄 Triggering scheduled odds refresh...');
+    }
     
     // Import and call the refresh function directly to share cache instance
     const { refreshOddsData } = await import('./refreshOdds');
     const result = await refreshOddsData({ source: 'scheduler' });
     
-    console.log(`✅ Scheduled odds refresh complete: ${result.gamesCount} games, ${result.apiCalls} API calls`);
+    if (process.env.VERCEL_ENV === 'production') {
+      console.log(`✅ Scheduled odds refresh complete: ${result.gamesCount} games, ${result.apiCalls} API calls`);
+    }
   } catch (error) {
+    // Always log errors
     console.error('❌ Scheduled odds refresh error:', error);
   }
 }
@@ -30,11 +36,15 @@ async function refreshOdds() {
  */
 export function startOddsScheduler() {
   if (refreshInterval) {
-    console.log('⚠️ Odds scheduler already running');
+    if (process.env.VERCEL_ENV === 'production') {
+      console.log('⚠️ Odds scheduler already running');
+    }
     return;
   }
   
-  console.log(`🚀 Starting odds scheduler (refresh every ${CACHE_TTL.ODDS} minutes)`);
+  if (process.env.VERCEL_ENV === 'production') {
+    console.log(`🚀 Starting odds scheduler (refresh every ${CACHE_TTL.ODDS} minutes)`);
+  }
   
   // Initial refresh on startup
   setTimeout(() => {

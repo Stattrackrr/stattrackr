@@ -237,9 +237,51 @@ export async function GET(req: NextRequest){
     if (!team) return NextResponse.json({ success:false, error:'Missing team' }, { status:400 });
 
     const { dir, file } = storePath(seasonYear, team);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir,{ recursive:true });
-    if (refresh && fs.existsSync(file)) fs.unlinkSync(file);
-    const out: any[] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : [];
+    
+    // Check if we're in a serverless environment (Vercel has read-only filesystem)
+    const isServerless = process.env.VERCEL === '1' || process.env.VERCEL_ENV || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    let out: any[] = [];
+    // Try to read existing data, but don't fail if filesystem is read-only
+    // Wrap everything in try-catch since even fs.existsSync can throw EROFS
+    try {
+      if (!isServerless) {
+        try {
+          const dirExists = fs.existsSync(dir);
+          if (!dirExists) {
+            fs.mkdirSync(dir,{ recursive:true });
+          }
+          if (refresh) {
+            const fileExists = fs.existsSync(file);
+            if (fileExists) {
+              fs.unlinkSync(file);
+            }
+          }
+          const fileExists = fs.existsSync(file);
+          if (fileExists) {
+            out = JSON.parse(fs.readFileSync(file,'utf8'));
+          }
+        } catch (e: any) {
+          // EROFS = read-only file system (serverless), EACCES = permission denied
+          if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+            console.log(`[ingest-nba] Read-only filesystem detected for ${team}, starting fresh`);
+          } else {
+            console.warn(`[ingest-nba] File read failed for ${team}, starting fresh:`, e.message);
+          }
+          out = [];
+        }
+      } else {
+        // In serverless, we can't read/write files, so start fresh
+        console.log(`[ingest-nba] Serverless environment detected (VERCEL=${process.env.VERCEL}), skipping file I/O for ${team}`);
+        out = [];
+      }
+    } catch (e: any) {
+      // Catch any errors from fs.existsSync or other file operations
+      if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+        console.log(`[ingest-nba] Read-only filesystem detected for ${team} (outer catch), starting fresh`);
+      }
+      out = [];
+    }
     const have = new Set(out.map(x=> String(x.gameId)));
 
     // List games via BDL
@@ -446,8 +488,34 @@ for (const r of oppRows2){
 out.push({ gameId: gidBdl, date: when, opponent: oppAbbr, team, season: seasonLabelFromYear(seasonYear), buckets, players, source: 'bdl+espn' });
     }
 
-    fs.writeFileSync(file, JSON.stringify(out, null, 2));
-    return NextResponse.json({ success:true, team, season: seasonYear, stored_games: out.length, file: file.replace(process.cwd(),'') });
+    // Try to write to file, but don't fail if it's read-only (serverless)
+    let fileWritten = false;
+    if (!isServerless) {
+      try {
+        if (fs.writeFileSync && typeof fs.writeFileSync === 'function') {
+          fs.writeFileSync(file, JSON.stringify(out, null, 2));
+          fileWritten = true;
+        }
+      } catch (e: any) {
+        // EROFS = read-only file system (serverless), EACCES = permission denied
+        if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+          console.log(`[ingest-nba] Read-only filesystem detected for ${team}, skipping file write`);
+        } else {
+          console.warn(`[ingest-nba] File write failed for ${team}:`, e.message);
+        }
+      }
+    }
+    
+    // Always return success - data was computed even if not persisted
+    return NextResponse.json({ 
+      success: true, 
+      team, 
+      season: seasonYear, 
+      stored_games: out.length, 
+      file: fileWritten ? file.replace(process.cwd(),'') : null, 
+      serverless: isServerless || !fileWritten,
+      note: fileWritten ? undefined : 'Data computed but not persisted (serverless/read-only filesystem)'
+    });
   }catch(e:any){
     return NextResponse.json({ success:false, error: e?.message || 'Ingest NBA mode failed' }, { status: 200 });
   }

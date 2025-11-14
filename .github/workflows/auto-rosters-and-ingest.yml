@@ -12,19 +12,30 @@ on:
 jobs:
   warm_and_ingest:
     runs-on: ubuntu-latest
+    # Don't fail the workflow if requests fail
+    continue-on-error: true
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
     steps:
-      - name: Guard when PROD_URL is missing
-        if: env.PROD_URL == ''
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
         run: |
-          echo "PROD_URL secret not set; skipping." && exit 0
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL secret not set; skipping workflow"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Warm depth charts T-10
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
         run: |
-          curl -sS "$PROD_URL/api/depth-chart/warm-tminus10?window_min=15" -H 'Accept: application/json' || true
+          curl -fsS --max-time 30 --retry 2 "$PROD_URL/api/depth-chart/warm-tminus10?window_min=15" -H 'Accept: application/json' || echo "Depth chart warm failed but continuing"
 
       - name: Ingest latest finals (league-wide)
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
         run: |
           YEAR=$(date -u +%Y)
-          curl -sS "$PROD_URL/api/dvp/ingest-nba-all?season=$YEAR&latest=1" -H 'Accept: application/json' || true
+          curl -fsS --max-time 60 --retry 2 "$PROD_URL/api/dvp/ingest-nba-all?season=$YEAR&latest=1" -H 'Accept: application/json' || echo "Ingest failed but continuing"
