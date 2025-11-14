@@ -7559,7 +7559,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
             {propsMode === 'player' && (
-              <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
+              <div className="lg:hidden">
                 <ShotChart isDark={isDark} shotData={shotDistanceData} />
               </div>
             )}
@@ -8630,7 +8630,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Shot Chart (Desktop) - only in Player Props mode */}
             {propsMode === 'player' && (
-              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
+              <div className="hidden lg:block">
                 <ShotChart isDark={isDark} shotData={shotDistanceData} />
               </div>
             )}

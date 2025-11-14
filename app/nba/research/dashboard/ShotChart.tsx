@@ -126,7 +126,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
   const midRangeWidth = 80; // Width of mid-range zone
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 p-4 gap-4">
+    <div className="w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '400px' }}>
       {/* Title with Info Button and Season Label */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2 relative">
@@ -150,7 +150,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
       </div>
       
       {/* SVG Chart */}
-      <svg viewBox="0 0 500 380" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      <svg viewBox="0 0 500 380" className="w-full" style={{ height: '380px', maxWidth: '500px' }} preserveAspectRatio="xMidYMid meet">
         {/* Define clip path for rounded corners */}
         <defs>
           <clipPath id="roundedCourt">
