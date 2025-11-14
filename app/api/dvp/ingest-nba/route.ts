@@ -234,6 +234,7 @@ async function fetchEspnPlayerBasics(name: string, teamAbbr: string, base: strin
 }
 
 export async function GET(req: NextRequest){
+  // Wrap entire function to catch any EROFS errors
   try{
     const { searchParams } = new URL(req.url);
     const rawTeam = searchParams.get('team') || '';
@@ -245,50 +246,87 @@ export async function GET(req: NextRequest){
     const latestOnly = searchParams.get('latest') === '1';
     if (!team) return NextResponse.json({ success:false, error:'Missing team' }, { status:400 });
 
-    const { dir, file } = storePath(seasonYear, team);
+    // Wrap storePath call in try-catch (though it shouldn't throw, being defensive)
+    let dir: string, file: string;
+    try {
+      const paths = storePath(seasonYear, team);
+      dir = paths.dir;
+      file = paths.file;
+    } catch (e: any) {
+      if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+        return NextResponse.json({ 
+          success: true, 
+          team, 
+          season: seasonYear, 
+          stored_games: 0, 
+          file: null, 
+          serverless: true, 
+          note: 'Read-only filesystem detected early' 
+        });
+      }
+      throw e;
+    }
     
     // Check if we're in a serverless environment (Vercel has read-only filesystem)
-    const isServerless = process.env.VERCEL === '1' || process.env.VERCEL_ENV || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    // Vercel sets VERCEL=1 and VERCEL_ENV (production/preview/development)
+    const isServerless = process.env.VERCEL === '1' || 
+                         process.env.VERCEL_ENV !== undefined || 
+                         process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined ||
+                         process.env.VERCEL_URL !== undefined;
     
     let out: any[] = [];
     // Try to read existing data, but don't fail if filesystem is read-only
-    // Wrap everything in try-catch since even fs.existsSync can throw EROFS
-    try {
-      if (!isServerless) {
+    // Always wrap file operations in try-catch since serverless detection might be wrong
+    if (!isServerless) {
+      try {
+        // Try file operations, but catch EROFS errors
         try {
           const dirExists = fs.existsSync(dir);
           if (!dirExists) {
             fs.mkdirSync(dir,{ recursive:true });
           }
-          if (refresh) {
+        } catch (e: any) {
+          if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+            console.log(`[ingest-nba] Read-only filesystem detected (mkdir) for ${team}, skipping file I/O`);
+            out = [];
+          } else {
+            throw e; // Re-throw non-filesystem errors
+          }
+        }
+        
+        if (out.length === 0) { // Only try other operations if we didn't hit EROFS
+          try {
+            if (refresh) {
+              const fileExists = fs.existsSync(file);
+              if (fileExists) {
+                fs.unlinkSync(file);
+              }
+            }
             const fileExists = fs.existsSync(file);
             if (fileExists) {
-              fs.unlinkSync(file);
+              out = JSON.parse(fs.readFileSync(file,'utf8'));
+            }
+          } catch (e: any) {
+            // EROFS = read-only file system (serverless), EACCES = permission denied
+            if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+              console.log(`[ingest-nba] Read-only filesystem detected for ${team}, starting fresh`);
+              out = [];
+            } else {
+              console.warn(`[ingest-nba] File read failed for ${team}, starting fresh:`, e.message);
+              out = [];
             }
           }
-          const fileExists = fs.existsSync(file);
-          if (fileExists) {
-            out = JSON.parse(fs.readFileSync(file,'utf8'));
-          }
-        } catch (e: any) {
-          // EROFS = read-only file system (serverless), EACCES = permission denied
-          if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
-            console.log(`[ingest-nba] Read-only filesystem detected for ${team}, starting fresh`);
-          } else {
-            console.warn(`[ingest-nba] File read failed for ${team}, starting fresh:`, e.message);
-          }
-          out = [];
         }
-      } else {
-        // In serverless, we can't read/write files, so start fresh
-        console.log(`[ingest-nba] Serverless environment detected (VERCEL=${process.env.VERCEL}), skipping file I/O for ${team}`);
+      } catch (e: any) {
+        // Catch any other errors
+        if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+          console.log(`[ingest-nba] Read-only filesystem detected (outer) for ${team}, starting fresh`);
+        }
         out = [];
       }
-    } catch (e: any) {
-      // Catch any errors from fs.existsSync or other file operations
-      if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
-        console.log(`[ingest-nba] Read-only filesystem detected for ${team} (outer catch), starting fresh`);
-      }
+    } else {
+      // In serverless, we can't read/write files, so start fresh
+      console.log(`[ingest-nba] Serverless environment detected (VERCEL=${process.env.VERCEL}), skipping file I/O for ${team}`);
       out = [];
     }
     const have = new Set(out.map(x=> String(x.gameId)));
