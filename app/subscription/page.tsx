@@ -81,17 +81,18 @@ export default function SubscriptionPage() {
         setFullName(`${firstName} ${lastName}`.trim() || 'User');
         
         // Fetch profile data
-        const { data: profileData } = await supabase
-          .from('profiles')
+        const { data: profileData } = await (supabase
+          .from('profiles') as any)
           .select('subscription_status, subscription_tier, subscription_billing_cycle, subscription_current_period_end, stripe_customer_id')
           .eq('id', user.id)
           .single();
         
         if (profileData) {
           setProfile(profileData);
+          const profile = profileData as any;
           
           // Fetch payment method if user has active subscription
-          if (profileData.stripe_customer_id && (profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing')) {
+          if (profile.stripe_customer_id && (profile.subscription_status === 'active' || profile.subscription_status === 'trialing')) {
             await fetchPaymentMethod();
           }
         }
