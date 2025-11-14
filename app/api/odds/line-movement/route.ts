@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       ? impliedProbs.reduce((a, b) => a + b, 0) / impliedProbs.length
       : null;
 
-    const lineMovement = (movementRows || []).map((event) => ({
+    const lineMovement = (movementRows || []).map((event: any) => ({
       bookmaker: event.bookmaker,
       line: event.new_line,
       change: event.change,
@@ -212,7 +212,7 @@ async function buildSnapshotResponse(
 
   const opening = snapshots[0];
 
-  const fanduelSnapshots = snapshots.filter(s => s.bookmaker.toLowerCase().includes('fanduel'));
+  const fanduelSnapshots = snapshots.filter((s: any) => s.bookmaker.toLowerCase().includes('fanduel'));
   const current = fanduelSnapshots.length > 0
     ? fanduelSnapshots[fanduelSnapshots.length - 1]
     : snapshots[snapshots.length - 1];
