@@ -45,7 +45,7 @@ export default function DevToolsPage() {
                 id: user.id,
                 subscription_tier: 'free',
                 subscription_status: null,
-              })
+              } as any)
               .select()
               .single();
             
