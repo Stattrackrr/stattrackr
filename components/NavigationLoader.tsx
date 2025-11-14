@@ -10,6 +10,9 @@ export default function NavigationLoader() {
   const loadingStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+
     // Detect clicks on Link elements (Next.js Link components)
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;

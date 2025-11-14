@@ -14,8 +14,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   experimental: {
-    // Skip prerendering API routes to avoid build-time errors
-    isrFlushToDisk: false,
+    // Experimental features disabled to avoid build errors
   },
   // Suppress Supabase auth errors during build
   webpack: (config, { isServer }) => {
