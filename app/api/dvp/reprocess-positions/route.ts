@@ -61,12 +61,18 @@ async function loadCustomPositions(team?: string): Promise<{ positions: Record<s
 }
 
 // Reprocess a single team's DVP data with updated positions
-async function reprocessTeam(team: string): Promise<{ success: boolean; team: string; games?: number; error?: string }> {
+async function reprocessTeam(team: string): Promise<{ success: boolean; team: string; games?: number; playersUpdated?: number; gamesUpdated?: number; serverless?: boolean; note?: string; error?: string }> {
   try {
     const abbr = normalizeAbbr(team);
     if (!abbr || !(abbr in NBA_TEAMS)) {
       return { success: false, team, error: 'Invalid team' };
     }
+    
+    // Check if we're in a serverless environment
+    const isServerless = process.env.VERCEL === '1' || 
+                         process.env.VERCEL_ENV !== undefined || 
+                         process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined ||
+                         process.env.VERCEL_URL !== undefined;
     
     // Load the stored DVP data
     const storeDir = path.resolve(process.cwd(), 'data', 'dvp_store', '2025');
@@ -74,43 +80,110 @@ async function reprocessTeam(team: string): Promise<{ success: boolean; team: st
     
     let games: any[];
     try {
+      if (isServerless) {
+        // In serverless, we can't read files - return error
+        return { success: false, team, error: 'Reprocess not available in serverless environment. Use re-ingest instead.' };
+      }
       const raw = await fs.readFile(storeFile, 'utf8');
       games = JSON.parse(raw);
       if (!Array.isArray(games)) {
         return { success: false, team, error: 'Invalid data format' };
       }
-    } catch {
+    } catch (e: any) {
+      if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+        return { success: false, team, error: 'Read-only filesystem. Use re-ingest instead of reprocess.' };
+      }
       return { success: false, team, error: 'No stored data found' };
     }
     
     // Load current position mappings
     const { positions, aliases } = await loadCustomPositions(abbr);
     
+    let playersUpdated = 0;
+    let gamesUpdated = 0;
+    
     // Reprocess each game
     for (const game of games) {
       const players = Array.isArray(game?.players) ? game.players : [];
       
-      // Reset buckets
+      // Reset buckets - will recalculate based on NEW positions
       const newBuckets: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+      let gameChanged = false;
       
-      // Recalculate bucket totals based on EXISTING player buckets (don't change them)
+      // Update player positions based on custom mappings and recalculate buckets
       for (const player of players) {
-        const bucket = player.bucket;
+        const playerName = String(player?.name || '').trim();
+        if (!playerName) continue;
         
-        // Add to bucket total (using pts)
+        // Normalize player name for lookup
+        const nameKey = normName(playerName);
+        
+        // Check aliases first
+        const canonicalName = aliases[nameKey] || nameKey;
+        const lookupKey = aliases[canonicalName] || canonicalName;
+        
+        // Get new position from custom mappings (master or team-specific)
+        let newBucket: 'PG'|'SG'|'SF'|'PF'|'C' | null = null;
+        
+        // Try direct lookup
+        if (positions[lookupKey] && ['PG','SG','SF','PF','C'].includes(positions[lookupKey])) {
+          newBucket = positions[lookupKey] as 'PG'|'SG'|'SF'|'PF'|'C';
+        }
+        // Try canonical name
+        else if (positions[canonicalName] && ['PG','SG','SF','PF','C'].includes(positions[canonicalName])) {
+          newBucket = positions[canonicalName] as 'PG'|'SG'|'SF'|'PF'|'C';
+        }
+        // Try original name
+        else if (positions[nameKey] && ['PG','SG','SF','PF','C'].includes(positions[nameKey])) {
+          newBucket = positions[nameKey] as 'PG'|'SG'|'SF'|'PF'|'C';
+        }
+        
+        // Update player bucket if we found a new position
+        if (newBucket && player.bucket !== newBucket) {
+          player.bucket = newBucket;
+          playersUpdated++;
+          gameChanged = true;
+        }
+        
+        // Use the updated bucket (or keep existing if no mapping found)
+        const bucket = player.bucket as 'PG'|'SG'|'SF'|'PF'|'C';
+        
+        // Add player's points to the appropriate position bucket
         if (bucket && ['PG','SG','SF','PF','C'].includes(bucket)) {
-          newBuckets[bucket as 'PG'|'SG'|'SF'|'PF'|'C'] += Number(player?.pts || 0);
+          newBuckets[bucket] += Number(player?.pts || 0);
         }
       }
       
-      // Update game buckets
+      // Update game buckets with recalculated totals
       game.buckets = newBuckets;
+      if (gameChanged) gamesUpdated++;
     }
     
-    // Save updated data
-    await fs.writeFile(storeFile, JSON.stringify(games, null, 2));
+    // Save updated data (skip in serverless)
+    if (!isServerless) {
+      try {
+        await fs.writeFile(storeFile, JSON.stringify(games, null, 2));
+      } catch (e: any) {
+        if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+          return { 
+            success: false, 
+            team: abbr, 
+            error: 'Read-only filesystem. Data was computed but not saved. Use re-ingest instead.' 
+          };
+        }
+        throw e;
+      }
+    }
     
-    return { success: true, team: abbr, games: games.length };
+    return { 
+      success: true, 
+      team: abbr, 
+      games: games.length,
+      playersUpdated,
+      gamesUpdated,
+      serverless: isServerless,
+      note: isServerless ? 'Data computed but not persisted (serverless environment)' : undefined
+    };
   } catch (e: any) {
     return { success: false, team, error: e?.message || 'Reprocess failed' };
   }
