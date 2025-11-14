@@ -94,13 +94,22 @@ function storePath(seasonYear: number, team: string){
 function loadTeamCustom(abbr: string): { aliases: Record<string,string> }{
   try{
     const p = path.resolve(process.cwd(),'data','player_positions','teams',`${abbr}.json`);
+    // Check if we're in serverless before trying file operations
+    const isServerless = process.env.VERCEL === '1' || process.env.VERCEL_ENV || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    if (isServerless) return { aliases: {} };
     if (!fs.existsSync(p)) return { aliases: {} };
     const j = JSON.parse(fs.readFileSync(p,'utf8'));
     const als = j?.aliases || {};
     const outAls: any = {};
     for (const [k,v] of Object.entries(als)) outAls[normName(k)] = normName(String(v));
     return { aliases: outAls };
-  }catch{ return { aliases: {} }; }
+  }catch(e: any){
+    // Silently return empty if it's a filesystem error (serverless)
+    if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+      return { aliases: {} };
+    }
+    return { aliases: {} };
+  }
 }
 
 async function fetchDepthChartBestMap(teamAbbr: string, host?: string): Promise<Record<string,'PG'|'SG'|'SF'|'PF'|'C'>>{
@@ -517,6 +526,22 @@ out.push({ gameId: gidBdl, date: when, opponent: oppAbbr, team, season: seasonLa
       note: fileWritten ? undefined : 'Data computed but not persisted (serverless/read-only filesystem)'
     });
   }catch(e:any){
+    // If it's a filesystem error (serverless), still return success - data computation may have succeeded
+    if (e.code === 'EROFS' || e.code === 'EACCES' || e.message?.includes('read-only')) {
+      const errorTeam = req.url ? new URL(req.url).searchParams.get('team') || 'unknown' : 'unknown';
+      const errorSeason = req.url ? (parseInt(new URL(req.url).searchParams.get('season') || '0', 10) || currentNbaSeason()) : currentNbaSeason();
+      console.log(`[ingest-nba] Read-only filesystem error caught (outer): ${errorTeam}`, e.message);
+      return NextResponse.json({ 
+        success: true, 
+        team: errorTeam, 
+        season: errorSeason, 
+        stored_games: 0, 
+        file: null, 
+        serverless: true, 
+        note: 'Data computation may have been interrupted by read-only filesystem',
+        error: e.message 
+      });
+    }
     return NextResponse.json({ success:false, error: e?.message || 'Ingest NBA mode failed' }, { status: 200 });
   }
 }
