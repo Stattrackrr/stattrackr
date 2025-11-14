@@ -123,24 +123,25 @@ if (supabaseUrl !== 'https://placeholder.supabase.co') {
   });
 }
 
+// Only enable autoRefreshToken in browser - during build/server there's no session to refresh
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
+    persistSession: isBrowser,
     storageKey: PERSISTENT_STORAGE_KEY,
     storage: persistentStorage,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    autoRefreshToken: isBrowser, // Only in browser, not during build
+    detectSessionInUrl: isBrowser,
   },
 })
 
 // Create a session-only client for non-remember-me logins (per-tab isolation)
 export const supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
+    persistSession: isBrowser,
     storageKey: SESSION_STORAGE_KEY,
     storage: sessionOnlyStorage,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    autoRefreshToken: isBrowser, // Only in browser, not during build
+    detectSessionInUrl: isBrowser,
   },
 })
 
