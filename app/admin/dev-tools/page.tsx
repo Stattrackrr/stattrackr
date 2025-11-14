@@ -39,13 +39,13 @@ export default function DevToolsPage() {
           // Profile might not exist, create it
           if (error.code === 'PGRST116' || !profileData) {
             console.log('Profile does not exist, creating one...');
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
+            const { data: newProfile, error: createError } = await (supabase
+              .from('profiles') as any)
               .insert({
                 id: user.id,
                 subscription_tier: 'free',
                 subscription_status: null,
-              } as any)
+              })
               .select()
               .single();
             
@@ -92,9 +92,9 @@ export default function DevToolsPage() {
       console.log('Updating profile with:', updates);
       console.log('User ID:', user.id);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates as any)
+      const { data, error } = await (supabase
+        .from('profiles') as any)
+        .update(updates)
         .eq('id', user.id)
         .select();
 
@@ -123,14 +123,14 @@ export default function DevToolsPage() {
   async function setTrialing() {
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles') as any)
         .update({
           subscription_status: 'trialing',
           subscription_tier: 'pro',
           subscription_billing_cycle: 'monthly',
           subscription_current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        } as any)
+        })
         .eq('id', user.id);
 
       if (error) throw error;
