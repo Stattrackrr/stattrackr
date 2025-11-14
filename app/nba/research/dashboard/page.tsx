@@ -3856,8 +3856,8 @@ function NBADashboardContent() {
         setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
         
         // Check Pro access - try profiles table first, fallback to user_metadata
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: profile } = await (supabase
+          .from('profiles') as any)
           .select('subscription_status, subscription_tier')
           .eq('id', session.user.id)
           .single();
@@ -3867,8 +3867,9 @@ function NBADashboardContent() {
         
         if (profile) {
           // Use profiles table if available
-          isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
-          isProTier = profile.subscription_tier === 'pro';
+          const profileData = profile as any;
+          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+          isProTier = profileData.subscription_tier === 'pro';
         } else {
           // Fallback to user_metadata for dev testing
           const metadata = session.user.user_metadata || {};
