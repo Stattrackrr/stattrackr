@@ -82,14 +82,15 @@ export default function PricingPage() {
         isProTier = profileData.subscription_tier === 'pro';
       } else {
         // Fallback to subscriptions table
-        const { data: subscription } = await supabase
-          .from('subscriptions')
+        const { data: subscription } = await (supabase
+          .from('subscriptions') as any)
           .select('status')
           .eq('user_id', userId)
           .single();
         
         if (subscription) {
-          isActive = subscription.status === 'active' || subscription.status === 'trialing';
+          const subscriptionData = subscription as any;
+          isActive = subscriptionData.status === 'active' || subscriptionData.status === 'trialing';
           isProTier = true; // Assume pro if in subscriptions table
         }
       }
