@@ -34,7 +34,12 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     if (profile) {
       // Use profiles table data
       const isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
-      const tier: SubscriptionTier = profile.subscription_tier === 'pro' ? 'pro' : 'free';
+      let tier: SubscriptionTier = 'free';
+      if (profile.subscription_tier === 'pro') {
+        tier = 'pro';
+      } else if (profile.subscription_tier === 'premium') {
+        tier = 'premium';
+      }
       
       return {
         tier,

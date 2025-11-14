@@ -45,7 +45,59 @@ type DerivedOdds = { openingLine?: number | null; currentLine?: number | null };
 
 type MovementRow = { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' };
 
-type MatchupInfo = { tipoffLocal?: string | null } | null;
+const getNthWeekdayOfMonthUtc = (year: number, month: number, weekday: number, nth: number) => {
+  const firstOfMonth = new Date(Date.UTC(year, month, 1));
+  const firstWeekdayOffset = (weekday - firstOfMonth.getUTCDay() + 7) % 7;
+  const day = 1 + firstWeekdayOffset + (nth - 1) * 7;
+  return new Date(Date.UTC(year, month, day));
+};
+
+const getEasternOffsetMinutes = (date: Date) => {
+  const year = date.getUTCFullYear();
+  const startDst = getNthWeekdayOfMonthUtc(year, 2, 0, 2); // Second Sunday in March
+  startDst.setUTCHours(7, 0, 0, 0); // 2 AM ET -> 7 AM UTC during standard time
+  const endDst = getNthWeekdayOfMonthUtc(year, 10, 0, 1); // First Sunday in November
+  endDst.setUTCHours(6, 0, 0, 0); // 2 AM ET -> 6 AM UTC during daylight time
+  const isDst = date >= startDst && date < endDst;
+  return isDst ? -240 : -300; // minutes offset from UTC
+};
+
+const parseBallDontLieTipoff = (game: any): Date | null => {
+  if (!game) return null;
+  const iso = String(game?.date || '');
+  if (!iso) return null;
+  const status = String(game?.status || '');
+  const datePart = iso.split('T')[0];
+  if (!datePart) return null;
+
+  const timeMatch = status.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+  if (!timeMatch) {
+    const fallback = new Date(iso);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+
+  let hour = parseInt(timeMatch[1], 10);
+  const minute = parseInt(timeMatch[2], 10);
+  const meridiem = timeMatch[3].toUpperCase();
+  if (meridiem === 'PM' && hour !== 12) {
+    hour += 12;
+  } else if (meridiem === 'AM' && hour === 12) {
+    hour = 0;
+  }
+
+  const baseDate = new Date(iso);
+  const offsetMinutes = getEasternOffsetMinutes(baseDate);
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMins = Math.abs(offsetMinutes) % 60;
+  const offsetSign = offsetMinutes <= 0 ? '-' : '+';
+  const offsetStr = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMins).padStart(2, '0')}`;
+
+  const zonedIso = `${datePart}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00${offsetStr}`;
+  const parsed = new Date(zonedIso);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+type MatchupInfo = { tipoffLocal?: string | null; tipoffDate?: string | null } | null;
 
 export interface OfficialOddsCardProps {
   isDark: boolean;
@@ -576,6 +628,10 @@ const StaticBarsChart = memo(function StaticBarsChart({
   selectedStat,
   compactMobile,
   selectedTimeframe,
+  onChartTouchStart,
+  onChartTouchMove,
+  onChartTouchEnd,
+  onChartMouseLeave,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -586,6 +642,10 @@ const StaticBarsChart = memo(function StaticBarsChart({
   selectedStat: string;
   compactMobile?: boolean;
   selectedTimeframe?: string;
+  onChartTouchStart?: () => void;
+  onChartTouchMove?: () => void;
+  onChartTouchEnd?: () => void;
+  onChartMouseLeave?: () => void;
 }) {
   const colorMap = useMemo(() => {
     return data.map(d => {
@@ -641,13 +701,14 @@ const StaticBarsChart = memo(function StaticBarsChart({
   const computedMaxBarSize = useMemo(() => (compactMobile ? 120 : CHART_CONFIG.performance.maxBarSize), [compactMobile]);
   
   const chartMargin = useMemo(() => {
-    // Use smaller bottom margin on mobile to eliminate gap with X-axis line
-    // Add left/right padding for even spacing on mobile
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    return isMobile 
-      ? { ...CHART_CONFIG.margin, bottom: 0, left: 2, right: 2 }
-      : CHART_CONFIG.margin;
-  }, []);
+    const margin = { ...CHART_CONFIG.margin };
+    if (compactMobile || isMobileSB) {
+      margin.bottom = 0;
+      margin.left = 2;
+      margin.right = 2;
+    }
+    return margin;
+  }, [compactMobile, isMobileSB]);
   
   // Hide logos and labels for Last Season to reduce clutter
   const hideLogosAndLabels = selectedTimeframe === 'lastseason';
@@ -666,6 +727,10 @@ const StaticBarsChart = memo(function StaticBarsChart({
         maxBarSize={data.length <= 5 ? 250 : data.length <= 10 ? 250 : computedMaxBarSize}
         barCategoryGap={computedBarCategoryGap}
         barGap={selectedStat === 'fg3m' ? -40 : (compactMobile ? 2 : 2)}
+        onTouchStart={onChartTouchStart}
+        onTouchMove={onChartTouchMove}
+        onTouchEnd={onChartTouchEnd}
+        onMouseLeave={onChartMouseLeave}
       >
         <XAxis
           dataKey="xKey"
@@ -832,7 +897,16 @@ const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
     [dataLength, yAxisConfig]
   );
   
-  const chartMargin = useMemo(() => CHART_CONFIG.margin, []);
+  const chartMargin = useMemo(() => {
+    if (compactMobile) {
+      const mobileMargin = { ...CHART_CONFIG.margin };
+      mobileMargin.bottom = 0;
+      mobileMargin.left = 2;
+      mobileMargin.right = 2;
+      return mobileMargin;
+    }
+    return CHART_CONFIG.margin;
+  }, [compactMobile]);
   return (
     <ResponsiveContainer 
       width="100%" 
@@ -874,7 +948,7 @@ const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark
         left: isMobile ? 8 : CHART_CONFIG.yAxis.width,
         right: isMobile ? 8 : (CHART_CONFIG.margin.right + 10),
         top: CHART_CONFIG.margin.top,
-        bottom: CHART_CONFIG.margin.bottom + 30,
+        bottom: isMobile ? CHART_CONFIG.margin.bottom : CHART_CONFIG.margin.bottom + 30,
         zIndex: 5 // above bars but below tooltips
       }}
     >
@@ -917,8 +991,6 @@ const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
           const r = b.getBoundingClientRect();
           minLeft = Math.min(minLeft, r.left - parentRect.left);
           maxRight = Math.max(maxRight, r.right - parentRect.left);
-          minTop = Math.min(minTop, r.top - parentRect.top);
-          maxBottom = Math.max(maxBottom, r.bottom - parentRect.top);
           const valueAttr = b.getAttribute('data-value');
           const parsed = valueAttr != null ? parseFloat(valueAttr) : NaN;
           if (!Number.isNaN(parsed)) barValues.push(parsed);
@@ -926,27 +998,6 @@ const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
 
         if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, minLeft)}px`;
         if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, parentRect.width - maxRight)}px`;
-
-        if (Number.isFinite(minTop) && Number.isFinite(maxBottom)) {
-          const baselineValue = minY; // use actual minY baseline for chart alignment
-          const dataMax = typeof yAxisConfig.dataMax === 'number'
-            ? Math.max(yAxisConfig.dataMax, baselineValue)
-            : Math.max((barValues.length ? Math.max(...barValues) : maxY), baselineValue);
-          const dataMin = typeof yAxisConfig.dataMin === 'number'
-            ? Math.min(yAxisConfig.dataMin, baselineValue)
-            : Math.min((barValues.length ? Math.min(...barValues) : minY), baselineValue);
-
-          const barPixelHeight = maxBottom - minTop;
-          const barValueRange = Math.max(1e-6, dataMax - dataMin);
-          const pixelsPerUnit = barPixelHeight / barValueRange;
-          const topPaddingUnits = Math.max(0, maxY - dataMax);
-          const bottomPaddingUnits = Math.max(0, dataMin - minY);
-          const topOffset = topPaddingUnits * pixelsPerUnit;
-          const bottomOffset = bottomPaddingUnits * pixelsPerUnit;
-
-          container.style.top = `${Math.max(0, minTop - topOffset)}px`;
-          container.style.bottom = `${Math.max(0, parentRect.height - maxBottom - bottomOffset)}px`;
-        }
       }
     }
 
@@ -1018,10 +1069,40 @@ const StatsBarChart = memo(function StatsBarChart({
 
   // Detect mobile only on client to avoid affecting desktop SSR
   const [isMobile, setIsMobile] = useState(false);
+  const [layoutKey, setLayoutKey] = useState(0);
+  const [mobileTooltipActive, setMobileTooltipActive] = useState(false);
+  const mobileTooltipTimerRef = useRef<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clearMobileTooltipTimer = useCallback(() => {
+    if (mobileTooltipTimerRef.current !== null && typeof window !== 'undefined') {
+      window.clearTimeout(mobileTooltipTimerRef.current);
+      mobileTooltipTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearMobileTooltipTimer();
+    };
+  }, [clearMobileTooltipTimer]);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(max-width: 639px)');
-    const update = () => setIsMobile(mq.matches);
+    const update = () => {
+      const matches = mq.matches;
+      setIsMobile(prev => {
+        if (prev !== matches) {
+          setLayoutKey((k) => k + 1);
+          if (!matches) {
+            setMobileTooltipActive(false);
+            clearMobileTooltipTimer();
+          }
+        }
+        return matches;
+      });
+    };
     update();
     if (mq.addEventListener) {
       mq.addEventListener('change', update);
@@ -1093,8 +1174,61 @@ const StatsBarChart = memo(function StatsBarChart({
       : 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.085) 15%, rgba(239, 68, 68, 0.055) 30%, rgba(239, 68, 68, 0.024) 45%, rgba(239, 68, 68, 0.008) 60%, rgba(239, 68, 68, 0.003) 75%, rgba(239, 68, 68, 0.001) 85%, rgba(239, 68, 68, 0.0003) 92%, rgba(239, 68, 68, 0.00005) 97%, transparent 100%)';
   }
 
+  const handleChartTouchStart = useCallback((event?: React.TouchEvent | TouchEvent) => {
+    if (!isMobile) return;
+    clearMobileTooltipTimer();
+    setIsDragging(false);
+    if (event && 'touches' in event && event.touches.length > 0) {
+      const touch = event.touches[0];
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    } else {
+      touchStartRef.current = null;
+    }
+  }, [isMobile, clearMobileTooltipTimer]);
+
+  const handleChartTouchMove = useCallback((event?: React.TouchEvent | TouchEvent) => {
+    if (!isMobile) return;
+    if (touchStartRef.current && event && 'touches' in event && event.touches.length > 0) {
+      const touch = event.touches[0];
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = touch.clientY - touchStartRef.current.y;
+      const distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared > 16) {
+        setIsDragging(true);
+        clearMobileTooltipTimer();
+        setMobileTooltipActive(false);
+      }
+    }
+  }, [isMobile, clearMobileTooltipTimer]);
+
+  const handleChartTouchEnd = useCallback(() => {
+    if (!isMobile) return;
+    clearMobileTooltipTimer();
+    touchStartRef.current = null;
+    if (isDragging) {
+      setMobileTooltipActive(false);
+      setIsDragging(false);
+      return;
+    }
+    setIsDragging(false);
+    setMobileTooltipActive(true);
+  }, [isMobile, clearMobileTooltipTimer, isDragging]);
+
+  const handleChartMouseLeave = useCallback(() => {
+    if (!isMobile) return;
+    clearMobileTooltipTimer();
+    setMobileTooltipActive(false);
+  }, [isMobile, clearMobileTooltipTimer]);
+
+  const adjustedTooltip = useCallback((tooltipProps: any) => {
+    if (isMobile && !mobileTooltipActive) {
+      return null;
+    }
+    return customTooltip(tooltipProps);
+  }, [isMobile, mobileTooltipActive, customTooltip]);
+
   return (
-    <div className="relative w-full h-full chart-mobile-optimized">
+    <div className="relative w-full h-full chart-mobile-optimized" key={layoutKey}>
       {/* Background glow effect */}
       {backgroundGradient && (
         <div 
@@ -1118,11 +1252,15 @@ const StatsBarChart = memo(function StatsBarChart({
         yAxisConfig={yAxisConfig}
         isDark={isDark}
         bettingLine={bettingLine}
-        customTooltip={customTooltip}
+        customTooltip={adjustedTooltip}
         formatChartLabel={formatChartLabel}
         selectedStat={selectedStat}
         compactMobile={isMobile}
         selectedTimeframe={selectedTimeframe}
+        onChartTouchStart={handleChartTouchStart}
+        onChartTouchMove={handleChartTouchMove}
+        onChartTouchEnd={handleChartTouchEnd}
+        onChartMouseLeave={handleChartMouseLeave}
       />
       {/* Mobile-only: Reference line layer (SVG) for perfect alignment */}
       {isMobile && (
@@ -3898,7 +4036,7 @@ const lineMovementInFlightRef = useRef(false);
         return lineMovement
           .map((movement) => {
             const dt = new Date(movement.timestamp);
-            const timeLabel = dt.toLocaleString('en-US', {
+            const timeLabel = dt.toLocaleString(undefined, {
               month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
             });
             const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
@@ -3917,7 +4055,7 @@ const lineMovementInFlightRef = useRef(false);
       const formatLabel = (entry: typeof openingLine, label: string) => {
         if (!entry) return '';
         const dt = new Date(entry.timestamp);
-        const time = dt.toLocaleString('en-US', {
+        const time = dt.toLocaleString(undefined, {
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
         const suffix = entry.bookmaker ? ` (${entry.bookmaker})` : '';
@@ -3966,7 +4104,7 @@ const lineMovementInFlightRef = useRef(false);
       const delta = cur.line - prev.line;
       const dir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
       const dt = new Date(cur.timestamp);
-      const timeLabel = dt.toLocaleString('en-US', {
+      const timeLabel = dt.toLocaleString(undefined, {
         month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
       });
       rows.push({
@@ -4044,6 +4182,7 @@ const lineMovementInFlightRef = useRef(false);
   // Games state
   const [todaysGames, setTodaysGames] = useState<any[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
+  const gamesFetchInFlightRef = useRef(false);
   
   // Game stats for team props (separate from player stats)
   const [gameStats, setGameStats] = useState<any[]>([]);
@@ -4061,17 +4200,16 @@ const lineMovementInFlightRef = useRef(false);
         return (home === teamA && away === teamB) || (home === teamB && away === teamA);
       });
       if (!game) return null;
-      const iso = String(game?.date || '');
-      const dt = iso ? new Date(iso) : null;
-      const tipoffLocal = dt
-        ? new Intl.DateTimeFormat('en-US', {
+      const tipoffDate = parseBallDontLieTipoff(game);
+      const tipoffLocal = tipoffDate
+        ? new Intl.DateTimeFormat(undefined, {
             month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-          }).format(dt)
+          }).format(tipoffDate)
         : null;
       const homeAbbr = normalizeAbbr(game?.home_team?.abbreviation || '');
       const awayAbbr = normalizeAbbr(game?.visitor_team?.abbreviation || '');
       const isSelectedHome = teamA === homeAbbr;
-      return { tipoffLocal, homeAbbr, awayAbbr, isSelectedHome };
+      return { tipoffLocal, tipoffDate: tipoffDate?.toISOString() ?? null, homeAbbr, awayAbbr, isSelectedHome };
     } catch {
       return null;
     }
@@ -4425,9 +4563,16 @@ const lineMovementInFlightRef = useRef(false);
   };
 
   // Fetch games function (today ± 7 days)
-  const fetchTodaysGames = async () => {
+  const fetchTodaysGames = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (gamesFetchInFlightRef.current) {
+      return;
+    }
+    gamesFetchInFlightRef.current = true;
+
     try {
-      setGamesLoading(true);
+      if (!silent) {
+        setGamesLoading(true);
+      }
       
       const formatDate = (date: Date) => {
         return date.toISOString().split('T')[0];
@@ -4459,9 +4604,12 @@ const lineMovementInFlightRef = useRef(false);
       console.error('Error in fetchTodaysGames:', error);
       setTodaysGames([]);
     } finally {
-      setGamesLoading(false);
+      gamesFetchInFlightRef.current = false;
+      if (!silent) {
+        setGamesLoading(false);
+      }
     }
-  };
+  }, [gamesFetchInFlightRef]);
 
   // Update opponent when games or selected team changes
   useEffect(() => {
@@ -4499,11 +4647,26 @@ const lineMovementInFlightRef = useRef(false);
   // Load games on mount and refresh every 3 hours (reduced churn)
   useEffect(() => {
     fetchTodaysGames();
-    const id = setInterval(fetchTodaysGames, 3 * 60 * 60 * 1000); // 3 hours
+    const id = setInterval(() => {
+      fetchTodaysGames({ silent: true });
+    }, 60 * 1000);
     return () => {
       clearInterval(id);
     };
-  }, []);
+  }, [fetchTodaysGames]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTodaysGames({ silent: true });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchTodaysGames]);
 
   // When a team's game goes Final, immediately switch VS to next opponent (or ALL if none)
   // Also track next game for prop tracking/journal
