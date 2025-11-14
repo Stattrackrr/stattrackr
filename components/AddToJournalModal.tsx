@@ -159,8 +159,8 @@ export default function AddToJournalModal({
       // Get bookmaker name if odds were selected from a bookmaker
       const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
 
-      const { error: insertError } = await supabase
-        .from('bets')
+      const { error: insertError } = await (supabase
+        .from('bets') as any)
         .insert({
           user_id: user.id,
           date: gameDate,
