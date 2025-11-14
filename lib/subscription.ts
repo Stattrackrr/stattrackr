@@ -25,27 +25,28 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     }
 
     // Check profiles table first (source of truth)
-    const { data: profile } = await supabase
-      .from('profiles')
+    const { data: profile } = await (supabase
+      .from('profiles') as any)
       .select('subscription_status, subscription_tier, subscription_billing_cycle, subscription_current_period_end')
       .eq('id', user.id)
       .single();
 
     if (profile) {
       // Use profiles table data
-      const isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
+      const profileData = profile as any;
+      const isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
       let tier: SubscriptionTier = 'free';
-      if (profile.subscription_tier === 'pro') {
+      if (profileData.subscription_tier === 'pro') {
         tier = 'pro';
-      } else if (profile.subscription_tier === 'premium') {
+      } else if (profileData.subscription_tier === 'premium') {
         tier = 'premium';
       }
       
       return {
         tier,
         isActive,
-        planName: profile.subscription_billing_cycle,
-        nextBillingDate: profile.subscription_current_period_end,
+        planName: profileData.subscription_billing_cycle,
+        nextBillingDate: profileData.subscription_current_period_end,
       };
     }
 

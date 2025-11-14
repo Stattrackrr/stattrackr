@@ -215,8 +215,8 @@ export default function RightSidebar({
       return;
     }
 
-    const { data: trackedProps, error } = await supabase
-      .from('tracked_props')
+    const { data: trackedProps, error } = await (supabase
+      .from('tracked_props') as any)
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -229,7 +229,7 @@ export default function RightSidebar({
 
     if (trackedProps) {
       // Convert to TrackedBet format
-      const bets = trackedProps.map(prop => {
+      const bets = (trackedProps as any[]).map((prop: any) => {
         // Format stat type name for display
         const statDisplay = formatStatTypeName(prop.stat_type);
         
@@ -313,8 +313,8 @@ export default function RightSidebar({
 
   const removeBet = async (id: string) => {
     // Remove from Supabase
-    const { error } = await supabase
-      .from('tracked_props')
+    const { error } = await (supabase
+      .from('tracked_props') as any)
       .delete()
       .eq('id', id);
 
@@ -350,8 +350,8 @@ export default function RightSidebar({
     if (!user) return;
 
     // Delete all from Supabase
-    const { error } = await supabase
-      .from('tracked_props')
+    const { error } = await (supabase
+      .from('tracked_props') as any)
       .delete()
       .eq('user_id', user.id);
 

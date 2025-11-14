@@ -160,8 +160,8 @@ export default function TrackPlayerModal({
       const bookmakerName = !isManualMode && selectedOdds ? getBookmakerInfo(selectedOdds.bookmaker).name : null;
       
       // Insert into tracked_props
-      const { data: insertedProp, error: insertError } = await supabase
-        .from('tracked_props')
+      const { data: insertedProp, error: insertError } = await (supabase
+        .from('tracked_props') as any)
         .insert({
           user_id: user.id,
           player_id: playerId,
