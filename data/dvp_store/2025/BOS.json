@@ -9,8 +9,8 @@
       "PG": 41,
       "SG": 13,
       "SF": 20,
-      "PF": 15,
-      "C": 16
+      "PF": 7,
+      "C": 24
     },
     "players": [
       {
@@ -160,7 +160,7 @@
       {
         "playerId": 1028035794,
         "name": "Kyle Filipowski",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 13,
         "reb": 8,
@@ -192,7 +192,7 @@
       {
         "playerId": 285,
         "name": "Kevin Love",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 5,
         "reb": 7,
@@ -616,11 +616,11 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 49,
-      "SG": 15,
-      "SF": 12,
-      "PF": 26,
-      "C": 3
+      "PG": 12,
+      "SG": 37,
+      "SF": 13,
+      "PF": 14,
+      "C": 29
     },
     "players": [
       {
@@ -642,7 +642,7 @@
       {
         "playerId": 61,
         "name": "Mikal Bridges",
-        "bucket": "SG",
+        "bucket": "PF",
         "isStarter": true,
         "pts": 12,
         "reb": 6,
@@ -658,7 +658,7 @@
       {
         "playerId": 447,
         "name": "Karl-Anthony Towns",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": true,
         "pts": 26,
         "reb": 13,
@@ -674,7 +674,7 @@
       {
         "playerId": 73,
         "name": "Jalen Brunson",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": true,
         "pts": 31,
         "reb": 3,
@@ -706,7 +706,7 @@
       {
         "playerId": 100,
         "name": "Jordan Clarkson",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 6,
         "reb": 3,
@@ -754,7 +754,7 @@
       {
         "playerId": 202,
         "name": "Josh Hart",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 2,
         "reb": 14,
@@ -802,7 +802,7 @@
       {
         "playerId": 414,
         "name": "Landry Shamet",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 3,
         "reb": 3,
@@ -905,9 +905,9 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 25,
-      "SG": 15,
-      "SF": 21,
+      "PG": 32,
+      "SG": 21,
+      "SF": 8,
       "PF": 25,
       "C": 33
     },
@@ -963,7 +963,7 @@
       {
         "playerId": 397,
         "name": "Duncan Robinson",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": true,
         "pts": 8,
         "reb": 4,
@@ -1011,7 +1011,7 @@
       {
         "playerId": 56677826,
         "name": "Ausar Thompson",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": true,
         "pts": 21,
         "reb": 12,
@@ -1043,7 +1043,7 @@
       {
         "playerId": 666604,
         "name": "Javonte Green",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 7,
         "reb": 3,
@@ -1194,9 +1194,9 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 7,
-      "SG": 31,
-      "SF": 22,
+      "PG": 9,
+      "SG": 22,
+      "SF": 29,
       "PF": 12,
       "C": 18
     },
@@ -1220,7 +1220,7 @@
       {
         "playerId": 18677986,
         "name": "Trey Murphy III",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": true,
         "pts": 7,
         "reb": 5,
@@ -1380,7 +1380,7 @@
       {
         "playerId": 1057390538,
         "name": "Micah Peavy",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 2,
         "reb": 2,
@@ -1499,10 +1499,10 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 12,
-      "SG": 15,
-      "SF": 43,
-      "PF": 19,
+      "PG": 25,
+      "SG": 21,
+      "SF": 18,
+      "PF": 25,
       "C": 16
     },
     "players": [
@@ -1557,7 +1557,7 @@
       {
         "playerId": 1028028993,
         "name": "Jaylon Tyson",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 19,
         "reb": 5,
@@ -1573,7 +1573,7 @@
       {
         "playerId": 322,
         "name": "Donovan Mitchell",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": true,
         "pts": 15,
         "reb": 4,
@@ -1653,7 +1653,7 @@
       {
         "playerId": 1057395754,
         "name": "Tyrese Proctor",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 2,
         "reb": 0,
@@ -1685,7 +1685,7 @@
       {
         "playerId": 666940,
         "name": "Dean Wade",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 6,
         "reb": 3,
@@ -1822,8 +1822,8 @@
     "buckets": {
       "PG": 42,
       "SG": 17,
-      "SF": 21,
-      "PF": 2,
+      "SF": 17,
+      "PF": 6,
       "C": 26
     },
     "players": [
@@ -1846,7 +1846,7 @@
       {
         "playerId": 38017711,
         "name": "Jabari Walker",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 2,
         "reb": 1,
@@ -1958,7 +1958,7 @@
       {
         "playerId": 1028214238,
         "name": "Justin Edwards",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 2,
         "reb": 4,
@@ -2112,8 +2112,8 @@
       "PG": 36,
       "SG": 12,
       "SF": 38,
-      "PF": 18,
-      "C": 24
+      "PF": 22,
+      "C": 20
     },
     "players": [
       {
@@ -2215,7 +2215,7 @@
       {
         "playerId": 83,
         "name": "Clint Capela",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 4,
         "reb": 10,
@@ -2311,7 +2311,7 @@
       {
         "playerId": 3547301,
         "name": "Jae'Sean Tate",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 1,
@@ -2414,10 +2414,10 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 14,
-      "SG": 9,
-      "SF": 26,
-      "PF": 11,
+      "PG": 6,
+      "SG": 17,
+      "SF": 32,
+      "PF": 5,
       "C": 47
     },
     "players": [
@@ -2520,7 +2520,7 @@
       {
         "playerId": 38017692,
         "name": "Malaki Branham",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 10,
         "reb": 3,
@@ -2568,7 +2568,7 @@
       {
         "playerId": 1028026717,
         "name": "AJ Johnson",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 1,
         "reb": 2,
@@ -2584,7 +2584,7 @@
       {
         "playerId": 1057262985,
         "name": "Tre Johnson",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 7,
         "reb": 1,
@@ -2616,7 +2616,7 @@
       {
         "playerId": 1057279594,
         "name": "Will Riley",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 4,
         "reb": 2,
@@ -2751,10 +2751,10 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 14,
-      "SG": 35,
-      "SF": 38,
-      "PF": 18,
+      "PG": 27,
+      "SG": 22,
+      "SF": 30,
+      "PF": 26,
       "C": 18
     },
     "players": [
@@ -2857,7 +2857,7 @@
       {
         "playerId": 56677827,
         "name": "Anthony Black",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 13,
         "reb": 4,
@@ -2873,7 +2873,7 @@
       {
         "playerId": 1028025497,
         "name": "Tristan Da Silva",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 11,
         "reb": 2,
@@ -2905,7 +2905,7 @@
       {
         "playerId": 229,
         "name": "Jonathan Isaac",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 3,
         "reb": 1,
@@ -3040,10 +3040,10 @@
     "team": "BOS",
     "season": "2025-26",
     "buckets": {
-      "PG": 20,
-      "SG": 13,
-      "SF": 32,
-      "PF": 28,
+      "PG": 24,
+      "SG": 9,
+      "SF": 20,
+      "PF": 40,
       "C": 14
     },
     "players": [
@@ -3146,7 +3146,7 @@
       {
         "playerId": 56677827,
         "name": "Anthony Black",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 4,
         "reb": 3,
@@ -3162,7 +3162,7 @@
       {
         "playerId": 1028025497,
         "name": "Tristan Da Silva",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 12,
         "reb": 5,
@@ -3194,7 +3194,7 @@
       {
         "playerId": 229,
         "name": "Jonathan Isaac",
-        "bucket": "PF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3307,6 +3307,311 @@
         "playerId": 462,
         "name": "Moritz Wagner",
         "bucket": "SF",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      }
+    ],
+    "source": "bdl+espn"
+  },
+  {
+    "gameId": "18446984",
+    "date": "2025-11-12",
+    "opponent": "MEM",
+    "team": "BOS",
+    "season": "2025-26",
+    "buckets": {
+      "PG": 29,
+      "SG": 5,
+      "SF": 8,
+      "PF": 38,
+      "C": 15
+    },
+    "players": [
+      {
+        "playerId": 1028048549,
+        "name": "Cam Spencer",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 5,
+        "reb": 2,
+        "ast": 3,
+        "fg3m": 1,
+        "fg3a": 2,
+        "fgm": 1,
+        "fga": 5,
+        "stl": 1,
+        "blk": 1,
+        "min": "29"
+      },
+      {
+        "playerId": 666505,
+        "name": "Brandon Clarke",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
+        "playerId": 1028025754,
+        "name": "Zach Edey",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
+        "playerId": 666676,
+        "name": "Ty Jerome",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
+        "playerId": 666786,
+        "name": "Ja Morant",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
+        "playerId": 38017656,
+        "name": "Scotty Pippen Jr.",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
+        "playerId": 81,
+        "name": "Kentavious Caldwell-Pope",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 3,
+        "ast": 3,
+        "fg3m": 0,
+        "fg3a": 3,
+        "fgm": 0,
+        "fga": 3,
+        "stl": 1,
+        "blk": 0,
+        "min": "19"
+      },
+      {
+        "playerId": 231,
+        "name": "Jaren Jackson Jr.",
+        "bucket": "PF",
+        "isStarter": true,
+        "pts": 18,
+        "reb": 2,
+        "ast": 0,
+        "fg3m": 1,
+        "fg3a": 3,
+        "fgm": 7,
+        "fga": 15,
+        "stl": 1,
+        "blk": 1,
+        "min": "23"
+      },
+      {
+        "playerId": 19465326,
+        "name": "Jock Landale",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 11,
+        "reb": 6,
+        "ast": 4,
+        "fg3m": 1,
+        "fg3a": 2,
+        "fgm": 5,
+        "fga": 10,
+        "stl": 1,
+        "blk": 0,
+        "min": "24"
+      },
+      {
+        "playerId": 1028039105,
+        "name": "Jaylen Wells",
+        "bucket": "SG",
+        "isStarter": true,
+        "pts": 5,
+        "reb": 4,
+        "ast": 0,
+        "fg3m": 1,
+        "fg3a": 5,
+        "fgm": 2,
+        "fga": 10,
+        "stl": 2,
+        "blk": 0,
+        "min": "24"
+      },
+      {
+        "playerId": 38017731,
+        "name": "Vince Williams Jr.",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 12,
+        "reb": 5,
+        "ast": 2,
+        "fg3m": 3,
+        "fg3a": 10,
+        "fgm": 4,
+        "fga": 12,
+        "stl": 0,
+        "blk": 0,
+        "min": "25"
+      },
+      {
+        "playerId": 17896067,
+        "name": "Santi Aldama",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 14,
+        "reb": 6,
+        "ast": 4,
+        "fg3m": 2,
+        "fg3a": 7,
+        "fgm": 4,
+        "fga": 11,
+        "stl": 2,
+        "blk": 1,
+        "min": "24"
+      },
+      {
+        "playerId": 1057266649,
+        "name": "Cedric Coward",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 12,
+        "reb": 6,
+        "ast": 3,
+        "fg3m": 1,
+        "fg3a": 6,
+        "fgm": 3,
+        "fga": 12,
+        "stl": 0,
+        "blk": 0,
+        "min": "26"
+      },
+      {
+        "playerId": 1028244692,
+        "name": "PJ Hall",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 4,
+        "reb": 3,
+        "ast": 1,
+        "fg3m": 0,
+        "fg3a": 1,
+        "fgm": 2,
+        "fga": 4,
+        "stl": 0,
+        "blk": 0,
+        "min": "07"
+      },
+      {
+        "playerId": 56677830,
+        "name": "GG Jackson",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 6,
+        "reb": 0,
+        "ast": 1,
+        "fg3m": 0,
+        "fg3a": 2,
+        "fgm": 2,
+        "fga": 6,
+        "stl": 0,
+        "blk": 0,
+        "min": "07"
+      },
+      {
+        "playerId": 666703,
+        "name": "John Konchar",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "06"
+      },
+      {
+        "playerId": 56677859,
+        "name": "Olivier-Maxence Prosper",
+        "bucket": "SF",
+        "isStarter": false,
+        "pts": 8,
+        "reb": 4,
+        "ast": 4,
+        "fg3m": 0,
+        "fg3a": 2,
+        "fgm": 2,
+        "fga": 7,
+        "stl": 0,
+        "blk": 1,
+        "min": "26"
+      },
+      {
+        "playerId": 1057396260,
+        "name": "Javon Small",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
