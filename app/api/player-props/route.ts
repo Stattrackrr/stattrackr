@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
+import { ensureOddsCache } from '@/lib/refreshOdds';
+import type { OddsCache } from '@/app/api/odds/refresh/route';
 
 export const runtime = 'nodejs';
 
@@ -47,8 +49,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Get cached odds data
-    const oddsCache: any = cache.get(ODDS_CACHE_KEY);
+    let oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
     
+    if (!oddsCache) {
+      try {
+        oddsCache = await ensureOddsCache({ source: 'api/player-props' });
+      } catch (refreshError) {
+        console.error('Player props on-demand refresh failed:', refreshError);
+      }
+    }
+
     if (!oddsCache) {
       return NextResponse.json({ 
         error: 'Odds data not available - waiting for refresh',

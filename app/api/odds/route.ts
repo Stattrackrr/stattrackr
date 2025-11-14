@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
-import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import cache from '@/lib/cache';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { gameInvolvesTeam } from '@/lib/teamMapping';
+import { ensureOddsCache } from '@/lib/refreshOdds';
+import type { OddsCache } from '@/app/api/odds/refresh/route';
 
 export interface BookRow {
   name: string;
@@ -15,12 +17,6 @@ export interface BookRow {
   PTS: { line: string; over: string; under: string };
   REB: { line: string; over: string; under: string };
   AST: { line: string; over: string; under: string };
-}
-
-interface OddsCache {
-  games: any[];
-  lastUpdated: string;
-  nextUpdate: string;
 }
 
 const ODDS_CACHE_KEY = 'all_nba_odds';
@@ -38,11 +34,20 @@ export async function GET(request: NextRequest) {
     const team = searchParams.get('team');
     
     // Get bulk cached odds data
-    const oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
+    let oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
     
     // Debug: Check cache status
     const stats = cache.getStats();
     console.log('Cache stats:', { totalEntries: stats.totalEntries, validEntries: stats.validEntries, keys: stats.keys.slice(0, 5) });
+    
+    if (!oddsCache) {
+      console.warn('No odds data in cache - attempting on-demand refresh');
+      try {
+        oddsCache = await ensureOddsCache({ source: 'api/odds' });
+      } catch (refreshError) {
+        console.error('Failed to refresh odds on-demand:', refreshError);
+      }
+    }
     
     if (!oddsCache) {
       console.warn('No odds data in cache - bulk refresh may not have run yet');

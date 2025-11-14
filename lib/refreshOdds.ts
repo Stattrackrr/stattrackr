@@ -22,9 +22,18 @@ const ODDS_CACHE_KEY = 'all_nba_odds';
  * Fetch all NBA odds from The Odds API
  * This function is called by the scheduler and the API route
  */
-type RefreshSource = 'scheduler' | 'api/odds/refresh';
+type RefreshSource =
+  | 'scheduler'
+  | 'api/odds/refresh'
+  | 'api/odds'
+  | 'api/player-props'
+  | 'ensureOddsCache';
 
-export async function refreshOddsData(options: { source: RefreshSource } = { source: 'scheduler' }) {
+let ongoingRefresh: Promise<OddsCache | null> | null = null;
+
+export async function refreshOddsData(
+  options: { source: RefreshSource } = { source: 'scheduler' }
+) {
   const ODDS_API_KEY = process.env.ODDS_API_KEY;
   
   if (!ODDS_API_KEY) {
@@ -38,19 +47,13 @@ export async function refreshOddsData(options: { source: RefreshSource } = { sou
     // Fetch all NBA games with game odds (H2H, spreads, totals)
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
     const baseRegions = process.env.ODDS_REGIONS || 'us';
-    const defaultBookmakers = 'draftkings,fanduel,fanatics,caesars';
-    const baseBookmakers = (process.env.ODDS_BOOKMAKERS || defaultBookmakers).trim();
     const gamesParams = new URLSearchParams({
       apiKey: ODDS_API_KEY,
+      regions: baseRegions,
       markets: 'h2h,spreads,totals',
       oddsFormat: 'american',
       dateFormat: 'iso',
     });
-    if (baseBookmakers.length > 0) {
-      gamesParams.set('bookmakers', baseBookmakers);
-    } else {
-      gamesParams.set('regions', baseRegions);
-    }
 
     const gamesResponse = await fetch(`${gamesUrl}?${gamesParams}`);
     const gamesData = await gamesResponse.json();
@@ -82,15 +85,11 @@ export async function refreshOddsData(options: { source: RefreshSource } = { sou
         const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
         const eventParams = new URLSearchParams({
           apiKey: ODDS_API_KEY,
+          regions: baseRegions,
           markets: playerPropsMarkets,
           oddsFormat: 'american',
           dateFormat: 'iso',
         });
-        if (baseBookmakers.length > 0) {
-          eventParams.set('bookmakers', baseBookmakers);
-        } else {
-          eventParams.set('regions', baseRegions);
-        }
         
         const response = await fetch(`${eventUrl}?${eventParams}`);
         if (response.ok) {
@@ -149,6 +148,32 @@ export async function refreshOddsData(options: { source: RefreshSource } = { sou
     console.error('❌ Bulk odds refresh failed:', error);
     throw error;
   }
+}
+
+export async function ensureOddsCache(options: {
+  source: RefreshSource;
+  force?: boolean;
+}): Promise<OddsCache | null> {
+  const existing = cache.get<OddsCache>(ODDS_CACHE_KEY);
+  if (existing && !options.force) {
+    return existing;
+  }
+
+  if (!ongoingRefresh) {
+    ongoingRefresh = (async () => {
+      try {
+        await refreshOddsData({ source: options.source });
+      } catch (error) {
+        console.error('❌ ensureOddsCache refresh failed:', error);
+        throw error;
+      }
+      return cache.get<OddsCache>(ODDS_CACHE_KEY);
+    })().finally(() => {
+      ongoingRefresh = null;
+    });
+  }
+
+  return ongoingRefresh;
 }
 
 /**
