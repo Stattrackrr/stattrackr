@@ -113,9 +113,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Trigger ingest with latest=1 to only ingest new games
+    // Use production domain to avoid preview deployment authentication issues
     const host = req.headers.get('host') || '';
     const protocol = req.headers.get('x-forwarded-proto') || 'https';
-    const ingestUrl = `${protocol}://${host}/api/dvp/ingest-nba-all?latest=1`;
+    
+    // If it's a preview deployment (contains .vercel.app), use production domain instead
+    const productionDomain = process.env.NEXT_PUBLIC_BASE_URL || 'stattrackr.co';
+    const useProductionDomain = host.includes('.vercel.app') || host.includes('localhost');
+    
+    const ingestHost = useProductionDomain ? productionDomain : host;
+    const ingestUrl = `${protocol}://${ingestHost}/api/dvp/ingest-nba-all?latest=1`;
 
     console.log('[auto-ingest] Triggering ingest:', ingestUrl);
 
