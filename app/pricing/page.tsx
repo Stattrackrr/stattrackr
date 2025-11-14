@@ -66,8 +66,8 @@ export default function PricingPage() {
   const checkPremiumStatus = async (userId: string) => {
     try {
       // Check Pro access - try profiles table first, fallback to subscriptions table
-      const { data: profile } = await supabase
-        .from('profiles')
+      const { data: profile } = await (supabase
+        .from('profiles') as any)
         .select('subscription_status, subscription_tier')
         .eq('id', userId)
         .single();
@@ -77,8 +77,9 @@ export default function PricingPage() {
       
       if (profile) {
         // Use profiles table if available
-        isActive = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
-        isProTier = profile.subscription_tier === 'pro';
+        const profileData = profile as any;
+        isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+        isProTier = profileData.subscription_tier === 'pro';
       } else {
         // Fallback to subscriptions table
         const { data: subscription } = await supabase
