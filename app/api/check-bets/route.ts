@@ -3,16 +3,25 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const results = {
       trackedBets: { updated: 0, total: 0, error: null as string | null },
       journalBets: { updated: 0, total: 0, error: null as string | null },
     };
 
+    // Use production domain to avoid preview deployment authentication issues
+    const host = req.headers.get('host') || '';
+    const protocol = req.headers.get('x-forwarded-proto') || 'https';
+    const productionDomain = process.env.NEXT_PUBLIC_BASE_URL || 'stattrackr.co';
+    const useProductionDomain = host.includes('.vercel.app') || host.includes('localhost');
+    const baseUrl = useProductionDomain 
+      ? `${protocol}://${productionDomain}`
+      : (process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`);
+
     // Check tracked bets
     try {
-      const trackedResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-tracked-bets`);
+      const trackedResponse = await fetch(`${baseUrl}/api/check-tracked-bets`);
       if (trackedResponse.ok) {
         const data = await trackedResponse.json();
         results.trackedBets = { updated: data.updated || 0, total: data.total || 0, error: null };
@@ -25,7 +34,7 @@ export async function GET() {
 
     // Check journal bets
     try {
-      const journalResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-journal-bets`);
+      const journalResponse = await fetch(`${baseUrl}/api/check-journal-bets`);
       if (journalResponse.ok) {
         const data = await journalResponse.json();
         results.journalBets = { updated: data.updated || 0, total: data.total || 0, error: null };
