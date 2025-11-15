@@ -2782,14 +2782,15 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                     'pa': 'PA',
                     'ra': 'RA',
                   };
-                  const bookKey = statToBookKey[selectedStat] || 'PTS';
+                  const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
                   
                   // Get current line from books (realOddsData) - use first available bookmaker with data
                   let currentLineFromBooks: { line: number; bookmaker: string } | null = null;
                   if (books && books.length > 0) {
                     for (const book of books) {
-                      if (book[bookKey] && book[bookKey].line && book[bookKey].line !== 'N/A') {
-                        const lineValue = parseFloat(String(book[bookKey].line).replace(/[^0-9.+-]/g, ''));
+                      const bookData = (book as any)[bookKey];
+                      if (bookData && bookData.line && bookData.line !== 'N/A') {
+                        const lineValue = parseFloat(String(bookData.line).replace(/[^0-9.+-]/g, ''));
                         if (!Number.isNaN(lineValue)) {
                           currentLineFromBooks = {
                             line: lineValue,
@@ -6597,14 +6598,15 @@ const lineMovementInFlightRef = useRef(false);
       'pa': 'PA',
       'ra': 'RA',
     };
-    const bookKey = statToBookKey[selectedStat] || 'PTS';
+    const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
     
     // Get current line from live odds (realOddsData) - use first available bookmaker with data
     let currentLineFromLive: { line: number; bookmaker: string; timestamp: string } | null = null;
     if (realOddsData && realOddsData.length > 0) {
       for (const b of realOddsData) {
-        if (b[bookKey] && b[bookKey].line && b[bookKey].line !== 'N/A') {
-          const lineValue = parseFloat(String(b[bookKey].line).replace(/[^0-9.+-]/g, ''));
+        const bookData = (b as any)[bookKey];
+        if (bookData && bookData.line && bookData.line !== 'N/A') {
+          const lineValue = parseFloat(String(bookData.line).replace(/[^0-9.+-]/g, ''));
           if (!Number.isNaN(lineValue)) {
             currentLineFromLive = {
               line: lineValue,
