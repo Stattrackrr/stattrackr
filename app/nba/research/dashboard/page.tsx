@@ -2711,7 +2711,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
               {/* Implied Odds */}
               <div>
                 <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Implied Odds</div>
-                {((lineMovementData?.overImpliedProb !== null && lineMovementData?.overImpliedProb !== undefined) ||
+                {(((lineMovementData as any)?.overImpliedProb !== null && (lineMovementData as any)?.overImpliedProb !== undefined) ||
                   (lineMovementData?.impliedOdds !== null && lineMovementData?.impliedOdds !== undefined)) ? (
                   <div className="space-y-2 text-base sm:text-sm">
                     <div className="flex items-baseline gap-2">
@@ -2723,7 +2723,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {(lineMovementData?.overImpliedProb ?? lineMovementData?.impliedOdds ?? 0).toFixed(1)}%
+                        {((lineMovementData as any)?.overImpliedProb ?? lineMovementData?.impliedOdds ?? 0).toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -2735,7 +2735,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {(lineMovementData?.underImpliedProb ?? (lineMovementData?.impliedOdds ? (100 - lineMovementData.impliedOdds) : 0)).toFixed(1)}%
+                        {((lineMovementData as any)?.underImpliedProb ?? (lineMovementData?.impliedOdds ? (100 - lineMovementData.impliedOdds) : 0)).toFixed(1)}%
                       </span>
                     </div>
                   </div>
