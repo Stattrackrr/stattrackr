@@ -105,22 +105,61 @@ export async function GET(request: NextRequest) {
       return fanduel || rows[0];
     };
 
-    const openingRow = pickPreferredBookmaker(latestRows);
-    const currentRow = pickPreferredBookmaker(latestRows);
+    // For opening line: find row with earliest opening_recorded_at
+    const openingRow = latestRows.length > 0
+      ? latestRows.reduce((earliest: any, row: any) => {
+          const earliestTime = earliest?.opening_recorded_at ? new Date(earliest.opening_recorded_at).getTime() : Infinity;
+          const rowTime = row?.opening_recorded_at ? new Date(row.opening_recorded_at).getTime() : Infinity;
+          return rowTime < earliestTime ? row : earliest;
+        })
+      : null;
 
-    const impliedProbs: number[] = [];
+    // For current line: find row with latest current_recorded_at (or use preferred bookmaker's latest)
+    const currentRow = latestRows.length > 0
+      ? latestRows.reduce((latest: any, row: any) => {
+          const latestTime = latest?.current_recorded_at ? new Date(latest.current_recorded_at).getTime() : 0;
+          const rowTime = row?.current_recorded_at ? new Date(row.current_recorded_at).getTime() : 0;
+          return rowTime > latestTime ? row : latest;
+        })
+      : null;
+
+    // Calculate implied probabilities for both over and under
+    // Compare them to determine which is more favorable
+    const impliedProbsOver: number[] = [];
+    const impliedProbsUnder: number[] = [];
+    
     for (const row of latestRows) {
       const overOdds = row.current_over_odds;
+      const underOdds = row.current_under_odds;
+      
       if (typeof overOdds === 'number') {
         const prob = overOdds < 0
           ? (-overOdds) / (-overOdds + 100) * 100
           : 100 / (overOdds + 100) * 100;
-        impliedProbs.push(prob);
+        impliedProbsOver.push(prob);
+      }
+      
+      if (typeof underOdds === 'number') {
+        const prob = underOdds < 0
+          ? (-underOdds) / (-underOdds + 100) * 100
+          : 100 / (underOdds + 100) * 100;
+        impliedProbsUnder.push(prob);
       }
     }
 
-    const impliedOdds = impliedProbs.length > 0
-      ? impliedProbs.reduce((a, b) => a + b, 0) / impliedProbs.length
+    const avgOverProb = impliedProbsOver.length > 0
+      ? impliedProbsOver.reduce((a, b) => a + b, 0) / impliedProbsOver.length
+      : null;
+    
+    const avgUnderProb = impliedProbsUnder.length > 0
+      ? impliedProbsUnder.reduce((a, b) => a + b, 0) / impliedProbsUnder.length
+      : null;
+
+    // Return the over probability (for display), and indicate which is more favorable
+    // More favorable = lower implied probability (better value)
+    const impliedOdds = avgOverProb !== null ? Math.round(avgOverProb * 10) / 10 : null;
+    const isOverFavorable = avgOverProb !== null && avgUnderProb !== null 
+      ? avgOverProb < avgUnderProb 
       : null;
 
     const lineMovement = (movementRows || []).map((event: any) => ({
@@ -152,7 +191,8 @@ export async function GET(request: NextRequest) {
               timestamp: currentRow.current_recorded_at ?? null,
             }
           : null,
-        impliedOdds: impliedOdds ? Math.round(impliedOdds * 10) / 10 : null,
+        impliedOdds: impliedOdds,
+        isOverFavorable: isOverFavorable,
         lineMovement,
       }
     });
