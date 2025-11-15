@@ -6,6 +6,30 @@ import { X, Loader2, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-reac
 import { getBookmakerInfo } from "@/lib/bookmakers";
 import { formatOdds, getCurrencySymbol, americanToDecimal } from "@/lib/currencyUtils";
 
+// Component to handle bookmaker logo with fallback
+function BookmakerLogo({ logoUrl, name, fallbackEmoji }: { logoUrl: string; name: string; fallbackEmoji: string }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (imgError || !logoUrl) {
+    return <span className="text-2xl">{fallbackEmoji}</span>;
+  }
+
+  return (
+    <img 
+      src={logoUrl} 
+      alt={name}
+      className="w-8 h-8 object-contain flex-shrink-0"
+      onError={() => {
+        console.warn(`Failed to load logo for ${name} from ${logoUrl}`);
+        setImgError(true);
+      }}
+      onLoad={() => {
+        console.log(`Successfully loaded logo for ${name}`);
+      }}
+    />
+  );
+}
+
 interface AddToJournalModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -362,7 +386,7 @@ export default function AddToJournalModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -432,7 +456,7 @@ export default function AddToJournalModal({
                   Combined Odds: {formatOdds(calculateParlayOdds(parlaySelections, oddsFormat), oddsFormat)}
                 </div>
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                 {parlaySelections.map((sel) => {
                   const statLabel = STAT_OPTIONS.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
                   return (
@@ -519,9 +543,13 @@ export default function AddToJournalModal({
                     No live odds available for this prop
                   </div>
                 ) : (
-                  <div className="max-h-64 overflow-y-auto space-y-2">
+                  <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
                     {availableOdds.map((odds, idx) => {
                       const bookmaker = getBookmakerInfo(odds.bookmaker);
+                      // Debug: log bookmaker info
+                      if (!bookmaker.logoUrl) {
+                        console.log(`No logo URL for bookmaker: ${odds.bookmaker}, got:`, bookmaker);
+                      }
                       const isSelected = !isManualMode && selectedOdds?.bookmaker === odds.bookmaker && selectedOdds?.line === odds.line;
                       
                       return (
@@ -540,7 +568,15 @@ export default function AddToJournalModal({
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl">{bookmaker.logo}</span>
+                              {bookmaker.logoUrl ? (
+                                <BookmakerLogo 
+                                  logoUrl={bookmaker.logoUrl}
+                                  name={bookmaker.name}
+                                  fallbackEmoji={bookmaker.logo}
+                                />
+                              ) : (
+                                <span className="text-2xl">{bookmaker.logo}</span>
+                              )}
                               <div>
                                 <div className="font-semibold text-sm text-gray-900 dark:text-white">
                                   {bookmaker.name}

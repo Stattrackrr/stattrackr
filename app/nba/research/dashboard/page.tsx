@@ -2206,11 +2206,30 @@ const ChartControls = function ChartControls({
   homeAway,
   onChangeHomeAway,
   yAxisConfig,
+  realOddsData,
+  fmtOdds,
 }: any) {
   // Track the latest in-progress line while the user is holding +/-
   const transientLineRef = useRef<number | null>(null);
   const holdDelayRef = useRef<any>(null);
   const holdRepeatRef = useRef<any>(null);
+  
+  // Alt Lines dropdown state
+  const [isAltLinesOpen, setIsAltLinesOpen] = useState(false);
+  const altLinesRef = useRef<HTMLDivElement>(null);
+  // Track if betting line has been manually set (to avoid auto-updating when user changes it)
+  const hasManuallySetLineRef = useRef(false);
+  // Track previous odds data length to detect when new player data loads
+  const prevOddsDataLengthRef = useRef<number>(0);
+  // Track the last auto-set line to prevent infinite loops
+  const lastAutoSetLineRef = useRef<number | null>(null);
+  const lastAutoSetStatRef = useRef<string | null>(null);
+  // Track which bookmaker was selected from the dropdown
+  const [selectedBookmaker, setSelectedBookmaker] = useState<string | null>(null);
+  // Debounce timer for betting line updates
+  const bettingLineDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  // Track current line value for immediate bookmaker detection (updates instantly, separate from debounced bettingLine)
+  const [displayLine, setDisplayLine] = useState(bettingLine);
 
   // Sync input and dashed line to the committed bettingLine value.
   // Only track bettingLine/yAxisConfig to avoid racing with timeframe updates.
@@ -2281,6 +2300,197 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     updateOverRatePillFast(bettingLine);
   }, [updateOverRatePillFast, bettingLine]);
+  
+  // Reset selectedBookmaker when stat changes
+  useEffect(() => {
+    setSelectedBookmaker(null);
+    setDisplayLine(bettingLine);
+  }, [selectedStat]);
+  
+  // Sync displayLine with bettingLine when it changes externally
+  useEffect(() => {
+    if (!hasManuallySetLineRef.current) {
+      setDisplayLine(bettingLine);
+    }
+  }, [bettingLine]);
+  
+  // Helper function to get bookmaker info
+  const getBookmakerInfo = (name: string) => {
+    const bookmakerMap: Record<string, { name: string; logo: string; logoUrl?: string }> = {
+      'DraftKings': { name: 'DraftKings', logo: 'DK', logoUrl: `https://logo.clearbit.com/draftkings.com` },
+      'FanDuel': { name: 'FanDuel', logo: 'FD', logoUrl: `https://logo.clearbit.com/fanduel.com` },
+      'BetMGM': { name: 'BetMGM', logo: 'MGM', logoUrl: `https://logo.clearbit.com/betmgm.com` },
+      'Caesars': { name: 'Caesars', logo: 'CZR', logoUrl: `https://logo.clearbit.com/caesars.com` },
+      'BetRivers': { name: 'BetRivers', logo: 'BR', logoUrl: `https://logo.clearbit.com/riverscasino.com` },
+      'Bovada': { name: 'Bovada', logo: 'BV', logoUrl: `https://logo.clearbit.com/bovada.lv` },
+      'BetOnline.ag': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `https://logo.clearbit.com/betonline.ag` },
+    };
+    return bookmakerMap[name] || { name, logo: name.substring(0, 2).toUpperCase() };
+  };
+  
+  // Calculate best bookmaker and line for stat (lowest over line)
+  const bestBookmakerForStat = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0) return null;
+    
+    const statMap: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'pra': 'PTS',
+      'pr': 'PTS',
+      'ra': 'REB',
+    };
+    
+    const bookRowKey = statMap[selectedStat] || null;
+    if (!bookRowKey) return null;
+    
+    let bestBook: any = null;
+    let bestLine = Infinity;
+    
+    for (const book of realOddsData) {
+      const statData = (book as any)[bookRowKey];
+      if (!statData || statData.line === 'N/A') continue;
+      const lineValue = parseFloat(statData.line);
+      if (isNaN(lineValue)) continue;
+      if (lineValue < bestLine) {
+        bestLine = lineValue;
+        bestBook = book;
+      }
+    }
+    
+    return bestBook ? bestBook.name : null;
+  }, [realOddsData, selectedStat]);
+  
+  // Calculate best line for stat (lowest over line)
+  const bestLineForStat = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0) return null;
+    
+    const statMap: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'pra': 'PTS',
+      'pr': 'PTS',
+      'ra': 'REB',
+    };
+    
+    const bookRowKey = statMap[selectedStat] || null;
+    if (!bookRowKey) return null;
+    
+    let bestLine = Infinity;
+    
+    for (const book of realOddsData) {
+      const statData = (book as any)[bookRowKey];
+      if (!statData || statData.line === 'N/A') continue;
+      const lineValue = parseFloat(statData.line);
+      if (isNaN(lineValue)) continue;
+      if (lineValue < bestLine) {
+        bestLine = lineValue;
+      }
+    }
+    
+    return bestLine !== Infinity ? bestLine : null;
+  }, [realOddsData, selectedStat]);
+  
+  // Auto-set betting line to best available line when odds data loads (only if user hasn't manually set it)
+  useEffect(() => {
+    if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
+      // Only auto-set if:
+      // 1. The line hasn't been auto-set for this stat yet, OR
+      // 2. The best line has changed from what we last auto-set
+      const shouldAutoSet = 
+        lastAutoSetStatRef.current !== selectedStat ||
+        lastAutoSetLineRef.current === null ||
+        Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
+      
+      if (shouldAutoSet) {
+        // Only update if the current betting line is different from the best line
+        // Use a ref to check the current value to avoid dependency issues
+        const currentBettingLine = bettingLine;
+        if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
+          onChangeBettingLine(bestLineForStat);
+          setDisplayLine(bestLineForStat);
+          lastAutoSetLineRef.current = bestLineForStat;
+          lastAutoSetStatRef.current = selectedStat;
+          
+          // Update input field
+          const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+          if (input) {
+            input.value = String(bestLineForStat);
+            transientLineRef.current = bestLineForStat;
+            // Update visual elements
+            if (yAxisConfig) {
+              updateBettingLinePosition(yAxisConfig, bestLineForStat);
+            }
+            recolorBarsFast(bestLineForStat);
+            updateOverRatePillFast(bestLineForStat);
+          }
+        } else {
+          // Line is already set correctly, just update the refs
+          lastAutoSetLineRef.current = bestLineForStat;
+          lastAutoSetStatRef.current = selectedStat;
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bestLineForStat, selectedStat]);
+  
+  // Reset manual flag when stat changes (allow auto-fetch for new stat)
+  useEffect(() => {
+    hasManuallySetLineRef.current = false;
+    lastAutoSetLineRef.current = null;
+    lastAutoSetStatRef.current = null;
+  }, [selectedStat]);
+  
+  // Reset manual flag when odds data loads (new player fetched)
+  useEffect(() => {
+    const currentLength = realOddsData?.length || 0;
+    const prevLength = prevOddsDataLengthRef.current;
+    
+    // If data changed from empty to having data, reset manual flag to allow auto-fetch
+    if (prevLength === 0 && currentLength > 0) {
+      hasManuallySetLineRef.current = false;
+      lastAutoSetLineRef.current = null;
+      lastAutoSetStatRef.current = null;
+    }
+    
+    prevOddsDataLengthRef.current = currentLength;
+  }, [realOddsData]);
+  
+  // Auto-update selected bookmaker when line changes and matches a bookmaker (uses displayLine for immediate updates)
+  useEffect(() => {
+    if (!realOddsData || realOddsData.length === 0) return;
+    
+    const statMap: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'pra': 'PTS',
+      'pr': 'PTS',
+      'ra': 'REB',
+    };
+    
+    const bookRowKey = statMap[selectedStat] || null;
+    if (!bookRowKey) return;
+    
+    // Find if any bookmaker has a line matching the current display line (updates immediately)
+    const matchingBook = realOddsData.find((book: any) => {
+      const statData = (book as any)[bookRowKey];
+      if (!statData || statData.line === 'N/A') return false;
+      const lineValue = parseFloat(statData.line);
+      if (isNaN(lineValue)) return false;
+      return Math.abs(lineValue - displayLine) < 0.01;
+    });
+    
+    if (matchingBook) {
+      // Only update if it's different from current selection
+      setSelectedBookmaker(prev => prev !== matchingBook.name ? matchingBook.name : prev);
+    } else {
+      // Clear selection if no bookmaker matches
+      setSelectedBookmaker(prev => prev !== null ? null : prev);
+    }
+  }, [displayLine, realOddsData, selectedStat]);
+  
    const StatPills = useMemo(() => (
       <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0">
         <div
@@ -2383,11 +2593,448 @@ const ChartControls = function ChartControls({
         {/* Responsive controls layout */}
         <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
           {/* Top row: Line input (left), Over Rate (center-left), Team vs + Timeframes (right) */}
-          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-2">
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 sm:ml-6">
+            {/* Alt Lines Dropdown - Desktop only */}
+            {(() => {
+              // Hide if no odds data available
+              if (!realOddsData || realOddsData.length === 0) return null;
+              
+              const statMap: Record<string, string> = {
+                'pts': 'PTS',
+                'reb': 'REB',
+                'ast': 'AST',
+                'pra': 'PTS',
+                'pr': 'PTS',
+                'ra': 'REB',
+              };
+              
+              const bookRowKey = statMap[selectedStat] || null;
+              if (!bookRowKey) return null;
+              
+              // Get all available lines for dropdown
+              const altLines = realOddsData && realOddsData.length > 0
+                ? realOddsData
+                    .map((book: any) => {
+                      const statData = (book as any)[bookRowKey];
+                      if (!statData || statData.line === 'N/A') return null;
+                      
+                      const lineValue = parseFloat(statData.line);
+                      if (isNaN(lineValue)) return null;
+                      
+                      return {
+                        bookmaker: book.name,
+                        line: lineValue,
+                        over: statData.over,
+                        under: statData.under,
+                      };
+                    })
+                    .filter((item: any): item is { bookmaker: string; line: number; over: string; under: string } => item !== null)
+                    .sort((a: { line: number }, b: { line: number }) => a.line - b.line)
+                : [];
+              
+              // Find the bookmaker to display: check all available lines for a match
+              const displayBookmaker = (() => {
+                // First, check if any bookmaker has a line matching the current display line (updates immediately)
+                const matchingLine = altLines.find((l: { bookmaker: string; line: number }) => 
+                  Math.abs(l.line - displayLine) < 0.01
+                );
+                
+                if (matchingLine) {
+                  return {
+                    bookmaker: matchingLine.bookmaker,
+                    line: matchingLine.line,
+                    over: matchingLine.over,
+                    under: matchingLine.under,
+                  };
+                }
+                
+                return null;
+              })();
+              
+              const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
+              const shouldShowBookmaker = displayBookmaker !== null;
+              
+              return (
+                <div className="hidden sm:block relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={altLinesRef}>
+                  <button
+                    onClick={() => setIsAltLinesOpen(!isAltLinesOpen)}
+                    className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden"
+                  >
+                    <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0 overflow-hidden">
+                      {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
+                        <>
+                          {bookmakerInfo.logoUrl ? (
+                            <img 
+                              src={bookmakerInfo.logoUrl} 
+                              alt={bookmakerInfo.name}
+                              className="w-5 h-5 sm:w-6 sm:h-6 rounded object-contain flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'block';
+                              }}
+                            />
+                          ) : null}
+                          <span className={`text-base sm:text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                            {bookmakerInfo.logo}
+                          </span>
+                          <div className="flex flex-col items-start gap-0.5 min-w-0">
+                            {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
+                              <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                                O{fmtOdds(displayBookmaker.over)}
+                              </span>
+                            )}
+                            {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
+                              <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                                U{fmtOdds(displayBookmaker.under)}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Placeholder for logo space */}
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+                          {/* Text in same structure as odds column */}
+                          <div className="flex flex-col items-start gap-0.5 min-w-0">
+                            <span className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">Alt Lines</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ml-auto ${isAltLinesOpen ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {isAltLinesOpen && (
+                    <>
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
+                        <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
+                        </div>
+                        <div className="p-2">
+                          {altLines.length === 0 ? (
+                            <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                              {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
+                            </div>
+                          ) : (
+                            altLines.map((altLine: { bookmaker: string; line: number; over: string; under: string }, idx: number) => {
+                              const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
+                              const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
+                              
+                              return (
+                                <button
+                                  key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
+                                  onClick={() => {
+                                    onChangeBettingLine(altLine.line);
+                                    setSelectedBookmaker(altLine.bookmaker);
+                                    setIsAltLinesOpen(false);
+                                    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+                                    if (input) {
+                                      input.value = String(altLine.line);
+                                      transientLineRef.current = altLine.line;
+                                      updateBettingLinePosition(yAxisConfig, altLine.line);
+                                      recolorBarsFast(altLine.line);
+                                      updateOverRatePillFast(altLine.line);
+                                    }
+                                  }}
+                                  className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                                    isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {/* Bookmaker Logo */}
+                                    {bookmakerInfo.logoUrl ? (
+                                      <img 
+                                        src={bookmakerInfo.logoUrl} 
+                                        alt={bookmakerInfo.name}
+                                        className="w-5 h-5 rounded object-contain flex-shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                          const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                          if (fallback) fallback.style.display = 'block';
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                                      {bookmakerInfo.logo}
+                                    </span>
+                                    
+                                    {/* Line and Bookmaker Name */}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                                          {altLine.line}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                          {bookmakerInfo.name}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Odds */}
+                                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                                    {altLine.over && altLine.over !== 'N/A' && (
+                                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                                        O {fmtOdds(altLine.over)}
+                                      </span>
+                                    )}
+                                    {altLine.under && altLine.under !== 'N/A' && (
+                                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                                        U {fmtOdds(altLine.under)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Selected indicator */}
+                                  {isSelected && (
+                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsAltLinesOpen(false)}
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+            
             {/* Left: line input */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 -mt-1 sm:mt-0">
-              <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Line:</label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {/* Alt Lines Button - Mobile only */}
+                {(() => {
+                  // Hide if no odds data available
+                  if (!realOddsData || realOddsData.length === 0) return null;
+                  
+                  const statMap: Record<string, string> = {
+                    'pts': 'PTS',
+                    'reb': 'REB',
+                    'ast': 'AST',
+                    'pra': 'PTS',
+                    'pr': 'PTS',
+                    'ra': 'REB',
+                  };
+                  
+                  const bookRowKey = statMap[selectedStat] || null;
+                  if (!bookRowKey) return null;
+                  
+                  // Get all available lines for dropdown
+                  const altLines = realOddsData && realOddsData.length > 0
+                    ? realOddsData
+                        .map((book: any) => {
+                          const statData = (book as any)[bookRowKey];
+                          if (!statData || statData.line === 'N/A') return null;
+                          
+                          const lineValue = parseFloat(statData.line);
+                          if (isNaN(lineValue)) return null;
+                          
+                          return {
+                            bookmaker: book.name,
+                            line: lineValue,
+                            over: statData.over,
+                            under: statData.under,
+                          };
+                        })
+                        .filter((item: any): item is { bookmaker: string; line: number; over: string; under: string } => item !== null)
+                        .sort((a: { line: number }, b: { line: number }) => a.line - b.line)
+                    : [];
+                  
+                  // Find the bookmaker to display: check all available lines for a match
+                  const displayBookmaker = (() => {
+                    const matchingLine = altLines.find((l: { bookmaker: string; line: number }) => 
+                      Math.abs(l.line - displayLine) < 0.01
+                    );
+                    
+                    if (matchingLine) {
+                      return {
+                        bookmaker: matchingLine.bookmaker,
+                        line: matchingLine.line,
+                        over: matchingLine.over,
+                        under: matchingLine.under,
+                      };
+                    }
+                    
+                    return null;
+                  })();
+                  
+                  const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
+                  const shouldShowBookmaker = displayBookmaker !== null;
+                  
+                  return (
+                    <div className="sm:hidden relative flex-shrink-0 w-[100px]" ref={altLinesRef}>
+                      <button
+                        onClick={() => setIsAltLinesOpen(!isAltLinesOpen)}
+                        className="w-full px-1.5 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
+                      >
+                        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                          {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
+                            <>
+                              {bookmakerInfo.logoUrl ? (
+                                <img 
+                                  src={bookmakerInfo.logoUrl} 
+                                  alt={bookmakerInfo.name}
+                                  className="w-5 h-5 rounded object-contain flex-shrink-0"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'block';
+                                  }}
+                                />
+                              ) : null}
+                              <span className={`text-base flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                                {bookmakerInfo.logo}
+                              </span>
+                              <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
+                                  <span className="text-[11px] text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                                    O{fmtOdds(displayBookmaker.over)}
+                                  </span>
+                                )}
+                                {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
+                                  <span className="text-[11px] text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                                    U{fmtOdds(displayBookmaker.under)}
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-5 h-5 flex-shrink-0" />
+                              <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                <span className="text-[11px] text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">Alt Lines</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <svg 
+                          className={`w-4 h-4 transition-transform flex-shrink-0 ml-auto ${isAltLinesOpen ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {isAltLinesOpen && (
+                        <>
+                          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
+                            <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                              <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
+                            </div>
+                            <div className="p-2">
+                              {altLines.length === 0 ? (
+                                <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                                  {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
+                                </div>
+                              ) : (
+                                altLines.map((altLine: { bookmaker: string; line: number; over: string; under: string }, idx: number) => {
+                                  const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
+                                  const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
+                                  
+                                  return (
+                                    <button
+                                      key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
+                                      onClick={() => {
+                                        onChangeBettingLine(altLine.line);
+                                        setSelectedBookmaker(altLine.bookmaker);
+                                        setIsAltLinesOpen(false);
+                                        const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+                                        if (input) {
+                                          input.value = String(altLine.line);
+                                          transientLineRef.current = altLine.line;
+                                          updateBettingLinePosition(yAxisConfig, altLine.line);
+                                          recolorBarsFast(altLine.line);
+                                          updateOverRatePillFast(altLine.line);
+                                        }
+                                      }}
+                                      className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                                        isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        {/* Bookmaker Logo */}
+                                        {bookmakerInfo.logoUrl ? (
+                                          <img 
+                                            src={bookmakerInfo.logoUrl} 
+                                            alt={bookmakerInfo.name}
+                                            className="w-5 h-5 rounded object-contain flex-shrink-0"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                              const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                              if (fallback) fallback.style.display = 'block';
+                                            }}
+                                          />
+                                        ) : null}
+                                        <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                                          {bookmakerInfo.logo}
+                                        </span>
+                                        
+                                        {/* Line and Bookmaker Name */}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                                              {altLine.line}
+                                            </span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                              {bookmakerInfo.name}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Odds */}
+                                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                                        {altLine.over && altLine.over !== 'N/A' && (
+                                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                                            O {fmtOdds(altLine.over)}
+                                          </span>
+                                        )}
+                                        {altLine.under && altLine.under !== 'N/A' && (
+                                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                                            U {fmtOdds(altLine.under)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Selected indicator */}
+                                      {isSelected && (
+                                        <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setIsAltLinesOpen(false)}
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
                 <input
                   id="betting-line-input"
                   type="number" 
@@ -2399,19 +3046,45 @@ const ChartControls = function ChartControls({
                     const v = parseFloat((e.currentTarget as HTMLInputElement).value);
                     if (!Number.isFinite(v)) return;
                     transientLineRef.current = v;
+                    hasManuallySetLineRef.current = true; // Mark as manually set to prevent auto-updates
+                    
+                    // Update displayLine immediately for instant bookmaker detection
+                    setDisplayLine(v);
+                    
+                    // Update visual elements immediately (no lag)
                     updateBettingLinePosition(yAxisConfig, v);
                     recolorBarsFast(v);
                     updateOverRatePillFast(v);
                     try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
+                    
+                    // Debounce state update to reduce re-renders (bookmaker detection will run after debounce)
+                    if (bettingLineDebounceRef.current) {
+                      clearTimeout(bettingLineDebounceRef.current);
+                    }
+                    bettingLineDebounceRef.current = setTimeout(() => {
+                      onChangeBettingLine(v);
+                      bettingLineDebounceRef.current = null;
+                    }, 300);
                   }}
                   onBlur={(e) => {
                     const v = parseFloat((e.currentTarget as HTMLInputElement).value);
                     if (Number.isFinite(v)) {
                       transientLineRef.current = v;
+                      hasManuallySetLineRef.current = true; // Mark as manually set
+                      
+                      // Update displayLine immediately
+                      setDisplayLine(v);
+                      
+                      // Clear any pending debounce and update immediately
+                      if (bettingLineDebounceRef.current) {
+                        clearTimeout(bettingLineDebounceRef.current);
+                        bettingLineDebounceRef.current = null;
+                      }
                       onChangeBettingLine(v);
+                      // selectedBookmaker will be auto-updated by useEffect if a matching bookmaker is found
                     }
                   }}
-                  className="w-[72px] sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
             </div>
@@ -2501,6 +3174,8 @@ const ChartContainer = function ChartContainer({
   currentTeam,
   homeAway,
   onChangeHomeAway,
+  realOddsData,
+  fmtOdds,
 }: any) {
   return (
 <div 
@@ -2525,6 +3200,8 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         homeAway={homeAway}
         onChangeHomeAway={onChangeHomeAway}
         yAxisConfig={yAxisConfig}
+        realOddsData={realOddsData}
+        fmtOdds={fmtOdds}
       />
       {/* Mobile: Over Rate pill above chart */}
       <div className="sm:hidden px-2 pb-2">
@@ -8071,6 +8748,8 @@ const lineMovementInFlightRef = useRef(false);
               currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
               homeAway={homeAway}
               onChangeHomeAway={setHomeAway}
+              realOddsData={realOddsData}
+              fmtOdds={fmtOdds}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
