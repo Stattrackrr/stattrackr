@@ -2711,7 +2711,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
               {/* Implied Odds */}
               <div>
                 <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Implied Odds</div>
-                {lineMovementData?.impliedOdds !== null && lineMovementData?.impliedOdds !== undefined ? (
+                {((lineMovementData?.overImpliedProb !== null && lineMovementData?.overImpliedProb !== undefined) ||
+                  (lineMovementData?.impliedOdds !== null && lineMovementData?.impliedOdds !== undefined)) ? (
                   <div className="space-y-2 text-base sm:text-sm">
                     <div className="flex items-baseline gap-2">
                       <span className="font-semibold text-gray-700 dark:text-gray-200">Over:</span>
@@ -2722,7 +2723,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {lineMovementData.impliedOdds.toFixed(1)}%
+                        {(lineMovementData?.overImpliedProb ?? lineMovementData?.impliedOdds ?? 0).toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -2734,7 +2735,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {(100 - lineMovementData.impliedOdds).toFixed(1)}%
+                        {(lineMovementData?.underImpliedProb ?? (lineMovementData?.impliedOdds ? (100 - lineMovementData.impliedOdds) : 0)).toFixed(1)}%
                       </span>
                     </div>
                   </div>
@@ -4025,7 +4026,9 @@ function NBADashboardContent() {
 const [lineMovementData, setLineMovementData] = useState<{
   openingLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
   currentLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
-  impliedOdds: number | null;
+  impliedOdds: number | null; // Backward compatibility
+  overImpliedProb?: number | null;
+  underImpliedProb?: number | null;
   isOverFavorable: boolean | null;
   lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
 } | null>(null);

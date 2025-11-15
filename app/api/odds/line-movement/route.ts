@@ -160,9 +160,10 @@ export async function GET(request: NextRequest) {
       ? impliedProbsUnder.reduce((a, b) => a + b, 0) / impliedProbsUnder.length
       : null;
 
-    // Return the over probability (for display), and indicate which is more favorable
+    // Calculate both over and under probabilities (rounded to 1 decimal)
     // More favorable = lower implied probability (better value)
-    const impliedOdds = avgOverProb !== null ? Math.round(avgOverProb * 10) / 10 : null;
+    const overImpliedProb = avgOverProb !== null ? Math.round(avgOverProb * 10) / 10 : null;
+    const underImpliedProb = avgUnderProb !== null ? Math.round(avgUnderProb * 10) / 10 : null;
     const isOverFavorable = avgOverProb !== null && avgUnderProb !== null 
       ? avgOverProb < avgUnderProb 
       : null;
@@ -196,7 +197,9 @@ export async function GET(request: NextRequest) {
               timestamp: currentRow.current_recorded_at ?? null,
             }
           : null,
-        impliedOdds: impliedOdds,
+        impliedOdds: overImpliedProb, // Keep for backward compatibility
+        overImpliedProb: overImpliedProb,
+        underImpliedProb: underImpliedProb,
         isOverFavorable: isOverFavorable,
         lineMovement,
       }
