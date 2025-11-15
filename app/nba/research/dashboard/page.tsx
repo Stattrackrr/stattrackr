@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useRef, useEffect, memo, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -9088,10 +9088,8 @@ const lineMovementInFlightRef = useRef(false);
 
 export default function NBADashboard() {
   return (
-    <ThemeProvider>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">Loading dashboard...</div>}>
-        <NBADashboardContent />
-      </Suspense>
-    </ThemeProvider>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">Loading dashboard...</div>}>
+      <NBADashboardContent />
+    </Suspense>
   );
 }
