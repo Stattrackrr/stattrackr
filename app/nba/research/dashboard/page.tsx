@@ -5405,6 +5405,38 @@ const lineMovementInFlightRef = useRef(false);
   const advancedStatsFetchRef = useRef<string | null>(null);
   const shotDistanceFetchRef = useRef<string | null>(null);
   
+  // Restore stats from sessionStorage when player ID is set (for page refresh)
+  useEffect(() => {
+    if (resolvedPlayerId && hasPremium && typeof window !== 'undefined') {
+      // Only restore if stats aren't already loaded
+      if (!advancedStats) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${resolvedPlayerId}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+            console.log('✅ Restored advanced stats from cache for player', resolvedPlayerId);
+          }
+        } catch (e) {
+          console.error('Error restoring advanced stats:', e);
+        }
+      }
+      
+      if (!shotDistanceData) {
+        try {
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${resolvedPlayerId}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+            console.log('✅ Restored shot chart data from cache for player', resolvedPlayerId);
+          }
+        } catch (e) {
+          console.error('Error restoring shot chart data:', e);
+        }
+      }
+    }
+  }, [resolvedPlayerId, hasPremium]); // Restore when player ID or premium status changes
+  
   // Fetch advanced stats for a player
   const fetchAdvancedStats = async (playerId: string) => {
     // Don't attempt to fetch if user doesn't have premium - just silently return
