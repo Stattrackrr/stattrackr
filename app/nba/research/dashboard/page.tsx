@@ -5430,6 +5430,15 @@ const lineMovementInFlightRef = useRef(false);
       if (advancedStatsFetchRef.current === playerId) {
         if (stats) {
           setAdvancedStats(stats);
+          // Save to sessionStorage for persistence across refreshes
+          if (typeof window !== 'undefined') {
+            try {
+              const storageKey = `advanced_stats_${playerId}`;
+              sessionStorage.setItem(storageKey, JSON.stringify(stats));
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
         } else {
           setAdvancedStats(null);
           setAdvancedStatsError('No advanced stats found for this player');
@@ -5474,7 +5483,17 @@ const lineMovementInFlightRef = useRef(false);
       // Only update if this is still the current fetch (prevent race conditions)
       if (shotDistanceFetchRef.current === playerId) {
         if (data && Array.isArray(data.data) && data.data.length > 0) {
-          setShotDistanceData(data.data[0].stats);
+          const shotData = data.data[0].stats;
+          setShotDistanceData(shotData);
+          // Save to sessionStorage for persistence across refreshes
+          if (typeof window !== 'undefined') {
+            try {
+              const storageKey = `shot_distance_${playerId}`;
+              sessionStorage.setItem(storageKey, JSON.stringify(shotData));
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
         } else {
           setShotDistanceData(null);
         }
@@ -5507,6 +5526,25 @@ const lineMovementInFlightRef = useRef(false);
       const pid = /^\d+$/.test(String(player.id)) ? String(player.id) : await resolvePlayerId(player.full, player.teamAbbr);
       if (!pid) throw new Error(`Couldn't resolve player id for "${player.full}"`);
       setResolvedPlayerId(pid);
+      
+      // Restore cached stats from sessionStorage if available
+      if (typeof window !== 'undefined' && hasPremium) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${pid}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+          }
+          
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${pid}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+          }
+        } catch (e) {
+          // Ignore storage errors, will fetch fresh data
+        }
+      }
       
       // OPTIMIZATION: Lazy load premium stats
       // Fetch critical path data first: game stats + ESPN data
@@ -5589,6 +5627,25 @@ const lineMovementInFlightRef = useRef(false);
     try {
       const pid = String(r.id);
       setResolvedPlayerId(pid);
+      
+      // Restore cached stats from sessionStorage if available
+      if (typeof window !== 'undefined' && hasPremium) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${pid}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+          }
+          
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${pid}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+          }
+        } catch (e) {
+          // Ignore storage errors, will fetch fresh data
+        }
+      }
       // Create player object from search result
       const tempPlayer = {
         id: pid,
