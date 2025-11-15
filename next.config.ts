@@ -8,9 +8,10 @@ const nextConfig: NextConfig = {
     dirs: ['app', 'components', 'lib', 'contexts', 'hooks'],
   },
   typescript: {
-    // Temporarily ignore build errors - these Supabase type issues need proper type generation
-    // TODO: Generate Supabase types and remove this
-    ignoreBuildErrors: true,
+    // Enable type checking during builds
+    // Note: If you need to temporarily disable this during development,
+    // use the environment variable: NEXT_TYPESCRIPT_IGNORE_BUILD_ERRORS=true
+    ignoreBuildErrors: false,
   },
   experimental: {
     // Experimental features disabled to avoid build errors

@@ -5252,3 +5252,82 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Sat 15/11/2025  4:18:40.58] warm-rosters end (exit 0) 
+[Sat 15/11/2025  4:48:36.73] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  true,
+    "date":  "20251115",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 15/11/2025  4:48:40.14] warm-rosters end (exit 0) 
+[Sat 15/11/2025  5:18:36.68] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  true,
+    "date":  "20251115",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 15/11/2025  5:18:41.40] warm-rosters end (exit 0) 
+[Sat 15/11/2025  5:48:36.71] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  true,
+    "date":  "20251115",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 15/11/2025  5:48:39.65] warm-rosters end (exit 0) 
+[Sat 15/11/2025  6:28:53.15] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251115"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251114&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251114"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251116&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251116"
+}
+No games found for today/Añ1 or requests failed.
+At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
++ ...  $worked) { throw "No games found for today/Añ1 or requests failed."  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (No games found ...equests failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
+ 
+[Sat 15/11/2025  6:28:53.96] warm-rosters end (exit 1) 
+[Sat 15/11/2025 15:07:29.62] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  true,
+    "date":  "20251115",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 15/11/2025 15:07:43.47] warm-rosters end (exit 0) 
+[Sat 15/11/2025 15:18:36.71] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251115&window_min=180
+{
+    "success":  true,
+    "date":  "20251115",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 15/11/2025 15:18:41.53] warm-rosters end (exit 0) 
