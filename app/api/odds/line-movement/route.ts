@@ -105,23 +105,28 @@ export async function GET(request: NextRequest) {
       return fanduel || rows[0];
     };
 
-    // For opening line: find row with earliest opening_recorded_at
-    const openingRow = latestRows.length > 0
-      ? latestRows.reduce((earliest: any, row: any) => {
-          const earliestTime = earliest?.opening_recorded_at ? new Date(earliest.opening_recorded_at).getTime() : Infinity;
-          const rowTime = row?.opening_recorded_at ? new Date(row.opening_recorded_at).getTime() : Infinity;
-          return rowTime < earliestTime ? row : earliest;
-        })
-      : null;
-
-    // For current line: find row with latest current_recorded_at (or use preferred bookmaker's latest)
-    const currentRow = latestRows.length > 0
-      ? latestRows.reduce((latest: any, row: any) => {
-          const latestTime = latest?.current_recorded_at ? new Date(latest.current_recorded_at).getTime() : 0;
-          const rowTime = row?.current_recorded_at ? new Date(row.current_recorded_at).getTime() : 0;
-          return rowTime > latestTime ? row : latest;
-        })
-      : null;
+    // Use the same row (preferred bookmaker) for both opening and current
+    // This ensures we're comparing the same bookmaker's opening_line vs current_line
+    const preferredRow = pickPreferredBookmaker(latestRows);
+    
+    // If we have a preferred row, use it for both opening and current
+    // Otherwise, try to find the best row with actual line movement
+    let openingRow = preferredRow;
+    let currentRow = preferredRow;
+    
+    // If preferred row doesn't have different opening/current, look for one that does
+    if (preferredRow && preferredRow.opening_line === preferredRow.current_line) {
+      // Find a row where opening and current are actually different
+      const rowWithMovement = latestRows.find((row: any) => 
+        row.opening_line !== null && 
+        row.current_line !== null && 
+        row.opening_line !== row.current_line
+      );
+      if (rowWithMovement) {
+        openingRow = rowWithMovement;
+        currentRow = rowWithMovement;
+      }
+    }
 
     // Calculate implied probabilities for both over and under
     // Compare them to determine which is more favorable
