@@ -5418,8 +5418,13 @@ const lineMovementInFlightRef = useRef(false);
     // Mark this fetch as the current one
     advancedStatsFetchRef.current = playerId;
     
-    // Clear old data immediately to prevent showing stale data
-    setAdvancedStats(null);
+    // Check if we already have cached data - if so, don't clear it (preserve on refresh)
+    const hasCachedData = typeof window !== 'undefined' && sessionStorage.getItem(`advanced_stats_${playerId}`);
+    
+    // Only clear if we don't have cached data (to preserve restored stats on refresh)
+    if (!hasCachedData) {
+      setAdvancedStats(null);
+    }
     setAdvancedStatsLoading(true);
     setAdvancedStatsError(null);
     
@@ -5471,8 +5476,13 @@ const lineMovementInFlightRef = useRef(false);
     // Mark this fetch as the current one
     shotDistanceFetchRef.current = playerId;
     
-    // Clear old data immediately to prevent showing stale data
-    setShotDistanceData(null);
+    // Check if we already have cached data - if so, don't clear it (preserve on refresh)
+    const hasCachedData = typeof window !== 'undefined' && sessionStorage.getItem(`shot_distance_${playerId}`);
+    
+    // Only clear if we don't have cached data (to preserve restored stats on refresh)
+    if (!hasCachedData) {
+      setShotDistanceData(null);
+    }
     setShotDistanceLoading(true);
     
     try {
