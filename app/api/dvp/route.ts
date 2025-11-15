@@ -139,10 +139,9 @@ export async function GET(req: NextRequest) {
       }
     })();
 
-    // Include custom positions in cache key so position changes invalidate cache
-    // Create a simple hash of custom positions for cache key
-    const positionsHash = Object.keys(CUSTOM_POSITIONS).sort().join(',');
-    const cacheKey = `dvp:${team}:${seasonYear}:${metric}:${limitGames}:split=${wantSplit?1:0}:pos=${positionsHash.substring(0, 20)}`;
+    // Cache key - note: custom positions are now only used as fallback, so stored game positions take priority
+    // Cache is based on stored game data, not custom positions (since we respect per-game positions)
+    const cacheKey = `dvp:${team}:${seasonYear}:${metric}:${limitGames}:split=${wantSplit?1:0}`;
     const hit = !forceRefresh ? cache.get<any>(cacheKey) : undefined;
     if (hit) return NextResponse.json(hit);
 
@@ -231,22 +230,25 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
           const gameAttBench = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
           
           for (const p of players){
-            // Use custom position if available, otherwise use stored bucket
+            // Use stored bucket from game data (respects historical positions per game)
             let b = p?.bucket as 'PG'|'SG'|'SF'|'PF'|'C';
             
-            // Override with custom position if it exists
-            if (p?.name) {
-              const nameKey = normName(String(p.name));
-              const canonicalName = ALIASES[nameKey] || nameKey;
-              const lookupKey = ALIASES[canonicalName] || canonicalName;
-              
-              // Check custom positions (master or team-specific)
-              if (CUSTOM_POSITIONS[lookupKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[lookupKey])) {
-                b = CUSTOM_POSITIONS[lookupKey];
-              } else if (CUSTOM_POSITIONS[canonicalName] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[canonicalName])) {
-                b = CUSTOM_POSITIONS[canonicalName];
-              } else if (CUSTOM_POSITIONS[nameKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[nameKey])) {
-                b = CUSTOM_POSITIONS[nameKey];
+            // Only use custom position as fallback if stored bucket is missing/invalid
+            // This preserves per-game position changes (e.g., PG in game 1, SG in game 2)
+            if (!b || !['PG','SG','SF','PF','C'].includes(b)) {
+              if (p?.name) {
+                const nameKey = normName(String(p.name));
+                const canonicalName = ALIASES[nameKey] || nameKey;
+                const lookupKey = ALIASES[canonicalName] || canonicalName;
+                
+                // Check custom positions (master or team-specific) only as fallback
+                if (CUSTOM_POSITIONS[lookupKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[lookupKey])) {
+                  b = CUSTOM_POSITIONS[lookupKey];
+                } else if (CUSTOM_POSITIONS[canonicalName] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[canonicalName])) {
+                  b = CUSTOM_POSITIONS[canonicalName];
+                } else if (CUSTOM_POSITIONS[nameKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[nameKey])) {
+                  b = CUSTOM_POSITIONS[nameKey];
+                }
               }
             }
             
