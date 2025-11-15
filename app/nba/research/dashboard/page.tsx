@@ -3167,8 +3167,17 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
         const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'];
         const rankPromises = metrics.map(metric => 
           fetch(`/api/dvp/team-totals/rank?metric=${metric}&games=82`)
-            .then(res => res.json())
+            .then(res => {
+              if (!res.ok) {
+                throw new Error(`Failed to fetch rank for ${metric}: ${res.status}`);
+              }
+              return res.json();
+            })
             .then(data => ({ metric, rank: data.ranks?.[opponentTeam] || 0 }))
+            .catch(error => {
+              console.error(`Error fetching rank for ${metric}:`, error);
+              return { metric, rank: 0 };
+            })
         );
         
         const rankResults = await Promise.all(rankPromises);
