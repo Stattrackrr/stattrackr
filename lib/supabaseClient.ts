@@ -121,6 +121,8 @@ if (supabaseUrl !== 'https://placeholder.supabase.co') {
     keyLength: supabaseAnonKey.length,
     namespace: isBrowser ? tabNamespace : 'server',
   });
+} else if (isBrowser) {
+  console.warn('⚠️ Supabase URL not configured. Please set NEXT_PUBLIC_SUPABASE_URL in your .env.local file.');
 }
 
 // Suppress console errors during build for Supabase auth
@@ -210,12 +212,16 @@ try {
       const error = event.reason;
       const errorMessage = error?.message || error?.toString() || '';
       
-      // Suppress refresh token errors - they're harmless (user just needs to log in again)
+      // Suppress refresh token errors and network errors - they're harmless (user just needs to log in again)
       if (
         errorMessage.includes('Invalid Refresh Token') ||
         errorMessage.includes('Refresh Token Not Found') ||
         errorMessage.includes('refresh') ||
-        error?.name === 'AuthApiError'
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Network request failed') ||
+        error?.name === 'AuthApiError' ||
+        error?.name === 'TypeError'
       ) {
         event.preventDefault(); // Prevent error from showing in console
         // Clear invalid tokens silently
@@ -236,15 +242,20 @@ try {
       const errorObj = typeof args[0] === 'object' ? args[0] : null;
       const errorMessage = errorObj?.message || errorObj?.error_description || '';
       
-      // Suppress refresh token errors in console
+      // Suppress refresh token errors and network errors in console
       if (
         message.includes('Invalid Refresh Token') ||
         message.includes('Refresh Token Not Found') ||
         message.includes('AuthApiError') ||
+        message.includes('Failed to fetch') ||
+        message.includes('NetworkError') ||
+        message.includes('Network request failed') ||
         errorMessage.includes('refresh') ||
-        errorMessage.includes('token')
+        errorMessage.includes('token') ||
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError')
       ) {
-        // Silently ignore - user just needs to log in again
+        // Silently ignore - user just needs to log in again or check network/Supabase config
         return;
       }
       originalConsoleError.apply(console, args);
@@ -256,11 +267,14 @@ try {
       try {
         return await originalGetSession();
       } catch (error: any) {
-        // If it's a refresh token error, clear storage and return null session
+        // If it's a refresh token error or network error, clear storage and return null session
         if (
           error?.message?.includes('Invalid Refresh Token') ||
           error?.message?.includes('Refresh Token Not Found') ||
-          error?.message?.includes('refresh')
+          error?.message?.includes('refresh') ||
+          error?.message?.includes('Failed to fetch') ||
+          error?.message?.includes('NetworkError') ||
+          error?.message?.includes('Network request failed')
         ) {
           // Clear all auth storage
           if (persistentStorage) {
@@ -326,11 +340,14 @@ try {
       try {
         return await originalGetSessionSessionOnly();
       } catch (error: any) {
-        // If it's a refresh token error, clear storage and return null session
+        // If it's a refresh token error or network error, clear storage and return null session
         if (
           error?.message?.includes('Invalid Refresh Token') ||
           error?.message?.includes('Refresh Token Not Found') ||
-          error?.message?.includes('refresh')
+          error?.message?.includes('refresh') ||
+          error?.message?.includes('Failed to fetch') ||
+          error?.message?.includes('NetworkError') ||
+          error?.message?.includes('Network request failed')
         ) {
           // Clear all auth storage
           if (sessionOnlyStorage) {

@@ -2413,17 +2413,27 @@ const ChartControls = function ChartControls({
                   }}
                   className="w-[72px] sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
-                {/* Mobile-only: show existing Over Rate pill to the right of line selector */}
-                <div className="sm:hidden">
-                  <OverRatePill 
-                    overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
-                    total={chartData.length} 
-                    isDark={isDark} 
-                  />
-                </div>
               </div>
             </div>
-            {/* Middle: Over Rate pill, centered within remaining space (appears slightly left due to right content) */}
+            {/* Mobile: Filters inline with line input */}
+            <div className="sm:hidden flex items-center flex-wrap gap-2.5 ml-2 mt-4">
+              <div className="flex-shrink-0 mr-1">
+                {TimeframeButtons}
+              </div>
+              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
+              <div className="mr-1">
+                <OpponentSelector
+                  currentOpponent={currentOpponent}
+                  manualOpponent={manualOpponent}
+                  onOpponentChange={onOpponentChange}
+                  isDark={isDark}
+                  propsMode={propsMode}
+                  currentTeam={currentTeam}
+                  selectedTimeframe={selectedTimeframe}
+                />
+              </div>
+            </div>
+            {/* Middle: Over Rate pill, centered within remaining space (appears slightly left due to right content) - Desktop only */}
           <div className="hidden sm:flex flex-1 items-center justify-center">
               <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">Over Rate:</span>
               <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:hidden ml-1">Rate:</span>
@@ -2435,8 +2445,8 @@ const ChartControls = function ChartControls({
                 />
               </div>
             </div>
-            {/* Right: VS (opponent), H/A, and Timeframe inline */}
-            <div className="flex items-center flex-wrap gap-2 sm:gap-3 ml-auto">
+            {/* Right: VS (opponent), H/A, and Timeframe inline - Desktop only */}
+            <div className="hidden sm:flex items-center flex-wrap gap-2 sm:gap-3 ml-auto">
               <div className="mr-1 sm:mr-0">
                 <OpponentSelector
                   currentOpponent={currentOpponent}
@@ -2516,6 +2526,17 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         onChangeHomeAway={onChangeHomeAway}
         yAxisConfig={yAxisConfig}
       />
+      {/* Mobile: Over Rate pill above chart */}
+      <div className="sm:hidden px-2 pb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
+          <OverRatePill 
+            overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
+            total={chartData.length} 
+            isDark={isDark} 
+          />
+        </div>
+      </div>
       <div className="flex-1 min-h-0">
         <PureChart
           isLoading={isLoading}
@@ -2749,33 +2770,58 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
               {/* Official Odds */}
               <div>
                 <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Official Odds</div>
-                {lineMovementData?.openingLine || lineMovementData?.currentLine ? (
-                  <div className="space-y-2 text-base sm:text-sm">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
-                      <span className="text-gray-900 dark:text-white">
-                        {lineMovementData.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : '—'}
-                      </span>
+                {(() => {
+                  // Map selected stat to bookmaker property
+                  const statToBookKey: Record<string, string> = {
+                    'pts': 'PTS',
+                    'reb': 'REB',
+                    'ast': 'AST',
+                    'fg3m': 'THREES',
+                    'pra': 'PRA',
+                    'pr': 'PR',
+                    'pa': 'PA',
+                    'ra': 'RA',
+                  };
+                  const bookKey = statToBookKey[selectedStat] || 'PTS';
+                  
+                  // Get current line from books (realOddsData) - use first available bookmaker with data
+                  let currentLineFromBooks: { line: number; bookmaker: string } | null = null;
+                  if (books && books.length > 0) {
+                    for (const book of books) {
+                      if (book[bookKey] && book[bookKey].line && book[bookKey].line !== 'N/A') {
+                        const lineValue = parseFloat(String(book[bookKey].line).replace(/[^0-9.+-]/g, ''));
+                        if (!Number.isNaN(lineValue)) {
+                          currentLineFromBooks = {
+                            line: lineValue,
+                            bookmaker: book.name,
+                          };
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  
+                  return (
+                    <div className="space-y-2 text-base sm:text-sm">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
+                        <span className="text-gray-900 dark:text-white">
+                          {lineMovementData?.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
+                        <span className="text-gray-900 dark:text-white">
+                          {currentLineFromBooks 
+                            ? `${currentLineFromBooks.line.toFixed(1)} (${currentLineFromBooks.bookmaker})`
+                            : lineMovementData?.currentLine 
+                              ? `${lineMovementData.currentLine.line.toFixed(1)} (${lineMovementData.currentLine.bookmaker})`
+                              : '—'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
-                      <span className="text-gray-900 dark:text-white">
-                        {lineMovementData.currentLine ? `${lineMovementData.currentLine.line.toFixed(1)} (${lineMovementData.currentLine.bookmaker})` : '—'}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2 text-base sm:text-sm">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
-                      <span className="text-gray-900 dark:text-white">{derivedOdds.openingLine != null ? derivedOdds.openingLine.toFixed(1) : '—'}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
-                      <span className="text-gray-900 dark:text-white">{derivedOdds.currentLine != null ? derivedOdds.currentLine.toFixed(1) : '—'}</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -3136,7 +3182,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
                 <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${borderColor} px-3 py-2.5`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium ${mounted && isDark ? 'text-white' : 'text-black'}`}>{m.label}{posLabel}</span>
+                      <span className={`text-sm font-medium ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.label}{posLabel}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`font-bold ${mounted && isDark ? 'text-slate-100' : 'text-slate-900'} text-base sm:text-lg`}>
@@ -3369,9 +3415,157 @@ const BestOddsTable = memo(function BestOddsTable({
     setMounted(true);
   }, []);
 
+  const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
+  const away = opponentTeam || 'AWAY';
+  
+  const books = realOddsData.length > 0 ? realOddsData : [
+    { name: 'DraftKings', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+    { name: 'FanDuel', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+    { name: 'BetMGM', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
+    { name: 'Caesars', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } }
+  ];
+
+  const americanToNumber = (s: string) => {
+    if (s === 'N/A') return 0;
+    return parseInt(s.replace(/[^+\-\d]/g, ''), 10);
+  };
+  
+  // Convert American odds to a comparable value where higher = better
+  const oddsToComparable = (s: string) => {
+    if (s === 'N/A') return -Infinity;
+    const american = americanToNumber(s);
+    // For negative odds (favorites): -110 is better than -150 (less risk)
+    // For positive odds (underdogs): +150 is better than +110 (more payout)
+    // To make both comparable: convert to decimal-like value
+    if (american < 0) {
+      return 100 / Math.abs(american); // -110 -> ~0.909, -150 -> ~0.667
+    } else if (american > 0) {
+      return 1 + american / 100; // +150 -> 2.5, +110 -> 2.1
+    }
+    return 0;
+  };
+  const displayHalfLine = (s: string) => {
+    if (s === 'N/A') return 'N/A';
+    const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+    if (Number.isNaN(v)) return s;
+    const frac = Math.abs(v * 10) % 10;
+    if (frac === 0) {
+      const adj = v > 0 ? v - 0.5 : v + 0.5;
+      return adj.toFixed(1);
+    }
+    return Number.isFinite(v) ? v.toFixed(1) : s;
+  };
+
+  const maxIdx = (get: (b: any) => string) => {
+    let bi = 0;
+    for (let i = 1; i < books.length; i++) {
+      if (americanToNumber(get(books[i])) > americanToNumber(get(books[bi]))) bi = i;
+    }
+    return bi;
+  };
+
+  const parseLine = (s: string) => {
+    if (s === 'N/A') return NaN;
+    return parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+  };
+  const pickBest = (
+    preferLowLine: boolean,
+    getLine: (b: any) => string,
+    getOdds: (b: any) => string,
+  ) => {
+    let bestLine = preferLowLine ? Infinity : -Infinity;
+    for (let i = 0; i < books.length; i++) {
+      const v = parseLine(getLine(books[i]));
+      if (Number.isNaN(v)) continue;
+      if (preferLowLine ? v < bestLine : v > bestLine) bestLine = v;
+    }
+    const EPS = 1e-6;
+    const candIdx: number[] = [];
+    for (let i = 0; i < books.length; i++) {
+      const v = parseLine(getLine(books[i]));
+      if (!Number.isNaN(v) && Math.abs(v - bestLine) < EPS) candIdx.push(i);
+    }
+    if (candIdx.length <= 1) return new Set(candIdx);
+    let maxOdds = -Infinity;
+    let bestIdx = candIdx[0];
+    for (const i of candIdx) {
+      const o = americanToNumber(getOdds(books[i]));
+      if (o > maxOdds) {
+        maxOdds = o;
+        bestIdx = i;
+      }
+    }
+    return new Set([bestIdx]);
+  };
+
+  const bestH2H = {
+    home: maxIdx((b: any) => b.H2H.home),
+    away: maxIdx((b: any) => b.H2H.away),
+  } as const;
+
+  // For Spread: - display wants max line (closest to 0), + display wants min line (farthest from 0)
+  const pickBestSpreadForPositive = () => {
+    return pickBest(true, (b: any) => b.Spread.line, (b: any) => b.Spread.over); // min line for + display
+  };
+  
+  const pickBestSpreadForNegative = () => {
+    return pickBest(false, (b: any) => b.Spread.line, (b: any) => b.Spread.under); // max line for - display
+  };
+
+  const bestSets = {
+    Spread: {
+      positive: pickBestSpreadForPositive(),  // + display: min line (e.g., -8.5 shown as +8.5)
+      negative: pickBestSpreadForNegative(),  // - display: max line (e.g., -7.5 shown as -7.5)
+    },
+    Total: {
+      over: pickBest(true, (b: any) => b.Total.line, (b: any) => b.Total.over),
+      under: pickBest(false, (b: any) => b.Total.line, (b: any) => b.Total.under),
+    },
+    PTS: {
+      over: pickBest(true, (b: any) => b.PTS.line, (b: any) => b.PTS.over),
+      under: pickBest(false, (b: any) => b.PTS.line, (b: any) => b.PTS.under),
+    },
+    REB: {
+      over: pickBest(true, (b: any) => b.REB.line, (b: any) => b.REB.over),
+      under: pickBest(false, (b: any) => b.REB.line, (b: any) => b.REB.under),
+    },
+    AST: {
+      over: pickBest(true, (b: any) => b.AST.line, (b: any) => b.AST.over),
+      under: pickBest(false, (b: any) => b.AST.line, (b: any) => b.AST.under),
+    },
+    THREES: {
+      over: pickBest(true, (b: any) => b.THREES?.line, (b: any) => b.THREES?.over),
+      under: pickBest(false, (b: any) => b.THREES?.line, (b: any) => b.THREES?.under),
+    },
+    PRA: {
+      over: pickBest(true, (b: any) => b.PRA?.line, (b: any) => b.PRA?.over),
+      under: pickBest(false, (b: any) => b.PRA?.line, (b: any) => b.PRA?.under),
+    },
+    PR: {
+      over: pickBest(true, (b: any) => b.PR?.line, (b: any) => b.PR?.over),
+      under: pickBest(false, (b: any) => b.PR?.line, (b: any) => b.PR?.under),
+    },
+    PA: {
+      over: pickBest(true, (b: any) => b.PA?.line, (b: any) => b.PA?.over),
+      under: pickBest(false, (b: any) => b.PA?.line, (b: any) => b.PA?.under),
+    },
+    RA: {
+      over: pickBest(true, (b: any) => b.RA?.line, (b: any) => b.RA?.over),
+      under: pickBest(false, (b: any) => b.RA?.line, (b: any) => b.RA?.under),
+    },
+  } as const;
+
+  const green = mounted && isDark ? 'text-green-400' : 'text-green-600';
+  const grey = mounted && isDark ? 'text-slate-300' : 'text-slate-600';
+
+  // Different markets for player vs team mode
+  const markets = propsMode === 'player' 
+    ? ['PTS','REB','AST','3PT','P+R+A','P+R','P+A','R+A']
+    : ['H2H','Spread','Total'];
+
   return (
     <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
-      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">BEST ODDS</div>
+      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-2">BEST ODDS</div>
       
       {oddsLoading && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
@@ -3384,150 +3578,103 @@ const BestOddsTable = memo(function BestOddsTable({
         <table className="min-w-full text-xs border-collapse">
           <thead>
             <tr className={(mounted && isDark ? 'bg-slate-900' : 'bg-slate-100') + ' sticky top-0'}>
-              <th className="text-left py-2 pr-2 font-semibold text-gray-700 dark:text-gray-300">Book</th>
-              {['H2H','Spread','Total','PTS','REB','AST'].map((market) => (
-                <th key={market} className="text-left py-2 px-1 font-semibold text-gray-700 dark:text-gray-300 text-xs">{market}</th>
+              <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
+              {markets.map((market) => (
+                <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-          {(() => {
-            const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
-            const away = opponentTeam || 'AWAY';
-            
-            const books = realOddsData.length > 0 ? realOddsData : [
-              { name: 'DraftKings', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-              { name: 'FanDuel', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-              { name: 'BetMGM', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-              { name: 'Caesars', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } }
-            ];
-
-            const americanToNumber = (s: string) => {
-              if (s === 'N/A') return 0;
-              return parseInt(s.replace(/[^+\-\d]/g, ''), 10);
-            };
-            const displayHalfLine = (s: string) => {
-              if (s === 'N/A') return 'N/A';
-              const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-              if (Number.isNaN(v)) return s;
-              const frac = Math.abs(v * 10) % 10;
-              if (frac === 0) {
-                const adj = v > 0 ? v - 0.5 : v + 0.5;
-                return adj.toFixed(1);
-              }
-              return Number.isFinite(v) ? v.toFixed(1) : s;
-            };
-
-            const maxIdx = (get: (b: any) => string) => {
-              let bi = 0;
-              for (let i = 1; i < books.length; i++) {
-                if (americanToNumber(get(books[i])) > americanToNumber(get(books[bi]))) bi = i;
-              }
-              return bi;
-            };
-
-            const parseLine = (s: string) => {
-              if (s === 'N/A') return NaN;
-              return parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-            };
-            const pickBest = (
-              preferLowLine: boolean,
-              getLine: (b: any) => string,
-              getOdds: (b: any) => string,
-            ) => {
-              let bestLine = preferLowLine ? Infinity : -Infinity;
-              for (let i = 0; i < books.length; i++) {
-                const v = parseLine(getLine(books[i]));
-                if (Number.isNaN(v)) continue;
-                if (preferLowLine ? v < bestLine : v > bestLine) bestLine = v;
-              }
-              const EPS = 1e-6;
-              const candIdx: number[] = [];
-              for (let i = 0; i < books.length; i++) {
-                const v = parseLine(getLine(books[i]));
-                if (!Number.isNaN(v) && Math.abs(v - bestLine) < EPS) candIdx.push(i);
-              }
-              if (candIdx.length <= 1) return new Set(candIdx);
-              let maxOdds = -Infinity;
-              for (const i of candIdx) {
-                const o = americanToNumber(getOdds(books[i]));
-                if (o > maxOdds) maxOdds = o;
-              }
-              const winners = candIdx.filter(i => americanToNumber(getOdds(books[i])) === maxOdds);
-              return new Set(winners);
-            };
-
-            const bestH2H = {
-              home: maxIdx((b: any) => b.H2H.home),
-              away: maxIdx((b: any) => b.H2H.away),
-            };
-
-            const bestSets = {
-              Spread: {
-                over: pickBest(false, (b: any) => b.Spread.line, (b: any) => b.Spread.over), // Highest + line
-                under: pickBest(true, (b: any) => b.Spread.line, (b: any) => b.Spread.under), // Lowest - line (closest to 0)
-              },
-              Total: {
-                over: pickBest(true, (b: any) => b.Total.line, (b: any) => b.Total.over),
-                under: pickBest(false, (b: any) => b.Total.line, (b: any) => b.Total.under),
-              },
-              PTS: {
-                over: pickBest(true, (b: any) => b.PTS.line, (b: any) => b.PTS.over),
-                under: pickBest(false, (b: any) => b.PTS.line, (b: any) => b.PTS.under),
-              },
-              REB: {
-                over: pickBest(true, (b: any) => b.REB.line, (b: any) => b.REB.over),
-                under: pickBest(false, (b: any) => b.REB.line, (b: any) => b.REB.under),
-              },
-              AST: {
-                over: pickBest(true, (b: any) => b.AST.line, (b: any) => b.AST.over),
-                under: pickBest(false, (b: any) => b.AST.line, (b: any) => b.AST.under),
-              },
-            } as const;
-
-            const green = mounted && isDark ? 'text-green-400' : 'text-green-600';
-            const grey = mounted && isDark ? 'text-slate-300' : 'text-slate-600';
-
-            return books.map((row, i) => (
-              <tr key={row.name} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
-                <td className="py-2 pr-2 text-gray-700 dark:text-gray-300 text-xs truncate">{row.name}</td>
-                <td className="py-2 px-1">
-                  <div className="font-mono text-gray-900 dark:text-white text-xs">
-                    <div className="truncate">{home} <span className={i === bestH2H.home ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.home) : row.H2H.home}</span></div>
-                    <div className="truncate opacity-80">{away} <span className={i === bestH2H.away ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.away) : row.H2H.away}</span></div>
-                  </div>
-                </td>
-                <td className="py-2 px-1">
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.Spread.over.has(i) ? green : grey}`}>
-                    {row.Spread.line !== 'N/A' && parseLine(row.Spread.line) !== 0 ? (
-                      parseLine(row.Spread.line) > 0 ? `+${displayHalfLine(row.Spread.line)}` : displayHalfLine(row.Spread.line)
-                    ) : row.Spread.line} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
-                  </div>
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.Spread.under.has(i) ? green : grey}`}>
-                    {row.Spread.line !== 'N/A' && parseLine(row.Spread.line) !== 0 ? (
-                      parseLine(row.Spread.line) > 0 ? displayHalfLine(String(-parseLine(row.Spread.line))) : `+${displayHalfLine(String(Math.abs(parseLine(row.Spread.line))))}`
-                    ) : row.Spread.line} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
-                  </div>
-                </td>
-                <td className="py-2 px-1">
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)}</div>
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)}</div>
-                </td>
-                <td className="py-2 px-1">
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)}</div>
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)}</div>
-                </td>
-                <td className="py-2 px-1">
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)}</div>
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)}</div>
-                </td>
-                <td className="py-2 px-1">
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)}</div>
-                  <div className={`font-mono whitespace-nowrap text-xs ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)}</div>
-                </td>
-              </tr>
-            ));
-          })()}
+          {books.map((row, i) => (
+            <tr key={row.name} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
+              <td className="py-2 pr-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.name}</td>
+              
+              {/* Team mode: show H2H, Spread, Total */}
+              {propsMode === 'team' && (
+                <>
+              <td className="py-2 px-3">
+                <div className="font-mono text-gray-900 dark:text-white whitespace-nowrap">
+{home} <span className={i === bestH2H.home ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.home) : row.H2H.home}</span>
+                </div>
+                <div className="font-mono text-gray-900 dark:text-white opacity-80 whitespace-nowrap">
+{away} <span className={i === bestH2H.away ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.away) : row.H2H.away}</span>
+                </div>
+              </td>
+              <td className="py-2 px-3">
+                {(() => {
+                  const lineVal = parseLine(row.Spread.line);
+                  if (row.Spread.line === 'N/A' || Number.isNaN(lineVal)) {
+                    return (
+                      <>
+                        <div className={`font-mono whitespace-nowrap ${grey}`}>
+                          + N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                        </div>
+                        <div className={`font-mono whitespace-nowrap ${grey}`}>
+                          - N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                        </div>
+                      </>
+                    );
+                  }
+                  // Display both + and - with the same line value
+                  const absLineVal = Math.abs(lineVal);
+                  return (
+                    <>
+                      <div className={`font-mono whitespace-nowrap ${bestSets.Spread.positive.has(i) ? green : grey}`}>
+                        + {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                      </div>
+                      <div className={`font-mono whitespace-nowrap ${bestSets.Spread.negative.has(i) ? green : grey}`}>
+                        - {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                      </div>
+                    </>
+                  );
+                })()}
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.over) : row.Total.over})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.under) : row.Total.under})</div>
+              </td>
+                </>
+              )}
+              
+              {/* Player mode: show player props */}
+              {propsMode === 'player' && (
+                <>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.over) : row.PTS.over})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.under) : row.PTS.under})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.over) : row.REB.over})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.under) : row.REB.under})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.over) : row.AST.over})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.under) : row.AST.under})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.over || 'N/A') : row.THREES?.over || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.under || 'N/A') : row.THREES?.under || 'N/A'})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.over || 'N/A') : row.PRA?.over || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.under || 'N/A') : row.PRA?.under || 'N/A'})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.over || 'N/A') : row.PR?.over || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.under || 'N/A') : row.PR?.under || 'N/A'})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.over || 'N/A') : row.PA?.over || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.under || 'N/A') : row.PA?.under || 'N/A'})</div>
+              </td>
+              <td className="py-2 px-3">
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.over || 'N/A') : row.RA?.over || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.under || 'N/A') : row.RA?.under || 'N/A'})</div>
+              </td>
+                </>
+              )}
+            </tr>
+          ))}
           </tbody>
         </table>
       </div>
@@ -3853,14 +4000,17 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
 
 function NBADashboardContent() {
   const router = useRouter();
-  const searchParamsHook = useSearchParams();
-  const { isDark } = useTheme();
+  const { isDark, theme, setTheme } = useTheme();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false); // Default to false until verified
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const journalDropdownRef = useRef<HTMLDivElement>(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Check for success parameter from checkout
   useEffect(() => {
@@ -3907,8 +4057,10 @@ function NBADashboardContent() {
         console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
         setIsPro(proStatus);
       } else {
-        // No session - redirect to login with return path
-        router.push('/login?redirect=/nba/research/dashboard');
+        // No session - redirect to login with return path (non-blocking)
+        setTimeout(() => {
+          router.push('/login?redirect=/nba/research/dashboard');
+        }, 0);
       }
     };
     getUser();
@@ -3924,6 +4076,20 @@ function NBADashboardContent() {
         !target.closest('[data-journal-button]')
       ) {
         setShowJournalDropdown(false);
+      }
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(target) &&
+        !target.closest('[data-profile-button]')
+      ) {
+        setShowProfileDropdown(false);
+      }
+      if (
+        settingsDropdownRef.current &&
+        !settingsDropdownRef.current.contains(target) &&
+        !target.closest('[data-settings-button]')
+      ) {
+        setShowSettingsDropdown(false);
       }
     };
 
@@ -4045,18 +4211,6 @@ const lineMovementInFlightRef = useRef(false);
       if (saved === 'decimal' || saved === 'american') setOddsFormat(saved as any);
     } catch {}
   }, []);
-
-  const derivedOdds = useMemo(() => {
-    if (lineMovementData) {
-      return {
-        openingLine: lineMovementData.openingLine?.line ?? null,
-        currentLine: lineMovementData.currentLine?.line ?? null,
-      };
-    }
-    // Fallback to old snapshot logic for team mode
-    const filtered = filterByMarket(oddsSnapshots, marketKey);
-    return deriveOpeningCurrentMovement(filtered);
-  }, [lineMovementData, oddsSnapshots, marketKey]);
 
   // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
@@ -5661,7 +5815,9 @@ const lineMovementInFlightRef = useRef(false);
 
   // Select from live search results
   const handlePlayerSelectFromSearch = async (r: BdlSearchResult) => {
-    setIsLoading(true); setApiError(null);
+    console.log('🔍 handlePlayerSelectFromSearch called with:', r);
+    setIsLoading(true); 
+    setApiError(null);
     
     // Clear premium stats immediately when switching players
     setAdvancedStats(null);
@@ -5794,8 +5950,11 @@ const lineMovementInFlightRef = useRef(false);
       setOpponentTeam(normalizeAbbr(opponent));
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
+      console.log('✅ handlePlayerSelectFromSearch completed successfully');
     } catch (e: any) {
-      setApiError(e?.message || "Failed to load stats."); setPlayerStats([]);
+      console.error('❌ handlePlayerSelectFromSearch error:', e);
+      setApiError(e?.message || "Failed to load stats."); 
+      setPlayerStats([]);
       setOpponentTeam('N/A');
     } finally {
       setIsLoading(false);
@@ -5807,11 +5966,25 @@ const lineMovementInFlightRef = useRef(false);
 
   // Close dropdown on outside click
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDropdown(false);
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking inside the search container (includes dropdown)
+      // The button handlers will close the dropdown themselves
+      if (searchRef.current && searchRef.current.contains(target)) {
+        return; // Click is inside search container
+      }
+      // Click is outside - close dropdown
+      setShowDropdown(false);
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    // Use a slight delay to ensure button onClick handlers fire first
+    const handleClick = (e: MouseEvent) => {
+      // Use requestAnimationFrame to defer the check until after button handlers
+      requestAnimationFrame(() => {
+        onClick(e);
+      });
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, []);
 
   // header info - dynamic based on props mode
@@ -6409,6 +6582,130 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
   
+  // Merge line movement data with live odds to get accurate current line
+  const mergedLineMovementData = useMemo(() => {
+    if (!lineMovementData) return null;
+    
+    // Map selected stat to bookmaker property
+    const statToBookKey: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'fg3m': 'THREES',
+      'pra': 'PRA',
+      'pr': 'PR',
+      'pa': 'PA',
+      'ra': 'RA',
+    };
+    const bookKey = statToBookKey[selectedStat] || 'PTS';
+    
+    // Get current line from live odds (realOddsData) - use first available bookmaker with data
+    let currentLineFromLive: { line: number; bookmaker: string; timestamp: string } | null = null;
+    if (realOddsData && realOddsData.length > 0) {
+      for (const b of realOddsData) {
+        if (b[bookKey] && b[bookKey].line && b[bookKey].line !== 'N/A') {
+          const lineValue = parseFloat(String(b[bookKey].line).replace(/[^0-9.+-]/g, ''));
+          if (!Number.isNaN(lineValue)) {
+            currentLineFromLive = {
+              line: lineValue,
+              bookmaker: b.name,
+              timestamp: new Date().toISOString(),
+            };
+            break;
+          }
+        }
+      }
+    }
+    
+    // Merge: use opening from database, current from live odds (if available)
+    return {
+      ...lineMovementData,
+      currentLine: currentLineFromLive || lineMovementData.currentLine,
+    };
+  }, [lineMovementData, realOddsData, selectedStat]);
+  
+  const derivedOdds = useMemo(() => {
+    if (mergedLineMovementData) {
+      return {
+        openingLine: mergedLineMovementData.openingLine?.line ?? null,
+        currentLine: mergedLineMovementData.currentLine?.line ?? null,
+      };
+    }
+    // Fallback to old snapshot logic for team mode
+    const filtered = filterByMarket(oddsSnapshots, marketKey);
+    return deriveOpeningCurrentMovement(filtered);
+  }, [mergedLineMovementData, oddsSnapshots, marketKey]);
+  
+  // Update intraday movements to use merged data for accurate current line
+  const intradayMovementsFinal = useMemo(() => {
+    if (mergedLineMovementData) {
+      const { lineMovement = [], openingLine, currentLine } = mergedLineMovementData;
+
+      if (lineMovement.length > 0) {
+        return lineMovement
+          .map((movement) => {
+            const dt = new Date(movement.timestamp);
+            const timeLabel = dt.toLocaleString(undefined, {
+              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+            });
+            const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
+            return {
+              ts: new Date(movement.timestamp).getTime(),
+              timeLabel: `${timeLabel} (${movement.bookmaker})`,
+              line: movement.line,
+              change: `${movement.change > 0 ? '+' : ''}${movement.change.toFixed(1)}`,
+              direction: direction as 'up' | 'down' | 'flat',
+            };
+          })
+          .reverse(); // Most recent first
+      }
+
+      const fallbackRows: { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' }[] = [];
+      const formatLabel = (entry: typeof openingLine, label: string) => {
+        if (!entry) return '';
+        const dt = new Date(entry.timestamp);
+        const time = dt.toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+        const suffix = entry.bookmaker ? ` (${entry.bookmaker})` : '';
+        return `${time}${suffix}${label ? ` — ${label}` : ''}`;
+      };
+
+      if (openingLine) {
+        fallbackRows.push({
+          ts: new Date(openingLine.timestamp).getTime(),
+          timeLabel: formatLabel(openingLine, 'Opening'),
+          line: openingLine.line,
+          change: '—',
+          direction: 'flat'
+        });
+      }
+
+      if (currentLine) {
+        const delta = openingLine ? currentLine.line - openingLine.line : 0;
+        const hasDifferentTimestamp = !openingLine || currentLine.timestamp !== openingLine.timestamp;
+        const hasDifferentLine = !openingLine || currentLine.line !== openingLine.line;
+
+        if (hasDifferentTimestamp || hasDifferentLine) {
+          fallbackRows.push({
+            ts: new Date(currentLine.timestamp).getTime(),
+            timeLabel: formatLabel(currentLine, 'Latest'),
+            line: currentLine.line,
+            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '—',
+            direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+          });
+        }
+      }
+
+      if (fallbackRows.length > 0) {
+        return fallbackRows.sort((a, b) => b.ts - a.ts);
+      }
+    }
+    
+    // Fallback to original intradayMovements
+    return intradayMovements;
+  }, [mergedLineMovementData, intradayMovements]);
+  
   // Fetch real odds data - fetches player props or team game odds based on mode
   const fetchOddsData = async (retryCount = 0) => {
     setOddsLoading(true);
@@ -6813,8 +7110,9 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Header (with search bar and team display) */}
 <div className="relative z-[60] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-36 md:h-40 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
-              <div className="flex flex-col h-full gap-3">
-              <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col h-full gap-2 lg:gap-3">
+              {/* Desktop: Original layout - Player info, Search, Team vs Team all in one row */}
+              <div className="hidden lg:flex items-center justify-between flex-1">
                 <div className="flex-shrink-0">
                   {propsMode === 'team' ? (
                     // Game Props mode - show team or prompt
@@ -7054,14 +7352,20 @@ const lineMovementInFlightRef = useRef(false);
                               ) : searchResults.map((r) => (
                                 <button
                                   key={`${r.id}-${r.full}`}
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('🔘 Mobile search result clicked (first):', r, 'isPro:', isPro);
                                     if (!isPro) {
                                       if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
                                         router.push('/subscription');
                                       }
                                       return;
                                     }
-                                    handlePlayerSelectFromSearch(r);
+                                    console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                                    handlePlayerSelectFromSearch(r).catch(err => {
+                                      console.error('Error in handlePlayerSelectFromSearch:', err);
+                                    });
                                     setSearchQuery('');
                                     setIsMobileSearchOpen(false);
                                   }}
@@ -7089,7 +7393,10 @@ const lineMovementInFlightRef = useRef(false);
                         ) : searchResults.map((r) => (
                           <button
                             key={`${r.id}-${r.full}`}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔘 Desktop search result clicked:', r, 'isPro:', isPro);
                               // Extra check: ensure Pro access before player selection
                               if (!isPro) {
                                 if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
@@ -7097,7 +7404,12 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                                 return;
                               }
-                              handlePlayerSelectFromSearch(r);
+                              console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                              handlePlayerSelectFromSearch(r).catch(err => {
+                                console.error('Error in handlePlayerSelectFromSearch:', err);
+                              });
+                              setSearchQuery('');
+                              setShowDropdown(false);
                             }}
                             className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                           >
@@ -7182,8 +7494,8 @@ const lineMovementInFlightRef = useRef(false);
                   </div>
                 </div>
 
-                {/* Team vs Team Display - Dynamic based on props mode */}
-                <div className="flex-shrink-0">
+                {/* Team vs Team Display - Desktop only - Aligned with name */}
+                <div className="hidden lg:flex flex-shrink-0">
                   {propsMode === 'player' ? (
                     // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
                     selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
@@ -7309,6 +7621,369 @@ const lineMovementInFlightRef = useRef(false);
                   )}
                 </div>
               </div>
+
+              {/* Mobile: Two-row layout - First row: Player name and Search, Second row: Height and Team vs Team */}
+              {/* First row: Player name / Team name and Search button */}
+              <div className="lg:hidden flex items-center justify-between">
+                <div className="flex-shrink-0">
+                  {propsMode === 'team' ? (
+                    // Game Props mode - show team or prompt
+                    gamePropsTeam && gamePropsTeam !== 'N/A' ? (
+                      <div>
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <h1 className="text-lg font-bold text-gray-900 dark:text-white">{TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}</h1>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Team</h1>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    // Player Props mode - show player name
+                    <div className="flex items-baseline gap-3">
+                      <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
+                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dynamic Search - Player or Team based on props mode - Aligned with name */}
+                <div className="flex-shrink-0 ml-4">
+                  <div className="relative z-[70]" ref={searchRef}>
+                    {/* Mobile icon button */}
+                    <div className="flex justify-end">
+                      <button onClick={() => {
+                        if (propsMode === 'player' && !isPro) {
+                          if (window.confirm('Player Props search is a Pro feature. Would you like to upgrade?')) {
+                            router.push('/subscription');
+                          }
+                          return;
+                        }
+                        setIsMobileSearchOpen(true);
+                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 110-16 8 8 0 010 16z"/></svg>
+                      </button>
+                    </div>
+                    {/* Mobile search overlay - same as before */}
+                    {isMobileSearchOpen && (
+                      <>
+                        {/* Backdrop */}
+                        <div 
+                          className="fixed inset-0 bg-black/20 z-[99]" 
+                          onClick={() => setIsMobileSearchOpen(false)}
+                        />
+                        {/* Search panel */}
+                        <div className="fixed inset-x-0 top-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-b-lg shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center gap-2 p-3 border-b border-gray-300 dark:border-gray-700">
+                          <input
+                            autoFocus={propsMode !== 'player' || isPro}
+                            type="text"
+                            placeholder={propsMode === 'player' ? (isPro ? 'Search player...' : 'Upgrade to Pro') : 'Search team...'}
+                            value={searchQuery}
+                            onChange={(e) => {
+                              if (propsMode === 'player' && !isPro) {
+                                return;
+                              }
+                              setSearchQuery(e.target.value);
+                              if (propsMode === 'player') setShowDropdown(true);
+                            }}
+                            onFocus={(e) => {
+                              if (propsMode === 'player' && !isPro) {
+                                e.target.blur();
+                                setIsMobileSearchOpen(false);
+                                if (window.confirm('Player Props search is a Pro feature. Would you like to upgrade?')) {
+                                  router.push('/subscription');
+                                }
+                                return;
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && propsMode === 'team') {
+                                const query = searchQuery.toLowerCase();
+                                if (query.length >= 2) {
+                                  let foundTeam = '';
+                                  if (Object.keys(TEAM_FULL_NAMES).some(abbr => abbr.toLowerCase().includes(query))) foundTeam = Object.keys(TEAM_FULL_NAMES).find(abbr => abbr.toLowerCase().includes(query)) || '';
+                                  if (!foundTeam) {
+                                    const m = Object.entries(TEAM_FULL_NAMES).find(([abbr, fullName]) => fullName.toLowerCase().includes(query));
+                                    if (m) foundTeam = m[0];
+                                  }
+                                  const nick: Record<string,string> = { 'lakers':'LAL','warriors':'GSW','celtics':'BOS','heat':'MIA','bulls':'CHI','knicks':'NYK','nets':'BKN','sixers':'PHI','76ers':'PHI','mavs':'DAL','spurs':'SAS','rockets':'HOU' };
+                                  if (!foundTeam && nick[query]) foundTeam = nick[query];
+                                  if (foundTeam) {
+                                    setGamePropsTeam(foundTeam);
+                                    setSelectedStat('total_pts');
+                                    const opponent = getOpponentTeam(foundTeam, todaysGames);
+                                    setOpponentTeam(normalizeAbbr(opponent));
+                                    setSearchQuery('');
+                                    setIsMobileSearchOpen(false);
+                                  }
+                                }
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          />
+                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                        
+                        {/* Search results - same as before */}
+                        <div className="p-2">
+                          {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
+                            const query = searchQuery.toLowerCase();
+                            const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
+                            
+                            Object.entries(TEAM_FULL_NAMES).forEach(([abbr, fullName]) => {
+                              if (abbr.toLowerCase().includes(query) || fullName.toLowerCase().includes(query)) {
+                                matchingTeams.push({ abbr, fullName });
+                              }
+                            });
+                            
+                            const nicknames: Record<string, string> = {
+                              'lakers': 'LAL', 'warriors': 'GSW', 'celtics': 'BOS', 'heat': 'MIA',
+                              'bulls': 'CHI', 'knicks': 'NYK', 'nets': 'BKN', 'sixers': 'PHI',
+                              '76ers': 'PHI', 'mavs': 'DAL', 'spurs': 'SAS', 'rockets': 'HOU'
+                            };
+                            
+                            if (nicknames[query] && !matchingTeams.find(t => t.abbr === nicknames[query])) {
+                              const abbr = nicknames[query];
+                              matchingTeams.push({ abbr, fullName: TEAM_FULL_NAMES[abbr] || abbr });
+                            }
+                            
+                            return matchingTeams.length > 0 ? (
+                              <>
+                                {matchingTeams.slice(0, 10).map((team) => (
+                                  <button
+                                    key={team.abbr}
+                                    onClick={() => {
+                                      setGamePropsTeam(team.abbr);
+                                      setSelectedStat('total_pts');
+                                      const opponent = getOpponentTeam(team.abbr, todaysGames);
+                                      setOpponentTeam(normalizeAbbr(opponent));
+                                      setSearchQuery('');
+                                      setIsMobileSearchOpen(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
+                                  >
+                                    <div className="font-medium text-gray-900 dark:text-white">{team.fullName}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">{team.abbr}</div>
+                                  </button>
+                                ))}
+                              </>
+                            ) : null;
+                          })()}
+                          
+                          {propsMode === 'player' && isPro && searchQuery && (
+                            <>
+                              {searchResults.length === 0 ? (
+                                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                  {searchBusy ? "Searching..." : (searchError ? `Search error: ${searchError}` : `No players found for "${searchQuery}"`)}
+                                </div>
+                              ) : searchResults.map((r) => (
+                                <button
+                                  key={`${r.id}-${r.full}`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('🔘 Mobile search result clicked (second):', r, 'isPro:', isPro);
+                                    if (!isPro) {
+                                      if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
+                                        router.push('/subscription');
+                                      }
+                                      return;
+                                    }
+                                    console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                                    handlePlayerSelectFromSearch(r).catch(err => {
+                                      console.error('Error in handlePlayerSelectFromSearch:', err);
+                                    });
+                                    setSearchQuery('');
+                                    setIsMobileSearchOpen(false);
+                                  }}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
+                                >
+                                  <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                  </div>
+                                </button>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Second row: Player height / Team info and Team vs Team display - Mobile only */}
+              <div className="lg:hidden flex items-center justify-between">
+                <div className="flex-shrink-0">
+                  {propsMode === 'team' ? (
+                    // Game Props mode - show team info
+                    gamePropsTeam && gamePropsTeam !== 'N/A' ? (
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Team: {gamePropsTeam}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Game Props Mode
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Search for a team above
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Game Props Mode
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    // Player Props mode - show player height and team
+                    <div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        Height: {playerInfo.height || "—"}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {playerInfo.teamName || "—"}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Team vs Team Display - Mobile only - Aligned with height */}
+                <div className="flex-shrink-0">
+                  {propsMode === 'player' ? (
+                    // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
+                    selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
+                      <div className="flex items-center gap-1.5 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                        {/* Player Team */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink">
+                          <img 
+                            src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
+                            alt={selectedTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(selectedTeam);
+                              const next = selectedTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setSelectedTeamLogoAttempt(next);
+                                setSelectedTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{selectedTeam}</span>
+                        </div>
+                        
+                        {/* VS */}
+                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        
+                        {/* Next Game Opponent */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                          <img 
+                            src={getEspnLogoUrl(nextGameOpponent)}
+                            alt={nextGameOpponent}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(nextGameOpponent);
+                              const next = opponentTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setOpponentTeamLogoAttempt(next);
+                                e.currentTarget.src = candidates[next];
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{nextGameOpponent}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                      </div>
+                    )
+                  ) : (
+                    // Game Props Mode - Show selected team vs opponent or prompt
+                    gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
+                      <div className="flex items-center gap-1.5 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
+                        {/* Selected Team */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink">
+                          <img 
+                            src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
+                            alt={gamePropsTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(gamePropsTeam);
+                              const next = selectedTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setSelectedTeamLogoAttempt(next);
+                                setSelectedTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{gamePropsTeam}</span>
+                        </div>
+                        
+                        {/* VS */}
+                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        
+                        {/* Opponent Team */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                          <img 
+                            src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                            alt={opponentTeam}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              // Advance through ESPN candidates exactly once per team to avoid flicker
+                              const candidates = getEspnLogoCandidates(opponentTeam);
+                              const next = opponentTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setOpponentTeamLogoAttempt(next);
+                                setOpponentTeamLogoUrl(candidates[next]);
+                              } else {
+                                // No more candidates; stop retrying
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{opponentTeam}</span>
+                        </div>
+                      </div>
+                    ) : gamePropsTeam && gamePropsTeam !== 'N/A' ? (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <img 
+                          src={getEspnLogoUrl(gamePropsTeam)}
+                          alt={gamePropsTeam}
+                          className="w-8 h-8 object-contain"
+                        />
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">{gamePropsTeam}</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">No Game Today</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                        <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Team</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
               
               {/* Tracking Buttons - Show for both Player Props and Game Props modes */}
               {((propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A') ||
@@ -7411,24 +8086,6 @@ const lineMovementInFlightRef = useRef(false);
               <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h4 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">Team Matchup</h4>
-                  
-                  {/* Team Switcher - only show when both teams are available */}
-                  {((propsMode === 'player' && selectedTeam && selectedTeam !== 'N/A' && opponentTeam && opponentTeam !== '') || 
-                    (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
-                    <button
-                      onClick={() => {
-                        // Only toggle pie chart display order, don't change underlying team data
-                        setPieChartSwapped(!pieChartSwapped);
-                      }}
-                      className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      title="Switch teams in comparison"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m0 0l4-4" />
-                      </svg>
-                      Swap
-                    </button>
-                  )}
                 </div>
                 
                 {/* Comparison Metric Selector */}
@@ -7504,19 +8161,23 @@ const lineMovementInFlightRef = useRef(false);
                   let teamValue: number = 0;
                   let opponentValue: number = 0;
                   let isPercentage = false;
+                  let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                   
                   switch (selectedComparison) {
                     case 'points':
                       teamValue = currentStats.pts || 0;
                       opponentValue = opponentStats.pts || 0;
+                      isDefensiveStat = true;
                       break;
                     case 'rebounds':
                       teamValue = currentStats.reb || 0;
                       opponentValue = opponentStats.reb || 0;
+                      isDefensiveStat = true;
                       break;
                     case 'assists':
                       teamValue = currentStats.ast || 0;
                       opponentValue = opponentStats.ast || 0;
+                      isDefensiveStat = true;
                       break;
                     case 'fg_pct':
                       teamValue = currentStats.fg_pct || 0;
@@ -7533,17 +8194,42 @@ const lineMovementInFlightRef = useRef(false);
                   const teamDisplay = isPercentage ? `${teamValue.toFixed(1)}%` : teamValue.toFixed(1);
                   const oppDisplay = isPercentage ? `${opponentValue.toFixed(1)}%` : opponentValue.toFixed(1);
                   
+                  // Calculate pie data to get consistent colors
+                  const tempPieData = createTeamComparisonPieData(
+                    teamValue,
+                    opponentValue,
+                    currentTeam,
+                    currentOpponent || 'TBD',
+                    false,
+                    /* amplify */ true,
+                    /* useAbs */ false,
+                    /* clampNegatives */ false,
+                    /* baseline */ 0,
+                    /* invertOppForShare */ false,
+                    /* invertMax */ 130,
+                    /* ampBoost */ isPercentage ? 3.0 : 1.0
+                  );
+                  
+                  // Use pie chart colors for consistency (green = better, red = worse)
+                  // pieData[0] is currentTeam, pieData[1] is opponent
+                  const teamColorClass = tempPieData[0]?.fill === '#16a34a' || tempPieData[0]?.fill === '#22c55e'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-500 dark:text-red-400';
+                  const oppColorClass = tempPieData[1]?.fill === '#16a34a' || tempPieData[1]?.fill === '#22c55e'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-500 dark:text-red-400';
+                  
                   return (
                     <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
                       <div className="flex items-center justify-between gap-1 text-xs">
-                        <div className="flex-1 text-center text-green-600 dark:text-green-400">
+                        <div className={`flex-1 text-center ${teamColorClass}`}>
                           <span className="font-bold">{currentTeam}</span>
                           <span className="font-bold ml-1">{teamDisplay}</span>
                         </div>
                         
                         <div className="text-gray-400 font-bold px-1">VS</div>
                         
-                        <div className="flex-1 text-center text-red-500 dark:text-red-400">
+                        <div className={`flex-1 text-center ${oppColorClass}`}>
                           <span className="font-bold">{currentOpponent || 'TBD'}</span>
                           <span className="font-bold ml-1">{oppDisplay}</span>
                         </div>
@@ -7574,19 +8260,30 @@ const lineMovementInFlightRef = useRef(false);
                     let teamValue: number = 0;
                     let opponentValue: number = 0;
                     let isPercentage = false;
+                    let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                     
                     switch (selectedComparison) {
                       case 'points':
-                        teamValue = currentStats.pts || 0;
-                        opponentValue = opponentStats.pts || 0;
+                        // For defensive stats, invert: lower allowed = better, so invert the values
+                        // Use max of 150 points allowed as baseline
+                        const maxPoints = 150;
+                        teamValue = maxPoints - (currentStats.pts || 0);
+                        opponentValue = maxPoints - (opponentStats.pts || 0);
+                        isDefensiveStat = true;
                         break;
                       case 'rebounds':
-                        teamValue = currentStats.reb || 0;
-                        opponentValue = opponentStats.reb || 0;
+                        // Invert rebounds allowed: lower allowed = better
+                        const maxRebounds = 60;
+                        teamValue = maxRebounds - (currentStats.reb || 0);
+                        opponentValue = maxRebounds - (opponentStats.reb || 0);
+                        isDefensiveStat = true;
                         break;
                       case 'assists':
-                        teamValue = currentStats.ast || 0;
-                        opponentValue = opponentStats.ast || 0;
+                        // Invert assists allowed: lower allowed = better
+                        const maxAssists = 35;
+                        teamValue = maxAssists - (currentStats.ast || 0);
+                        opponentValue = maxAssists - (opponentStats.ast || 0);
+                        isDefensiveStat = true;
                         break;
                       case 'fg_pct':
                         teamValue = currentStats.fg_pct || 0;
@@ -7600,10 +8297,24 @@ const lineMovementInFlightRef = useRef(false);
                         break;
                     }
                     
+                    // Store original values for display (before inversion)
+                    const originalTeamValue = isDefensiveStat 
+                      ? (selectedComparison === 'points' ? (currentStats.pts || 0) :
+                         selectedComparison === 'rebounds' ? (currentStats.reb || 0) :
+                         (currentStats.ast || 0))
+                      : teamValue;
+                    const originalOpponentValue = isDefensiveStat
+                      ? (selectedComparison === 'points' ? (opponentStats.pts || 0) :
+                         selectedComparison === 'rebounds' ? (opponentStats.reb || 0) :
+                         (opponentStats.ast || 0))
+                      : opponentValue;
+                    
                     console.log('📊 Team Matchup Pie Data:', {
                       comparison: selectedComparison,
                       teamValue,
                       opponentValue,
+                      originalTeamValue,
+                      originalOpponentValue,
                       currentTeam,
                       currentOpponent,
                       currentStats,
@@ -7624,8 +8335,13 @@ const lineMovementInFlightRef = useRef(false);
                       /* invertMax */ 130,
                       /* ampBoost */ isPercentage ? 3.0 : 1.0
                     );
+                    
+                    // Update display values to show original (non-inverted) values
+                    pieData[0].displayValue = originalTeamValue.toFixed(1);
+                    pieData[1].displayValue = originalOpponentValue.toFixed(1);
 
-                    const pieDrawData = [pieData?.[1], pieData?.[0]];
+                    // Keep pie chart data in same order as pieData (currentTeam first, then opponent)
+                    const pieDrawData = [pieData?.[0], pieData?.[1]];
 
                     const teamDisplayRaw = pieData?.[0]?.displayValue ?? '';
                     const oppDisplayRaw = pieData?.[1]?.displayValue ?? '';
@@ -7856,7 +8572,42 @@ const lineMovementInFlightRef = useRef(false);
               </div>
             )}
 
-            {/* 6. Depth Chart Container (Mobile) */}
+            {/* 6. Official Odds Card Container (Mobile) - Line Movement */}
+            {useMemo(() => (
+<div className="lg:hidden">
+                <OfficialOddsCard
+                  isDark={isDark}
+                  derivedOdds={derivedOdds}
+                  intradayMovements={intradayMovementsFinal}
+                  selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+                  opponentTeam={opponentTeam}
+                  selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                  opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                  matchupInfo={matchupInfo}
+                  oddsFormat={oddsFormat}
+                  books={realOddsData}
+                  fmtOdds={fmtOdds}
+                  lineMovementData={mergedLineMovementData}
+                  selectedStat={selectedStat}
+                />
+              </div>
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
+
+            {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
+            <BestOddsTable
+              isDark={isDark}
+              oddsLoading={oddsLoading}
+              oddsError={oddsError}
+              realOddsData={realOddsData}
+              selectedTeam={selectedTeam}
+              gamePropsTeam={gamePropsTeam}
+              propsMode={propsMode}
+              opponentTeam={opponentTeam}
+              oddsFormat={oddsFormat}
+              fmtOdds={fmtOdds}
+/>
+
+            {/* 8. Depth Chart Container (Mobile) */}
             {useMemo(() => {
               // Determine which team to show based on mode
               const currentTeam = propsMode === 'player' 
@@ -7932,41 +8683,6 @@ const lineMovementInFlightRef = useRef(false);
               todaysGames
             ])}
 
-            {/* 7. Official Odds Card Container (Mobile) */}
-            {useMemo(() => (
-<div className="lg:hidden">
-                <OfficialOddsCard
-                  isDark={isDark}
-                  derivedOdds={derivedOdds}
-                  intradayMovements={intradayMovements}
-                  selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-                  opponentTeam={opponentTeam}
-                  selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
-                  opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-                  matchupInfo={matchupInfo}
-                  oddsFormat={oddsFormat}
-                  books={realOddsData}
-                  fmtOdds={fmtOdds}
-                  lineMovementData={lineMovementData}
-                  selectedStat={selectedStat}
-                />
-              </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, lineMovementData, selectedStat])}
-
-            {/* 8. Best Odds Container (Mobile) */}
-            <BestOddsTable
-              isDark={isDark}
-              oddsLoading={oddsLoading}
-              oddsError={oddsError}
-              realOddsData={realOddsData}
-              selectedTeam={selectedTeam}
-              gamePropsTeam={gamePropsTeam}
-              propsMode={propsMode}
-              opponentTeam={opponentTeam}
-              oddsFormat={oddsFormat}
-              fmtOdds={fmtOdds}
-/>
-
             {/* 9. Injury Container (Mobile) */}
 <div className="lg:hidden">
               <InjuryContainer
@@ -8006,11 +8722,11 @@ const lineMovementInFlightRef = useRef(false);
                 oddsFormat={oddsFormat}
                 books={realOddsData}
                 fmtOdds={fmtOdds}
-                lineMovementData={lineMovementData}
+                lineMovementData={mergedLineMovementData}
                 selectedStat={selectedStat}
               />
               </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, lineMovementData, selectedStat])}
+            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
@@ -8254,24 +8970,6 @@ const lineMovementInFlightRef = useRef(false);
                 <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
                   <div className="flex items-center justify-between mb-3 md:mb-4">
                     <h4 className="text-sm md:text-base font-medium text-gray-900 dark:text-white">Team Matchup</h4>
-                    
-                    {/* Team Switcher - only show when both teams are available */}
-                    {((propsMode === 'player' && selectedTeam && selectedTeam !== 'N/A' && opponentTeam && opponentTeam !== '') || 
-                      (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
-                      <button
-                        onClick={() => {
-                          // Only toggle pie chart display order, don't change underlying team data
-                          setPieChartSwapped(!pieChartSwapped);
-                        }}
-                        className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        title="Switch teams in comparison"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m0 0l4-4" />
-                        </svg>
-                        Swap
-                      </button>
-                    )}
                   </div>
                   
                   {/* Comparison Metric Selector */}
@@ -8347,19 +9045,23 @@ const lineMovementInFlightRef = useRef(false);
                     let teamValue: number = 0;
                     let opponentValue: number = 0;
                     let isPercentage = false;
+                    let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                     
                     switch (selectedComparison) {
                       case 'points':
                         teamValue = currentStats.pts || 0;
                         opponentValue = opponentStats.pts || 0;
+                        isDefensiveStat = true;
                         break;
                       case 'rebounds':
                         teamValue = currentStats.reb || 0;
                         opponentValue = opponentStats.reb || 0;
+                        isDefensiveStat = true;
                         break;
                       case 'assists':
                         teamValue = currentStats.ast || 0;
                         opponentValue = opponentStats.ast || 0;
+                        isDefensiveStat = true;
                         break;
                       case 'fg_pct':
                         teamValue = currentStats.fg_pct || 0;
@@ -8376,22 +9078,42 @@ const lineMovementInFlightRef = useRef(false);
                     const teamDisplay = isPercentage ? `${teamValue.toFixed(1)}%` : teamValue.toFixed(1);
                     const oppDisplay = isPercentage ? `${opponentValue.toFixed(1)}%` : opponentValue.toFixed(1);
                     
-                    // Higher is better for all our metrics
-                    const teamHasAdvantage = teamValue > opponentValue;
-                    const teamColor = teamHasAdvantage ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
-                    const oppColor = teamHasAdvantage ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+                    // Calculate pie data to get consistent colors
+                    const tempPieData = createTeamComparisonPieData(
+                      teamValue,
+                      opponentValue,
+                      currentTeam,
+                      currentOpponent || 'TBD',
+                      false,
+                      /* amplify */ true,
+                      /* useAbs */ false,
+                      /* clampNegatives */ false,
+                      /* baseline */ 0,
+                      /* invertOppForShare */ false,
+                      /* invertMax */ 130,
+                      /* ampBoost */ isPercentage ? 3.0 : 1.0
+                    );
+                    
+                    // Use pie chart colors for consistency (green = better, red = worse)
+                    // pieData[0] is currentTeam, pieData[1] is opponent
+                    const teamColorClass = tempPieData[0]?.fill === '#16a34a' || tempPieData[0]?.fill === '#22c55e'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-500 dark:text-red-400';
+                    const oppColorClass = tempPieData[1]?.fill === '#16a34a' || tempPieData[1]?.fill === '#22c55e'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-500 dark:text-red-400';
                     
                     return (
                       <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
                         <div className="flex items-center justify-between gap-1 text-xs">
-                          <div className={`flex-1 text-center ${teamColor}`}>
+                          <div className={`flex-1 text-center ${teamColorClass}`}>
                             <span className="font-bold">{currentTeam}</span>
                             <span className="font-bold ml-1">{teamDisplay}</span>
                           </div>
                           
                           <div className="text-gray-400 font-bold px-1">VS</div>
                           
-                          <div className={`flex-1 text-center ${oppColor}`}>
+                          <div className={`flex-1 text-center ${oppColorClass}`}>
                             <span className="font-bold">{currentOpponent || 'TBD'}</span>
                             <span className="font-bold ml-1">{oppDisplay}</span>
                           </div>
@@ -8481,19 +9203,30 @@ const lineMovementInFlightRef = useRef(false);
                           let teamValue: number = 0;
                           let opponentValue: number = 0;
                           let isPercentage = false;
+                          let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                           
                           switch (selectedComparison) {
                             case 'points':
-                              teamValue = currentStats.pts || 0;
-                              opponentValue = opponentStats.pts || 0;
+                              // For defensive stats, invert: lower allowed = better, so invert the values
+                              // Use max of 150 points allowed as baseline
+                              const maxPoints = 150;
+                              teamValue = maxPoints - (currentStats.pts || 0);
+                              opponentValue = maxPoints - (opponentStats.pts || 0);
+                              isDefensiveStat = true;
                               break;
                             case 'rebounds':
-                              teamValue = currentStats.reb || 0;
-                              opponentValue = opponentStats.reb || 0;
+                              // Invert rebounds allowed: lower allowed = better
+                              const maxRebounds = 60;
+                              teamValue = maxRebounds - (currentStats.reb || 0);
+                              opponentValue = maxRebounds - (opponentStats.reb || 0);
+                              isDefensiveStat = true;
                               break;
                             case 'assists':
-                              teamValue = currentStats.ast || 0;
-                              opponentValue = opponentStats.ast || 0;
+                              // Invert assists allowed: lower allowed = better
+                              const maxAssists = 35;
+                              teamValue = maxAssists - (currentStats.ast || 0);
+                              opponentValue = maxAssists - (opponentStats.ast || 0);
+                              isDefensiveStat = true;
                               break;
                             case 'fg_pct':
                               teamValue = currentStats.fg_pct || 0;
@@ -8506,6 +9239,18 @@ const lineMovementInFlightRef = useRef(false);
                               isPercentage = true;
                               break;
                           }
+                          
+                          // Store original values for display (before inversion)
+                          const originalTeamValue = isDefensiveStat 
+                            ? (selectedComparison === 'points' ? (currentStats.pts || 0) :
+                               selectedComparison === 'rebounds' ? (currentStats.reb || 0) :
+                               (currentStats.ast || 0))
+                            : teamValue;
+                          const originalOpponentValue = isDefensiveStat
+                            ? (selectedComparison === 'points' ? (opponentStats.pts || 0) :
+                               selectedComparison === 'rebounds' ? (opponentStats.reb || 0) :
+                               (opponentStats.ast || 0))
+                            : opponentValue;
 
                           const pieData = createTeamComparisonPieData(
                             teamValue,
@@ -8521,8 +9266,13 @@ const lineMovementInFlightRef = useRef(false);
                             /* invertMax */ 130,
                             /* ampBoost */ isPercentage ? 3.0 : 1.0
                           );
+                          
+                          // Update display values to show original (non-inverted) values
+                          pieData[0].displayValue = originalTeamValue.toFixed(1);
+                          pieData[1].displayValue = originalOpponentValue.toFixed(1);
 
-                          const pieDrawData = [pieData?.[1], pieData?.[0]];
+                          // Keep pie chart data in same order as pieData (currentTeam first, then opponent)
+                          const pieDrawData = [pieData?.[0], pieData?.[1]];
 
                           const teamDisplayRaw = pieData?.[0]?.displayValue ?? '';
                           const oppDisplayRaw = pieData?.[1]?.displayValue ?? '';
@@ -8998,6 +9748,33 @@ const lineMovementInFlightRef = useRef(false);
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        {/* Profile Dropdown Menu - Shows above bottom nav */}
+        {showProfileDropdown && (
+          <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  handleSidebarSubscription();
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Subscription
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  handleLogout();
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Journal Dropdown Menu - Shows above bottom nav */}
         {showJournalDropdown && hasPremium && (
           <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
@@ -9024,8 +9801,48 @@ const lineMovementInFlightRef = useRef(false);
             </div>
           </div>
         )}
+
+        {/* Settings Dropdown Menu - Shows above bottom nav */}
+        {showSettingsDropdown && (
+          <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              {/* Theme Selection */}
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
+                <select 
+                  value={theme}
+                  onChange={(e) => {
+                    setTheme(e.target.value as 'Light' | 'Dark');
+                    localStorage.setItem('theme', e.target.value);
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="Light">Light</option>
+                  <option value="Dark">Dark</option>
+                </select>
+              </div>
+              
+              {/* Odds Format Selection */}
+              <div className="px-4 py-3">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Odds Format</label>
+                <select 
+                  value={oddsFormat}
+                  onChange={(e) => {
+                    const newFormat = e.target.value as 'american' | 'decimal';
+                    setOddsFormat(newFormat);
+                    localStorage.setItem('oddsFormat', newFormat);
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="american">American</option>
+                  <option value="decimal">Decimal</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
         
-        <div className="grid grid-cols-3 h-16">
+        <div className="grid grid-cols-4 h-16">
           {/* Dashboard */}
           <button
             className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
@@ -9066,12 +9883,46 @@ const lineMovementInFlightRef = useRef(false);
             <span className="text-xs font-medium">Journal</span>
           </button>
           
+          {/* Profile */}
+          <button
+            data-profile-button
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            {(() => {
+              const displayName = username || userEmail || 'Profile';
+              const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
+              const getAvatarColor = (name: string): string => {
+                let hash = 0;
+                for (let i = 0; i < name.length; i++) {
+                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const hue = Math.abs(hash) % 360;
+                const saturation = 65 + (Math.abs(hash) % 20);
+                const lightness = 45 + (Math.abs(hash) % 15);
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+              };
+              const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
+              return (
+                <div 
+                  className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs font-semibold text-white"
+                  style={avatarColor ? { backgroundColor: avatarColor } : { backgroundColor: 'rgb(243, 244, 246)' }}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl ?? undefined} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="flex items-center justify-center w-full h-full">{fallbackInitial}</span>
+                  )}
+                </div>
+              );
+            })()}
+            <span className="text-xs font-medium">Profile</span>
+          </button>
+          
           {/* Settings */}
           <button
-            onClick={() => {
-              // Toggle the LeftSidebar settings - you'll need to add state for this
-              alert('Settings panel - coming soon!');
-            }}
+            data-settings-button
+            onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9089,7 +9940,23 @@ const lineMovementInFlightRef = useRef(false);
 export default function NBADashboard() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">Loading dashboard...</div>}>
-      <NBADashboardContent />
+      <NBADashboardWrapper />
     </Suspense>
   );
+}
+
+// Wrapper component to ensure theme context is available
+// This ensures the component only renders client-side after ThemeProvider is mounted
+function NBADashboardWrapper() {
+  const [mounted, setMounted] = useState(false);
+  
+  // Call all hooks before any conditional returns
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Always render NBADashboardContent to ensure hooks are called consistently
+  // The ThemeProvider should always be available from layout-client.tsx
+  // If there's an error, it will be caught by ErrorBoundary
+  return <NBADashboardContent />;
 }

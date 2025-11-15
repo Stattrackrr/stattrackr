@@ -47,7 +47,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    // Return default values if context is not available
+    // This can happen during SSR, initial render, or if provider isn't mounted yet
+    // The setTheme function is a no-op since there's no provider to update
+    return { theme: 'Dark' as Theme, setTheme: () => {}, isDark: true };
   }
   return context;
 }

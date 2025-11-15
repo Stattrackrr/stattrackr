@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { X, Loader2, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { getBookmakerInfo } from "@/lib/bookmakers";
-import { formatOdds, getCurrencySymbol } from "@/lib/currencyUtils";
+import { formatOdds, getCurrencySymbol, americanToDecimal } from "@/lib/currencyUtils";
 
 interface AddToJournalModalProps {
   isOpen: boolean;
@@ -57,6 +57,21 @@ interface BookmakerOdds {
   underPrice: number;
 }
 
+interface ParlaySelection {
+  id: string;
+  playerName: string;
+  playerId: string;
+  team: string;
+  opponent: string;
+  gameDate: string;
+  statType: string;
+  line: number;
+  overUnder: 'over' | 'under';
+  odds: number;
+  bookmaker: string | null;
+  isManual: boolean;
+}
+
 export default function AddToJournalModal({
   isOpen,
   onClose,
@@ -90,6 +105,10 @@ export default function AddToJournalModal({
   const [manualLine, setManualLine] = useState('');
   const [manualOdds, setManualOdds] = useState('');
   const [isManualMode, setIsManualMode] = useState(false);
+  
+  // Parlay mode
+  const [isParlayMode, setIsParlayMode] = useState(false);
+  const [parlaySelections, setParlaySelections] = useState<ParlaySelection[]>([]);
 
   // Fetch odds when modal opens or stat type changes
   useEffect(() => {
@@ -124,10 +143,34 @@ export default function AddToJournalModal({
     fetchOdds();
   }, [isOpen, playerName, statType]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Convert odds to decimal for parlay calculation
+  const toDecimalOdds = (odds: number, format: 'american' | 'decimal'): number => {
+    if (format === 'decimal') return odds;
+    return americanToDecimal(odds);
+  };
+
+  // Calculate combined parlay odds
+  const calculateParlayOdds = (selections: ParlaySelection[], format: 'american' | 'decimal'): number => {
+    if (selections.length === 0) return 1;
     
-    // Validate based on mode
+    // Convert all to decimal, multiply, then convert back if needed
+    const decimalOdds = selections.reduce((acc, sel) => {
+      const dec = toDecimalOdds(sel.odds, format);
+      return acc * dec;
+    }, 1);
+    
+    if (format === 'decimal') return decimalOdds;
+    
+    // Convert back to American
+    if (decimalOdds >= 2.0) {
+      return Math.round((decimalOdds - 1) * 100);
+    } else {
+      return -Math.round(100 / (decimalOdds - 1));
+    }
+  };
+
+  // Add current selection to parlay
+  const addToParlay = () => {
     if (isManualMode) {
       if (!manualLine || !manualOdds) {
         setError('Please enter both line and odds');
@@ -139,6 +182,83 @@ export default function AddToJournalModal({
         return;
       }
     }
+
+    const statLabel = STAT_OPTIONS.find(opt => opt.value === statType)?.label || statType.toUpperCase();
+    const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
+    const finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
+    const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
+
+    const newSelection: ParlaySelection = {
+      id: `${Date.now()}-${Math.random()}`,
+      playerName,
+      playerId,
+      team,
+      opponent,
+      gameDate,
+      statType,
+      line: finalLine,
+      overUnder,
+      odds: finalOdds,
+      bookmaker: bookmakerName,
+      isManual: isManualMode,
+    };
+
+    setParlaySelections([...parlaySelections, newSelection]);
+    
+    // Reset form for next selection (but keep stake if parlay is ready)
+    setStatType(isGameProp ? 'moneyline' : 'pts');
+    setSelectedOdds(null);
+    setOverUnder('over');
+    setManualLine('');
+    setManualOdds('');
+    setIsManualMode(false);
+    setBookmakerExpanded(false);
+    setManualExpanded(false);
+    setError('');
+    
+    // Clear stake when adding first selection (will be enabled after 2nd selection)
+    if (parlaySelections.length === 0) {
+      setStake('');
+    }
+  };
+
+  // Remove selection from parlay
+  const removeFromParlay = (id: string) => {
+    const newSelections = parlaySelections.filter(sel => sel.id !== id);
+    setParlaySelections(newSelections);
+    // Clear stake if we go below 2 selections
+    if (newSelections.length < 2) {
+      setStake('');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isParlayMode) {
+      // Parlay mode validation
+      if (parlaySelections.length < 2) {
+        setError('Parlay must have at least 2 selections');
+        return;
+      }
+      if (!stake) {
+        setError('Please enter a stake');
+        return;
+      }
+    } else {
+      // Single bet validation
+      if (isManualMode) {
+        if (!manualLine || !manualOdds) {
+          setError('Please enter both line and odds');
+          return;
+        }
+      } else {
+        if (!selectedOdds) {
+          setError('Please select a bookmaker line or use manual entry');
+          return;
+        }
+      }
+    }
     
     setLoading(true);
     setError('');
@@ -147,48 +267,80 @@ export default function AddToJournalModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const statLabel = STAT_OPTIONS.find(opt => opt.value === statType)?.label || statType.toUpperCase();
-      
-      // Determine line and odds based on mode
-      const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
-      const finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
-      
-      const selection = `${playerName} ${overUnder} ${finalLine} ${statLabel}`;
-      const market = `Player ${statLabel}`;
-      
-      // Get bookmaker name if odds were selected from a bookmaker
-      const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
-
-      const { error: insertError } = await (supabase
-        .from('bets') as any)
-        .insert({
-          user_id: user.id,
-          date: gameDate,
-          sport: 'NBA',
-          market,
-          selection,
-          stake: parseFloat(stake),
-          currency,
-          odds: finalOdds,
-          result: 'pending', // Will be updated when game finishes
-          player_id: playerId,
-          player_name: playerName,
-          team,
-          opponent,
-          stat_type: statType,
-          line: finalLine,
-          over_under: overUnder,
-          game_date: gameDate,
-          status: 'pending',
-          bookmaker: bookmakerName,
+      if (isParlayMode) {
+        // Handle parlay submission
+        const combinedOdds = calculateParlayOdds(parlaySelections, oddsFormat);
+        const selectionTexts = parlaySelections.map(sel => {
+          const statLabel = STAT_OPTIONS.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
+          return `${sel.playerName} ${sel.overUnder} ${sel.line} ${statLabel}`;
         });
+        const selection = `Parlay: ${selectionTexts.join(' + ')}`;
+        const market = `Parlay (${parlaySelections.length} legs)`;
 
-      if (insertError) throw insertError;
+        const { error: insertError } = await (supabase
+          .from('bets') as any)
+          .insert({
+            user_id: user.id,
+            date: parlaySelections[0].gameDate, // Use first selection's date
+            sport: 'NBA',
+            market,
+            selection,
+            stake: parseFloat(stake),
+            currency,
+            odds: combinedOdds,
+            result: 'pending',
+            status: 'pending',
+            // Store parlay selections as JSON in a text field (we'll use selection field for now, or add a new column)
+            // For now, we'll store the JSON in a way that can be parsed later
+            // We can add a parlay_selections JSONB column later if needed
+          });
+
+        if (insertError) throw insertError;
+      } else {
+        // Handle single bet submission
+        const statLabel = STAT_OPTIONS.find(opt => opt.value === statType)?.label || statType.toUpperCase();
+        
+        // Determine line and odds based on mode
+        const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
+        const finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
+        
+        const selection = `${playerName} ${overUnder} ${finalLine} ${statLabel}`;
+        const market = `Player ${statLabel}`;
+        
+        // Get bookmaker name if odds were selected from a bookmaker
+        const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
+
+        const { error: insertError } = await (supabase
+          .from('bets') as any)
+          .insert({
+            user_id: user.id,
+            date: gameDate,
+            sport: 'NBA',
+            market,
+            selection,
+            stake: parseFloat(stake),
+            currency,
+            odds: finalOdds,
+            result: 'pending',
+            player_id: playerId,
+            player_name: playerName,
+            team,
+            opponent,
+            stat_type: statType,
+            line: finalLine,
+            over_under: overUnder,
+            game_date: gameDate,
+            status: 'pending',
+            bookmaker: bookmakerName,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       // Success!
       onClose();
       // Reset form
-      setStatType('pts');
+      setStatType(isGameProp ? 'moneyline' : 'pts');
       setSelectedOdds(null);
       setOverUnder('over');
       setStake('');
@@ -197,6 +349,8 @@ export default function AddToJournalModal({
       setIsManualMode(false);
       setBookmakerExpanded(false);
       setManualExpanded(false);
+      setIsParlayMode(false);
+      setParlaySelections([]);
     } catch (err: any) {
       setError(err.message || 'Failed to add to journal');
     } finally {
@@ -234,6 +388,80 @@ export default function AddToJournalModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Parlay Mode Toggle */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div>
+              <label className="text-sm font-medium text-gray-900 dark:text-white">Bet Type</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {isParlayMode ? 'Parlay (multiple selections)' : 'Single Bet'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsParlayMode(!isParlayMode);
+                if (!isParlayMode) {
+                  // Switching to parlay mode - clear current selection and stake
+                  setParlaySelections([]);
+                  setStake('');
+                } else {
+                  // Switching to single bet mode - clear parlay
+                  setParlaySelections([]);
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                isParlayMode ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isParlayMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Parlay Selections List */}
+          {isParlayMode && parlaySelections.length > 0 && (
+            <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/30">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Parlay Selections ({parlaySelections.length})
+                </h3>
+                <div className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                  Combined Odds: {formatOdds(calculateParlayOdds(parlaySelections, oddsFormat), oddsFormat)}
+                </div>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {parlaySelections.map((sel) => {
+                  const statLabel = STAT_OPTIONS.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
+                  return (
+                    <div
+                      key={sel.id}
+                      className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                          {sel.playerName} {sel.overUnder} {sel.line} {statLabel}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatOdds(sel.odds, oddsFormat)} {sel.bookmaker ? `• ${sel.bookmaker}` : '• Manual'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromParlay(sel.id)}
+                        className="ml-2 p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Stat Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -434,6 +662,7 @@ export default function AddToJournalModal({
                 onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
+                disabled={isParlayMode && parlaySelections.length < 2}
               >
                 {CURRENCIES.map(curr => (
                   <option key={curr} value={curr}>{curr}</option>
@@ -445,7 +674,14 @@ export default function AddToJournalModal({
                 Stake
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
+                <span className={`absolute left-3 font-medium pointer-events-none text-base ${
+                  isParlayMode && parlaySelections.length < 2
+                    ? 'text-gray-400 dark:text-gray-600'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`} style={{ 
+                  top: '0.5rem',
+                  lineHeight: '1.5rem'
+                }}>
                   {getCurrencySymbol(currency)}
                 </span>
                 <input
@@ -454,30 +690,59 @@ export default function AddToJournalModal({
                   value={stake}
                   onChange={(e) => setStake(e.target.value)}
                   placeholder="100"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
                   required
+                  disabled={isParlayMode && parlaySelections.length < 2}
                 />
+                {isParlayMode && parlaySelections.length < 2 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Add at least 2 selections to enable stake
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? 'Adding...' : 'Add to Journal'}
-            </button>
+            {isParlayMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={addToParlay}
+                  className="flex-1 px-4 py-2 border-2 border-purple-600 text-purple-600 dark:text-purple-400 rounded-lg font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={loading || oddsLoading}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add to Parlay
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading || parlaySelections.length < 2}
+                >
+                  {loading ? 'Adding...' : `Submit Parlay (${parlaySelections.length})`}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? 'Adding...' : 'Add to Journal'}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>

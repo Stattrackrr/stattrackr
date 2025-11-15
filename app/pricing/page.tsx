@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navigation from '@/components/navigation';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -17,6 +17,11 @@ export default function PricingPage() {
   const [hasPremium, setHasPremium] = useState(false);
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const isLoggedIn = Boolean(user);
 
   useEffect(() => {
@@ -24,6 +29,9 @@ export default function PricingPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        setUserEmail(session.user.email || null);
+        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+        setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
         checkPremiumStatus(session.user.id);
       }
     });
@@ -32,9 +40,15 @@ export default function PricingPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        setUserEmail(session.user.email || null);
+        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+        setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
         checkPremiumStatus(session.user.id);
       } else {
         setHasPremium(false);
+        setAvatarUrl(null);
+        setUsername(null);
+        setUserEmail(null);
       }
     });
 
@@ -56,6 +70,12 @@ export default function PricingPage() {
       if (!target.closest('[data-journal-button]') && 
           !target.closest('.absolute.bottom-full')) {
         setShowJournalDropdown(false);
+      }
+      
+      // Close profile dropdown if clicking outside
+      if (!target.closest('[data-profile-button]') && 
+          !target.closest('.absolute.bottom-full')) {
+        setShowProfileDropdown(false);
       }
     };
     
@@ -348,6 +368,35 @@ export default function PricingPage() {
 
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+        {/* Profile Dropdown Menu - Shows above bottom nav */}
+        {showProfileDropdown && isLoggedIn && (
+          <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  const element = document.getElementById('pricing-cards');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Subscription
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <button
+                onClick={async () => {
+                  setShowProfileDropdown(false);
+                  await supabase.auth.signOut();
+                  router.push('/');
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Dashboard Dropdown Menu - Shows above bottom nav */}
         {showDashboardDropdown && (
           <div className="absolute bottom-full left-0 right-0 mb-1 mx-3">
@@ -474,18 +523,46 @@ export default function PricingPage() {
             <span className="text-xs font-medium">Journal</span>
           </button>
           
-          {/* Settings */}
+          {/* Profile */}
           <button
+            data-profile-button
             onClick={() => {
-              alert('Settings panel - coming soon!');
+              if (!isLoggedIn) {
+                router.push('/login?redirect=/account');
+                return;
+              }
+              setShowProfileDropdown(!showProfileDropdown);
             }}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-xs font-medium">Settings</span>
+            {(() => {
+              const displayName = username || userEmail || 'Profile';
+              const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
+              const getAvatarColor = (name: string): string => {
+                let hash = 0;
+                for (let i = 0; i < name.length; i++) {
+                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const hue = Math.abs(hash) % 360;
+                const saturation = 65 + (Math.abs(hash) % 20);
+                const lightness = 45 + (Math.abs(hash) % 15);
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+              };
+              const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
+              return (
+                <div 
+                  className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs font-semibold text-white"
+                  style={avatarColor ? { backgroundColor: avatarColor } : { backgroundColor: 'rgb(243, 244, 246)' }}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl ?? undefined} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="flex items-center justify-center w-full h-full">{fallbackInitial}</span>
+                  )}
+                </div>
+              );
+            })()}
+            <span className="text-xs font-medium">Profile</span>
           </button>
         </div>
       </div>
