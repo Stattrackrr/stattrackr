@@ -1308,7 +1308,7 @@ const OverRatePill = memo(function OverRatePill({ overCount, total, isDark }: { 
     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
   return (
-    <span className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`} data-over-rate>
+    <span className={`px-1 sm:px-2 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`} data-over-rate>
       {overCount}/{total} ({pct.toFixed(1)}%)
     </span>
   );
@@ -1961,7 +1961,8 @@ const PureChart = memo(function PureChart({
   const formatChartLabel = useCallback((value: any): string => {
     const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
     const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
-    return isPercentageStat ? `${numValue.toFixed(1)}%` : numValue.toString();
+    if (isPercentageStat) return `${numValue.toFixed(1)}%`;
+    return `${numValue}`;
   }, [selectedStat]);
 
   return (
@@ -1971,25 +1972,6 @@ const PureChart = memo(function PureChart({
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <div className="text-gray-600 dark:text-gray-400">Loading player stats...</div>
-          </div>
-        </div>
-      ) : !chartData.length ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center max-w-md">
-            {apiError && <div className="text-xs text-red-500 mb-2">{apiError}</div>}
-            <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-              {propsMode === 'player' ? 'No Player Selected' : 'No Team Selected'}
-            </div>
-            <div className="text-gray-400 dark:text-gray-500 text-sm">
-              {propsMode === 'player' 
-                ? (selectedPlayer 
-                    ? `No ${String(selectedStat).toUpperCase()} data found for ${selectedPlayer.full}` 
-                    : 'Please search and select a player to research their statistics')
-                : (gamePropsTeam && gamePropsTeam !== 'N/A' 
-                    ? `No ${String(selectedStat).toUpperCase()} data found for ${gamePropsTeam}` 
-                    : 'Please search and select a team to research their game statistics')
-              }
-            </div>
           </div>
         </div>
       ) : (
@@ -2208,7 +2190,22 @@ const ChartControls = function ChartControls({
   yAxisConfig,
   realOddsData,
   fmtOdds,
+  minMinutesFilter,
+  maxMinutesFilter,
+  onMinMinutesChange,
+  onMaxMinutesChange,
+  excludeBlowouts,
+  excludeBackToBack,
+  onExcludeBlowoutsChange,
+  onExcludeBackToBackChange,
+  rosterForSelectedTeam,
+  withWithoutMode,
+  setWithWithoutMode,
+  teammateFilterId,
+  setTeammateFilterId,
+  loadingTeammateGames,
 }: any) {
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   // Track the latest in-progress line while the user is holding +/-
   const transientLineRef = useRef<number | null>(null);
   const holdDelayRef = useRef<any>(null);
@@ -2276,7 +2273,7 @@ const ChartControls = function ChartControls({
           : pct >= 40
           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-        el.className = `px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`;
+        el.className = `px-1 sm:px-2 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-bold ${cls} whitespace-nowrap`;
       }
     });
   }, [chartData, selectedStat]);
@@ -2295,6 +2292,30 @@ const ChartControls = function ChartControls({
   }, [selectedTimeframe]);
   // Dropdown state for timeframe selector (moved outside useMemo to follow hooks rules)
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  // Local accordion state for minutes filter
+  const [isMinutesFilterOpen, setIsMinutesFilterOpen] = useState(false);
+  // Close Advanced when clicking outside (desktop or mobile containers)
+  const advancedDesktopRef = useRef<HTMLDivElement | null>(null);
+  const advancedMobileRef = useRef<HTMLDivElement | null>(null);
+
+  // (With/Without teammate options now come directly from depth chart roster)
+  useEffect(() => {
+    if (!isAdvancedFiltersOpen) return;
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      const inDesktop = advancedDesktopRef.current?.contains(target);
+      const inMobile = advancedMobileRef.current?.contains(target);
+      if (inDesktop || inMobile) return;
+      setIsAdvancedFiltersOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [isAdvancedFiltersOpen]);
   
   // Update Over Rate when committed line or data changes
   useEffect(() => {
@@ -2327,21 +2348,34 @@ const ChartControls = function ChartControls({
     };
     return bookmakerMap[name] || { name, logo: name.substring(0, 2).toUpperCase() };
   };
+
+  // Display helper: always show + for positive lines
+  const fmtLine = (line: number | string): string => {
+    const n = typeof line === 'number' ? line : parseFloat(String(line));
+    if (!Number.isFinite(n)) return String(line);
+    return n > 0 ? `+${n}` : `${n}`;
+  };
+
+  // Map selectedStat -> odds book key
+  const getBookRowKey = (stat: string | null | undefined): string | null => {
+    const map: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'fg3m': 'THREES',
+      'pra': 'PRA',
+      'pr': 'PR',
+      'pa': 'PA',
+      'ra': 'RA',
+    };
+    return stat ? (map[stat] || null) : null;
+  };
   
   // Calculate best bookmaker and line for stat (lowest over line)
   const bestBookmakerForStat = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0) return null;
-    
-    const statMap: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'pra': 'PTS',
-      'pr': 'PTS',
-      'ra': 'REB',
-    };
-    
-    const bookRowKey = statMap[selectedStat] || null;
+
+    const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return null;
     
     let bestBook: any = null;
@@ -2364,17 +2398,8 @@ const ChartControls = function ChartControls({
   // Calculate best line for stat (lowest over line)
   const bestLineForStat = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0) return null;
-    
-    const statMap: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'pra': 'PTS',
-      'pr': 'PTS',
-      'ra': 'REB',
-    };
-    
-    const bookRowKey = statMap[selectedStat] || null;
+
+    const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return null;
     
     let bestLine = Infinity;
@@ -2461,16 +2486,7 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     if (!realOddsData || realOddsData.length === 0) return;
     
-    const statMap: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'pra': 'PTS',
-      'pr': 'PTS',
-      'ra': 'REB',
-    };
-    
-    const bookRowKey = statMap[selectedStat] || null;
+    const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return;
     
     // Find if any bookmaker has a line matching the current display line (updates immediately)
@@ -2582,10 +2598,7 @@ const ChartControls = function ChartControls({
       );
     }, [selectedTimeframe, onSelectTimeframe, isTimeframeDropdownOpen, setIsTimeframeDropdownOpen]);
 
-    // Hide controls when no data
-    if (!chartData || chartData.length === 0) {
-      return null;
-    }
+    // Always show controls, even when no data, so users can adjust filters/timeframes
 
     return (
       <>
@@ -2593,26 +2606,13 @@ const ChartControls = function ChartControls({
         {/* Responsive controls layout */}
         <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
           {/* Top row: Line input (left), Over Rate (center-left), Team vs + Timeframes (right) */}
-          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 sm:ml-6">
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-2 sm:ml-6">
             {/* Alt Lines Dropdown - Desktop only */}
             {(() => {
-              // Hide if no odds data available
-              if (!realOddsData || realOddsData.length === 0) return null;
-              
-              const statMap: Record<string, string> = {
-                'pts': 'PTS',
-                'reb': 'REB',
-                'ast': 'AST',
-                'pra': 'PTS',
-                'pr': 'PTS',
-                'ra': 'REB',
-              };
-              
-              const bookRowKey = statMap[selectedStat] || null;
-              if (!bookRowKey) return null;
+              const bookRowKey = getBookRowKey(selectedStat);
               
               // Get all available lines for dropdown
-              const altLines = realOddsData && realOddsData.length > 0
+              const altLines = realOddsData && realOddsData.length > 0 && bookRowKey
                 ? realOddsData
                     .map((book: any) => {
                       const statData = (book as any)[bookRowKey];
@@ -2681,12 +2681,12 @@ const ChartControls = function ChartControls({
                           <div className="flex flex-col items-start gap-0.5 min-w-0">
                             {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
                               <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                                O{fmtOdds(displayBookmaker.over)}
+                                O&nbsp;{fmtOdds(displayBookmaker.over)}
                               </span>
                             )}
                             {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
                               <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                                U{fmtOdds(displayBookmaker.under)}
+                                U&nbsp;{fmtOdds(displayBookmaker.under)}
                               </span>
                             )}
                           </div>
@@ -2770,7 +2770,7 @@ const ChartControls = function ChartControls({
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
                                         <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                          {altLine.line}
+                                          {fmtLine(altLine.line)}
                                         </span>
                                         <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                           {bookmakerInfo.name}
@@ -2820,23 +2820,10 @@ const ChartControls = function ChartControls({
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {/* Alt Lines Button - Mobile only */}
                 {(() => {
-                  // Hide if no odds data available
-                  if (!realOddsData || realOddsData.length === 0) return null;
-                  
-                  const statMap: Record<string, string> = {
-                    'pts': 'PTS',
-                    'reb': 'REB',
-                    'ast': 'AST',
-                    'pra': 'PTS',
-                    'pr': 'PTS',
-                    'ra': 'REB',
-                  };
-                  
-                  const bookRowKey = statMap[selectedStat] || null;
-                  if (!bookRowKey) return null;
+                  const bookRowKey = getBookRowKey(selectedStat);
                   
                   // Get all available lines for dropdown
-                  const altLines = realOddsData && realOddsData.length > 0
+                  const altLines = realOddsData && realOddsData.length > 0 && bookRowKey
                     ? realOddsData
                         .map((book: any) => {
                           const statData = (book as any)[bookRowKey];
@@ -2881,7 +2868,7 @@ const ChartControls = function ChartControls({
                     <div className="sm:hidden relative flex-shrink-0 w-[100px]" ref={altLinesRef}>
                       <button
                         onClick={() => setIsAltLinesOpen(!isAltLinesOpen)}
-                        className="w-full px-1.5 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
                       >
                         <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
                           {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
@@ -2991,7 +2978,7 @@ const ChartControls = function ChartControls({
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2">
                                             <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                              {altLine.line}
+                                              {fmtLine(altLine.line)}
                                             </span>
                                             <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                               {bookmakerInfo.name}
@@ -3105,19 +3092,172 @@ const ChartControls = function ChartControls({
                   selectedTimeframe={selectedTimeframe}
                 />
               </div>
+              {propsMode === 'player' && (
+                <div className="relative" ref={advancedMobileRef}>
+                  <button
+                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
+                    className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
+                  >
+                    Advanced
+                  </button>
+                  {isAdvancedFiltersOpen && (
+                    <div className="absolute left-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
+                      <div className="space-y-2">
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsMinutesFilterOpen((v: boolean) => !v)}
+                            className="w-full flex items-center justify-between"
+                          >
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Minutes Played</span>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                              {minMinutesFilter} - {maxMinutesFilter} min
+                              <svg className={`w-3 h-3 transition-transform ${isMinutesFilterOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/></svg>
+                            </span>
+                          </button>
+                          {isMinutesFilterOpen && (
+                            <div className="mt-2">
+                              <div className="relative">
+                                <input type="range" min="0" max="48" step="1" value={minMinutesFilter} onChange={(e) => onMinMinutesChange(Number(e.target.value))} className="w-full" style={{ accentColor: '#7c3aed' }} />
+                                <input type="range" min="0" max="48" step="1" value={maxMinutesFilter} onChange={(e) => onMaxMinutesChange(Number(e.target.value))} className="w-full -mt-3" style={{ accentColor: '#7c3aed' }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                        {/* With / Without teammate */}
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                          <div className="flex items-center gap-2">
+                            {/* Playing with */}
+                            <div className="flex-1">
+                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing with</div>
+                              <select
+                                value={withWithoutMode === 'with' ? String(teammateFilterId ?? '') : ''}
+                                onChange={async (e) => {
+                                  const v = e.target.value;
+                                  setWithWithoutMode('with');
+                                  if (!v) {
+                                    setTeammateFilterId(null);
+                                    return;
+                                  }
+                                  // If option is an encoded id, use it directly, otherwise resolve by name
+                                  if (/^\d+$/.test(v)) {
+                                    setTeammateFilterId(parseInt(v, 10));
+                                    return;
+                                  }
+                                  const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
+                                  setTeammateFilterId(id);
+                                }}
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                disabled={!rosterForSelectedTeam}
+                              >
+                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
+                                {rosterForSelectedTeam && (
+                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
+                                    const arr = Array.isArray(pos) ? pos : [];
+                                    arr.forEach((p: any) => {
+                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
+                                      if (!name) return;
+                                      const key = `name:${name}`;
+                                      if (acc.some((x: any) => x.key === key)) return;
+                                      acc.push({ key, name });
+                                    });
+                                    return acc;
+                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
+                                    <option key={`tm-with-${p.key}`} value={p.key}>
+                                      {p.name}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                            {/* Playing without */}
+                            <div className="flex-1">
+                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing without</div>
+                              <select
+                                value={withWithoutMode === 'without' ? String(teammateFilterId ?? '') : ''}
+                                onChange={async (e) => {
+                                  const v = e.target.value;
+                                  setWithWithoutMode('without');
+                                  if (!v) {
+                                    setTeammateFilterId(null);
+                                    return;
+                                  }
+                                  if (/^\d+$/.test(v)) {
+                                    setTeammateFilterId(parseInt(v, 10));
+                                    return;
+                                  }
+                                  const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
+                                  setTeammateFilterId(id);
+                                }}
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                disabled={!rosterForSelectedTeam}
+                              >
+                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
+                                {rosterForSelectedTeam && (
+                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
+                                    const arr = Array.isArray(pos) ? pos : [];
+                                    arr.forEach((p: any) => {
+                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
+                                      if (!name) return;
+                                      const key = `name:${name}`;
+                                      if (acc.some((x: any) => x.key === key)) return;
+                                      acc.push({ key, name });
+                                    });
+                                    return acc;
+                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
+                                    <option key={`tm-without-${p.key}`} value={p.key}>
+                                      {p.name}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                          </div>
+                          {teammateFilterId != null && (
+                            <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                              {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            {/* Middle: Over Rate pill, centered within remaining space (appears slightly left due to right content) - Desktop only */}
-          <div className="hidden sm:flex flex-1 items-center justify-center">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">Over Rate:</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:hidden ml-1">Rate:</span>
-              <div className="ml-1">
-                <OverRatePill 
-                  overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
-                  total={chartData.length} 
-                  isDark={isDark} 
-                />
-              </div>
+            {/* Middle: Over Rate pill in header - Hidden on desktop to use in-chart placement */}
+          <div className="hidden">
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">Over Rate:</span>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:hidden ml-1">Rate:</span>
+            <div className="ml-1">
+              <OverRatePill 
+                overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
+                total={chartData.length} 
+                isDark={isDark} 
+              />
             </div>
+          </div>
             {/* Right: VS (opponent), H/A, and Timeframe inline - Desktop only */}
             <div className="hidden sm:flex items-center flex-wrap gap-2 sm:gap-3 ml-auto">
               <div className="mr-1 sm:mr-0">
@@ -3132,6 +3272,158 @@ const ChartControls = function ChartControls({
                 />
               </div>
               <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
+              {propsMode === 'player' && (
+                <div className="relative" ref={advancedDesktopRef}>
+                  <button
+                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
+                    className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
+                  >
+                    Advanced
+                  </button>
+                  {isAdvancedFiltersOpen && (
+                    <div className="absolute right-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
+                      <div className="space-y-2">
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsMinutesFilterOpen((v: boolean) => !v)}
+                            className="w-full flex items-center justify-between"
+                          >
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Minutes Played</span>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                              {minMinutesFilter} - {maxMinutesFilter} min
+                              <svg className={`w-3 h-3 transition-transform ${isMinutesFilterOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/></svg>
+                            </span>
+                          </button>
+                          {isMinutesFilterOpen && (
+                            <div className="mt-2">
+                              <div className="relative">
+                                <input type="range" min="0" max="48" step="1" value={minMinutesFilter} onChange={(e) => onMinMinutesChange(Number(e.target.value))} className="w-full" style={{ accentColor: '#7c3aed' }} />
+                                <input type="range" min="0" max="48" step="1" value={maxMinutesFilter} onChange={(e) => onMaxMinutesChange(Number(e.target.value))} className="w-full -mt-3" style={{ accentColor: '#7c3aed' }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                        {/* With / Without teammate (desktop) */}
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                          <div className="flex items-center gap-2">
+                            {/* Playing with */}
+                            <div className="flex-1">
+                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing with</div>
+                              <select
+                                value={withWithoutMode === 'with' ? String(teammateFilterId ?? '') : ''}
+                                onChange={async (e) => {
+                                  const v = e.target.value;
+                                  setWithWithoutMode('with');
+                                  if (!v) {
+                                    setTeammateFilterId(null);
+                                    return;
+                                  }
+                                  if (/^\d+$/.test(v)) {
+                                    setTeammateFilterId(parseInt(v, 10));
+                                    return;
+                                  }
+                                  const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
+                                  setTeammateFilterId(id);
+                                }}
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                disabled={!rosterForSelectedTeam}
+                              >
+                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
+                                {rosterForSelectedTeam && (
+                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
+                                    const arr = Array.isArray(pos) ? pos : [];
+                                    arr.forEach((p: any) => {
+                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
+                                      if (!name) return;
+                                      const key = `name:${name}`;
+                                      if (acc.some((x: any) => x.key === key)) return;
+                                      acc.push({ key, name });
+                                    });
+                                    return acc;
+                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
+                                    <option key={`tm-with-d-${p.key}`} value={p.key}>
+                                      {p.name}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                            {/* Playing without */}
+                            <div className="flex-1">
+                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing without</div>
+                              <select
+                                value={withWithoutMode === 'without' ? String(teammateFilterId ?? '') : ''}
+                                onChange={async (e) => {
+                                  const v = e.target.value;
+                                  setWithWithoutMode('without');
+                                  if (!v) {
+                                    setTeammateFilterId(null);
+                                    return;
+                                  }
+                                  if (/^\d+$/.test(v)) {
+                                    setTeammateFilterId(parseInt(v, 10));
+                                    return;
+                                  }
+                                  const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
+                                  setTeammateFilterId(id);
+                                }}
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                disabled={!rosterForSelectedTeam}
+                              >
+                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
+                                {rosterForSelectedTeam && (
+                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
+                                    const arr = Array.isArray(pos) ? pos : [];
+                                    arr.forEach((p: any) => {
+                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
+                                      if (!name) return;
+                                      const key = `name:${name}`;
+                                      if (acc.some((x: any) => x.key === key)) return;
+                                      acc.push({ key, name });
+                                    });
+                                    return acc;
+                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
+                                    <option key={`tm-without-d-${p.key}`} value={p.key}>
+                                      {p.name}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                          </div>
+                          {teammateFilterId != null && (
+                            <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                              {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex-shrink-0 mr-1 sm:mr-0">
                 {TimeframeButtons}
               </div>
@@ -3176,12 +3468,30 @@ const ChartContainer = function ChartContainer({
   onChangeHomeAway,
   realOddsData,
   fmtOdds,
+  minMinutesFilter,
+  maxMinutesFilter,
+  onMinMinutesChange,
+  onMaxMinutesChange,
+  excludeBlowouts,
+  excludeBackToBack,
+  onExcludeBlowoutsChange,
+  onExcludeBackToBackChange,
+  rosterForSelectedTeam,
+  withWithoutMode,
+  setWithWithoutMode,
+  teammateFilterId,
+  setTeammateFilterId,
+  loadingTeammateGames,
 }: any) {
+  const overCountDesktop = chartData.filter((d: any) => d.value > bettingLine).length;
+  const totalDesktop = chartData.length;
   return (
 <div 
 className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
       style={{ outline: 'none', boxShadow: 'none' }}
     >
+      {/* Desktop: In-chart overlay pill (disabled; use pre-chart placement to match mobile) */}
+      <div className="hidden"></div>
       <ChartControls
         isDark={isDark}
         currentStatOptions={currentStatOptions}
@@ -3202,11 +3512,36 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         yAxisConfig={yAxisConfig}
         realOddsData={realOddsData}
         fmtOdds={fmtOdds}
+        minMinutesFilter={minMinutesFilter}
+        maxMinutesFilter={maxMinutesFilter}
+        onMinMinutesChange={onMinMinutesChange}
+        onMaxMinutesChange={onMaxMinutesChange}
+        excludeBlowouts={excludeBlowouts}
+        excludeBackToBack={excludeBackToBack}
+        onExcludeBlowoutsChange={onExcludeBlowoutsChange}
+        onExcludeBackToBackChange={onExcludeBackToBackChange}
+        rosterForSelectedTeam={rosterForSelectedTeam}
+        withWithoutMode={withWithoutMode}
+        setWithWithoutMode={setWithWithoutMode}
+        teammateFilterId={teammateFilterId}
+        setTeammateFilterId={setTeammateFilterId}
+        loadingTeammateGames={loadingTeammateGames}
       />
       {/* Mobile: Over Rate pill above chart */}
       <div className="sm:hidden px-2 pb-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
+          <OverRatePill 
+            overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
+            total={chartData.length} 
+            isDark={isDark} 
+          />
+        </div>
+      </div>
+      {/* Desktop: Over Rate pill above chart (same logic and placement as mobile) */}
+      <div className="hidden sm:block px-3 pb-2 -mt-1 md:-mt-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
           <OverRatePill 
             overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
             total={chartData.length} 
@@ -3881,58 +4216,132 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
   );
 }, (prev, next) => prev.isDark === next.isDark && prev.opponentTeam === next.opponentTeam && prev.selectedPosition === next.selectedPosition);
 // Opponent Analysis (isolated, memoized)
+// NOTE: This reuses the same batched DvP + rank data and caches as PositionDefenseCard
+// to avoid redundant API calls and to ensure we always display real values instead of 0s.
 const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, opponentTeam, selectedTimeFilter }: { isDark: boolean; opponentTeam: string; selectedTimeFilter: string }) {
   const [mounted, setMounted] = useState(false);
   const [teamStats, setTeamStats] = useState<any>(null);
   const [teamRanks, setTeamRanks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   useEffect(() => {
     if (!opponentTeam) return;
-    
+
+    let abort = false;
+
     const fetchData = async () => {
       setLoading(true);
-      try {
-        // Fetch team stats
-        const statsResponse = await fetch(`/api/dvp/team-totals?team=${opponentTeam}&games=82`);
-        const statsData = await statsResponse.json();
-        if (statsData.success) {
-          setTeamStats(statsData.perGame);
-        }
-        
-        // Fetch ranks for all metrics
-        const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'];
-        const rankPromises = metrics.map(metric => 
-          fetch(`/api/dvp/team-totals/rank?metric=${metric}&games=82`)
-            .then(res => {
-              if (!res.ok) {
-                throw new Error(`Failed to fetch rank for ${metric}: ${res.status}`);
-              }
-              return res.json();
-            })
-            .then(data => ({ metric, rank: data.ranks?.[opponentTeam] || 0 }))
-            .catch(error => {
-              console.error(`Error fetching rank for ${metric}:`, error);
-              return { metric, rank: 0 };
-            })
-        );
-        
-        const rankResults = await Promise.all(rankPromises);
+
+      // For the high-level opponent card, show defense vs guards by default (PG),
+      // which matches how ranks are currently computed elsewhere.
+      const targetOpp = opponentTeam;
+      const targetPos: 'PG' = 'PG';
+      const metricsStr = DVP_METRICS.map(m => m.key).join(',');
+
+      const teamCacheKey = `${targetOpp}:82`;
+      const rankCacheKey = `${targetPos}:82`;
+      const cachedTeam = dvpTeamCache.get(teamCacheKey);
+      const cachedRank = dvpRankCache.get(rankCacheKey);
+
+      const applyData = (teamData: { metrics: any; sample: number } | undefined | null, rankData: { metrics: any } | undefined | null) => {
+        if (!teamData || !rankData || abort) return;
+
+        const stats: any = {};
         const ranks: Record<string, number> = {};
-        rankResults.forEach(r => { ranks[r.metric] = r.rank; });
+
+        // Approximate team-level defense by aggregating across all five positions.
+        const POSITIONS: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+        for (const m of DVP_METRICS) {
+          const perGame = teamData.metrics?.[m.key] || {};
+          const values = POSITIONS
+            .map(pos => perGame?.[pos])
+            .filter((v: any) => typeof v === 'number' && Number.isFinite(v as number)) as number[];
+
+          let value = 0;
+          if (values.length > 0) {
+            if (m.isPercentage) {
+              // For percentages, use the average across positions
+              const sum = values.reduce((a, b) => a + b, 0);
+              value = sum / values.length;
+            } else {
+              // For counting stats (pts/reb/ast/etc), sum across positions to approximate team totals
+              value = values.reduce((a, b) => a + b, 0);
+            }
+          }
+          stats[m.key] = value;
+
+          const metricRanks = rankData.metrics?.[m.key] || {};
+          const rank = metricRanks?.[targetOpp] as number | undefined;
+          ranks[m.key] = Number.isFinite(rank as any) ? (rank as number) : 0;
+        }
+
+        setTeamStats(stats);
         setTeamRanks(ranks);
-      } catch (error) {
-        console.error('Failed to fetch team data:', error);
-      } finally {
+      };
+
+      // If everything is cached, use it immediately
+      if (cachedTeam && cachedRank) {
+        applyData(cachedTeam, cachedRank);
         setLoading(false);
+        return;
+      }
+
+      try {
+        const promises: Promise<any>[] = [];
+
+        if (!cachedTeam) {
+          promises.push(
+            cachedFetch<any>(
+              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
+              undefined,
+              300000
+            ).then(data => ({ type: 'team', data }))
+          );
+        }
+
+        if (!cachedRank) {
+          promises.push(
+            cachedFetch<any>(
+              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
+              undefined,
+              300000
+            ).then(data => ({ type: 'rank', data }))
+          );
+        }
+
+        const results = promises.length > 0 ? await Promise.all(promises) : [];
+
+        let teamData = cachedTeam || null;
+        let rankData = cachedRank || null;
+
+        for (const r of results) {
+          if (r.type === 'team') {
+            teamData = { metrics: r.data?.metrics, sample: r.data?.sample_games || 0 };
+            dvpTeamCache.set(teamCacheKey, teamData);
+          } else if (r.type === 'rank') {
+            rankData = { metrics: r.data?.metrics };
+            dvpRankCache.set(rankCacheKey, rankData);
+          }
+        }
+
+        applyData(teamData, rankData);
+      } catch (error) {
+        console.error('Failed to fetch opponent analysis data:', error);
+      } finally {
+        if (!abort) setLoading(false);
       }
     };
-    
+
     fetchData();
+
+    return () => {
+      abort = true;
+    };
   }, [opponentTeam]);
   
   const getRankColor = (rank: number): string => {
@@ -3975,7 +4384,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Points Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.pts.toFixed(1)}
+                          {(teamStats?.pts ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.pts || 0)}`}>
                           {teamRanks.pts > 0 ? `#${teamRanks.pts}` : '—'}
@@ -3986,7 +4395,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Rebounds Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.reb.toFixed(1)}
+                          {(teamStats?.reb ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.reb || 0)}`}>
                           {teamRanks.reb > 0 ? `#${teamRanks.reb}` : '—'}
@@ -3997,7 +4406,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Assists Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.ast.toFixed(1)}
+                          {(teamStats?.ast ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.ast || 0)}`}>
                           {teamRanks.ast > 0 ? `#${teamRanks.ast}` : '—'}
@@ -4008,7 +4417,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Field Goal % Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.fg_pct.toFixed(1)}%
+                          {(teamStats?.fg_pct ?? 0).toFixed(1)}%
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.fg_pct || 0)}`}>
                           {teamRanks.fg_pct > 0 ? `#${teamRanks.fg_pct}` : '—'}
@@ -4019,7 +4428,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>3-Point % Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.fg3_pct.toFixed(1)}%
+                          {(teamStats?.fg3_pct ?? 0).toFixed(1)}%
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.fg3_pct || 0)}`}>
                           {teamRanks.fg3_pct > 0 ? `#${teamRanks.fg3_pct}` : '—'}
@@ -4030,7 +4439,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Steals Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.stl.toFixed(1)}
+                          {(teamStats?.stl ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.stl || 0)}`}>
                           {teamRanks.stl > 0 ? `#${teamRanks.stl}` : '—'}
@@ -4041,7 +4450,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Blocks Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
-                          {teamStats.blk.toFixed(1)}
+                          {(teamStats?.blk ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.blk || 0)}`}>
                           {teamRanks.blk > 0 ? `#${teamRanks.blk}` : '—'}
@@ -4272,10 +4681,10 @@ const BestOddsTable = memo(function BestOddsTable({
                 <>
               <td className="py-2 px-3">
                 <div className="font-mono text-gray-900 dark:text-white whitespace-nowrap">
-{home} <span className={i === bestH2H.home ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.home) : row.H2H.home}</span>
+{home} <span className={i === bestH2H.home ? green : grey}>{fmtOdds(row.H2H.home)}</span>
                 </div>
                 <div className="font-mono text-gray-900 dark:text-white opacity-80 whitespace-nowrap">
-{away} <span className={i === bestH2H.away ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.away) : row.H2H.away}</span>
+{away} <span className={i === bestH2H.away ? green : grey}>{fmtOdds(row.H2H.away)}</span>
                 </div>
               </td>
               <td className="py-2 px-3">
@@ -4285,10 +4694,10 @@ const BestOddsTable = memo(function BestOddsTable({
                     return (
                       <>
                         <div className={`font-mono whitespace-nowrap ${grey}`}>
-                          + N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                          + N/A ({fmtOdds(row.Spread.over)})
                         </div>
                         <div className={`font-mono whitespace-nowrap ${grey}`}>
-                          - N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                          - N/A ({fmtOdds(row.Spread.under)})
                         </div>
                       </>
                     );
@@ -4298,18 +4707,18 @@ const BestOddsTable = memo(function BestOddsTable({
                   return (
                     <>
                       <div className={`font-mono whitespace-nowrap ${bestSets.Spread.positive.has(i) ? green : grey}`}>
-                        + {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                        + {displayHalfLine(String(absLineVal))} ({fmtOdds(row.Spread.over)})
                       </div>
                       <div className={`font-mono whitespace-nowrap ${bestSets.Spread.negative.has(i) ? green : grey}`}>
-                        - {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                        - {displayHalfLine(String(absLineVal))} ({fmtOdds(row.Spread.under)})
                       </div>
                     </>
                   );
                 })()}
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.over) : row.Total.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.under) : row.Total.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)} ({fmtOdds(row.Total.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)} ({fmtOdds(row.Total.under)})</div>
               </td>
                 </>
               )}
@@ -4318,36 +4727,36 @@ const BestOddsTable = memo(function BestOddsTable({
               {propsMode === 'player' && (
                 <>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.over) : row.PTS.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.under) : row.PTS.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.over) : row.REB.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.under) : row.REB.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.over) : row.AST.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.under) : row.AST.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.over || 'N/A') : row.THREES?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.under || 'N/A') : row.THREES?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.over || 'N/A') : row.PRA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.under || 'N/A') : row.PRA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.over || 'N/A') : row.PR?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PR.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.under || 'N/A') : row.PR?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.over || 'N/A') : row.PA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.under || 'N/A') : row.PA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PA?.line || 'N/A')} ({fmtOdds(row.PA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PA?.line || 'N/A')} ({fmtOdds(row.PA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.RA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.over || 'N/A') : row.RA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.RA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.under || 'N/A') : row.RA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.RA?.line || 'N/A')} ({fmtOdds(row.RA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.RA?.line || 'N/A')} ({fmtOdds(row.RA?.under || 'N/A')})</div>
               </td>
                 </>
               )}
@@ -4578,10 +4987,10 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
                 <>
               <td className="py-2 px-3">
                 <div className="font-mono text-gray-900 dark:text-white whitespace-nowrap">
-{home} <span className={i === bestH2H.home ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.home) : row.H2H.home}</span>
+{home} <span className={i === bestH2H.home ? green : grey}>{fmtOdds(row.H2H.home)}</span>
                 </div>
                 <div className="font-mono text-gray-900 dark:text-white opacity-80 whitespace-nowrap">
-{away} <span className={i === bestH2H.away ? green : grey}>{oddsFormat === 'decimal' ? fmtOdds(row.H2H.away) : row.H2H.away}</span>
+{away} <span className={i === bestH2H.away ? green : grey}>{fmtOdds(row.H2H.away)}</span>
                 </div>
               </td>
               <td className="py-2 px-3">
@@ -4591,10 +5000,10 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
                     return (
                       <>
                         <div className={`font-mono whitespace-nowrap ${grey}`}>
-                          + N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                          + N/A ({fmtOdds(row.Spread.over)})
                         </div>
                         <div className={`font-mono whitespace-nowrap ${grey}`}>
-                          - N/A ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                          - N/A ({fmtOdds(row.Spread.under)})
                         </div>
                       </>
                     );
@@ -4604,18 +5013,18 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
                   return (
                     <>
                       <div className={`font-mono whitespace-nowrap ${bestSets.Spread.positive.has(i) ? green : grey}`}>
-                        + {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.over) : row.Spread.over})
+                        + {displayHalfLine(String(absLineVal))} ({fmtOdds(row.Spread.over)})
                       </div>
                       <div className={`font-mono whitespace-nowrap ${bestSets.Spread.negative.has(i) ? green : grey}`}>
-                        - {displayHalfLine(String(absLineVal))} ({oddsFormat === 'decimal' ? fmtOdds(row.Spread.under) : row.Spread.under})
+                        - {displayHalfLine(String(absLineVal))} ({fmtOdds(row.Spread.under)})
                       </div>
                     </>
                   );
                 })()}
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.over) : row.Total.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.Total.under) : row.Total.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.over.has(i) ? green : grey}`}>O {displayHalfLine(row.Total.line)} ({fmtOdds(row.Total.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.Total.under.has(i) ? green : grey}`}>U {displayHalfLine(row.Total.line)} ({fmtOdds(row.Total.under)})</div>
               </td>
                 </>
               )}
@@ -4624,36 +5033,36 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
               {propsMode === 'player' && (
                 <>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.over) : row.PTS.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.PTS.under) : row.PTS.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.over) : row.REB.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.REB.under) : row.REB.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.over) : row.AST.over})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({oddsFormat === 'decimal' ? fmtOdds(row.AST.under) : row.AST.under})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.over || 'N/A') : row.THREES?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.THREES?.under || 'N/A') : row.THREES?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.over || 'N/A') : row.PRA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PRA?.under || 'N/A') : row.PRA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.over || 'N/A') : row.PR?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PR.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PR?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PR?.under || 'N/A') : row.PR?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PR.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.over || 'N/A') : row.PA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.PA?.under || 'N/A') : row.PA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PA?.line || 'N/A')} ({fmtOdds(row.PA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PA?.line || 'N/A')} ({fmtOdds(row.PA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.RA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.over || 'N/A') : row.RA?.over || 'N/A'})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.RA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.RA?.line || 'N/A')} ({oddsFormat === 'decimal' ? fmtOdds(row.RA?.under || 'N/A') : row.RA?.under || 'N/A'})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.RA?.line || 'N/A')} ({fmtOdds(row.RA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.RA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.RA?.line || 'N/A')} ({fmtOdds(row.RA?.under || 'N/A')})</div>
               </td>
                 </>
               )}
@@ -4689,6 +5098,15 @@ function NBADashboardContent() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Advanced filters (player mode)
+  const [minMinutesFilter, setMinMinutesFilter] = useState<number>(0);
+  const [maxMinutesFilter, setMaxMinutesFilter] = useState<number>(48);
+  const [excludeBlowouts, setExcludeBlowouts] = useState<boolean>(false);
+  const [excludeBackToBack, setExcludeBackToBack] = useState<boolean>(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
+  const [isMinutesFilterOpen, setIsMinutesFilterOpen] = useState<boolean>(false);
+  // With/Without filters - states will be defined after roster setup
 
   // Check for success parameter from checkout
   useEffect(() => {
@@ -5772,6 +6190,40 @@ const lineMovementInFlightRef = useRef(false);
   // Comprehensive roster cache - preload ALL team rosters for instant switching
   const [allTeamRosters, setAllTeamRosters] = useState<Record<string, DepthChartData>>({});
   const [rosterCacheLoading, setRosterCacheLoading] = useState(false);
+
+  // With/Without filters
+  const [withWithoutMode, setWithWithoutMode] = useState<'with'|'without'>('with');
+  const [teammateFilterId, setTeammateFilterId] = useState<number | null>(null);
+  const [teammatePlayedGameIds, setTeammatePlayedGameIds] = useState<Set<number>>(new Set());
+  const [loadingTeammateGames, setLoadingTeammateGames] = useState<boolean>(false);
+  const rosterForSelectedTeam = useMemo(() => {
+    if (propsMode !== 'player') return null;
+    const roster = (playerTeamRoster && Object.keys(playerTeamRoster || {}).length ? playerTeamRoster : allTeamRosters[originalPlayerTeam]) as any;
+    return roster || null;
+  }, [propsMode, playerTeamRoster, allTeamRosters, originalPlayerTeam]);
+  
+  // Resolve BDL player id from a name if depth chart item lacks an id
+  const resolveTeammateIdFromName = useCallback(async (name: string): Promise<number | null> => {
+    try {
+      if (!name) return null;
+      const q = new URLSearchParams();
+      q.set('endpoint', '/players');
+      q.set('search', name);
+      q.set('per_page', '100');
+      const url = `/api/balldontlie?${q.toString()}`;
+      const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
+      const js = await res?.json().catch(() => ({})) as any;
+      const arr = Array.isArray(js?.data) ? js.data : [];
+      if (arr.length === 0) return null;
+      // Prefer exact full-name match
+      const exact = arr.find((p: any) => `${p.first_name} ${p.last_name}`.trim().toLowerCase() === name.trim().toLowerCase());
+      const chosen = exact || arr[0];
+      return typeof chosen?.id === 'number' ? chosen.id : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  // Effect moved below where baseGameData is declared
 
   // Resolve selected player's exact position from depth chart (after roster states are ready)
   // Rules:
@@ -7034,16 +7486,130 @@ const lineMovementInFlightRef = useRef(false);
     });
   }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway]); // Added team mode dependencies, manual opponent, and home/away
   
+  // Precompute back-to-back games (player mode)
+  const backToBackGameIds = useMemo(() => {
+    if (propsMode !== 'player' || !playerStats || playerStats.length === 0) return new Set<string | number>();
+    const withDates = playerStats.filter((p: any) => !!p?.game?.date);
+    const sorted = withDates.slice().sort((a: any, b: any) =>
+      new Date(a.game.date).getTime() - new Date(b.game.date).getTime()
+    );
+    const b2b = new Set<string | number>();
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date((sorted[i - 1] as any)?.game?.date as any);
+      const cur = new Date((sorted[i] as any)?.game?.date as any);
+      const diffDays = (cur.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0.5 && diffDays <= 1.5) {
+        // Only include the second game of the back-to-back
+        const curId = sorted[i]?.game?.id ?? `g_${i}`;
+        b2b.add(curId);
+      }
+    }
+    return b2b;
+  }, [propsMode, playerStats]);
+
+  const parseMinutesPlayed = (minVal: any): number => {
+    if (typeof minVal === 'number') return minVal;
+    if (!minVal) return 0;
+    const s = String(minVal);
+    if (s.includes(':')) {
+      const [m, sec] = s.split(':').map(x => parseInt(x || '0', 10));
+      return (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) && sec > 0) ? 1 : 0);
+    }
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // Apply advanced filters to base data for player mode
+  const filteredGameData = useMemo(() => {
+    if (propsMode !== 'player') return baseGameData;
+    return baseGameData.filter((g: any) => {
+      const stats = g?.stats;
+      const game = stats?.game;
+
+      // minutes
+      const minutes = parseMinutesPlayed(stats?.min);
+      if (minutes === 0) return false; // always exclude zero-minute games
+      if (minutes < minMinutesFilter || minutes > maxMinutesFilter) return false;
+
+      // blowout
+      if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
+        const diff = Math.abs((game.home_team_score || 0) - (game.visitor_team_score || 0));
+        if (diff >= 21) return false;
+      }
+
+      // back-to-back (when enabled, only include second game of B2B)
+      if (excludeBackToBack) {
+        if (!game || !backToBackGameIds.has(game.id)) return false;
+      }
+      
+      // with/without teammate filter
+      if (teammateFilterId) {
+        const gid = game?.id;
+        if (!gid) return false;
+        const didPlay = teammatePlayedGameIds.has(gid);
+        if (withWithoutMode === 'with' && !didPlay) return false;
+        if (withWithoutMode === 'without' && didPlay) return false;
+      }
+
+      return true;
+    });
+  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds]);
+
   /* -------- Chart data with current stat values ----------
      Only recalculate values when selectedStat changes */
   const chartData = useMemo(() => {
-    return baseGameData.map(game => ({
+    const source = propsMode === 'player' ? filteredGameData : baseGameData;
+    return source.map(game => ({
       ...game,
       value: propsMode === 'team' 
         ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam) 
         : getStatValue((game as any).stats, selectedStat) ?? 0,
     }));
-  }, [baseGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam]);
+  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam]);
+
+  // Load teammate participation for current base games when filter is active
+  useEffect(() => {
+    const run = async () => {
+      if (!teammateFilterId) {
+        setTeammatePlayedGameIds(new Set());
+        return;
+      }
+      try {
+        const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
+        if (!games.length) {
+          setTeammatePlayedGameIds(new Set());
+          return;
+        }
+        setLoadingTeammateGames(true);
+        const chunks: number[][] = [];
+        const size = 25;
+        for (let i = 0; i < games.length; i += size) chunks.push(games.slice(i, i + size));
+        const played = new Set<number>();
+        for (const chunk of chunks) {
+          const params = new URLSearchParams();
+          params.set('endpoint', '/stats');
+          params.set('per_page', '100');
+          params.set('player_ids[]', String(teammateFilterId));
+          for (const gid of chunk) params.append('game_ids[]', String(gid));
+          const url = `/api/balldontlie?${params.toString()}`;
+          const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
+          const json = await res?.json().catch(() => ({})) as any;
+          const data = Array.isArray(json?.data) ? json.data : [];
+          data.forEach((s: any) => {
+            const minStr = s?.min || '0:00';
+            const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
+            const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
+            const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
+            if (minutes > 0 && gid != null) played.add(gid);
+          });
+        }
+        setTeammatePlayedGameIds(played);
+      } finally {
+        setLoadingTeammateGames(false);
+      }
+    };
+    run();
+  }, [withWithoutMode, teammateFilterId, baseGameData]);
 
   // Hit rate calculations - only recalculate when chartData or bettingLine changes
   const hitRateStats = useMemo(() => {
@@ -7109,8 +7675,8 @@ const lineMovementInFlightRef = useRef(false);
       } else if (propsMode === 'player' && data.stats) {
         // Player mode: use player stats
         const gameStats = data.stats;
-        if (gameStats?.game) {
-          const gameISO = gameStats.game.date;
+        if ((gameStats as any)?.game) {
+          const gameISO = (gameStats as any)?.game?.date;
           if (gameISO) {
             correctDate = new Date(gameISO).toLocaleDateString('en-US', { 
               year: 'numeric', 
@@ -7476,7 +8042,18 @@ const lineMovementInFlightRef = useRef(false);
     return dec.toFixed(2);
   };
 
-  const fmtOdds = (odds: string): string => odds === 'N/A' ? 'N/A' : (oddsFormat === 'decimal' ? americanToDecimal(odds) : odds);
+  // Ensure positive American odds show a leading '+' and strip any surrounding noise
+  const normalizeAmerican = (odds: string): string => {
+    if (odds === 'N/A') return 'N/A';
+    const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
+    if (isNaN(n)) return odds;
+    return n > 0 ? `+${n}` : `${n}`;
+  };
+
+  const fmtOdds = (odds: string): string => {
+    if (odds === 'N/A') return 'N/A';
+    return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
+  };
 
   return (
 <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
@@ -8750,6 +9327,20 @@ const lineMovementInFlightRef = useRef(false);
               onChangeHomeAway={setHomeAway}
               realOddsData={realOddsData}
               fmtOdds={fmtOdds}
+              minMinutesFilter={minMinutesFilter}
+              maxMinutesFilter={maxMinutesFilter}
+              onMinMinutesChange={setMinMinutesFilter}
+              onMaxMinutesChange={setMaxMinutesFilter}
+              excludeBlowouts={excludeBlowouts}
+              excludeBackToBack={excludeBackToBack}
+              onExcludeBlowoutsChange={setExcludeBlowouts}
+              onExcludeBackToBackChange={setExcludeBackToBack}
+              rosterForSelectedTeam={rosterForSelectedTeam}
+              withWithoutMode={withWithoutMode}
+              setWithWithoutMode={setWithWithoutMode}
+              teammateFilterId={teammateFilterId}
+              setTeammateFilterId={setTeammateFilterId}
+              loadingTeammateGames={loadingTeammateGames}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">

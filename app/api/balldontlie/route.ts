@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   
   try {
     // Construct the Ball Don't Lie API URL
-    const baseUrl = 'https://www.balldontlie.io/api/v1';
+    const baseUrl = 'https://api.balldontlie.io/v1';
     const url = `${baseUrl}${endpoint}?${forwardParams.toString()}`;
     console.log('Full API URL:', url);
     
@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'StatTrackr/1.0',
-        'Authorization': 'Bearer 9823adcf-57dc-4036-906d-aeb9f0003cfd',
+        // Some endpoints don't require auth; include only if configured
+        ...(process.env.BALLDONTLIE_API_KEY ? { 'Authorization': `Bearer ${process.env.BALLDONTLIE_API_KEY}` } : {}),
       },
     });
 
