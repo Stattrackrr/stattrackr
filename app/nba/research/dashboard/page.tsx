@@ -2228,6 +2228,41 @@ const ChartControls = function ChartControls({
   // Track current line value for immediate bookmaker detection (updates instantly, separate from debounced bettingLine)
   const [displayLine, setDisplayLine] = useState(bettingLine);
 
+  // Helper: resolve teammate ID from name + team using Ball Don't Lie /players endpoint
+  const resolveTeammateIdFromNameLocal = async (name: string, teamAbbr?: string): Promise<number | null> => {
+    try {
+      if (!name) return null;
+      const tryFetch = async (searchStr: string) => {
+        const q = new URLSearchParams();
+        q.set('endpoint', '/players');
+        q.set('search', searchStr);
+        q.set('per_page', '25');
+        const maybeTeamId = teamAbbr ? ABBR_TO_TEAM_ID[normalizeAbbr(teamAbbr)] : undefined;
+        if (maybeTeamId) q.append('team_ids[]', String(maybeTeamId));
+        const url = `/api/balldontlie?${q.toString()}`;
+        const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
+        const js = await res?.json().catch(() => ({})) as any;
+        const arr = Array.isArray(js?.data) ? js.data : [];
+        return arr;
+      };
+      // 1) full name
+      let results = await tryFetch(name);
+      // 2) last name only if none
+      if (!results.length) {
+        const parts = name.split(' ').filter(Boolean);
+        const last = parts[parts.length - 1] || name;
+        results = await tryFetch(last);
+      }
+      if (!results.length) return null;
+      const lower = name.trim().toLowerCase();
+      const exact = results.find((p: any) => `${p.first_name} ${p.last_name}`.trim().toLowerCase() === lower);
+      const chosen = exact || results[0];
+      return typeof chosen?.id === 'number' ? chosen.id : null;
+    } catch {
+      return null;
+    }
+  };
+
   // Sync input and dashed line to the committed bettingLine value.
   // Only track bettingLine/yAxisConfig to avoid racing with timeframe updates.
   useEffect(() => {
