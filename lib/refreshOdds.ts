@@ -63,10 +63,247 @@ const formatOddsPrice = (price: any, bookmakerName: string): string => {
 
 const determinePickemVariant = (overOdds: string, underOdds: string): 'Goblin' | 'Demon' | null => {
   if (overOdds === '+100' && underOdds === '+100') return 'Demon';
-  if (overOdds === 'Pick’em' && underOdds === 'Pick’em') return 'Goblin';
+  if (overOdds === 'Pick\'em' && underOdds === 'Pick\'em') return 'Goblin';
   if (overOdds === '+100' || underOdds === '+100') return 'Demon';
   return 'Goblin';
 };
+
+/**
+ * Save odds snapshots to database for line movement tracking
+ */
+type MovementSnapshot = {
+  compositeKey: string;
+  gameId: string;
+  playerName: string;
+  market: string;
+  bookmaker: string;
+  line: number;
+  overOdds: number;
+  underOdds: number;
+  recordedAt: string;
+};
+
+async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
+  const keys = Array.from(new Set(movementSnapshots.map((m) => m.compositeKey)));
+
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    if (size <= 0) return [arr];
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const latestRows: any[] = [];
+  if (keys.length > 0) {
+    const keyChunks = chunkArray(keys, 10);
+    for (const chunk of keyChunks) {
+      const { data, error } = await supabaseAdmin
+        .from('line_movement_latest')
+        .select('composite_key, opening_line, opening_over_odds, opening_under_odds, opening_recorded_at, line_last_changed_at, current_line')
+        .in('composite_key', chunk);
+
+      if (error) {
+        console.error('Failed to load existing line movement state:', error);
+        throw error;
+      }
+
+      if (data) {
+        latestRows.push(...data);
+      }
+    }
+  }
+
+  const latestMap = new Map(
+    latestRows.map((row) => [
+      row.composite_key,
+      {
+        openingLine: typeof row.opening_line === 'number' ? row.opening_line : null,
+        openingOverOdds: typeof row.opening_over_odds === 'number' ? row.opening_over_odds : null,
+        openingUnderOdds: typeof row.opening_under_odds === 'number' ? row.opening_under_odds : null,
+        openingRecordedAt: row.opening_recorded_at as string | null,
+        currentLine: typeof row.current_line === 'number' ? row.current_line : null,
+        lineLastChangedAt: row.line_last_changed_at as string | null,
+      },
+    ])
+  );
+
+  const latestUpserts: any[] = [];
+  const movementEvents: any[] = [];
+
+  for (const snapshot of movementSnapshots) {
+    const prev = latestMap.get(snapshot.compositeKey);
+    const previousLine = prev?.currentLine ?? null;
+    const change = previousLine === null ? 0 : Number((snapshot.line - previousLine).toFixed(2));
+    const hasChanged = previousLine === null ? false : Math.abs(change) >= 0.01;
+
+    if (hasChanged) {
+      movementEvents.push({
+        composite_key: snapshot.compositeKey,
+        game_id: snapshot.gameId,
+        player_name: snapshot.playerName,
+        market: snapshot.market,
+        bookmaker: snapshot.bookmaker,
+        previous_line: previousLine,
+        new_line: snapshot.line,
+        change,
+        recorded_at: snapshot.recordedAt,
+      });
+    }
+
+    latestUpserts.push({
+      composite_key: snapshot.compositeKey,
+      game_id: snapshot.gameId,
+      player_name: snapshot.playerName,
+      market: snapshot.market,
+      bookmaker: snapshot.bookmaker,
+      opening_line: prev?.openingLine ?? snapshot.line,
+      opening_over_odds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
+      opening_under_odds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
+      opening_recorded_at: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
+      current_line: snapshot.line,
+      current_over_odds: snapshot.overOdds,
+      current_under_odds: snapshot.underOdds,
+      current_recorded_at: snapshot.recordedAt,
+      line_last_changed_at: hasChanged
+        ? snapshot.recordedAt
+        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
+      updated_at: snapshot.recordedAt,
+    });
+
+    latestMap.set(snapshot.compositeKey, {
+      openingLine: prev?.openingLine ?? snapshot.line,
+      openingOverOdds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
+      openingUnderOdds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
+      openingRecordedAt: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
+      currentLine: snapshot.line,
+      lineLastChangedAt: hasChanged
+        ? snapshot.recordedAt
+        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
+    });
+  }
+
+  if (latestUpserts.length > 0) {
+    const latestChunks = chunkArray(latestUpserts, 500);
+    for (const chunk of latestChunks) {
+      const { error: upsertError } = await supabaseAdmin
+        .from('line_movement_latest')
+        .upsert(chunk, { onConflict: 'composite_key' });
+
+      if (upsertError) {
+        console.error('Failed to upsert line movement latest rows:', upsertError);
+        throw upsertError;
+      }
+    }
+  }
+
+  if (movementEvents.length > 0) {
+    const eventChunks = chunkArray(movementEvents, 500);
+    for (const chunk of eventChunks) {
+      const { error: eventsError } = await supabaseAdmin
+        .from('line_movement_events')
+        .insert(chunk);
+
+      if (eventsError) {
+        console.error('Failed to insert line movement events:', eventsError);
+        throw eventsError;
+      }
+    }
+  }
+}
+
+async function saveOddsSnapshots(games: GameOdds[]) {
+  const snapshots: any[] = [];
+  const movementSnapshots: MovementSnapshot[] = [];
+  const now = new Date().toISOString();
+
+  for (const game of games) {
+    // Save player prop snapshots
+    for (const [bookmakerName, playerProps] of Object.entries(game.playerPropsByBookmaker)) {
+      for (const [playerName, props] of Object.entries(playerProps)) {
+        // Map stat keys to market names
+        const statToMarket: Record<string, string> = {
+          'PTS': 'player_points',
+          'REB': 'player_rebounds',
+          'AST': 'player_assists',
+          'THREES': 'player_threes',
+          'BLK': 'player_blocks',
+          'STL': 'player_steals',
+          'TO': 'player_turnovers',
+          'PRA': 'player_points_rebounds_assists',
+          'PR': 'player_points_rebounds',
+          'PA': 'player_points_assists',
+          'RA': 'player_rebounds_assists',
+        };
+
+        for (const [statKey, propData] of Object.entries(props)) {
+          if (!propData || typeof propData !== 'object') continue;
+          
+          const market = statToMarket[statKey];
+          if (!market) continue;
+
+          // Only save if we have line and odds data
+          if ('line' in propData && 'over' in propData && 'under' in propData) {
+            const line = parseFloat(String(propData.line));
+            const overOdds = parseInt(String(propData.over));
+            const underOdds = parseInt(String(propData.under));
+
+            if (!isNaN(line) && !isNaN(overOdds) && !isNaN(underOdds)) {
+              const compositeKey = [
+                game.gameId,
+                playerName,
+                market,
+                bookmakerName
+              ].join('|');
+
+              snapshots.push({
+                game_id: game.gameId,
+                player_name: playerName,
+                bookmaker: bookmakerName,
+                market,
+                line,
+                over_odds: overOdds,
+                under_odds: underOdds,
+                snapshot_at: now,
+              });
+
+              movementSnapshots.push({
+                compositeKey,
+                gameId: game.gameId,
+                playerName,
+                market,
+                bookmaker: bookmakerName,
+                line,
+                overOdds,
+                underOdds,
+                recordedAt: now,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Batch insert snapshots using service role (bypasses RLS)
+  if (snapshots.length > 0) {
+    const { error } = await supabaseAdmin
+      .from('odds_snapshots')
+      .insert(snapshots);
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      throw error;
+    }
+
+    console.log(`💾 Saved ${snapshots.length} odds snapshots`);
+  }
+
+  if (movementSnapshots.length > 0) {
+    await saveLineMovementState(movementSnapshots);
+  }
+}
 
 /**
  * Fetch all NBA odds from The Odds API
@@ -537,243 +774,4 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
   }
 
   return games;
-}
-
-/**
- * Save odds snapshots to database for line movement tracking
- */
-type MovementSnapshot = {
-  compositeKey: string;
-  gameId: string;
-  playerName: string;
-  market: string;
-  bookmaker: string;
-  line: number;
-  overOdds: number;
-  underOdds: number;
-  recordedAt: string;
-};
-
-async function saveOddsSnapshots(games: GameOdds[]) {
-  const snapshots: any[] = [];
-  const movementSnapshots: MovementSnapshot[] = [];
-  const now = new Date().toISOString();
-
-  for (const game of games) {
-    // Save player prop snapshots
-    for (const [bookmakerName, playerProps] of Object.entries(game.playerPropsByBookmaker)) {
-      for (const [playerName, props] of Object.entries(playerProps)) {
-        // Map stat keys to market names
-        const statToMarket: Record<string, string> = {
-          'PTS': 'player_points',
-          'REB': 'player_rebounds',
-          'AST': 'player_assists',
-          'THREES': 'player_threes',
-          'BLK': 'player_blocks',
-          'STL': 'player_steals',
-          'TO': 'player_turnovers',
-          'PRA': 'player_points_rebounds_assists',
-          'PR': 'player_points_rebounds',
-          'PA': 'player_points_assists',
-          'RA': 'player_rebounds_assists',
-        };
-
-        for (const [statKey, propData] of Object.entries(props)) {
-          if (!propData || typeof propData !== 'object') continue;
-          
-          const market = statToMarket[statKey];
-          if (!market) continue;
-
-          // Only save if we have line and odds data
-          if ('line' in propData && 'over' in propData && 'under' in propData) {
-            const line = parseFloat(String(propData.line));
-            const overOdds = parseInt(String(propData.over));
-            const underOdds = parseInt(String(propData.under));
-
-            if (!isNaN(line) && !isNaN(overOdds) && !isNaN(underOdds)) {
-              const compositeKey = [
-                game.gameId,
-                playerName,
-                market,
-                bookmakerName
-              ].join('|');
-
-              snapshots.push({
-                game_id: game.gameId,
-                player_name: playerName,
-                bookmaker: bookmakerName,
-                market,
-                line,
-                over_odds: overOdds,
-                under_odds: underOdds,
-                snapshot_at: now,
-              });
-
-              movementSnapshots.push({
-                compositeKey,
-                gameId: game.gameId,
-                playerName,
-                market,
-                bookmaker: bookmakerName,
-                line,
-                overOdds,
-                underOdds,
-                recordedAt: now,
-              });
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Batch insert snapshots using service role (bypasses RLS)
-  if (snapshots.length > 0) {
-    const { error } = await supabaseAdmin
-      .from('odds_snapshots')
-      .insert(snapshots);
-
-    if (error) {
-      console.error('Supabase insert error:', error);
-      throw error;
-    }
-
-    console.log(`💾 Saved ${snapshots.length} odds snapshots`);
-  }
-
-  if (movementSnapshots.length > 0) {
-    await saveLineMovementState(movementSnapshots);
-  }
-}
-
-async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
-  const keys = Array.from(new Set(movementSnapshots.map((m) => m.compositeKey)));
-
-  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
-    if (size <= 0) return [arr];
-    const chunks: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) {
-      chunks.push(arr.slice(i, i + size));
-    }
-    return chunks;
-  };
-
-  const latestRows: any[] = [];
-  if (keys.length > 0) {
-    const keyChunks = chunkArray(keys, 10);
-    for (const chunk of keyChunks) {
-      const { data, error } = await supabaseAdmin
-        .from('line_movement_latest')
-        .select('composite_key, opening_line, opening_over_odds, opening_under_odds, opening_recorded_at, line_last_changed_at, current_line')
-        .in('composite_key', chunk);
-
-      if (error) {
-        console.error('Failed to load existing line movement state:', error);
-        throw error;
-      }
-
-      if (data) {
-        latestRows.push(...data);
-      }
-    }
-  }
-
-  const latestMap = new Map(
-    latestRows.map((row) => [
-      row.composite_key,
-      {
-        openingLine: typeof row.opening_line === 'number' ? row.opening_line : null,
-        openingOverOdds: typeof row.opening_over_odds === 'number' ? row.opening_over_odds : null,
-        openingUnderOdds: typeof row.opening_under_odds === 'number' ? row.opening_under_odds : null,
-        openingRecordedAt: row.opening_recorded_at as string | null,
-        currentLine: typeof row.current_line === 'number' ? row.current_line : null,
-        lineLastChangedAt: row.line_last_changed_at as string | null,
-      },
-    ])
-  );
-
-  const latestUpserts: any[] = [];
-  const movementEvents: any[] = [];
-
-  for (const snapshot of movementSnapshots) {
-    const prev = latestMap.get(snapshot.compositeKey);
-    const previousLine = prev?.currentLine ?? null;
-    const change = previousLine === null ? 0 : Number((snapshot.line - previousLine).toFixed(2));
-    const hasChanged = previousLine === null ? false : Math.abs(change) >= 0.01;
-
-    if (hasChanged) {
-      movementEvents.push({
-        composite_key: snapshot.compositeKey,
-        game_id: snapshot.gameId,
-        player_name: snapshot.playerName,
-        market: snapshot.market,
-        bookmaker: snapshot.bookmaker,
-        previous_line: previousLine,
-        new_line: snapshot.line,
-        change,
-        recorded_at: snapshot.recordedAt,
-      });
-    }
-
-    latestUpserts.push({
-      composite_key: snapshot.compositeKey,
-      game_id: snapshot.gameId,
-      player_name: snapshot.playerName,
-      market: snapshot.market,
-      bookmaker: snapshot.bookmaker,
-      opening_line: prev?.openingLine ?? snapshot.line,
-      opening_over_odds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
-      opening_under_odds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
-      opening_recorded_at: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
-      current_line: snapshot.line,
-      current_over_odds: snapshot.overOdds,
-      current_under_odds: snapshot.underOdds,
-      current_recorded_at: snapshot.recordedAt,
-      line_last_changed_at: hasChanged
-        ? snapshot.recordedAt
-        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
-      updated_at: snapshot.recordedAt,
-    });
-
-    latestMap.set(snapshot.compositeKey, {
-      openingLine: prev?.openingLine ?? snapshot.line,
-      openingOverOdds: prev?.openingLine ? prev.openingOverOdds : snapshot.overOdds,
-      openingUnderOdds: prev?.openingLine ? prev.openingUnderOdds : snapshot.underOdds,
-      openingRecordedAt: prev?.openingLine ? prev.openingRecordedAt : snapshot.recordedAt,
-      currentLine: snapshot.line,
-      lineLastChangedAt: hasChanged
-        ? snapshot.recordedAt
-        : prev?.lineLastChangedAt ?? snapshot.recordedAt,
-    });
-  }
-
-  if (latestUpserts.length > 0) {
-    const latestChunks = chunkArray(latestUpserts, 500);
-    for (const chunk of latestChunks) {
-      const { error: upsertError } = await supabaseAdmin
-        .from('line_movement_latest')
-        .upsert(chunk, { onConflict: 'composite_key' });
-
-      if (upsertError) {
-        console.error('Failed to upsert line movement latest rows:', upsertError);
-        throw upsertError;
-      }
-    }
-  }
-
-  if (movementEvents.length > 0) {
-    const eventChunks = chunkArray(movementEvents, 500);
-    for (const chunk of eventChunks) {
-      const { error: eventsError } = await supabaseAdmin
-        .from('line_movement_events')
-        .insert(chunk);
-
-      if (eventsError) {
-        console.error('Failed to insert line movement events:', eventsError);
-        throw eventsError;
-      }
-    }
-  }
-}
-
 }
