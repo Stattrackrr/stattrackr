@@ -521,7 +521,7 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
         FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
       };
 
-          for (const market of bookmaker.markets || []) {
+      for (const market of bookmaker.markets || []) {
         if (market.key === 'h2h') {
           const homeOutcome = market.outcomes.find((o: any) => o.name === game.home_team);
           const awayOutcome = market.outcomes.find((o: any) => o.name === game.away_team);
@@ -770,6 +770,7 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
           }
         }
       }
+    }
     }
   }
 
