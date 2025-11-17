@@ -5,7 +5,7 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const regions = process.env.ODDS_REGIONS || 'us';
+const regions = process.env.ODDS_REGIONS || 'us,us_dfs';
 const url = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?apiKey=${API_KEY}&regions=${regions}&markets=h2h`;
 
 const res = await fetch(url);

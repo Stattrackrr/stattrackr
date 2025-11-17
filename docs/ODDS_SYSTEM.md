@@ -84,9 +84,11 @@ curl "http://localhost:3000/api/odds?player=LeBron+James"
 
 ## Setup
 
-1. Add API key to `.env.local`:
+1. Add API key (and optional region override) to `.env.local`:
 ```bash
 ODDS_API_KEY=your_key_here
+# Optional: override default regions (defaults to "us,us_dfs")
+# ODDS_REGIONS=us
 ```
 
 2. Restart dev server:

@@ -18,6 +18,56 @@ const supabaseAdmin = createClient(
 // Store all odds data in a single cache entry
 const ODDS_CACHE_KEY = 'all_nba_odds';
 
+const PICKEM_BOOKMAKERS = [
+  'draftkings pick6',
+  'pick6',
+  'prizepicks',
+  'prize picks',
+  'underdog fantasy',
+  'underdog',
+];
+
+const isPickemBookmaker = (name: string): boolean => {
+  const lower = (name || '').toLowerCase();
+  return PICKEM_BOOKMAKERS.some(key => lower.includes(key));
+};
+
+const formatOddsPrice = (price: any, bookmakerName: string): string => {
+  const fallback = isPickemBookmaker(bookmakerName) ? '+100' : 'N/A';
+  if (price === null || price === undefined) return fallback;
+  const raw = String(price).trim();
+  if (!raw) return fallback;
+
+  if (/^[+-]?\d+$/.test(raw)) {
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return parsed > 0 ? `+${parsed}` : String(parsed);
+  }
+
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric)) return raw || fallback;
+
+  if (Number.isInteger(numeric)) {
+    return numeric > 0 ? `+${numeric}` : String(numeric);
+  }
+
+  if (numeric <= 1.01 || numeric === 1) return fallback;
+
+  const american = numeric >= 2
+    ? Math.round((numeric - 1) * 100)
+    : Math.round(-100 / (numeric - 1));
+
+  if (!Number.isFinite(american)) return fallback;
+  return american > 0 ? `+${american}` : String(american);
+};
+
+const determinePickemVariant = (overOdds: string, underOdds: string): 'Goblin' | 'Demon' | null => {
+  if (overOdds === '+100' && underOdds === '+100') return 'Demon';
+  if (overOdds === 'Pick’em' && underOdds === 'Pick’em') return 'Goblin';
+  if (overOdds === '+100' || underOdds === '+100') return 'Demon';
+  return 'Goblin';
+};
+
 /**
  * Fetch all NBA odds from The Odds API
  * This function is called by the scheduler and the API route
@@ -46,7 +96,7 @@ export async function refreshOddsData(
   try {
     // Fetch all NBA games with game odds (H2H, spreads, totals)
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
-    const baseRegions = process.env.ODDS_REGIONS || 'us';
+    const baseRegions = process.env.ODDS_REGIONS || 'us,us_dfs';
     const gamesParams = new URLSearchParams({
       apiKey: ODDS_API_KEY,
       regions: baseRegions,
@@ -78,8 +128,27 @@ export async function refreshOddsData(
       console.log(`🏀 Sample games: ${upcomingGames.slice(0, 3).map((g: any) => `${g.home_team} vs ${g.away_team} at ${new Date(g.commence_time).toLocaleString()}`).join(', ')}`);
     }
     
-    // Include both standard and alternate markets for DFS sites (goblins/demons/multipliers)
-    const playerPropsMarkets = 'player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists';
+    // Include standard and alternate markets (DFS pick'em multipliers live in *_alternate keys)
+    const playerPropsMarkets = [
+      // Standard markets
+      'player_points',
+      'player_rebounds',
+      'player_assists',
+      'player_threes',
+      'player_points_rebounds_assists',
+      'player_points_rebounds',
+      'player_points_assists',
+      'player_rebounds_assists',
+      // Alternate (DFS pick’em goblins/demons) markets
+      'player_points_alternate',
+      'player_rebounds_alternate',
+      'player_assists_alternate',
+      'player_threes_alternate',
+      'player_points_rebounds_assists_alternate',
+      'player_points_rebounds_alternate',
+      'player_points_assists_alternate',
+      'player_rebounds_assists_alternate',
+    ].join(',');
     const playerPropsPromises = upcomingGames.map(async (game: any) => {
       try {
         const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
@@ -215,7 +284,7 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
         FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
       };
 
-      for (const market of bookmaker.markets || []) {
+          for (const market of bookmaker.markets || []) {
         if (market.key === 'h2h') {
           const homeOutcome = market.outcomes.find((o: any) => o.name === game.home_team);
           const awayOutcome = market.outcomes.find((o: any) => o.name === game.away_team);
@@ -252,11 +321,75 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
 
   // Process player props if available
   if (playerPropsData && Array.isArray(playerPropsData)) {
+    // Debug: Log all bookmakers found in player props
+    const allBookmakers = new Set<string>();
+    for (const game of playerPropsData) {
+      for (const bookmaker of game.bookmakers || []) {
+        if (bookmaker.title) {
+          allBookmakers.add(bookmaker.title);
+        }
+      }
+    }
+    console.log(`[ODDS DEBUG] All bookmakers in player props data:`, Array.from(allBookmakers).sort());
+    console.log(`[ODDS DEBUG] PrizePicks found:`, Array.from(allBookmakers).some(b => b.toLowerCase().includes('prizepicks')));
+    
     for (const game of playerPropsData) {
       const matchingGame = games.find(g => g.gameId === game.id);
       if (!matchingGame) continue;
 
       for (const bookmaker of game.bookmakers || []) {
+        // Debug: Check if PrizePicks is in the data
+        if (bookmaker.title && bookmaker.title.toLowerCase().includes('prizepicks')) {
+          console.log(`[PRIZEPICKS DEBUG] Found PrizePicks bookmaker for game ${game.id}:`, {
+            title: bookmaker.title,
+            markets: bookmaker.markets?.map((m: any) => m.key) || [],
+            marketCount: bookmaker.markets?.length || 0,
+            alternateMarkets: bookmaker.markets?.filter((m: any) => m.key.includes('alternate')).map((m: any) => m.key) || [],
+          });
+        }
+        
+        const ensureBookmakerEntry = (name: string) => {
+          if (!matchingGame.playerPropsByBookmaker[name]) {
+            matchingGame.playerPropsByBookmaker[name] = {};
+          }
+        };
+
+        const ensurePlayerBucket = (bookName: string, playerNameKey: string) => {
+          ensureBookmakerEntry(bookName);
+          const bookBucket = matchingGame.playerPropsByBookmaker[bookName];
+          if (!bookBucket[playerNameKey]) {
+            bookBucket[playerNameKey] = {};
+          }
+          return bookBucket[playerNameKey] as Record<string, any>;
+        };
+
+        const pushStatEntry = (
+          bookName: string,
+          playerNameKey: string,
+          statKeyName: string,
+          entry: { line: string; over: string; under: string; isPickem?: boolean; variantLabel?: string | null }
+        ) => {
+          const playerBucket = ensurePlayerBucket(bookName, playerNameKey);
+          const current = playerBucket[statKeyName];
+          if (!Array.isArray(current)) {
+            playerBucket[statKeyName] = current ? [current] : [];
+          }
+          const list = playerBucket[statKeyName] as Array<any>;
+          const exists = list.some((e: any) =>
+            e.line === entry.line &&
+            e.over === entry.over &&
+            e.under === entry.under &&
+            (e.variantLabel || null) === (entry.variantLabel || null)
+          );
+          if (!exists) {
+            list.push(entry);
+          }
+        };
+
+        // Initialize bookmaker's player props if needed
+        const baseBookmakerName = bookmaker.title;
+        ensureBookmakerEntry(baseBookmakerName);
+
         for (const market of bookmaker.markets || []) {
           // Map API market keys to our stat keys
           const marketKeyMap: Record<string, string> = {
@@ -276,76 +409,126 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
             'player_first_basket': 'FIRST_BASKET',
           };
 
-          const statKey = marketKeyMap[market.key];
+          const statKey = marketKeyMap[market.key.replace(/_alternate$/, '')];
           if (!statKey) continue;
-
-          // Initialize bookmaker's player props if needed
-          const bookmakerName = bookmaker.title;
-          if (!matchingGame.playerPropsByBookmaker[bookmakerName]) {
-            matchingGame.playerPropsByBookmaker[bookmakerName] = {};
+          
+          // Debug PrizePicks alternate markets structure
+          if (baseBookmakerName.toLowerCase().includes('prizepicks') && /_alternate$/.test(market.key)) {
+            console.log(`[PRIZEPICKS DEBUG] Processing ${market.key} for ${statKey}:`, {
+              marketKey: market.key,
+              statKey,
+              outcomeCount: market.outcomes?.length || 0,
+              sampleOutcomes: market.outcomes?.slice(0, 3).map((o: any) => ({
+                name: o.name,
+                description: o.description,
+                point: o.point,
+                price: o.price,
+              })) || [],
+            });
           }
 
-          for (const outcome of market.outcomes || []) {
-            const playerName = outcome.description || outcome.name;
-            if (!playerName || playerName === 'Over' || playerName === 'Under' || playerName === 'Yes' || playerName === 'No') continue;
+          const registerPickemVariant = (variantLabel: 'Goblin' | 'Demon' | null, lineValue: number, playerNameKey: string, statBucket: string) => {
+            pushStatEntry(baseBookmakerName, playerNameKey, statBucket, {
+              line: String(lineValue),
+              over: 'Pick\'em',
+              under: 'Pick\'em',
+              isPickem: true,
+              variantLabel,
+            });
+          };
 
-            // Initialize player's props for this bookmaker
-            if (!matchingGame.playerPropsByBookmaker[bookmakerName][playerName]) {
-              matchingGame.playerPropsByBookmaker[bookmakerName][playerName] = {};
-            }
+        for (const outcome of market.outcomes || []) {
+          const playerName = outcome.description || outcome.name;
+          if (!playerName || playerName === 'Over' || playerName === 'Under' || playerName === 'Yes' || playerName === 'No') continue;
 
-            // Handle over/under markets (most props)
-            if (['PTS', 'REB', 'AST', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
-              // Find all over/under pairs for this player
-              const allOvers = market.outcomes.filter((o: any) => o.name === 'Over' && o.description === playerName);
-              const allUnders = market.outcomes.filter((o: any) => o.name === 'Under' && o.description === playerName);
-              
-              // Skip if no valid pairs
-              if (allOvers.length === 0 || allUnders.length === 0) continue;
-              
-              // Find the main line (most balanced odds, closest to even)
-              // Main lines typically have odds between -150 and +150
-              const mainLinePairs = [];
+          const isAlternateMarket = /_alternate$/.test(market.key);
+          const isPickemBook = isPickemBookmaker(baseBookmakerName);
+
+          // Handle over/under markets (most props)
+          if (['PTS', 'REB', 'AST', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
+            // Skip straight entries for pick'em-only books
+            if (isPickemBook && !isAlternateMarket) continue;
+
+            const allOvers = market.outcomes.filter((o: any) => o.name === 'Over' && o.description === playerName);
+            const allUnders = market.outcomes.filter((o: any) => o.name === 'Under' && o.description === playerName);
+            
+            // Special handling for PrizePicks alternate markets (pick'em style - only Over outcomes)
+            if (isPickemBook && isAlternateMarket && allOvers.length > 0 && allUnders.length === 0) {
+              // PrizePicks alternate markets only have Over outcomes - treat each as a pick'em line
               for (const over of allOvers) {
-                const matchingUnder = allUnders.find((u: any) => Math.abs(parseFloat(u.point) - parseFloat(over.point)) < 0.01);
-                if (matchingUnder) {
-                  const overPrice = parseInt(String(over.price));
-                  const underPrice = parseInt(String(matchingUnder.price));
-                  // Calculate how "balanced" the odds are (main lines are more balanced)
-                  const balance = Math.abs(Math.abs(overPrice) - Math.abs(underPrice));
-                  // Prefer odds in the -150 to +150 range (typical main lines)
-                  const inMainRange = overPrice >= -150 && overPrice <= 150 && underPrice >= -150 && underPrice <= 150;
-                  mainLinePairs.push({ over, under: matchingUnder, balance, inMainRange });
-                }
-              }
-              
-              if (mainLinePairs.length > 0) {
-                // Sort: prefer main range first, then most balanced
-                mainLinePairs.sort((a, b) => {
-                  if (a.inMainRange && !b.inMainRange) return -1;
-                  if (!a.inMainRange && b.inMainRange) return 1;
-                  return a.balance - b.balance;
-                });
+                // Determine variant based on price: +100 (100) = Demon, others = Goblin
+                const priceValue = over.price;
+                const variantLabel: 'Goblin' | 'Demon' = (priceValue === 100 || priceValue === -100) ? 'Demon' : 'Goblin';
                 
-                const bestPair = mainLinePairs[0];
-                (matchingGame.playerPropsByBookmaker[bookmakerName][playerName] as any)[statKey] = {
-                  line: String(bestPair.over.point),
-                  over: String(bestPair.over.price),
-                  under: String(bestPair.under.price),
-                };
+                console.log(`[PRIZEPICKS DEBUG] Found PrizePicks ${statKey} line for ${playerName}:`, {
+                  line: over.point,
+                  price: priceValue,
+                  variantLabel,
+                  marketKey: market.key,
+                });
+
+                pushStatEntry(baseBookmakerName, playerName, statKey, {
+                  line: String(over.point),
+                  over: 'Pick\'em',
+                  under: 'Pick\'em',
+                  isPickem: true,
+                  variantLabel,
+                });
+
+                registerPickemVariant(variantLabel, parseFloat(String(over.point)), playerName, statKey);
+              }
+              continue; // Skip the normal Over/Under matching logic
+            }
+            
+            // Normal Over/Under matching for other bookmakers
+            if (allOvers.length === 0 || allUnders.length === 0) continue;
+            
+            for (const over of allOvers) {
+              const matchingUnder = allUnders.find((u: any) => Math.abs(parseFloat(u.point) - parseFloat(over.point)) < 0.01);
+              if (!matchingUnder) continue;
+
+              const formattedOver = isAlternateMarket && isPickemBook ? 'Pick\'em' : formatOddsPrice(over.price, baseBookmakerName);
+              const formattedUnder = isAlternateMarket && isPickemBook ? 'Pick\'em' : formatOddsPrice(matchingUnder.price, baseBookmakerName);
+              const variantLabel = isPickemBook && isAlternateMarket
+                ? determinePickemVariant(formattedOver, formattedUnder) || 'Goblin'
+                : null;
+
+              // Debug PrizePicks goblin/demon lines
+              if (baseBookmakerName.toLowerCase().includes('prizepicks') && isAlternateMarket) {
+                console.log(`[PRIZEPICKS DEBUG] Found PrizePicks ${statKey} line for ${playerName}:`, {
+                  line: over.point,
+                  over: formattedOver,
+                  under: formattedUnder,
+                  variantLabel,
+                  isPickem: isPickemBook && isAlternateMarket,
+                  marketKey: market.key,
+                });
+              }
+
+              pushStatEntry(baseBookmakerName, playerName, statKey, {
+                line: String(over.point),
+                over: formattedOver,
+                under: formattedUnder,
+                isPickem: isPickemBook && isAlternateMarket,
+                variantLabel,
+              });
+
+              if (isPickemBook && isAlternateMarket) {
+                registerPickemVariant(variantLabel, parseFloat(String(over.point)), playerName, statKey);
               }
             }
-            // Handle yes/no markets (double-double, triple-double, first basket)
-            else if (['DD', 'TD', 'FIRST_BASKET'].includes(statKey)) {
-              const yesOutcome = market.outcomes.find((o: any) => o.name === 'Yes' && o.description === playerName);
-              const noOutcome = market.outcomes.find((o: any) => o.name === 'No' && o.description === playerName);
+          }
+          // Handle yes/no markets (double-double, triple-double, first basket)
+          else if (['DD', 'TD', 'FIRST_BASKET'].includes(statKey)) {
+            const yesOutcome = market.outcomes.find((o: any) => o.name === 'Yes' && o.description === playerName);
+            const noOutcome = market.outcomes.find((o: any) => o.name === 'No' && o.description === playerName);
 
-              if (yesOutcome && noOutcome) {
-                (matchingGame.playerPropsByBookmaker[bookmakerName][playerName] as any)[statKey] = {
-                  yes: String(yesOutcome.price),
-                  no: String(noOutcome.price),
-                };
-              }
+            if (yesOutcome && noOutcome) {
+              const bucket = ensurePlayerBucket(baseBookmakerName, playerName);
+              bucket[statKey] = {
+                yes: formatOddsPrice(yesOutcome.price, baseBookmakerName),
+                no: formatOddsPrice(noOutcome.price, baseBookmakerName),
+              };
             }
           }
         }
@@ -591,4 +774,6 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
       }
     }
   }
+}
+
 }

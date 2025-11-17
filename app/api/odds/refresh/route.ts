@@ -10,6 +10,14 @@ const ODDS_CACHE_KEY = 'all_nba_odds';
 // Route segment config to prevent treating non-handler exports as routes
 export const runtime = 'nodejs';
 
+export interface PlayerPropLineEntry {
+  line: string;
+  over: string;
+  under: string;
+  isPickem?: boolean;
+  variantLabel?: string | null;
+}
+
 export interface BookRow {
   name: string;
   H2H: { home: string; away: string };
@@ -29,6 +37,12 @@ export interface BookRow {
   PA: { line: string; over: string; under: string }; // Points + Assists
   RA: { line: string; over: string; under: string }; // Rebounds + Assists
   FIRST_BASKET: { yes: string; no: string };
+  meta?: {
+    baseName?: string;
+    isPickem?: boolean;
+    variantLabel?: string | null;
+    stat?: string;
+  };
 }
 
 export interface GameOdds {
@@ -41,19 +55,19 @@ export interface GameOdds {
   playerPropsByBookmaker: {
     [bookmakerName: string]: {
       [playerName: string]: {
-        PTS?: { line: string; over: string; under: string };
-        REB?: { line: string; over: string; under: string };
-        AST?: { line: string; over: string; under: string };
-        THREES?: { line: string; over: string; under: string };
-        BLK?: { line: string; over: string; under: string };
-        STL?: { line: string; over: string; under: string };
-        TO?: { line: string; over: string; under: string };
+        PTS?: PlayerPropLineEntry[];
+        REB?: PlayerPropLineEntry[];
+        AST?: PlayerPropLineEntry[];
+        THREES?: PlayerPropLineEntry[];
+        BLK?: PlayerPropLineEntry[];
+        STL?: PlayerPropLineEntry[];
+        TO?: PlayerPropLineEntry[];
         DD?: { yes: string; no: string };
         TD?: { yes: string; no: string };
-        PRA?: { line: string; over: string; under: string };
-        PR?: { line: string; over: string; under: string };
-        PA?: { line: string; over: string; under: string };
-        RA?: { line: string; over: string; under: string };
+        PRA?: PlayerPropLineEntry[];
+        PR?: PlayerPropLineEntry[];
+        PA?: PlayerPropLineEntry[];
+        RA?: PlayerPropLineEntry[];
         FIRST_BASKET?: { yes: string; no: string };
       };
     };

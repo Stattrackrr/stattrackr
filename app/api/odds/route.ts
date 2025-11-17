@@ -17,6 +17,17 @@ export interface BookRow {
   PTS: { line: string; over: string; under: string };
   REB: { line: string; over: string; under: string };
   AST: { line: string; over: string; under: string };
+  THREES: { line: string; over: string; under: string };
+  BLK: { line: string; over: string; under: string };
+  STL: { line: string; over: string; under: string };
+  TO: { line: string; over: string; under: string };
+  DD: { yes: string; no: string };
+  TD: { yes: string; no: string };
+  PRA: { line: string; over: string; under: string };
+  PR: { line: string; over: string; under: string };
+  PA: { line: string; over: string; under: string };
+  RA: { line: string; over: string; under: string };
+  FIRST_BASKET: { yes: string; no: string };
 }
 
 const ODDS_CACHE_KEY = 'all_nba_odds';
@@ -82,31 +93,146 @@ export async function GET(request: NextRequest) {
       for (const game of oddsCache.games) {
         const playerPropsByBookmaker = game.playerPropsByBookmaker || {};
         
+        // Debug: Log all bookmakers in playerPropsByBookmaker
+        const allBookmakersInProps = Object.keys(playerPropsByBookmaker);
+        const prizepicksBookmakers = allBookmakersInProps.filter(b => b.toLowerCase().includes('prizepicks'));
+        if (prizepicksBookmakers.length > 0) {
+          console.log(`[API DEBUG] PrizePicks bookmakers found in cache for game ${game.gameId}:`, prizepicksBookmakers);
+          // Log all players in PrizePicks
+          for (const ppBook of prizepicksBookmakers) {
+            const allPlayers = Object.keys(playerPropsByBookmaker[ppBook] || {});
+            console.log(`[API DEBUG] PrizePicks ${ppBook} has props for players:`, allPlayers);
+            // Check if requested player matches any (case-insensitive)
+            const matchingPlayer = allPlayers.find(p => p.toLowerCase() === player.toLowerCase());
+            if (matchingPlayer) {
+              console.log(`[API DEBUG] Found matching player! Requested: "${player}", Found: "${matchingPlayer}"`);
+              console.log(`[API DEBUG] PrizePicks props for ${matchingPlayer}:`, playerPropsByBookmaker[ppBook][matchingPlayer]);
+            } else {
+              console.log(`[API DEBUG] No exact match for "${player}". Available players:`, allPlayers);
+            }
+          }
+        }
+        
         // Check if this player has props in any bookmaker
-        const hasPlayerProps = Object.values(playerPropsByBookmaker).some(
-          (bookmakerProps: any) => bookmakerProps[player]
-        );
+        const allBookNames = new Set<string>();
+        for (const book of game.bookmakers) allBookNames.add(book.name);
+        for (const bookName of Object.keys(playerPropsByBookmaker)) {
+          // Try exact match first
+          if (playerPropsByBookmaker[bookName]?.[player]) {
+            allBookNames.add(bookName);
+          } else {
+            // Try case-insensitive match
+            const matchingPlayerKey = Object.keys(playerPropsByBookmaker[bookName] || {}).find(
+              p => p.toLowerCase() === player.toLowerCase()
+            );
+            if (matchingPlayerKey) {
+              allBookNames.add(bookName);
+            }
+          }
+        }
+        
+        // Debug: Check for PrizePicks
+        if (player && Array.from(allBookNames).some(name => name.toLowerCase().includes('prizepicks'))) {
+          console.log(`[API DEBUG] PrizePicks found for player ${player} in game ${game.gameId}:`, {
+            bookNames: Array.from(allBookNames).filter(n => n.toLowerCase().includes('prizepicks')),
+            props: playerPropsByBookmaker[Array.from(allBookNames).find(n => n.toLowerCase().includes('prizepicks')) || '']?.[player],
+          });
+        }
+
+        const hasPlayerProps = Array.from(allBookNames).some(name => {
+          // Try exact match first
+          if (playerPropsByBookmaker[name]?.[player]) return true;
+          // Try case-insensitive match
+          const matchingPlayerKey = Object.keys(playerPropsByBookmaker[name] || {}).find(
+            p => p.toLowerCase() === player.toLowerCase()
+          );
+          return !!matchingPlayerKey;
+        });
         
         if (hasPlayerProps) {
-          // Convert player props to BookRow format - only include bookmakers that have props for this player
+          // Convert player props to BookRow format - include DFS-only books as needed
           const bookRows: any[] = [];
           
-          for (const book of game.bookmakers) {
-            const bookmakerProps = playerPropsByBookmaker[book.name]?.[player];
+          const statKeysWithLines = new Set(['PTS','REB','AST','THREES','BLK','STL','TO','PRA','PR','PA','RA']);
+          const cloneRow = (row: BookRow): BookRow => JSON.parse(JSON.stringify(row));
+
+          for (const bookName of allBookNames) {
+            const baseBook = game.bookmakers.find((b: any) => b.name === bookName);
+            // Try to find the actual player key (case-insensitive match)
+            const actualPlayerKey = playerPropsByBookmaker[bookName]?.[player] 
+              ? player 
+              : Object.keys(playerPropsByBookmaker[bookName] || {}).find(
+                  p => p.toLowerCase() === player.toLowerCase()
+                );
+            if (!actualPlayerKey) continue;
             
-            // Only include this bookmaker if they have at least one prop for this player
-            if (bookmakerProps && Object.keys(bookmakerProps).length > 0) {
-              bookRows.push({
-                ...book,
-                PTS: bookmakerProps.PTS || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                REB: bookmakerProps.REB || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                AST: bookmakerProps.AST || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                THREES: bookmakerProps.THREES || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                PRA: bookmakerProps.PRA || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                PR: bookmakerProps.PR || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                PA: bookmakerProps.PA || { line: 'N/A', over: 'N/A', under: 'N/A' },
-                RA: bookmakerProps.RA || { line: 'N/A', over: 'N/A', under: 'N/A' },
-              });
+            const bookmakerProps = playerPropsByBookmaker[bookName]?.[actualPlayerKey];
+            if (!bookmakerProps || Object.keys(bookmakerProps).length === 0) continue;
+
+            const blankRow: BookRow = {
+              name: bookName,
+              H2H: { home: 'N/A', away: 'N/A' },
+              Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              BLK: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              STL: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              TO: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+              DD: { yes: 'N/A', no: 'N/A' },
+              TD: { yes: 'N/A', no: 'N/A' },
+              FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
+            };
+
+            for (const [statKey, statValue] of Object.entries(bookmakerProps)) {
+              if (!statValue) continue;
+
+              if (statKeysWithLines.has(statKey)) {
+                const entries = Array.isArray(statValue) ? statValue : [statValue];
+                for (const entry of entries) {
+                  // Debug PrizePicks goblin/demon lines
+                  const entryAny = entry as any;
+                  if (bookName.toLowerCase().includes('prizepicks') && entryAny?.variantLabel) {
+                    console.log(`[API DEBUG] PrizePicks ${statKey} line for ${player}:`, {
+                      line: entryAny?.line,
+                      over: entryAny?.over,
+                      under: entryAny?.under,
+                      variantLabel: entryAny?.variantLabel,
+                      isPickem: entryAny?.isPickem,
+                    });
+                  }
+                  
+                  const row = cloneRow(baseBook || blankRow);
+                  (row as any)[statKey] = {
+                    line: entryAny?.line ?? 'N/A',
+                    over: entryAny?.over ?? 'N/A',
+                    under: entryAny?.under ?? 'N/A',
+                  };
+                  (row as any).meta = {
+                    baseName: baseBook?.name || bookName,
+                    isPickem: entryAny?.isPickem ?? false,
+                    variantLabel: entryAny?.variantLabel ?? null,
+                    stat: statKey,
+                  };
+                  bookRows.push(row);
+                }
+              } else {
+                const row = cloneRow(baseBook || blankRow);
+                (row as any)[statKey] = statValue;
+                (row as any).meta = {
+                  baseName: baseBook?.name || bookName,
+                  isPickem: false,
+                  variantLabel: null,
+                  stat: statKey,
+                };
+                bookRows.push(row);
+              }
             }
           }
           

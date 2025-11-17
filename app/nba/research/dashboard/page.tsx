@@ -41,6 +41,160 @@ export type BookRow = {
   AST: { line: string; over: string; under: string };
 };
 
+const PLACEHOLDER_BOOK_ROWS: any[] = [
+  {
+    name: 'DraftKings',
+    H2H: { home: 'N/A', away: 'N/A' },
+    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+  },
+  {
+    name: 'FanDuel',
+    H2H: { home: 'N/A', away: 'N/A' },
+    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+  },
+  {
+    name: 'BetMGM',
+    H2H: { home: 'N/A', away: 'N/A' },
+    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+  },
+  {
+    name: 'Caesars',
+    H2H: { home: 'N/A', away: 'N/A' },
+    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+  },
+];
+
+const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
+  if (skipMerge) return books;
+
+  const MERGE_KEYS = [
+    'H2H',
+    'Spread',
+    'Total',
+    'PTS',
+    'REB',
+    'AST',
+    'THREES',
+    'BLK',
+    'STL',
+    'TO',
+    'PRA',
+    'PR',
+    'PA',
+    'RA',
+    'DD',
+    'TD',
+    'FIRST_BASKET',
+  ];
+
+  const mergedMap = new Map<string, any>();
+  const order: string[] = [];
+
+  for (const book of books || []) {
+    const baseNameRaw = (book as any)?.meta?.baseName || book?.name || '';
+    const baseKey = baseNameRaw.toLowerCase();
+    const displayName = baseNameRaw || book?.name || 'Book';
+
+    if (!mergedMap.has(baseKey)) {
+      const clone = JSON.parse(JSON.stringify(book));
+      clone.name = displayName;
+      mergedMap.set(baseKey, clone);
+      order.push(baseKey);
+      continue;
+    }
+
+    const target = mergedMap.get(baseKey);
+
+    for (const key of MERGE_KEYS) {
+      const sourceVal = book[key];
+      const targetVal = target[key];
+
+      if (!sourceVal) continue;
+
+      if (key === 'H2H') {
+        if (targetVal?.home === 'N/A' && sourceVal.home !== 'N/A') {
+          targetVal.home = sourceVal.home;
+        }
+        if (targetVal?.away === 'N/A' && sourceVal.away !== 'N/A') {
+          targetVal.away = sourceVal.away;
+        }
+        continue;
+      }
+
+      const needsLine =
+        sourceVal &&
+        typeof sourceVal === 'object' &&
+        ('line' in sourceVal || 'yes' in sourceVal);
+
+      if (!needsLine) {
+        if (!targetVal && sourceVal) {
+          target[key] = JSON.parse(JSON.stringify(sourceVal));
+        }
+        continue;
+      }
+
+      const shouldReplaceLine =
+        targetVal?.line === 'N/A' && sourceVal.line !== 'N/A';
+
+      if (shouldReplaceLine) {
+        target[key] = { ...sourceVal };
+        continue;
+      }
+
+      if (sourceVal.over && targetVal?.over === 'N/A') {
+        targetVal.over = sourceVal.over;
+      }
+      if (sourceVal.under && targetVal?.under === 'N/A') {
+        targetVal.under = sourceVal.under;
+      }
+      if (sourceVal.yes && targetVal?.yes === 'N/A') {
+        targetVal.yes = sourceVal.yes;
+      }
+      if (sourceVal.no && targetVal?.no === 'N/A') {
+        targetVal.no = sourceVal.no;
+      }
+    }
+  }
+
+  return order.map((key) => mergedMap.get(key));
+};
+
 type DerivedOdds = { openingLine?: number | null; currentLine?: number | null };
 
 type MovementRow = { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' };
@@ -2169,6 +2323,82 @@ const OpponentSelector = memo(function OpponentSelector({
   prev.selectedTimeframe === next.selectedTimeframe
 );
 
+type AltLineItem = {
+  bookmaker: string;
+  line: number;
+  over: string;
+  under: string;
+  isPickem?: boolean;
+  variantLabel?: string | null;
+};
+
+const partitionAltLineItems = (lines: AltLineItem[]) => {
+  // Calculate consensus line (most common line value)
+  const lineCounts = new Map<number, number>();
+  for (const line of lines) {
+    lineCounts.set(line.line, (lineCounts.get(line.line) || 0) + 1);
+  }
+  
+  let consensusLine: number | null = null;
+  let maxCount = 0;
+  for (const [line, count] of lineCounts.entries()) {
+    if (count > maxCount) {
+      maxCount = count;
+      consensusLine = line;
+    }
+  }
+  
+  // Group lines by bookmaker
+  const linesByBookmaker = new Map<string, AltLineItem[]>();
+  for (const line of lines) {
+    const key = (line.bookmaker || '').toLowerCase();
+    if (!linesByBookmaker.has(key)) {
+      linesByBookmaker.set(key, []);
+    }
+    linesByBookmaker.get(key)!.push(line);
+  }
+  
+  // Identify primary line for each bookmaker (closest to consensus)
+  const primaryLines = new Map<string, AltLineItem>();
+  const alternate: AltLineItem[] = [];
+  
+  for (const [bookmaker, bookmakerLines] of linesByBookmaker.entries()) {
+    if (bookmakerLines.length === 0) continue;
+    
+    let primaryLine = bookmakerLines[0]; // Default to first
+    
+    // If we have consensus and multiple lines, find closest to consensus
+    if (consensusLine !== null && bookmakerLines.length > 1) {
+      let closestLine = bookmakerLines[0];
+      let minDiff = Math.abs(bookmakerLines[0].line - consensusLine);
+      
+      for (const line of bookmakerLines) {
+        const diff = Math.abs(line.line - consensusLine);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestLine = line;
+        }
+      }
+      primaryLine = closestLine;
+    }
+    
+    primaryLines.set(bookmaker, primaryLine);
+    
+    // All other lines for this bookmaker are alternates
+    for (const line of bookmakerLines) {
+      if (line.line !== primaryLine.line || 
+          line.over !== primaryLine.over || 
+          line.under !== primaryLine.under) {
+        alternate.push(line);
+      }
+    }
+  }
+  
+  const primary = Array.from(primaryLines.values());
+  
+  return { primary, alternate };
+};
+
 // Chart controls (updates freely with betting line changes)
 const ChartControls = function ChartControls({
   isDark,
@@ -2371,17 +2601,45 @@ const ChartControls = function ChartControls({
   }, [bettingLine]);
   
   // Helper function to get bookmaker info
+  const normalizeBookNameForLookup = (name: string) => {
+    if (!name) return '';
+    return name.replace(/\s+Pick'?em.*$/i, '').trim();
+  };
+
+  const isPickemBookmakerName = (name: string | null | undefined): boolean => {
+    if (!name) return false;
+    return /pick'?em/i.test(name);
+  };
+
+  const getPickemVariantFromName = (name: string | null | undefined): string | null => {
+    if (!name) return null;
+    const match = name.match(/\(([^)]+)\)\s*$/);
+    return match ? match[1] : null;
+  };
+
   const getBookmakerInfo = (name: string) => {
     const bookmakerMap: Record<string, { name: string; logo: string; logoUrl?: string }> = {
       'DraftKings': { name: 'DraftKings', logo: 'DK', logoUrl: `https://logo.clearbit.com/draftkings.com` },
       'FanDuel': { name: 'FanDuel', logo: 'FD', logoUrl: `https://logo.clearbit.com/fanduel.com` },
       'BetMGM': { name: 'BetMGM', logo: 'MGM', logoUrl: `https://logo.clearbit.com/betmgm.com` },
       'Caesars': { name: 'Caesars', logo: 'CZR', logoUrl: `https://logo.clearbit.com/caesars.com` },
-      'BetRivers': { name: 'BetRivers', logo: 'BR', logoUrl: `https://logo.clearbit.com/riverscasino.com` },
+      'BetRivers': { name: 'BetRivers', logo: 'BR', logoUrl: `https://logo.clearbit.com/betrivers.com` },
       'Bovada': { name: 'Bovada', logo: 'BV', logoUrl: `https://logo.clearbit.com/bovada.lv` },
       'BetOnline.ag': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `https://logo.clearbit.com/betonline.ag` },
+      'BetOnline': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `https://logo.clearbit.com/betonline.ag` },
+      'BetUS': { name: 'BetUS', logo: 'BU', logoUrl: `https://logo.clearbit.com/betus.com` },
+      'LowVig.ag': { name: 'LowVig.ag', logo: 'LV', logoUrl: `https://logo.clearbit.com/lowvig.ag` },
+      'MyBookie.ag': { name: 'MyBookie.ag', logo: 'MB', logoUrl: `https://logo.clearbit.com/mybookie.ag` },
+      'Fanatics': { name: 'Fanatics', logo: 'FN', logoUrl: `https://logo.clearbit.com/fanatics.com` },
+      'DraftKings Pick6': { name: 'DraftKings Pick6', logo: 'P6', logoUrl: `https://logo.clearbit.com/draftkings.com` },
+      'PrizePicks': { name: 'PrizePicks', logo: 'PP', logoUrl: `/images/prizepicks.avif` },
+      'Underdog Fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `https://logo.clearbit.com/underdogfantasy.com` },
     };
-    return bookmakerMap[name] || { name, logo: name.substring(0, 2).toUpperCase() };
+    const direct = bookmakerMap[name];
+    if (direct) return direct;
+    const normalized = normalizeBookNameForLookup(name);
+    if (normalized && bookmakerMap[normalized]) return bookmakerMap[normalized];
+    return { name, logo: name.substring(0, 2).toUpperCase() };
   };
 
   // Display helper: always show + for positive lines
@@ -2430,22 +2688,71 @@ const ChartControls = function ChartControls({
     return bestBook ? bestBook.name : null;
   }, [realOddsData, selectedStat]);
   
-  // Calculate best line for stat (lowest over line)
+  // Calculate best line for stat (lowest over line) - exclude alternate lines
   const bestLineForStat = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0) return null;
 
     const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return null;
     
-    let bestLine = Infinity;
-    
+    // Collect all lines per bookmaker
+    const allLinesByBookmaker = new Map<string, number[]>();
     for (const book of realOddsData) {
+      const meta = (book as any)?.meta;
+      const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+      const statKey: string = meta?.stat || bookRowKey;
+      
+      if (statKey !== bookRowKey) continue;
+      
       const statData = (book as any)[bookRowKey];
       if (!statData || statData.line === 'N/A') continue;
       const lineValue = parseFloat(statData.line);
       if (isNaN(lineValue)) continue;
-      if (lineValue < bestLine) {
-        bestLine = lineValue;
+      
+      if (!allLinesByBookmaker.has(baseName)) {
+        allLinesByBookmaker.set(baseName, []);
+      }
+      allLinesByBookmaker.get(baseName)!.push(lineValue);
+    }
+    
+    // Calculate consensus line (most common line value across ALL bookmakers)
+    const lineCounts = new Map<number, number>();
+    for (const [bookmaker, lines] of allLinesByBookmaker.entries()) {
+      for (const line of lines) {
+        lineCounts.set(line, (lineCounts.get(line) || 0) + 1);
+      }
+    }
+    let consensusLine: number | null = null;
+    let maxCount = 0;
+    for (const [line, count] of lineCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        consensusLine = line;
+      }
+    }
+    
+    // Find primary lines (closest to consensus) and get the lowest
+    let bestLine = Infinity;
+    for (const [baseName, lines] of allLinesByBookmaker.entries()) {
+      if (lines.length === 0) continue;
+      
+      let primaryLine = lines[0];
+      if (consensusLine !== null && lines.length > 1) {
+        let closestLine = lines[0];
+        let minDiff = Math.abs(lines[0] - consensusLine);
+        for (const line of lines) {
+          const diff = Math.abs(line - consensusLine);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestLine = line;
+          }
+        }
+        // Always use closest to consensus (no threshold)
+        primaryLine = closestLine;
+      }
+      
+      if (primaryLine < bestLine) {
+        bestLine = primaryLine;
       }
     }
     
@@ -2518,14 +2825,16 @@ const ChartControls = function ChartControls({
   }, [realOddsData]);
   
   // Auto-update selected bookmaker when line changes and matches a bookmaker (uses displayLine for immediate updates)
+  // This includes alternate lines (Goblin/Demon variants) so users see the variant when they set a matching line
   useEffect(() => {
     if (!realOddsData || realOddsData.length === 0) return;
     
     const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return;
     
-    // Find if any bookmaker has a line matching the current display line (updates immediately)
-    const matchingBook = realOddsData.find((book: any) => {
+    // Find ALL bookmaker entries that have a line matching the current display line
+    // This includes alternate lines (Goblin/Demon variants) - prioritize exact matches including variants
+    const matchingBooks = realOddsData.filter((book: any) => {
       const statData = (book as any)[bookRowKey];
       if (!statData || statData.line === 'N/A') return false;
       const lineValue = parseFloat(statData.line);
@@ -2533,9 +2842,19 @@ const ChartControls = function ChartControls({
       return Math.abs(lineValue - displayLine) < 0.01;
     });
     
-    if (matchingBook) {
+    if (matchingBooks.length > 0) {
+      // Prioritize entries with variant labels (Goblin/Demon) if they match the line
+      // This way when a user sets a line that matches a Goblin/Demon variant, it shows that variant
+      const variantMatch = matchingBooks.find((book: any) => {
+        const meta = (book as any)?.meta;
+        return meta?.variantLabel && (meta.variantLabel === 'Goblin' || meta.variantLabel === 'Demon');
+      });
+      
+      const bookToSelect = variantMatch || matchingBooks[0];
+      const bookName = (bookToSelect as any)?.meta?.baseName || bookToSelect?.name;
+      
       // Only update if it's different from current selection
-      setSelectedBookmaker(prev => prev !== matchingBook.name ? matchingBook.name : prev);
+      setSelectedBookmaker(prev => prev !== bookName ? bookName : prev);
     } else {
       // Clear selection if no bookmaker matches
       setSelectedBookmaker(prev => prev !== null ? null : prev);
@@ -2647,45 +2966,350 @@ const ChartControls = function ChartControls({
               const bookRowKey = getBookRowKey(selectedStat);
               
               // Get all available lines for dropdown
-              const altLines = realOddsData && realOddsData.length > 0 && bookRowKey
-                ? realOddsData
+              const altLines: AltLineItem[] = realOddsData && realOddsData.length > 0 && bookRowKey
+                ? (realOddsData
                     .map((book: any) => {
                       const statData = (book as any)[bookRowKey];
                       if (!statData || statData.line === 'N/A') return null;
-                      
                       const lineValue = parseFloat(statData.line);
                       if (isNaN(lineValue)) return null;
-                      
+                      const meta = (book as any).meta || {};
                       return {
-                        bookmaker: book.name,
+                        bookmaker: meta.baseName || book.name,
                         line: lineValue,
                         over: statData.over,
                         under: statData.under,
-                      };
+                        isPickem: meta.isPickem ?? false,
+                        variantLabel: meta.variantLabel ?? null,
+                      } as AltLineItem;
                     })
-                    .filter((item: any): item is { bookmaker: string; line: number; over: string; under: string } => item !== null)
-                    .sort((a: { line: number }, b: { line: number }) => a.line - b.line)
+                    .filter((item: AltLineItem | null): item is AltLineItem => item !== null))
                 : [];
               
-              // Find the bookmaker to display: check all available lines for a match
-              const displayBookmaker = (() => {
-                // First, check if any bookmaker has a line matching the current display line (updates immediately)
-                const matchingLine = altLines.find((l: { bookmaker: string; line: number }) => 
-                  Math.abs(l.line - displayLine) < 0.01
+              altLines.sort((a: AltLineItem, b: AltLineItem) => {
+                const isPickemA = a.isPickem ? 0 : 1;
+                const isPickemB = b.isPickem ? 0 : 1;
+                if (isPickemA !== isPickemB) return isPickemA - isPickemB;
+                return a.line - b.line;
+              });
+              const { primary: primaryAltLines, alternate: alternateAltLines } = partitionAltLineItems(altLines);
+              const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
+                const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
+                const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
+                const isPickemAlt = altLine.isPickem ?? false;
+                const pickemVariant = altLine.variantLabel ?? null;
+
+                return (
+                  <button
+                    key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
+                    onClick={() => {
+                      onChangeBettingLine(altLine.line);
+                      setSelectedBookmaker(altLine.bookmaker);
+                      setIsAltLinesOpen(false);
+                      const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+                      if (input) {
+                        input.value = String(altLine.line);
+                        transientLineRef.current = altLine.line;
+                        updateBettingLinePosition(yAxisConfig, altLine.line);
+                        recolorBarsFast(altLine.line);
+                        updateOverRatePillFast(altLine.line);
+                      }
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                      isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {/* Bookmaker Logo */}
+                      {bookmakerInfo.logoUrl ? (
+                        <img 
+                          src={bookmakerInfo.logoUrl} 
+                          alt={bookmakerInfo.name}
+                          className="w-5 h-5 rounded object-contain flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'block';
+                          }}
+                        />
+                      ) : null}
+                      <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                        {bookmakerInfo.logo}
+                      </span>
+                      
+                      {/* Line and Bookmaker Name */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {fmtLine(altLine.line)}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {bookmakerInfo.name}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Odds */}
+                    {!isPickemAlt ? (
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {altLine.over && altLine.over !== 'N/A' && altLine.over !== 'Pick\'em' && (
+                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                            O {fmtOdds(altLine.over)}
+                          </span>
+                        )}
+                        {altLine.under && altLine.under !== 'N/A' && altLine.under !== 'Pick\'em' && (
+                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                            U {fmtOdds(altLine.under)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {pickemVariant === 'Goblin' ? (
+                          <img 
+                            src="/images/goblin.png" 
+                            alt="Goblin" 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              // Fallback to emoji if image fails to load
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-lg leading-none';
+                              fallback.textContent = '👹';
+                              if (img.parentElement && img.nextSibling) {
+                                img.parentElement.insertBefore(fallback, img.nextSibling);
+                              } else if (img.parentElement) {
+                                img.parentElement.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : pickemVariant === 'Demon' ? (
+                          <img 
+                            src="/images/demon.png" 
+                            alt="Demon" 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              // Fallback to emoji if image fails to load
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-lg leading-none';
+                              fallback.textContent = '😈';
+                              if (img.parentElement && img.nextSibling) {
+                                img.parentElement.insertBefore(fallback, img.nextSibling);
+                              } else if (img.parentElement) {
+                                img.parentElement.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-semibold">
+                            Pick&apos;em
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Selected indicator */}
+                    {isSelected && (
+                      <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
                 );
+              };
+              
+              // Find the bookmaker to display: find the bookmaker whose PRIMARY line matches displayLine
+              const displayBookmaker = (() => {
+                if (!realOddsData || realOddsData.length === 0) return null;
                 
-                if (matchingLine) {
-                  return {
-                    bookmaker: matchingLine.bookmaker,
-                    line: matchingLine.line,
-                    over: matchingLine.over,
-                    under: matchingLine.under,
-                  };
+                console.log('[DEBUG] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
+                
+                // Track all lines per bookmaker to identify the true primary line
+                const allLinesByBookmaker = new Map<string, Array<{line: number; over: string; under: string; isPickem: boolean; variantLabel: string | null}>>();
+                
+                // First pass: collect ALL lines for each bookmaker
+                for (const book of realOddsData) {
+                  const meta = (book as any)?.meta;
+                  const baseName = (meta?.baseName || book?.name || '');
+                  const baseNameLower = baseName.toLowerCase();
+                  const statKey: string = meta?.stat || bookRowKey;
+                  
+                  // Only consider entries matching the selected stat
+                  if (statKey !== bookRowKey) continue;
+                  
+                  const statData = (book as any)[bookRowKey];
+                  if (!statData || statData.line === 'N/A') continue;
+                  const lineValue = parseFloat(statData.line);
+                  if (isNaN(lineValue)) continue;
+                  
+                  if (!allLinesByBookmaker.has(baseNameLower)) {
+                    allLinesByBookmaker.set(baseNameLower, []);
+                  }
+                  
+                  allLinesByBookmaker.get(baseNameLower)!.push({
+                    line: lineValue,
+                    over: statData.over,
+                    under: statData.under,
+                    isPickem: meta?.isPickem ?? false,
+                    variantLabel: meta?.variantLabel ?? null,
+                  });
                 }
                 
+                // Calculate consensus line by finding the most common line value across ALL bookmakers
+                // Count all line values, not just first lines
+                const lineCounts = new Map<number, number>();
+                for (const [bookmaker, lines] of allLinesByBookmaker.entries()) {
+                  for (const line of lines) {
+                    lineCounts.set(line.line, (lineCounts.get(line.line) || 0) + 1);
+                  }
+                }
+                
+                // Find the most common line (this is our consensus)
+                let consensusLine: number | null = null;
+                let maxCount = 0;
+                for (const [line, count] of lineCounts.entries()) {
+                  if (count > maxCount) {
+                    maxCount = count;
+                    consensusLine = line;
+                  }
+                }
+                
+                console.log('[DEBUG] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
+                
+                // Second pass: identify primary line for each bookmaker
+                // Primary line is ALWAYS the one closest to consensus (if consensus exists)
+                const primaryLinesByBookmaker = new Map<string, any>();
+                for (const [baseNameLower, lines] of allLinesByBookmaker.entries()) {
+                  if (lines.length === 0) continue;
+                  
+                  let primaryLine = lines[0]; // Default to first
+                  
+                  // If we have a consensus line, ALWAYS use the line closest to it
+                  if (consensusLine !== null && lines.length > 1) {
+                    let closestLine = lines[0];
+                    let minDiff = Math.abs(lines[0].line - consensusLine);
+                    
+                    for (const line of lines) {
+                      const diff = Math.abs(line.line - consensusLine);
+                      if (diff < minDiff) {
+                        minDiff = diff;
+                        closestLine = line;
+                      }
+                    }
+                    
+                    // Always use the closest line to consensus (no threshold)
+                    primaryLine = closestLine;
+                    console.log('[DEBUG] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
+                  }
+                  
+                  // Get the original bookmaker name (preserve case)
+                  const firstBook = realOddsData.find((book: any) => {
+                    const meta = (book as any)?.meta;
+                    const name = (meta?.baseName || book?.name || '').toLowerCase();
+                    return name === baseNameLower;
+                  });
+                  const displayName = firstBook ? ((firstBook as any)?.meta?.baseName || firstBook?.name || baseNameLower) : baseNameLower;
+                  
+                  primaryLinesByBookmaker.set(baseNameLower, {
+                    bookmaker: displayName,
+                    line: primaryLine.line,
+                    over: primaryLine.over,
+                    under: primaryLine.under,
+                    isPickem: primaryLine.isPickem,
+                    variantLabel: primaryLine.variantLabel,
+                  });
+                  
+                  console.log('[DEBUG] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
+                }
+                
+                console.log('[DEBUG] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
+                
+                // Debug: Show all Bovada lines (including alternates)
+                const bovadaLines = bookRowKey ? realOddsData
+                  .filter((book: any) => {
+                    const meta = (book as any)?.meta;
+                    const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+                    return baseName.includes('bovada');
+                  })
+                  .map((book: any) => {
+                    const meta = (book as any)?.meta;
+                    const statData = (book as any)[bookRowKey];
+                    return {
+                      baseName: meta?.baseName || book?.name,
+                      stat: meta?.stat,
+                      line: statData ? statData.line : 'N/A',
+                      over: statData ? statData.over : 'N/A',
+                      under: statData ? statData.under : 'N/A',
+                    };
+                  }) : [];
+                console.log('[DEBUG] All Bovada lines for', bookRowKey, ':', bovadaLines);
+                
+                console.log('[DEBUG] selectedBookmaker:', selectedBookmaker);
+                
+                // Second pass: find the bookmaker entry that matches displayLine
+                // If selectedBookmaker is set, check ALL lines (including alternates/Goblin/Demon) for that bookmaker
+                if (selectedBookmaker) {
+                  const selectedLower = selectedBookmaker.toLowerCase();
+                  
+                  // First, try to find an exact match in realOddsData (includes alternate lines with variants)
+                  const exactMatch = bookRowKey ? realOddsData.find((book: any) => {
+                    const meta = (book as any)?.meta;
+                    const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+                    if (baseName !== selectedLower) return false;
+                    
+                    const statData = (book as any)[bookRowKey];
+                    if (!statData || statData.line === 'N/A') return false;
+                    const lineValue = parseFloat(statData.line);
+                    if (isNaN(lineValue)) return false;
+                    return Math.abs(lineValue - displayLine) < 0.01;
+                  }) : null;
+                  
+                  if (exactMatch && bookRowKey) {
+                    const meta = (exactMatch as any)?.meta;
+                    const statData = (exactMatch as any)[bookRowKey];
+                    const result = {
+                      bookmaker: meta?.baseName || exactMatch?.name || selectedBookmaker,
+                      line: parseFloat(statData.line),
+                      over: statData.over,
+                      under: statData.under,
+                      isPickem: meta?.isPickem ?? false,
+                      variantLabel: meta?.variantLabel ?? null,
+                    };
+                    console.log('[DEBUG] Found exact match (including variant):', result);
+                    return result;
+                  }
+                  
+                  // Fallback to primary line if no exact match found
+                  const selectedPrimary = primaryLinesByBookmaker.get(selectedLower);
+                  console.log('[DEBUG] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
+                  if (selectedPrimary && Math.abs(selectedPrimary.line - displayLine) < 0.01) {
+                    console.log('[DEBUG] Using selectedBookmaker primary line:', selectedPrimary);
+                    return selectedPrimary;
+                  } else if (selectedPrimary) {
+                    console.log('[DEBUG] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
+                  }
+                }
+                
+                // Otherwise, find the first bookmaker whose primary line matches
+                for (const [bookmakerLower, primaryData] of primaryLinesByBookmaker.entries()) {
+                  if (Math.abs(primaryData.line - displayLine) < 0.01) {
+                    console.log('[DEBUG] Found matching primary line:', bookmakerLower, primaryData);
+                    return primaryData;
+                  }
+                }
+                
+                console.log('[DEBUG] No matching primary line found for displayLine:', displayLine);
                 return null;
               })();
               
+              console.log('[DEBUG] Final displayBookmaker result:', displayBookmaker);
+              
+              const displayIsPickem = displayBookmaker ? (displayBookmaker.isPickem ?? isPickemBookmakerName(displayBookmaker.bookmaker)) : false;
+              const displayPickemVariant = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
               const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
               const shouldShowBookmaker = displayBookmaker !== null;
               
@@ -2702,7 +3326,7 @@ const ChartControls = function ChartControls({
                             <img 
                               src={bookmakerInfo.logoUrl} 
                               alt={bookmakerInfo.name}
-                              className="w-5 h-5 sm:w-6 sm:h-6 rounded object-contain flex-shrink-0"
+                              className="w-6 h-6 sm:w-7 sm:h-7 rounded object-contain flex-shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                                 const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
@@ -2713,18 +3337,44 @@ const ChartControls = function ChartControls({
                           <span className={`text-base sm:text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
                             {bookmakerInfo.logo}
                           </span>
-                          <div className="flex flex-col items-start gap-0.5 min-w-0">
-                            {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
-                              <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                                O&nbsp;{fmtOdds(displayBookmaker.over)}
-                              </span>
-                            )}
-                            {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
-                              <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                                U&nbsp;{fmtOdds(displayBookmaker.under)}
-                              </span>
-                            )}
-                          </div>
+                          {/* Show Goblin/Demon symbol inline with logo for PrizePicks */}
+                          {bookmakerInfo.name === 'PrizePicks' && displayIsPickem && displayPickemVariant ? (
+                            <img 
+                              src={displayPickemVariant === 'Goblin' ? '/images/goblin.png' : '/images/demon.png'} 
+                              alt={displayPickemVariant} 
+                              className="w-7 h-7 sm:w-8 sm:h-8 object-contain flex-shrink-0 ml-0.5 mt-0.5"
+                              onError={(e) => {
+                                // Fallback to text if image fails
+                                const img = e.target as HTMLImageElement;
+                                img.style.display = 'none';
+                                const fallback = document.createElement('span');
+                                fallback.className = 'text-[11px] sm:text-xs text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap';
+                                fallback.textContent = `Pick'em • ${displayPickemVariant}`;
+                                if (img.parentElement && img.nextSibling) {
+                                  img.parentElement.insertBefore(fallback, img.nextSibling);
+                                } else if (img.parentElement) {
+                                  img.parentElement.appendChild(fallback);
+                                }
+                              }}
+                            />
+                          ) : !displayIsPickem ? (
+                            <div className="flex flex-col items-start gap-0.5 min-w-0">
+                              {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
+                                <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                                  O&nbsp;{fmtOdds(displayBookmaker.over)}
+                                </span>
+                              )}
+                              {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
+                                <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                                  U&nbsp;{fmtOdds(displayBookmaker.under)}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] sm:text-xs text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap">
+                              Pick&apos;em{displayPickemVariant ? ` • ${displayPickemVariant}` : ''}
+                            </span>
+                          )}
                         </>
                       ) : (
                         <>
@@ -2759,84 +3409,19 @@ const ChartControls = function ChartControls({
                               {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
                             </div>
                           ) : (
-                            altLines.map((altLine: { bookmaker: string; line: number; over: string; under: string }, idx: number) => {
-                              const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
-                              const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
-                              
-                              return (
-                                <button
-                                  key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
-                                  onClick={() => {
-                                    onChangeBettingLine(altLine.line);
-                                    setSelectedBookmaker(altLine.bookmaker);
-                                    setIsAltLinesOpen(false);
-                                    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-                                    if (input) {
-                                      input.value = String(altLine.line);
-                                      transientLineRef.current = altLine.line;
-                                      updateBettingLinePosition(yAxisConfig, altLine.line);
-                                      recolorBarsFast(altLine.line);
-                                      updateOverRatePillFast(altLine.line);
-                                    }
-                                  }}
-                                  className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                                    isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {/* Bookmaker Logo */}
-                                    {bookmakerInfo.logoUrl ? (
-                                      <img 
-                                        src={bookmakerInfo.logoUrl} 
-                                        alt={bookmakerInfo.name}
-                                        className="w-5 h-5 rounded object-contain flex-shrink-0"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                          const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                          if (fallback) fallback.style.display = 'block';
-                                        }}
-                                      />
-                                    ) : null}
-                                    <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
-                                      {bookmakerInfo.logo}
-                                    </span>
-                                    
-                                    {/* Line and Bookmaker Name */}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                          {fmtLine(altLine.line)}
-                                        </span>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                          {bookmakerInfo.name}
-                                        </span>
-                                      </div>
-                                    </div>
+                            <>
+                              {primaryAltLines.map(renderAltLineButton)}
+                              {alternateAltLines.length > 0 && (
+                                <>
+                                  <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                    Alternate Lines
                                   </div>
-                                  
-                                  {/* Odds */}
-                                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                                    {altLine.over && altLine.over !== 'N/A' && (
-                                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
-                                        O {fmtOdds(altLine.over)}
-                                      </span>
-                                    )}
-                                    {altLine.under && altLine.under !== 'N/A' && (
-                                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
-                                        U {fmtOdds(altLine.under)}
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Selected indicator */}
-                                  {isSelected && (
-                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
+                                  {alternateAltLines.map((altLine, idx) =>
+                                    renderAltLineButton(altLine, idx + primaryAltLines.length)
                                   )}
-                                </button>
-                              );
-                            })
+                                </>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -2858,44 +3443,352 @@ const ChartControls = function ChartControls({
                   const bookRowKey = getBookRowKey(selectedStat);
                   
                   // Get all available lines for dropdown
-                  const altLines = realOddsData && realOddsData.length > 0 && bookRowKey
-                    ? realOddsData
-                        .map((book: any) => {
-                          const statData = (book as any)[bookRowKey];
-                          if (!statData || statData.line === 'N/A') return null;
-                          
-                          const lineValue = parseFloat(statData.line);
-                          if (isNaN(lineValue)) return null;
-                          
-                          return {
-                            bookmaker: book.name,
-                            line: lineValue,
-                            over: statData.over,
-                            under: statData.under,
-                          };
-                        })
-                        .filter((item: any): item is { bookmaker: string; line: number; over: string; under: string } => item !== null)
-                        .sort((a: { line: number }, b: { line: number }) => a.line - b.line)
-                    : [];
-                  
-                  // Find the bookmaker to display: check all available lines for a match
-                  const displayBookmaker = (() => {
-                    const matchingLine = altLines.find((l: { bookmaker: string; line: number }) => 
-                      Math.abs(l.line - displayLine) < 0.01
-                    );
-                    
-                    if (matchingLine) {
+              const altLines: AltLineItem[] = realOddsData && realOddsData.length > 0 && bookRowKey
+                ? (realOddsData
+                    .map((book: any) => {
+                      const statData = (book as any)[bookRowKey];
+                      if (!statData || statData.line === 'N/A') return null;
+                      
+                      const lineValue = parseFloat(statData.line);
+                      if (isNaN(lineValue)) return null;
+                      const meta = (book as any).meta || {};
+                      
                       return {
-                        bookmaker: matchingLine.bookmaker,
-                        line: matchingLine.line,
-                        over: matchingLine.over,
-                        under: matchingLine.under,
-                      };
+                        bookmaker: meta.baseName || book.name,
+                        line: lineValue,
+                        over: statData.over,
+                        under: statData.under,
+                        isPickem: meta.isPickem ?? false,
+                        variantLabel: meta.variantLabel ?? null,
+                      } as AltLineItem;
+                    })
+                    .filter((item: AltLineItem | null): item is AltLineItem => item !== null))
+                : [];
+              
+              altLines.sort((a: AltLineItem, b: AltLineItem) => {
+                const pickA = a.isPickem ? 0 : 1;
+                const pickB = b.isPickem ? 0 : 1;
+                if (pickA !== pickB) return pickA - pickB;
+                return a.line - b.line;
+              });
+              const { primary: primaryAltLines, alternate: alternateAltLines } = partitionAltLineItems(altLines);
+              const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
+                const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
+                const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
+                const isPickemAlt = altLine.isPickem ?? false;
+                const pickemVariant = altLine.variantLabel ?? null;
+                
+                return (
+                  <button
+                    key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
+                    onClick={() => {
+                      onChangeBettingLine(altLine.line);
+                      setSelectedBookmaker(altLine.bookmaker);
+                      setIsAltLinesOpen(false);
+                      const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+                      if (input) {
+                        input.value = String(altLine.line);
+                        transientLineRef.current = altLine.line;
+                        updateBettingLinePosition(yAxisConfig, altLine.line);
+                        recolorBarsFast(altLine.line);
+                        updateOverRatePillFast(altLine.line);
+                      }
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                      isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {/* Bookmaker Logo */}
+                      {bookmakerInfo.logoUrl ? (
+                        <img 
+                          src={bookmakerInfo.logoUrl} 
+                          alt={bookmakerInfo.name}
+                          className="w-5 h-5 rounded object-contain flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'block';
+                          }}
+                        />
+                      ) : null}
+                      <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                        {bookmakerInfo.logo}
+                      </span>
+                      
+                      {/* Line and Bookmaker Name */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {fmtLine(altLine.line)}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {bookmakerInfo.name}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Odds */}
+                    {!isPickemAlt ? (
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {altLine.over && altLine.over !== 'N/A' && altLine.over !== 'Pick\'em' && (
+                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                            O {fmtOdds(altLine.over)}
+                          </span>
+                        )}
+                        {altLine.under && altLine.under !== 'N/A' && altLine.under !== 'Pick\'em' && (
+                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                            U {fmtOdds(altLine.under)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {pickemVariant === 'Goblin' ? (
+                          <img 
+                            src="/images/goblin.png" 
+                            alt="Goblin" 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              // Fallback to emoji if image fails to load
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-lg leading-none';
+                              fallback.textContent = '👹';
+                              if (img.parentElement && img.nextSibling) {
+                                img.parentElement.insertBefore(fallback, img.nextSibling);
+                              } else if (img.parentElement) {
+                                img.parentElement.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : pickemVariant === 'Demon' ? (
+                          <img 
+                            src="/images/demon.png" 
+                            alt="Demon" 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              // Fallback to emoji if image fails to load
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-lg leading-none';
+                              fallback.textContent = '😈';
+                              if (img.parentElement && img.nextSibling) {
+                                img.parentElement.insertBefore(fallback, img.nextSibling);
+                              } else if (img.parentElement) {
+                                img.parentElement.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-semibold">
+                            Pick&apos;em
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Selected indicator */}
+                    {isSelected && (
+                      <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              };
+                  
+                  // Find the bookmaker to display: find the bookmaker whose PRIMARY line matches displayLine
+                  const displayBookmaker = (() => {
+                    if (!realOddsData || realOddsData.length === 0) return null;
+                    
+                    console.log('[DEBUG MOBILE] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
+                    
+                    // Track all lines per bookmaker to identify the true primary line
+                    const allLinesByBookmaker = new Map<string, Array<{line: number; over: string; under: string; isPickem: boolean; variantLabel: string | null}>>();
+                    
+                    // First pass: collect ALL lines for each bookmaker
+                    for (const book of realOddsData) {
+                      const meta = (book as any)?.meta;
+                      const baseName = (meta?.baseName || book?.name || '');
+                      const baseNameLower = baseName.toLowerCase();
+                      const statKey: string = meta?.stat || bookRowKey;
+                      
+                      // Only consider entries matching the selected stat
+                      if (statKey !== bookRowKey) continue;
+                      
+                      const statData = (book as any)[bookRowKey];
+                      if (!statData || statData.line === 'N/A') continue;
+                      const lineValue = parseFloat(statData.line);
+                      if (isNaN(lineValue)) continue;
+                      
+                      if (!allLinesByBookmaker.has(baseNameLower)) {
+                        allLinesByBookmaker.set(baseNameLower, []);
+                      }
+                      
+                      allLinesByBookmaker.get(baseNameLower)!.push({
+                        line: lineValue,
+                        over: statData.over,
+                        under: statData.under,
+                        isPickem: meta?.isPickem ?? false,
+                        variantLabel: meta?.variantLabel ?? null,
+                      });
                     }
                     
+                    // Calculate consensus line by finding the most common line value across ALL bookmakers
+                    // Count all line values, not just first lines
+                    const lineCounts = new Map<number, number>();
+                    for (const [bookmaker, lines] of allLinesByBookmaker.entries()) {
+                      for (const line of lines) {
+                        lineCounts.set(line.line, (lineCounts.get(line.line) || 0) + 1);
+                      }
+                    }
+                    
+                    // Find the most common line (this is our consensus)
+                    let consensusLine: number | null = null;
+                    let maxCount = 0;
+                    for (const [line, count] of lineCounts.entries()) {
+                      if (count > maxCount) {
+                        maxCount = count;
+                        consensusLine = line;
+                      }
+                    }
+                    
+                    console.log('[DEBUG MOBILE] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
+                    
+                    // Second pass: identify primary line for each bookmaker
+                    // Primary line is ALWAYS the one closest to consensus (if consensus exists)
+                    const primaryLinesByBookmaker = new Map<string, any>();
+                    for (const [baseNameLower, lines] of allLinesByBookmaker.entries()) {
+                      if (lines.length === 0) continue;
+                      
+                      let primaryLine = lines[0]; // Default to first
+                      
+                      // If we have a consensus line, ALWAYS use the line closest to it
+                      if (consensusLine !== null && lines.length > 1) {
+                        let closestLine = lines[0];
+                        let minDiff = Math.abs(lines[0].line - consensusLine);
+                        
+                        for (const line of lines) {
+                          const diff = Math.abs(line.line - consensusLine);
+                          if (diff < minDiff) {
+                            minDiff = diff;
+                            closestLine = line;
+                          }
+                        }
+                        
+                        // Always use the closest line to consensus (no threshold)
+                        primaryLine = closestLine;
+                        console.log('[DEBUG MOBILE] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
+                      }
+                      
+                      // Get the original bookmaker name (preserve case)
+                      const firstBook = realOddsData.find((book: any) => {
+                        const meta = (book as any)?.meta;
+                        const name = (meta?.baseName || book?.name || '').toLowerCase();
+                        return name === baseNameLower;
+                      });
+                      const displayName = firstBook ? ((firstBook as any)?.meta?.baseName || firstBook?.name || baseNameLower) : baseNameLower;
+                      
+                      primaryLinesByBookmaker.set(baseNameLower, {
+                        bookmaker: displayName,
+                        line: primaryLine.line,
+                        over: primaryLine.over,
+                        under: primaryLine.under,
+                        isPickem: primaryLine.isPickem,
+                        variantLabel: primaryLine.variantLabel,
+                      });
+                      
+                      console.log('[DEBUG MOBILE] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
+                    }
+                    
+                    console.log('[DEBUG MOBILE] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
+                    
+                    // Debug: Show all Bovada lines (including alternates)
+                    const bovadaLines = bookRowKey ? realOddsData
+                      .filter((book: any) => {
+                        const meta = (book as any)?.meta;
+                        const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+                        return baseName.includes('bovada');
+                      })
+                      .map((book: any) => {
+                        const meta = (book as any)?.meta;
+                        const statData = (book as any)[bookRowKey];
+                        return {
+                          baseName: meta?.baseName || book?.name,
+                          stat: meta?.stat,
+                          line: statData ? statData.line : 'N/A',
+                          over: statData ? statData.over : 'N/A',
+                          under: statData ? statData.under : 'N/A',
+                        };
+                      }) : [];
+                    console.log('[DEBUG MOBILE] All Bovada lines for', bookRowKey, ':', bovadaLines);
+                    
+                    console.log('[DEBUG MOBILE] selectedBookmaker:', selectedBookmaker);
+                    
+                    // Second pass: find the bookmaker entry that matches displayLine
+                    // If selectedBookmaker is set, check ALL lines (including alternates/Goblin/Demon) for that bookmaker
+                    if (selectedBookmaker) {
+                      const selectedLower = selectedBookmaker.toLowerCase();
+                      
+                      // First, try to find an exact match in realOddsData (includes alternate lines with variants)
+                      const exactMatch = bookRowKey ? realOddsData.find((book: any) => {
+                        const meta = (book as any)?.meta;
+                        const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+                        if (baseName !== selectedLower) return false;
+                        
+                        const statData = (book as any)[bookRowKey];
+                        if (!statData || statData.line === 'N/A') return false;
+                        const lineValue = parseFloat(statData.line);
+                        if (isNaN(lineValue)) return false;
+                        return Math.abs(lineValue - displayLine) < 0.01;
+                      }) : null;
+                      
+                      if (exactMatch && bookRowKey) {
+                        const meta = (exactMatch as any)?.meta;
+                        const statData = (exactMatch as any)[bookRowKey];
+                        const result = {
+                          bookmaker: meta?.baseName || exactMatch?.name || selectedBookmaker,
+                          line: parseFloat(statData.line),
+                          over: statData.over,
+                          under: statData.under,
+                          isPickem: meta?.isPickem ?? false,
+                          variantLabel: meta?.variantLabel ?? null,
+                        };
+                        console.log('[DEBUG MOBILE] Found exact match (including variant):', result);
+                        return result;
+                      }
+                      
+                      // Fallback to primary line if no exact match found
+                      const selectedPrimary = primaryLinesByBookmaker.get(selectedLower);
+                      console.log('[DEBUG MOBILE] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
+                      if (selectedPrimary && Math.abs(selectedPrimary.line - displayLine) < 0.01) {
+                        console.log('[DEBUG MOBILE] Using selectedBookmaker primary line:', selectedPrimary);
+                        return selectedPrimary;
+                      } else if (selectedPrimary) {
+                        console.log('[DEBUG MOBILE] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
+                      }
+                    }
+                    
+                    // Otherwise, find the first bookmaker whose primary line matches
+                    for (const [bookmakerLower, primaryData] of primaryLinesByBookmaker.entries()) {
+                      if (Math.abs(primaryData.line - displayLine) < 0.01) {
+                        console.log('[DEBUG MOBILE] Found matching primary line:', bookmakerLower, primaryData);
+                        return primaryData;
+                      }
+                    }
+                    
+                    console.log('[DEBUG MOBILE] No matching primary line found for displayLine:', displayLine);
                     return null;
                   })();
                   
+                  console.log('[DEBUG MOBILE] Final displayBookmaker result:', displayBookmaker);
+                  
+                  const displayIsPickemMobile = displayBookmaker ? (displayBookmaker.isPickem ?? isPickemBookmakerName(displayBookmaker.bookmaker)) : false;
+                  const displayPickemVariantMobile = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
                   const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
                   const shouldShowBookmaker = displayBookmaker !== null;
                   
@@ -2912,7 +3805,7 @@ const ChartControls = function ChartControls({
                                 <img 
                                   src={bookmakerInfo.logoUrl} 
                                   alt={bookmakerInfo.name}
-                                  className="w-5 h-5 rounded object-contain flex-shrink-0"
+                                  className="w-6 h-6 rounded object-contain flex-shrink-0"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                     const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
@@ -2923,18 +3816,44 @@ const ChartControls = function ChartControls({
                               <span className={`text-base flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
                                 {bookmakerInfo.logo}
                               </span>
-                              <div className="flex flex-col items-start gap-0.5 min-w-0">
-                                {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
-                                  <span className="text-[11px] text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                                    O{fmtOdds(displayBookmaker.over)}
-                                  </span>
-                                )}
-                                {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
-                                  <span className="text-[11px] text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                                    U{fmtOdds(displayBookmaker.under)}
-                                  </span>
-                                )}
-                              </div>
+                              {/* Show Goblin/Demon symbol inline with logo for PrizePicks */}
+                              {bookmakerInfo.name === 'PrizePicks' && displayIsPickemMobile && displayPickemVariantMobile ? (
+                                <img 
+                                  src={displayPickemVariantMobile === 'Goblin' ? '/images/goblin.png' : '/images/demon.png'} 
+                                  alt={displayPickemVariantMobile} 
+                                  className="w-7 h-7 object-contain flex-shrink-0 ml-0.5 mt-0.5"
+                                  onError={(e) => {
+                                    // Fallback to text if image fails
+                                    const img = e.target as HTMLImageElement;
+                                    img.style.display = 'none';
+                                    const fallback = document.createElement('span');
+                                    fallback.className = 'text-[11px] text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap';
+                                    fallback.textContent = `Pick'em • ${displayPickemVariantMobile}`;
+                                    if (img.parentElement && img.nextSibling) {
+                                      img.parentElement.insertBefore(fallback, img.nextSibling);
+                                    } else if (img.parentElement) {
+                                      img.parentElement.appendChild(fallback);
+                                    }
+                                  }}
+                                />
+                              ) : !displayIsPickemMobile ? (
+                                <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                  {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
+                                    <span className="text-[11px] text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                                      O{fmtOdds(displayBookmaker.over)}
+                                    </span>
+                                  )}
+                                  {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
+                                    <span className="text-[11px] text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                                      U{fmtOdds(displayBookmaker.under)}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap">
+                                  Pick&apos;em{displayPickemVariantMobile ? ` • ${displayPickemVariantMobile}` : ''}
+                                </span>
+                              )}
                             </>
                           ) : (
                             <>
@@ -2967,84 +3886,19 @@ const ChartControls = function ChartControls({
                                   {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
                                 </div>
                               ) : (
-                                altLines.map((altLine: { bookmaker: string; line: number; over: string; under: string }, idx: number) => {
-                                  const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
-                                  const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
-                                  
-                                  return (
-                                    <button
-                                      key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
-                                      onClick={() => {
-                                        onChangeBettingLine(altLine.line);
-                                        setSelectedBookmaker(altLine.bookmaker);
-                                        setIsAltLinesOpen(false);
-                                        const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-                                        if (input) {
-                                          input.value = String(altLine.line);
-                                          transientLineRef.current = altLine.line;
-                                          updateBettingLinePosition(yAxisConfig, altLine.line);
-                                          recolorBarsFast(altLine.line);
-                                          updateOverRatePillFast(altLine.line);
-                                        }
-                                      }}
-                                      className={`w-full px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                                        isSelected ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600' : ''
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        {/* Bookmaker Logo */}
-                                        {bookmakerInfo.logoUrl ? (
-                                          <img 
-                                            src={bookmakerInfo.logoUrl} 
-                                            alt={bookmakerInfo.name}
-                                            className="w-5 h-5 rounded object-contain flex-shrink-0"
-                                            onError={(e) => {
-                                              (e.target as HTMLImageElement).style.display = 'none';
-                                              const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                              if (fallback) fallback.style.display = 'block';
-                                            }}
-                                          />
-                                        ) : null}
-                                        <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
-                                          {bookmakerInfo.logo}
-                                        </span>
-                                        
-                                        {/* Line and Bookmaker Name */}
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                              {fmtLine(altLine.line)}
-                                            </span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                              {bookmakerInfo.name}
-                                            </span>
-                                          </div>
-                                        </div>
+                                <>
+                                  {primaryAltLines.map(renderAltLineButton)}
+                                  {alternateAltLines.length > 0 && (
+                                    <>
+                                      <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                        Alternate Lines
                                       </div>
-                                      
-                                      {/* Odds */}
-                                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                                        {altLine.over && altLine.over !== 'N/A' && (
-                                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
-                                            O {fmtOdds(altLine.over)}
-                                          </span>
-                                        )}
-                                        {altLine.under && altLine.under !== 'N/A' && (
-                                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
-                                            U {fmtOdds(altLine.under)}
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      {/* Selected indicator */}
-                                      {isSelected && (
-                                        <svg className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
+                                      {alternateAltLines.map((altLine, idx) =>
+                                        renderAltLineButton(altLine, idx + primaryAltLines.length)
                                       )}
-                                    </button>
-                                  );
-                                })
+                                    </>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -4267,6 +5121,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
     if (!opponentTeam) return;
 
     let abort = false;
+    const LOCAL_CACHE_KEY = 'opponentAnalysisCacheV1';
+    const LOCAL_CACHE_TTL = 1000 * 60 * 60 * 6; // 6 hours
 
     const fetchData = async () => {
       setLoading(true);
@@ -4281,6 +5137,38 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
       const rankCacheKey = `${targetPos}:82`;
       const cachedTeam = dvpTeamCache.get(teamCacheKey);
       const cachedRank = dvpRankCache.get(rankCacheKey);
+      const localKey = `${targetOpp}:${rankCacheKey}`;
+
+      const readLocalCache = (): { teamData: { metrics: any; sample: number }; rankData: { metrics: any } } | null => {
+        if (typeof window === 'undefined') return null;
+        try {
+          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          const entry = parsed?.[localKey];
+          if (!entry) return null;
+          if (Date.now() - entry.timestamp > LOCAL_CACHE_TTL) return null;
+          return { teamData: entry.teamData, rankData: entry.rankData };
+        } catch {
+          return null;
+        }
+      };
+
+      const writeLocalCache = (teamData: { metrics: any; sample: number }, rankData: { metrics: any }) => {
+        if (typeof window === 'undefined') return;
+        try {
+          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          parsed[localKey] = {
+            timestamp: Date.now(),
+            teamData,
+            rankData,
+          };
+          window.localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(parsed));
+        } catch {
+          // ignore storage errors
+        }
+      };
 
       const applyData = (teamData: { metrics: any; sample: number } | undefined | null, rankData: { metrics: any } | undefined | null) => {
         if (!teamData || !rankData || abort) return;
@@ -4320,8 +5208,16 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
       };
 
       // If everything is cached, use it immediately
+      const localCache = readLocalCache();
+      if (localCache) {
+        applyData(localCache.teamData, localCache.rankData);
+        setLoading(false);
+        return;
+      }
+
       if (cachedTeam && cachedRank) {
         applyData(cachedTeam, cachedRank);
+        if (cachedTeam && cachedRank) writeLocalCache(cachedTeam, cachedRank);
         setLoading(false);
         return;
       }
@@ -4365,6 +5261,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
         }
 
         applyData(teamData, rankData);
+        if (teamData && rankData) writeLocalCache(teamData, rankData);
       } catch (error) {
         console.error('Failed to fetch opponent analysis data:', error);
       } finally {
@@ -4379,14 +5276,27 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
     };
   }, [opponentTeam]);
   
-  const getRankColor = (rank: number): string => {
-    if (rank === 0 || !rank) return mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
-    if (rank >= 26) return 'bg-green-800 text-green-50 dark:bg-green-900 dark:text-green-100';
-    if (rank >= 21) return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
-    if (rank >= 16) return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
-    if (rank >= 11) return 'bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-200';
-    if (rank >= 6) return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+  const normalizeRank = (rank: number): number => {
+    if (!rank || rank <= 0) return 0;
+    // Incoming ranks are 1 = best defense (allows least). We want 30 = best for our player (allows most).
+    // Convert to a "concedes more" rank where 30 = worst defense.
+    return 31 - rank;
+  };
+
+  const getRankColor = (rawRank: number): string => {
+    const rank = normalizeRank(rawRank);
+    if (rank === 0) return mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+    if (rank >= 25) return 'bg-green-800 text-green-50 dark:bg-green-900 dark:text-green-100';
+    if (rank >= 20) return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+    if (rank >= 15) return 'bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-200';
+    if (rank >= 10) return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
     return 'bg-red-800 text-red-50 dark:bg-red-900 dark:text-red-100';
+  };
+
+  const formatRankLabel = (rawRank: number): string => {
+    const rank = normalizeRank(rawRank);
+    if (!rank) return '—';
+    return `#${rank}`;
   };
 
   return (
@@ -4422,7 +5332,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.pts ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.pts || 0)}`}>
-                          {teamRanks.pts > 0 ? `#${teamRanks.pts}` : '—'}
+                          {formatRankLabel(teamRanks.pts || 0)}
                         </span>
                       </div>
                     </div>
@@ -4433,7 +5343,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.reb ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.reb || 0)}`}>
-                          {teamRanks.reb > 0 ? `#${teamRanks.reb}` : '—'}
+                          {formatRankLabel(teamRanks.reb || 0)}
                         </span>
                       </div>
                     </div>
@@ -4444,7 +5354,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.ast ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.ast || 0)}`}>
-                          {teamRanks.ast > 0 ? `#${teamRanks.ast}` : '—'}
+                          {formatRankLabel(teamRanks.ast || 0)}
                         </span>
                       </div>
                     </div>
@@ -4455,7 +5365,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.fg_pct ?? 0).toFixed(1)}%
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.fg_pct || 0)}`}>
-                          {teamRanks.fg_pct > 0 ? `#${teamRanks.fg_pct}` : '—'}
+                          {formatRankLabel(teamRanks.fg_pct || 0)}
                         </span>
                       </div>
                     </div>
@@ -4466,7 +5376,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.fg3_pct ?? 0).toFixed(1)}%
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.fg3_pct || 0)}`}>
-                          {teamRanks.fg3_pct > 0 ? `#${teamRanks.fg3_pct}` : '—'}
+                          {formatRankLabel(teamRanks.fg3_pct || 0)}
                         </span>
                       </div>
                     </div>
@@ -4477,7 +5387,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.stl ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.stl || 0)}`}>
-                          {teamRanks.stl > 0 ? `#${teamRanks.stl}` : '—'}
+                          {formatRankLabel(teamRanks.stl || 0)}
                         </span>
                       </div>
                     </div>
@@ -4488,7 +5398,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                           {(teamStats?.blk ?? 0).toFixed(1)}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${getRankColor(teamRanks.blk || 0)}`}>
-                          {teamRanks.blk > 0 ? `#${teamRanks.blk}` : '—'}
+                          {formatRankLabel(teamRanks.blk || 0)}
                         </span>
                       </div>
                     </div>
@@ -4539,13 +5449,20 @@ const BestOddsTable = memo(function BestOddsTable({
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
-  
-  const books = realOddsData.length > 0 ? realOddsData : [
-    { name: 'DraftKings', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'FanDuel', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'BetMGM', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'Caesars', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } }
-  ];
+  const hasRealOdds = realOddsData.length > 0;
+  const books = useMemo(
+    () => {
+      const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
+      return merged.filter((book: any) => {
+        const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
+        return !name.includes('underdog') && 
+               !name.includes('bovada') && 
+               !name.includes('draftkings') && 
+               !name.includes('prizepicks');
+      });
+    },
+    [hasRealOdds, realOddsData]
+  );
 
   const americanToNumber = (s: string) => {
     if (s === 'N/A') return 0;
@@ -4566,6 +5483,25 @@ const BestOddsTable = memo(function BestOddsTable({
     }
     return 0;
   };
+  
+  // Helper to get PrizePicks variant label or formatted odds
+  const getOddsDisplay = (row: any, statKey: string, oddsValue: string) => {
+    const meta = (row as any)?.meta;
+    const baseName = (meta?.baseName || row?.name || '').toLowerCase();
+    const isPrizePicks = baseName.includes('prizepicks');
+    const isPickem = meta?.isPickem ?? false;
+    const variantLabel = meta?.variantLabel;
+    const stat = meta?.stat;
+    
+    // If this is PrizePicks pick'em for the matching stat, show variant label
+    if (isPrizePicks && isPickem && stat === statKey && variantLabel) {
+      return variantLabel; // "Goblin" or "Demon"
+    }
+    
+    // Otherwise show formatted odds
+    return fmtOdds(oddsValue);
+  };
+  
   const displayHalfLine = (s: string) => {
     if (s === 'N/A') return 'N/A';
     const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
@@ -4707,8 +5643,8 @@ const BestOddsTable = memo(function BestOddsTable({
             </tr>
           </thead>
           <tbody>
-          {books.map((row, i) => (
-            <tr key={row.name} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
+          {books.map((row: any, i: number) => (
+            <tr key={`${row.name}-${i}`} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
               <td className="py-2 pr-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.name}</td>
               
               {/* Team mode: show H2H, Spread, Total */}
@@ -4762,24 +5698,24 @@ const BestOddsTable = memo(function BestOddsTable({
               {propsMode === 'player' && (
                 <>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({getOddsDisplay(row, 'PTS', row.PTS.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({getOddsDisplay(row, 'PTS', row.PTS.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({getOddsDisplay(row, 'REB', row.REB.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({getOddsDisplay(row, 'REB', row.REB.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({getOddsDisplay(row, 'AST', row.AST.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({getOddsDisplay(row, 'AST', row.AST.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.over || 'N/A')})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.under || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({getOddsDisplay(row, 'THREES', row.THREES?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({getOddsDisplay(row, 'THREES', row.THREES?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.over || 'N/A')})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.under || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({getOddsDisplay(row, 'PRA', row.PRA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({getOddsDisplay(row, 'PRA', row.PRA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
 <div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.over || 'N/A')})</div>
@@ -4845,13 +5781,20 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
-  
-  const books = realOddsData.length > 0 ? realOddsData : [
-    { name: 'DraftKings', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'FanDuel', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'BetMGM', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } },
-    { name: 'Caesars', H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' }, PTS: { line: 'N/A', over: 'N/A', under: 'N/A' }, REB: { line: 'N/A', over: 'N/A', under: 'N/A' }, AST: { line: 'N/A', over: 'N/A', under: 'N/A' } }
-  ];
+  const hasRealOdds = realOddsData.length > 0;
+  const books = useMemo(
+    () => {
+      const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
+      return merged.filter((book: any) => {
+        const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
+        return !name.includes('underdog') && 
+               !name.includes('bovada') && 
+               !name.includes('draftkings') && 
+               !name.includes('prizepicks');
+      });
+    },
+    [hasRealOdds, realOddsData]
+  );
 
   const americanToNumber = (s: string) => {
     if (s === 'N/A') return 0;
@@ -4872,6 +5815,25 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
     }
     return 0;
   };
+  
+  // Helper to get PrizePicks variant label or formatted odds
+  const getOddsDisplay = (row: any, statKey: string, oddsValue: string) => {
+    const meta = (row as any)?.meta;
+    const baseName = (meta?.baseName || row?.name || '').toLowerCase();
+    const isPrizePicks = baseName.includes('prizepicks');
+    const isPickem = meta?.isPickem ?? false;
+    const variantLabel = meta?.variantLabel;
+    const stat = meta?.stat;
+    
+    // If this is PrizePicks pick'em for the matching stat, show variant label
+    if (isPrizePicks && isPickem && stat === statKey && variantLabel) {
+      return variantLabel; // "Goblin" or "Demon"
+    }
+    
+    // Otherwise show formatted odds
+    return fmtOdds(oddsValue);
+  };
+  
   const displayHalfLine = (s: string) => {
     if (s === 'N/A') return 'N/A';
     const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
@@ -5013,8 +5975,8 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
             </tr>
           </thead>
           <tbody>
-          {books.map((row, i) => (
-            <tr key={row.name} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
+          {books.map((row: any, i: number) => (
+            <tr key={`${row.name}-${i}`} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
               <td className="py-2 pr-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.name}</td>
               
               {/* Team mode: show H2H, Spread, Total */}
@@ -5068,24 +6030,24 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
               {propsMode === 'player' && (
                 <>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({fmtOdds(row.PTS.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PTS.line)} ({getOddsDisplay(row, 'PTS', row.PTS.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PTS.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PTS.line)} ({getOddsDisplay(row, 'PTS', row.PTS.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({fmtOdds(row.REB.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.over.has(i) ? green : grey}`}>O {displayHalfLine(row.REB.line)} ({getOddsDisplay(row, 'REB', row.REB.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.REB.under.has(i) ? green : grey}`}>U {displayHalfLine(row.REB.line)} ({getOddsDisplay(row, 'REB', row.REB.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.over)})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({fmtOdds(row.AST.under)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.over.has(i) ? green : grey}`}>O {displayHalfLine(row.AST.line)} ({getOddsDisplay(row, 'AST', row.AST.over)})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.AST.under.has(i) ? green : grey}`}>U {displayHalfLine(row.AST.line)} ({getOddsDisplay(row, 'AST', row.AST.under)})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.over || 'N/A')})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({fmtOdds(row.THREES?.under || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.over.has(i) ? green : grey}`}>O {displayHalfLine(row.THREES?.line || 'N/A')} ({getOddsDisplay(row, 'THREES', row.THREES?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.THREES.under.has(i) ? green : grey}`}>U {displayHalfLine(row.THREES?.line || 'N/A')} ({getOddsDisplay(row, 'THREES', row.THREES?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.over || 'N/A')})</div>
-<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({fmtOdds(row.PRA?.under || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PRA?.line || 'N/A')} ({getOddsDisplay(row, 'PRA', row.PRA?.over || 'N/A')})</div>
+<div className={`font-mono whitespace-nowrap ${bestSets.PRA.under.has(i) ? green : grey}`}>U {displayHalfLine(row.PRA?.line || 'N/A')} ({getOddsDisplay(row, 'PRA', row.PRA?.under || 'N/A')})</div>
               </td>
               <td className="py-2 px-3">
 <div className={`font-mono whitespace-nowrap ${bestSets.PR.over.has(i) ? green : grey}`}>O {displayHalfLine(row.PR?.line || 'N/A')} ({fmtOdds(row.PR?.over || 'N/A')})</div>
@@ -5364,7 +6326,7 @@ const lineMovementInFlightRef = useRef(false);
               direction: direction as 'up' | 'down' | 'flat',
             };
           })
-          .reverse(); // Most recent first
+          .sort((a, b) => b.ts - a.ts); // Most recent first (descending by timestamp)
       }
 
       const fallbackRows: { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' }[] = [];
@@ -5431,7 +6393,7 @@ const lineMovementInFlightRef = useRef(false);
         direction: dir,
       });
     }
-    return rows;
+    return rows.sort((a, b) => b.ts - a.ts); // Most recent first (descending by timestamp)
   }, [lineMovementData, oddsSnapshots, marketKey]);
 
   // search state
@@ -7937,7 +8899,7 @@ const lineMovementInFlightRef = useRef(false);
               direction: direction as 'up' | 'down' | 'flat',
             };
           })
-          .reverse(); // Most recent first
+          .sort((a, b) => b.ts - a.ts); // Most recent first (descending by timestamp)
       }
 
       const fallbackRows: { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' }[] = [];
@@ -8054,6 +9016,27 @@ const lineMovementInFlightRef = useRef(false);
       const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
       const target = propsMode === 'player' ? playerName : gamePropsTeam;
       console.log(`📊 Loaded ${data.data?.length || 0} bookmaker odds for ${target}`);
+      
+      // Debug: Check for PrizePicks in the data
+      const allBookmakers = new Set<string>();
+      const prizepicksEntries: any[] = [];
+      (data.data || []).forEach((book: any) => {
+        const bookName = (book?.meta?.baseName || book?.name || '').toLowerCase();
+        if (bookName) {
+          allBookmakers.add(bookName);
+          if (bookName.includes('prizepicks')) {
+            prizepicksEntries.push({
+              name: book?.meta?.baseName || book?.name,
+              stat: book?.meta?.stat,
+              variantLabel: book?.meta?.variantLabel,
+              isPickem: book?.meta?.isPickem,
+              pts: book?.PTS,
+            });
+          }
+        }
+      });
+      console.log(`[CLIENT DEBUG] All bookmakers in odds data:`, Array.from(allBookmakers).sort());
+      console.log(`[CLIENT DEBUG] PrizePicks found:`, prizepicksEntries.length > 0, prizepicksEntries);
       
     } catch (error) {
       console.error('Error fetching odds:', error);
