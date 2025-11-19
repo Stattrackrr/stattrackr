@@ -3,10 +3,21 @@ import cache, { CACHE_TTL } from './cache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
 import { createClient } from '@supabase/supabase-js';
 
+// Validate required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
+}
+if (!supabaseServiceKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+}
+
 // Use service role for server-side operations
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  supabaseUrl,
+  supabaseServiceKey,
   {
     auth: {
       autoRefreshToken: false,
@@ -96,6 +107,8 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   };
 
   const latestRows: any[] = [];
+  const lastEventTimestamps = new Map<string, string>();
+  
   if (keys.length > 0) {
     const keyChunks = chunkArray(keys, 10);
     for (const chunk of keyChunks) {
@@ -111,6 +124,27 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
 
       if (data) {
         latestRows.push(...data);
+      }
+      
+      // Also fetch the most recent event timestamp for each composite key
+      const { data: lastEvents, error: eventsError } = await supabaseAdmin
+        .from('line_movement_events')
+        .select('composite_key, recorded_at')
+        .in('composite_key', chunk)
+        .order('recorded_at', { ascending: false })
+        .limit(1000); // Get recent events
+      
+      if (!eventsError && lastEvents) {
+        // Group by composite_key and get the most recent for each
+        const eventsByKey = new Map<string, string>();
+        for (const event of lastEvents) {
+          if (!eventsByKey.has(event.composite_key)) {
+            eventsByKey.set(event.composite_key, event.recorded_at);
+          }
+        }
+        eventsByKey.forEach((timestamp, key) => {
+          lastEventTimestamps.set(key, timestamp);
+        });
       }
     }
   }
@@ -138,7 +172,21 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
     const change = previousLine === null ? 0 : Number((snapshot.line - previousLine).toFixed(2));
     const hasChanged = previousLine === null ? false : Math.abs(change) >= 0.01;
 
-    if (hasChanged) {
+    // Check when the last event was created for this composite key
+    const lastEventTime = lastEventTimestamps.get(snapshot.compositeKey);
+    const timeSinceLastEvent = lastEventTime 
+      ? new Date(snapshot.recordedAt).getTime() - new Date(lastEventTime).getTime()
+      : Infinity;
+
+    // Create event if:
+    // 1. Line changed (>= 0.01 difference)
+    // 2. This is a new entry (no previous line)
+    // 3. More than 3 hours have passed since last event (to track ongoing monitoring)
+    const shouldCreateEvent = hasChanged || 
+      (previousLine === null) || 
+      (timeSinceLastEvent > 3 * 60 * 60 * 1000); // 3 hours
+
+    if (shouldCreateEvent) {
       movementEvents.push({
         composite_key: snapshot.compositeKey,
         game_id: snapshot.gameId,
@@ -147,7 +195,7 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
         bookmaker: snapshot.bookmaker,
         previous_line: previousLine,
         new_line: snapshot.line,
-        change,
+        change: hasChanged ? change : 0,
         recorded_at: snapshot.recordedAt,
       });
     }
@@ -199,6 +247,7 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   }
 
   if (movementEvents.length > 0) {
+    console.log(`📊 Creating ${movementEvents.length} line movement events`);
     const eventChunks = chunkArray(movementEvents, 500);
     for (const chunk of eventChunks) {
       const { error: eventsError } = await supabaseAdmin
@@ -210,6 +259,9 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
         throw eventsError;
       }
     }
+    console.log(`✅ Successfully inserted ${movementEvents.length} line movement events`);
+  } else {
+    console.log('⚠️ No line movement events to insert (lines may not have changed)');
   }
 }
 
@@ -238,16 +290,26 @@ async function saveOddsSnapshots(games: GameOdds[]) {
         };
 
         for (const [statKey, propData] of Object.entries(props)) {
-          if (!propData || typeof propData !== 'object') continue;
-          
           const market = statToMarket[statKey];
           if (!market) continue;
 
-          // Only save if we have line and odds data
-          if ('line' in propData && 'over' in propData && 'under' in propData) {
-            const line = parseFloat(String(propData.line));
-            const overOdds = parseInt(String(propData.over));
-            const underOdds = parseInt(String(propData.under));
+          const entries = Array.isArray(propData) ? propData : [propData];
+
+          for (const entry of entries) {
+            if (!entry || typeof entry !== 'object') continue;
+
+            const { line: rawLine, over, under } = entry as Record<string, unknown>;
+            if (
+              rawLine === undefined ||
+              over === undefined ||
+              under === undefined
+            ) {
+              continue;
+            }
+
+            const line = parseFloat(String(rawLine));
+            const overOdds = parseInt(String(over));
+            const underOdds = parseInt(String(under));
 
             if (!isNaN(line) && !isNaN(overOdds) && !isNaN(underOdds)) {
               const compositeKey = [

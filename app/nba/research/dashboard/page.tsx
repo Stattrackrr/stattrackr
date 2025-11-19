@@ -2625,20 +2625,32 @@ const ChartControls = function ChartControls({
       'Caesars': { name: 'Caesars', logo: 'CZR', logoUrl: `https://logo.clearbit.com/caesars.com` },
       'BetRivers': { name: 'BetRivers', logo: 'BR', logoUrl: `https://logo.clearbit.com/betrivers.com` },
       'Bovada': { name: 'Bovada', logo: 'BV', logoUrl: `https://logo.clearbit.com/bovada.lv` },
-      'BetOnline.ag': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `https://logo.clearbit.com/betonline.ag` },
-      'BetOnline': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `https://logo.clearbit.com/betonline.ag` },
+      'BetOnline.ag': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` },
+      'BetOnline': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` },
       'BetUS': { name: 'BetUS', logo: 'BU', logoUrl: `https://logo.clearbit.com/betus.com` },
       'LowVig.ag': { name: 'LowVig.ag', logo: 'LV', logoUrl: `https://logo.clearbit.com/lowvig.ag` },
       'MyBookie.ag': { name: 'MyBookie.ag', logo: 'MB', logoUrl: `https://logo.clearbit.com/mybookie.ag` },
       'Fanatics': { name: 'Fanatics', logo: 'FN', logoUrl: `https://logo.clearbit.com/fanatics.com` },
       'DraftKings Pick6': { name: 'DraftKings Pick6', logo: 'P6', logoUrl: `https://logo.clearbit.com/draftkings.com` },
       'PrizePicks': { name: 'PrizePicks', logo: 'PP', logoUrl: `/images/prizepicks.avif` },
-      'Underdog Fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `https://logo.clearbit.com/underdogfantasy.com` },
+      'Underdog Fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
+      'Underdog': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
+      'underdog': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
+      'underdog fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
     };
     const direct = bookmakerMap[name];
     if (direct) return direct;
     const normalized = normalizeBookNameForLookup(name);
     if (normalized && bookmakerMap[normalized]) return bookmakerMap[normalized];
+    
+    // Also check case-insensitive match for Underdog and BetOnline
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('underdog')) {
+      return { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` };
+    }
+    if (nameLower.includes('betonline') || nameLower.includes('bet online')) {
+      return { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` };
+    }
     return { name, logo: name.substring(0, 2).toUpperCase() };
   };
 
@@ -2864,7 +2876,7 @@ const ChartControls = function ChartControls({
    const StatPills = useMemo(() => (
       <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0">
         <div
-          className="w-full min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x custom-scrollbar"
+          className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar"
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
             {currentStatOptions.map((s: any) => (
@@ -3066,7 +3078,7 @@ const ChartControls = function ChartControls({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                        {pickemVariant === 'Goblin' ? (
+                        {pickemVariant === 'Goblin' && bookmakerInfo.name !== 'Underdog' && bookmakerInfo.name !== 'DraftKings Pick6' ? (
                           <img 
                             src="/images/goblin.png" 
                             alt="Goblin" 
@@ -3085,7 +3097,7 @@ const ChartControls = function ChartControls({
                               }
                             }}
                           />
-                        ) : pickemVariant === 'Demon' ? (
+                        ) : pickemVariant === 'Demon' && bookmakerInfo.name !== 'Underdog' && bookmakerInfo.name !== 'DraftKings Pick6' ? (
                           <img 
                             src="/images/demon.png" 
                             alt="Demon" 
@@ -3349,7 +3361,7 @@ const ChartControls = function ChartControls({
                                 img.style.display = 'none';
                                 const fallback = document.createElement('span');
                                 fallback.className = 'text-[11px] sm:text-xs text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap';
-                                fallback.textContent = `Pick'em • ${displayPickemVariant}`;
+                                fallback.textContent = (bookmakerInfo.name === 'Underdog' || bookmakerInfo.name === 'DraftKings Pick6') ? `Pick'em` : `Pick'em • ${displayPickemVariant}`;
                                 if (img.parentElement && img.nextSibling) {
                                   img.parentElement.insertBefore(fallback, img.nextSibling);
                                 } else if (img.parentElement) {
@@ -3372,7 +3384,7 @@ const ChartControls = function ChartControls({
                             </div>
                           ) : (
                             <span className="text-[11px] sm:text-xs text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap">
-                              Pick&apos;em{displayPickemVariant ? ` • ${displayPickemVariant}` : ''}
+                              Pick&apos;em{displayPickemVariant && bookmakerInfo.name !== 'Underdog' && bookmakerInfo.name !== 'DraftKings Pick6' ? ` • ${displayPickemVariant}` : ''}
                             </span>
                           )}
                         </>
@@ -3545,7 +3557,7 @@ const ChartControls = function ChartControls({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                        {pickemVariant === 'Goblin' ? (
+                        {pickemVariant === 'Goblin' && bookmakerInfo.name !== 'Underdog' && bookmakerInfo.name !== 'DraftKings Pick6' ? (
                           <img 
                             src="/images/goblin.png" 
                             alt="Goblin" 
@@ -3564,7 +3576,7 @@ const ChartControls = function ChartControls({
                               }
                             }}
                           />
-                        ) : pickemVariant === 'Demon' ? (
+                        ) : pickemVariant === 'Demon' && bookmakerInfo.name !== 'Underdog' && bookmakerInfo.name !== 'DraftKings Pick6' ? (
                           <img 
                             src="/images/demon.png" 
                             alt="Demon" 
@@ -3828,7 +3840,7 @@ const ChartControls = function ChartControls({
                                     img.style.display = 'none';
                                     const fallback = document.createElement('span');
                                     fallback.className = 'text-[11px] text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap';
-                                    fallback.textContent = `Pick'em • ${displayPickemVariantMobile}`;
+                                    fallback.textContent = bookmakerInfo.name === 'Underdog' ? `Pick'em` : `Pick'em • ${displayPickemVariantMobile}`;
                                     if (img.parentElement && img.nextSibling) {
                                       img.parentElement.insertBefore(fallback, img.nextSibling);
                                     } else if (img.parentElement) {
@@ -3851,7 +3863,7 @@ const ChartControls = function ChartControls({
                                 </div>
                               ) : (
                                 <span className="text-[11px] text-purple-600 dark:text-purple-300 font-semibold whitespace-nowrap">
-                                  Pick&apos;em{displayPickemVariantMobile ? ` • ${displayPickemVariantMobile}` : ''}
+                                  Pick&apos;em{displayPickemVariantMobile && bookmakerInfo.name !== 'Underdog' ? ` • ${displayPickemVariantMobile}` : ''}
                                 </span>
                               )}
                             </>
@@ -4562,13 +4574,13 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
             <div className="text-sm sm:text-base font-semibold mb-3 text-gray-900 dark:text-white">Matchup Odds</div>
             <div className="flex items-center gap-1.5 mb-3">
               {selectedTeamLogoUrl && <img src={selectedTeamLogoUrl} alt={selectedTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!selectedTeam || selectedTeam === 'N/A') ? '—' : selectedTeam}</span>
+              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!selectedTeam || selectedTeam === 'N/A') ? '' : selectedTeam}</span>
               <span className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs'}>vs</span>
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!opponentTeam || opponentTeam === '') ? '—' : opponentTeam}</span>
+              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!opponentTeam || opponentTeam === '') ? '' : opponentTeam}</span>
               {opponentTeamLogoUrl && <img src={opponentTeamLogoUrl} alt={opponentTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
             </div>
             <div className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs mb-3'}>
-              Tipoff: {matchupInfo?.tipoffLocal || '—'}
+              Tipoff: {matchupInfo?.tipoffLocal || ''}
             </div>
             {(() => {
               const fd = (books || []).find(b => b.name.toLowerCase() === 'fanduel');
@@ -4708,7 +4720,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                       <div className="flex items-baseline gap-2">
                         <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
                         <span className="text-gray-900 dark:text-white">
-                          {lineMovementData?.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : '—'}
+                          {lineMovementData?.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : ''}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
@@ -4718,7 +4730,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                             ? `${currentLineFromBooks.line.toFixed(1)} (${currentLineFromBooks.bookmaker})`
                             : lineMovementData?.currentLine 
                               ? `${lineMovementData.currentLine.line.toFixed(1)} (${lineMovementData.currentLine.bookmaker})`
-                              : '—'}
+                              : ''}
                         </span>
                       </div>
                     </div>
@@ -4967,11 +4979,11 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
   }, [oppSel, posSel, opponentTeam, selectedPosition]);
 
   const fmt = (v?: number | null, isPercentage?: boolean) => {
-    if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
+    if (typeof v !== 'number' || !Number.isFinite(v)) return '';
     return isPercentage ? `${v.toFixed(1)}%` : v.toFixed(1);
   };
 
-  const posLabel = posSel || selectedPosition || '—';
+  const posLabel = posSel || selectedPosition || '';
 
   return (
     <div className="mb-6">
@@ -5021,7 +5033,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             >
               <span className="flex items-center gap-2">
                 {(oppSel || opponentTeam) && <img src={getEspnLogoUrl(oppSel || opponentTeam || '')} alt={oppSel || opponentTeam || 'OPP'} className="w-6 h-6 object-contain" />}
-                <span className="font-semibold">{oppSel || opponentTeam || '—'}</span>
+                <span className="font-semibold">{oppSel || opponentTeam || ''}</span>
               </span>
               <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -5091,7 +5103,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
                         {fmt(perStat[m.key], m.isPercentage)}
                       </span>
                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}`} title="Rank (30 better for overs, 1 for unders)">
-                        {rank && rank > 0 ? `#${rank}` : '—'}
+                        {rank && rank > 0 ? `#${rank}` : ''}
                       </span>
                     </div>
                   </div>
@@ -5295,7 +5307,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
 
   const formatRankLabel = (rawRank: number): string => {
     const rank = normalizeRank(rawRank);
-    if (!rank) return '—';
+    if (!rank) return '';
     return `#${rank}`;
   };
 
@@ -6115,48 +6127,97 @@ function NBADashboardContent() {
     }
   }, []);
 
-  // Get user info and subscription status on mount
+  // Get user info and subscription status on mount - independent per tab
   useEffect(() => {
-    const getUser = async () => {
+    let isMounted = true;
+    
+    const checkSubscription = async () => {
+      // Get session independently for this tab
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserEmail(session.user.email || null);
-        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-        setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
-        
-        // Check Pro access - try profiles table first, fallback to user_metadata
+      
+      if (!session?.user) {
+        if (isMounted) {
+          // No session - redirect to login with return path (non-blocking)
+          setTimeout(() => {
+            router.push('/login?redirect=/nba/research/dashboard');
+          }, 0);
+        }
+        return;
+      }
+
+      if (!isMounted) return;
+
+      setUserEmail(session.user.email || null);
+      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+      setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
+      
+      // Check Pro access independently - query database directly
+      // This ensures each tab has its own subscription check without interference
+      const { data: profile } = await (supabase
+        .from('profiles') as any)
+        .select('subscription_status, subscription_tier')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (!isMounted) return;
+      
+      let isActive = false;
+      let isProTier = false;
+      
+      if (profile) {
+        // Use profiles table if available
+        const profileData = profile as any;
+        isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+        isProTier = profileData.subscription_tier === 'pro';
+      } else {
+        // Fallback to user_metadata for dev testing
+        const metadata = session.user.user_metadata || {};
+        isActive = metadata.subscription_status === 'active';
+        isProTier = metadata.subscription_plan === 'pro';
+      }
+      
+      const proStatus = isActive && isProTier;
+      console.log('🔐 Dashboard Pro Status Check (independent):', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
+      
+      if (isMounted) {
+        setIsPro(proStatus);
+      }
+    };
+    
+    // Initial check
+    checkSubscription();
+    
+    // Set up listener only for SIGNED_OUT to handle logout
+    // Don't listen for other auth changes that could interfere with other tabs
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (isMounted) {
+          setIsPro(false);
+          router.push('/login?redirect=/nba/research/dashboard');
+        }
+      }
+      // For SIGNED_IN or TOKEN_REFRESHED, re-check subscription independently
+      else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMounted && session?.user) {
+        // Re-check subscription independently without affecting other tabs
         const { data: profile } = await (supabase
           .from('profiles') as any)
           .select('subscription_status, subscription_tier')
           .eq('id', session.user.id)
           .single();
         
-        let isActive = false;
-        let isProTier = false;
-        
-        if (profile) {
-          // Use profiles table if available
+        if (profile && isMounted) {
           const profileData = profile as any;
-          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-          isProTier = profileData.subscription_tier === 'pro';
-        } else {
-          // Fallback to user_metadata for dev testing
-          const metadata = session.user.user_metadata || {};
-          isActive = metadata.subscription_status === 'active';
-          isProTier = metadata.subscription_plan === 'pro';
+          const isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+          const isProTier = profileData.subscription_tier === 'pro';
+          setIsPro(isActive && isProTier);
         }
-        
-        const proStatus = isActive && isProTier;
-        console.log('🔐 Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
-        setIsPro(proStatus);
-      } else {
-        // No session - redirect to login with return path (non-blocking)
-        setTimeout(() => {
-          router.push('/login?redirect=/nba/research/dashboard');
-        }, 0);
       }
+    });
+    
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
     };
-    getUser();
   }, [router]);
 
   // Close profile menu when clicking outside
@@ -6345,7 +6406,7 @@ const lineMovementInFlightRef = useRef(false);
           ts: new Date(openingLine.timestamp).getTime(),
           timeLabel: formatLabel(openingLine, 'Opening'),
           line: openingLine.line,
-          change: '—',
+          change: '',
           direction: 'flat'
         });
       }
@@ -6360,7 +6421,7 @@ const lineMovementInFlightRef = useRef(false);
             ts: new Date(currentLine.timestamp).getTime(),
             timeLabel: formatLabel(currentLine, 'Latest'),
             line: currentLine.line,
-            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '—',
+            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '',
             direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
           });
         }
@@ -6967,13 +7028,48 @@ const lineMovementInFlightRef = useRef(false);
       return home === normTeam || away === normTeam;
     });
 
-    // Find next game (sorted by time)
-    const nextGame = teamGames
-      .map((g: any) => ({ 
-        g, 
-        t: new Date(g.date || 0).getTime(), 
-        status: String(g.status || '').toLowerCase() 
-      }))
+    // Map all games with their info
+    const mappedGames = teamGames.map((g: any) => ({ 
+      g, 
+      t: new Date(g.date || 0).getTime(), 
+      status: String(g.status || '').toLowerCase(),
+      rawStatus: String(g.status || '')
+    }));
+    
+    // Check if there's a game currently in progress first
+    const threeHoursMs = 3 * 60 * 60 * 1000;
+    let currentGame = mappedGames.find((game) => {
+      const rawStatus = game.rawStatus;
+      const gameStatus = game.status;
+      
+      // Check if game is live by looking at tipoff time (same logic as check-bets endpoints)
+      let isLive = false;
+      const tipoffTime = Date.parse(rawStatus);
+      if (!Number.isNaN(tipoffTime)) {
+        const timeSinceTipoff = now - tipoffTime;
+        isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+      }
+      
+      // Also check if game time has passed and game isn't final (fallback if status isn't a timestamp)
+      const gameStarted = game.t <= now;
+      const timeSinceGameTime = now - game.t;
+      const isWithinThreeHours = timeSinceGameTime > 0 && timeSinceGameTime < threeHoursMs;
+      
+      // API sometimes returns date strings as status - ignore these
+      const isDateStatus = rawStatus.includes('T') || rawStatus.includes('+') || rawStatus.match(/\d{4}-\d{2}-\d{2}/);
+      
+      // Mark as in progress if:
+      // 1. Game is live (started within last 3 hours based on status timestamp), OR
+      // 2. Game time has passed within last 3 hours and status doesn't indicate final
+      return (isLive || (gameStarted && isWithinThreeHours && !isDateStatus)) 
+        && gameStatus !== '' 
+        && gameStatus !== 'scheduled' 
+        && !gameStatus.includes('final') 
+        && !gameStatus.includes('completed');
+    });
+    
+    // If no game in progress, find next upcoming game
+    const nextGame = currentGame || mappedGames
       .sort((a, b) => a.t - b.t)
       .find(({ status }) => !status.includes('final') && !status.includes('completed'));
     
@@ -6983,28 +7079,50 @@ const lineMovementInFlightRef = useRef(false);
       const opponent = normTeam === home ? away : home;
       const gameDate = nextGame.g?.date ? new Date(nextGame.g.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       
-      // Check if game is in progress (game time passed but not final)
-      const status = nextGame.status;
+      // Check if game is in progress (same logic as above)
+      const rawStatus = nextGame.rawStatus;
+      const gameStatus = nextGame.status;
+      
+      // Check if game is live by looking at tipoff time (same logic as check-bets endpoints)
+      let isLive = false;
+      const tipoffTime = Date.parse(rawStatus);
+      if (!Number.isNaN(tipoffTime)) {
+        const timeSinceTipoff = now - tipoffTime;
+        isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+      }
+      
+      // Also check if game time has passed and game isn't final (fallback if status isn't a timestamp)
+      const gameStarted = nextGame.t <= now;
+      const timeSinceGameTime = now - nextGame.t;
+      const isWithinThreeHours = timeSinceGameTime > 0 && timeSinceGameTime < threeHoursMs;
       
       // API sometimes returns date strings as status - ignore these
-      const isDateStatus = status.includes('T') || status.includes('+') || status.match(/\d{4}-\d{2}-\d{2}/);
-      const gameStarted = nextGame.t <= now; // Game time has actually passed
+      const isDateStatus = rawStatus.includes('T') || rawStatus.includes('+') || rawStatus.match(/\d{4}-\d{2}-\d{2}/);
       
-      // Only mark as in progress if:
-      // 1. Game time has passed
-      // 2. Status is NOT empty, 'scheduled', or a date string
-      // 3. Status doesn't include 'final' or 'completed'
-      const inProgress = !isDateStatus && gameStarted && status !== '' && status !== 'scheduled' && !status.includes('final') && !status.includes('completed');
+      // Mark as in progress if:
+      // 1. Game is live (started within last 3 hours based on status timestamp), OR
+      // 2. Game time has passed within last 3 hours and status doesn't indicate final
+      const inProgress = (isLive || (gameStarted && isWithinThreeHours && !isDateStatus)) 
+        && gameStatus !== '' 
+        && gameStatus !== 'scheduled' 
+        && !gameStatus.includes('final') 
+        && !gameStatus.includes('completed');
       
       console.log('Game progress check:', { 
         opponent, 
         gameDate, 
-        status, 
+        status: rawStatus, 
+        gameStatus,
         isDateStatus,
+        tipoffTime: !Number.isNaN(tipoffTime) ? new Date(tipoffTime).toISOString() : 'invalid',
         gameTime: new Date(nextGame.t).toISOString(), 
         now: new Date(now).toISOString(),
-        gameStarted, 
-        inProgress 
+        gameStarted,
+        timeSinceGameTime: timeSinceGameTime / (60 * 60 * 1000) + ' hours',
+        isWithinThreeHours,
+        isLive,
+        inProgress,
+        isCurrentGame: !!currentGame
       });
       
       setNextGameOpponent(opponent || '');
@@ -8256,10 +8374,10 @@ const lineMovementInFlightRef = useRef(false);
           gameData: game, // Keep reference to game data for value calculation
           opponent,
           gameNumber: index + 1,
-          game: opponent ? `vs ${opponent}` : "—",
+          game: opponent ? `vs ${opponent}` : "",
           date: shortDate,
           xKey: String(game.id || `game-${index}`),
-          tickLabel: opponent || "—", // Show opponent abbreviation on x-axis for team mode
+          tickLabel: opponent || "", // Show opponent abbreviation on x-axis for team mode
         };
       });
     }
@@ -8469,7 +8587,7 @@ const lineMovementInFlightRef = useRef(false);
       
       // Create unique key for each game to fix tooltip data grouping
       const gameId = stats?.game?.id ?? `${opponent}-${index}`;
-      const tickLabel = opponent || "—";
+      const tickLabel = opponent || "";
       
       return {
         stats, // Keep reference to original stats for value calculation
@@ -8556,13 +8674,56 @@ const lineMovementInFlightRef = useRef(false);
      Only recalculate values when selectedStat changes */
   const chartData = useMemo(() => {
     const source = propsMode === 'player' ? filteredGameData : baseGameData;
-    return source.map(game => ({
+    const mapped = source.map(game => ({
       ...game,
       value: propsMode === 'team' 
         ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam) 
         : getStatValue((game as any).stats, selectedStat) ?? 0,
     }));
-  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam]);
+    
+    // Check if the most recent game (last item) is live
+    if (mapped.length > 0) {
+      const mostRecentGame = mapped[mapped.length - 1];
+      const gameData = propsMode === 'team' ? (mostRecentGame as any).gameData : (mostRecentGame as any).stats?.game;
+      
+      if (gameData) {
+        const rawStatus = String(gameData.status || '');
+        const gameStatus = rawStatus.toLowerCase();
+        const gameDate = gameData.date ? new Date(gameData.date).getTime() : 0;
+        const now = Date.now();
+        const threeHoursMs = 3 * 60 * 60 * 1000;
+        
+        // Check if game is live by looking at tipoff time
+        let isLive = false;
+        const tipoffTime = Date.parse(rawStatus);
+        if (!Number.isNaN(tipoffTime)) {
+          const timeSinceTipoff = now - tipoffTime;
+          isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+        }
+        
+        // Also check if game time has passed and game isn't final (fallback)
+        const gameStarted = gameDate > 0 && gameDate <= now;
+        const timeSinceGameTime = gameDate > 0 ? now - gameDate : 0;
+        const isWithinThreeHours = gameStarted && timeSinceGameTime > 0 && timeSinceGameTime < threeHoursMs;
+        const isDateStatus = rawStatus.includes('T') || rawStatus.includes('+') || rawStatus.match(/\d{4}-\d{2}-\d{2}/);
+        
+        // Mark as live if game started within last 3 hours and not final
+        const isLiveGame = (isLive || (gameStarted && isWithinThreeHours && !isDateStatus)) 
+          && gameStatus !== '' 
+          && gameStatus !== 'scheduled' 
+          && !gameStatus.includes('final') 
+          && !gameStatus.includes('completed');
+        
+        // Add isLive flag to the most recent game
+        if (isLiveGame) {
+          const lastItem = mapped[mapped.length - 1];
+          (lastItem as any).isLive = true;
+        }
+      }
+    }
+    
+    return mapped;
+  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
 
   // Load teammate participation for current base games when filter is active
   useEffect(() => {
@@ -8883,14 +9044,158 @@ const lineMovementInFlightRef = useRef(false);
     if (mergedLineMovementData) {
       const { lineMovement = [], openingLine, currentLine } = mergedLineMovementData;
 
+      // Build a map of alt lines to check if movements are from alt lines
+      const altLinesMap = new Map<string, { variantLabel: string | null; isPickem: boolean }>();
+      let primaryLines: AltLineItem[] = [];
+      let primaryKeysSet = new Set<string>();
+      
+      if (realOddsData && realOddsData.length > 0) {
+        const statToBookKey: Record<string, string> = {
+          'pts': 'PTS',
+          'reb': 'REB',
+          'ast': 'AST',
+          'fg3m': 'THREES',
+          'pra': 'PRA',
+          'pr': 'PR',
+          'pa': 'PA',
+          'ra': 'RA',
+        };
+        const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
+        
+        // Get all lines and identify primary vs alt
+        const allLines: AltLineItem[] = realOddsData
+          .map((book: any) => {
+            const statData = (book as any)[bookKey];
+            if (!statData || statData.line === 'N/A') return null;
+            const lineValue = parseFloat(statData.line);
+            if (isNaN(lineValue)) return null;
+            const meta = (book as any).meta || {};
+            return {
+              bookmaker: meta.baseName || book.name,
+              line: lineValue,
+              over: statData.over,
+              under: statData.under,
+              isPickem: meta.isPickem ?? false,
+              variantLabel: meta.variantLabel ?? null,
+            } as AltLineItem;
+          })
+          .filter((item: AltLineItem | null): item is AltLineItem => item !== null);
+        
+        const partitioned = partitionAltLineItems(allLines);
+        primaryLines = partitioned.primary;
+        const alternateLines = partitioned.alternate;
+        
+        // Create a set of primary line keys (bookmaker + line) for quick lookup
+        primaryKeysSet = new Set(
+          primaryLines.map((p: AltLineItem) => `${p.bookmaker.toLowerCase().trim()}|${p.line.toFixed(1)}`)
+        );
+        
+        // Map alt lines for quick lookup (to filter them out)
+        // Store multiple keys for each alt line to handle name variations
+        for (const alt of alternateLines) {
+          const bookmakerLower = alt.bookmaker.toLowerCase().trim();
+          const lineKey = alt.line.toFixed(1);
+          
+          // Store with the exact bookmaker name
+          const key1 = `${bookmakerLower}|${lineKey}`;
+          altLinesMap.set(key1, {
+            variantLabel: alt.variantLabel ?? null,
+            isPickem: alt.isPickem ?? false,
+          });
+          
+          // Also store with normalized bookmaker name (remove common suffixes)
+          const normalizedBookmaker = bookmakerLower
+            .replace(/\s+(fantasy|sportsbook|sports|betting)$/i, '')
+            .replace(/^the\s+/i, '')
+            .trim();
+          if (normalizedBookmaker !== bookmakerLower) {
+            const key2 = `${normalizedBookmaker}|${lineKey}`;
+            altLinesMap.set(key2, {
+              variantLabel: alt.variantLabel ?? null,
+              isPickem: alt.isPickem ?? false,
+            });
+          }
+        }
+      }
+
       if (lineMovement.length > 0) {
-        return lineMovement
+        // Filter to only show primary line movements (exclude alt lines)
+        // Also use a more flexible matching approach for bookmaker names
+        const primaryMovements = lineMovement.filter((movement) => {
+          const bookmakerLower = movement.bookmaker.toLowerCase().trim();
+          const lineRounded = Math.round(movement.line * 10) / 10; // Round to 1 decimal
+          
+          // Check all possible key variations
+          const possibleKeys = [
+            `${bookmakerLower}|${lineRounded.toFixed(1)}`,
+            `${bookmakerLower}|${movement.line.toFixed(1)}`,
+            `${bookmakerLower}|${movement.line.toFixed(2)}`,
+          ];
+          
+          // Also check with normalized bookmaker name (remove common suffixes/prefixes)
+          const normalizedBookmaker = bookmakerLower
+            .replace(/\s+(fantasy|sportsbook|sports|betting)$/i, '')
+            .replace(/^the\s+/i, '')
+            .trim();
+          if (normalizedBookmaker !== bookmakerLower) {
+            possibleKeys.push(
+              `${normalizedBookmaker}|${lineRounded.toFixed(1)}`,
+              `${normalizedBookmaker}|${movement.line.toFixed(1)}`
+            );
+          }
+          
+          // Check if any of these keys match an alt line
+          const isAltLine = possibleKeys.some(key => altLinesMap.has(key));
+          
+          // Only include if it's NOT an alt line
+          return !isAltLine;
+        });
+        
+        // If we have primary movements, use them; otherwise fall back to all movements
+        // But also try to deduplicate by bookmaker (keep only one movement per bookmaker, most recent)
+        const movementsToDisplay = primaryMovements.length > 0 ? primaryMovements : lineMovement;
+        
+        // Deduplicate by bookmaker - keep only the movement that matches a primary line (or most recent if no match)
+        const deduplicatedMovements = new Map<string, typeof movementsToDisplay[0]>();
+        
+        for (const movement of movementsToDisplay) {
+          const bookmakerKey = movement.bookmaker.toLowerCase().trim();
+          const movementKey = `${bookmakerKey}|${movement.line.toFixed(1)}`;
+          const isPrimaryLine = primaryKeysSet.has(movementKey);
+          
+          const existing = deduplicatedMovements.get(bookmakerKey);
+          
+          // Prefer movements that match primary lines
+          if (!existing) {
+            deduplicatedMovements.set(bookmakerKey, movement);
+          } else {
+            const existingKey = `${bookmakerKey}|${existing.line.toFixed(1)}`;
+            const existingIsPrimary = primaryKeysSet.has(existingKey);
+            
+            // If current is primary and existing is not, replace it
+            if (isPrimaryLine && !existingIsPrimary) {
+              deduplicatedMovements.set(bookmakerKey, movement);
+            }
+            // If both are primary or both are not, keep the most recent
+            else if (isPrimaryLine === existingIsPrimary) {
+              if (new Date(movement.timestamp).getTime() > new Date(existing.timestamp).getTime()) {
+                deduplicatedMovements.set(bookmakerKey, movement);
+              }
+            }
+            // If existing is primary and current is not, keep existing
+          }
+        }
+        
+        const finalMovements = Array.from(deduplicatedMovements.values());
+        
+        return finalMovements
           .map((movement) => {
             const dt = new Date(movement.timestamp);
             const timeLabel = dt.toLocaleString(undefined, {
               month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
             });
             const direction = movement.change > 0 ? 'up' : movement.change < 0 ? 'down' : 'flat';
+            
             return {
               ts: new Date(movement.timestamp).getTime(),
               timeLabel: `${timeLabel} (${movement.bookmaker})`,
@@ -8918,7 +9223,7 @@ const lineMovementInFlightRef = useRef(false);
           ts: new Date(openingLine.timestamp).getTime(),
           timeLabel: formatLabel(openingLine, 'Opening'),
           line: openingLine.line,
-          change: '—',
+          change: '',
           direction: 'flat'
         });
       }
@@ -8933,7 +9238,7 @@ const lineMovementInFlightRef = useRef(false);
             ts: new Date(currentLine.timestamp).getTime(),
             timeLabel: formatLabel(currentLine, 'Latest'),
             line: currentLine.line,
-            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '—',
+            change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '',
             direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
           });
         }
@@ -8946,7 +9251,7 @@ const lineMovementInFlightRef = useRef(false);
     
     // Fallback to original intradayMovements
     return intradayMovements;
-  }, [mergedLineMovementData, intradayMovements]);
+  }, [mergedLineMovementData, intradayMovements, realOddsData, selectedStat]);
   
   // Fetch real odds data - fetches player props or team game odds based on mode
   const fetchOddsData = async (retryCount = 0) => {
@@ -9126,7 +9431,6 @@ const lineMovementInFlightRef = useRef(false);
         .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: #d1d5db transparent;
-          overflow-y: scroll; /* Force scrollbar to always show */
         }
         
         .dark .custom-scrollbar {
@@ -9141,6 +9445,13 @@ const lineMovementInFlightRef = useRef(false);
         
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
+        }
+        
+        /* Remove the little arrow buttons on custom scrollbars */
+        .custom-scrollbar::-webkit-scrollbar-button {
+          display: none;
+          width: 0;
+          height: 0;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -9423,10 +9734,10 @@ const lineMovementInFlightRef = useRef(false);
                         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        Height: {playerInfo.height || "—"}
+                        Height: {playerInfo.height || ""}
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {playerInfo.teamName || "—"}
+                        {playerInfo.teamName || ""}
                       </div>
                     </div>
                   )}
@@ -10122,10 +10433,10 @@ const lineMovementInFlightRef = useRef(false);
                     // Player Props mode - show player height and team
                     <div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        Height: {playerInfo.height || "—"}
+                        Height: {playerInfo.height || ""}
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {playerInfo.teamName || "—"}
+                        {playerInfo.teamName || ""}
                       </div>
                     </div>
                   )}
@@ -11434,7 +11745,7 @@ const lineMovementInFlightRef = useRef(false);
                                   <div className="w-32 text-right text-sm font-semibold pr-2 md:pr-4 text-gray-400">
                                     <div>N/A</div>
                                     <div>N/A</div>
-                                    <div className="text-xs opacity-85">Rank: —</div>
+                                    <div className="text-xs opacity-85">Rank: </div>
                                   </div>
                                   
                                   {/* Neutral Pie */}
@@ -11464,7 +11775,7 @@ const lineMovementInFlightRef = useRef(false);
                                   <div className="w-28 md:w-32 text-left text-sm font-semibold pl-2 md:pl-4 text-gray-400">
                                     <div>N/A</div>
                                     <div>N/A</div>
-                                    <div className="text-xs opacity-85">Rank: —</div>
+                                    <div className="text-xs opacity-85">Rank: </div>
                                   </div>
                                 </div>
                                 

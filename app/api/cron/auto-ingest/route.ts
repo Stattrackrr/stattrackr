@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
+import { authorizeCronRequest } from "@/lib/cronAuth";
+import { checkRateLimit, strictRateLimiter } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
@@ -26,11 +28,16 @@ async function checkIfAnyGamesComplete(): Promise<{ shouldIngest: boolean; compl
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     
     // Fetch games for both days
+    const apiKey = process.env.BALLDONTLIE_API_KEY;
+    if (!apiKey) {
+      throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+    }
+
     const url = `https://api.balldontlie.io/v1/games?start_date=${yesterdayStr}&end_date=${todayStr}`;
     const res = await fetch(url, {
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       cache: 'no-store',
     });
@@ -96,6 +103,16 @@ async function checkIfAnyGamesComplete(): Promise<{ shouldIngest: boolean; compl
 }
 
 export async function GET(req: NextRequest) {
+  const authResult = authorizeCronRequest(req);
+  if (!authResult.authorized) {
+    return authResult.response;
+  }
+
+  const rateResult = checkRateLimit(req, strictRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
   try {
     console.log('[auto-ingest] Cron job triggered');
 
@@ -155,7 +172,7 @@ export async function GET(req: NextRequest) {
     console.error('[auto-ingest] Error:', e.message);
     return NextResponse.json(
       { success: false, error: e?.message || 'Auto-ingest failed' },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

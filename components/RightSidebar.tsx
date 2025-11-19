@@ -495,21 +495,25 @@ export default function RightSidebar({
   const underLosses = underBets.filter(bet => bet.result === 'loss').length;
   const underWinRate = underResulted > 0 ? ((underWins / underResulted) * 100).toFixed(1) : '0.0';
   
-  // Winners by Odds ranges (in decimal odds)
+  // Winners by Odds ranges (in decimal odds) - 20 cent increments from $1 to $2
   const oddsRanges = [
-    { label: '1.00-1.50', min: 1.0, max: 1.5 },
-    { label: '1.51-2.00', min: 1.51, max: 2.0 },
-    { label: '2.01-2.50', min: 2.01, max: 2.5 },
-    { label: '2.51-3.00', min: 2.51, max: 3.0 },
-    { label: '3.01-5.00', min: 3.01, max: 5.0 },
-    { label: '5.01-10.00', min: 5.01, max: 10.0 },
-    { label: '10.00+', min: 10.01, max: Infinity },
+    { label: '1.00-1.20', min: 1.0, max: 1.2 },
+    { label: '1.20-1.40', min: 1.2, max: 1.4 },
+    { label: '1.40-1.60', min: 1.4, max: 1.6 },
+    { label: '1.60-1.80', min: 1.6, max: 1.8 },
+    { label: '1.80-2.00', min: 1.8, max: 2.0 },
   ];
   
-  const getOddsRangeStats = (min: number, max: number) => {
+  const getOddsRangeStats = (min: number, max: number, isLast: boolean = false) => {
     const betsInRange = statFilteredBets.filter(bet => {
       const odds = bet.odds;
-      return odds >= min && odds <= max && (bet.result === 'win' || bet.result === 'loss');
+      // For ranges, use >= min && <= max (inclusive on both ends)
+      // For the last range, also use <= max to include the upper bound
+      // This means 1.8 goes into 1.60-1.80, not 1.80-2.00
+      const inRange = isLast 
+        ? (odds > min && odds <= max) // Last range: > min && <= max (so 1.8 goes in previous range)
+        : (odds >= min && odds <= max); // Other ranges: >= min && <= max (includes both bounds)
+      return inRange && (bet.result === 'win' || bet.result === 'loss');
     });
     const wins = betsInRange.filter(bet => bet.result === 'win').length;
     const losses = betsInRange.filter(bet => bet.result === 'loss').length;
@@ -560,6 +564,7 @@ export default function RightSidebar({
         total: stats.total,
         hitRate: stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : '0.0'
       }))
+      .filter(stat => stat.total > 0) // Only show bookmakers that have been used
       .sort((a, b) => {
         // Manual Entry always last
         if (a.bookmaker === 'Manual Entry') return 1;
@@ -1089,9 +1094,14 @@ export default function RightSidebar({
             <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-gray-200 dark:border-gray-700 flex-[1.8] min-h-0 flex flex-col">
               <h4 className="text-xs font-semibold text-black dark:text-white mb-1.5">Winners by Odds</h4>
               <div className="space-y-0.5 flex-1 flex flex-col justify-around">
-                {oddsRanges.map((range) => {
-                  const stats = getOddsRangeStats(range.min, range.max);
-                  return (
+                {oddsRanges
+                  .map((range, index) => {
+                    const isLast = index === oddsRanges.length - 1;
+                    const stats = getOddsRangeStats(range.min, range.max, isLast);
+                    return { range, stats };
+                  })
+                  .filter(({ stats }) => stats.total > 0) // Only show odds ranges that have been used
+                  .map(({ range, stats }) => (
                     <div key={range.label} className="flex items-center gap-14">
                       <span className="text-xs text-gray-600 dark:text-gray-400 w-[70px] flex-shrink-0">{range.label}:</span>
                       <div className="flex items-center gap-1 text-xs w-[45px] flex-shrink-0">
@@ -1111,8 +1121,7 @@ export default function RightSidebar({
                         </span>
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
               </div>
             </div>
           </div>
@@ -1163,7 +1172,7 @@ export default function RightSidebar({
                 <div className="flex items-center justify-between text-xs mb-2">
                   <div className="text-gray-600 dark:text-gray-400">
                     {bet.odds > 0 ? (
-                      <>Odds: <span className="font-semibold text-black dark:text-white">{bet.odds.toFixed(2)}</span></>
+                      <>Odds: <span className="font-semibold text-black dark:text-white">{formatOdds(bet.odds, oddsFormat)}</span></>
                     ) : (
                       <span>&nbsp;</span>
                     )}
@@ -1328,7 +1337,7 @@ export default function RightSidebar({
                         Stake: <span className="font-semibold text-black dark:text-white">{bet.currency} ${bet.stake.toFixed(2)}</span>
                       </div>
                       <div className="text-gray-600 dark:text-gray-400">
-                        Odds: <span className="font-semibold text-black dark:text-white">{bet.odds.toFixed(2)}</span>
+                        Odds: <span className="font-semibold text-black dark:text-white">{formatOdds(bet.odds, oddsFormat)}</span>
                       </div>
                     </div>
                     

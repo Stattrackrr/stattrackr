@@ -7,6 +7,14 @@
     {
       "path": "/api/check-bets",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/odds/cleanup",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/odds/refresh",
+      "schedule": "*/20 * * * *"
     }
   ],
   "rewrites": [

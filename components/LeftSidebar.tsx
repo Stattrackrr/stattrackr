@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, Dispatch, SetStateAction, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -38,6 +39,11 @@ export default function LeftSidebar({
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(false);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const { theme, setTheme, isDark } = useTheme();
 
   const displayName = username || userEmail || 'Profile';
@@ -288,16 +294,19 @@ export default function LeftSidebar({
       </div>
 
       {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-[100]">
-          {/* Backdrop with blur */}
+      {showSettings && mounted && createPortal(
+        <>
+          {/* Backdrop with blur - separate element */}
           <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md"
             onClick={() => setShowSettings(false)}
-          ></div>
+          />
           
           {/* Modal content - positioned like sidebar */}
-          <div className="fixed left-0 top-4 h-[calc(100vh-1rem)] w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-[110] flex flex-col">
+          <div 
+            className="fixed left-0 top-4 h-[calc(100vh-1rem)] w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-[110] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
               <button
@@ -345,7 +354,8 @@ export default function LeftSidebar({
               </button>
             </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </div>
     </>

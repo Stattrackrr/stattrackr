@@ -10,19 +10,62 @@ import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
 import { getBookmakerInfo } from '@/lib/bookmakers';
+import { formatOdds } from '@/lib/currencyUtils';
 
 export default function JournalPage() {
   return (
     <ThemeProvider>
       <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
           <div className="text-xl">Loading journal...</div>
         </div>
       }>
-        <JournalContent />
+        <ErrorBoundary>
+          <JournalContent />
+        </ErrorBoundary>
       </Suspense>
     </ThemeProvider>
   );
+}
+
+// Simple error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Journal page error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-2">Something went wrong</div>
+            <div className="text-sm text-gray-400 mb-4">{this.state.error?.message}</div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // Bet type from database
@@ -40,6 +83,124 @@ type Bet = {
   created_at: string;
   opponent?: string | null;
 };
+
+type BookmakerEntry = { key: string; raw: string };
+
+const SPECIAL_BOOKMAKER_LABELS: Record<string, string> = {
+  unknown: 'Unknown',
+  'multiple bookmakers': 'Multiple Bookmakers',
+  'manual entry': 'Manual Entry',
+};
+
+function extractBookmakerEntries(bookmaker: string | null | undefined): BookmakerEntry[] {
+  if (!bookmaker || bookmaker.trim() === '' || bookmaker === 'Unknown') {
+    return [{ key: 'unknown', raw: 'Unknown' }];
+  }
+
+  try {
+    const parsed = JSON.parse(bookmaker);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const entries = parsed
+        .map((value) => (typeof value === 'string' ? value : String(value)))
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .map((raw) => ({ key: raw.toLowerCase(), raw }));
+      if (entries.length > 0) {
+        return entries;
+      }
+    }
+  } catch {
+    // Not JSON, treat as regular string
+  }
+
+  const trimmed = bookmaker.trim();
+  if (!trimmed) {
+    return [{ key: 'unknown', raw: 'Unknown' }];
+  }
+
+  return [{ key: trimmed.toLowerCase(), raw: trimmed }];
+}
+
+function getBookmakerDisplayName(entry: BookmakerEntry): string {
+  const specialLabel = SPECIAL_BOOKMAKER_LABELS[entry.key];
+  if (specialLabel) {
+    return specialLabel;
+  }
+
+  const info = getBookmakerInfo(entry.raw || entry.key);
+  return info?.name || entry.raw || 'Unknown';
+}
+
+// Helper function to format bookmaker display
+function formatBookmakerDisplay(bookmaker: string | null | undefined, isVoid: boolean = false): string {
+  // For void bets, show N/A instead of Unknown
+  if (isVoid) {
+    return 'N/A';
+  }
+  
+  const entries = extractBookmakerEntries(bookmaker);
+  if (entries.length === 0) {
+    return 'Unknown';
+  }
+
+  const displayNames = entries
+    .map((entry) => getBookmakerDisplayName(entry))
+    .filter((name, index, arr) => name && arr.indexOf(name) === index);
+
+  return displayNames.length > 0 ? displayNames.join(', ') : 'Unknown';
+}
+
+// Helper function to capitalize player names properly
+function capitalizePlayerName(name: string): string {
+  if (!name || name.trim() === '') return name;
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+// Helper function to parse parlay legs from selection text
+function parseParlayLegs(selectionText: string): Array<{
+  playerName: string;
+  overUnder: 'over' | 'under';
+  line: number;
+  statName: string;
+}> {
+  if (!selectionText || !selectionText.startsWith('Parlay:')) {
+    return [];
+  }
+  
+  // Remove "Parlay: " prefix
+  const legsText = selectionText.replace(/^Parlay:\s*/, '');
+  const legs = legsText.split(' + ').map(leg => leg.trim()).filter(leg => leg);
+  
+  const parsedLegs: Array<{
+    playerName: string;
+    overUnder: 'over' | 'under';
+    line: number;
+    statName: string;
+  }> = [];
+  
+  for (const leg of legs) {
+    // Pattern: "PlayerName over/under Line StatName"
+    // Examples: "Nikola Jokic over 11.5 Rebounds", "Anthony Edwards under 26.5 Points"
+    const match = leg.match(/^(.+?)\s+(over|under)\s+([\d.]+)\s+(.+)$/i);
+    if (match) {
+      const [, playerName, overUnder, lineStr, statName] = match;
+      const line = parseFloat(lineStr);
+      if (!isNaN(line)) {
+        parsedLegs.push({
+          playerName: capitalizePlayerName(playerName.trim()),
+          overUnder: (overUnder.toLowerCase() as 'over' | 'under'),
+          line,
+          statName: statName.trim().toLowerCase(),
+        });
+      }
+    }
+  }
+  
+  return parsedLegs;
+}
 
 function JournalContent() {
   const router = useRouter();
@@ -87,9 +248,16 @@ function JournalContent() {
     }
     return 'All';
   });
+  const [betTypeFilter, setBetTypeFilter] = useState<'All' | 'Straight' | 'Parlay'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('journal-betType') as 'All' | 'Straight' | 'Parlay') || 'All';
+    }
+    return 'All';
+  });
   const [bookmaker, setBookmaker] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('journal-bookmaker') || 'All';
+      const stored = localStorage.getItem('journal-bookmaker') || 'All';
+      return stored !== 'All' ? stored.toLowerCase() : 'All';
     }
     return 'All';
   });
@@ -175,6 +343,10 @@ function JournalContent() {
   }, [sport]);
   
   useEffect(() => {
+    localStorage.setItem('journal-betType', betTypeFilter);
+  }, [betTypeFilter]);
+  
+  useEffect(() => {
     localStorage.setItem('journal-bookmaker', bookmaker);
   }, [bookmaker]);
   
@@ -235,18 +407,25 @@ function JournalContent() {
   
   // Left sidebar remains open on desktop for the desktop-focused layout
 
-  // Fetch bets from Supabase and check subscription
+  // Fetch bets from Supabase and check subscription - independent per tab
   useEffect(() => {
-    // Use onAuthStateChange to properly detect session on page load
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    let isMounted = true;
+    
+    const checkSubscriptionAndLoadBets = async () => {
+      // Get session independently for this tab
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
-        setHasProAccess(false);
-        setLoading(false);
-        router.push("/");
+        if (isMounted) {
+          setHasProAccess(false);
+          setLoading(false);
+          router.push("/");
+        }
         return;
       }
 
-      // Check Pro access - try profiles table first, fallback to user_metadata
+      // Check Pro access independently - query database directly
+      // This ensures each tab has its own subscription check without interference
       const { data: profile } = await (supabase
         .from('profiles') as any)
         .select('subscription_status, subscription_tier')
@@ -268,7 +447,9 @@ function JournalContent() {
         isPro = metadata.subscription_plan === 'pro';
       }
       
-      console.log('🔐 Journal Pro Status Check:', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
+      if (!isMounted) return;
+      
+      console.log('🔐 Journal Pro Status Check (independent):', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
       setHasProAccess(isActive && isPro);
       
       // Set user info for profile menu
@@ -284,6 +465,8 @@ function JournalContent() {
           .select('*')
           .order('date', { ascending: false });
 
+        if (!isMounted) return;
+
         if (error) {
           console.error('Error fetching bets:', error);
           setBets([]);
@@ -291,15 +474,57 @@ function JournalContent() {
           setBets(data || []);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Unexpected error fetching bets:', error);
         setBets([]);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    // Initial check
+    checkSubscriptionAndLoadBets();
+    
+    // Only listen for SIGNED_OUT events to handle logout
+    // Don't listen for other auth changes that could interfere with other tabs
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only react to sign out - let each tab manage its own subscription check
+      if (event === 'SIGNED_OUT') {
+        if (isMounted) {
+          setHasProAccess(false);
+          setIsPro(false);
+          setLoading(false);
+          router.push("/");
+        }
+      }
+      // For SIGNED_IN or TOKEN_REFRESHED, re-check subscription independently
+      else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (isMounted && session) {
+          // Re-check subscription independently without affecting other tabs
+          const { data: profile } = await (supabase
+            .from('profiles') as any)
+            .select('subscription_status, subscription_tier')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            const profileData = profile as any;
+            const isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+            const isPro = profileData.subscription_tier === 'pro';
+            if (isMounted) {
+              setHasProAccess(isActive && isPro);
+              setIsPro(isActive && isPro);
+            }
+          }
+        }
       }
     });
     
     // Cleanup listener on unmount
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, [router]);
@@ -319,15 +544,34 @@ function JournalContent() {
   };
 
   // Filter bets based on current filters (no currency filter)
+  // Voids bypass all filters but are still included in the result
   const filteredBets = useMemo(() => {
-    let filtered = bets;
+    // Separate voids from other bets
+    const voidBets = bets.filter(bet => bet.result === 'void');
+    let filtered = bets.filter(bet => bet.result !== 'void');
 
-    // Filter by sport
+    // Filter by sport (non-voids only)
     if (sport !== 'All') {
       filtered = filtered.filter(bet => bet.sport === sport);
     }
 
-    // Filter by selected calendar date
+    // Filter by bet type (straight vs parlay) (non-voids only)
+    if (betTypeFilter !== 'All') {
+      filtered = filtered.filter(bet => {
+        const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
+        return betTypeFilter === 'Parlay' ? isParlay : !isParlay;
+      });
+    }
+
+    // Filter by bookmaker (non-voids only)
+    if (bookmaker !== 'All') {
+      filtered = filtered.filter(bet => {
+        const entries = extractBookmakerEntries(bet.bookmaker);
+        return entries.some(entry => entry.key === bookmaker);
+      });
+    }
+
+    // Filter by selected calendar date (non-voids only)
     if (selectedDate && selectedDateType) {
       filtered = filtered.filter(bet => {
         const betDate = new Date(bet.date);
@@ -355,7 +599,7 @@ function JournalContent() {
         return true;
       });
     } else {
-      // Filter by date range when no specific date selected
+      // Filter by date range when no specific date selected (non-voids only)
       const now = new Date();
       if (dateRange !== 'all') {
         filtered = filtered.filter(bet => {
@@ -374,8 +618,47 @@ function JournalContent() {
       }
     }
 
-    return filtered;
-  }, [bets, sport, dateRange, selectedDate, selectedDateType]);
+    // Combine filtered non-voids with all voids
+    return [...filtered, ...voidBets];
+  }, [bets, sport, betTypeFilter, bookmaker, dateRange, selectedDate, selectedDateType]);
+
+  // Count non-void bets for "All Bookmakers" display
+  const nonVoidBetsCount = useMemo(() => {
+    return bets.filter(bet => bet.result !== 'void').length;
+  }, [bets]);
+
+  const bookmakerOptions = useMemo(() => {
+    const counts: Record<string, { count: number; raw: string }> = {};
+
+    // Exclude voids from bookmaker counts
+    bets.filter(bet => bet.result !== 'void').forEach(bet => {
+      const entries = extractBookmakerEntries(bet.bookmaker);
+      entries.forEach(entry => {
+        const key = entry.key || 'unknown';
+        if (!counts[key]) {
+          counts[key] = { count: 0, raw: entry.raw };
+        }
+        counts[key].count += 1;
+      });
+    });
+
+    return Object.entries(counts)
+      .map(([key, info]) => ({
+        value: key,
+        label: getBookmakerDisplayName({ key, raw: info.raw }),
+        count: info.count,
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [bets]);
+
+  useEffect(() => {
+    if (bookmaker !== 'All') {
+      const exists = bookmakerOptions.some(option => option.value === bookmaker);
+      if (!exists) {
+        setBookmaker('All');
+      }
+    }
+  }, [bookmaker, bookmakerOptions]);
 
   // Calculate statistics with currency conversion
   const stats = useMemo(() => {
@@ -431,17 +714,18 @@ function JournalContent() {
         ? convertedStake * (bet.odds - 1) 
         : -convertedStake;
       
-      // Use bookmaker ID if available, otherwise 'Unknown'
-      const bookmakerId = bet.bookmaker || 'Unknown';
-      bookmakerData[bookmakerId] = (bookmakerData[bookmakerId] || 0) + profit;
+      const entries = extractBookmakerEntries(bet.bookmaker);
+      
+      entries.forEach(entry => {
+        const key = entry.key || 'unknown';
+        bookmakerData[key] = (bookmakerData[key] || 0) + profit;
+      });
     });
     
     // Convert bookmaker IDs to display names
     let result = Object.entries(bookmakerData)
       .map(([bookmakerId, profit]) => {
-        // Get display name from bookmaker info if available
-        const bookmakerInfo = bookmakerId !== 'Unknown' ? getBookmakerInfo(bookmakerId) : null;
-        const displayName = bookmakerInfo ? bookmakerInfo.name : bookmakerId;
+        const displayName = getBookmakerDisplayName({ key: bookmakerId, raw: bookmakerId });
         return { bookmaker: displayName, profit, bookmakerId };
       })
       .sort((a, b) => b.profit - a.profit);
@@ -466,7 +750,10 @@ function JournalContent() {
         ? convertedStake * (bet.odds - 1) 
         : -convertedStake;
       
-      const marketType = bet.market || 'Other';
+      let marketType = bet.market || 'Other';
+      if (bet.market && bet.market.toLowerCase().startsWith('parlay')) {
+        marketType = 'Parlay';
+      }
       marketData[marketType] = (marketData[marketType] || 0) + profit;
     });
     
@@ -915,20 +1202,27 @@ function JournalContent() {
                      <option value="All">All Sports</option>
                      <option value="NBA">NBA</option>
                    </select>
-                   <select
-                     value={bookmaker}
-                     onChange={(e) => setBookmaker(e.target.value)}
-                     className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                   >
-                     <option value="All">All Bookmakers</option>
-                     <option value="DraftKings">DraftKings</option>
-                     <option value="FanDuel">FanDuel</option>
-                     <option value="BetMGM">BetMGM</option>
-                     <option value="Caesars">Caesars</option>
-                     <option value="BetRivers">BetRivers</option>
-                     <option value="PointsBet">PointsBet</option>
-                     <option value="Bet365">Bet365</option>
-                   </select>
+                  <select
+                    value={betTypeFilter}
+                    onChange={(e) => setBetTypeFilter(e.target.value as 'All' | 'Straight' | 'Parlay')}
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="All">All Bet Types</option>
+                    <option value="Straight">Straight Bets</option>
+                    <option value="Parlay">Parlays</option>
+                  </select>
+                  <select
+                    value={bookmaker}
+                    onChange={(e) => setBookmaker(e.target.value)}
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="All">All Bookmakers ({nonVoidBetsCount})</option>
+                    {bookmakerOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} ({option.count})
+                      </option>
+                    ))}
+                  </select>
                   <div className="relative ml-auto z-40" ref={timeframeDropdownRef}>
                      <button
                        data-timeframe-button
@@ -1090,6 +1384,7 @@ function JournalContent() {
                             color: isDark ? '#FFFFFF' : '#000000'
                           }}
                           labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                          itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                           labelFormatter={(value: number) => `Bet No: ${value}`}
                           formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
                           cursor={{ stroke: isDark ? '#4b5563' : '#9ca3af', strokeWidth: 1 }}
@@ -1309,6 +1604,8 @@ function JournalContent() {
                                 borderRadius: '8px',
                                 color: isDark ? '#FFFFFF' : '#000000'
                               }}
+                              labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                              itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                               formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
                               cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
                             />
@@ -1374,6 +1671,8 @@ function JournalContent() {
                               borderRadius: '8px',
                               color: isDark ? '#FFFFFF' : '#000000'
                             }}
+                            labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                            itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                             formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
                             cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
                           />
@@ -1436,6 +1735,11 @@ function JournalContent() {
                         : 0;
                       const betDate = new Date(bet.date);
                       const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      
+                      // Check if this is a parlay
+                      const isParlay = bet.market && bet.market.toLowerCase().startsWith('parlay');
+                      const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
+                      const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
 
                       return (
                         <div key={bet.id} className={`p-1.5 md:p-2 rounded-lg border-2 ${
@@ -1464,10 +1768,25 @@ function JournalContent() {
                               <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
                             )}
                           </div>
-                          <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
+                          {isParlay && parlayLegs.length > 0 ? (
+                            <>
+                              <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5">
+                                {legCount} leg Parlay
+                              </div>
+                              <div className="text-[9px] md:text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5">
+                                {parlayLegs.map((leg, index) => (
+                                  <div key={index} className="break-words">
+                                    {leg.playerName} {leg.overUnder} {leg.line} {leg.statName}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
+                          )}
                           <div className="flex items-center justify-between text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 flex-wrap gap-1">
                             <span className="break-words">Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
-                            <span className="whitespace-nowrap">Odds: {bet.odds.toFixed(2)}</span>
+                            <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
                           </div>
                           {(bet.market || bet.opponent) && (
                             <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-500 break-words">
@@ -1475,7 +1794,7 @@ function JournalContent() {
                             </div>
                           )}
                           <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400">
-                            Bookmaker: <span className="font-medium">{bet.bookmaker || 'Unknown'}</span>
+                            Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void')}</span>
                           </div>
                         </div>
                       );
@@ -1532,20 +1851,31 @@ function JournalContent() {
                   <option value="NBA">NBA</option>
                 </select>
                 
+                {/* Bet Type Dropdown */}
+                <select
+                  value={betTypeFilter}
+                  onChange={(e) => setBetTypeFilter(e.target.value as 'All' | 'Straight' | 'Parlay')}
+                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                >
+                  <option value="All">All Bet Types</option>
+                  <option value="Straight">Straight Bets</option>
+                  <option value="Parlay">Parlays</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 w-full">
                 {/* Bookmaker Dropdown */}
                 <select
                   value={bookmaker}
                   onChange={(e) => setBookmaker(e.target.value)}
                   className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 >
-                  <option value="All">All Bookmakers</option>
-                  <option value="DraftKings">DraftKings</option>
-                  <option value="FanDuel">FanDuel</option>
-                  <option value="BetMGM">BetMGM</option>
-                  <option value="Caesars">Caesars</option>
-                  <option value="BetRivers">BetRivers</option>
-                  <option value="PointsBet">PointsBet</option>
-                  <option value="Bet365">Bet365</option>
+                  <option value="All">All Bookmakers ({bets.length})</option>
+                  {bookmakerOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count})
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1667,6 +1997,7 @@ function JournalContent() {
                     color: isDark ? '#FFFFFF' : '#000000'
                   }}
                   labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                  itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                   labelFormatter={(value: number) => `Bet No: ${value}`}
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
                   cursor={{ stroke: isDark ? '#4b5563' : '#9ca3af', strokeWidth: 1 }}
@@ -1938,6 +2269,8 @@ function JournalContent() {
                       borderRadius: '8px',
                       color: isDark ? '#FFFFFF' : '#000000'
                     }}
+                    labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                    itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
                     cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
                   />
@@ -2006,6 +2339,8 @@ function JournalContent() {
                       borderRadius: '8px',
                       color: isDark ? '#FFFFFF' : '#000000'
                     }}
+                    labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+                    itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
                     cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
                   />
@@ -2067,6 +2402,11 @@ function JournalContent() {
                   ? -convertedStake 
                   : 0;
                 
+                // Check if this is a parlay
+                const isParlay = bet.market && bet.market.toLowerCase().startsWith('parlay');
+                const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
+                const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
+                
                 const betDate = new Date(bet.date);
                 const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -2099,10 +2439,25 @@ function JournalContent() {
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
                       )}
                     </div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
+                    {isParlay && parlayLegs.length > 0 ? (
+                      <>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+                          {legCount} leg Parlay
+                        </div>
+                        <div className="text-xs text-slate-700 dark:text-slate-300 space-y-0.5 mb-1">
+                          {parlayLegs.map((leg, index) => (
+                            <div key={index} className="break-words">
+                              {leg.playerName} {leg.overUnder} {leg.line} {leg.statName}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
+                    )}
                     <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                       <span>Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
-                      <span>Odds: {bet.odds.toFixed(2)}</span>
+                      <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
                     </div>
                     {(bet.market || bet.opponent) && (
                       <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">

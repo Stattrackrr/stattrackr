@@ -1,58 +1,99 @@
-// Types for Ball Don't Lie API - Advanced Stats
-export interface Player {
-  id: number;
-  first_name: string;
-  last_name: string;
-  position: string;
-  height?: string;
-  weight?: string;
-  jersey_number?: string;
-  college?: string;
-  country?: string;
-  draft_year?: number;
-  draft_round?: number;
-  draft_number?: number;
+// Types for NBA Dashboard
+
+export type OddsFormat = 'american' | 'decimal';
+
+export type BookRow = {
+  name: string;
+  H2H: { home: string; away: string };
+  Spread: { line: string; over: string; under: string };
+  Total: { line: string; over: string; under: string };
+  PTS: { line: string; over: string; under: string };
+  REB: { line: string; over: string; under: string };
+  AST: { line: string; over: string; under: string };
+};
+
+export type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
+export type DepthChartPlayer = { name: string; jersey?: string };
+export type DepthChartData = Record<DepthPos, DepthChartPlayer[]>;
+
+export type DerivedOdds = { openingLine?: number | null; currentLine?: number | null };
+export type MovementRow = { ts: number; timeLabel: string; line: number; change: string; direction: 'up' | 'down' | 'flat' };
+export type MatchupInfo = { tipoffLocal?: string | null; tipoffDate?: string | null } | null;
+
+export interface OfficialOddsCardProps {
+  isDark: boolean;
+  derivedOdds: DerivedOdds;
+  intradayMovements: MovementRow[];
+  selectedTeam: string;
+  opponentTeam: string;
+  selectedTeamLogoUrl: string;
+  opponentTeamLogoUrl: string;
+  matchupInfo: MatchupInfo;
+  oddsFormat: OddsFormat;
+  books: BookRow[];
+  fmtOdds: (odds: string) => string;
+  lineMovementData?: {
+    openingLine: { line: number; bookmaker: string; timestamp: string } | null;
+    currentLine: { line: number; bookmaker: string; timestamp: string } | null;
+    impliedOdds: number | null;
+    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
+  } | null;
+  selectedStat?: string;
 }
 
-export interface Team {
+export interface BallDontLieGame {
   id: number;
-  conference: string;
-  division: string;
-  city: string;
-  name: string;
-  full_name: string;
-  abbreviation: string;
+  date: string;
+  home_team?: { id: number; abbreviation: string; full_name: string; name: string };
+  visitor_team?: { id: number; abbreviation: string; full_name: string; name: string };
+  season: number;
+  status: string;
 }
+
+export interface BallDontLieStats {
+  id: number;
+  ast: number; blk: number; dreb: number;
+  fg3_pct: number; fg3a: number; fg3m: number;
+  fg_pct: number; fga: number; fgm: number;
+  ft_pct: number; fta: number; ftm: number;
+  min: string; oreb: number; pf: number; pts: number; reb: number;
+  stl: number; turnover: number;
+  game?: BallDontLieGame;
+  team?: { id: number; abbreviation: string; full_name: string; name: string };
+  player?: any;
+}
+
+export type BdlSearchResult = { id: number; full: string; team?: string; pos?: string };
+export type EspnPlayerData = { name: string; jersey?: string; height?: string; weight?: number; team?: string; position?: string };
+
+export const SESSION_KEY = 'nba_dashboard_session_v1';
+export type SavedSession = {
+  player: BdlSearchResult;
+  selectedStat: string;
+  selectedTimeframe: string;
+  propsMode: 'player' | 'team';
+};
+
+export type AltLineItem = {
+  bookmaker: string;
+  line: number;
+  over: string;
+  under: string;
+  isPickem?: boolean;
+  variantLabel?: string | null;
+};
 
 export interface AdvancedStats {
-  id: number;
-  assist_percentage: number;
-  assist_ratio: number;
-  assist_to_turnover: number;
-  defensive_rating: number;
-  defensive_rebound_percentage: number;
-  effective_field_goal_percentage: number;
-  net_rating: number;
-  offensive_rating: number;
-  offensive_rebound_percentage: number;
-  pie: number;
-  rebound_percentage: number;
-  true_shooting_percentage: number;
-  turnover_ratio: number;
-  usage_percentage: number;
-  pace: number;
-  player: Player;
-}
-
-export interface AdvancedStatsResponse {
-  data: AdvancedStats[];
-  meta: {
-    next_cursor?: number;
-    per_page: number;
-  };
-}
-
-export interface ApiError {
-  message: string;
-  status?: number;
+  offensive_rating?: number | null;
+  defensive_rating?: number | null;
+  net_rating?: number | null;
+  true_shooting_percentage?: number | null;
+  effective_field_goal_percentage?: number | null;
+  usage_percentage?: number | null;
+  pie?: number | null;
+  pace?: number | null;
+  rebound_percentage?: number | null;
+  assist_percentage?: number | null;
+  offensive_rebound_percentage?: number | null;
+  assist_to_turnover?: number | null;
 }

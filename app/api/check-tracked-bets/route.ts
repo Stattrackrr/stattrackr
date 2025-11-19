@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cronAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;
+
+if (!BALLDONTLIE_API_KEY) {
+  throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+}
 
 interface PlayerStats {
   pts: number;
@@ -15,7 +21,23 @@ interface PlayerStats {
   fg3m: number;
 }
 
-export async function GET() {
+const logDebug = (...args: Parameters<typeof console.log>) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
+
+export async function GET(request: Request) {
+  const authResult = authorizeCronRequest(request);
+  if (!authResult.authorized) {
+    return authResult.response;
+  }
+
+  const rateResult = checkRateLimit(request, strictRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
   try {
     // Fetch all pending, live tracked props, and completed ones missing individual stat breakdown
     const { data: trackedProps, error } = await supabaseAdmin
@@ -23,14 +45,14 @@ export async function GET() {
       .select('*')
       .or('status.in.(pending,live),and(status.eq.completed,actual_pts.is.null)');
 
-    console.log('Fetched tracked props:', trackedProps?.length || 0);
+    logDebug('Fetched tracked props:', trackedProps?.length || 0);
     if (error) {
       console.error('Error fetching tracked props:', error);
       throw error;
     }
 
     if (!trackedProps || trackedProps.length === 0) {
-      console.log('No tracked props found with pending or live status');
+      logDebug('No tracked props found with pending or live status');
       return NextResponse.json({ message: 'No pending tracked bets', updated: 0 });
     }
 
@@ -50,7 +72,7 @@ export async function GET() {
         `https://api.balldontlie.io/v1/games?dates[]=${gameDate}`,
         {
           headers: {
-            'Authorization': BALLDONTLIE_API_KEY!,
+            'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
           },
         }
       );
@@ -76,7 +98,7 @@ export async function GET() {
         });
 
         if (!game) {
-          console.log(`Game not found for ${prop.team} vs ${prop.opponent}`);
+          logDebug(`Game not found for ${prop.team} vs ${prop.opponent}`);
           continue;
         }
 
@@ -103,13 +125,13 @@ export async function GET() {
             .eq('id', prop.id)
             .in('status', ['pending', 'live']); // Update if pending or already live
           
-          console.log(`Game ${prop.team} vs ${prop.opponent} is live, updated status`);
+          logDebug(`Game ${prop.team} vs ${prop.opponent} is live, updated status`);
           continue;
         }
         
         // Check if game is final
         if (!gameStatus.includes('final')) {
-          console.log(`Game ${prop.team} vs ${prop.opponent} is ${game.status}, not final yet`);
+          logDebug(`Game ${prop.team} vs ${prop.opponent} is ${game.status}, not final yet`);
           continue;
         }
 
@@ -118,7 +140,7 @@ export async function GET() {
           `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${prop.player_id}`,
           {
             headers: {
-              'Authorization': BALLDONTLIE_API_KEY!,
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
             },
           }
         );
@@ -131,7 +153,7 @@ export async function GET() {
         const statsData = await statsResponse.json();
         
         if (!statsData.data || statsData.data.length === 0) {
-          console.log(`No stats found for player ${prop.player_name}`);
+          logDebug(`No stats found for player ${prop.player_name}`);
           continue;
         }
 
@@ -162,7 +184,7 @@ export async function GET() {
           if (updateError) {
             console.error(`Failed to update prop ${prop.id}:`, updateError);
           } else {
-            console.log(`Voided ${prop.player_name} ${prop.stat_type} ${prop.over_under} ${prop.line}: player played 0 minutes`);
+            logDebug(`Voided ${prop.player_name} ${prop.stat_type} ${prop.over_under} ${prop.line}: player played 0 minutes`);
             updatedCount++;
           }
           continue;
@@ -208,7 +230,7 @@ export async function GET() {
             actualValue = stats.fg3m;
             break;
           default:
-            console.log(`Unknown stat type: ${prop.stat_type}`);
+            logDebug(`Unknown stat type: ${prop.stat_type}`);
             continue;
         }
 
@@ -239,7 +261,7 @@ export async function GET() {
         if (updateError) {
           console.error(`Failed to update prop ${prop.id}:`, updateError);
         } else {
-          console.log(`Updated ${prop.player_name} ${prop.stat_type} ${prop.over_under} ${prop.line}: ${result} (actual: ${actualValue})`);
+          logDebug(`Updated ${prop.player_name} ${prop.stat_type} ${prop.over_under} ${prop.line}: ${result} (actual: ${actualValue})`);
           updatedCount++;
         }
       }

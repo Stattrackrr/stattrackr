@@ -27,19 +27,19 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betonlineag': {
     name: 'BetOnline.ag',
     logo: 'BO',
-    logoUrl: 'https://logo.clearbit.com/betonline.ag',
+    logoUrl: '/images/betonline.webp',
     color: '#6B7280',
   },
   'betonline.ag': {
     name: 'BetOnline.ag',
     logo: 'BO',
-    logoUrl: 'https://logo.clearbit.com/betonline.ag',
+    logoUrl: '/images/betonline.webp',
     color: '#6B7280',
   },
   'betonline': {
     name: 'BetOnline.ag',
     logo: 'BO',
-    logoUrl: 'https://logo.clearbit.com/betonline.ag',
+    logoUrl: '/images/betonline.webp',
     color: '#6B7280',
   },
   'betrivers': {
@@ -153,13 +153,13 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'underdog': {
     name: 'Underdog Fantasy',
     logo: 'UD',
-    logoUrl: 'https://logo.clearbit.com/underdogfantasy.com',
+    logoUrl: '/images/underdog.avif',
     color: '#F5C000',
   },
   'underdog fantasy': {
     name: 'Underdog Fantasy',
     logo: 'UD',
-    logoUrl: 'https://logo.clearbit.com/underdogfantasy.com',
+    logoUrl: '/images/underdog.avif',
     color: '#F5C000',
   },
 };

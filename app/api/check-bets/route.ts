@@ -2,8 +2,14 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cronAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY;
+
+if (!BALLDONTLIE_API_KEY) {
+  throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+}
 
 /**
  * Check if any NBA games finished recently (in the last hour)
@@ -23,7 +29,7 @@ async function shouldCheckBets(): Promise<{ shouldCheck: boolean; recentlyFinish
     const url = `https://api.balldontlie.io/v1/games?start_date=${yesterdayStr}&end_date=${todayStr}`;
     const res = await fetch(url, {
       headers: {
-        'Authorization': BALLDONTLIE_API_KEY || '',
+        'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
       },
       cache: 'no-store',
     });
@@ -111,6 +117,21 @@ async function shouldCheckBets(): Promise<{ shouldCheck: boolean; recentlyFinish
 }
 
 export async function GET(req: Request) {
+  const authResult = authorizeCronRequest(req);
+  if (!authResult.authorized) {
+    return authResult.response;
+  }
+
+  const rateResult = checkRateLimit(req, strictRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    throw new Error('CRON_SECRET environment variable is required');
+  }
+
   try {
     // First, check if any games finished recently
     const { shouldCheck, recentlyFinished, reason } = await shouldCheckBets();
@@ -147,7 +168,11 @@ export async function GET(req: Request) {
 
     // Check tracked bets
     try {
-      const trackedResponse = await fetch(`${baseUrl}/api/check-tracked-bets`);
+      const trackedResponse = await fetch(`${baseUrl}/api/check-tracked-bets`, {
+        headers: {
+          Authorization: `Bearer ${cronSecret}`,
+        },
+      });
       if (trackedResponse.ok) {
         const data = await trackedResponse.json();
         results.trackedBets = { updated: data.updated || 0, total: data.total || 0, error: null };
@@ -160,7 +185,11 @@ export async function GET(req: Request) {
 
     // Check journal bets
     try {
-      const journalResponse = await fetch(`${baseUrl}/api/check-journal-bets`);
+      const journalResponse = await fetch(`${baseUrl}/api/check-journal-bets`, {
+        headers: {
+          Authorization: `Bearer ${cronSecret}`,
+        },
+      });
       if (journalResponse.ok) {
         const data = await journalResponse.json();
         results.journalBets = { updated: data.updated || 0, total: data.total || 0, error: null };
