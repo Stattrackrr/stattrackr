@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
     console.log(`[Team Tracking Stats] Fetching ${category} stats for ${team}${filterSuffix}, season ${season}`);
 
-    const seasonStr = `${season}-${String(parseInt(season) + 1).slice(-2)}`;
+    const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     
     // Determine which endpoint to use based on category
     const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
