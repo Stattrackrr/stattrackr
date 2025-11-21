@@ -207,7 +207,7 @@ export function Example6_CompactStats({ playerId }: { playerId: string }) {
       <div className="flex items-center gap-2">
         <span>💪</span>
         <span className="text-sm">
-          Contested Reb: <strong>{data.rebounding_stats?.REB_CONTESTED}</strong>
+          Contested Reb: <strong>{data.rebounding_stats?.REB_CONTEST}</strong>
         </span>
       </div>
     </div>
@@ -227,7 +227,7 @@ export async function Example7_DirectFetch(playerId: string) {
       potentialAssists: data.passing_stats?.POTENTIAL_AST,
       assistPointsCreated: data.passing_stats?.AST_PTS_CREATED,
       reboundChances: data.rebounding_stats?.REB_CHANCES,
-      contestedRebounds: data.rebounding_stats?.REB_CONTESTED,
+      contestedRebounds: data.rebounding_stats?.REB_CONTEST,
     };
   } catch (error) {
     console.error('Failed to fetch tracking stats:', error);
