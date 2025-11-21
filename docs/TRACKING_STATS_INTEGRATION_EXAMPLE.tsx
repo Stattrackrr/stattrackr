@@ -131,7 +131,7 @@ export function Example4_TooltipInfo({ playerId }: { playerId: string }) {
           <p><strong>Potential Assists:</strong> {data.passing_stats?.POTENTIAL_AST}</p>
           <p><strong>Assist Points:</strong> {data.passing_stats?.AST_PTS_CREATED}</p>
           <p><strong>Rebound Chances:</strong> {data.rebounding_stats?.REB_CHANCES}</p>
-          <p><strong>Contested Reb:</strong> {data.rebounding_stats?.REB_CONTESTED}</p>
+          <p><strong>Contested Reb:</strong> {data.rebounding_stats?.REB_CONTEST}</p>
         </div>
       )}
     </div>
