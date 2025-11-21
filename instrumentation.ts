@@ -10,5 +10,9 @@ export async function register() {
     // Import and start the odds scheduler
     const { startOddsScheduler } = await import('./lib/oddsScheduler');
     startOddsScheduler();
+    
+    // Import and start the tracking stats scheduler
+    const { startTrackingStatsScheduler } = await import('./lib/trackingStatsScheduler');
+    startTrackingStatsScheduler();
   }
 }

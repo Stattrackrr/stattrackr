@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getNbaStatsId } from '@/lib/playerIdMapping';
 
 interface ShotZone {
   name: string;
@@ -7,8 +8,56 @@ interface ShotZone {
   fgPct: number;
 }
 
+interface EnhancedZone {
+  fgm: number;
+  fga: number;
+  fgPct: number;
+  pts: number;
+}
+
+interface OpponentZoneDefense {
+  fgPctAllowed: number;
+  rank: number;
+}
+
+interface ZoneRanking {
+  rank: number;
+  fgPct: number;
+  fga: number;
+  fgm: number;
+  totalTeams: number;
+}
+
+interface EnhancedShotData {
+  shotZones: {
+    restrictedArea: EnhancedZone;
+    paint: EnhancedZone;
+    midRange: EnhancedZone;
+    leftCorner3: EnhancedZone;
+    rightCorner3: EnhancedZone;
+    aboveBreak3: EnhancedZone;
+  };
+  opponentDefense?: {
+    restrictedArea: OpponentZoneDefense;
+    paint: OpponentZoneDefense;
+    midRange: OpponentZoneDefense;
+    corner3: OpponentZoneDefense;
+    aboveBreak3: OpponentZoneDefense;
+  } | null;
+  opponentRankings?: {
+    restrictedArea: ZoneRanking;
+    paint: ZoneRanking;
+    midRange: ZoneRanking;
+    leftCorner3: ZoneRanking;
+    rightCorner3: ZoneRanking;
+    aboveBreak3: ZoneRanking;
+  } | null;
+}
+
 interface ShotChartProps {
   isDark: boolean;
+  playerId?: string;
+  opponentTeam?: string;
   shotData?: {
     '40+_ft._fga'?: number;
     '40+_ft._fgm'?: number;
@@ -40,11 +89,128 @@ interface ShotChartProps {
   };
 }
 
-const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
+const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, shotData }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [enhancedData, setEnhancedData] = useState<EnhancedShotData | null>(null);
+  const [enhancedLoading, setEnhancedLoading] = useState(false);
+  const [allowFallback, setAllowFallback] = useState(false);
+  const [showMakes, setShowMakes] = useState(false); // Toggle between attempts vs makes distribution
+  const [showOppDef, setShowOppDef] = useState(false); // Show opponent defense
+  const [showOppDefMakes, setShowOppDefMakes] = useState(false); // Show opponent defense makes (vs attempts)
+
+  console.log('[Shot Chart] Component rendered with playerId:', playerId);
+
+  // Set 20-second timeout before allowing fallback to BallDontLie
+  useEffect(() => {
+    setAllowFallback(false);
+    const timeout = setTimeout(() => {
+      console.log('[Shot Chart] 20 seconds passed, allowing BallDontLie fallback');
+      setAllowFallback(true);
+    }, 20000); // 20 seconds
+
+    return () => clearTimeout(timeout);
+  }, [playerId, opponentTeam]);
+
+  // Fetch enhanced shot data from NBA Stats API
+  useEffect(() => {
+    console.log('[Shot Chart] useEffect triggered with playerId:', playerId, 'opponentTeam:', opponentTeam);
+    const fetchEnhanced = async () => {
+      if (!playerId) {
+        setEnhancedData(null); // Clear data when no player
+        return;
+      }
+      
+      // Convert BallDontLie ID to NBA Stats ID
+      const nbaPlayerId = getNbaStatsId(playerId);
+      console.log('[Shot Chart] Player ID conversion:', { 
+        bdlId: playerId, 
+        nbaId: nbaPlayerId 
+      });
+      
+      if (!nbaPlayerId) {
+        console.warn('[Shot Chart] Could not convert player ID to NBA Stats format:', playerId);
+        setEnhancedData(null); // Clear data on conversion failure
+        return;
+      }
+      
+      // Clear old data immediately when player changes
+      setEnhancedData(null);
+      setEnhancedLoading(true);
+      
+      try {
+        console.log('[Shot Chart] Opponent team value:', {
+          opponentTeam,
+          willFetchDefense: opponentTeam && opponentTeam !== 'N/A'
+        });
+        
+        const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
+        console.log('[Shot Chart] Fetching enhanced data:', {
+          bdlPlayerId: playerId,
+          nbaPlayerId: nbaPlayerId,
+          opponentTeam,
+          url: url
+        });
+        const response = await fetch(url);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
+          setEnhancedData(data);
+        } else {
+          console.error('[Shot Chart] API returned error:', response.status);
+          setEnhancedData(null);
+        }
+      } catch (err) {
+        console.error('[Shot Chart] Error fetching enhanced data:', err);
+        setEnhancedData(null);
+      } finally {
+        setEnhancedLoading(false);
+      }
+    };
+
+    fetchEnhanced();
+  }, [playerId, opponentTeam]);
   
   // Process shot data into zones
-  const zones: ShotZone[] = shotData ? [
+  // Use enhanced NBA Stats API data if available (has corner 3s), otherwise fallback to BallDontLie after 20s
+  const zones: ShotZone[] = enhancedData?.shotZones ? [
+    {
+      name: 'Restricted',
+      fga: enhancedData.shotZones.restrictedArea.fga,
+      fgm: enhancedData.shotZones.restrictedArea.fgm,
+      fgPct: enhancedData.shotZones.restrictedArea.fgPct,
+    },
+    {
+      name: 'Paint',
+      fga: enhancedData.shotZones.paint.fga,
+      fgm: enhancedData.shotZones.paint.fgm,
+      fgPct: enhancedData.shotZones.paint.fgPct,
+    },
+    {
+      name: 'Mid-Range',
+      fga: enhancedData.shotZones.midRange.fga,
+      fgm: enhancedData.shotZones.midRange.fgm,
+      fgPct: enhancedData.shotZones.midRange.fgPct,
+    },
+    {
+      name: 'Left Corner 3',
+      fga: enhancedData.shotZones.leftCorner3.fga,
+      fgm: enhancedData.shotZones.leftCorner3.fgm,
+      fgPct: enhancedData.shotZones.leftCorner3.fgPct,
+    },
+    {
+      name: 'Right Corner 3',
+      fga: enhancedData.shotZones.rightCorner3.fga,
+      fgm: enhancedData.shotZones.rightCorner3.fgm,
+      fgPct: enhancedData.shotZones.rightCorner3.fgPct,
+    },
+    {
+      name: 'Above Break 3',
+      fga: enhancedData.shotZones.aboveBreak3.fga,
+      fgm: enhancedData.shotZones.aboveBreak3.fgm,
+      fgPct: enhancedData.shotZones.aboveBreak3.fgPct,
+    },
+  ] : (allowFallback && shotData) ? [
     {
       name: 'Paint',
       fga: shotData['less_than_5_ft._fga'] || 0,
@@ -77,16 +243,19 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
     },
   ] : [];
 
-  // Calculate 3-point percentage
-  if (zones[4] && zones[4].fga > 0) {
+  // Calculate 3-point percentage for BallDontLie fallback
+  if (!enhancedData && zones[4] && zones[4].fga > 0) {
     zones[4].fgPct = (zones[4].fgm / zones[4].fga) * 100;
   }
 
   // Calculate total FGA for distribution percentages
   const totalFga = zones.reduce((sum, zone) => sum + zone.fga, 0);
+  const totalFgm = zones.reduce((sum, zone) => sum + zone.fgm, 0);
   
-  // Calculate distribution percentages
-  const distributions = zones.map(zone => (zone.fga / totalFga) * 100);
+  // Calculate distributions based on toggle: attempts or makes
+  const distributions = showMakes 
+    ? zones.map(zone => (zone.fgm / totalFgm) * 100)  // % of total makes
+    : zones.map(zone => (zone.fga / totalFga) * 100); // % of total attempts
 
   const getColorForDistribution = (pct: number) => {
     if (pct >= 30) return '#10b981'; // teal/green ≥30%
@@ -96,11 +265,19 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
     return '#ef4444'; // red <10%
   };
 
-  if (!shotData) {
+  // Get color based on defensive ranking (rank 1 = best = red, rank 30 = worst = green)
+  const getColorForRank = (rank: number) => {
+    if (rank <= 5) return '#ef4444'; // Red for ranks 1-5 (elite defense)
+    if (rank <= 11) return '#f97316'; // Orange for ranks 6-11 (good defense)
+    if (rank <= 21) return '#fbbf24'; // Yellow for ranks 12-21 (average defense)
+    return '#10b981'; // Green for ranks 22-30 (weak defense - good for offense!)
+  };
+
+  if (!enhancedData && (!allowFallback || !shotData)) {
     return (
       <div className="w-full h-full flex items-center justify-center p-6" style={{ minHeight: '200px' }}>
         <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-          No shot data available
+          {enhancedLoading ? 'Loading NBA Stats data...' : 'No shot data available'}
         </div>
       </div>
     );
@@ -140,13 +317,58 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
           </button>
           {showTooltip && (
             <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
-              <strong>Shot Distribution</strong><br/>
-              Percentages show where the player takes their shots from, not shooting accuracy.<br/><br/>
-              Example: 10% means 10% of total shots are taken from that zone.
+              <strong>Shot Chart Views</strong><br/>
+              <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player's shot distribution<br/>
+              <span className="text-green-600 dark:text-green-400">Makes</span> - Player's make distribution<br/>
+              <span className="text-purple-600 dark:text-purple-400">Opp Def Rank</span> - Team defense rankings by zone (lower % = better rank)
             </div>
           )}
         </div>
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setShowMakes(false);
+              setShowOppDef(false);
+            }}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              !showMakes && !showOppDef
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Attempts
+          </button>
+          <button
+            onClick={() => {
+              setShowMakes(true);
+              setShowOppDef(false);
+            }}
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+              showMakes && !showOppDef
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Makes
+          </button>
+          {enhancedData?.opponentRankings && opponentTeam && opponentTeam !== 'N/A' && (
+            <>
+              <button
+                onClick={() => {
+                  setShowOppDef(true);
+                  setShowOppDefMakes(false);
+                }}
+                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                  showOppDef && !showOppDefMakes
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Opp Def Rank
+              </button>
+            </>
+          )}
+        </div>
       </div>
       
       {/* SVG Chart */}
@@ -165,13 +387,45 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
         <g clipPath="url(#roundedCourt)">
         {/* ===== ZONE FILLS (drawn first, behind lines) ===== */}
         
+        {/* Left Corner 3 - drawn first so it's underneath other zones, with rounded bottom-left corner */}
+        {enhancedData && (
+          <path
+            d={`M 0 270 
+                L 150 270 
+                L 150 ${baseline} 
+                L 15 ${baseline} 
+                Q 0 ${baseline} 0 ${baseline - 15} Z`}
+            fill={showOppDef && enhancedData?.opponentRankings?.leftCorner3 
+              ? getColorForRank(enhancedData.opponentRankings.leftCorner3.rank) 
+              : getColorForDistribution(distributions[3] || 0)}
+            stroke="none"
+          />
+        )}
+        
+        {/* Right Corner 3 - drawn first so it's underneath other zones, with rounded bottom-right corner */}
+        {enhancedData && (
+          <path
+            d={`M ${courtWidth - 150} 270 
+                L ${courtWidth} 270 
+                L ${courtWidth} ${baseline - 15} 
+                Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+                L ${courtWidth - 150} ${baseline} Z`}
+            fill={showOppDef && enhancedData?.opponentRankings?.rightCorner3 
+              ? getColorForRank(enhancedData.opponentRankings.rightCorner3.rank) 
+              : getColorForDistribution(distributions[4] || 0)}
+            stroke="none"
+          />
+        )}
+        
         {/* Paint zone (5-9ft shots) */}
         <rect
           x={paintLeft}
           y={freeThrowLine}
           width={paintWidth}
           height={baseline - freeThrowLine}
-          fill={getColorForDistribution(distributions[1] || 0)}
+          fill={showOppDef && enhancedData?.opponentRankings?.paint 
+            ? getColorForRank(enhancedData.opponentRankings.paint.rank) 
+            : getColorForDistribution(distributions[1] || 0)}
           stroke="none"
         />
         
@@ -181,12 +435,48 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
               L ${centerX - 60} ${baseline - 60} 
               Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
               L ${centerX + 60} ${baseline} Z`}
-          fill={getColorForDistribution(distributions[0] || 0)}
+          fill={showOppDef && enhancedData?.opponentRankings?.restrictedArea 
+            ? getColorForRank(enhancedData.opponentRankings.restrictedArea.rank) 
+            : getColorForDistribution(distributions[0] || 0)}
           stroke="#000"
           strokeWidth="3"
         />
         
-        {/* Mid-range zone - Complete border around paint with rounded bottom corners */}
+        {/* 3-point zone - area above mid-range, excluding corners when using NBA data (drawn BEFORE mid-range so mid-range goes on top) */}
+        <path
+          d={enhancedData 
+            ? `M 15 0 
+                L ${courtWidth - 15} 0 
+                Q ${courtWidth} 0 ${courtWidth} 15 
+                L ${courtWidth} 270 
+                L ${courtWidth - 150} 270 
+                L ${courtWidth - 150} ${freeThrowLine - 50} 
+                L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+                Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+                L 150 ${freeThrowLine - 50} 
+                L 150 270 
+                L 0 270 
+                L 0 15 
+                Q 0 0 15 0 Z`
+            : `M 15 0 
+                L ${courtWidth - 15} 0 
+                Q ${courtWidth} 0 ${courtWidth} 15 
+                L ${courtWidth} ${baseline - 15} 
+                Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+                L ${paintRight + midRangeWidth} ${baseline} 
+                L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+                Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+                L ${paintLeft - midRangeWidth} ${baseline} 
+                L 15 ${baseline} 
+                Q 0 ${baseline} 0 ${baseline - 15} 
+                L 0 15 
+                Q 0 0 15 0 Z`}
+          fill={showOppDef && enhancedData?.opponentRankings?.aboveBreak3 
+            ? getColorForRank(enhancedData.opponentRankings.aboveBreak3.rank) 
+            : getColorForDistribution(distributions[enhancedData ? 5 : 4] || 0)}
+        />
+        
+        {/* Mid-range zone - Complete border around paint with rounded bottom corners (drawn AFTER 3-point so it goes on top) */}
         <path
           d={`M ${paintLeft - midRangeWidth} ${baseline - 15} 
               Q ${paintLeft - midRangeWidth} ${baseline} ${paintLeft - midRangeWidth + 15} ${baseline} 
@@ -206,26 +496,10 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
               Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} 
               L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
               Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
-          fill={getColorForDistribution(distributions[2] || 0)}
+          fill={showOppDef && enhancedData?.opponentRankings?.midRange 
+            ? getColorForRank(enhancedData.opponentRankings.midRange.rank) 
+            : getColorForDistribution(distributions[2] || 0)}
           stroke="none"
-        />
-        
-        {/* 3-point zone - entire area above mid-range with all rounded corners */}
-        <path
-          d={`M 15 0 
-              L ${courtWidth - 15} 0 
-              Q ${courtWidth} 0 ${courtWidth} 15 
-              L ${courtWidth} ${baseline - 15} 
-              Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
-              L ${paintRight + midRangeWidth} ${baseline} 
-              L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
-              Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
-              L ${paintLeft - midRangeWidth} ${baseline} 
-              L 15 ${baseline} 
-              Q 0 ${baseline} 0 ${baseline - 15} 
-              L 0 15 
-              Q 0 0 15 0 Z`}
-          fill={getColorForDistribution(distributions[4] || 0)}
         />
         
         {/* ===== COURT LINES ===== */}
@@ -255,64 +529,151 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, shotData }) => {
           strokeWidth="3"
         />
         
-        {/* Restricted area */}
-        <path
-          d={`M ${centerX - restrictedRadius} ${baseline} A ${restrictedRadius} ${restrictedRadius} 0 0 0 ${centerX + restrictedRadius} ${baseline}`}
-          fill="none"
+        {/* Free throw mark */}
+        <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
+        
+        {/* Corner 3 separator lines - horizontal lines on left and right */}
+        <line
+          x1="0"
+          y1="270"
+          x2="90"
+          y2="270"
+          stroke="#000"
+          strokeWidth="3"
+        />
+        <line
+          x1="410"
+          y1="270"
+          x2="500"
+          y2="270"
           stroke="#000"
           strokeWidth="3"
         />
         
-        {/* Hoop */}
-        <circle cx={centerX} cy={baseline - 5} r="9" fill="none" stroke="#000" strokeWidth="2.5" />
+        {/* ===== PERCENTAGES OR DEFENSE RANKINGS (toggle between them) ===== */}
         
-        {/* Free throw mark */}
-        <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
-        
-        {/* ===== PERCENTAGES ===== */}
-        
-        {/* 3PT percentage */}
-        <text x={centerX} y="60" textAnchor="middle" fill="#fff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-          {distributions[4]?.toFixed(0) || 0}%
-        </text>
-        
-        {/* Mid-Range percentage - top */}
-        <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-          {distributions[2]?.toFixed(0) || 0}%
-        </text>
-        
-        {/* Paint percentage - in restricted area */}
-        <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-          {distributions[0]?.toFixed(0) || 0}%
-        </text>
-        
-        {/* 5-9ft percentage - in middle of paint */}
-        <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-          {distributions[1]?.toFixed(0) || 0}%
-        </text>
+        {showOppDef && enhancedData?.opponentRankings ? (
+          /* OPPONENT DEFENSE RANKINGS MODE - Show rankings (rank 1 = best defense = red) */
+          (() => {
+            const rankings = enhancedData.opponentRankings;
+            if (!rankings) return null;
+            
+            return (
+              <>
+                {/* Above-the-break 3 */}
+                <text x={centerX} y="60" textAnchor="middle" fill="#ffffff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                  #{rankings.aboveBreak3?.rank || '-'}
+                </text>
+                {/* Mid-Range */}
+                <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                  #{rankings.midRange?.rank || '-'}
+                </text>
+                {/* Restricted Area */}
+                <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                  #{rankings.restrictedArea?.rank || '-'}
+                </text>
+                {/* Paint */}
+                <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                  #{rankings.paint?.rank || '-'}
+                </text>
+                {/* Left Corner 3 - show individual rank */}
+                {enhancedData && (
+                  <>
+                    <text x="45" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                      #{rankings.leftCorner3?.rank || '-'}
+                    </text>
+                    <text x="455" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                      #{rankings.rightCorner3?.rank || '-'}
+                    </text>
+                  </>
+                )}
+              </>
+            );
+          })()
+        ) : (
+          /* PLAYER STATS MODE (attempts/makes distribution) */
+          <>
+            {/* Above-the-break 3PT percentage (or all 3s if using BallDontLie) */}
+            <text x={centerX} y="60" textAnchor="middle" fill="#fff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+              {(enhancedData ? distributions[5] : distributions[4])?.toFixed(0) || 0}%
+            </text>
+            
+            {/* Mid-Range percentage - top */}
+            <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+              {distributions[2]?.toFixed(0) || 0}%
+            </text>
+            
+            {/* Restricted area percentage */}
+            <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+              {distributions[0]?.toFixed(0) || 0}%
+            </text>
+            
+            {/* Paint percentage - in middle of paint */}
+            <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+              {distributions[1]?.toFixed(0) || 0}%
+            </text>
+            
+            {/* Left Corner 3 percentage - only show if using enhanced data */}
+            {enhancedData && (
+              <text x="45" y="330" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                {distributions[3]?.toFixed(0) || 0}%
+              </text>
+            )}
+            
+            {/* Right Corner 3 percentage - only show if using enhanced data */}
+            {enhancedData && (
+              <text x="455" y="330" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
+                {distributions[4]?.toFixed(0) || 0}%
+              </text>
+            )}
+          </>
+        )}
         </g>
       </svg>
       
       {/* Color Legend */}
-      <div className="flex items-center gap-4 text-sm font-medium">
-        <span className="text-gray-700 dark:text-gray-300">Shot Distribution:</span>
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
-          <span className="text-gray-600 dark:text-gray-400">≥30%</span>
+      {showOppDef && enhancedData?.opponentRankings ? (
+        <div className="flex items-center gap-4 text-sm font-medium flex-wrap">
+          <span className="text-gray-700 dark:text-gray-300">Defense Ranking:</span>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#1-5 (Elite)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#6-11 (Good)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#12-21 (Avg)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#22-30 (Weak)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#22c55e' }}></div>
-          <span className="text-gray-600 dark:text-gray-400">25-29%</span>
+      ) : (
+        <div className="flex items-center gap-4 text-sm font-medium">
+          <span className="text-gray-700 dark:text-gray-300">{showMakes ? 'Make Distribution:' : 'Shot Distribution:'}</span>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">≥30%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#22c55e' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">25-29%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">10-24%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
-          <span className="text-gray-600 dark:text-gray-400">10-24%</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-          <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
-        </div>
-      </div>
+      )}
+
     </div>
   );
 };

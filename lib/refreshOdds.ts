@@ -95,6 +95,7 @@ type MovementSnapshot = {
 };
 
 async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
+  console.log(`📊 Starting line movement state save for ${movementSnapshots.length} snapshots...`);
   const keys = Array.from(new Set(movementSnapshots.map((m) => m.compositeKey)));
 
   const chunkArray = <T,>(arr: T[], size: number): T[][] => {
@@ -110,6 +111,7 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   const lastEventTimestamps = new Map<string, string>();
   
   if (keys.length > 0) {
+    console.log(`🔍 Fetching existing state for ${keys.length} composite keys...`);
     const keyChunks = chunkArray(keys, 10);
     for (const chunk of keyChunks) {
       const { data, error } = await supabaseAdmin
@@ -233,6 +235,7 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   }
 
   if (latestUpserts.length > 0) {
+    console.log(`💾 Upserting ${latestUpserts.length} latest movement rows...`);
     const latestChunks = chunkArray(latestUpserts, 500);
     for (const chunk of latestChunks) {
       const { error: upsertError } = await supabaseAdmin
@@ -244,6 +247,7 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
         throw upsertError;
       }
     }
+    console.log(`✅ Successfully upserted ${latestUpserts.length} latest movement rows`);
   }
 
   if (movementEvents.length > 0) {
@@ -492,12 +496,23 @@ export async function refreshOddsData(
     cache.set(ODDS_CACHE_KEY, oddsCache, CACHE_TTL.ODDS);
 
     // Save snapshots to database for line movement tracking
-    try {
-      await saveOddsSnapshots(games);
-      console.log('📸 Odds snapshots saved to database');
-    } catch (error) {
-      console.error('❌ Failed to save odds snapshots:', error);
-      // Don't fail the whole refresh if snapshot saving fails
+    // Skip in development to prevent server freezing
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        // Add 10-second timeout to prevent hanging
+        await Promise.race([
+          saveOddsSnapshots(games),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Snapshot save timeout after 10s')), 10000)
+          )
+        ]);
+        console.log('📸 Odds snapshots saved to database');
+      } catch (error) {
+        console.error('❌ Failed to save odds snapshots:', error);
+        // Don't fail the whole refresh if snapshot saving fails
+      }
+    } else {
+      console.log('⚠️ Skipping odds snapshots in development mode');
     }
 
     const elapsed = Date.now() - startTime;
@@ -629,24 +644,12 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
         }
       }
     }
-    console.log(`[ODDS DEBUG] All bookmakers in player props data:`, Array.from(allBookmakers).sort());
-    console.log(`[ODDS DEBUG] PrizePicks found:`, Array.from(allBookmakers).some(b => b.toLowerCase().includes('prizepicks')));
     
     for (const game of playerPropsData) {
       const matchingGame = games.find(g => g.gameId === game.id);
       if (!matchingGame) continue;
 
       for (const bookmaker of game.bookmakers || []) {
-        // Debug: Check if PrizePicks is in the data
-        if (bookmaker.title && bookmaker.title.toLowerCase().includes('prizepicks')) {
-          console.log(`[PRIZEPICKS DEBUG] Found PrizePicks bookmaker for game ${game.id}:`, {
-            title: bookmaker.title,
-            markets: bookmaker.markets?.map((m: any) => m.key) || [],
-            marketCount: bookmaker.markets?.length || 0,
-            alternateMarkets: bookmaker.markets?.filter((m: any) => m.key.includes('alternate')).map((m: any) => m.key) || [],
-          });
-        }
-        
         const ensureBookmakerEntry = (name: string) => {
           if (!matchingGame.playerPropsByBookmaker[name]) {
             matchingGame.playerPropsByBookmaker[name] = {};
@@ -711,21 +714,6 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
           const statKey = marketKeyMap[market.key.replace(/_alternate$/, '')];
           if (!statKey) continue;
           
-          // Debug PrizePicks alternate markets structure
-          if (baseBookmakerName.toLowerCase().includes('prizepicks') && /_alternate$/.test(market.key)) {
-            console.log(`[PRIZEPICKS DEBUG] Processing ${market.key} for ${statKey}:`, {
-              marketKey: market.key,
-              statKey,
-              outcomeCount: market.outcomes?.length || 0,
-              sampleOutcomes: market.outcomes?.slice(0, 3).map((o: any) => ({
-                name: o.name,
-                description: o.description,
-                point: o.point,
-                price: o.price,
-              })) || [],
-            });
-          }
-
           const registerPickemVariant = (variantLabel: 'Goblin' | 'Demon' | null, lineValue: number, playerNameKey: string, statBucket: string) => {
             pushStatEntry(baseBookmakerName, playerNameKey, statBucket, {
               line: String(lineValue),
@@ -758,13 +746,6 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
                 // Determine variant based on price: +100 (100) = Demon, others = Goblin
                 const priceValue = over.price;
                 const variantLabel: 'Goblin' | 'Demon' = (priceValue === 100 || priceValue === -100) ? 'Demon' : 'Goblin';
-                
-                console.log(`[PRIZEPICKS DEBUG] Found PrizePicks ${statKey} line for ${playerName}:`, {
-                  line: over.point,
-                  price: priceValue,
-                  variantLabel,
-                  marketKey: market.key,
-                });
 
                 pushStatEntry(baseBookmakerName, playerName, statKey, {
                   line: String(over.point),
@@ -791,18 +772,6 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
               const variantLabel = isPickemBook && isAlternateMarket
                 ? determinePickemVariant(formattedOver, formattedUnder) || 'Goblin'
                 : null;
-
-              // Debug PrizePicks goblin/demon lines
-              if (baseBookmakerName.toLowerCase().includes('prizepicks') && isAlternateMarket) {
-                console.log(`[PRIZEPICKS DEBUG] Found PrizePicks ${statKey} line for ${playerName}:`, {
-                  line: over.point,
-                  over: formattedOver,
-                  under: formattedUnder,
-                  variantLabel,
-                  isPickem: isPickemBook && isAlternateMarket,
-                  marketKey: market.key,
-                });
-              }
 
               pushStatEntry(baseBookmakerName, playerName, statKey, {
                 line: String(over.point),

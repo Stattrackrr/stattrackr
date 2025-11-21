@@ -22,6 +22,7 @@ import ShotChart from './ShotChart';
 import TrackPlayerModal from '@/components/TrackPlayerModal';
 import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
+import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -1468,6 +1469,20 @@ const OverRatePill = memo(function OverRatePill({ overCount, total, isDark }: { 
   );
 });
 
+type AverageStatInfo = {
+  label: string;
+  value: number;
+  format?: 'percent';
+};
+
+type HitRateStats = {
+  overCount: number;
+  underCount: number;
+  total: number;
+  totalBeforeFilters?: number; // Track total games before advanced filters (for "X/Y games" display)
+  averages: AverageStatInfo[];
+};
+
 // Get rebound percentage rank for a team (higher rebound % = better for overs)
 const getReboundRank = (teamAbbr: string): number => {
   const reboundArray = Object.entries(teamReboundPct).map(([team, rebPct]) => ({ team, rebPct }));
@@ -2434,6 +2449,7 @@ const ChartControls = function ChartControls({
   teammateFilterId,
   setTeammateFilterId,
   loadingTeammateGames,
+  clearTeammateFilter,
 }: any) {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   // Track the latest in-progress line while the user is holding +/-
@@ -3138,7 +3154,7 @@ const ChartControls = function ChartControls({
               const displayBookmaker = (() => {
                 if (!realOddsData || realOddsData.length === 0) return null;
                 
-                console.log('[DEBUG] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
+                // console.log('[DEBUG] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
                 
                 // Track all lines per bookmaker to identify the true primary line
                 const allLinesByBookmaker = new Map<string, Array<{line: number; over: string; under: string; isPickem: boolean; variantLabel: string | null}>>();
@@ -3190,7 +3206,7 @@ const ChartControls = function ChartControls({
                   }
                 }
                 
-                console.log('[DEBUG] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
+                // console.log('[DEBUG] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
                 
                 // Second pass: identify primary line for each bookmaker
                 // Primary line is ALWAYS the one closest to consensus (if consensus exists)
@@ -3215,7 +3231,7 @@ const ChartControls = function ChartControls({
                     
                     // Always use the closest line to consensus (no threshold)
                     primaryLine = closestLine;
-                    console.log('[DEBUG] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
+                    // console.log('[DEBUG] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
                   }
                   
                   // Get the original bookmaker name (preserve case)
@@ -3235,10 +3251,10 @@ const ChartControls = function ChartControls({
                     variantLabel: primaryLine.variantLabel,
                   });
                   
-                  console.log('[DEBUG] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
+                  // console.log('[DEBUG] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
                 }
                 
-                console.log('[DEBUG] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
+                // console.log('[DEBUG] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
                 
                 // Debug: Show all Bovada lines (including alternates)
                 const bovadaLines = bookRowKey ? realOddsData
@@ -3258,9 +3274,9 @@ const ChartControls = function ChartControls({
                       under: statData ? statData.under : 'N/A',
                     };
                   }) : [];
-                console.log('[DEBUG] All Bovada lines for', bookRowKey, ':', bovadaLines);
+                // console.log('[DEBUG] All Bovada lines for', bookRowKey, ':', bovadaLines);
                 
-                console.log('[DEBUG] selectedBookmaker:', selectedBookmaker);
+                // console.log('[DEBUG] selectedBookmaker:', selectedBookmaker);
                 
                 // Second pass: find the bookmaker entry that matches displayLine
                 // If selectedBookmaker is set, check ALL lines (including alternates/Goblin/Demon) for that bookmaker
@@ -3291,34 +3307,34 @@ const ChartControls = function ChartControls({
                       isPickem: meta?.isPickem ?? false,
                       variantLabel: meta?.variantLabel ?? null,
                     };
-                    console.log('[DEBUG] Found exact match (including variant):', result);
+                    // console.log('[DEBUG] Found exact match (including variant):', result);
                     return result;
                   }
                   
                   // Fallback to primary line if no exact match found
                   const selectedPrimary = primaryLinesByBookmaker.get(selectedLower);
-                  console.log('[DEBUG] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
+                  // console.log('[DEBUG] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
                   if (selectedPrimary && Math.abs(selectedPrimary.line - displayLine) < 0.01) {
-                    console.log('[DEBUG] Using selectedBookmaker primary line:', selectedPrimary);
+                    // console.log('[DEBUG] Using selectedBookmaker primary line:', selectedPrimary);
                     return selectedPrimary;
                   } else if (selectedPrimary) {
-                    console.log('[DEBUG] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
+                    // console.log('[DEBUG] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
                   }
                 }
                 
                 // Otherwise, find the first bookmaker whose primary line matches
                 for (const [bookmakerLower, primaryData] of primaryLinesByBookmaker.entries()) {
                   if (Math.abs(primaryData.line - displayLine) < 0.01) {
-                    console.log('[DEBUG] Found matching primary line:', bookmakerLower, primaryData);
+                    // console.log('[DEBUG] Found matching primary line:', bookmakerLower, primaryData);
                     return primaryData;
                   }
                 }
                 
-                console.log('[DEBUG] No matching primary line found for displayLine:', displayLine);
+                // console.log('[DEBUG] No matching primary line found for displayLine:', displayLine);
                 return null;
               })();
               
-              console.log('[DEBUG] Final displayBookmaker result:', displayBookmaker);
+              // console.log('[DEBUG] Final displayBookmaker result:', displayBookmaker);
               
               const displayIsPickem = displayBookmaker ? (displayBookmaker.isPickem ?? isPickemBookmakerName(displayBookmaker.bookmaker)) : false;
               const displayPickemVariant = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
@@ -3617,7 +3633,7 @@ const ChartControls = function ChartControls({
                   const displayBookmaker = (() => {
                     if (!realOddsData || realOddsData.length === 0) return null;
                     
-                    console.log('[DEBUG MOBILE] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
+                    // console.log('[DEBUG MOBILE] Finding displayBookmaker for displayLine:', displayLine, 'selectedStat:', selectedStat, 'bookRowKey:', bookRowKey);
                     
                     // Track all lines per bookmaker to identify the true primary line
                     const allLinesByBookmaker = new Map<string, Array<{line: number; over: string; under: string; isPickem: boolean; variantLabel: string | null}>>();
@@ -3669,7 +3685,7 @@ const ChartControls = function ChartControls({
                       }
                     }
                     
-                    console.log('[DEBUG MOBILE] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
+                    // console.log('[DEBUG MOBILE] Consensus line (most common across all):', consensusLine, 'appears', maxCount, 'times');
                     
                     // Second pass: identify primary line for each bookmaker
                     // Primary line is ALWAYS the one closest to consensus (if consensus exists)
@@ -3694,7 +3710,7 @@ const ChartControls = function ChartControls({
                         
                         // Always use the closest line to consensus (no threshold)
                         primaryLine = closestLine;
-                        console.log('[DEBUG MOBILE] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
+                        // console.log('[DEBUG MOBILE] Bookmaker', baseNameLower, '- closest to consensus', consensusLine, 'is', primaryLine.line, '(diff:', minDiff, ')');
                       }
                       
                       // Get the original bookmaker name (preserve case)
@@ -3714,10 +3730,10 @@ const ChartControls = function ChartControls({
                         variantLabel: primaryLine.variantLabel,
                       });
                       
-                      console.log('[DEBUG MOBILE] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
+                      // console.log('[DEBUG MOBILE] Found primary line:', displayName, 'line:', primaryLine.line, 'over:', primaryLine.over, 'under:', primaryLine.under, '(from', lines.length, 'total lines)');
                     }
                     
-                    console.log('[DEBUG MOBILE] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
+                    // console.log('[DEBUG MOBILE] Primary lines map:', Array.from(primaryLinesByBookmaker.entries()).map(([name, data]) => `${name}: ${data.line}`));
                     
                     // Debug: Show all Bovada lines (including alternates)
                     const bovadaLines = bookRowKey ? realOddsData
@@ -3737,9 +3753,9 @@ const ChartControls = function ChartControls({
                           under: statData ? statData.under : 'N/A',
                         };
                       }) : [];
-                    console.log('[DEBUG MOBILE] All Bovada lines for', bookRowKey, ':', bovadaLines);
+                    // console.log('[DEBUG MOBILE] All Bovada lines for', bookRowKey, ':', bovadaLines);
                     
-                    console.log('[DEBUG MOBILE] selectedBookmaker:', selectedBookmaker);
+                    // console.log('[DEBUG MOBILE] selectedBookmaker:', selectedBookmaker);
                     
                     // Second pass: find the bookmaker entry that matches displayLine
                     // If selectedBookmaker is set, check ALL lines (including alternates/Goblin/Demon) for that bookmaker
@@ -3770,34 +3786,34 @@ const ChartControls = function ChartControls({
                           isPickem: meta?.isPickem ?? false,
                           variantLabel: meta?.variantLabel ?? null,
                         };
-                        console.log('[DEBUG MOBILE] Found exact match (including variant):', result);
+                        // console.log('[DEBUG MOBILE] Found exact match (including variant):', result);
                         return result;
                       }
                       
                       // Fallback to primary line if no exact match found
                       const selectedPrimary = primaryLinesByBookmaker.get(selectedLower);
-                      console.log('[DEBUG MOBILE] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
+                      // console.log('[DEBUG MOBILE] Checking selectedBookmaker:', selectedBookmaker, 'lower:', selectedLower, 'found:', selectedPrimary);
                       if (selectedPrimary && Math.abs(selectedPrimary.line - displayLine) < 0.01) {
-                        console.log('[DEBUG MOBILE] Using selectedBookmaker primary line:', selectedPrimary);
+                        // console.log('[DEBUG MOBILE] Using selectedBookmaker primary line:', selectedPrimary);
                         return selectedPrimary;
                       } else if (selectedPrimary) {
-                        console.log('[DEBUG MOBILE] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
+                        // console.log('[DEBUG MOBILE] Selected bookmaker line mismatch:', selectedPrimary.line, 'vs displayLine:', displayLine, 'diff:', Math.abs(selectedPrimary.line - displayLine));
                       }
                     }
                     
                     // Otherwise, find the first bookmaker whose primary line matches
                     for (const [bookmakerLower, primaryData] of primaryLinesByBookmaker.entries()) {
                       if (Math.abs(primaryData.line - displayLine) < 0.01) {
-                        console.log('[DEBUG MOBILE] Found matching primary line:', bookmakerLower, primaryData);
+                        // console.log('[DEBUG MOBILE] Found matching primary line:', bookmakerLower, primaryData);
                         return primaryData;
                       }
                     }
                     
-                    console.log('[DEBUG MOBILE] No matching primary line found for displayLine:', displayLine);
+                    // console.log('[DEBUG MOBILE] No matching primary line found for displayLine:', displayLine);
                     return null;
                   })();
                   
-                  console.log('[DEBUG MOBILE] Final displayBookmaker result:', displayBookmaker);
+                  // console.log('[DEBUG MOBILE] Final displayBookmaker result:', displayBookmaker);
                   
                   const displayIsPickemMobile = displayBookmaker ? (displayBookmaker.isPickem ?? isPickemBookmakerName(displayBookmaker.bookmaker)) : false;
                   const displayPickemVariantMobile = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
@@ -4127,8 +4143,17 @@ const ChartControls = function ChartControls({
                             </div>
                           </div>
                           {teammateFilterId != null && (
-                            <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                              {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                              <span>
+                                {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={clearTeammateFilter}
+                                className="text-purple-600 dark:text-purple-300 font-semibold hover:underline"
+                              >
+                                Clear
+                              </button>
                             </div>
                           )}
                         </div>
@@ -4306,8 +4331,17 @@ const ChartControls = function ChartControls({
                             </div>
                           </div>
                           {teammateFilterId != null && (
-                            <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                              {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                              <span>
+                                {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={clearTeammateFilter}
+                                className="text-purple-600 dark:text-purple-300 font-semibold hover:underline"
+                              >
+                                Clear
+                              </button>
                             </div>
                           )}
                         </div>
@@ -4383,9 +4417,36 @@ const ChartContainer = function ChartContainer({
   teammateFilterId,
   setTeammateFilterId,
   loadingTeammateGames,
+  clearTeammateFilter,
+  hitRateStats,
 }: any) {
-  const overCountDesktop = chartData.filter((d: any) => d.value > bettingLine).length;
-  const totalDesktop = chartData.length;
+  const totalSamples = hitRateStats?.total ?? chartData.length;
+  const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
+
+  const formatAverageValue = (avg: AverageStatInfo): string => {
+    if (!Number.isFinite(avg.value)) return '0.0';
+    if (avg.format === 'percent') return `${avg.value.toFixed(1)}%`;
+    return avg.value.toFixed(1);
+  };
+
+  const renderAverageChips = (className = '') => {
+    if (!hitRateStats?.averages?.length) return null;
+    return (
+      <div className={`flex flex-wrap items-center gap-1 sm:gap-2 ${className}`}>
+        {hitRateStats.averages.map((avg: AverageStatInfo) => (
+          <span
+            key={`avg-${avg.label}`}
+            className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-[10px] sm:text-xs font-medium"
+          >
+            {avg.label}:{' '}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {formatAverageValue(avg)}
+            </span>
+          </span>
+        ))}
+      </div>
+    );
+  };
   return (
 <div 
 className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
@@ -4427,27 +4488,44 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         teammateFilterId={teammateFilterId}
         setTeammateFilterId={setTeammateFilterId}
         loadingTeammateGames={loadingTeammateGames}
+        clearTeammateFilter={clearTeammateFilter}
       />
       {/* Mobile: Over Rate pill above chart */}
       <div className="sm:hidden px-2 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-          <OverRatePill 
-            overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
-            total={chartData.length} 
-            isDark={isDark} 
-          />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
+            <OverRatePill 
+              overCount={overSamples} 
+              total={totalSamples} 
+              isDark={isDark} 
+            />
+            {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
+              </span>
+            )}
+          </div>
+          {renderAverageChips('text-gray-600 dark:text-gray-300')}
         </div>
       </div>
       {/* Desktop: Over Rate pill above chart (same logic and placement as mobile) */}
       <div className="hidden sm:block px-3 pb-2 -mt-1 md:-mt-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-          <OverRatePill 
-            overCount={chartData.filter((d: any) => d.value > bettingLine).length} 
-            total={chartData.length} 
-            isDark={isDark} 
-          />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
+            <OverRatePill 
+              overCount={overSamples} 
+              total={totalSamples} 
+              isDark={isDark} 
+            />
+            {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
+              </span>
+            )}
+          </div>
+          {renderAverageChips('text-gray-600 dark:text-gray-300')}
         </div>
       </div>
       <div className="flex-1 min-h-0">
@@ -5288,16 +5366,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
     };
   }, [opponentTeam]);
   
-  const normalizeRank = (rank: number): number => {
-    if (!rank || rank <= 0) return 0;
-    // Incoming ranks are 1 = best defense (allows least). We want 30 = best for our player (allows most).
-    // Convert to a "concedes more" rank where 30 = worst defense.
-    return 31 - rank;
-  };
-
-  const getRankColor = (rawRank: number): string => {
-    const rank = normalizeRank(rawRank);
-    if (rank === 0) return mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  const getRankColor = (rank: number): string => {
+    if (!rank || rank <= 0) return mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
     if (rank >= 25) return 'bg-green-800 text-green-50 dark:bg-green-900 dark:text-green-100';
     if (rank >= 20) return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
     if (rank >= 15) return 'bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-200';
@@ -5305,9 +5375,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
     return 'bg-red-800 text-red-50 dark:bg-red-900 dark:text-red-100';
   };
 
-  const formatRankLabel = (rawRank: number): string => {
-    const rank = normalizeRank(rawRank);
-    if (!rank) return '';
+  const formatRankLabel = (rank: number): string => {
+    if (!rank || rank <= 0) return '';
     return `#${rank}`;
   };
 
@@ -7311,6 +7380,22 @@ const lineMovementInFlightRef = useRef(false);
   const [teammateFilterId, setTeammateFilterId] = useState<number | null>(null);
   const [teammatePlayedGameIds, setTeammatePlayedGameIds] = useState<Set<number>>(new Set());
   const [loadingTeammateGames, setLoadingTeammateGames] = useState<boolean>(false);
+
+  // Reset teammate filters whenever the primary context changes (new player/team tab)
+  useEffect(() => {
+    // Always clear when leaving player mode or switching players
+    setTeammateFilterId(null);
+    setTeammatePlayedGameIds(new Set());
+    setWithWithoutMode('with');
+    setLoadingTeammateGames(false);
+  }, [propsMode, selectedPlayer?.id]);
+
+  const clearTeammateFilter = useCallback(() => {
+    setTeammateFilterId(null);
+    setTeammatePlayedGameIds(new Set());
+    setLoadingTeammateGames(false);
+  }, []);
+
   const rosterForSelectedTeam = useMemo(() => {
     if (propsMode !== 'player') return null;
     const roster = (playerTeamRoster && Object.keys(playerTeamRoster || {}).length ? playerTeamRoster : allTeamRosters[originalPlayerTeam]) as any;
@@ -8769,17 +8854,72 @@ const lineMovementInFlightRef = useRef(false);
     run();
   }, [withWithoutMode, teammateFilterId, baseGameData]);
 
+  const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
+
   // Hit rate calculations - only recalculate when chartData or bettingLine changes
-  const hitRateStats = useMemo(() => {
+  const hitRateStats = useMemo<HitRateStats>(() => {
     const overCount = chartData.filter(d => d.value > bettingLine).length;
     const underCount = chartData.filter(d => d.value < bettingLine).length;
-    const average = chartData.length ? chartData.reduce((s, d) => s + (Number.isFinite(d.value) ? d.value : 0), 0) / chartData.length : 0;
+    const total = chartData.length;
     
-    return { overCount, underCount, average };
-  }, [chartData, bettingLine]);
+    const safeReduce = (values: number[]): number => {
+      if (!values.length) return 0;
+      const total = values.reduce((sum, val) => sum + val, 0);
+      return total / values.length;
+    };
+  
+    const primaryValues = chartData
+      .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
+      .filter((v): v is number => Number.isFinite(v));
+  
+    const averages: AverageStatInfo[] = [];
+    const statMeta = currentStatOptions.find(s => s.key === selectedStat);
+    const baseLabel = statMeta ? statMeta.label : selectedStat.toUpperCase();
+    const percentageStats = new Set(['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct']);
+    const baseFormat: 'percent' | undefined = percentageStats.has(selectedStat) ? 'percent' : undefined;
+    const primaryAverage = safeReduce(primaryValues);
+    averages.push({ label: baseLabel, value: primaryAverage, format: baseFormat });
 
-
-  const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
+    if (['pra', 'pr', 'ra', 'pa'].includes(selectedStat)) {
+      const parts = chartData.map((d: any) => {
+        const stats = d && (d as any).stats;
+        return stats || {};
+      });
+      const ptsValues = parts.map(p => Number(p.pts)).filter((v): v is number => Number.isFinite(v));
+      const rebValues = parts.map(p => Number(p.reb)).filter((v): v is number => Number.isFinite(v));
+      const astValues = parts.map(p => Number(p.ast)).filter((v): v is number => Number.isFinite(v));
+  
+      if (selectedStat === 'pra') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      } else if (selectedStat === 'pr') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+      } else if (selectedStat === 'ra') {
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      } else if (selectedStat === 'pa') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      }
+    } else if (selectedStat === 'fg3m') {
+      const attempts = chartData
+        .map((d: any) => Number((d?.stats as any)?.fg3a))
+        .filter((v): v is number => Number.isFinite(v));
+      averages.push({ label: '3PA', value: safeReduce(attempts) });
+    } else if (selectedStat === 'fg3a') {
+      const made = chartData
+        .map((d: any) => Number((d?.stats as any)?.fg3m))
+        .filter((v): v is number => Number.isFinite(v));
+      averages.push({ label: '3PM', value: safeReduce(made) });
+    }
+  
+    // Track total games before filters for "X/Y games" display (player mode only)
+    const totalBeforeFilters = propsMode === 'player' ? baseGameData.length : undefined;
+    
+    return { overCount, underCount, total, averages, totalBeforeFilters };
+  }, [chartData, bettingLine, selectedStat, currentStatOptions, propsMode, baseGameData.length]);
 
   // Custom tooltip content - completely independent to prevent lag when adjusting betting line
   const customTooltip = ({ active, payload, label }: any) => {
@@ -9186,7 +9326,17 @@ const lineMovementInFlightRef = useRef(false);
           }
         }
         
-        const finalMovements = Array.from(deduplicatedMovements.values());
+        const finalMovements = Array.from(deduplicatedMovements.values()).filter((movement) => {
+          const rawChange = (movement as any)?.change;
+          let changeValue = 0;
+          if (typeof rawChange === 'number') {
+            changeValue = rawChange;
+          } else if (typeof rawChange === 'string') {
+            const normalized = rawChange.replace(/[^\d.-]/g, '');
+            changeValue = normalized === '' ? 0 : parseFloat(normalized);
+          }
+          return Number.isFinite(changeValue) && Math.abs(changeValue) >= 0.01;
+        });
         
         return finalMovements
           .map((movement) => {
@@ -9340,8 +9490,6 @@ const lineMovementInFlightRef = useRef(false);
           }
         }
       });
-      console.log(`[CLIENT DEBUG] All bookmakers in odds data:`, Array.from(allBookmakers).sort());
-      console.log(`[CLIENT DEBUG] PrizePicks found:`, prizepicksEntries.length > 0, prizepicksEntries);
       
     } catch (error) {
       console.error('Error fetching odds:', error);
@@ -10670,6 +10818,8 @@ const lineMovementInFlightRef = useRef(false);
               teammateFilterId={teammateFilterId}
               setTeammateFilterId={setTeammateFilterId}
               loadingTeammateGames={loadingTeammateGames}
+      clearTeammateFilter={clearTeammateFilter}
+      hitRateStats={hitRateStats}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
@@ -11005,7 +11155,12 @@ const lineMovementInFlightRef = useRef(false);
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
             {propsMode === 'player' && (
               <div className="lg:hidden">
-                <ShotChart isDark={isDark} shotData={shotDistanceData} />
+                <ShotChart 
+                  isDark={isDark} 
+                  shotData={shotDistanceData}
+                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                  opponentTeam={opponentTeam}
+                />
               </div>
             )}
 
@@ -11173,6 +11328,28 @@ const lineMovementInFlightRef = useRef(false);
               </div>
             )}
 
+            {/* 5.5. Tracking Stats Container (Mobile) - Team Rankings */}
+            {useMemo(() => {
+              if (propsMode !== 'player' || !selectedTeam || selectedTeam === 'N/A') return null;
+              
+              const playerName = selectedPlayer?.full || 
+                `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
+              
+              return (
+<div className="lg:hidden">
+                  <TeamTrackingStatsTable
+                    teamAbbr={selectedTeam}
+                    selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                    selectedPlayerName={playerName || undefined}
+                    season={2025}
+                    isDark={isDark}
+                    opponentTeam={opponentTeam}
+                    opponentTeamLogoUrl={opponentTeamLogoUrl || (opponentTeam ? getEspnLogoUrl(opponentTeam) : undefined)}
+                  />
+                </div>
+              );
+            }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark, opponentTeam, opponentTeamLogoUrl])}
+
             {/* 6. Official Odds Card Container (Mobile) - Line Movement */}
             {useMemo(() => (
 <div className="lg:hidden">
@@ -11192,7 +11369,7 @@ const lineMovementInFlightRef = useRef(false);
                   selectedStat={selectedStat}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
 
             {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
             <BestOddsTable
@@ -11293,7 +11470,7 @@ const lineMovementInFlightRef = useRef(false);
               />
             </div>
 
-            {/* 10. Player Box Score Container (Mobile) - Final container! */}
+            {/* 10. Player Box Score Container (Mobile) */}
             {useMemo(() => {
               if (propsMode !== 'player') return null;
               
@@ -11308,13 +11485,35 @@ const lineMovementInFlightRef = useRef(false);
               );
             }, [propsMode, selectedPlayer, playerStats, isDark])}
 
+            {/* Tracking Stats Container (Desktop) - Team Rankings */}
+            {useMemo(() => {
+              if (propsMode !== 'player' || !selectedTeam || selectedTeam === 'N/A') return null;
+              
+              const playerName = selectedPlayer?.full || 
+                `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
+              
+              return (
+<div className="hidden lg:block">
+                  <TeamTrackingStatsTable
+                    teamAbbr={selectedTeam}
+                    selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                    selectedPlayerName={playerName || undefined}
+                    season={2025}
+                    isDark={isDark}
+                    opponentTeam={opponentTeam}
+                    opponentTeamLogoUrl={opponentTeamLogoUrl || (opponentTeam ? getEspnLogoUrl(opponentTeam) : undefined)}
+                  />
+                </div>
+              );
+            }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark, opponentTeam, opponentTeamLogoUrl])}
+
             {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
             {useMemo(() => (
 <div className="hidden lg:block">
                 <OfficialOddsCard
                 isDark={isDark}
                 derivedOdds={derivedOdds}
-                intradayMovements={intradayMovements}
+                intradayMovements={intradayMovementsFinal}
                 selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
                 opponentTeam={opponentTeam}
                 selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
@@ -11327,7 +11526,7 @@ const lineMovementInFlightRef = useRef(false);
                 selectedStat={selectedStat}
               />
               </div>
-            ), [isDark, derivedOdds, intradayMovements, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
@@ -12110,7 +12309,12 @@ const lineMovementInFlightRef = useRef(false);
             {/* Shot Chart (Desktop) - only in Player Props mode */}
             {propsMode === 'player' && (
               <div className="hidden lg:block">
-                <ShotChart isDark={isDark} shotData={shotDistanceData} />
+                <ShotChart 
+                  isDark={isDark} 
+                  shotData={shotDistanceData}
+                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                  opponentTeam={opponentTeam}
+                />
               </div>
             )}
             

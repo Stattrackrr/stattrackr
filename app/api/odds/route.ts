@@ -93,26 +93,6 @@ export async function GET(request: NextRequest) {
       for (const game of oddsCache.games) {
         const playerPropsByBookmaker = game.playerPropsByBookmaker || {};
         
-        // Debug: Log all bookmakers in playerPropsByBookmaker
-        const allBookmakersInProps = Object.keys(playerPropsByBookmaker);
-        const prizepicksBookmakers = allBookmakersInProps.filter(b => b.toLowerCase().includes('prizepicks'));
-        if (prizepicksBookmakers.length > 0) {
-          console.log(`[API DEBUG] PrizePicks bookmakers found in cache for game ${game.gameId}:`, prizepicksBookmakers);
-          // Log all players in PrizePicks
-          for (const ppBook of prizepicksBookmakers) {
-            const allPlayers = Object.keys(playerPropsByBookmaker[ppBook] || {});
-            console.log(`[API DEBUG] PrizePicks ${ppBook} has props for players:`, allPlayers);
-            // Check if requested player matches any (case-insensitive)
-            const matchingPlayer = allPlayers.find(p => p.toLowerCase() === player.toLowerCase());
-            if (matchingPlayer) {
-              console.log(`[API DEBUG] Found matching player! Requested: "${player}", Found: "${matchingPlayer}"`);
-              console.log(`[API DEBUG] PrizePicks props for ${matchingPlayer}:`, playerPropsByBookmaker[ppBook][matchingPlayer]);
-            } else {
-              console.log(`[API DEBUG] No exact match for "${player}". Available players:`, allPlayers);
-            }
-          }
-        }
-        
         // Check if this player has props in any bookmaker
         const allBookNames = new Set<string>();
         for (const book of game.bookmakers) allBookNames.add(book.name);
@@ -129,14 +109,6 @@ export async function GET(request: NextRequest) {
               allBookNames.add(bookName);
             }
           }
-        }
-        
-        // Debug: Check for PrizePicks
-        if (player && Array.from(allBookNames).some(name => name.toLowerCase().includes('prizepicks'))) {
-          console.log(`[API DEBUG] PrizePicks found for player ${player} in game ${game.gameId}:`, {
-            bookNames: Array.from(allBookNames).filter(n => n.toLowerCase().includes('prizepicks')),
-            props: playerPropsByBookmaker[Array.from(allBookNames).find(n => n.toLowerCase().includes('prizepicks')) || '']?.[player],
-          });
         }
 
         const hasPlayerProps = Array.from(allBookNames).some(name => {
@@ -196,17 +168,7 @@ export async function GET(request: NextRequest) {
               if (statKeysWithLines.has(statKey)) {
                 const entries = Array.isArray(statValue) ? statValue : [statValue];
                 for (const entry of entries) {
-                  // Debug PrizePicks goblin/demon lines
                   const entryAny = entry as any;
-                  if (bookName.toLowerCase().includes('prizepicks') && entryAny?.variantLabel) {
-                    console.log(`[API DEBUG] PrizePicks ${statKey} line for ${player}:`, {
-                      line: entryAny?.line,
-                      over: entryAny?.over,
-                      under: entryAny?.under,
-                      variantLabel: entryAny?.variantLabel,
-                      isPickem: entryAny?.isPickem,
-                    });
-                  }
                   
                   const row = cloneRow(baseBook || blankRow);
                   (row as any)[statKey] = {

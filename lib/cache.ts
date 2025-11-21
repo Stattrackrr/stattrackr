@@ -218,6 +218,10 @@ export const CACHE_TTL = {
   // Injury reports - 30 minutes
   // Rationale: Injury status can change quickly on game days
   INJURIES: 30,
+  
+  // Tracking stats (potentials) - 24 hours
+  // Rationale: Tracking stats are cumulative season data that updates once daily
+  TRACKING_STATS: 24 * 60,
 } as const;
 
 // Cache key generators
@@ -238,6 +242,10 @@ export const getCacheKey = {
     `depth_chart_${team.toUpperCase()}`,
   injuries: (team: string) => 
     `injuries_${team.toUpperCase()}`,
+  trackingStats: (team: string, season: number, category: string) => 
+    `tracking_stats_${team.toUpperCase()}_${season}_${category}`,
+  allTrackingStats: (season: number) =>
+    `all_tracking_stats_${season}`,
 };
 
 export { cache };
