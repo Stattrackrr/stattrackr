@@ -72,9 +72,20 @@ export function PlayTypeAnalysis({
         const response = await fetch(url);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[PlayTypeAnalysis] API error:', response.status, errorText);
-          throw new Error(`Failed to fetch play type analysis: ${response.status}`);
+          // Try to get error message from response
+          let errorMessage = `Failed to fetch play type analysis (${response.status})`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+            console.error('[PlayTypeAnalysis] API error:', response.status, errorData);
+          } catch {
+            const errorText = await response.text().catch(() => '');
+            console.error('[PlayTypeAnalysis] API error:', response.status, errorText);
+            if (errorText) {
+              errorMessage = errorText.substring(0, 200);
+            }
+          }
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();

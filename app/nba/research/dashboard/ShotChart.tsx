@@ -93,6 +93,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   const [showTooltip, setShowTooltip] = useState(false);
   const [enhancedData, setEnhancedData] = useState<EnhancedShotData | null>(null);
   const [enhancedLoading, setEnhancedLoading] = useState(false);
+  const [enhancedError, setEnhancedError] = useState<string | null>(null);
   const [allowFallback, setAllowFallback] = useState(false);
   const [showMakes, setShowMakes] = useState(false); // Toggle between attempts vs makes distribution
   const [showOppDef, setShowOppDef] = useState(false); // Show opponent defense
@@ -156,13 +157,28 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           const data = await response.json();
           console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
           setEnhancedData(data);
+          setEnhancedError(null); // Clear any previous errors
         } else {
-          console.error('[Shot Chart] API returned error:', response.status);
+          // Try to get error message from response
+          let errorMessage = `Failed to load shot chart data (${response.status})`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+            console.error('[Shot Chart] API returned error:', response.status, errorData);
+          } catch {
+            const errorText = await response.text().catch(() => '');
+            console.error('[Shot Chart] API returned error:', response.status, errorText);
+            if (errorText) {
+              errorMessage = errorText.substring(0, 200);
+            }
+          }
           setEnhancedData(null);
+          setEnhancedError(errorMessage);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('[Shot Chart] Error fetching enhanced data:', err);
         setEnhancedData(null);
+        setEnhancedError(err.message || 'Failed to fetch shot chart data. Please try again.');
       } finally {
         setEnhancedLoading(false);
       }
@@ -276,9 +292,16 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   if (!enhancedData && (!allowFallback || !shotData)) {
     return (
       <div className="w-full h-full flex items-center justify-center p-6" style={{ minHeight: '200px' }}>
-        <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-          {enhancedLoading ? 'Loading NBA Stats data...' : 'No shot data available'}
-        </div>
+        {enhancedError ? (
+          <div className="text-center max-w-md">
+            <div className="text-red-500 dark:text-red-400 font-semibold mb-2 text-sm">⚠️ Error Loading Shot Chart</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">{enhancedError}</div>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {enhancedLoading ? 'Loading NBA Stats data...' : 'No shot data available'}
+          </div>
+        )}
       </div>
     );
   }
