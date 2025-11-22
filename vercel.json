@@ -17,6 +17,20 @@
       "schedule": "*/20 * * * *"
     }
   ],
+  "functions": {
+    "app/api/shot-chart-enhanced/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/play-type-analysis/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/team-defense-rankings/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/tracking-stats/team/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/api/webhooks/stripe",
