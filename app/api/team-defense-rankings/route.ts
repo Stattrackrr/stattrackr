@@ -41,8 +41,8 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use 40s max timeout in production (leaving 20s buffer for Vercel overhead)
-  const actualTimeout = isProduction ? Math.min(Math.max(timeout, 40000), 40000) : timeout;
+  // Use 30s max timeout in production (leaving 30s buffer for Vercel overhead and retries)
+  const actualTimeout = isProduction ? Math.min(Math.max(timeout, 30000), 30000) : timeout;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();

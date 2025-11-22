@@ -238,8 +238,8 @@ export async function GET(request: NextRequest) {
     const playerUrl = `${NBA_STATS_BASE}/shotchartdetail?${playerParams.toString()}`;
     console.log(`[Shot Chart Enhanced] Calling NBA API: ${playerUrl}`);
     
-    // Use 40s timeout (leaving 20s buffer for Vercel overhead)
-    const playerData = await fetchNBAStats(playerUrl, 40000);
+    // Use 30s timeout (leaving 30s buffer for Vercel overhead)
+    const playerData = await fetchNBAStats(playerUrl, 30000);
     console.log(`[Shot Chart Enhanced] Player data received:`, playerData?.resultSets?.length, 'result sets');
 
     if (!playerData?.resultSets) {
