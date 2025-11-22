@@ -23,6 +23,7 @@ import TrackPlayerModal from '@/components/TrackPlayerModal';
 import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
+import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -11154,12 +11155,19 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
             {propsMode === 'player' && (
-              <div className="lg:hidden">
+              <div className="lg:hidden w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
                   playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
                   opponentTeam={opponentTeam}
+                />
+                {/* Play Type Analysis */}
+                <PlayTypeAnalysis
+                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
+                  opponentTeam={opponentTeam}
+                  season={currentNbaSeason()}
+                  isDark={isDark}
                 />
               </div>
             )}
@@ -12308,12 +12316,19 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Shot Chart (Desktop) - only in Player Props mode */}
             {propsMode === 'player' && (
-              <div className="hidden lg:block">
+              <div className="hidden lg:block w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
                   playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
                   opponentTeam={opponentTeam}
+                />
+                {/* Play Type Analysis */}
+                <PlayTypeAnalysis
+                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
+                  opponentTeam={opponentTeam}
+                  season={currentNbaSeason()}
+                  isDark={isDark}
                 />
               </div>
             )}
