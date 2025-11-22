@@ -109,6 +109,10 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
 }
 
 export async function GET(request: NextRequest) {
+  // Define variables at function scope for error handling
+  let cacheKey: string | null = null;
+  let nbaPlayerId: string | null = null;
+  
   try {
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
@@ -124,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Auto-convert BallDontLie ID to NBA Stats ID if needed
-    let nbaPlayerId = playerId;
+    nbaPlayerId = playerId;
     const originalPlayerId = playerId;
     
     // Try to convert any ID format using the smart detection
