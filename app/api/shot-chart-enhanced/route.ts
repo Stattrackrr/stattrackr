@@ -26,33 +26,68 @@ const NBA_HEADERS = {
   'sec-ch-ua-platform': '"Windows"',
 };
 
-async function fetchNBAStats(url: string, timeout = 20000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  try {
-    const response = await fetch(url, {
-      headers: NBA_HEADERS,
-      signal: controller.signal,
-      cache: 'no-store'
-    });
+    try {
+      const response = await fetch(url, {
+        headers: NBA_HEADERS,
+        signal: controller.signal,
+        cache: 'no-store',
+        // Add redirect handling for production
+        redirect: 'follow'
+      });
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(`[Shot Chart Enhanced] NBA API error ${response.status}:`, text.slice(0, 500));
-      throw new Error(`NBA API ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        const text = await response.text();
+        const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
+        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 500));
+        
+        // Don't retry on 4xx errors (client errors)
+        if (response.status >= 400 && response.status < 500 && attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+          lastError = new Error(errorMsg);
+          continue;
+        }
+        
+        throw new Error(errorMsg);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        lastError = new Error('Request timeout');
+        if (attempt < retries) {
+          console.log(`[Shot Chart Enhanced] Timeout on attempt ${attempt + 1}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw lastError;
+      }
+      
+      // Network errors - retry
+      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND')) {
+        lastError = error;
+        if (attempt < retries) {
+          console.log(`[Shot Chart Enhanced] Network error on attempt ${attempt + 1}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+      }
+      
+      throw error;
     }
-
-    return await response.json();
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
   }
+  
+  throw lastError || new Error('Failed after retries');
 }
 
 export async function GET(request: NextRequest) {
