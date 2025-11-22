@@ -733,6 +733,27 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Play Type Analysis] Error:', error);
     
+    // On timeout, try to return cached data if available
+    const { searchParams: errorSearchParams } = new URL(request.url);
+    const errorPlayerId = errorSearchParams.get('playerId');
+    const errorSeason = parseInt(errorSearchParams.get('season') || '2025');
+    const errorOpponentTeam = errorSearchParams.get('opponentTeam') || 'all';
+    const errorCacheKey = `playtype_analysis_${errorPlayerId}_${errorOpponentTeam}_${errorSeason}`;
+    
+    if ((error.message?.includes('timeout') || error.name === 'AbortError') && errorCacheKey) {
+      const cached = cache.get<any>(errorCacheKey);
+      if (cached) {
+        console.log(`[Play Type Analysis] ⚠️ Timeout occurred, returning cached data for player ${errorPlayerId}`);
+        return NextResponse.json(cached, {
+          status: 200,
+          headers: { 
+            'X-Cache-Status': 'HIT-FALLBACK',
+            'X-Error': 'Timeout - using cached data'
+          }
+        });
+      }
+    }
+    
     // Determine error type and provide helpful message
     let errorMessage = 'Failed to fetch play type analysis';
     let errorType = error.name || 'UnknownError';

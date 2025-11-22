@@ -433,6 +433,21 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Shot Chart Enhanced] Error:', error);
     
+    // On timeout, try to return cached data if available
+    if ((error.message?.includes('timeout') || error.name === 'AbortError') && cacheKey) {
+      const cached = cache.get<any>(cacheKey);
+      if (cached) {
+        console.log(`[Shot Chart Enhanced] ⚠️ Timeout occurred, returning cached data for player ${nbaPlayerId}`);
+        return NextResponse.json(cached, {
+          status: 200,
+          headers: { 
+            'X-Cache-Status': 'HIT-FALLBACK',
+            'X-Error': 'Timeout - using cached data'
+          }
+        });
+      }
+    }
+    
     // Determine error type and provide helpful message
     let errorMessage = 'Failed to fetch enhanced shot data';
     let errorType = error.name || 'UnknownError';
