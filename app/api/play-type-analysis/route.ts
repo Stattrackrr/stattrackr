@@ -5,6 +5,7 @@ import { getNbaStatsId, convertNbaToBdlId } from '@/lib/playerIdMapping';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Vercel Pro plan allows up to 60s
 
 const NBA_STATS_BASE = 'https://stats.nba.com/stats';
 
@@ -45,8 +46,8 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use longer timeout in production (production networks can be slower)
-  const actualTimeout = isProduction ? Math.max(timeout, 30000) : timeout;
+  // Use longer timeout in production (Vercel Pro allows 60s, so use 50s max to leave buffer)
+  const actualTimeout = isProduction ? Math.max(timeout, 50000) : timeout;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
