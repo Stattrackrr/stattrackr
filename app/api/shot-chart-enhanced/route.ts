@@ -208,7 +208,31 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season}`);
+    // If no cache and NBA API is unreachable, return empty data instead of timing out
+    // Background jobs should populate cache
+    if (!bypassCache) {
+      console.log(`[Shot Chart Enhanced] ⚠️ No cache available for player ${nbaPlayerId}. NBA API is unreachable from Vercel. Returning empty data.`);
+      return NextResponse.json({
+        playerId: nbaPlayerId,
+        originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
+        season: `${season}-${String(season + 1).slice(-2)}`,
+        shotZones: {
+          restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+        },
+        opponentTeam,
+        opponentDefense: null,
+        opponentRankings: null,
+        error: 'NBA API unreachable - data will be available once cache is populated',
+        cachedAt: new Date().toISOString()
+      }, { status: 200 });
+    }
+
+    console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (bypassCache=true)`);
 
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
 

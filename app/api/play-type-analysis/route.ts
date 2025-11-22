@@ -260,6 +260,31 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // If no cache and NBA API is unreachable, return cached data or empty response
+    // Background jobs should populate cache
+    if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length) {
+      console.log(`[Play Type Analysis] ⚠️ No cache available. NBA API is unreachable from Vercel. Returning empty data.`);
+      // Return minimal response with empty play types
+      const emptyResponse = {
+        playerId: parseInt(playerId),
+        season: seasonStr,
+        opponentTeam: opponentTeam || null,
+        playTypes: PLAY_TYPES.map(({ key, displayName }) => ({
+          playType: key,
+          displayName,
+          points: 0,
+          possessions: 0,
+          ppp: 0,
+          percentage: 0,
+          opponentRank: null,
+        })),
+        totalPoints: 0,
+        error: 'NBA API unreachable - data will be available once cache is populated',
+        cachedAt: new Date().toISOString()
+      };
+      return NextResponse.json(emptyResponse, { status: 200 });
+    }
+    
     console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);
       
     // Check for bulk cached player play type data first

@@ -152,6 +152,20 @@ export async function GET(request: NextRequest) {
       }
       
       console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category} - falling back to API`);
+      
+      // If no cache and NBA API is unreachable, return empty data instead of timing out
+      // Background jobs should populate cache
+      if (!forceRefresh) {
+        console.log(`[Team Tracking Stats] ⚠️ No cache available. NBA API is unreachable from Vercel. Returning empty data.`);
+        return NextResponse.json({
+          team,
+          season: seasonStr,
+          category,
+          stats: [],
+          error: 'NBA API unreachable - data will be available once cache is populated',
+          cachedAt: new Date().toISOString()
+        }, { status: 200 });
+      }
     }
 
     const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
