@@ -156,6 +156,7 @@ export async function GET(request: NextRequest) {
       // If no cache and NBA API is unreachable, return empty data instead of timing out
       // Background jobs should populate cache
       if (!forceRefresh) {
+        const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
         console.log(`[Team Tracking Stats] ⚠️ No cache available. NBA API is unreachable from Vercel. Returning empty data.`);
         return NextResponse.json({
           team,
