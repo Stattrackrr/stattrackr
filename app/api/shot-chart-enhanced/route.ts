@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
     console.log(`[Shot Chart Enhanced] Request for player ${nbaPlayerId} (original: ${originalPlayerId}), opponent: ${opponentTeam || 'none'}, season: ${season}, bypassCache: ${bypassCache}`);
 
     // Check cache (unless bypassed) - use NBA ID for cache key
-    const cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
+    cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
     const cached = !bypassCache ? cache.get<any>(cacheKey) : null;
     
     if (cached) {
