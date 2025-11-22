@@ -43,6 +43,7 @@ export default function SubscriptionPage() {
   const [billingEmail, setBillingEmail] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [hasTriedAutoRedirect, setHasTriedAutoRedirect] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -81,15 +82,25 @@ export default function SubscriptionPage() {
         setFullName(`${firstName} ${lastName}`.trim() || 'User');
         
         // Fetch profile data
-        const { data: profileData } = await (supabase
+        const { data: profileData, error: profileError } = await (supabase
           .from('profiles') as any)
           .select('subscription_status, subscription_tier, subscription_billing_cycle, subscription_current_period_end, stripe_customer_id')
           .eq('id', user.id)
           .single();
         
+        if (profileError) {
+          console.error('[Subscription] Profile error:', profileError);
+        }
+        
         if (profileData) {
           setProfile(profileData);
           const profile = profileData as any;
+          
+          console.log('[Subscription] Loaded profile:', {
+            userId: user.id,
+            subscription_status: profile.subscription_status,
+            subscription_tier: profile.subscription_tier,
+          });
           
           // Fetch payment method if user has active subscription
           if (profile.stripe_customer_id && (profile.subscription_status === 'active' || profile.subscription_status === 'trialing')) {
@@ -104,7 +115,13 @@ export default function SubscriptionPage() {
       console.error("Error loading user:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }
+
+  async function refreshSubscription() {
+    setRefreshing(true);
+    await loadUserData();
   }
 
   async function fetchPaymentMethod() {
@@ -270,11 +287,11 @@ export default function SubscriptionPage() {
 
             {/* Current Plan Status */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm font-semibold text-blue-900 mb-1">Current Plan</p>
                   <h2 className="text-3xl font-bold text-blue-900">
-                    {hasActiveSubscription ? 'Pro' : 'Free'}
+                    {hasActiveSubscription ? (subscriptionTier === 'pro' ? 'Pro' : 'Premium') : 'Free'}
                   </h2>
                   {hasActiveSubscription && profile?.subscription_billing_cycle && (
                     <p className="text-sm text-blue-700 mt-1 capitalize">
@@ -294,6 +311,36 @@ export default function SubscriptionPage() {
                     )}
                   </div>
                 )}
+              </div>
+              
+              {/* Debug Info & Refresh Button */}
+              <div className="flex items-center justify-between pt-4 border-t border-blue-200">
+                <div className="text-xs text-blue-600">
+                  <p>Status: <span className="font-semibold">{profile?.subscription_status || 'free'}</span></p>
+                  <p>Tier: <span className="font-semibold">{profile?.subscription_tier || 'free'}</span></p>
+                </div>
+                <button
+                  onClick={refreshSubscription}
+                  disabled={refreshing}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  {refreshing ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh Status
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 

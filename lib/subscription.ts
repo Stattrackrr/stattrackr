@@ -25,11 +25,20 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     }
 
     // Check profiles table first (source of truth)
-    const { data: profile } = await (supabase
+    const { data: profile, error: profileError } = await (supabase
       .from('profiles') as any)
       .select('subscription_status, subscription_tier, subscription_billing_cycle, subscription_current_period_end')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      console.error('[Subscription] Profile query error:', profileError);
+      // If it's a "not found" error, that's OK - fall through to metadata
+      // But log other errors
+      if (profileError.code !== 'PGRST116') {
+        console.error('[Subscription] Unexpected profile error:', profileError);
+      }
+    }
 
     if (profile) {
       // Use profiles table data
@@ -41,6 +50,14 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
       } else if (profileData.subscription_tier === 'premium') {
         tier = 'premium';
       }
+      
+      console.log('[Subscription] Profile data:', {
+        userId: user.id,
+        subscription_status: profileData.subscription_status,
+        subscription_tier: profileData.subscription_tier,
+        isActive,
+        tier,
+      });
       
       return {
         tier,

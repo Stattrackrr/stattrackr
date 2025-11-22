@@ -28,12 +28,18 @@ const NBA_HEADERS = {
 
 async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Use longer timeout in production (production networks can be slower)
+  const actualTimeout = isProduction ? Math.max(timeout, 30000) : timeout;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
     try {
+      console.log(`[Shot Chart Enhanced] Fetching NBA API (attempt ${attempt + 1}/${retries + 1}): ${url.substring(0, 100)}...`);
+      
       const response = await fetch(url, {
         headers: NBA_HEADERS,
         signal: controller.signal,
@@ -49,9 +55,11 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
         const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
         console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 500));
         
-        // Don't retry on 4xx errors (client errors)
-        if (response.status >= 400 && response.status < 500 && attempt < retries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+        // Don't retry on 4xx errors (client errors) except 429 (rate limit)
+        if (response.status === 429 || (response.status >= 500 && attempt < retries)) {
+          const delay = 1000 * (attempt + 1);
+          console.log(`[Shot Chart Enhanced] Retrying after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           lastError = new Error(errorMsg);
           continue;
         }
@@ -59,12 +67,14 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
         throw new Error(errorMsg);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`[Shot Chart Enhanced] ✅ Successfully fetched NBA API data`);
+      return data;
     } catch (error: any) {
       clearTimeout(timeoutId);
       
       if (error.name === 'AbortError') {
-        lastError = new Error('Request timeout');
+        lastError = new Error(`Request timeout after ${actualTimeout}ms`);
         if (attempt < retries) {
           console.log(`[Shot Chart Enhanced] Timeout on attempt ${attempt + 1}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
@@ -74,14 +84,21 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       }
       
       // Network errors - retry
-      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND')) {
+      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNRESET')) {
         lastError = error;
         if (attempt < retries) {
-          console.log(`[Shot Chart Enhanced] Network error on attempt ${attempt + 1}, retrying...`);
+          console.log(`[Shot Chart Enhanced] Network error on attempt ${attempt + 1}: ${error.message}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
+      
+      // Log the error for debugging
+      console.error(`[Shot Chart Enhanced] Fetch error (attempt ${attempt + 1}):`, {
+        name: error.name,
+        message: error.message,
+        isProduction,
+      });
       
       throw error;
     }
@@ -415,11 +432,43 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Shot Chart Enhanced] Error:', error);
     
+    // Determine error type and provide helpful message
+    let errorMessage = 'Failed to fetch enhanced shot data';
+    let errorType = error.name || 'UnknownError';
+    
+    if (error.message?.includes('timeout') || error.name === 'AbortError') {
+      errorMessage = 'Request timed out - NBA API is slow to respond. Please try again.';
+      errorType = 'TimeoutError';
+    } else if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND')) {
+      errorMessage = 'Network error - Unable to reach NBA API. Please check your connection.';
+      errorType = 'NetworkError';
+    } else if (error.message?.includes('NBA API 4')) {
+      errorMessage = 'NBA API returned an error. The player data may not be available.';
+      errorType = 'APIError';
+    } else if (error.message?.includes('NBA API 5')) {
+      errorMessage = 'NBA API server error. Please try again in a few moments.';
+      errorType = 'ServerError';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+    const errorDetails = isProduction 
+      ? {
+          error: errorMessage,
+          type: errorType,
+          // Include original message for debugging but sanitized
+          originalError: error.message?.substring(0, 100) || 'Unknown error',
+        }
+      : {
+          error: errorMessage,
+          message: error.message,
+          stack: error.stack,
+          type: errorType,
+        };
+    
     return NextResponse.json(
-      {
-        error: 'Failed to fetch enhanced shot data',
-        details: error.message
-      },
+      errorDetails,
       { status: 500 }
     );
   }

@@ -6736,8 +6736,19 @@ const lineMovementInFlightRef = useRef(false);
   // Subscription/paywall state
   const { 
     hasPremium, 
-    checkFeatureAccess
+    checkFeatureAccess,
+    subscription,
+    loading: subscriptionLoading
   } = useSubscription();
+  
+  // Debug subscription status
+  useEffect(() => {
+    console.log('[Dashboard] Subscription status:', {
+      hasPremium,
+      subscription,
+      loading: subscriptionLoading
+    });
+  }, [hasPremium, subscription, subscriptionLoading]);
   
   // Next game info for tracking (separate from chart filter)
   const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
