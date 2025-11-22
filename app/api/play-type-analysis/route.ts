@@ -298,44 +298,56 @@ export async function GET(request: NextRequest) {
       });
     } else {
       console.log(`[Play Type Analysis] ⚠️ No bulk cached data found (or empty/invalid), fetching all from API...`);
-      // Fallback: Fetch play types sequentially to avoid rate limiting
-      for (let i = 0; i < playTypesToFetch.length; i++) {
-        const key = playTypesToFetch[i];
-        console.log(`[Play Type Analysis] Fetching ${key} (${i + 1}/${playTypesToFetch.length}) for season ${seasonStr}...`);
-          
-        try {
-          const playerParams = new URLSearchParams({
-            LeagueID: '00',
-            PerMode: 'PerGame', // Use PerGame to get points per game
-            PlayerOrTeam: 'P',
-            SeasonType: 'Regular Season',
-            SeasonYear: seasonStr,
-            PlayType: key, // Specify the play type!
-            TypeGrouping: 'offensive',
-          });
-
-          const playerUrl = `${NBA_STATS_BASE}/synergyplaytypes?${playerParams.toString()}`;
-          
-          const playerData = await fetchNBAStats(playerUrl, 20000); // Increased timeout to 20s
-          const playerResultSet = playerData?.resultSets?.[0];
-          
-          if (!playerResultSet) {
-            allResults.push({ status: 'fulfilled', value: { key, success: false, rows: [], headers: [] } });
-          } else {
-            const playerRows = playerResultSet.rowSet || [];
-            const headers = playerResultSet.headers || [];
-            console.log(`[Play Type Analysis] ${key}: ${playerRows.length} rows`);
-            
-            allResults.push({ status: 'fulfilled', value: { key, success: true, rows: playerRows, headers } });
-          }
-        } catch (err) {
-          console.warn(`[Play Type Analysis] Error fetching ${key}:`, err);
-          allResults.push({ status: 'fulfilled', value: { key, success: false, rows: [], headers: [], error: err } });
-        }
+      // Fetch play types in parallel batches to speed up (3 at a time to avoid rate limiting)
+      const BATCH_SIZE = 3;
+      const batches: string[][] = [];
+      for (let i = 0; i < playTypesToFetch.length; i += BATCH_SIZE) {
+        batches.push(playTypesToFetch.slice(i, i + BATCH_SIZE));
+      }
+      
+      for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+        const batch = batches[batchIdx];
+        console.log(`[Play Type Analysis] Fetching batch ${batchIdx + 1}/${batches.length} (${batch.length} play types)...`);
         
-        // Add delay between requests to avoid rate limiting (except for last request)
-        if (i < playTypesToFetch.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        // Fetch batch in parallel
+        const batchPromises = batch.map(async (key) => {
+          try {
+            const playerParams = new URLSearchParams({
+              LeagueID: '00',
+              PerMode: 'PerGame',
+              PlayerOrTeam: 'P',
+              SeasonType: 'Regular Season',
+              SeasonYear: seasonStr,
+              PlayType: key,
+              TypeGrouping: 'offensive',
+            });
+
+            const playerUrl = `${NBA_STATS_BASE}/synergyplaytypes?${playerParams.toString()}`;
+            
+            const playerData = await fetchNBAStats(playerUrl, 15000); // Reduced to 15s per call
+            const playerResultSet = playerData?.resultSets?.[0];
+            
+            if (!playerResultSet) {
+              return { status: 'fulfilled' as const, value: { key, success: false, rows: [], headers: [] } };
+            } else {
+              const playerRows = playerResultSet.rowSet || [];
+              const headers = playerResultSet.headers || [];
+              console.log(`[Play Type Analysis] ${key}: ${playerRows.length} rows`);
+              
+              return { status: 'fulfilled' as const, value: { key, success: true, rows: playerRows, headers } };
+            }
+          } catch (err) {
+            console.warn(`[Play Type Analysis] Error fetching ${key}:`, err);
+            return { status: 'fulfilled' as const, value: { key, success: false, rows: [], headers: [], error: err } };
+          }
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults);
+        
+        // Small delay between batches (not between individual calls)
+        if (batchIdx < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 0.5 second delay between batches
         }
       }
     }
