@@ -25,32 +25,84 @@ const NBA_HEADERS = {
   'sec-ch-ua-platform': '"Windows"',
 };
 
-async function fetchNBAStats(url: string, timeout = 20000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
+  let lastError: Error | null = null;
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Use longer timeout in production (production networks can be slower)
+  const actualTimeout = isProduction ? Math.max(timeout, 30000) : timeout;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
-  try {
-    const response = await fetch(url, {
-      headers: NBA_HEADERS,
-      signal: controller.signal,
-      next: { revalidate: 1800 } // Cache for 30 minutes
-    });
+    try {
+      console.log(`[Team Tracking Stats] Fetching NBA API (attempt ${attempt + 1}/${retries + 1}): ${url.substring(0, 100)}...`);
+      
+      const response = await fetch(url, {
+        headers: NBA_HEADERS,
+        signal: controller.signal,
+        cache: 'no-store',
+        redirect: 'follow'
+      });
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`NBA API ${response.status}: ${text.substring(0, 200)}`);
+      if (!response.ok) {
+        const text = await response.text();
+        const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
+        console.error(`[Team Tracking Stats] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 500));
+        
+        // Retry on 5xx errors or 429 (rate limit)
+        if ((response.status >= 500 || response.status === 429) && attempt < retries) {
+          const delay = 1000 * (attempt + 1);
+          console.log(`[Team Tracking Stats] Retrying after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          lastError = new Error(errorMsg);
+          continue;
+        }
+        
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      console.log(`[Team Tracking Stats] ✅ Successfully fetched NBA API data`);
+      return data;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        lastError = new Error(`Request timeout after ${actualTimeout}ms`);
+        if (attempt < retries) {
+          console.log(`[Team Tracking Stats] Timeout on attempt ${attempt + 1}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw lastError;
+      }
+      
+      // Network errors - retry
+      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNRESET')) {
+        lastError = error;
+        if (attempt < retries) {
+          console.log(`[Team Tracking Stats] Network error on attempt ${attempt + 1}: ${error.message}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+      }
+      
+      // Log the error for debugging
+      console.error(`[Team Tracking Stats] Fetch error (attempt ${attempt + 1}):`, {
+        name: error.name,
+        message: error.message,
+        isProduction,
+      });
+      
+      throw error;
     }
-
-    return await response.json();
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout - NBA API took too long to respond');
-    }
-    throw error;
   }
+  
+  throw lastError || new Error('Failed after retries');
 }
 
 // NBA Team ID mapping (abbreviation to ID)
@@ -242,11 +294,43 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[Team Tracking Stats] Error:', error);
+    
+    // Determine error type and provide helpful message
+    let errorMessage = 'Failed to fetch team tracking stats';
+    let errorType = error.name || 'UnknownError';
+    
+    if (error.message?.includes('timeout') || error.name === 'AbortError') {
+      errorMessage = 'Request timed out - NBA API is slow to respond. Please try again.';
+      errorType = 'TimeoutError';
+    } else if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND')) {
+      errorMessage = 'Network error - Unable to reach NBA API. Please check your connection.';
+      errorType = 'NetworkError';
+    } else if (error.message?.includes('NBA API 4')) {
+      errorMessage = 'NBA API returned an error. The team data may not be available.';
+      errorType = 'APIError';
+    } else if (error.message?.includes('NBA API 5')) {
+      errorMessage = 'NBA API server error. Please try again in a few moments.';
+      errorType = 'ServerError';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+    const errorDetails = isProduction 
+      ? {
+          error: errorMessage,
+          type: errorType,
+          originalError: error.message?.substring(0, 100) || 'Unknown error',
+        }
+      : {
+          error: errorMessage,
+          message: error.message,
+          stack: error.stack,
+          type: errorType,
+        };
+    
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch team tracking stats',
-        details: error.message 
-      },
+      errorDetails,
       { status: 500 }
     );
   }
