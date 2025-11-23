@@ -4036,7 +4036,11 @@ const ChartControls = function ChartControls({
                   {isAdvancedFiltersOpen && advancedFilterTop !== null && (
                     <div 
                       className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
-                      style={{ top: `${advancedFilterTop}px` }}
+                      style={{ 
+                        top: `${advancedFilterTop}px`,
+                        position: 'fixed',
+                        willChange: 'transform'
+                      }}
                     >
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
                       <div className="space-y-2">
