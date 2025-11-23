@@ -553,49 +553,25 @@ export async function GET(request: NextRequest) {
         console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr}`);
         Object.assign(playTypeRankings, cachedRankings);
       } else {
-        // Try to fetch from cache endpoint (background job)
-        console.log(`[Play Type Analysis] ⚠️ No cached defensive rankings found. Attempting to fetch from cache endpoint...`);
-        try {
+        // No cached rankings - trigger background fetch (non-blocking)
+        // This will populate the cache for future requests
+        console.warn(`[Play Type Analysis] ⚠️ No cached defensive rankings found. Triggering background fetch for all play types...`);
+        
+        // Trigger cache endpoint in background (non-blocking)
+        // This fetches defensive rankings for all 11 play types (takes ~2-3 minutes)
+        if (process.env.NODE_ENV === 'development') {
           const host = request.headers.get('host') || 'localhost:3000';
-          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+          const protocol = 'http';
           const cacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${season}`;
           
-          // Add 5 second timeout - don't block if it's slow
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
-          
-          try {
-            const cacheResponse = await fetch(cacheUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            if (cacheResponse.ok) {
-              // Check cache again after the endpoint runs
-              cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
-              if (cachedRankings) {
-                console.log(`[Play Type Analysis] ✅ Fetched defensive rankings from cache endpoint`);
-                Object.assign(playTypeRankings, cachedRankings);
-              } else {
-                console.warn(`[Play Type Analysis] ⚠️ Cache endpoint ran but rankings still not available. Opponent ranks will be N/A.`);
-              }
-            } else {
-              console.warn(`[Play Type Analysis] ⚠️ Cache endpoint returned ${cacheResponse.status}. Opponent ranks will be N/A.`);
-            }
-          } catch (fetchErr: any) {
-            clearTimeout(timeoutId);
-            if (fetchErr.name === 'AbortError') {
-              console.warn(`[Play Type Analysis] ⚠️ Cache endpoint fetch timed out. Opponent ranks will be N/A.`);
-            } else {
-              console.warn(`[Play Type Analysis] ⚠️ Error fetching from cache endpoint:`, fetchErr.message);
-            }
-          }
-        } catch (err: any) {
-          console.warn(`[Play Type Analysis] ⚠️ Could not fetch defensive rankings:`, err.message);
+          // Don't await - let it run in background (this takes 2-3 minutes)
+          fetch(cacheUrl).catch(err => {
+            console.warn(`[Play Type Analysis] Background cache endpoint fetch failed:`, err.message);
+          });
         }
         
-        // If still no rankings, opponent ranks will be N/A
-        if (Object.keys(playTypeRankings).length === 0) {
-          console.warn(`[Play Type Analysis] ⚠️ No defensive rankings available. Opponent ranks will be N/A.`);
-        }
+        // Opponent ranks will be N/A for this request, but will be available after cache is populated
+        console.warn(`[Play Type Analysis] ⚠️ No defensive rankings available. Opponent ranks will be N/A. Cache will be populated in background.`);
       }
     } else {
       console.log(`[Play Type Analysis] No opponent team specified - skipping defensive rankings`);
