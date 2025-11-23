@@ -227,13 +227,22 @@ export async function GET(request: NextRequest) {
     || request.headers.get('Authorization')
     || request.headers.get('AUTHORIZATION');
   
+  // Also check query parameter as fallback (easier for testing with PowerShell)
+  const { searchParams } = new URL(request.url);
+  const secretFromQuery = searchParams.get('secret');
+  
   // Debug: Log all headers to see what's being received
   const allHeaders: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     allHeaders[key] = value;
   });
   console.log('[NBA Stats Refresh] All headers:', Object.keys(allHeaders));
-  console.log('[NBA Stats Refresh] Authorization header:', authHeader || 'NOT FOUND');
+  console.log('[NBA Stats Refresh] Authorization header (get):', authHeader || 'NOT FOUND');
+  console.log('[NBA Stats Refresh] Secret from query:', secretFromQuery ? 'PROVIDED' : 'NOT PROVIDED');
+  
+  // Check if this is a Vercel Cron call (they send x-vercel-cron header)
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  console.log('[NBA Stats Refresh] Is Vercel Cron call:', isVercelCron);
   
   const cronSecret = process.env.CRON_SECRET;
   
@@ -241,27 +250,29 @@ export async function GET(request: NextRequest) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const allowBypass = isDevelopment || !cronSecret;
   
-  if (cronSecret && !allowBypass) {
-    // Normalize header (case-insensitive, trim whitespace)
-    // Next.js headers.get() returns the header as-is, normalize to lowercase
+  // Vercel Cron calls are authenticated by Vercel itself, so skip manual auth check
+  // Only require auth for manual/external calls
+  if (cronSecret && !allowBypass && !isVercelCron) {
+    // Check both header and query parameter
     const normalizedHeader = authHeader?.trim().toLowerCase();
     const expectedHeader = `bearer ${cronSecret}`.toLowerCase();
+    const headerMatch = normalizedHeader === expectedHeader;
+    const queryMatch = secretFromQuery === cronSecret;
     
     // Log for debugging (will show in Vercel logs)
     console.log('[NBA Stats Refresh] Auth check:', {
       hasHeader: !!authHeader,
-      headerLength: authHeader?.length || 0,
-      secretLength: cronSecret.length,
-      headerPrefix: authHeader ? authHeader.substring(0, 20) : 'null',
-      match: normalizedHeader === expectedHeader
+      headerMatch,
+      queryMatch,
+      secretLength: cronSecret.length
     });
     
-    if (normalizedHeader !== expectedHeader) {
+    if (!headerMatch && !queryMatch) {
       return NextResponse.json({ 
         error: 'Unauthorized',
-        hint: 'CRON_SECRET mismatch. Verify the secret in Vercel matches the one in your request.',
-        receivedPrefix: authHeader ? authHeader.substring(0, 30) : 'null',
-        expectedPrefix: `Bearer ${cronSecret.substring(0, 10)}...`
+        hint: 'CRON_SECRET required. Use ?secret=YOUR_SECRET in URL or Authorization: Bearer YOUR_SECRET header.',
+        receivedHeader: authHeader ? 'yes' : 'no',
+        receivedQuery: secretFromQuery ? 'yes' : 'no'
       }, { status: 401 });
     }
   }
