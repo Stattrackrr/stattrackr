@@ -148,19 +148,22 @@ export async function GET(request: NextRequest) {
     if (!forceRefresh) {
       // Try Supabase cache first (persistent, shared across instances)
       let cached = await getNBACache<any>(cacheKey);
+      let cacheSource = 'supabase';
       
       // Fallback to in-memory cache
       if (!cached) {
         cached = cache.get<any>(cacheKey);
+        cacheSource = 'memory';
       }
       
       if (cached) {
         const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
-        console.log(`[Team Tracking Stats] ✅ Cache hit for ${team} ${category}${filterSuffix} (season ${season})`);
+        console.log(`[Team Tracking Stats] ✅ Cache hit (${cacheSource}) for ${team} ${category}${filterSuffix} (season ${season})`);
         return NextResponse.json(cached, {
           status: 200,
           headers: {
             'X-Cache-Status': 'HIT',
+            'X-Cache-Source': cacheSource,
             'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' // 24h cache, 48h stale
           }
         });
@@ -317,10 +320,10 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache the result (both all games and opponent-specific)
-    // Store in both Supabase (persistent) and in-memory
+    // Store in both Supabase (persistent, shared across all users) and in-memory
     await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
-    console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} for ${CACHE_TTL.TRACKING_STATS} minutes`);
+    console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory for ${CACHE_TTL.TRACKING_STATS} minutes (available instantly for all users)`);
 
     return NextResponse.json(
       responsePayload,
