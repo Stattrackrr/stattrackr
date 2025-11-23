@@ -645,7 +645,13 @@ export async function GET(request: NextRequest) {
     if (opponentTeam && opponentTeam !== 'N/A') {
       // Check cache for defensive rankings (league-wide, same for all players)
       const defensiveRankingsCacheKey = `playtype_defensive_rankings_${seasonStr}`;
-      let cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+      // Try Supabase cache first (persistent, shared across instances)
+      let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+      
+      // Fallback to in-memory cache
+      if (!cachedRankings) {
+        cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+      }
       
       if (cachedRankings) {
         const playTypeCount = Object.keys(cachedRankings).length;
