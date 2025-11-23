@@ -42,8 +42,17 @@ const NBA_TEAM_MAP: { [key: string]: string } = {
 /**
  * Fetch defensive stats for a single team (not all 30 teams)
  * This is much faster than fetching all teams just to get one team's stats
+ * Results are cached to avoid repeated API calls
  */
-async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, seasonStr: string) {
+async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, seasonStr: string, season: number) {
+  // Check cache first
+  const cacheKey = `team_defense_stats_${teamAbbr}_${season}`;
+  const cached = cache.get<any>(cacheKey);
+  if (cached) {
+    console.log(`[Shot Chart Enhanced] ✅ Using cached defensive stats for ${teamAbbr}`);
+    return cached;
+  }
+
   try {
     const defenseParams = new URLSearchParams({
       LeagueID: '00',
@@ -117,7 +126,7 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
         }
       }
 
-      return {
+      const stats = {
         restrictedArea: {
           fgPct: zoneStats.restrictedArea.attempted > 0 ? (zoneStats.restrictedArea.made / zoneStats.restrictedArea.attempted) * 100 : 0,
           fga: zoneStats.restrictedArea.attempted,
@@ -149,6 +158,12 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
           fgm: zoneStats.aboveBreak3.made
         }
       };
+
+      // Cache the result for 24 hours (1440 minutes)
+      cache.set(cacheKey, stats, 1440);
+      console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr}`);
+      
+      return stats;
     }
 
     return null;
@@ -366,7 +381,7 @@ export async function GET(request: NextRequest) {
               if (opponentTeamId) {
                 try {
                   const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-                  const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr);
+                  const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season);
                   
                   if (opponentStats) {
                     // Create a minimal rankings object with just this team
@@ -602,7 +617,7 @@ export async function GET(request: NextRequest) {
           if (opponentTeamId) {
             try {
               const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-              const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr);
+              const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season);
               
               if (opponentStats) {
                 // Create a minimal rankings object with just this team
