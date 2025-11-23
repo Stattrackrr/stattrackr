@@ -597,28 +597,28 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               <>
                 {/* Above-the-break 3 */}
                 <text x={centerX} y="60" textAnchor="middle" fill="#ffffff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  {rankings.aboveBreak3?.rank && rankings.aboveBreak3.rank > 0 ? `#${rankings.aboveBreak3.rank}` : rankings.aboveBreak3?.fgPct ? `${rankings.aboveBreak3.fgPct.toFixed(1)}%` : '-'}
+                  {rankings.aboveBreak3?.rank && rankings.aboveBreak3.rank > 0 ? `#${rankings.aboveBreak3.rank}` : '-'}
                 </text>
                 {/* Mid-Range */}
                 <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  {rankings.midRange?.rank && rankings.midRange.rank > 0 ? `#${rankings.midRange.rank}` : rankings.midRange?.fgPct ? `${rankings.midRange.fgPct.toFixed(1)}%` : '-'}
+                  {rankings.midRange?.rank && rankings.midRange.rank > 0 ? `#${rankings.midRange.rank}` : '-'}
                 </text>
                 {/* Restricted Area */}
                 <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  {rankings.restrictedArea?.rank && rankings.restrictedArea.rank > 0 ? `#${rankings.restrictedArea.rank}` : rankings.restrictedArea?.fgPct ? `${rankings.restrictedArea.fgPct.toFixed(1)}%` : '-'}
+                  {rankings.restrictedArea?.rank && rankings.restrictedArea.rank > 0 ? `#${rankings.restrictedArea.rank}` : '-'}
                 </text>
                 {/* Paint */}
                 <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  {rankings.paint?.rank && rankings.paint.rank > 0 ? `#${rankings.paint.rank}` : rankings.paint?.fgPct ? `${rankings.paint.fgPct.toFixed(1)}%` : '-'}
+                  {rankings.paint?.rank && rankings.paint.rank > 0 ? `#${rankings.paint.rank}` : '-'}
                 </text>
                 {/* Left Corner 3 - show individual rank */}
                 {enhancedData && (
                   <>
                     <text x="45" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                      {rankings.leftCorner3?.rank && rankings.leftCorner3.rank > 0 ? `#${rankings.leftCorner3.rank}` : rankings.leftCorner3?.fgPct ? `${rankings.leftCorner3.fgPct.toFixed(1)}%` : '-'}
+                      {rankings.leftCorner3?.rank && rankings.leftCorner3.rank > 0 ? `#${rankings.leftCorner3.rank}` : '-'}
                     </text>
                     <text x="455" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                      {rankings.rightCorner3?.rank && rankings.rightCorner3.rank > 0 ? `#${rankings.rightCorner3.rank}` : rankings.rightCorner3?.fgPct ? `${rankings.rightCorner3.fgPct.toFixed(1)}%` : '-'}
+                      {rankings.rightCorner3?.rank && rankings.rightCorner3.rank > 0 ? `#${rankings.rightCorner3.rank}` : '-'}
                     </text>
                   </>
                 )}
