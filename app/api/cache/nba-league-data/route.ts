@@ -42,10 +42,18 @@ const PLAY_TYPES = [
   { key: 'OffRebound', displayName: 'Putbacks' },
 ];
 
-async function fetchNBAStats(url: string, timeout = 5000) {
-  // Aggressive timeout: 5s max (fail fast, cache will be populated gradually)
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000));
+async function fetchNBAStats(url: string, timeout = 15000, retries = 1) {
+  // Timeout: 15s in dev (NBA API is slow), 8s in production
+  // 1 retry in dev to handle occasional timeouts
+  const isProduction = process.env.NODE_ENV === 'production';
+  const actualTimeout = isProduction ? Math.min(timeout, 8000) : Math.min(timeout, 15000);
+  const actualRetries = isProduction ? 0 : Math.min(retries, 1);
+  
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= actualRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
   try {
     const response = await fetch(url, {
@@ -63,11 +71,28 @@ async function fetchNBAStats(url: string, timeout = 5000) {
     return await response.json();
   } catch (error: any) {
     clearTimeout(timeoutId);
+    
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
+      lastError = new Error(`Request timeout after ${actualTimeout}ms`);
+      if (attempt < actualRetries) {
+        console.log(`[NBA League Data Cache] Timeout on attempt ${attempt + 1}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw lastError;
+    }
+    
+    lastError = error;
+    if (attempt < actualRetries) {
+      console.log(`[NBA League Data Cache] Error on attempt ${attempt + 1}, retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      continue;
     }
     throw error;
+    }
   }
+  
+  throw lastError || new Error('Unknown error');
 }
 
 export async function GET(request: NextRequest) {
@@ -142,8 +167,10 @@ export async function GET(request: NextRequest) {
         }
         
         // Delay between requests to avoid rate limiting
+        // Reduced to 500ms in dev (was 2s) - NBA API is slow but we can reduce delays
         if (i < PLAY_TYPES.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+          const delay = process.env.NODE_ENV === 'production' ? 2000 : 500; // 500ms in dev, 2s in prod
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (err: any) {
         console.error(`[NBA League Data Cache] ❌ Error fetching ${key}:`, err.message);
