@@ -25,12 +25,12 @@ export async function getCachedWithRefresh<T = any>(
   isStaleCheck?: (data: T) => boolean
 ): Promise<CacheRefreshResult<T>> {
   // Try to get cached data
-  let cached = await getNBACache<T>(cacheKey);
+  let cached: T | null = await getNBACache<T>(cacheKey);
   let cacheSource = 'supabase';
   
   // Fallback to in-memory cache
   if (!cached) {
-    cached = cache.get<T>(cacheKey);
+    cached = cache.get<T>(cacheKey) as T | null;
     cacheSource = 'memory';
   }
 
