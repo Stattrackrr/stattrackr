@@ -265,13 +265,14 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   }
 
   // Calculate total FGA for distribution percentages
-  const totalFga = zones.reduce((sum, zone) => sum + zone.fga, 0);
-  const totalFgm = zones.reduce((sum, zone) => sum + zone.fgm, 0);
+  const totalFga = zones.reduce((sum, zone) => sum + (zone.fga || 0), 0);
+  const totalFgm = zones.reduce((sum, zone) => sum + (zone.fgm || 0), 0);
   
   // Calculate distributions based on toggle: attempts or makes
+  // Guard against division by zero and NaN
   const distributions = showMakes 
-    ? zones.map(zone => (zone.fgm / totalFgm) * 100)  // % of total makes
-    : zones.map(zone => (zone.fga / totalFga) * 100); // % of total attempts
+    ? zones.map(zone => totalFgm > 0 ? (zone.fgm || 0) / totalFgm * 100 : 0)  // % of total makes
+    : zones.map(zone => totalFga > 0 ? (zone.fga || 0) / totalFga * 100 : 0); // % of total attempts
 
   const getColorForDistribution = (pct: number) => {
     if (pct >= 30) return '#10b981'; // teal/green ≥30%
@@ -630,35 +631,53 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           <>
             {/* Above-the-break 3PT percentage (or all 3s if using BallDontLie) */}
             <text x={centerX} y="60" textAnchor="middle" fill="#fff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-              {(enhancedData ? distributions[5] : distributions[4])?.toFixed(0) || 0}%
+              {(() => {
+                const val = enhancedData ? distributions[5] : distributions[4];
+                return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+              })()}%
             </text>
             
             {/* Mid-Range percentage - top */}
             <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-              {distributions[2]?.toFixed(0) || 0}%
+              {(() => {
+                const val = distributions[2];
+                return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+              })()}%
             </text>
             
             {/* Restricted area percentage */}
             <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-              {distributions[0]?.toFixed(0) || 0}%
+              {(() => {
+                const val = distributions[0];
+                return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+              })()}%
             </text>
             
             {/* Paint percentage - in middle of paint */}
             <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#fff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-              {distributions[1]?.toFixed(0) || 0}%
+              {(() => {
+                const val = distributions[1];
+                return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+              })()}%
             </text>
             
             {/* Left Corner 3 percentage - only show if using enhanced data */}
             {enhancedData && (
               <text x="45" y="330" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                {distributions[3]?.toFixed(0) || 0}%
+                {(() => {
+                  const val = distributions[3];
+                  return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+                })()}%
               </text>
             )}
             
             {/* Right Corner 3 percentage - only show if using enhanced data */}
             {enhancedData && (
               <text x="455" y="330" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                {distributions[4]?.toFixed(0) || 0}%
+                {(() => {
+                  const val = distributions[4];
+                  return (isNaN(val) || !isFinite(val) ? 0 : val)?.toFixed(0) || 0;
+                })()}%
               </text>
             )}
           </>
