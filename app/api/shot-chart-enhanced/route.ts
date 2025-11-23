@@ -222,38 +222,47 @@ export async function GET(request: NextRequest) {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
           const cachedRankings = cache.get<any>(rankingsCacheKey);
           
-          if (cachedRankings?.rankings) {
-            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings`);
+          if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
+            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
             defenseRankings = cachedRankings.rankings;
           } else {
-            console.log(`[Shot Chart Enhanced] Fetching defense rankings for all 30 teams...`);
-            const host = request.headers.get('host') || 'localhost:3000';
-            const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-            const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-            
-            // Add 10 second timeout for rankings fetch
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            
-            try {
-              const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
-              clearTimeout(timeoutId);
+            // Only try to fetch in development - in production, rely on cache (populated by background job)
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
+              const host = request.headers.get('host') || 'localhost:3000';
+              const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+              const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
               
-              if (rankingsResponse.ok) {
-                const rankingsData = await rankingsResponse.json();
-                defenseRankings = rankingsData.rankings;
-                cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
-                console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
-              } else {
-                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+              // Add 5 second timeout for rankings fetch (shorter to fail faster)
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 5000);
+              
+              try {
+                const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (rankingsResponse.ok) {
+                  const rankingsData = await rankingsResponse.json();
+                  if (rankingsData.rankings && Object.keys(rankingsData.rankings).length > 0) {
+                    defenseRankings = rankingsData.rankings;
+                    cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
+                    console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
+                  } else {
+                    console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned empty rankings`);
+                  }
+                } else {
+                  console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+                }
+              } catch (fetchErr: any) {
+                clearTimeout(timeoutId);
+                if (fetchErr.name === 'AbortError') {
+                  console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
+                } else {
+                  console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
+                }
               }
-            } catch (fetchErr: any) {
-              clearTimeout(timeoutId);
-              if (fetchErr.name === 'AbortError') {
-                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
-              } else {
-                console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
-              }
+            } else {
+              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
             }
           }
           
@@ -450,39 +459,48 @@ export async function GET(request: NextRequest) {
       const rankingsCacheKey = `team_defense_rankings_${season}`;
       const cachedRankings = cache.get<any>(rankingsCacheKey);
       
-      if (cachedRankings?.rankings) {
-        console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings`);
+      if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
+        console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
         defenseRankings = cachedRankings.rankings;
       } else {
-        console.log(`[Shot Chart Enhanced] Fetching defense rankings for all 30 teams...`);
-        const host = request.headers.get('host') || 'localhost:3000';
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-        const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-        
-        // Add 10 second timeout for rankings fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        try {
-          const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
-          clearTimeout(timeoutId);
+        // Only try to fetch in development - in production, rely on cache (populated by background job)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
+          const host = request.headers.get('host') || 'localhost:3000';
+          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+          const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
           
-          if (rankingsResponse.ok) {
-            const rankingsData = await rankingsResponse.json();
-            defenseRankings = rankingsData.rankings;
-            // Cache the full response (not just rankings) to match the API's cache format
-            cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
-            console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
-          } else {
-            console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+          // Add 5 second timeout for rankings fetch (shorter to fail faster)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          try {
+            const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            
+            if (rankingsResponse.ok) {
+              const rankingsData = await rankingsResponse.json();
+              if (rankingsData.rankings && Object.keys(rankingsData.rankings).length > 0) {
+                defenseRankings = rankingsData.rankings;
+                // Cache the full response (not just rankings) to match the API's cache format
+                cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
+                console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
+              } else {
+                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned empty rankings`);
+              }
+            } else {
+              console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+            }
+          } catch (fetchErr: any) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === 'AbortError') {
+              console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
+            } else {
+              console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
+            }
           }
-        } catch (fetchErr: any) {
-          clearTimeout(timeoutId);
-          if (fetchErr.name === 'AbortError') {
-            console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
-          } else {
-            throw fetchErr;
-          }
+        } else {
+          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
         }
       }
     } catch (err) {
