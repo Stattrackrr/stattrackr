@@ -349,7 +349,7 @@ export async function GET(request: NextRequest) {
     
     // Only use bulk cache if it exists and has substantial data, and we're not bypassing cache
     // Check if bulk cache has at least some play types with data
-    const hasValidBulkCache = bulkPlayerData && Object.keys(bulkPlayerData).length > 0 && 
+    const hasValidBulkCache = bulkPlayerData && Object.keys(bulkPlayerData || {}).length > 0 && 
       Object.values(bulkPlayerData).some((pt: any) => pt && pt.rows && Array.isArray(pt.rows) && pt.rows.length > 0);
     
     console.log(`[Play Type Analysis] Bulk cache check: exists=${!!bulkPlayerData}, keys=${bulkPlayerData ? Object.keys(bulkPlayerData).length : 0}, hasValidData=${hasValidBulkCache}, bypassCache=${bypassCache}`);
