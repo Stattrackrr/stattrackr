@@ -407,8 +407,19 @@ export async function GET(request: NextRequest) {
                 }
               };
             } else {
-              // No cached rankings or stats - skip fetching (NBA API is too slow/unreliable)
-              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
+              // No cached rankings or stats - trigger background fetch (non-blocking)
+              // This won't help current request but will populate cache for future requests
+              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Triggering background fetch...`);
+              
+              // Trigger background fetch without awaiting (non-blocking)
+              const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
+              if (opponentTeamId && process.env.NODE_ENV === 'development') {
+                const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+                // Don't await - let it run in background
+                fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season).catch(err => {
+                  console.warn(`[Shot Chart Enhanced] Background fetch failed for ${opponentTeam}:`, err.message);
+                });
+              }
             }
           }
           
@@ -645,8 +656,19 @@ export async function GET(request: NextRequest) {
             }
           };
         } else {
-          // No cached rankings or stats - skip fetching (NBA API is too slow/unreliable)
-          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
+          // No cached rankings or stats - trigger background fetch (non-blocking)
+          // This won't help current request but will populate cache for future requests
+          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Triggering background fetch...`);
+          
+          // Trigger background fetch without awaiting (non-blocking)
+          const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
+          if (opponentTeamId && process.env.NODE_ENV === 'development') {
+            const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+            // Don't await - let it run in background
+            fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season).catch(err => {
+              console.warn(`[Shot Chart Enhanced] Background fetch failed for ${opponentTeam}:`, err.message);
+            });
+          }
         }
       }
     } catch (err) {
