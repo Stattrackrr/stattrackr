@@ -226,6 +226,15 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization') 
     || request.headers.get('Authorization')
     || request.headers.get('AUTHORIZATION');
+  
+  // Debug: Log all headers to see what's being received
+  const allHeaders: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    allHeaders[key] = value;
+  });
+  console.log('[NBA Stats Refresh] All headers:', Object.keys(allHeaders));
+  console.log('[NBA Stats Refresh] Authorization header:', authHeader || 'NOT FOUND');
+  
   const cronSecret = process.env.CRON_SECRET;
   
   // Allow bypass in development or if secret is not set
