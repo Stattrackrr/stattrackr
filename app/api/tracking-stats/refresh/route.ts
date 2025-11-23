@@ -1,6 +1,7 @@
 // app/api/tracking-stats/refresh/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { currentNbaSeason } from '@/lib/nbaUtils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
   
   try {
     const { searchParams } = new URL(request.url);
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     
     console.log(`[Tracking Stats Refresh] Starting bulk refresh for ${season}-${season + 1} season`);
     

@@ -269,6 +269,38 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   }
 }
 
+// Allowed bookmakers for odds snapshots (to reduce database size)
+// Only these bookmakers will have their snapshots saved to reduce database usage
+const ALLOWED_BOOKMAKERS = [
+  'fanduel',
+  'prizepicks',
+  'prize picks', // Handle space variation
+  'draftkings',
+  'betonline',
+  'betonline.ag',
+  'betonlineag',
+  'fanatics',
+  'fanatics sportsbook', // Handle full name variation
+  'fanatics betting and gaming' // Handle full name variation
+];
+
+/**
+ * Normalize bookmaker name and check if it's in the allowed list
+ * Handles variations in naming (case, spaces, punctuation)
+ */
+function isAllowedBookmaker(bookmakerName: string): boolean {
+  if (!bookmakerName) return false;
+  
+  const normalized = bookmakerName.toLowerCase().trim().replace(/[.\s]/g, '');
+  
+  return ALLOWED_BOOKMAKERS.some(allowed => {
+    const normalizedAllowed = allowed.toLowerCase().trim().replace(/[.\s]/g, '');
+    return normalized === normalizedAllowed || 
+           normalized.includes(normalizedAllowed) ||
+           normalizedAllowed.includes(normalized);
+  });
+}
+
 async function saveOddsSnapshots(games: GameOdds[]) {
   const snapshots: any[] = [];
   const movementSnapshots: MovementSnapshot[] = [];
@@ -277,6 +309,10 @@ async function saveOddsSnapshots(games: GameOdds[]) {
   for (const game of games) {
     // Save player prop snapshots
     for (const [bookmakerName, playerProps] of Object.entries(game.playerPropsByBookmaker)) {
+      // Filter: Only save snapshots from allowed bookmakers
+      if (!isAllowedBookmaker(bookmakerName)) {
+        continue; // Skip this bookmaker
+      }
       for (const [playerName, props] of Object.entries(playerProps)) {
         // Map stat keys to market names
         const statToMarket: Record<string, string> = {
@@ -363,7 +399,10 @@ async function saveOddsSnapshots(games: GameOdds[]) {
       throw error;
     }
 
-    console.log(`💾 Saved ${snapshots.length} odds snapshots`);
+    const bookmakers = [...new Set(snapshots.map(s => s.bookmaker))];
+    console.log(`💾 Saved ${snapshots.length} odds snapshots from ${bookmakers.length} bookmakers: ${bookmakers.join(', ')}`);
+  } else {
+    console.log(`💾 No odds snapshots to save (filtered by allowed bookmakers)`);
   }
 
   if (movementSnapshots.length > 0) {

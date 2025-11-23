@@ -93,7 +93,14 @@ export function PlayTypeAnalysis({
         console.log('[PlayTypeAnalysis] Play types:', data.playTypes?.length || 0);
         console.log('[PlayTypeAnalysis] Total points:', data.totalPoints);
         
-        setPlayTypeData(data.playTypes || []);
+        // Filter out play types with 0.0 points
+        const filteredPlayTypes = (data.playTypes || []).filter((playType: PlayTypeData) => 
+          playType.points > 0
+        );
+        
+        console.log('[PlayTypeAnalysis] Filtered play types (removed 0.0):', filteredPlayTypes.length);
+        
+        setPlayTypeData(filteredPlayTypes);
         setTotalPoints(data.totalPoints || 0);
       } catch (err: any) {
         console.error('[PlayTypeAnalysis] Error:', err);

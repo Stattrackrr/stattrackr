@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL } from '@/lib/cache';
 import { setNBACache } from '@/lib/nbaCache';
+import { currentNbaSeason } from '@/lib/nbaUtils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,14 +44,16 @@ const PLAY_TYPES = [
   { key: 'OffRebound', displayName: 'Putbacks' },
 ];
 
-async function fetchNBAStats(url: string, timeout = 15000, retries = 1) {
+async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
   // Timeout: 15s in dev (NBA API is slow), 8s in production
-  // 1 retry in dev to handle occasional timeouts
+  // Retry logic: Always retry on 500 errors, retry timeouts in dev
   const isProduction = process.env.NODE_ENV === 'production';
   const actualTimeout = isProduction ? Math.min(timeout, 8000) : Math.min(timeout, 15000);
-  const actualRetries = isProduction ? 0 : Math.min(retries, 1);
+  // For zone rankings (critical), allow retries even in production for 500 errors
+  const actualRetries = retryOn500 ? Math.min(retries, 2) : (isProduction ? 0 : Math.min(retries, 1));
   
   let lastError: Error | null = null;
+  let lastStatusCode: number | null = null;
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
@@ -66,6 +69,13 @@ async function fetchNBAStats(url: string, timeout = 15000, retries = 1) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      lastStatusCode = response.status;
+      // Retry on 500 errors if retryOn500 is true
+      if (response.status >= 500 && retryOn500 && attempt < actualRetries) {
+        console.log(`[NBA League Data Cache] Server error ${response.status} on attempt ${attempt + 1}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Longer delay for 500 errors
+        continue;
+      }
       throw new Error(`NBA API ${response.status}`);
     }
 
@@ -99,7 +109,7 @@ async function fetchNBAStats(url: string, timeout = 15000, retries = 1) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     const forceRefresh = searchParams.get('force') === 'true';
     const retry = searchParams.get('retry') === 'true';
     
@@ -215,81 +225,42 @@ export async function GET(request: NextRequest) {
     console.log(`[NBA League Data Cache] ✅ Cached play type rankings for ${Object.keys(playTypeRankings).length} play types (Supabase + in-memory)`);
 
     // 2. Fetch zone defense rankings (for shot chart)
-    console.log(`[NBA League Data Cache] Fetching zone defense rankings...`);
-    const zoneRankings: Record<string, Array<{ team: string; fgPct: number }>> = {};
-    
-    const zones = ['Restricted Area', 'Paint (Non-RA)', 'Mid-Range', 'Left Corner 3', 'Right Corner 3', 'Above the Break 3'];
-    
-    try {
-      // Use leaguedashteamstats to get zone defense stats
-      const params = new URLSearchParams({
-        LeagueID: '00',
-        PerMode: 'PerGame',
-        MeasureType: 'Opponent',
-        SeasonType: 'Regular Season',
-        Season: seasonStr,
-      });
-
-      const url = `${NBA_STATS_BASE}/leaguedashteamstats?${params.toString()}`;
-      const data = await fetchNBAStats(url, 30000);
-      const resultSet = data?.resultSets?.[0];
-      
-      if (resultSet) {
-        const headers = resultSet.headers || [];
-        const rows = resultSet.rowSet || [];
-        
-        // Find column indices for zone stats
-        const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-        const raFgPctIdx = headers.indexOf('OPP_RESTRICTED_AREA_FG_PCT');
-        const paintFgPctIdx = headers.indexOf('OPP_PAINT_NON_RA_FG_PCT');
-        const midRangeFgPctIdx = headers.indexOf('OPP_MID_RANGE_FG_PCT');
-        const corner3FgPctIdx = headers.indexOf('OPP_CORNER_3_FG_PCT');
-        const aboveBreak3FgPctIdx = headers.indexOf('OPP_ABOVE_THE_BREAK_3_FG_PCT');
-        
-        if (teamAbbrIdx >= 0) {
-          const zoneMappings = [
-            { key: 'Restricted Area', idx: raFgPctIdx },
-            { key: 'Paint (Non-RA)', idx: paintFgPctIdx },
-            { key: 'Mid-Range', idx: midRangeFgPctIdx },
-            { key: 'Left Corner 3', idx: corner3FgPctIdx },
-            { key: 'Right Corner 3', idx: corner3FgPctIdx }, // Same column for both corners
-            { key: 'Above the Break 3', idx: aboveBreak3FgPctIdx },
-          ];
-          
-          zoneMappings.forEach(({ key, idx }) => {
-            if (idx >= 0) {
-              const rankings: Array<{ team: string; fgPct: number }> = [];
-              
-              rows.forEach((row: any[]) => {
-                const team = row[teamAbbrIdx]?.toUpperCase() || '';
-                const fgPct = parseFloat(row[idx]) || 0;
-                if (team) {
-                  rankings.push({ team, fgPct });
-                }
-              });
-              
-              // Sort by FG% (ascending - lower FG% = better defense = rank 1)
-              rankings.sort((a, b) => a.fgPct - b.fgPct);
-              zoneRankings[key] = rankings;
-            }
-          });
-          
-          console.log(`[NBA League Data Cache] ✅ Zone rankings: ${Object.keys(zoneRankings).length} zones`);
-        }
-      }
-    } catch (err: any) {
-      console.error(`[NBA League Data Cache] ❌ Error fetching zone rankings:`, err.message);
-      results.errors.push({ type: 'zone', error: err.message });
-    }
-
-    // Cache zone rankings (both Supabase and in-memory)
+    // NOTE: leaguedashteamstats does NOT provide zone-level defense stats
+    // Zone defense stats must be fetched per-team using shotchartdetail endpoint
+    // This is handled by /api/team-defense-rankings which fetches all teams sequentially
+    console.log(`[NBA League Data Cache] Checking zone defense rankings cache...`);
     const zoneCacheKey = `zone_defensive_rankings_${seasonStr}`;
-    // Store in Supabase (persistent, shared across instances)
-    await setNBACache(zoneCacheKey, 'zone_defensive_rankings', zoneRankings, CACHE_TTL.TRACKING_STATS);
-    // Also store in-memory for faster access
-    cache.set(zoneCacheKey, zoneRankings, CACHE_TTL.TRACKING_STATS);
-    results.zoneRankings = zoneRankings;
-    console.log(`[NBA League Data Cache] ✅ Cached zone rankings (Supabase + in-memory)`);
+    const { getNBACache } = await import('@/lib/nbaCache');
+    
+    // Check if we already have zone rankings cached
+    const existingZoneCache = await getNBACache<Record<string, Array<{ team: string; fgPct: number }>>>(zoneCacheKey);
+    
+    // Filter out metadata to check for actual zone data
+    let zoneRankings: Record<string, Array<{ team: string; fgPct: number }>> = {};
+    if (existingZoneCache) {
+      const { __cache_metadata, ...zoneDataOnly } = existingZoneCache as any;
+      const actualZones = Object.keys(zoneDataOnly).filter(key => 
+        Array.isArray(zoneDataOnly[key]) && zoneDataOnly[key].length > 0
+      );
+      
+      if (actualZones.length > 0) {
+        zoneRankings = zoneDataOnly;
+        console.log(`[NBA League Data Cache] ✅ Zone rankings found in cache (${actualZones.length} zones: ${actualZones.join(', ')})`);
+        results.zoneRankings = zoneRankings;
+      } else {
+        console.log(`[NBA League Data Cache] ⚠️ Zone rankings cache exists but is empty/corrupted`);
+        // Delete corrupted cache
+        const { deleteNBACache } = await import('@/lib/nbaCache');
+        await deleteNBACache(zoneCacheKey);
+        cache.delete(zoneCacheKey);
+        results.zoneRankings = {};
+      }
+    } else {
+      console.log(`[NBA League Data Cache] ⚠️ Zone rankings not cached yet`);
+      console.log(`[NBA League Data Cache] 💡 Zone rankings will be populated by /api/team-defense-rankings on first request`);
+      console.log(`[NBA League Data Cache] 💡 This endpoint fetches all 30 teams sequentially using shotchartdetail API`);
+      results.zoneRankings = {};
+    }
 
     // 3. Fetch all player play type stats (bulk fetch - one call per play type gets all players)
     console.log(`[NBA League Data Cache] Fetching player play type stats (bulk)...`);

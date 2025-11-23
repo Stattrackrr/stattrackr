@@ -77,17 +77,32 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       return null;
     }
 
-    // Attach metadata to data for refresh checking
-    const dataWithMetadata = cacheData.data;
-    if (dataWithMetadata && typeof dataWithMetadata === 'object') {
-      (dataWithMetadata as any).__cache_metadata = {
+    // Validate that data is not empty (for objects, check if it has any keys beyond metadata)
+    const dataToReturn = cacheData.data;
+    if (dataToReturn && typeof dataToReturn === 'object' && !Array.isArray(dataToReturn)) {
+      // Check if object is empty or only contains metadata-like keys
+      const keys = Object.keys(dataToReturn);
+      if (keys.length === 0) {
+        // Empty object - delete corrupted cache
+        console.warn(`[NBA Cache] Found empty cache entry for ${cacheKey}, deleting...`);
+        if (supabaseAdmin) {
+          await supabaseAdmin
+            .from('nba_api_cache')
+            .delete()
+            .eq('cache_key', cacheKey);
+        }
+        return null;
+      }
+      
+      // Attach metadata to data for refresh checking
+      (dataToReturn as any).__cache_metadata = {
         updated_at: cacheData.updated_at,
         created_at: cacheData.created_at,
         expires_at: cacheData.expires_at
       };
     }
 
-    return cacheData.data;
+    return dataToReturn;
   } catch (error) {
     // Fail gracefully - return null so in-memory cache can be used
     if (process.env.NODE_ENV === 'development') {

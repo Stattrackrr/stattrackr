@@ -230,7 +230,8 @@ export async function GET(request: NextRequest) {
   }
 
   const startTime = Date.now();
-  const currentSeason = 2025; // TODO: Make dynamic based on current date
+  const { currentNbaSeason } = await import('@/lib/nbaUtils');
+  const currentSeason = currentNbaSeason(); // Dynamically determine current NBA season
   const results = {
     total: 0,
     refreshed: 0,

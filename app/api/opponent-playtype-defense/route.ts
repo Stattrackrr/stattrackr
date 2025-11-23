@@ -1,6 +1,7 @@
 // app/api/opponent-playtype-defense/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { currentNbaSeason } from '@/lib/nbaUtils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const team = searchParams.get('team');
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
 
     if (!team) {
       return NextResponse.json(

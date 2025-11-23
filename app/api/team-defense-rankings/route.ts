@@ -1,6 +1,8 @@
 // app/api/team-defense-rankings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
+import { currentNbaSeason } from '@/lib/nbaUtils';
+import { getNBACache } from '@/lib/nbaCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -261,43 +263,186 @@ function calculateRankings(allTeamsData: any[]) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     const bypassCache = searchParams.get('bypassCache') === 'true';
 
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     const cacheKey = `team_defense_rankings_${season}`;
 
-    // Check cache (unless bypassed)
+    // Check in-memory cache first (unless bypassed)
     const cached = !bypassCache ? cache.get<any>(cacheKey) : null;
     if (cached) {
-      console.log(`[Team Defense Rankings] ✅ Cache hit for season ${season}`);
-      return NextResponse.json(cached, {
-        status: 200,
-        headers: { 'X-Cache-Status': 'HIT' }
-      });
+      // Validate that cached data has actual rankings
+      const hasValidRankings = cached.rankings && 
+                               typeof cached.rankings === 'object' && 
+                               Object.keys(cached.rankings).length > 0;
+      
+      if (hasValidRankings) {
+        console.log(`[Team Defense Rankings] ✅ Cache hit for season ${season} (${Object.keys(cached.rankings).length} teams)`);
+        return NextResponse.json(cached, {
+          status: 200,
+          headers: { 'X-Cache-Status': 'HIT' }
+        });
+      } else {
+        console.warn(`[Team Defense Rankings] ⚠️ In-memory cache exists but is corrupted (0 teams) - deleting and checking Supabase`);
+        // Delete corrupted in-memory cache
+        cache.delete(cacheKey);
+        // Fall through to check Supabase cache
+      }
     }
 
+    // Check Supabase cache for zone rankings (populated by background job)
+    const zoneCacheKey = `zone_defensive_rankings_${seasonStr}`;
+    const zoneRankingsCache = !bypassCache ? await getNBACache<Record<string, Array<{ team: string; fgPct: number }>>>(zoneCacheKey) : null;
+    
+    if (zoneRankingsCache) {
+      // Filter out metadata keys that get attached by getNBACache
+      const { __cache_metadata, ...zoneDataOnly } = zoneRankingsCache as any;
+      const availableZones = Object.keys(zoneDataOnly).filter(key => 
+        Array.isArray(zoneDataOnly[key]) && zoneDataOnly[key].length > 0
+      );
+      
+      console.log(`[Team Defense Rankings] 🔍 Cache inspection:`);
+      console.log(`[Team Defense Rankings] 🔍 Raw cache keys:`, Object.keys(zoneRankingsCache));
+      console.log(`[Team Defense Rankings] 🔍 Zone data keys (after filtering metadata):`, Object.keys(zoneDataOnly));
+      console.log(`[Team Defense Rankings] 🔍 Available zones (with data):`, availableZones);
+      
+      if (availableZones.length > 0) {
+        console.log(`[Team Defense Rankings] ✅ Using cached zone rankings from Supabase (${availableZones.length} zones: ${availableZones.join(', ')})`);
+        console.log(`[Team Defense Rankings] 🔍 All zone keys in cache:`, Object.keys(zoneDataOnly));
+        console.log(`[Team Defense Rankings] 🔍 Sample zone data:`, availableZones[0] ? { zone: availableZones[0], sample: zoneDataOnly[availableZones[0]]?.[0] } : 'none');
+        
+        // Warn if we have partial data
+        if (availableZones.length < 6) {
+          console.warn(`[Team Defense Rankings] ⚠️ WARNING: Only ${availableZones.length}/6 zones available. Some defensive metrics may be missing.`);
+        }
+        
+        // Convert zone rankings format to the expected format
+        const rankings: { [team: string]: any } = {};
+        const zones = ['Restricted Area', 'Paint (Non-RA)', 'Mid-Range', 'Left Corner 3', 'Right Corner 3', 'Above the Break 3'];
+        const zoneMap: Record<string, string> = {
+          'Restricted Area': 'restrictedArea',
+          'Paint (Non-RA)': 'paint',
+          'Mid-Range': 'midRange',
+          'Left Corner 3': 'leftCorner3',
+          'Right Corner 3': 'rightCorner3',
+          'Above the Break 3': 'aboveBreak3'
+        };
+        
+        // Use the filtered cache (without metadata)
+        const filteredCache = zoneDataOnly;
+
+        let zonesMatched = 0;
+        zones.forEach(zone => {
+          const zoneData = filteredCache[zone];
+          if (zoneData && Array.isArray(zoneData)) {
+            zonesMatched++;
+            console.log(`[Team Defense Rankings] ✅ Processing zone: ${zone} (${zoneData.length} teams)`);
+            zoneData.forEach((teamData, index) => {
+              // Ensure team abbreviation is uppercase
+              const team = (teamData.team || '').toUpperCase();
+              if (!team) {
+                console.warn(`[Team Defense Rankings] ⚠️ Skipping team data with no team name at index ${index}`);
+                return;
+              }
+              
+              if (!rankings[team]) {
+                rankings[team] = {};
+              }
+              const zoneKey = zoneMap[zone];
+              if (zoneKey) {
+                rankings[team][zoneKey] = {
+                  rank: index + 1,
+                  fgPct: teamData.fgPct || 0,
+                  fga: 0, // Not available from zone rankings cache
+                  fgm: 0, // Not available from zone rankings cache
+                  totalTeams: zoneData.length
+                };
+              }
+            });
+          } else {
+            console.warn(`[Team Defense Rankings] ⚠️ Zone "${zone}" not found in cache or not an array`);
+          }
+        });
+        
+        console.log(`[Team Defense Rankings] 🔍 Matched ${zonesMatched}/${zones.length} expected zones`);
+        console.log(`[Team Defense Rankings] 🔍 Teams in rankings: ${Object.keys(rankings).length}`);
+
+        // If no teams were processed, the cache is corrupted/empty - fall through to fetch fresh
+        if (Object.keys(rankings).length === 0) {
+          console.warn(`[Team Defense Rankings] ⚠️ Cache exists but produced 0 teams - cache is corrupted or empty`);
+          console.warn(`[Team Defense Rankings] ⚠️ Falling through to fetch fresh data from NBA API`);
+          // Delete corrupted cache
+          const { deleteNBACache } = await import('@/lib/nbaCache');
+          await deleteNBACache(zoneCacheKey);
+          cache.delete(zoneCacheKey);
+          // Fall through to fetch from NBA API
+        } else {
+          // Log sample of converted rankings for debugging
+          const sampleTeam = Object.keys(rankings)[0];
+          if (sampleTeam) {
+            console.log(`[Team Defense Rankings] Sample rankings for ${sampleTeam}:`, rankings[sampleTeam]);
+          }
+          console.log(`[Team Defense Rankings] Converted rankings for ${Object.keys(rankings).length} teams`);
+
+          const response = {
+            season: seasonStr,
+            rankings,
+            cachedAt: new Date().toISOString(),
+            teamsProcessed: Object.keys(rankings).length,
+            source: 'supabase_cache'
+          };
+
+          // Also cache in-memory for faster access
+          cache.set(cacheKey, response, 1440);
+          
+          return NextResponse.json(response, {
+            status: 200,
+            headers: { 'X-Cache-Status': 'HIT-SUPABASE' }
+          });
+        }
+      } else {
+        console.warn(`[Team Defense Rankings] ⚠️ Cache exists but has no valid zones - cache is corrupted`);
+        // Delete corrupted cache
+        const { deleteNBACache } = await import('@/lib/nbaCache');
+        await deleteNBACache(zoneCacheKey);
+        cache.delete(zoneCacheKey);
+        // Fall through to fetch from NBA API
+      }
+    }
+
+    console.log(`[Team Defense Rankings] ⚠️ No cache found, fetching from NBA API (this may timeout - consider running /api/cache/nba-league-data first)`);
     console.log(`[Team Defense Rankings] Fetching defense stats for all 30 teams (season ${seasonStr})...`);
 
-    // Fetch defense stats for all 30 teams (use allSettled to handle failures gracefully)
-    const allTeamsPromises = Object.entries(NBA_TEAM_MAP).map(([abbr, id]) =>
-      fetchTeamDefenseStats(abbr, id, seasonStr)
-    );
+    // Fetch sequentially with delays to avoid overwhelming NBA API
+    const validTeams: any[] = [];
+    const teams = Object.entries(NBA_TEAM_MAP);
+    
+    for (let i = 0; i < teams.length; i++) {
+      const [abbr, id] = teams[i];
+      try {
+        const result = await fetchTeamDefenseStats(abbr, id, seasonStr);
+        if (result) {
+          validTeams.push(result);
+        }
+      } catch (err) {
+        console.error(`[Team Defense Rankings] Failed to fetch ${abbr}:`, err);
+      }
+      
+      // Add delay between requests (except for last one)
+      if (i < teams.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      }
+    }
 
-    const allTeamsResults = await Promise.allSettled(allTeamsPromises);
-    const validTeams = allTeamsResults
-      .filter(result => result.status === 'fulfilled' && result.value !== null)
-      .map(result => (result as PromiseFulfilledResult<any>).value);
-
-    const failedCount = allTeamsResults.length - validTeams.length;
-    console.log(`[Team Defense Rankings] Successfully fetched ${validTeams.length}/30 teams${failedCount > 0 ? ` (${failedCount} failed/timed out)` : ''}`);
+    console.log(`[Team Defense Rankings] Successfully fetched ${validTeams.length}/30 teams`);
 
     // Require at least 20 teams for meaningful rankings
     if (validTeams.length < 20) {
       console.warn(`[Team Defense Rankings] ⚠️ Only ${validTeams.length} teams fetched, need at least 20 for rankings`);
       return NextResponse.json({
         error: 'Insufficient data',
-        message: `Only ${validTeams.length}/30 teams available, need at least 20 for rankings`,
+        message: `Only ${validTeams.length}/30 teams available, need at least 20 for rankings. Please run /api/cache/nba-league-data to populate cache.`,
         teamsProcessed: validTeams.length
       }, { status: 503 });
     }
@@ -309,7 +454,8 @@ export async function GET(request: NextRequest) {
       season: seasonStr,
       rankings,
       cachedAt: new Date().toISOString(),
-      teamsProcessed: validTeams.length
+      teamsProcessed: validTeams.length,
+      source: 'nba_api'
     };
 
     // Cache for 24 hours (1440 minutes)

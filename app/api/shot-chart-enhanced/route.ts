@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getNbaStatsId } from '@/lib/playerIdMapping';
+import { currentNbaSeason } from '@/lib/nbaUtils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -267,7 +268,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
     const opponentTeam = searchParams.get('opponentTeam');
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     const bypassCache = searchParams.get('bypassCache') === 'true';
 
     if (!playerId) {
@@ -429,16 +430,16 @@ export async function GET(request: NextRequest) {
               
               // Trigger all-teams rankings endpoint in background (non-blocking)
               // This will calculate ranks by comparing all teams
-              if (process.env.NODE_ENV === 'development') {
-                const host = request.headers.get('host') || 'localhost:3000';
-                const protocol = 'http';
-                const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-                
-                // Don't await - let it run in background (this can take 30-60 seconds)
-                fetch(rankingsUrl).catch(err => {
-                  console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
-                });
-              }
+              // Works in both dev and production - uses Supabase cache if available
+              const host = request.headers.get('host') || 'localhost:3000';
+              const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+              const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+              
+              // Don't await - let it run in background (this can take 30-60 seconds)
+              // In production, this will use Supabase cache if available, avoiding timeouts
+              fetch(rankingsUrl).catch(err => {
+                console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
+              });
             }
           }
           
@@ -696,16 +697,16 @@ export async function GET(request: NextRequest) {
           
           // Trigger all-teams rankings endpoint in background (non-blocking)
           // This will calculate ranks by comparing all teams
-          if (process.env.NODE_ENV === 'development') {
-            const host = request.headers.get('host') || 'localhost:3000';
-            const protocol = 'http';
-            const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-            
-            // Don't await - let it run in background (this can take 30-60 seconds)
-            fetch(rankingsUrl).catch(err => {
-              console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
-            });
-          }
+          // Works in both dev and production - uses Supabase cache if available
+          const host = request.headers.get('host') || 'localhost:3000';
+          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+          const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+          
+          // Don't await - let it run in background (this can take 30-60 seconds)
+          // In production, this will use Supabase cache if available, avoiding timeouts
+          fetch(rankingsUrl).catch(err => {
+            console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
+          });
         }
       }
     } catch (err) {

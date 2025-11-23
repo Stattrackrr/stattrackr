@@ -4,6 +4,7 @@ import { cache, CACHE_TTL } from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getNbaStatsId, convertNbaToBdlId } from '@/lib/playerIdMapping';
 import { requestDeduplicator } from '@/lib/requestDeduplication';
+import { currentNbaSeason } from '@/lib/nbaUtils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
     let opponentTeam = searchParams.get('opponentTeam');
-    const season = parseInt(searchParams.get('season') || '2025');
+    const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     
     // Normalize opponent team abbreviation (ensure uppercase)
     if (opponentTeam && opponentTeam !== 'N/A') {
@@ -994,7 +995,7 @@ export async function GET(request: NextRequest) {
     // On timeout, try to return cached data if available
     const { searchParams: errorSearchParams } = new URL(request.url);
     const errorPlayerId = errorSearchParams.get('playerId');
-    const errorSeason = parseInt(errorSearchParams.get('season') || '2025');
+    const errorSeason = parseInt(errorSearchParams.get('season') || currentNbaSeason().toString());
     const errorOpponentTeam = errorSearchParams.get('opponentTeam') || 'all';
     const errorCacheKey = `playtype_analysis_${errorPlayerId}_${errorOpponentTeam}_${errorSeason}`;
     
