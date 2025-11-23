@@ -538,11 +538,11 @@ export async function refreshOddsData(
     // Skip in development to prevent server freezing
     if (process.env.NODE_ENV === 'production') {
       try {
-        // Add 10-second timeout to prevent hanging
+        // Add 30-second timeout to prevent hanging (saving 5000+ snapshots can take time)
         await Promise.race([
           saveOddsSnapshots(games),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Snapshot save timeout after 10s')), 10000)
+            setTimeout(() => reject(new Error('Snapshot save timeout after 30s')), 30000)
           )
         ]);
         console.log('📸 Odds snapshots saved to database');
