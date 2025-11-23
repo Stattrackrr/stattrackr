@@ -643,14 +643,20 @@ export async function GET(request: NextRequest) {
     const playTypeRankings: Record<string, Array<{ team: string; ppp: number }>> = {};
     
     if (opponentTeam && opponentTeam !== 'N/A') {
+      console.log(`[Play Type Analysis] 🔍 Checking for defensive rankings (opponent: ${opponentTeam}, season: ${seasonStr})...`);
+      
       // Check cache for defensive rankings (league-wide, same for all players)
       const defensiveRankingsCacheKey = `playtype_defensive_rankings_${seasonStr}`;
+      console.log(`[Play Type Analysis] Cache key: ${defensiveRankingsCacheKey}`);
+      
       // Try Supabase cache first (persistent, shared across instances)
       let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+      console.log(`[Play Type Analysis] Supabase cache result: ${cachedRankings ? `found (${Object.keys(cachedRankings || {}).length} play types)` : 'not found'}`);
       
       // Fallback to in-memory cache
       if (!cachedRankings) {
         cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+        console.log(`[Play Type Analysis] In-memory cache result: ${cachedRankings ? `found (${Object.keys(cachedRankings || {}).length} play types)` : 'not found'}`);
       }
       
       if (cachedRankings) {
