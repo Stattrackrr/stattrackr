@@ -175,7 +175,8 @@ export async function GET(request: NextRequest) {
         });
 
         const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        const data = await fetchNBAStats(url, 5000); // 5s timeout - fail fast
+        // Use longer timeout with retries for defensive rankings (NBA API can be slow)
+        const data = await fetchNBAStats(url, 20000, 2, true); // 20s timeout, 2 retries, retry on 500 errors
         const resultSet = data?.resultSets?.[0];
         
         if (resultSet) {
@@ -282,7 +283,8 @@ export async function GET(request: NextRequest) {
         });
 
         const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        const data = await fetchNBAStats(url, 5000); // 5s timeout - fail fast
+        // Use longer timeout with retries for defensive rankings (NBA API can be slow)
+        const data = await fetchNBAStats(url, 20000, 2, true); // 20s timeout, 2 retries, retry on 500 errors
         const resultSet = data?.resultSets?.[0];
         
         if (resultSet) {
