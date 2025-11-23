@@ -160,12 +160,10 @@ export async function GET(request: NextRequest) {
         const hasFreeThrows = cachedData.playTypes?.some((pt: any) => pt.playType === 'FreeThrows' || pt.playType === 'Free Throws') || false;
         
         if (zeroValuePlayTypes.length === 0 && hasFreeThrows) {
-          // All play types have values and FreeThrows exists, return cached data
+          // All play types have values and FreeThrows exists
+          // But we still need to add defensive rankings if opponent team is provided
           console.log(`[Play Type Analysis] ✅ Cache hit for player ${playerId} (all play types have values, including FreeThrows)`);
-          return NextResponse.json(cachedData, {
-            status: 200,
-            headers: { 'X-Cache-Status': 'HIT' }
-          });
+          // Don't return early - continue to add defensive rankings below
         } else {
           if (zeroValuePlayTypes.length > 0) {
             console.log(`[Play Type Analysis] ⚠️ Cache hit but ${zeroValuePlayTypes.length} play types have 0.0 - will retry those`);
@@ -728,17 +726,37 @@ export async function GET(request: NextRequest) {
     // Merge cached play types (with values > 0) with fresh data
     // First, add cached play types that weren't refetched
     let cachedPointsAdded = 0;
-    PLAY_TYPES.forEach(({ key, displayName }) => {
-      const cachedPt = cachedPlayTypesMap.get(key);
-      if (cachedPt && cachedPt.points > 0 && !playTypesToFetch.includes(key)) {
-        // Use cached value if it has a value > 0 and wasn't refetched
-        const playerStats = { points: cachedPt.points, possessions: 0, ppp: 0 };
-        playerPlayTypes[key] = playerStats;
-        totalPoints += cachedPt.points;
-        cachedPointsAdded += cachedPt.points;
-        console.log(`[Play Type Analysis] Using cached ${displayName}: ${cachedPt.points} points`);
-      }
-    });
+    
+    // If we have a full cache hit (all play types + FreeThrows), use cached data directly
+    if (cachedData && zeroValuePlayTypes.length === 0 && hasFreeThrows) {
+      console.log(`[Play Type Analysis] Using full cached data, populating playerPlayTypes from cache...`);
+      PLAY_TYPES.forEach(({ key, displayName }) => {
+        const cachedPt = cachedData.playTypes?.find((pt: any) => {
+          const ptKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
+          return ptKey === key;
+        });
+        if (cachedPt && cachedPt.points > 0) {
+          const playerStats = { points: cachedPt.points, possessions: cachedPt.possessions || 0, ppp: cachedPt.ppp || 0 };
+          playerPlayTypes[key] = playerStats;
+          totalPoints += cachedPt.points;
+          cachedPointsAdded += cachedPt.points;
+          console.log(`[Play Type Analysis] Using cached ${displayName}: ${cachedPt.points} points`);
+        }
+      });
+    } else {
+      // Partial cache hit - merge cached and fresh data
+      PLAY_TYPES.forEach(({ key, displayName }) => {
+        const cachedPt = cachedPlayTypesMap.get(key);
+        if (cachedPt && cachedPt.points > 0 && !playTypesToFetch.includes(key)) {
+          // Use cached value if it has a value > 0 and wasn't refetched
+          const playerStats = { points: cachedPt.points, possessions: 0, ppp: 0 };
+          playerPlayTypes[key] = playerStats;
+          totalPoints += cachedPt.points;
+          cachedPointsAdded += cachedPt.points;
+          console.log(`[Play Type Analysis] Using cached ${displayName}: ${cachedPt.points} points`);
+        }
+      });
+    }
     
     // Fetch free throw data from BDL API (or use cached value)
     let freeThrowPoints = 0;
