@@ -150,10 +150,11 @@ export async function GET(request: NextRequest) {
         cachedData = cache.get<any>(cacheKey);
       }
       if (cachedData) {
+        console.log(`[Play Type Analysis] ✅ Found cached data for player ${playerId}, playTypes count: ${cachedData.playTypes?.length || 0}`);
         // Check if we have any play types with 0.0 that need retrying
         const zeroValuePlayTypes = cachedData.playTypes?.filter((pt: any) => pt.points === 0) || [];
         // Check if FreeThrows is missing (old cache won't have it)
-        const hasFreeThrows = cachedData.playTypes?.some((pt: any) => pt.playType === 'FreeThrows') || false;
+        const hasFreeThrows = cachedData.playTypes?.some((pt: any) => pt.playType === 'FreeThrows' || pt.playType === 'Free Throws') || false;
         
         if (zeroValuePlayTypes.length === 0 && hasFreeThrows) {
           // All play types have values and FreeThrows exists, return cached data
@@ -170,6 +171,8 @@ export async function GET(request: NextRequest) {
             console.log(`[Play Type Analysis] ⚠️ Cache hit but FreeThrows missing (old cache) - will fetch FreeThrows`);
           }
         }
+      } else {
+        console.log(`[Play Type Analysis] ⚠️ No cached data found for player ${playerId} (cacheKey: ${cacheKey})`);
       }
     } else {
       console.log(`[Play Type Analysis] ⚠️ Cache bypassed for player ${playerId}`);
@@ -244,11 +247,17 @@ export async function GET(request: NextRequest) {
     const cachedPlayTypesMap = new Map<string, any>();
     
     if (cachedData?.playTypes) {
+      console.log(`[Play Type Analysis] Processing ${cachedData.playTypes.length} cached play types`);
       cachedData.playTypes.forEach((pt: any) => {
-        cachedPlayTypesMap.set(pt.playType, pt);
+        // Handle both 'FreeThrows' and 'Free Throws' keys
+        const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
+        cachedPlayTypesMap.set(playTypeKey, pt);
         // Fetch if value is 0.0 (need retry)
         if (pt.points === 0) {
-          playTypesToFetch.push(pt.playType);
+          playTypesToFetch.push(playTypeKey);
+          console.log(`[Play Type Analysis] Will retry ${playTypeKey} (cached value: 0.0)`);
+        } else {
+          console.log(`[Play Type Analysis] Using cached ${playTypeKey} (${pt.points} pts)`);
         }
       });
     }
@@ -257,8 +266,11 @@ export async function GET(request: NextRequest) {
     PLAY_TYPES.forEach(({ key }) => {
       if (!cachedPlayTypesMap.has(key)) {
         playTypesToFetch.push(key);
+        console.log(`[Play Type Analysis] Will fetch ${key} (not in cache)`);
       }
     });
+    
+    console.log(`[Play Type Analysis] Total play types to fetch: ${playTypesToFetch.length} (cached: ${cachedPlayTypesMap.size})`);
     
     // If no play types need fetching and we have cache, use cached data
     if (playTypesToFetch.length === 0 && cachedData) {
