@@ -564,11 +564,16 @@ export function detectIdType(id: string | number): 'bdl' | 'nba' | 'unknown' {
   
   if (isNaN(idNum)) return 'unknown';
   
-  // BallDontLie IDs are 8 digits (e.g., 38017733)
+  // Check mapping first - if it's in the BDL map, it's a BDL ID
+  if (bdlToNbaMap.has(idStr)) return 'bdl';
+  // If it's in the NBA map, it's an NBA ID
+  if (nbaToBdlMap.has(idStr)) return 'nba';
+  
+  // BallDontLie IDs can be 8-10 digits (e.g., 38017733, 1057263194)
   // NBA Stats IDs are 6-7 digits, typically start with 1 or 2 (e.g., 1626167, 203507)
   
-  // BallDontLie IDs are 8 digits (10000000-99999999)
-  if (idStr.length === 8) return 'bdl';
+  // BallDontLie IDs are 8-10 digits
+  if (idStr.length >= 8 && idStr.length <= 10) return 'bdl';
   
   // NBA Stats IDs are typically 6-7 digits starting with 1 or 2
   if (idStr.length === 6 || idStr.length === 7) {
