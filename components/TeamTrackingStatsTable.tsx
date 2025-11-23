@@ -382,7 +382,9 @@ export function TeamTrackingStatsTable({
       {!loading && !error && sortedPlayers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            No tracking stats available for this team
+            {gameFilter === 'vs' && opponentTeam
+              ? `No stats available for ${teamAbbr} vs ${opponentTeam} this season. The teams may not have played yet.`
+              : 'No tracking stats available for this team'}
           </p>
         </div>
       )}

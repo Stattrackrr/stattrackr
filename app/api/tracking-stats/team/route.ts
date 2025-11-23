@@ -139,10 +139,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // If no opponent filter, try to serve from cache first
-    if (!opponentTeam && !forceRefresh) {
-      const cacheKey = getCacheKey.trackingStats(team, season, category);
-      
+    // Build cache key (include opponent if filtering)
+    const cacheKey = opponentTeam 
+      ? `tracking_stats_${team.toUpperCase()}_${season}_${category}_vs_${opponentTeam.toUpperCase()}`
+      : getCacheKey.trackingStats(team, season, category);
+    
+    // Try to serve from cache first (for both all games and opponent-specific)
+    if (!forceRefresh) {
       // Try Supabase cache first (persistent, shared across instances)
       let cached = await getNBACache<any>(cacheKey);
       
@@ -152,7 +155,8 @@ export async function GET(request: NextRequest) {
       }
       
       if (cached) {
-        console.log(`[Team Tracking Stats] ✅ Cache hit for ${team} ${category} (season ${season})`);
+        const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+        console.log(`[Team Tracking Stats] ✅ Cache hit for ${team} ${category}${filterSuffix} (season ${season})`);
         return NextResponse.json(cached, {
           status: 200,
           headers: {
@@ -162,7 +166,8 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category} - falling back to API`);
+      const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+      console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category}${filterSuffix} - falling back to API`);
       
       // If no cache and in production (where NBA API is unreachable), return empty data
       // In development, continue to try fetching from NBA API
@@ -173,15 +178,17 @@ export async function GET(request: NextRequest) {
           team,
           season: seasonStr,
           category,
-          stats: [],
-          error: 'NBA API unreachable - data will be available once cache is populated',
+          players: [],
+          error: opponentTeam 
+            ? `No stats available for ${team} vs ${opponentTeam} this season. The teams may not have played yet, or the data hasn't been cached.`
+            : 'NBA API unreachable - data will be available once cache is populated',
           cachedAt: new Date().toISOString()
         }, { status: 200 });
       }
 
       // In development, continue to fetch from NBA API even if cache is empty
       if (!forceRefresh) {
-        console.log(`[Team Tracking Stats] No cache found, fetching from NBA API for ${team} ${category}, season ${season}`);
+        console.log(`[Team Tracking Stats] No cache found, fetching from NBA API for ${team} ${category}${filterSuffix}, season ${season}`);
       }
     }
 
@@ -304,17 +311,16 @@ export async function GET(request: NextRequest) {
       season: seasonStr,
       category,
       players: teamPlayers,
+      opponentTeam: opponentTeam || undefined, // Include opponent in response if filtering
       cachedAt: new Date().toISOString()
     };
 
-    // Cache the result if no opponent filter (so it can be reused)
-    if (!opponentTeam) {
-      const cacheKey = getCacheKey.trackingStats(team, season, category);
-      // Store in both Supabase (persistent) and in-memory
-      await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
-      cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
-      console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category} for ${CACHE_TTL.TRACKING_STATS} minutes`);
-    }
+    // Cache the result (both all games and opponent-specific)
+    // Store in both Supabase (persistent) and in-memory
+    await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
+    cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
+    const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+    console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} for ${CACHE_TTL.TRACKING_STATS} minutes`);
 
     return NextResponse.json(
       responsePayload,
