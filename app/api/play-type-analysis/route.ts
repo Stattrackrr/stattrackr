@@ -338,8 +338,14 @@ export async function GET(request: NextRequest) {
       console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);
       
     // Check for bulk cached player play type data first
+    // Try Supabase cache first (persistent, shared across instances)
     const bulkPlayerDataCacheKey = `player_playtypes_bulk_${seasonStr}`;
-    const bulkPlayerData = !bypassCache ? cache.get<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey) : null;
+    let bulkPlayerData = !bypassCache ? await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey) : null;
+    
+    // Fallback to in-memory cache
+    if (!bulkPlayerData) {
+      bulkPlayerData = !bypassCache ? cache.get<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey) : null;
+    }
     
     const allResults: Array<{ status: 'fulfilled' | 'rejected', value?: any, reason?: any }> = [];
     
@@ -442,7 +448,9 @@ export async function GET(request: NextRequest) {
         
         if (Object.keys(bulkCacheData).length > 0) {
           console.log(`[Play Type Analysis] 💾 Populating bulk cache with ${Object.keys(bulkCacheData).length} play types`);
-          cache.set(bulkPlayerDataCacheKey, bulkCacheData, CACHE_TTL.TRACKING_STATS); // 24 hours
+          // Store in both Supabase (persistent, shared) and in-memory
+          await setNBACache(bulkPlayerDataCacheKey, 'play_type_bulk', bulkCacheData, CACHE_TTL.TRACKING_STATS);
+          cache.set(bulkPlayerDataCacheKey, bulkCacheData, CACHE_TTL.TRACKING_STATS);
         }
       }
       
