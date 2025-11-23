@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL } from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getNbaStatsId, convertNbaToBdlId } from '@/lib/playerIdMapping';
+import { requestDeduplicator } from '@/lib/requestDeduplication';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -182,15 +183,20 @@ export async function GET(request: NextRequest) {
       cache.delete(cacheKey);
     }
 
-    console.log(`[Play Type Analysis] Fetching data for player ${playerId}, opponent ${opponentTeam || 'all'}, season ${season}`);
+    // Use request deduplication to prevent concurrent duplicate fetches
+    // If multiple requests come in for the same player/season, they'll share the same fetch
+    const dedupeKey = `playtype_fetch_${cacheKey}`;
+    
+    const fetchData = async () => {
+      console.log(`[Play Type Analysis] Fetching data for player ${playerId}, opponent ${opponentTeam || 'all'}, season ${season}`);
 
-    // Step 0: Get player info to know their team (for filtering)
-    const nbaPlayerId = getNbaStatsId(playerId) || playerId;
-    let playerTeamAbbr: string | null = null;
-    let playerName: string | null = null;
+      // Step 0: Get player info to know their team (for filtering)
+      const nbaPlayerId = getNbaStatsId(playerId) || playerId;
+      let playerTeamAbbr: string | null = null;
+      let playerName: string | null = null;
 
-    try {
-      const playerInfoParams = new URLSearchParams({
+      try {
+        const playerInfoParams = new URLSearchParams({
         LeagueID: '00',
         PlayerID: String(nbaPlayerId),
       });
@@ -216,105 +222,102 @@ export async function GET(request: NextRequest) {
           console.log(`[Play Type Analysis] Player info: ${playerName}, Team: ${playerTeamAbbr}`);
         }
       }
-    } catch (err) {
-      console.warn(`[Play Type Analysis] Could not fetch player info:`, err);
-    }
-
-    // Step 1: Fetch player play type stats
-    // The NBA website fetches each play type individually with PlayType parameter specified
-    // We need to fetch each play type separately and then filter by player
-    const playerPlayTypes: Record<string, any> = {};
-    
-    // Initialize all play types with 0 values so they all show up in results
-    PLAY_TYPES.forEach(({ key }) => {
-      playerPlayTypes[key] = {
-        points: 0,
-        possessions: 0,
-        ppp: 0,
-        ftPossPct: 0,
-      };
-    });
-    
-    let totalPoints = 0;
-    let playerRowsFound = 0;
-    let playerHeaders: string[] = [];
-    let foundData = false;
-    
-    // Use only the specified season (no fallback)
-    console.log(`[Play Type Analysis] Fetching play types for season ${seasonStr}...`);
-    
-    // Determine which play types need to be fetched
-    // If cached, only fetch play types with 0.0 values or missing from cache
-    const playTypesToFetch: string[] = [];
-    const cachedPlayTypesMap = new Map<string, any>();
-    
-    if (cachedData?.playTypes) {
-      console.log(`[Play Type Analysis] Processing ${cachedData.playTypes.length} cached play types`);
-      cachedData.playTypes.forEach((pt: any) => {
-        // Handle both 'FreeThrows' and 'Free Throws' keys
-        const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
-        cachedPlayTypesMap.set(playTypeKey, pt);
-        // Fetch if value is 0.0 (need retry)
-        if (pt.points === 0) {
-          playTypesToFetch.push(playTypeKey);
-          console.log(`[Play Type Analysis] Will retry ${playTypeKey} (cached value: 0.0)`);
-        } else {
-          console.log(`[Play Type Analysis] Using cached ${playTypeKey} (${pt.points} pts)`);
-        }
-      });
-    }
-    
-    // Also fetch play types that aren't in cache at all
-    PLAY_TYPES.forEach(({ key }) => {
-      if (!cachedPlayTypesMap.has(key)) {
-        playTypesToFetch.push(key);
-        console.log(`[Play Type Analysis] Will fetch ${key} (not in cache)`);
+      } catch (err) {
+        console.warn(`[Play Type Analysis] Could not fetch player info:`, err);
       }
-    });
-    
-    console.log(`[Play Type Analysis] Total play types to fetch: ${playTypesToFetch.length} (cached: ${cachedPlayTypesMap.size})`);
-    
-    // If no play types need fetching and we have cache, use cached data
-    if (playTypesToFetch.length === 0 && cachedData) {
-      // All play types are cached with values > 0, use cached data
-      console.log(`[Play Type Analysis] ✅ All play types cached with values > 0`);
-      return NextResponse.json(cachedData, {
-        status: 200,
-        headers: { 'X-Cache-Status': 'HIT' }
-      });
-    }
-    
-    // If no cache and in production (where NBA API is unreachable), return empty data
-    // In development, continue to try fetching from NBA API
-    if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length && process.env.NODE_ENV === 'production') {
-      console.log(`[Play Type Analysis] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
-      // Return minimal response with empty play types
-      const emptyResponse = {
-        playerId: parseInt(playerId),
-        season: seasonStr,
-        opponentTeam: opponentTeam || null,
-        playTypes: PLAY_TYPES.map(({ key, displayName }) => ({
-          playType: key,
-          displayName,
+
+      // Step 1: Fetch player play type stats
+      // The NBA website fetches each play type individually with PlayType parameter specified
+      // We need to fetch each play type separately and then filter by player
+      const playerPlayTypes: Record<string, any> = {};
+      
+      // Initialize all play types with 0 values so they all show up in results
+      PLAY_TYPES.forEach(({ key }) => {
+        playerPlayTypes[key] = {
           points: 0,
           possessions: 0,
           ppp: 0,
-          percentage: 0,
-          opponentRank: null,
-        })),
-        totalPoints: 0,
-        error: 'NBA API unreachable - data will be available once cache is populated',
-        cachedAt: new Date().toISOString()
-      };
-      return NextResponse.json(emptyResponse, { status: 200 });
-    }
+          ftPossPct: 0,
+        };
+      });
+      
+      let totalPoints = 0;
+      let playerRowsFound = 0;
+      let playerHeaders: string[] = [];
+      let foundData = false;
+      
+      // Use only the specified season (no fallback)
+      console.log(`[Play Type Analysis] Fetching play types for season ${seasonStr}...`);
+      
+      // Determine which play types need to be fetched
+      // If cached, only fetch play types with 0.0 values or missing from cache
+      const playTypesToFetch: string[] = [];
+      const cachedPlayTypesMap = new Map<string, any>();
+      
+      if (cachedData?.playTypes) {
+        console.log(`[Play Type Analysis] Processing ${cachedData.playTypes.length} cached play types`);
+        cachedData.playTypes.forEach((pt: any) => {
+          // Handle both 'FreeThrows' and 'Free Throws' keys
+          const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
+          cachedPlayTypesMap.set(playTypeKey, pt);
+          // Fetch if value is 0.0 (need retry)
+          if (pt.points === 0) {
+            playTypesToFetch.push(playTypeKey);
+            console.log(`[Play Type Analysis] Will retry ${playTypeKey} (cached value: 0.0)`);
+          } else {
+            console.log(`[Play Type Analysis] Using cached ${playTypeKey} (${pt.points} pts)`);
+          }
+        });
+      }
+      
+      // Also fetch play types that aren't in cache at all
+      PLAY_TYPES.forEach(({ key }) => {
+        if (!cachedPlayTypesMap.has(key)) {
+          playTypesToFetch.push(key);
+          console.log(`[Play Type Analysis] Will fetch ${key} (not in cache)`);
+        }
+      });
+      
+      console.log(`[Play Type Analysis] Total play types to fetch: ${playTypesToFetch.length} (cached: ${cachedPlayTypesMap.size})`);
+      
+      // If no play types need fetching and we have cache, use cached data
+      if (playTypesToFetch.length === 0 && cachedData) {
+        // All play types are cached with values > 0, use cached data
+        console.log(`[Play Type Analysis] ✅ All play types cached with values > 0`);
+        return { response: cachedData, cacheStatus: 'HIT' };
+      }
+      
+      // If no cache and in production (where NBA API is unreachable), return empty data
+      // In development, continue to try fetching from NBA API
+      if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length && process.env.NODE_ENV === 'production') {
+        console.log(`[Play Type Analysis] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
+        // Return minimal response with empty play types
+        const emptyResponse = {
+          playerId: parseInt(playerId),
+          season: seasonStr,
+          opponentTeam: opponentTeam || null,
+          playTypes: PLAY_TYPES.map(({ key, displayName }) => ({
+            playType: key,
+            displayName,
+            points: 0,
+            possessions: 0,
+            ppp: 0,
+            percentage: 0,
+            opponentRank: null,
+          })),
+          totalPoints: 0,
+          error: 'NBA API unreachable - data will be available once cache is populated',
+          cachedAt: new Date().toISOString()
+        };
+        return { response: emptyResponse, cacheStatus: 'MISS' };
+      }
 
-    // In development, continue to fetch from NBA API even if cache is empty
-    if (!cachedData && !bypassCache && playTypesToFetch.length === PLAY_TYPES.length) {
-      console.log(`[Play Type Analysis] No cache found, fetching from NBA API for player ${playerId}, season ${season}`);
-    }
-    
-    console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);
+      // In development, continue to fetch from NBA API even if cache is empty
+      if (!cachedData && !bypassCache && playTypesToFetch.length === PLAY_TYPES.length) {
+        console.log(`[Play Type Analysis] No cache found, fetching from NBA API for player ${playerId}, season ${season}`);
+      }
+      
+      console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);
       
     // Check for bulk cached player play type data first
     const bulkPlayerDataCacheKey = `player_playtypes_bulk_${seasonStr}`;
@@ -768,12 +771,26 @@ export async function GET(request: NextRequest) {
     // Store in both Supabase (persistent) and in-memory
     await setNBACache(cacheKey, 'play_type', cachedResponse, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, cachedResponse, CACHE_TTL.TRACKING_STATS);
-    const zeroCount = playTypeAnalysis.length - playTypesToCache.length;
-    console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);
+      const zeroCount = playTypeAnalysis.length - playTypesToCache.length;
+      console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);
 
-    return NextResponse.json(response, {
+      return { response, cacheStatus: 'MISS' };
+    };
+    
+    // Execute with deduplication - concurrent requests will share the same fetch
+    const result = await requestDeduplicator.dedupe(dedupeKey, fetchData);
+    
+    // Handle early returns (cache hits, empty responses)
+    if (result.cacheStatus === 'HIT') {
+      return NextResponse.json(result.response, {
+        status: 200,
+        headers: { 'X-Cache-Status': 'HIT' }
+      });
+    }
+    
+    return NextResponse.json(result.response, {
       status: 200,
-      headers: { 'X-Cache-Status': 'MISS' }
+      headers: { 'X-Cache-Status': result.cacheStatus || 'MISS' }
     });
 
   } catch (error: any) {
