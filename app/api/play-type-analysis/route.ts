@@ -136,7 +136,9 @@ export async function GET(request: NextRequest) {
 
     let seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     const bypassCache = searchParams.get('bypassCache') === 'true';
-    const cacheKey = `playtype_analysis_${playerId}_${opponentTeam || 'all'}_${season}`;
+    // Cache key WITHOUT opponent - player play types are the same for all opponents
+    // Opponent only affects defensive rankings, which we add separately
+    const cacheKey = `playtype_analysis_${playerId}_${season}`;
     
     // Check cache unless bypassed
     // We'll use cached data for play types with values > 0, and retry 0.0 values
