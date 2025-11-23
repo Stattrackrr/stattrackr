@@ -47,11 +47,11 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use shorter timeout in dev (5s) to fail faster, 20s in production
+  // Use shorter timeout in dev (10s) to allow more requests to succeed, 20s in production
   // Reduce retries in dev (1 retry) vs production (2 retries)
   const actualTimeout = isProduction 
     ? Math.min(Math.max(timeout, 20000), 20000) 
-    : Math.min(timeout, 5000); // 5s max in dev
+    : Math.min(timeout, 10000); // 10s max in dev (NBA API is slow but sometimes responds in 5-10s)
   const actualRetries = isProduction ? retries : Math.min(retries, 1); // 1 retry max in dev
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
