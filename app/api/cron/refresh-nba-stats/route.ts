@@ -244,7 +244,18 @@ export async function GET(request: NextRequest) {
   
   // Check if this is a Vercel Cron call (they send x-vercel-cron header)
   const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  
+  // Check if this is an internal Vercel request (from same deployment)
+  // Internal requests have x-vercel-* headers and come from vercel domains
+  const host = request.headers.get('host') || '';
+  const isInternalVercel = host.includes('vercel.app') || 
+                           host.includes('vercel.app') ||
+                           request.headers.get('x-vercel-id') !== null ||
+                           request.headers.get('x-vercel-deployment-url') !== null;
+  
   console.log('[NBA Stats Refresh] Is Vercel Cron call:', isVercelCron);
+  console.log('[NBA Stats Refresh] Is internal Vercel request:', isInternalVercel);
+  console.log('[NBA Stats Refresh] Host:', host);
   
   const cronSecret = process.env.CRON_SECRET;
   
@@ -252,9 +263,9 @@ export async function GET(request: NextRequest) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const allowBypass = isDevelopment || !cronSecret;
   
-  // Vercel Cron calls are authenticated by Vercel itself, so skip manual auth check
+  // Vercel Cron calls and internal Vercel requests are authenticated by Vercel itself
   // Only require auth for manual/external calls
-  if (cronSecret && !allowBypass && !isVercelCron) {
+  if (cronSecret && !allowBypass && !isVercelCron && !isInternalVercel) {
     // Check both header and query parameter
     const normalizedHeader = authHeader?.trim().toLowerCase();
     const expectedHeader = `bearer ${cronSecret}`.toLowerCase();
