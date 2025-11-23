@@ -42,9 +42,10 @@ const PLAY_TYPES = [
   { key: 'OffRebound', displayName: 'Putbacks' },
 ];
 
-async function fetchNBAStats(url: string, timeout = 30000) {
+async function fetchNBAStats(url: string, timeout = 5000) {
+  // Aggressive timeout: 5s max (fail fast, cache will be populated gradually)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000));
 
   try {
     const response = await fetch(url, {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
         });
 
         const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        const data = await fetchNBAStats(url, 30000);
+        const data = await fetchNBAStats(url, 5000); // 5s timeout - fail fast
         const resultSet = data?.resultSets?.[0];
         
         if (resultSet) {
@@ -250,7 +251,7 @@ export async function GET(request: NextRequest) {
         });
 
         const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        const data = await fetchNBAStats(url, 30000);
+        const data = await fetchNBAStats(url, 5000); // 5s timeout - fail fast
         const resultSet = data?.resultSets?.[0];
         
         if (resultSet) {

@@ -41,12 +41,12 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use shorter timeout in dev (5s) to fail faster, 20s in production
-  // Reduce retries in dev (1 retry) vs production (2 retries)
+  // Aggressive timeouts: 5s in dev, 8s in production (fail fast, rely on cache)
+  // No retries in production, 1 retry max in dev
   const actualTimeout = isProduction 
-    ? Math.min(Math.max(timeout, 20000), 20000) 
-    : Math.min(timeout, 5000); // 5s max in dev
-  const actualRetries = isProduction ? retries : Math.min(retries, 1); // 1 retry max in dev
+    ? Math.min(timeout, 8000) // 8s max in production - fail fast
+    : Math.min(timeout, 5000); // 5s max in dev - fail fast
+  const actualRetries = isProduction ? 0 : Math.min(retries, 1); // 0 retries in production, 1 max in dev
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();

@@ -48,12 +48,12 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use shorter timeout in dev (10s) to allow more requests to succeed, 20s in production
-  // Reduce retries in dev (1 retry) vs production (2 retries)
+  // Aggressive timeouts: 5s in dev, 8s in production (fail fast, rely on cache)
+  // No retries in production, 1 retry max in dev
   const actualTimeout = isProduction 
-    ? Math.min(Math.max(timeout, 20000), 20000) 
-    : Math.min(timeout, 10000); // 10s max in dev (NBA API is slow but sometimes responds in 5-10s)
-  const actualRetries = isProduction ? retries : Math.min(retries, 1); // 1 retry max in dev
+    ? Math.min(timeout, 8000) // 8s max in production - fail fast
+    : Math.min(timeout, 5000); // 5s max in dev - fail fast
+  const actualRetries = isProduction ? 0 : Math.min(retries, 1); // 0 retries in production, 1 max in dev
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
@@ -287,10 +287,10 @@ export async function GET(request: NextRequest) {
         return { response: cachedData, cacheStatus: 'HIT' };
       }
       
-      // If no cache and in production (where NBA API is unreachable), return empty data
-      // In development, continue to try fetching from NBA API
-      if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length && process.env.NODE_ENV === 'production') {
-        console.log(`[Play Type Analysis] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
+      // In production, NEVER call NBA API directly - only use cache
+      // If no cache, return empty data and trigger background cache population
+      if (!bypassCache && process.env.NODE_ENV === 'production' && playTypesToFetch.length > 0) {
+        console.log(`[Play Type Analysis] ⚠️ Production mode: Skipping NBA API calls. Cache only. Missing ${playTypesToFetch.length} play types.`);
         // Return minimal response with empty play types
         const emptyResponse = {
           playerId: parseInt(playerId),
@@ -355,10 +355,18 @@ export async function GET(request: NextRequest) {
         }
       });
     } else {
-      console.log(`[Play Type Analysis] ⚠️ No bulk cached data found (or empty/invalid), fetching all from API...`);
-      // Fetch play types SEQUENTIALLY (one at a time) to avoid overwhelming the API
-      // This is slower but more reliable - we'll cache partial results as we go
-      for (let i = 0; i < playTypesToFetch.length; i++) {
+      // In production, skip API calls entirely if no cache
+      if (process.env.NODE_ENV === 'production' && !bypassCache) {
+        console.log(`[Play Type Analysis] ⚠️ Production mode: No bulk cache available. Skipping NBA API calls.`);
+        // Return empty results for missing play types
+        playTypesToFetch.forEach((key) => {
+          allResults.push({ status: 'fulfilled', value: { key, success: false, rows: [], headers: [] } });
+        });
+      } else {
+        console.log(`[Play Type Analysis] ⚠️ No bulk cached data found (or empty/invalid), fetching all from API...`);
+        // Fetch play types SEQUENTIALLY (one at a time) to avoid overwhelming the API
+        // This is slower but more reliable - we'll cache partial results as we go
+        for (let i = 0; i < playTypesToFetch.length; i++) {
         const key = playTypesToFetch[i];
         console.log(`[Play Type Analysis] Fetching ${key} (${i + 1}/${playTypesToFetch.length})...`);
         
@@ -396,6 +404,7 @@ export async function GET(request: NextRequest) {
         if (i < playTypesToFetch.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between requests
         }
+      }
       }
     }
       
