@@ -2599,6 +2599,13 @@ const ChartControls = function ChartControls({
       document.removeEventListener('touchstart', handleOutside);
     };
   }, [isAdvancedFiltersOpen]);
+
+  // Reset advancedFilterTop when dropdown closes
+  useEffect(() => {
+    if (!isAdvancedFiltersOpen) {
+      setAdvancedFilterTop(null);
+    }
+  }, [isAdvancedFiltersOpen]);
   
   // Update Over Rate when committed line or data changes
   useEffect(() => {
@@ -4015,9 +4022,11 @@ const ChartControls = function ChartControls({
                 <div className="relative" ref={advancedMobileRef}>
                   <button
                     onClick={(e) => {
-                      const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      // Position directly below button, centered
-                      setAdvancedFilterTop(buttonRect.bottom + 4); // 4px gap
+                      if (!isAdvancedFiltersOpen) {
+                        const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        // Position directly below button, centered - use viewport position (fixed)
+                        setAdvancedFilterTop(buttonRect.bottom + 4); // 4px gap below button
+                      }
                       setIsAdvancedFiltersOpen((v: boolean) => !v);
                     }}
                     className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
