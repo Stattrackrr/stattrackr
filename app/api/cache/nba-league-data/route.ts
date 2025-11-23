@@ -100,6 +100,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const season = parseInt(searchParams.get('season') || '2025');
     const forceRefresh = searchParams.get('force') === 'true';
+    const retry = searchParams.get('retry') === 'true';
     
     // Allow all requests - this endpoint is only called by cron jobs or manually
     // Vercel Cron will call this automatically via the cron schedule
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
     console.log(`[NBA League Data Cache] Request received from: ${request.headers.get('user-agent') || 'unknown'}`);
 
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-    console.log(`[NBA League Data Cache] Starting background job for season ${seasonStr}...`);
+    console.log(`[NBA League Data Cache] Starting background job for season ${seasonStr}... (retry=${retry})`);
 
     const results: any = {
       season: seasonStr,
@@ -119,11 +120,29 @@ export async function GET(request: NextRequest) {
     };
 
     // 1. Fetch all play type defensive rankings
-    console.log(`[NBA League Data Cache] Fetching play type defensive rankings...`);
+    // If retry mode, only fetch missing play types from cache
     const playTypeRankings: Record<string, Array<{ team: string; ppp: number }>> = {};
+    let playTypesToFetch = PLAY_TYPES;
     
-    for (let i = 0; i < PLAY_TYPES.length; i++) {
-      const { key } = PLAY_TYPES[i];
+    if (retry) {
+      // Retry mode: check cache and only fetch missing play types
+      const playTypeCacheKey = `playtype_defensive_rankings_${seasonStr}`;
+      const existingCache = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+      
+      if (existingCache) {
+        // Only fetch play types that are missing from cache
+        playTypesToFetch = PLAY_TYPES.filter(({ key }) => !existingCache[key]);
+        Object.assign(playTypeRankings, existingCache); // Start with existing cache
+        console.log(`[NBA League Data Cache] Retry mode: Found ${Object.keys(existingCache).length} cached play types, fetching ${playTypesToFetch.length} missing ones`);
+      } else {
+        console.log(`[NBA League Data Cache] Retry mode: No cache found, fetching all play types`);
+      }
+    }
+    
+    console.log(`[NBA League Data Cache] Fetching ${playTypesToFetch.length} play type defensive rankings...`);
+    
+    for (let i = 0; i < playTypesToFetch.length; i++) {
+      const { key } = playTypesToFetch[i];
       console.log(`[NBA League Data Cache] Fetching ${key} defensive rankings (${i + 1}/${PLAY_TYPES.length})...`);
       
       try {
@@ -168,7 +187,7 @@ export async function GET(request: NextRequest) {
         
         // Delay between requests to avoid rate limiting
         // Reduced to 500ms in dev (was 2s) - NBA API is slow but we can reduce delays
-        if (i < PLAY_TYPES.length - 1) {
+        if (i < playTypesToFetch.length - 1) {
           const delay = process.env.NODE_ENV === 'production' ? 2000 : 500; // 500ms in dev, 2s in prod
           await new Promise(resolve => setTimeout(resolve, delay));
         }

@@ -578,8 +578,30 @@ export async function GET(request: NextRequest) {
       
       if (cachedRankings) {
         const playTypeCount = Object.keys(cachedRankings).length;
-        console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr} (${playTypeCount} play types)`);
+        const expectedPlayTypes = PLAY_TYPES.length; // Should be 11
+        const missingPlayTypes = PLAY_TYPES.filter(({ key }) => !cachedRankings[key]).map(({ key }) => key);
+        
+        console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr} (${playTypeCount}/${expectedPlayTypes} play types)`);
         console.log(`[Play Type Analysis] Cached play types:`, Object.keys(cachedRankings));
+        
+        // If cache is incomplete, trigger background retry for missing play types
+        if (playTypeCount < expectedPlayTypes && missingPlayTypes.length > 0) {
+          console.warn(`[Play Type Analysis] ⚠️ Cache is incomplete! Missing ${missingPlayTypes.length} play types: ${missingPlayTypes.join(', ')}`);
+          console.warn(`[Play Type Analysis] 🔄 Triggering background retry for missing play types...`);
+          
+          // Trigger cache endpoint in background to retry missing play types
+          if (process.env.NODE_ENV === 'development') {
+            const host = request.headers.get('host') || 'localhost:3000';
+            const protocol = 'http';
+            const cacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${season}&retry=true`;
+            
+            // Don't await - let it run in background
+            fetch(cacheUrl).catch(err => {
+              console.warn(`[Play Type Analysis] Background cache retry failed:`, err.message);
+            });
+          }
+        }
+        
         Object.assign(playTypeRankings, cachedRankings);
       } else {
         // No cached rankings - trigger background fetch (non-blocking)
