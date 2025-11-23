@@ -32,11 +32,14 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use 20s max timeout in production (leaving 40s buffer for Vercel overhead and retries)
-  // NBA API is slow, so we need to fail fast and rely on cache
-  const actualTimeout = isProduction ? Math.min(Math.max(timeout, 20000), 20000) : timeout;
+  // Use shorter timeout in dev (5s) to fail faster, 20s in production
+  // Reduce retries in dev (1 retry) vs production (2 retries)
+  const actualTimeout = isProduction 
+    ? Math.min(Math.max(timeout, 20000), 20000) 
+    : Math.min(timeout, 5000); // 5s max in dev
+  const actualRetries = isProduction ? retries : Math.min(retries, 1); // 1 retry max in dev
   
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
@@ -56,10 +59,10 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (!response.ok) {
         const text = await response.text();
         const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
-        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 500));
+        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${actualRetries + 1}):`, text.slice(0, 500));
         
         // Don't retry on 4xx errors (client errors) except 429 (rate limit)
-        if (response.status === 429 || (response.status >= 500 && attempt < retries)) {
+        if (response.status === 429 || (response.status >= 500 && attempt < actualRetries)) {
           const delay = 1000 * (attempt + 1);
           console.log(`[Shot Chart Enhanced] Retrying after ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -78,7 +81,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       
       if (error.name === 'AbortError') {
         lastError = new Error(`Request timeout after ${actualTimeout}ms`);
-        if (attempt < retries) {
+        if (attempt < actualRetries) {
           console.log(`[Shot Chart Enhanced] Timeout on attempt ${attempt + 1}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
@@ -89,7 +92,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       // Network errors - retry
       if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNRESET')) {
         lastError = error;
-        if (attempt < retries) {
+        if (attempt < actualRetries) {
           console.log(`[Shot Chart Enhanced] Network error on attempt ${attempt + 1}: ${error.message}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;

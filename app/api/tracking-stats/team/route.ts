@@ -31,11 +31,14 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Use 20s max timeout in production (leaving 40s buffer for Vercel overhead and retries)
-  // NBA API is slow, so we need to fail fast and rely on cache
-  const actualTimeout = isProduction ? Math.min(Math.max(timeout, 20000), 20000) : timeout;
+  // Use shorter timeout in dev (5s) to fail faster, 20s in production
+  // Reduce retries in dev (1 retry) vs production (2 retries)
+  const actualTimeout = isProduction 
+    ? Math.min(Math.max(timeout, 20000), 20000) 
+    : Math.min(timeout, 5000); // 5s max in dev
+  const actualRetries = isProduction ? retries : Math.min(retries, 1); // 1 retry max in dev
   
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
@@ -54,10 +57,10 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (!response.ok) {
         const text = await response.text();
         const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
-        console.error(`[Team Tracking Stats] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 500));
+        console.error(`[Team Tracking Stats] NBA API error ${response.status} (attempt ${attempt + 1}/${actualRetries + 1}):`, text.slice(0, 500));
         
         // Retry on 5xx errors or 429 (rate limit)
-        if ((response.status >= 500 || response.status === 429) && attempt < retries) {
+        if ((response.status >= 500 || response.status === 429) && attempt < actualRetries) {
           const delay = 1000 * (attempt + 1);
           console.log(`[Team Tracking Stats] Retrying after ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -76,7 +79,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       
       if (error.name === 'AbortError') {
         lastError = new Error(`Request timeout after ${actualTimeout}ms`);
-        if (attempt < retries) {
+        if (attempt < actualRetries) {
           console.log(`[Team Tracking Stats] Timeout on attempt ${attempt + 1}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
