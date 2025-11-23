@@ -28,6 +28,136 @@ const NBA_HEADERS = {
   'sec-ch-ua-platform': '"Windows"',
 };
 
+const NBA_TEAM_MAP: { [key: string]: string } = {
+  'ATL': '1610612737', 'BOS': '1610612738', 'BKN': '1610612751', 'CHA': '1610612766',
+  'CHI': '1610612741', 'CLE': '1610612739', 'DAL': '1610612742', 'DEN': '1610612743',
+  'DET': '1610612765', 'GSW': '1610612744', 'HOU': '1610612745', 'IND': '1610612754',
+  'LAC': '1610612746', 'LAL': '1610612747', 'MEM': '1610612763', 'MIA': '1610612748',
+  'MIL': '1610612749', 'MIN': '1610612750', 'NOP': '1610612740', 'NYK': '1610612752',
+  'OKC': '1610612760', 'ORL': '1610612753', 'PHI': '1610612755', 'PHX': '1610612756',
+  'POR': '1610612757', 'SAC': '1610612758', 'SAS': '1610612759', 'TOR': '1610612761',
+  'UTA': '1610612762', 'WAS': '1610612764'
+};
+
+/**
+ * Fetch defensive stats for a single team (not all 30 teams)
+ * This is much faster than fetching all teams just to get one team's stats
+ */
+async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, seasonStr: string) {
+  try {
+    const defenseParams = new URLSearchParams({
+      LeagueID: '00',
+      Season: seasonStr,
+      SeasonType: 'Regular Season',
+      TeamID: '0',
+      PlayerID: '0',
+      Outcome: '',
+      Location: '',
+      Month: '0',
+      SeasonSegment: '',
+      DateFrom: '',
+      DateTo: '',
+      OpponentTeamID: teamId,
+      VsConference: '',
+      VsDivision: '',
+      GameSegment: '',
+      Period: '0',
+      LastNGames: '0',
+      ContextMeasure: 'FGA',
+      RookieYear: '',
+      Position: '',
+    });
+
+    const defenseUrl = `${NBA_STATS_BASE}/shotchartdetail?${defenseParams.toString()}`;
+    console.log(`[Shot Chart Enhanced] Fetching defensive stats for ${teamAbbr}...`);
+    
+    const defenseData = await fetchNBAStats(defenseUrl, 10000, 1); // 10s timeout, 1 retry
+
+    if (defenseData?.resultSets?.[0]) {
+      const resultSet = defenseData.resultSets[0];
+      const headers = resultSet.headers || [];
+      const rows = resultSet.rowSet || [];
+
+      const shotMadeIdx = headers.indexOf('SHOT_MADE_FLAG');
+      const shotZoneBasicIdx = headers.indexOf('SHOT_ZONE_BASIC');
+
+      const zoneStats: {
+        [key: string]: { made: number; attempted: number };
+      } = {
+        restrictedArea: { made: 0, attempted: 0 },
+        paint: { made: 0, attempted: 0 },
+        midRange: { made: 0, attempted: 0 },
+        leftCorner3: { made: 0, attempted: 0 },
+        rightCorner3: { made: 0, attempted: 0 },
+        aboveBreak3: { made: 0, attempted: 0 },
+      };
+
+      for (const row of rows) {
+        const made = row[shotMadeIdx] === 1;
+        const zone = row[shotZoneBasicIdx];
+
+        if (zone === 'Restricted Area') {
+          zoneStats.restrictedArea.attempted++;
+          if (made) zoneStats.restrictedArea.made++;
+        } else if (zone === 'In The Paint (Non-RA)') {
+          zoneStats.paint.attempted++;
+          if (made) zoneStats.paint.made++;
+        } else if (zone === 'Mid-Range') {
+          zoneStats.midRange.attempted++;
+          if (made) zoneStats.midRange.made++;
+        } else if (zone === 'Left Corner 3') {
+          zoneStats.leftCorner3.attempted++;
+          if (made) zoneStats.leftCorner3.made++;
+        } else if (zone === 'Right Corner 3') {
+          zoneStats.rightCorner3.attempted++;
+          if (made) zoneStats.rightCorner3.made++;
+        } else if (zone === 'Above the Break 3') {
+          zoneStats.aboveBreak3.attempted++;
+          if (made) zoneStats.aboveBreak3.made++;
+        }
+      }
+
+      return {
+        restrictedArea: {
+          fgPct: zoneStats.restrictedArea.attempted > 0 ? (zoneStats.restrictedArea.made / zoneStats.restrictedArea.attempted) * 100 : 0,
+          fga: zoneStats.restrictedArea.attempted,
+          fgm: zoneStats.restrictedArea.made
+        },
+        paint: {
+          fgPct: zoneStats.paint.attempted > 0 ? (zoneStats.paint.made / zoneStats.paint.attempted) * 100 : 0,
+          fga: zoneStats.paint.attempted,
+          fgm: zoneStats.paint.made
+        },
+        midRange: {
+          fgPct: zoneStats.midRange.attempted > 0 ? (zoneStats.midRange.made / zoneStats.midRange.attempted) * 100 : 0,
+          fga: zoneStats.midRange.attempted,
+          fgm: zoneStats.midRange.made
+        },
+        leftCorner3: {
+          fgPct: zoneStats.leftCorner3.attempted > 0 ? (zoneStats.leftCorner3.made / zoneStats.leftCorner3.attempted) * 100 : 0,
+          fga: zoneStats.leftCorner3.attempted,
+          fgm: zoneStats.leftCorner3.made
+        },
+        rightCorner3: {
+          fgPct: zoneStats.rightCorner3.attempted > 0 ? (zoneStats.rightCorner3.made / zoneStats.rightCorner3.attempted) * 100 : 0,
+          fga: zoneStats.rightCorner3.attempted,
+          fgm: zoneStats.rightCorner3.made
+        },
+        aboveBreak3: {
+          fgPct: zoneStats.aboveBreak3.attempted > 0 ? (zoneStats.aboveBreak3.made / zoneStats.aboveBreak3.attempted) * 100 : 0,
+          fga: zoneStats.aboveBreak3.attempted,
+          fgm: zoneStats.aboveBreak3.made
+        }
+      };
+    }
+
+    return null;
+  } catch (error: any) {
+    console.warn(`[Shot Chart Enhanced] Error fetching defensive stats for ${teamAbbr}:`, error.message);
+    return null;
+  }
+}
+
 async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
@@ -226,40 +356,39 @@ export async function GET(request: NextRequest) {
             console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
             defenseRankings = cachedRankings.rankings;
           } else {
+            // No cached rankings - fetch just the opponent team's stats (not all 30 teams!)
             // Only try to fetch in development - in production, rely on cache (populated by background job)
             if (process.env.NODE_ENV === 'development') {
-              console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
-              const host = request.headers.get('host') || 'localhost:3000';
-              const protocol = 'http';
-              const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+              console.log(`[Shot Chart Enhanced] No cached rankings found, fetching stats for opponent ${opponentTeam} only...`);
               
-              // Add 5 second timeout for rankings fetch (shorter to fail faster)
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 5000);
-              
-              try {
-                const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                if (rankingsResponse.ok) {
-                  const rankingsData = await rankingsResponse.json();
-                  if (rankingsData.rankings && Object.keys(rankingsData.rankings).length > 0) {
-                    defenseRankings = rankingsData.rankings;
-                    cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
-                    console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
-                  } else {
-                    console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned empty rankings`);
+              // Fetch just the opponent team's defensive stats directly
+              const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
+              if (opponentTeamId) {
+                try {
+                  const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+                  const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr);
+                  
+                  if (opponentStats) {
+                    // Create a minimal rankings object with just this team
+                    // We can't calculate rank without all teams, but we can return the stats
+                    defenseRankings = {
+                      [opponentTeam]: {
+                        restrictedArea: opponentStats.restrictedArea,
+                        paint: opponentStats.paint,
+                        midRange: opponentStats.midRange,
+                        leftCorner3: opponentStats.leftCorner3,
+                        rightCorner3: opponentStats.rightCorner3,
+                        aboveBreak3: opponentStats.aboveBreak3,
+                        // No rank since we don't have all teams to compare
+                      }
+                    };
+                    console.log(`[Shot Chart Enhanced] ✅ Fetched defensive stats for ${opponentTeam} (no rank available without all teams)`);
                   }
-                } else {
-                  console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+                } catch (fetchErr: any) {
+                  console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching opponent stats:`, fetchErr.message);
                 }
-              } catch (fetchErr: any) {
-                clearTimeout(timeoutId);
-                if (fetchErr.name === 'AbortError') {
-                  console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
-                } else {
-                  console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
-                }
+              } else {
+                console.warn(`[Shot Chart Enhanced] ⚠️ Unknown team abbreviation: ${opponentTeam}`);
               }
             } else {
               console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
@@ -462,42 +591,40 @@ export async function GET(request: NextRequest) {
       if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
         console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
         defenseRankings = cachedRankings.rankings;
-      } else {
+      } else if (opponentTeam && opponentTeam !== 'N/A') {
+        // No cached rankings - fetch just the opponent team's stats (not all 30 teams!)
         // Only try to fetch in development - in production, rely on cache (populated by background job)
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
-          const host = request.headers.get('host') || 'localhost:3000';
-          const protocol = 'http';
-          const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+          console.log(`[Shot Chart Enhanced] No cached rankings found, fetching stats for opponent ${opponentTeam} only...`);
           
-          // Add 5 second timeout for rankings fetch (shorter to fail faster)
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
-          
-          try {
-            const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            if (rankingsResponse.ok) {
-              const rankingsData = await rankingsResponse.json();
-              if (rankingsData.rankings && Object.keys(rankingsData.rankings).length > 0) {
-                defenseRankings = rankingsData.rankings;
-                // Cache the full response (not just rankings) to match the API's cache format
-                cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
-                console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
-              } else {
-                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned empty rankings`);
+          // Fetch just the opponent team's defensive stats directly
+          const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
+          if (opponentTeamId) {
+            try {
+              const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+              const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr);
+              
+              if (opponentStats) {
+                // Create a minimal rankings object with just this team
+                // We can't calculate rank without all teams, but we can return the stats
+                defenseRankings = {
+                  [opponentTeam]: {
+                    restrictedArea: opponentStats.restrictedArea,
+                    paint: opponentStats.paint,
+                    midRange: opponentStats.midRange,
+                    leftCorner3: opponentStats.leftCorner3,
+                    rightCorner3: opponentStats.rightCorner3,
+                    aboveBreak3: opponentStats.aboveBreak3,
+                    // No rank since we don't have all teams to compare
+                  }
+                };
+                console.log(`[Shot Chart Enhanced] ✅ Fetched defensive stats for ${opponentTeam} (no rank available without all teams)`);
               }
-            } else {
-              console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+            } catch (fetchErr: any) {
+              console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching opponent stats:`, fetchErr.message);
             }
-          } catch (fetchErr: any) {
-            clearTimeout(timeoutId);
-            if (fetchErr.name === 'AbortError') {
-              console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
-            } else {
-              console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
-            }
+          } else {
+            console.warn(`[Shot Chart Enhanced] ⚠️ Unknown team abbreviation: ${opponentTeam}`);
           }
         } else {
           console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
