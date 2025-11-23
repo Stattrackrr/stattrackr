@@ -282,11 +282,23 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   };
 
   // Get color based on defensive ranking (rank 1 = best = red, rank 30 = worst = green)
-  const getColorForRank = (rank: number) => {
-    if (rank <= 5) return '#ef4444'; // Red for ranks 1-5 (elite defense)
-    if (rank <= 11) return '#f97316'; // Orange for ranks 6-11 (good defense)
-    if (rank <= 21) return '#fbbf24'; // Yellow for ranks 12-21 (average defense)
-    return '#10b981'; // Green for ranks 22-30 (weak defense - good for offense!)
+  // If rank is 0, use fgPct to estimate (lower fgPct = better defense = redder)
+  const getColorForRank = (rank: number, fgPct?: number) => {
+    if (rank > 0) {
+      // Use actual rank
+      if (rank <= 5) return '#ef4444'; // Red for ranks 1-5 (elite defense)
+      if (rank <= 11) return '#f97316'; // Orange for ranks 6-11 (good defense)
+      if (rank <= 21) return '#fbbf24'; // Yellow for ranks 12-21 (average defense)
+      return '#10b981'; // Green for ranks 22-30 (weak defense - good for offense!)
+    } else if (fgPct !== undefined) {
+      // No rank available, use fgPct to estimate (lower = better defense)
+      // Typical NBA fgPct ranges: ~50-70% for restricted area, ~35-50% for 3s
+      if (fgPct < 50) return '#ef4444'; // Very good defense (red)
+      if (fgPct < 55) return '#f97316'; // Good defense (orange)
+      if (fgPct < 60) return '#fbbf24'; // Average defense (yellow)
+      return '#10b981'; // Weak defense (green)
+    }
+    return '#6b7280'; // Gray if no data
   };
 
   if (!enhancedData && (!allowFallback || !shotData)) {
@@ -419,7 +431,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 L 15 ${baseline} 
                 Q 0 ${baseline} 0 ${baseline - 15} Z`}
             fill={showOppDef && enhancedData?.opponentRankings?.leftCorner3 
-              ? getColorForRank(enhancedData.opponentRankings.leftCorner3.rank) 
+              ? getColorForRank(enhancedData.opponentRankings.leftCorner3.rank, enhancedData.opponentRankings.leftCorner3.fgPct) 
               : getColorForDistribution(distributions[3] || 0)}
             stroke="none"
           />
@@ -434,7 +446,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
                 L ${courtWidth - 150} ${baseline} Z`}
             fill={showOppDef && enhancedData?.opponentRankings?.rightCorner3 
-              ? getColorForRank(enhancedData.opponentRankings.rightCorner3.rank) 
+              ? getColorForRank(enhancedData.opponentRankings.rightCorner3.rank, enhancedData.opponentRankings.rightCorner3.fgPct) 
               : getColorForDistribution(distributions[4] || 0)}
             stroke="none"
           />
@@ -447,7 +459,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           width={paintWidth}
           height={baseline - freeThrowLine}
           fill={showOppDef && enhancedData?.opponentRankings?.paint 
-            ? getColorForRank(enhancedData.opponentRankings.paint.rank) 
+            ? getColorForRank(enhancedData.opponentRankings.paint.rank, enhancedData.opponentRankings.paint.fgPct) 
             : getColorForDistribution(distributions[1] || 0)}
           stroke="none"
         />
@@ -459,7 +471,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
               L ${centerX + 60} ${baseline} Z`}
           fill={showOppDef && enhancedData?.opponentRankings?.restrictedArea 
-            ? getColorForRank(enhancedData.opponentRankings.restrictedArea.rank) 
+            ? getColorForRank(enhancedData.opponentRankings.restrictedArea.rank, enhancedData.opponentRankings.restrictedArea.fgPct) 
             : getColorForDistribution(distributions[0] || 0)}
           stroke="#000"
           strokeWidth="3"
@@ -495,7 +507,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 L 0 15 
                 Q 0 0 15 0 Z`}
           fill={showOppDef && enhancedData?.opponentRankings?.aboveBreak3 
-            ? getColorForRank(enhancedData.opponentRankings.aboveBreak3.rank) 
+            ? getColorForRank(enhancedData.opponentRankings.aboveBreak3.rank, enhancedData.opponentRankings.aboveBreak3.fgPct) 
             : getColorForDistribution(distributions[enhancedData ? 5 : 4] || 0)}
         />
         
@@ -520,7 +532,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
               Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
           fill={showOppDef && enhancedData?.opponentRankings?.midRange 
-            ? getColorForRank(enhancedData.opponentRankings.midRange.rank) 
+            ? getColorForRank(enhancedData.opponentRankings.midRange.rank, enhancedData.opponentRankings.midRange.fgPct) 
             : getColorForDistribution(distributions[2] || 0)}
           stroke="none"
         />
@@ -585,28 +597,28 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               <>
                 {/* Above-the-break 3 */}
                 <text x={centerX} y="60" textAnchor="middle" fill="#ffffff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  #{rankings.aboveBreak3?.rank || '-'}
+                  {rankings.aboveBreak3?.rank && rankings.aboveBreak3.rank > 0 ? `#${rankings.aboveBreak3.rank}` : rankings.aboveBreak3?.fgPct ? `${rankings.aboveBreak3.fgPct.toFixed(1)}%` : '-'}
                 </text>
                 {/* Mid-Range */}
                 <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  #{rankings.midRange?.rank || '-'}
+                  {rankings.midRange?.rank && rankings.midRange.rank > 0 ? `#${rankings.midRange.rank}` : rankings.midRange?.fgPct ? `${rankings.midRange.fgPct.toFixed(1)}%` : '-'}
                 </text>
                 {/* Restricted Area */}
                 <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  #{rankings.restrictedArea?.rank || '-'}
+                  {rankings.restrictedArea?.rank && rankings.restrictedArea.rank > 0 ? `#${rankings.restrictedArea.rank}` : rankings.restrictedArea?.fgPct ? `${rankings.restrictedArea.fgPct.toFixed(1)}%` : '-'}
                 </text>
                 {/* Paint */}
                 <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                  #{rankings.paint?.rank || '-'}
+                  {rankings.paint?.rank && rankings.paint.rank > 0 ? `#${rankings.paint.rank}` : rankings.paint?.fgPct ? `${rankings.paint.fgPct.toFixed(1)}%` : '-'}
                 </text>
                 {/* Left Corner 3 - show individual rank */}
                 {enhancedData && (
                   <>
                     <text x="45" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                      #{rankings.leftCorner3?.rank || '-'}
+                      {rankings.leftCorner3?.rank && rankings.leftCorner3.rank > 0 ? `#${rankings.leftCorner3.rank}` : rankings.leftCorner3?.fgPct ? `${rankings.leftCorner3.fgPct.toFixed(1)}%` : '-'}
                     </text>
                     <text x="455" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5">
-                      #{rankings.rightCorner3?.rank || '-'}
+                      {rankings.rightCorner3?.rank && rankings.rightCorner3.rank > 0 ? `#${rankings.rightCorner3.rank}` : rankings.rightCorner3?.fgPct ? `${rankings.rightCorner3.fgPct.toFixed(1)}%` : '-'}
                     </text>
                   </>
                 )}
