@@ -550,7 +550,9 @@ export async function GET(request: NextRequest) {
       let cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
       
       if (cachedRankings) {
-        console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr}`);
+        const playTypeCount = Object.keys(cachedRankings).length;
+        console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr} (${playTypeCount} play types)`);
+        console.log(`[Play Type Analysis] Cached play types:`, Object.keys(cachedRankings));
         Object.assign(playTypeRankings, cachedRankings);
       } else {
         // No cached rankings - trigger background fetch (non-blocking)
@@ -696,6 +698,13 @@ export async function GET(request: NextRequest) {
         const normalizedOpponent = opponentTeam.toUpperCase();
         const ranking = playTypeRankings[key].findIndex(r => r.team.toUpperCase() === normalizedOpponent);
         oppRank = ranking >= 0 ? ranking + 1 : null;
+        if (oppRank) {
+          console.log(`[Play Type Analysis] ✅ ${key}: ${opponentTeam} rank = ${oppRank} (out of ${playTypeRankings[key].length} teams)`);
+        } else {
+          console.log(`[Play Type Analysis] ⚠️ ${key}: ${opponentTeam} not found in rankings (${playTypeRankings[key].length} teams available)`);
+        }
+      } else if (opponentTeam && opponentTeam !== 'N/A') {
+        console.log(`[Play Type Analysis] ⚠️ ${key}: No rankings available for this play type`);
       }
 
       const result = {
