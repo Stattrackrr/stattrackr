@@ -8150,7 +8150,9 @@ const lineMovementInFlightRef = useRef(false);
       
       // Set opponent team based on games schedule (will update when games load)
       const opponent = getOpponentTeam(currentTeam, todaysGames);
-      setOpponentTeam(normalizeAbbr(opponent));
+      const normalizedOpponent = normalizeAbbr(opponent);
+      console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (raw: ${opponent})`);
+      setOpponentTeam(normalizedOpponent);
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
     } catch (e: any) {
