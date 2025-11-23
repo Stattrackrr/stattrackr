@@ -45,11 +45,12 @@ const PLAY_TYPES = [
 ];
 
 async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
-  // Timeout: 15s in dev (NBA API is slow), 8s in production
-  // Retry logic: Always retry on 500 errors, retry timeouts in dev
+  // Timeout: Use provided timeout (can be longer for defensive rankings)
+  // Retry logic: Allow retries when retryOn500 is true (for critical data like defensive rankings)
   const isProduction = process.env.NODE_ENV === 'production';
-  const actualTimeout = isProduction ? Math.min(timeout, 8000) : Math.min(timeout, 15000);
-  // For zone rankings (critical), allow retries even in production for 500 errors
+  // Don't cap timeout in production - allow longer timeouts for slow NBA API calls
+  const actualTimeout = timeout;
+  // For defensive rankings (retryOn500=true), allow retries even in production
   const actualRetries = retryOn500 ? Math.min(retries, 2) : (isProduction ? 0 : Math.min(retries, 1));
   
   let lastError: Error | null = null;
