@@ -222,7 +222,10 @@ async function refreshTeamTrackingStats(
 
 export async function GET(request: NextRequest) {
   // Verify cron secret (optional but recommended)
-  const authHeader = request.headers.get('authorization');
+  // Try multiple header name variations (HTTP headers are case-insensitive)
+  const authHeader = request.headers.get('authorization') 
+    || request.headers.get('Authorization')
+    || request.headers.get('AUTHORIZATION');
   const cronSecret = process.env.CRON_SECRET;
   
   // Allow bypass in development or if secret is not set
