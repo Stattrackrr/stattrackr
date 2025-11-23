@@ -4019,7 +4019,7 @@ const ChartControls = function ChartControls({
                     Advanced
                   </button>
                   {isAdvancedFiltersOpen && (
-                    <div className="absolute left-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                    <div className="absolute left-1/2 -translate-x-1/2 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
                       <div className="space-y-2">
                         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
