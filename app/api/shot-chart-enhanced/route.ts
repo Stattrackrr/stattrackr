@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
             if (process.env.NODE_ENV === 'development') {
               console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
               const host = request.headers.get('host') || 'localhost:3000';
-              const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+              const protocol = 'http';
               const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
               
               // Add 5 second timeout for rankings fetch (shorter to fail faster)
@@ -467,7 +467,7 @@ export async function GET(request: NextRequest) {
         if (process.env.NODE_ENV === 'development') {
           console.log(`[Shot Chart Enhanced] No cached rankings found, attempting to fetch...`);
           const host = request.headers.get('host') || 'localhost:3000';
-          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+          const protocol = 'http';
           const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
           
           // Add 5 second timeout for rankings fetch (shorter to fail faster)
