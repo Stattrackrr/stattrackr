@@ -231,14 +231,24 @@ export async function GET(request: NextRequest) {
   
   if (cronSecret && !allowBypass) {
     // Normalize header (case-insensitive, trim whitespace)
-    const normalizedHeader = authHeader?.trim();
-    const expectedHeader = `Bearer ${cronSecret}`;
+    // Next.js headers.get() returns lowercase, but we'll normalize anyway
+    const normalizedHeader = authHeader?.trim().toLowerCase();
+    const expectedHeader = `bearer ${cronSecret}`.toLowerCase();
     
     if (normalizedHeader !== expectedHeader) {
-      console.warn('[NBA Stats Refresh] Auth failed - header mismatch');
+      console.warn('[NBA Stats Refresh] Auth failed - header mismatch', {
+        received: authHeader ? `${authHeader.substring(0, 20)}...` : 'null',
+        expectedLength: `Bearer ${cronSecret}`.length,
+        receivedLength: authHeader?.length || 0
+      });
       return NextResponse.json({ 
         error: 'Unauthorized',
-        hint: 'Check that CRON_SECRET matches in Vercel environment variables'
+        hint: 'Check that CRON_SECRET matches in Vercel environment variables',
+        debug: process.env.NODE_ENV === 'development' ? {
+          receivedHeader: authHeader ? `${authHeader.substring(0, 10)}...` : 'null',
+          expectedPrefix: 'Bearer ...',
+          secretLength: cronSecret.length
+        } : undefined
       }, { status: 401 });
     }
   }
