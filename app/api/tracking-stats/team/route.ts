@@ -320,7 +320,6 @@ export async function GET(request: NextRequest) {
     // Store in both Supabase (persistent) and in-memory
     await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
-    const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
     console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} for ${CACHE_TTL.TRACKING_STATS} minutes`);
 
     return NextResponse.json(
