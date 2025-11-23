@@ -161,11 +161,11 @@ export async function GET(request: NextRequest) {
       
       console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category} - falling back to API`);
       
-      // If no cache and NBA API is unreachable, return empty data instead of timing out
-      // Background jobs should populate cache
-      if (!forceRefresh) {
+      // If no cache and in production (where NBA API is unreachable), return empty data
+      // In development, continue to try fetching from NBA API
+      if (!forceRefresh && process.env.NODE_ENV === 'production') {
         const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-        console.log(`[Team Tracking Stats] ⚠️ No cache available. NBA API is unreachable from Vercel. Returning empty data.`);
+        console.log(`[Team Tracking Stats] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
         return NextResponse.json({
           team,
           season: seasonStr,
@@ -174,6 +174,11 @@ export async function GET(request: NextRequest) {
           error: 'NBA API unreachable - data will be available once cache is populated',
           cachedAt: new Date().toISOString()
         }, { status: 200 });
+      }
+
+      // In development, continue to fetch from NBA API even if cache is empty
+      if (!forceRefresh) {
+        console.log(`[Team Tracking Stats] No cache found, fetching from NBA API for ${team} ${category}, season ${season}`);
       }
     }
 

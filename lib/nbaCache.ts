@@ -6,20 +6,26 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase credentials required for NBA cache');
-}
+// Only create client if credentials are available (fail gracefully if not)
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
-// Admin client (bypasses RLS)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+if (supabaseUrl && supabaseServiceKey) {
+  try {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+  } catch (error) {
+    console.warn('[NBA Cache] Failed to initialize Supabase client:', error);
   }
-});
+} else {
+  console.warn('[NBA Cache] Supabase credentials not configured - cache will use in-memory only');
+}
 
 export interface NBACacheEntry {
   cache_key: string;
@@ -34,6 +40,11 @@ export interface NBACacheEntry {
  * Get cached NBA API data from Supabase
  */
 export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> {
+  // If Supabase not configured, return null (will fallback to in-memory cache)
+  if (!supabaseAdmin) {
+    return null;
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from('nba_api_cache')
@@ -45,20 +56,33 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       return null;
     }
 
-    // Check if expired
-    const expiresAt = new Date(data.expires_at);
-    if (expiresAt < new Date()) {
-      // Auto-delete expired entry
-      await supabaseAdmin
-        .from('nba_api_cache')
-        .delete()
-        .eq('cache_key', cacheKey);
+    // Type guard for data
+    if (!data || typeof data !== 'object' || !('expires_at' in data) || !('data' in data)) {
       return null;
     }
 
-    return data.data as T;
+    // Type assertion for Supabase response
+    const cacheData = data as { data: T; expires_at: string };
+    
+    // Check if expired
+    const expiresAt = new Date(cacheData.expires_at);
+    if (expiresAt < new Date()) {
+      // Auto-delete expired entry
+      if (supabaseAdmin) {
+        await supabaseAdmin
+          .from('nba_api_cache')
+          .delete()
+          .eq('cache_key', cacheKey);
+      }
+      return null;
+    }
+
+    return cacheData.data;
   } catch (error) {
-    console.error('[NBA Cache] Error reading from Supabase:', error);
+    // Fail gracefully - return null so in-memory cache can be used
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[NBA Cache] Error reading from Supabase (will use in-memory cache):', error);
+    }
     return null;
   }
 }
@@ -72,30 +96,42 @@ export async function setNBACache(
   data: any,
   ttlMinutes: number
 ): Promise<boolean> {
+  // If Supabase not configured, return false (in-memory cache will still work)
+  if (!supabaseAdmin) {
+    return false;
+  }
+
   try {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
 
+    const cacheEntry = {
+      cache_key: cacheKey,
+      cache_type: cacheType,
+      data: data,
+      expires_at: expiresAt.toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
     const { error } = await supabaseAdmin
       .from('nba_api_cache')
-      .upsert({
-        cache_key: cacheKey,
-        cache_type: cacheType,
-        data: data,
-        expires_at: expiresAt.toISOString(),
-        updated_at: new Date().toISOString()
-      }, {
+      .upsert(cacheEntry as any, {
         onConflict: 'cache_key'
       });
 
     if (error) {
-      console.error('[NBA Cache] Error writing to Supabase:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[NBA Cache] Error writing to Supabase (in-memory cache will still work):', error);
+      }
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('[NBA Cache] Error setting cache:', error);
+    // Fail gracefully - in-memory cache will still work
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[NBA Cache] Error setting cache (in-memory cache will still work):', error);
+    }
     return false;
   }
 }
@@ -104,6 +140,10 @@ export async function setNBACache(
  * Delete cached entry
  */
 export async function deleteNBACache(cacheKey: string): Promise<boolean> {
+  if (!supabaseAdmin) {
+    return false;
+  }
+
   try {
     const { error } = await supabaseAdmin
       .from('nba_api_cache')
@@ -121,6 +161,10 @@ export async function deleteNBACache(cacheKey: string): Promise<boolean> {
  * Clean up expired cache entries
  */
 export async function cleanupExpiredCache(): Promise<number> {
+  if (!supabaseAdmin) {
+    return 0;
+  }
+
   try {
     const { data, error } = await supabaseAdmin.rpc('cleanup_expired_nba_cache');
     if (error) {

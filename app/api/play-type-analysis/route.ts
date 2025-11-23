@@ -267,10 +267,10 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // If no cache and NBA API is unreachable, return cached data or empty response
-    // Background jobs should populate cache
-    if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length) {
-      console.log(`[Play Type Analysis] ⚠️ No cache available. NBA API is unreachable from Vercel. Returning empty data.`);
+    // If no cache and in production (where NBA API is unreachable), return empty data
+    // In development, continue to try fetching from NBA API
+    if (!bypassCache && !cachedData && playTypesToFetch.length === PLAY_TYPES.length && process.env.NODE_ENV === 'production') {
+      console.log(`[Play Type Analysis] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
       // Return minimal response with empty play types
       const emptyResponse = {
         playerId: parseInt(playerId),
@@ -290,6 +290,11 @@ export async function GET(request: NextRequest) {
         cachedAt: new Date().toISOString()
       };
       return NextResponse.json(emptyResponse, { status: 200 });
+    }
+
+    // In development, continue to fetch from NBA API even if cache is empty
+    if (!cachedData && !bypassCache && playTypesToFetch.length === PLAY_TYPES.length) {
+      console.log(`[Play Type Analysis] No cache found, fetching from NBA API for player ${playerId}, season ${season}`);
     }
     
     console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);

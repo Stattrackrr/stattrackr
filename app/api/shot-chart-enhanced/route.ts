@@ -216,10 +216,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // If no cache and NBA API is unreachable, return empty data instead of timing out
-    // Background jobs should populate cache
-    if (!bypassCache) {
-      console.log(`[Shot Chart Enhanced] ⚠️ No cache available for player ${nbaPlayerId}. NBA API is unreachable from Vercel. Returning empty data.`);
+    // If no cache and in production (where NBA API is unreachable), return empty data
+    // In development, continue to try fetching from NBA API
+    if (!bypassCache && process.env.NODE_ENV === 'production') {
+      console.log(`[Shot Chart Enhanced] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
       return NextResponse.json({
         playerId: nbaPlayerId,
         originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
@@ -239,6 +239,9 @@ export async function GET(request: NextRequest) {
         cachedAt: new Date().toISOString()
       }, { status: 200 });
     }
+
+    // In development, continue to fetch from NBA API even if cache is empty
+    console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season}`);
 
     console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (bypassCache=true)`);
 

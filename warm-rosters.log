@@ -6856,3 +6856,83 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Sun 23/11/2025  4:18:39.63] warm-rosters end (exit 0) 
+[Sun 23/11/2025  4:48:36.67] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  true,
+    "date":  "20251123",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 23/11/2025  4:48:40.14] warm-rosters end (exit 0) 
+[Sun 23/11/2025  5:18:36.69] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  true,
+    "date":  "20251123",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 23/11/2025  5:18:40.04] warm-rosters end (exit 0) 
+[Sun 23/11/2025  5:48:36.73] warm-rosters start 
+^C[Sun 23/11/2025  6:18:36.70] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  true,
+    "date":  "20251123",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 23/11/2025  6:18:41.67] warm-rosters end (exit 0) 
+[Sun 23/11/2025  6:48:36.70] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  true,
+    "date":  "20251123",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 23/11/2025  6:48:38.83] warm-rosters end (exit 0) 
+[Sun 23/11/2025  7:28:51.26] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251123"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251122&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251122"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251124&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251124"
+}
+No games found for today/Añ1 or requests failed.
+At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
++ ...  $worked) { throw "No games found for today/Añ1 or requests failed."  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (No games found ...equests failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
+ 
+[Sun 23/11/2025  7:28:52.21] warm-rosters end (exit 1) 
+[Sun 23/11/2025 22:30:13.19] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251123&window_min=180
+{
+    "success":  true,
+    "date":  "20251123",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 23/11/2025 22:30:22.24] warm-rosters end (exit 0) 
