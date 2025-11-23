@@ -225,8 +225,22 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
   
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Allow bypass in development or if secret is not set
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const allowBypass = isDevelopment || !cronSecret;
+  
+  if (cronSecret && !allowBypass) {
+    // Normalize header (case-insensitive, trim whitespace)
+    const normalizedHeader = authHeader?.trim();
+    const expectedHeader = `Bearer ${cronSecret}`;
+    
+    if (normalizedHeader !== expectedHeader) {
+      console.warn('[NBA Stats Refresh] Auth failed - header mismatch');
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        hint: 'Check that CRON_SECRET matches in Vercel environment variables'
+      }, { status: 401 });
+    }
   }
 
   const startTime = Date.now();
