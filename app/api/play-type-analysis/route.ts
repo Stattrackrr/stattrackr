@@ -307,29 +307,11 @@ export async function GET(request: NextRequest) {
         return { response: cachedData, cacheStatus: 'HIT' };
       }
       
-      // In production, NEVER call NBA API directly - only use cache
-      // If no cache, return empty data and trigger background cache population
+      // In production, try to fetch but with aggressive timeouts
+      // If it fails, trigger background cache population
       if (!bypassCache && process.env.NODE_ENV === 'production' && playTypesToFetch.length > 0) {
-        console.log(`[Play Type Analysis] ⚠️ Production mode: Skipping NBA API calls. Cache only. Missing ${playTypesToFetch.length} play types.`);
-        // Return minimal response with empty play types
-        const emptyResponse = {
-          playerId: parseInt(playerId),
-          season: seasonStr,
-          opponentTeam: opponentTeam || null,
-          playTypes: PLAY_TYPES.map(({ key, displayName }) => ({
-            playType: key,
-            displayName,
-            points: 0,
-            possessions: 0,
-            ppp: 0,
-            percentage: 0,
-            opponentRank: null,
-          })),
-          totalPoints: 0,
-          error: 'NBA API unreachable - data will be available once cache is populated',
-          cachedAt: new Date().toISOString()
-        };
-        return { response: emptyResponse, cacheStatus: 'MISS' };
+        console.log(`[Play Type Analysis] ⚠️ Production mode: Will attempt NBA API calls with short timeouts. Missing ${playTypesToFetch.length} play types.`);
+        // Continue to fetch below - don't return early
       }
 
       // In development, continue to fetch from NBA API even if cache is empty
@@ -390,6 +372,47 @@ export async function GET(request: NextRequest) {
         });
       } else {
         console.log(`[Play Type Analysis] ⚠️ No bulk cached data found (or empty/invalid), fetching all from API...`);
+        
+        // Check if we should try fetching or just trigger background cache population
+        const shouldTryFetch = !bypassCache && process.env.NODE_ENV === 'production' 
+          ? playTypesToFetch.length <= 3 // Only try if 3 or fewer play types (to avoid timeout)
+          : true; // Always try in dev
+        
+        if (!shouldTryFetch) {
+          console.log(`[Play Type Analysis] ⚠️ Too many play types to fetch in production (${playTypesToFetch.length}). Triggering background cache population...`);
+          
+          // Trigger background cache population (non-blocking)
+          const host = request.headers.get('host') || 'localhost:3000';
+          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+          const cacheUrl = `${protocol}://${host}/api/play-type-analysis?playerId=${playerId}&season=${season}&bypassCache=true`;
+          
+          // Don't await - let it run in background
+          fetch(cacheUrl).catch(err => {
+            console.warn(`[Play Type Analysis] Background cache population failed:`, err.message);
+          });
+          
+          // Return empty response with loading message
+          const emptyResponse = {
+            playerId: parseInt(playerId),
+            season: seasonStr,
+            opponentTeam: opponentTeam || null,
+            playTypes: PLAY_TYPES.map(({ key, displayName }) => ({
+              playType: key,
+              displayName,
+              points: 0,
+              possessions: 0,
+              ppp: 0,
+              percentage: 0,
+              opponentRank: null,
+            })),
+            totalPoints: 0,
+            error: 'Data is loading in the background. Please refresh in a few moments.',
+            loading: true,
+            cachedAt: new Date().toISOString()
+          };
+          return { response: emptyResponse, cacheStatus: 'MISS' };
+        }
+        
         // Fetch play types SEQUENTIALLY (one at a time) to avoid overwhelming the API
         // This is slower but more reliable - we'll cache partial results as we go
         for (let i = 0; i < playTypesToFetch.length; i++) {
@@ -409,7 +432,9 @@ export async function GET(request: NextRequest) {
 
           const playerUrl = `${NBA_STATS_BASE}/synergyplaytypes?${playerParams.toString()}`;
           
-          const playerData = await fetchNBAStats(playerUrl, 15000); // 15s timeout in dev, 8s in prod
+          // Use shorter timeout in production (8s) to fail fast, longer in dev (15s)
+          const timeout = process.env.NODE_ENV === 'production' ? 8000 : 15000;
+          const playerData = await fetchNBAStats(playerUrl, timeout);
           const playerResultSet = playerData?.resultSets?.[0];
           
           if (!playerResultSet) {
@@ -423,6 +448,21 @@ export async function GET(request: NextRequest) {
           }
         } catch (err: any) {
           console.warn(`[Play Type Analysis] ❌ Error fetching ${key}:`, err.message);
+          
+          // If we're in production and this is one of the first few play types, trigger background cache
+          if (process.env.NODE_ENV === 'production' && i === 0 && !bypassCache) {
+            console.log(`[Play Type Analysis] ⚠️ First play type fetch failed in production. Triggering background cache population...`);
+            
+            const host = request.headers.get('host') || 'localhost:3000';
+            const protocol = 'https';
+            const cacheUrl = `${protocol}://${host}/api/play-type-analysis?playerId=${playerId}&season=${season}&bypassCache=true`;
+            
+            // Don't await - let it run in background
+            fetch(cacheUrl).catch(fetchErr => {
+              console.warn(`[Play Type Analysis] Background cache population failed:`, fetchErr.message);
+            });
+          }
+          
           allResults.push({ status: 'fulfilled' as const, value: { key, success: false, rows: [], headers: [], error: err } });
         }
         

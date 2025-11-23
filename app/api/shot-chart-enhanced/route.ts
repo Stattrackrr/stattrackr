@@ -460,31 +460,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // If no cache and in production (where NBA API is unreachable), return empty data
-    // In development, continue to try fetching from NBA API
-    if (!bypassCache && process.env.NODE_ENV === 'production') {
-      console.log(`[Shot Chart Enhanced] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
-      return NextResponse.json({
-        playerId: nbaPlayerId,
-        originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
-        season: `${season}-${String(season + 1).slice(-2)}`,
-        shotZones: {
-          restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-        },
-        opponentTeam,
-        opponentDefense: null,
-        opponentRankings: null,
-        error: 'NBA API unreachable - data will be available once cache is populated',
-        cachedAt: new Date().toISOString()
-      }, { status: 200 });
-    }
-
-    // In development, continue to fetch from NBA API even if cache is empty
+    // No cache found - try to fetch from NBA API
+    // In production, we'll try with aggressive timeouts, and if it fails, trigger background cache population
     console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season}`);
 
     console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (bypassCache=true)`);
@@ -518,9 +495,53 @@ export async function GET(request: NextRequest) {
     const playerUrl = `${NBA_STATS_BASE}/shotchartdetail?${playerParams.toString()}`;
     console.log(`[Shot Chart Enhanced] Calling NBA API: ${playerUrl}`);
     
-    // Use 20s timeout (leaving 40s buffer for Vercel overhead and retries)
-    const playerData = await fetchNBAStats(playerUrl, 20000);
-    console.log(`[Shot Chart Enhanced] Player data received:`, playerData?.resultSets?.length, 'result sets');
+    // Use shorter timeout in production (8s) to fail fast, longer in dev (20s)
+    const timeout = process.env.NODE_ENV === 'production' ? 8000 : 20000;
+    let playerData;
+    
+    try {
+      playerData = await fetchNBAStats(playerUrl, timeout);
+      console.log(`[Shot Chart Enhanced] Player data received:`, playerData?.resultSets?.length, 'result sets');
+    } catch (error: any) {
+      // If fetch fails in production, trigger background cache population and return empty data
+      if (process.env.NODE_ENV === 'production' && !bypassCache) {
+        console.log(`[Shot Chart Enhanced] ⚠️ NBA API fetch failed in production. Triggering background cache population...`);
+        
+        // Trigger background cache population (non-blocking)
+        const host = request.headers.get('host') || 'localhost:3000';
+        const protocol = 'https';
+        const cacheUrl = `${protocol}://${host}/api/shot-chart-enhanced?playerId=${nbaPlayerId}&season=${season}&bypassCache=true`;
+        
+        // Don't await - let it run in background
+        fetch(cacheUrl).catch(err => {
+          console.warn(`[Shot Chart Enhanced] Background cache population failed:`, err.message);
+        });
+        
+        // Return empty data with loading message
+        return NextResponse.json({
+          playerId: nbaPlayerId,
+          originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
+          season: `${season}-${String(season + 1).slice(-2)}`,
+          shotZones: {
+            restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+            paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+            midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+            leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+            rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+            aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          },
+          opponentTeam,
+          opponentDefense: null,
+          opponentRankings: null,
+          error: 'Data is loading in the background. Please refresh in a few moments.',
+          loading: true,
+          cachedAt: new Date().toISOString()
+        }, { status: 200 });
+      }
+      
+      // In development, re-throw the error
+      throw error;
+    }
 
     if (!playerData?.resultSets) {
       throw new Error('No player shot data available');
