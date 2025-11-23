@@ -4014,13 +4014,21 @@ const ChartControls = function ChartControls({
               {propsMode === 'player' && (
                 <div className="relative" ref={advancedMobileRef}>
                   <button
-                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
+                    onClick={(e) => {
+                      const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      // Position directly below button, centered
+                      setAdvancedFilterTop(buttonRect.bottom + 4); // 4px gap
+                      setIsAdvancedFiltersOpen((v: boolean) => !v);
+                    }}
                     className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
                   >
                     Advanced
                   </button>
-                  {isAdvancedFiltersOpen && (
-                    <div className="fixed left-1/2 -translate-x-1/2 top-20 w-[calc(100vw-2rem)] max-w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                  {isAdvancedFiltersOpen && advancedFilterTop !== null && (
+                    <div 
+                      className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
+                      style={{ top: `${advancedFilterTop}px` }}
+                    >
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
                       <div className="space-y-2">
                         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
