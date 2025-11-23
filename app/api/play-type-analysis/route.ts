@@ -660,6 +660,14 @@ export async function GET(request: NextRequest) {
         
         console.log(`[Play Type Analysis] ✅ Using cached defensive rankings for season ${seasonStr} (${playTypeCount}/${expectedPlayTypes} play types)`);
         console.log(`[Play Type Analysis] Cached play types:`, Object.keys(cachedRankings));
+        console.log(`[Play Type Analysis] Opponent team: ${opponentTeam}`);
+        
+        // Log sample teams from first play type to verify structure
+        const firstPlayType = Object.keys(cachedRankings)[0];
+        if (firstPlayType && cachedRankings[firstPlayType]?.length > 0) {
+          const sampleTeams = cachedRankings[firstPlayType].slice(0, 3).map((r: any) => r.team).join(', ');
+          console.log(`[Play Type Analysis] Sample teams from ${firstPlayType}: ${sampleTeams}`);
+        }
         
         // If cache is incomplete, trigger background retry for missing play types
         if (playTypeCount < expectedPlayTypes && missingPlayTypes.length > 0) {
@@ -680,6 +688,7 @@ export async function GET(request: NextRequest) {
         }
         
         Object.assign(playTypeRankings, cachedRankings);
+        console.log(`[Play Type Analysis] Loaded ${Object.keys(playTypeRankings).length} play type rankings into memory`);
       } else {
         // No cached rankings - trigger background fetch (non-blocking)
         // This will populate the cache for future requests
@@ -820,17 +829,25 @@ export async function GET(request: NextRequest) {
 
       // Get opponent rank if opponent team is specified
       let oppRank: number | null = null;
-      if (opponentTeam && opponentTeam !== 'N/A' && playTypeRankings[key]) {
-        const normalizedOpponent = opponentTeam.toUpperCase();
-        const ranking = playTypeRankings[key].findIndex(r => r.team.toUpperCase() === normalizedOpponent);
-        oppRank = ranking >= 0 ? ranking + 1 : null;
-        if (oppRank) {
-          console.log(`[Play Type Analysis] ✅ ${key}: ${opponentTeam} rank = ${oppRank} (out of ${playTypeRankings[key].length} teams)`);
+      if (opponentTeam && opponentTeam !== 'N/A') {
+        if (playTypeRankings[key]) {
+          const normalizedOpponent = opponentTeam.toUpperCase();
+          const ranking = playTypeRankings[key].findIndex(r => r.team.toUpperCase() === normalizedOpponent);
+          oppRank = ranking >= 0 ? ranking + 1 : null;
+          if (oppRank) {
+            console.log(`[Play Type Analysis] ✅ ${key}: ${opponentTeam} rank = ${oppRank} (out of ${playTypeRankings[key].length} teams)`);
+          } else {
+            // Log available teams for debugging
+            const availableTeams = playTypeRankings[key].slice(0, 5).map(r => r.team).join(', ');
+            console.log(`[Play Type Analysis] ⚠️ ${key}: ${opponentTeam} not found in rankings (${playTypeRankings[key].length} teams available, sample: ${availableTeams})`);
+            console.log(`[Play Type Analysis] ⚠️ Looking for: "${normalizedOpponent}", available teams:`, playTypeRankings[key].map(r => r.team.toUpperCase()));
+          }
         } else {
-          console.log(`[Play Type Analysis] ⚠️ ${key}: ${opponentTeam} not found in rankings (${playTypeRankings[key].length} teams available)`);
+          // Check if rankings exist at all
+          const hasAnyRankings = Object.keys(playTypeRankings).length > 0;
+          const availablePlayTypes = Object.keys(playTypeRankings);
+          console.log(`[Play Type Analysis] ⚠️ ${key}: No rankings available for this play type. Has rankings: ${hasAnyRankings}, Available play types: ${availablePlayTypes.join(', ')}`);
         }
-      } else if (opponentTeam && opponentTeam !== 'N/A') {
-        console.log(`[Play Type Analysis] ⚠️ ${key}: No rankings available for this play type`);
       }
 
       const result = {
