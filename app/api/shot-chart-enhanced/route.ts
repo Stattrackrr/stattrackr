@@ -351,6 +351,15 @@ export async function GET(request: NextRequest) {
       cached = cache.get<any>(cacheKey);
     }
     
+    // Also check for cache without opponent team (in case opponent-specific cache doesn't exist)
+    if (!cached && !bypassCache && opponentTeam && opponentTeam !== 'N/A') {
+      const cacheKeyNoOpponent = `shot_enhanced_${nbaPlayerId}_none_${season}`;
+      cached = await getNBACache<any>(cacheKeyNoOpponent);
+      if (!cached) {
+        cached = cache.get<any>(cacheKeyNoOpponent);
+      }
+    }
+    
     if (cached) {
       console.log(`[Shot Chart Enhanced] ✅ Cache hit for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
         restrictedArea: cached.shotZones?.restrictedArea?.fga || 0,
@@ -503,44 +512,84 @@ export async function GET(request: NextRequest) {
       playerData = await fetchNBAStats(playerUrl, timeout);
       console.log(`[Shot Chart Enhanced] Player data received:`, playerData?.resultSets?.length, 'result sets');
     } catch (error: any) {
-      // If fetch fails in production, trigger background cache population and return empty data
-      if (process.env.NODE_ENV === 'production' && !bypassCache) {
-        console.log(`[Shot Chart Enhanced] ⚠️ NBA API fetch failed in production. Triggering background cache population...`);
+      console.error(`[Shot Chart Enhanced] NBA API fetch error:`, error.message);
+      
+      // If fetch fails, check if we have any cached data (even expired) to return
+      // Query Supabase directly to get expired cache
+      try {
+        const { getNBACache } = await import('@/lib/nbaCache');
+        const { createClient } = await import('@supabase/supabase-js');
         
-        // Trigger background cache population (non-blocking)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          
+          // Get cache even if expired
+          const { data: staleData } = await supabaseAdmin
+            .from('nba_api_cache')
+            .select('data')
+            .eq('cache_key', cacheKey)
+            .single();
+          
+          if (staleData?.data && staleData.data.shotZones) {
+            console.log(`[Shot Chart Enhanced] ⚠️ Returning stale cached data due to API failure`);
+            return NextResponse.json({
+              ...staleData.data,
+              error: 'Using cached data - fresh data unavailable',
+              stale: true
+            }, { status: 200 });
+          }
+        }
+      } catch (staleError) {
+        console.warn(`[Shot Chart Enhanced] Could not retrieve stale cache:`, staleError);
+      }
+      
+      // If fetch fails in production, try to trigger background cache population
+      if (process.env.NODE_ENV === 'production' && !bypassCache) {
+        console.log(`[Shot Chart Enhanced] ⚠️ NBA API fetch failed in production. Attempting background cache population...`);
+        
+        // Try to trigger background cache population (non-blocking)
+        // Use a separate endpoint or queue system if available
         const host = request.headers.get('host') || 'localhost:3000';
         const protocol = 'https';
         const cacheUrl = `${protocol}://${host}/api/shot-chart-enhanced?playerId=${nbaPlayerId}&season=${season}&bypassCache=true`;
         
-        // Don't await - let it run in background
-        fetch(cacheUrl).catch(err => {
+        // Don't await - let it run in background (may also fail, but worth trying)
+        fetch(cacheUrl, { 
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' }
+        }).catch(err => {
           console.warn(`[Shot Chart Enhanced] Background cache population failed:`, err.message);
         });
-        
-        // Return empty data with loading message
-        return NextResponse.json({
-          playerId: nbaPlayerId,
-          originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
-          season: `${season}-${String(season + 1).slice(-2)}`,
-          shotZones: {
-            restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-            paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-            midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-            leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-            rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-            aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
-          },
-          opponentTeam,
-          opponentDefense: null,
-          opponentRankings: null,
-          error: 'Data is loading in the background. Please refresh in a few moments.',
-          loading: true,
-          cachedAt: new Date().toISOString()
-        }, { status: 200 });
       }
       
-      // In development, re-throw the error
-      throw error;
+      // Return empty data - component will show 0% but at least won't crash
+      // The daily cron job should populate cache eventually
+      return NextResponse.json({
+        playerId: nbaPlayerId,
+        originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
+        season: `${season}-${String(season + 1).slice(-2)}`,
+        shotZones: {
+          restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+        },
+        opponentTeam,
+        opponentDefense: null,
+        opponentRankings: null,
+        error: process.env.NODE_ENV === 'production' 
+          ? 'NBA API unreachable from production. Data will be available once the daily cache refresh runs.'
+          : error.message,
+        loading: false,
+        cachedAt: new Date().toISOString()
+      }, { status: 200 });
     }
 
     if (!playerData?.resultSets) {
