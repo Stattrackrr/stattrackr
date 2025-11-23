@@ -1,0 +1,296 @@
+// app/api/cron/refresh-nba-stats/route.ts
+/**
+ * Daily NBA Stats Refresh Cron Job
+ * Runs daily to refresh stale NBA API cache entries
+ * 
+ * Schedule: Daily at 3 AM ET (8 AM UTC) - after NBA games are finalized
+ * Configured in vercel.json
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
+import { cache, CACHE_TTL } from '@/lib/cache';
+
+export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes for cron job
+
+const NBA_STATS_BASE = 'https://stats.nba.com/stats';
+
+const NBA_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Referer': 'https://www.nba.com/stats/',
+  'Origin': 'https://www.nba.com',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+  'x-nba-stats-origin': 'stats',
+  'x-nba-stats-token': 'true',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-origin',
+  'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not=A?Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+};
+
+// NBA Team ID mapping
+const NBA_TEAM_IDS: Record<string, string> = {
+  'ATL': '1610612737', 'BOS': '1610612738', 'BKN': '1610612751', 'CHA': '1610612766',
+  'CHI': '1610612741', 'CLE': '1610612739', 'DAL': '1610612742', 'DEN': '1610612743',
+  'DET': '1610612765', 'GSW': '1610612744', 'HOU': '1610612745', 'IND': '1610612754',
+  'LAC': '1610612746', 'LAL': '1610612747', 'MEM': '1610612763', 'MIA': '1610612748',
+  'MIL': '1610612749', 'MIN': '1610612750', 'NOP': '1610612740', 'NYK': '1610612752',
+  'OKC': '1610612760', 'ORL': '1610612753', 'PHI': '1610612755', 'PHX': '1610612756',
+  'POR': '1610612757', 'SAC': '1610612758', 'SAS': '1610612759', 'TOR': '1610612761',
+  'UTA': '1610612762', 'WAS': '1610612764'
+};
+
+const NBA_TEAMS = Object.keys(NBA_TEAM_IDS);
+
+async function fetchNBAStats(url: string, timeout = 20000): Promise<any> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      headers: NBA_HEADERS,
+      signal: controller.signal,
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`NBA API ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * Check if cache entry is stale (older than 24 hours)
+ */
+function isStale(updatedAt: string | undefined): boolean {
+  if (!updatedAt) return true;
+  const age = Date.now() - new Date(updatedAt).getTime();
+  return age > (24 * 60 * 60 * 1000); // 24 hours
+}
+
+/**
+ * Refresh tracking stats for a team
+ */
+async function refreshTeamTrackingStats(
+  team: string,
+  season: number,
+  category: 'passing' | 'rebounding',
+  opponentTeam: string | null = null
+): Promise<{ success: boolean; changed: boolean; error?: string }> {
+  try {
+    const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+    const cacheKey = opponentTeam 
+      ? `tracking_stats_${team.toUpperCase()}_${season}_${category}_vs_${opponentTeam.toUpperCase()}`
+      : `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
+
+    // Check if stale
+    const cached = await getNBACache<any>(cacheKey);
+    const cacheMetadata = cached?.__cache_metadata;
+    
+    if (cached && !isStale(cacheMetadata?.updated_at)) {
+      return { success: true, changed: false }; // Not stale, skip
+    }
+
+    // Fetch new data
+    const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
+    const opponentTeamId = opponentTeam && NBA_TEAM_IDS[opponentTeam] 
+      ? NBA_TEAM_IDS[opponentTeam] 
+      : "0";
+    
+    const params = new URLSearchParams({
+      College: "",
+      Conference: "",
+      Country: "",
+      DateFrom: "",
+      DateTo: "",
+      Division: "",
+      DraftPick: "",
+      DraftYear: "",
+      GameScope: "",
+      Height: "",
+      LastNGames: "0",
+      LeagueID: "00",
+      Location: "",
+      Month: "0",
+      OpponentTeamID: opponentTeamId,
+      Outcome: "",
+      PORound: "0",
+      PerMode: "PerGame",
+      PlayerExperience: "",
+      PlayerOrTeam: "Player",
+      PlayerPosition: "",
+      PtMeasureType: ptMeasureType,
+      Season: seasonStr,
+      SeasonSegment: "",
+      SeasonType: "Regular Season",
+      StarterBench: "",
+      TeamID: "0",
+      VsConference: "",
+      VsDivision: "",
+      Weight: "",
+    });
+
+    const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
+    const data = await fetchNBAStats(url, 30000); // 30s timeout for cron
+
+    if (!data?.resultSets?.[0]) {
+      return { success: false, changed: false, error: 'No resultSets' };
+    }
+
+    const resultSet = data.resultSets[0];
+    const headers = resultSet.headers || [];
+    const rows = resultSet.rowSet || [];
+
+    const playerIdIdx = headers.indexOf('PLAYER_ID');
+    const playerNameIdx = headers.indexOf('PLAYER_NAME');
+    const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
+
+    if (playerIdIdx === -1 || playerNameIdx === -1) {
+      return { success: false, changed: false, error: 'Missing columns' };
+    }
+
+    const teamPlayers = rows
+      .filter((row: any[]) => row[teamAbbrIdx] === team)
+      .map((row: any[]) => {
+        const stats: any = {};
+        headers.forEach((header: string, idx: number) => {
+          stats[header] = row[idx];
+        });
+
+        const player: any = {
+          playerId: String(stats.PLAYER_ID),
+          playerName: stats.PLAYER_NAME,
+          gp: stats.GP || 0,
+        };
+
+        if (category === 'passing') {
+          player.potentialAst = stats.POTENTIAL_AST;
+          player.ast = stats.AST_ADJ || stats.AST;
+          player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+          player.passesMade = stats.PASSES_MADE;
+          player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+        } else {
+          player.rebChances = stats.REB_CHANCES;
+          player.reb = stats.REB;
+          player.rebChancePct = stats.REB_CHANCE_PCT;
+          player.rebContest = stats.REB_CONTEST;
+          player.rebUncontest = stats.REB_UNCONTEST;
+          player.avgRebDist = stats.AVG_REB_DIST;
+          player.drebChances = stats.DREB_CHANCES;
+          player.drebChancePct = stats.DREB_CHANCE_PCT;
+          player.avgDrebDist = stats.AVG_DREB_DIST;
+        }
+
+        return player;
+      });
+
+    const newPayload = { 
+      team,
+      season: seasonStr,
+      category,
+      players: teamPlayers,
+      opponentTeam: opponentTeam || undefined,
+      cachedAt: new Date().toISOString()
+    };
+
+    // Compare with old data
+    const hasChanged = !cached || JSON.stringify(cached) !== JSON.stringify(newPayload);
+    
+    // Update cache
+    await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
+    cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+
+    return { success: true, changed: hasChanged };
+  } catch (error: any) {
+    return { success: false, changed: false, error: error.message };
+  }
+}
+
+export async function GET(request: NextRequest) {
+  // Verify cron secret (optional but recommended)
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const startTime = Date.now();
+  const currentSeason = 2025; // TODO: Make dynamic based on current date
+  const results = {
+    total: 0,
+    refreshed: 0,
+    changed: 0,
+    skipped: 0,
+    errors: 0,
+    details: [] as Array<{ team: string; category: string; status: string; error?: string }>
+  };
+
+  try {
+    console.log('[NBA Stats Refresh] Starting daily refresh...');
+
+    // Refresh all teams' tracking stats (passing and rebounding)
+    for (const team of NBA_TEAMS) {
+      for (const category of ['passing', 'rebounding'] as const) {
+        results.total++;
+        
+        const result = await refreshTeamTrackingStats(team, currentSeason, category);
+        
+        if (result.success) {
+          if (result.changed) {
+            results.changed++;
+            results.refreshed++;
+            results.details.push({ team, category, status: 'updated' });
+          } else {
+            results.skipped++;
+            results.details.push({ team, category, status: 'skipped (not stale or no changes)' });
+          }
+        } else {
+          results.errors++;
+          results.details.push({ team, category, status: 'error', error: result.error });
+        }
+
+        // Small delay to avoid overwhelming API
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log(`[NBA Stats Refresh] Complete: ${results.refreshed} refreshed, ${results.changed} changed, ${results.skipped} skipped, ${results.errors} errors (${duration}s)`);
+
+    return NextResponse.json({
+      success: true,
+      message: 'NBA stats refresh complete',
+      results: {
+        ...results,
+        duration: `${duration}s`
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('[NBA Stats Refresh] Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      results,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
+}
+
