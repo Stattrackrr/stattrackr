@@ -291,6 +291,40 @@ export async function GET(request: NextRequest) {
       console.log('[NBA Stats Refresh] Bulk play type cache is fresh');
     }
 
+    // Refresh defensive rankings cache (play type and zone rankings)
+    console.log('[NBA Stats Refresh] Triggering defensive rankings cache refresh...');
+    try {
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const cacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${currentSeason}`;
+      
+      // Trigger in background (non-blocking - this takes 2-3 minutes)
+      fetch(cacheUrl).then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[NBA Stats Refresh] ✅ Defensive rankings cache refreshed:', data.summary);
+        } else {
+          console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh failed:', response.status);
+        }
+      }).catch((err) => {
+        console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh error:', err.message);
+      });
+      
+      results.details.push({ 
+        team: 'DEFENSIVE_RANKINGS', 
+        category: 'play_type_rankings', 
+        status: 'triggered_in_background' 
+      });
+    } catch (err: any) {
+      console.error('[NBA Stats Refresh] Error triggering defensive rankings refresh:', err);
+      results.details.push({ 
+        team: 'DEFENSIVE_RANKINGS', 
+        category: 'play_type_rankings', 
+        status: 'error', 
+        error: err.message 
+      });
+    }
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log(`[NBA Stats Refresh] Complete: ${results.refreshed} refreshed, ${results.changed} changed, ${results.skipped} skipped, ${results.errors} errors (${duration}s)`);
