@@ -188,6 +188,7 @@ export async function GET(request: NextRequest) {
 
       // In development, continue to fetch from NBA API even if cache is empty
       if (!forceRefresh) {
+        const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
         console.log(`[Team Tracking Stats] No cache found, fetching from NBA API for ${team} ${category}${filterSuffix}, season ${season}`);
       }
     }
