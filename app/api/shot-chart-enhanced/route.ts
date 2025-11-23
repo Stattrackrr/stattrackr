@@ -392,12 +392,12 @@ export async function GET(request: NextRequest) {
     // This is optional - if it fails, we'll just not show rankings
     let defenseRankings = null;
     try {
-      const rankingsCacheKey = `defense_rankings_${season}`;
-      const cachedRankings = cache.get(rankingsCacheKey);
+      const rankingsCacheKey = `team_defense_rankings_${season}`;
+      const cachedRankings = cache.get<any>(rankingsCacheKey);
       
-      if (cachedRankings) {
+      if (cachedRankings?.rankings) {
         console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings`);
-        defenseRankings = cachedRankings;
+        defenseRankings = cachedRankings.rankings;
       } else {
         console.log(`[Shot Chart Enhanced] Fetching defense rankings for all 30 teams...`);
         const host = request.headers.get('host') || 'localhost:3000';
@@ -415,7 +415,8 @@ export async function GET(request: NextRequest) {
           if (rankingsResponse.ok) {
             const rankingsData = await rankingsResponse.json();
             defenseRankings = rankingsData.rankings;
-            cache.set(rankingsCacheKey, defenseRankings, 1440); // Cache for 24h
+            // Cache the full response (not just rankings) to match the API's cache format
+            cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
             console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
           } else {
             console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
