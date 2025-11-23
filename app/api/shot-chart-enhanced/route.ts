@@ -213,6 +213,61 @@ export async function GET(request: NextRequest) {
         rightCorner3: cached.shotZones?.rightCorner3?.fga || 0,
         aboveBreak3: cached.shotZones?.aboveBreak3?.fga || 0,
       });
+      
+      // If opponent team is provided, fetch defensive rankings even on cache hit
+      // (rankings are opponent-specific, so they may not be in the cached response)
+      if (opponentTeam && opponentTeam !== 'N/A') {
+        let defenseRankings = null;
+        try {
+          const rankingsCacheKey = `team_defense_rankings_${season}`;
+          const cachedRankings = cache.get<any>(rankingsCacheKey);
+          
+          if (cachedRankings?.rankings) {
+            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings`);
+            defenseRankings = cachedRankings.rankings;
+          } else {
+            console.log(`[Shot Chart Enhanced] Fetching defense rankings for all 30 teams...`);
+            const host = request.headers.get('host') || 'localhost:3000';
+            const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+            const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+            
+            // Add 10 second timeout for rankings fetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            try {
+              const rankingsResponse = await fetch(rankingsUrl, { signal: controller.signal });
+              clearTimeout(timeoutId);
+              
+              if (rankingsResponse.ok) {
+                const rankingsData = await rankingsResponse.json();
+                defenseRankings = rankingsData.rankings;
+                cache.set(rankingsCacheKey, rankingsData, 1440); // Cache for 24h
+                console.log(`[Shot Chart Enhanced] ✅ Fetched rankings for ${Object.keys(defenseRankings || {}).length} teams`);
+              } else {
+                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings API returned ${rankingsResponse.status}`);
+              }
+            } catch (fetchErr: any) {
+              clearTimeout(timeoutId);
+              if (fetchErr.name === 'AbortError') {
+                console.warn(`[Shot Chart Enhanced] ⚠️ Rankings fetch timed out - continuing without rankings`);
+              } else {
+                console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching rankings:`, fetchErr.message);
+              }
+            }
+          }
+          
+          // Add opponent rankings to cached response
+          if (defenseRankings && defenseRankings[opponentTeam]) {
+            cached.opponentRankings = defenseRankings[opponentTeam];
+            cached.opponentTeam = opponentTeam; // Ensure opponentTeam is set
+            console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam} to cached response`);
+          }
+        } catch (err) {
+          console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
+        }
+      }
+      
       return NextResponse.json(cached, {
         status: 200,
         headers: { 'X-Cache-Status': 'HIT' }
