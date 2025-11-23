@@ -464,9 +464,36 @@ export async function GET(request: NextRequest) {
                 return rowPlayerId === playerIdNum || String(rowPlayerId) === String(nbaPlayerId);
               });
               
-              // If we have player name, also filter by name to ensure we have the right player
-              // This helps catch cases where player ID might match multiple players (shouldn't happen, but safety check)
-              if (matchedRows.length > 0 && playerName && playerNameIdx >= 0) {
+              // If ID match failed but we have player name, try matching by name as fallback
+              // This handles cases where getNbaStatsId failed and we still have BDL ID
+              if (matchedRows.length === 0 && playerName && playerNameIdx >= 0) {
+                console.log(`[Play Type Analysis] ${key}: ID match failed (looking for ${nbaPlayerId}), trying name match: ${playerName}`);
+                const nameParts = playerName.toLowerCase().split(' ').filter(p => p.length > 1);
+                matchedRows = rows.filter((row: any[]) => {
+                  const rowName = String(row[playerNameIdx] || '').toLowerCase();
+                  return nameParts.every(part => rowName.includes(part));
+                });
+                
+                if (matchedRows.length > 0) {
+                  // If we found by name, also check team if available
+                  if (playerTeamAbbr && teamAbbrIdx >= 0) {
+                    const teamFiltered = matchedRows.filter((row: any[]) => {
+                      const rowTeam = String(row[teamAbbrIdx] || '').toUpperCase();
+                      return rowTeam === playerTeamAbbr.toUpperCase();
+                    });
+                    if (teamFiltered.length > 0) {
+                      matchedRows = teamFiltered;
+                      console.log(`[Play Type Analysis] ${key}: Found by name+team: ${matchedRows.length} matches`);
+                    } else {
+                      console.log(`[Play Type Analysis] ${key}: Found by name only: ${matchedRows.length} matches`);
+                    }
+                  } else {
+                    console.log(`[Play Type Analysis] ${key}: Found by name only: ${matchedRows.length} matches`);
+                  }
+                }
+              } else if (matchedRows.length > 0 && playerName && playerNameIdx >= 0) {
+                // If we have player name, also filter by name to ensure we have the right player
+                // This helps catch cases where player ID might match multiple players (shouldn't happen, but safety check)
                 const nameParts = playerName.toLowerCase().split(' ').filter(p => p.length > 1);
                 const nameFiltered = matchedRows.filter((row: any[]) => {
                   const rowName = String(row[playerNameIdx] || '').toLowerCase();
@@ -478,9 +505,27 @@ export async function GET(request: NextRequest) {
                   console.log(`[Play Type Analysis] ${key}: Filtered by name from ${matchedRows.length + nameFiltered.length - matchedRows.length} to ${matchedRows.length} matches`);
                 }
               }
+            } else if (playerName && playerNameIdx >= 0) {
+              // Fallback: if we don't have player ID, try matching by name
+              console.warn(`[Play Type Analysis] ${key}: No player ID available, trying name match: ${playerName}`);
+              const nameParts = playerName.toLowerCase().split(' ').filter(p => p.length > 1);
+              matchedRows = rows.filter((row: any[]) => {
+                const rowName = String(row[playerNameIdx] || '').toLowerCase();
+                return nameParts.every(part => rowName.includes(part));
+              });
+              
+              if (matchedRows.length > 0 && playerTeamAbbr && teamAbbrIdx >= 0) {
+                const teamFiltered = matchedRows.filter((row: any[]) => {
+                  const rowTeam = String(row[teamAbbrIdx] || '').toUpperCase();
+                  return rowTeam === playerTeamAbbr.toUpperCase();
+                });
+                if (teamFiltered.length > 0) {
+                  matchedRows = teamFiltered;
+                }
+              }
             } else {
-              // If we don't have player ID, we can't reliably match - log warning
-              console.warn(`[Play Type Analysis] ${key}: No player ID available, cannot filter rows`);
+              // If we don't have player ID or name, we can't reliably match - log warning
+              console.warn(`[Play Type Analysis] ${key}: No player ID or name available, cannot filter rows`);
             }
             
             // Log matching results
