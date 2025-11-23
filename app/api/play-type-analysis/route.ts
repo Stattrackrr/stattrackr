@@ -144,6 +144,9 @@ export async function GET(request: NextRequest) {
     // Check cache unless bypassed
     // We'll use cached data for play types with values > 0, and retry 0.0 values
     let cachedData: any = null;
+    let zeroValuePlayTypes: any[] = [];
+    let hasFreeThrows = false;
+    
     if (!bypassCache) {
       // Try Supabase cache first (persistent, shared across instances)
       cachedData = await getNBACache<any>(cacheKey);
@@ -155,9 +158,9 @@ export async function GET(request: NextRequest) {
       if (cachedData) {
         console.log(`[Play Type Analysis] ✅ Found cached data for player ${playerId}, playTypes count: ${cachedData.playTypes?.length || 0}`);
         // Check if we have any play types with 0.0 that need retrying
-        const zeroValuePlayTypes = cachedData.playTypes?.filter((pt: any) => pt.points === 0) || [];
+        zeroValuePlayTypes = cachedData.playTypes?.filter((pt: any) => pt.points === 0) || [];
         // Check if FreeThrows is missing (old cache won't have it)
-        const hasFreeThrows = cachedData.playTypes?.some((pt: any) => pt.playType === 'FreeThrows' || pt.playType === 'Free Throws') || false;
+        hasFreeThrows = cachedData.playTypes?.some((pt: any) => pt.playType === 'FreeThrows' || pt.playType === 'Free Throws') || false;
         
         if (zeroValuePlayTypes.length === 0 && hasFreeThrows) {
           // All play types have values and FreeThrows exists
@@ -355,7 +358,7 @@ export async function GET(request: NextRequest) {
     console.log(`[Play Type Analysis] Bulk cache check: exists=${!!bulkPlayerData}, keys=${bulkPlayerData ? Object.keys(bulkPlayerData).length : 0}, hasValidData=${hasValidBulkCache}, bypassCache=${bypassCache}`);
     
     if (hasValidBulkCache && !bypassCache) {
-      console.log(`[Play Type Analysis] ✅ Using bulk cached player play type data (${Object.keys(bulkPlayerData).length} play types cached)`);
+      console.log(`[Play Type Analysis] ✅ Using bulk cached player play type data (${bulkPlayerData ? Object.keys(bulkPlayerData).length : 0} play types cached)`);
       // Use cached bulk data - filter by play types we need
       playTypesToFetch.forEach((key) => {
         const cachedPlayTypeData = bulkPlayerData![key];
