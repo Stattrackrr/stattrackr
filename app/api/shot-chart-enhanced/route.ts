@@ -366,15 +366,30 @@ export async function GET(request: NextRequest) {
         let defenseRankings = null;
         try {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
-          const cachedRankings = cache.get<any>(rankingsCacheKey);
+          // Try Supabase cache first (persistent, shared across instances)
+          let cachedRankings = await getNBACache<any>(rankingsCacheKey);
           
-          if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
-            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
-            defenseRankings = cachedRankings.rankings;
+          // Fallback to in-memory cache
+          if (!cachedRankings) {
+            cachedRankings = cache.get<any>(rankingsCacheKey);
+          }
+          
+          // Handle both formats: direct rankings object or wrapped in rankings property
+          const rankings = cachedRankings?.rankings || cachedRankings;
+          
+          if (rankings && Object.keys(rankings).length > 0) {
+            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
+            defenseRankings = rankings;
           } else {
             // Check for single team stats cache (without rank, but still useful)
             const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
-            const singleTeamStats = cache.get<any>(singleTeamCacheKey);
+            // Try Supabase cache first
+            let singleTeamStats = await getNBACache<any>(singleTeamCacheKey);
+            
+            // Fallback to in-memory cache
+            if (!singleTeamStats) {
+              singleTeamStats = cache.get<any>(singleTeamCacheKey);
+            }
             
             if (singleTeamStats) {
               console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
@@ -616,17 +631,32 @@ export async function GET(request: NextRequest) {
     // Fetch league-wide defense rankings (all 30 teams)
     // This is optional - if it fails, we'll just not show rankings
     let defenseRankings = null;
-    try {
-      const rankingsCacheKey = `team_defense_rankings_${season}`;
-      const cachedRankings = cache.get<any>(rankingsCacheKey);
-      
-      if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
-        console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
-        defenseRankings = cachedRankings.rankings;
-      } else if (opponentTeam && opponentTeam !== 'N/A') {
-        // Check for single team stats cache (without rank, but still useful)
-        const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
-        const singleTeamStats = cache.get<any>(singleTeamCacheKey);
+      try {
+        const rankingsCacheKey = `team_defense_rankings_${season}`;
+        // Try Supabase cache first (persistent, shared across instances)
+        let cachedRankings = await getNBACache<any>(rankingsCacheKey);
+        
+        // Fallback to in-memory cache
+        if (!cachedRankings) {
+          cachedRankings = cache.get<any>(rankingsCacheKey);
+        }
+        
+        // Handle both formats: direct rankings object or wrapped in rankings property
+        const rankings = cachedRankings?.rankings || cachedRankings;
+        
+        if (rankings && Object.keys(rankings).length > 0) {
+          console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
+          defenseRankings = rankings;
+        } else if (opponentTeam && opponentTeam !== 'N/A') {
+          // Check for single team stats cache (without rank, but still useful)
+          const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
+          // Try Supabase cache first
+          let singleTeamStats = await getNBACache<any>(singleTeamCacheKey);
+          
+          // Fallback to in-memory cache
+          if (!singleTeamStats) {
+            singleTeamStats = cache.get<any>(singleTeamCacheKey);
+          }
         
         if (singleTeamStats) {
           console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
