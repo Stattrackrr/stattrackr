@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL } from '@/lib/cache';
+import { setNBACache } from '@/lib/nbaCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -127,7 +128,14 @@ export async function GET(request: NextRequest) {
     if (retry) {
       // Retry mode: check cache and only fetch missing play types
       const playTypeCacheKey = `playtype_defensive_rankings_${seasonStr}`;
-      const existingCache = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+      // Check Supabase cache first (persistent, shared across instances)
+      const { getNBACache } = await import('@/lib/nbaCache');
+      let existingCache = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+      
+      // Fallback to in-memory cache
+      if (!existingCache) {
+        existingCache = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+      }
       
       if (existingCache) {
         // Only fetch play types that are missing from cache
@@ -197,11 +205,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Cache play type rankings
+    // Cache play type rankings (both Supabase and in-memory)
     const playTypeCacheKey = `playtype_defensive_rankings_${seasonStr}`;
-    cache.set(playTypeCacheKey, playTypeRankings, CACHE_TTL.TRACKING_STATS); // 24 hours
+    // Store in Supabase (persistent, shared across instances)
+    await setNBACache(playTypeCacheKey, 'playtype_defensive_rankings', playTypeRankings, CACHE_TTL.TRACKING_STATS);
+    // Also store in-memory for faster access
+    cache.set(playTypeCacheKey, playTypeRankings, CACHE_TTL.TRACKING_STATS);
     results.playTypeRankings = playTypeRankings;
-    console.log(`[NBA League Data Cache] ✅ Cached play type rankings for ${Object.keys(playTypeRankings).length} play types`);
+    console.log(`[NBA League Data Cache] ✅ Cached play type rankings for ${Object.keys(playTypeRankings).length} play types (Supabase + in-memory)`);
 
     // 2. Fetch zone defense rankings (for shot chart)
     console.log(`[NBA League Data Cache] Fetching zone defense rankings...`);
@@ -271,11 +282,14 @@ export async function GET(request: NextRequest) {
       results.errors.push({ type: 'zone', error: err.message });
     }
 
-    // Cache zone rankings
+    // Cache zone rankings (both Supabase and in-memory)
     const zoneCacheKey = `zone_defensive_rankings_${seasonStr}`;
-    cache.set(zoneCacheKey, zoneRankings, CACHE_TTL.TRACKING_STATS); // 24 hours
+    // Store in Supabase (persistent, shared across instances)
+    await setNBACache(zoneCacheKey, 'zone_defensive_rankings', zoneRankings, CACHE_TTL.TRACKING_STATS);
+    // Also store in-memory for faster access
+    cache.set(zoneCacheKey, zoneRankings, CACHE_TTL.TRACKING_STATS);
     results.zoneRankings = zoneRankings;
-    console.log(`[NBA League Data Cache] ✅ Cached zone rankings`);
+    console.log(`[NBA League Data Cache] ✅ Cached zone rankings (Supabase + in-memory)`);
 
     // 3. Fetch all player play type stats (bulk fetch - one call per play type gets all players)
     console.log(`[NBA League Data Cache] Fetching player play type stats (bulk)...`);
@@ -326,9 +340,12 @@ export async function GET(request: NextRequest) {
 
     // Cache player play type data (bulk - all players for all play types)
     const playerPlayTypesCacheKey = `player_playtypes_bulk_${seasonStr}`;
-    cache.set(playerPlayTypesCacheKey, playerPlayTypesData, CACHE_TTL.TRACKING_STATS); // 24 hours
+    // Store in Supabase (persistent, shared across instances)
+    await setNBACache(playerPlayTypesCacheKey, 'play_type_bulk', playerPlayTypesData, CACHE_TTL.TRACKING_STATS);
+    // Also store in-memory for faster access
+    cache.set(playerPlayTypesCacheKey, playerPlayTypesData, CACHE_TTL.TRACKING_STATS);
     results.playerPlayTypes = { playTypesCached: Object.keys(playerPlayTypesData).length, totalPlayers: Object.values(playerPlayTypesData).reduce((sum: number, pt: any) => sum + (pt.rows?.length || 0), 0) };
-    console.log(`[NBA League Data Cache] ✅ Cached player play type data for ${Object.keys(playerPlayTypesData).length} play types`);
+    console.log(`[NBA League Data Cache] ✅ Cached player play type data for ${Object.keys(playerPlayTypesData).length} play types (Supabase + in-memory)`);
 
     console.log(`[NBA League Data Cache] ✅ Background job completed for season ${seasonStr}`);
     
