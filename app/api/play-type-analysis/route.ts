@@ -48,11 +48,11 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Aggressive timeouts: 5s in dev, 8s in production (fail fast, rely on cache)
+  // Timeouts: 15s in dev (NBA API is slow), 8s in production (fail fast, rely on cache)
   // No retries in production, 1 retry max in dev
   const actualTimeout = isProduction 
     ? Math.min(timeout, 8000) // 8s max in production - fail fast
-    : Math.min(timeout, 5000); // 5s max in dev - fail fast
+    : Math.min(timeout, 15000); // 15s max in dev - NBA API can take 10-20s
   const actualRetries = isProduction ? 0 : Math.min(retries, 1); // 0 retries in production, 1 max in dev
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
@@ -383,7 +383,7 @@ export async function GET(request: NextRequest) {
 
           const playerUrl = `${NBA_STATS_BASE}/synergyplaytypes?${playerParams.toString()}`;
           
-          const playerData = await fetchNBAStats(playerUrl, 5000); // 5s timeout in dev, 8s in prod
+          const playerData = await fetchNBAStats(playerUrl, 15000); // 15s timeout in dev, 8s in prod
           const playerResultSet = playerData?.resultSets?.[0];
           
           if (!playerResultSet) {
@@ -400,15 +400,33 @@ export async function GET(request: NextRequest) {
           allResults.push({ status: 'fulfilled' as const, value: { key, success: false, rows: [], headers: [], error: err } });
         }
         
-        // Delay between requests to avoid overwhelming the API (2s delay)
+        // Small delay between requests to avoid overwhelming the API
+        // Reduced to 500ms in dev (was 2s) - NBA API is slow but we can reduce delays
         if (i < playTypesToFetch.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between requests
+          const delay = process.env.NODE_ENV === 'production' ? 2000 : 500; // 500ms in dev, 2s in prod
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
       }
     }
       
       const results = allResults;
+      
+      // Populate bulk cache if we fetched from API (for future requests)
+      if (!hasValidBulkCache && results.length > 0) {
+        const bulkCacheData: Record<string, { headers: string[]; rows: any[] }> = {};
+        results.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value?.success && result.value?.rows?.length > 0) {
+            const { key, rows, headers } = result.value;
+            bulkCacheData[key] = { headers, rows };
+          }
+        });
+        
+        if (Object.keys(bulkCacheData).length > 0) {
+          console.log(`[Play Type Analysis] 💾 Populating bulk cache with ${Object.keys(bulkCacheData).length} play types`);
+          cache.set(bulkPlayerDataCacheKey, bulkCacheData, CACHE_TTL.TRACKING_STATS); // 24 hours
+        }
+      }
       
       // Process results
       let seasonHeaders: string[] = [];
