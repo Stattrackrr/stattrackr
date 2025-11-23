@@ -8063,6 +8063,10 @@ const lineMovementInFlightRef = useRef(false);
     setAdvancedStatsLoading(false);
     setShotDistanceLoading(false);
     
+    // Clear opponent team when switching players to force re-detection
+    console.log(`[Player Select] Clearing opponent team for player switch to: ${player.full}`);
+    setOpponentTeam('N/A');
+    
     try {
       const pid = /^\d+$/.test(String(player.id)) ? String(player.id) : await resolvePlayerId(player.full, player.teamAbbr);
       if (!pid) throw new Error(`Couldn't resolve player id for "${player.full}"`);
@@ -8289,7 +8293,9 @@ const lineMovementInFlightRef = useRef(false);
       
       // Set opponent team based on games schedule
       const opponent = getOpponentTeam(currentTeam, todaysGames);
-      setOpponentTeam(normalizeAbbr(opponent));
+      const normalizedOpponent = normalizeAbbr(opponent);
+      console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (raw: ${opponent})`);
+      setOpponentTeam(normalizedOpponent);
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
       console.log('✅ handlePlayerSelectFromSearch completed successfully');
