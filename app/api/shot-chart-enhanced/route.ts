@@ -371,43 +371,10 @@ export async function GET(request: NextRequest) {
             console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
             defenseRankings = cachedRankings.rankings;
           } else {
-            // No cached rankings - fetch just the opponent team's stats (not all 30 teams!)
-            // Only try to fetch in development - in production, rely on cache (populated by background job)
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`[Shot Chart Enhanced] No cached rankings found, fetching stats for opponent ${opponentTeam} only...`);
-              
-              // Fetch just the opponent team's defensive stats directly
-              const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
-              if (opponentTeamId) {
-                try {
-                  const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-                  const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season);
-                  
-                  if (opponentStats) {
-                    // Create a minimal rankings object with just this team
-                    // We can't calculate rank without all teams, but we can return the stats
-                    defenseRankings = {
-                      [opponentTeam]: {
-                        restrictedArea: opponentStats.restrictedArea,
-                        paint: opponentStats.paint,
-                        midRange: opponentStats.midRange,
-                        leftCorner3: opponentStats.leftCorner3,
-                        rightCorner3: opponentStats.rightCorner3,
-                        aboveBreak3: opponentStats.aboveBreak3,
-                        // No rank since we don't have all teams to compare
-                      }
-                    };
-                    console.log(`[Shot Chart Enhanced] ✅ Fetched defensive stats for ${opponentTeam} (no rank available without all teams)`);
-                  }
-                } catch (fetchErr: any) {
-                  console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching opponent stats:`, fetchErr.message);
-                }
-              } else {
-                console.warn(`[Shot Chart Enhanced] ⚠️ Unknown team abbreviation: ${opponentTeam}`);
-              }
-            } else {
-              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
-            }
+            // No cached rankings - skip fetching (NBA API is too slow/unreliable)
+            // Defensive rankings are optional - shot chart works fine without them
+            console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
+            // Don't fetch - just return without rankings to avoid blocking the response
           }
           
           // Add opponent rankings to cached response
@@ -606,44 +573,13 @@ export async function GET(request: NextRequest) {
       if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
         console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
         defenseRankings = cachedRankings.rankings;
-      } else if (opponentTeam && opponentTeam !== 'N/A') {
-        // No cached rankings - fetch just the opponent team's stats (not all 30 teams!)
-        // Only try to fetch in development - in production, rely on cache (populated by background job)
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Shot Chart Enhanced] No cached rankings found, fetching stats for opponent ${opponentTeam} only...`);
-          
-          // Fetch just the opponent team's defensive stats directly
-          const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
-          if (opponentTeamId) {
-            try {
-              const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-              const opponentStats = await fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season);
-              
-              if (opponentStats) {
-                // Create a minimal rankings object with just this team
-                // We can't calculate rank without all teams, but we can return the stats
-                defenseRankings = {
-                  [opponentTeam]: {
-                    restrictedArea: opponentStats.restrictedArea,
-                    paint: opponentStats.paint,
-                    midRange: opponentStats.midRange,
-                    leftCorner3: opponentStats.leftCorner3,
-                    rightCorner3: opponentStats.rightCorner3,
-                    aboveBreak3: opponentStats.aboveBreak3,
-                    // No rank since we don't have all teams to compare
-                  }
-                };
-                console.log(`[Shot Chart Enhanced] ✅ Fetched defensive stats for ${opponentTeam} (no rank available without all teams)`);
-              }
-            } catch (fetchErr: any) {
-              console.warn(`[Shot Chart Enhanced] ⚠️ Error fetching opponent stats:`, fetchErr.message);
-            }
-          } else {
-            console.warn(`[Shot Chart Enhanced] ⚠️ Unknown team abbreviation: ${opponentTeam}`);
-          }
-        } else {
-          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found in production. Rankings will be populated by background job.`);
+      } else {
+        // No cached rankings - skip fetching (NBA API is too slow/unreliable)
+        // Defensive rankings are optional - shot chart works fine without them
+        if (opponentTeam && opponentTeam !== 'N/A') {
+          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
         }
+        // Don't fetch - just return without rankings to avoid blocking the response
       }
     } catch (err) {
       console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
