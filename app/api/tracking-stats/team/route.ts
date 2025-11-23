@@ -352,21 +352,12 @@ export async function GET(request: NextRequest) {
       const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
       console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category}${filterSuffix} - falling back to API`);
       
-      // If no cache and in production (where NBA API is unreachable), return empty data
-      // In development, continue to try fetching from NBA API
+      // If no cache, try to fetch from NBA API (even in production with short timeout)
+      // If that fails, check for stale cache
       if (!forceRefresh && process.env.NODE_ENV === 'production') {
-        const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-        console.log(`[Team Tracking Stats] ⚠️ No cache available in production. NBA API is unreachable from Vercel. Returning empty data.`);
-        return NextResponse.json({
-          team,
-          season: seasonStr,
-          category,
-          players: [],
-          error: opponentTeam 
-            ? `No stats available for ${team} vs ${opponentTeam} this season. The teams may not have played yet, or the data hasn't been cached.`
-            : 'NBA API unreachable - data will be available once cache is populated',
-          cachedAt: new Date().toISOString()
-        }, { status: 200 });
+        // Try to fetch with short timeout first
+        console.log(`[Team Tracking Stats] ⚠️ No cache available in production. Attempting API fetch with short timeout...`);
+        // Continue to fetch below - don't return early
       }
 
       // In development, continue to fetch from NBA API even if cache is empty
@@ -426,7 +417,76 @@ export async function GET(request: NextRequest) {
     const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
     console.log(`[Team Tracking Stats] Fetching: ${url}`);
 
-    const data = await fetchNBAStats(url);
+    let data;
+    try {
+      data = await fetchNBAStats(url);
+    } catch (error: any) {
+      console.error(`[Team Tracking Stats] NBA API fetch error:`, error.message);
+      
+      // If fetch fails, check if we have any cached data (even expired) to return
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+          
+          // Get cache even if expired (for this specific cache key)
+          const { data: staleData } = await supabaseAdmin
+            .from('nba_api_cache')
+            .select('data')
+            .eq('cache_key', cacheKey)
+            .single();
+          
+          if (staleData?.data && staleData.data.players && Array.isArray(staleData.data.players)) {
+            console.log(`[Team Tracking Stats] ⚠️ Returning stale cached data due to API failure`);
+            return NextResponse.json({
+              ...staleData.data,
+              error: 'Using cached data - fresh data unavailable',
+              stale: true
+            }, { status: 200 });
+          }
+          
+          // Also check for cache without opponent team as fallback
+          if (opponentTeam) {
+            const cacheKeyNoOpponent = `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
+            const { data: staleDataNoOpp } = await supabaseAdmin
+              .from('nba_api_cache')
+              .select('data')
+              .eq('cache_key', cacheKeyNoOpponent)
+              .single();
+            
+            if (staleDataNoOpp?.data && staleDataNoOpp.data.players && Array.isArray(staleDataNoOpp.data.players)) {
+              console.log(`[Team Tracking Stats] ⚠️ Returning stale cached data (without opponent) due to API failure`);
+              return NextResponse.json({
+                ...staleDataNoOpp.data,
+                error: 'Using cached data (all games) - opponent-specific data unavailable',
+                stale: true
+              }, { status: 200 });
+            }
+          }
+        }
+      } catch (staleError) {
+        console.warn(`[Team Tracking Stats] Could not retrieve stale cache:`, staleError);
+      }
+      
+      // If no stale cache, return empty data
+      const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+      return NextResponse.json({
+        team,
+        season: seasonStr,
+        category,
+        players: [],
+        error: opponentTeam 
+          ? `No stats available for ${team} vs ${opponentTeam} this season. The teams may not have played yet, or the data hasn't been cached.`
+          : 'NBA API unreachable - data will be available once cache is populated',
+        cachedAt: new Date().toISOString()
+      }, { status: 200 });
+    }
 
     if (!data?.resultSets?.[0]) {
       console.warn("[Team Tracking Stats] No resultSets in response");
