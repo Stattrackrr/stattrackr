@@ -495,13 +495,6 @@ export async function GET(request: NextRequest) {
         console.error('[NBA Stats Refresh] Error refreshing individual player caches:', err);
       }
     })(); // Immediately invoke async function - runs in background
-      results.details.push({ 
-        team: 'INDIVIDUAL_PLAYER_CACHES', 
-        category: 'shot_charts_and_play_types', 
-        status: 'error', 
-        error: err.message 
-      });
-    }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
