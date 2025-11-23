@@ -1,6 +1,7 @@
 // app/api/tracking-stats/team/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -138,7 +139,14 @@ export async function GET(request: NextRequest) {
     // If no opponent filter, try to serve from cache first
     if (!opponentTeam && !forceRefresh) {
       const cacheKey = getCacheKey.trackingStats(team, season, category);
-      const cached = cache.get<any>(cacheKey);
+      
+      // Try Supabase cache first (persistent, shared across instances)
+      let cached = await getNBACache<any>(cacheKey);
+      
+      // Fallback to in-memory cache
+      if (!cached) {
+        cached = cache.get<any>(cacheKey);
+      }
       
       if (cached) {
         console.log(`[Team Tracking Stats] ✅ Cache hit for ${team} ${category} (season ${season})`);
@@ -294,6 +302,8 @@ export async function GET(request: NextRequest) {
     // Cache the result if no opponent filter (so it can be reused)
     if (!opponentTeam) {
       const cacheKey = getCacheKey.trackingStats(team, season, category);
+      // Store in both Supabase (persistent) and in-memory
+      await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
       cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
       console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category} for ${CACHE_TTL.TRACKING_STATS} minutes`);
     }

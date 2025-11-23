@@ -1,6 +1,7 @@
 // app/api/play-type-analysis/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getNbaStatsId, convertNbaToBdlId } from '@/lib/playerIdMapping';
 
 export const runtime = 'nodejs';
@@ -138,7 +139,13 @@ export async function GET(request: NextRequest) {
     // We'll use cached data for play types with values > 0, and retry 0.0 values
     let cachedData: any = null;
     if (!bypassCache) {
-      cachedData = cache.get<any>(cacheKey);
+      // Try Supabase cache first (persistent, shared across instances)
+      cachedData = await getNBACache<any>(cacheKey);
+      
+      // Fallback to in-memory cache
+      if (!cachedData) {
+        cachedData = cache.get<any>(cacheKey);
+      }
       if (cachedData) {
         // Check if we have any play types with 0.0 that need retrying
         const zeroValuePlayTypes = cachedData.playTypes?.filter((pt: any) => pt.points === 0) || [];
@@ -747,6 +754,8 @@ export async function GET(request: NextRequest) {
     cachedResponse.totalPoints = parseFloat(cachedTotalPoints.toFixed(1));
 
     // Cache only play types with values > 0 (24 hour TTL)
+    // Store in both Supabase (persistent) and in-memory
+    await setNBACache(cacheKey, 'play_type', cachedResponse, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, cachedResponse, CACHE_TTL.TRACKING_STATS);
     const zeroCount = playTypeAnalysis.length - playTypesToCache.length;
     console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);

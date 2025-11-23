@@ -1,6 +1,7 @@
 // app/api/shot-chart-enhanced/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getNbaStatsId } from '@/lib/playerIdMapping';
 
 export const runtime = 'nodejs';
@@ -191,7 +192,14 @@ export async function GET(request: NextRequest) {
 
     // Check cache (unless bypassed) - use NBA ID for cache key
     cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
-    const cached = !bypassCache ? cache.get<any>(cacheKey) : null;
+    
+    // Try Supabase cache first (persistent, shared across instances)
+    let cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
+    
+    // Fallback to in-memory cache
+    if (!cached && !bypassCache) {
+      cached = cache.get<any>(cacheKey);
+    }
     
     if (cached) {
       console.log(`[Shot Chart Enhanced] ✅ Cache hit for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
@@ -442,7 +450,8 @@ export async function GET(request: NextRequest) {
       cachedAt: new Date().toISOString()
     };
 
-    // Cache the result
+    // Cache the result in both Supabase (persistent) and in-memory
+    await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
     
     console.log(`[Shot Chart Enhanced] 💾 Cached response for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
