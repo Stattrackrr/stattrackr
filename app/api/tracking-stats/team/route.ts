@@ -123,6 +123,162 @@ const NBA_TEAM_IDS: Record<string, string> = {
   'UTA': '1610612762', 'WAS': '1610612764'
 };
 
+/**
+ * Deep equality check for comparing old vs new data
+ */
+function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  
+  for (const key of keysA) {
+    if (key === '__cache_metadata') continue; // Skip metadata
+    if (!keysB.includes(key)) return false;
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Refresh tracking stats in background
+ * Fetches new data, compares with old, updates if different
+ */
+async function refreshTrackingStatsInBackground(
+  team: string,
+  season: number,
+  category: string,
+  opponentTeam: string | null,
+  cacheKey: string
+): Promise<void> {
+  try {
+    const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+    const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
+    const opponentTeamId = opponentTeam && NBA_TEAM_IDS[opponentTeam] 
+      ? NBA_TEAM_IDS[opponentTeam] 
+      : "0";
+    
+    const params = new URLSearchParams({
+      College: "",
+      Conference: "",
+      Country: "",
+      DateFrom: "",
+      DateTo: "",
+      Division: "",
+      DraftPick: "",
+      DraftYear: "",
+      GameScope: "",
+      Height: "",
+      LastNGames: "0",
+      LeagueID: "00",
+      Location: "",
+      Month: "0",
+      OpponentTeamID: opponentTeamId,
+      Outcome: "",
+      PORound: "0",
+      PerMode: "PerGame",
+      PlayerExperience: "",
+      PlayerOrTeam: "Player",
+      PlayerPosition: "",
+      PtMeasureType: ptMeasureType,
+      Season: seasonStr,
+      SeasonSegment: "",
+      SeasonType: "Regular Season",
+      StarterBench: "",
+      TeamID: "0",
+      VsConference: "",
+      VsDivision: "",
+      Weight: "",
+    });
+
+    const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
+    const data = await fetchNBAStats(url);
+
+    if (!data?.resultSets?.[0]) {
+      console.warn(`[Team Tracking Stats] Background refresh: No resultSets for ${team} ${category}`);
+      return;
+    }
+
+    const resultSet = data.resultSets[0];
+    const headers = resultSet.headers || [];
+    const rows = resultSet.rowSet || [];
+
+    const playerIdIdx = headers.indexOf('PLAYER_ID');
+    const playerNameIdx = headers.indexOf('PLAYER_NAME');
+    const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
+
+    if (playerIdIdx === -1 || playerNameIdx === -1) {
+      console.warn(`[Team Tracking Stats] Background refresh: Missing columns for ${team} ${category}`);
+      return;
+    }
+
+    const teamPlayers = rows
+      .filter((row: any[]) => row[teamAbbrIdx] === team)
+      .map((row: any[]) => {
+        const stats: any = {};
+        headers.forEach((header: string, idx: number) => {
+          stats[header] = row[idx];
+        });
+
+        const player: any = {
+          playerId: String(stats.PLAYER_ID),
+          playerName: stats.PLAYER_NAME,
+          gp: stats.GP || 0,
+        };
+
+        if (category === 'passing') {
+          player.potentialAst = stats.POTENTIAL_AST;
+          player.ast = stats.AST_ADJ || stats.AST;
+          player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+          player.passesMade = stats.PASSES_MADE;
+          player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+        } else {
+          player.rebChances = stats.REB_CHANCES;
+          player.reb = stats.REB;
+          player.rebChancePct = stats.REB_CHANCE_PCT;
+          player.rebContest = stats.REB_CONTEST;
+          player.rebUncontest = stats.REB_UNCONTEST;
+          player.avgRebDist = stats.AVG_REB_DIST;
+          player.drebChances = stats.DREB_CHANCES;
+          player.drebChancePct = stats.DREB_CHANCE_PCT;
+          player.avgDrebDist = stats.AVG_DREB_DIST;
+        }
+
+        return player;
+      });
+
+    const newPayload = { 
+      team,
+      season: seasonStr,
+      category,
+      players: teamPlayers,
+      opponentTeam: opponentTeam || undefined,
+      cachedAt: new Date().toISOString()
+    };
+
+    // Get old data for comparison
+    const oldCached = await getNBACache<any>(cacheKey);
+    const hasChanged = !oldCached || !deepEqual(oldCached, newPayload);
+    
+    if (hasChanged) {
+      console.log(`[Team Tracking Stats] ✅ Background refresh: New data detected for ${team} ${category}, updating cache...`);
+      await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
+      cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+    } else {
+      console.log(`[Team Tracking Stats] ℹ️ Background refresh: No changes for ${team} ${category}, updating TTL only`);
+      await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
+      cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+    }
+  } catch (error: any) {
+    console.error(`[Team Tracking Stats] Background refresh failed for ${team} ${category}:`, error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -158,12 +314,35 @@ export async function GET(request: NextRequest) {
       
       if (cached) {
         const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
-        console.log(`[Team Tracking Stats] ✅ Cache hit (${cacheSource}) for ${team} ${category}${filterSuffix} (season ${season})`);
+        
+        // Check if data is stale (older than 24 hours for daily updates)
+        const cacheMetadata = (cached as any).__cache_metadata;
+        const isStale = cacheMetadata?.updated_at 
+          ? (Date.now() - new Date(cacheMetadata.updated_at).getTime()) > (24 * 60 * 60 * 1000)
+          : false;
+        
+        // If stale, trigger background refresh but return old data immediately
+        if (isStale && process.env.NODE_ENV !== 'production') {
+          console.log(`[Team Tracking Stats] ⚠️ Cache is stale (older than 24h) for ${team} ${category}${filterSuffix}, refreshing in background...`);
+          
+          // Trigger background refresh (don't await)
+          refreshTrackingStatsInBackground(team, season, category, opponentTeam, cacheKey).catch(err => {
+            console.error(`[Team Tracking Stats] Background refresh failed:`, err);
+          });
+        }
+        
+        // Remove metadata before returning
+        if ((cached as any).__cache_metadata) {
+          delete (cached as any).__cache_metadata;
+        }
+        
+        console.log(`[Team Tracking Stats] ✅ Cache hit (${cacheSource}${isStale ? ', stale' : ''}) for ${team} ${category}${filterSuffix} (season ${season})`);
         return NextResponse.json(cached, {
           status: 200,
           headers: {
-            'X-Cache-Status': 'HIT',
+            'X-Cache-Status': isStale ? 'STALE' : 'HIT',
             'X-Cache-Source': cacheSource,
+            'X-Refresh-In-Progress': isStale ? 'true' : 'false',
             'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' // 24h cache, 48h stale
           }
         });
@@ -319,8 +498,19 @@ export async function GET(request: NextRequest) {
       cachedAt: new Date().toISOString()
     };
 
+    // Check if we have old data to compare
+    const oldCached = await getNBACache<any>(cacheKey);
+    const hasChanged = oldCached && !deepEqual(oldCached, responsePayload);
+    
+    if (hasChanged) {
+      console.log(`[Team Tracking Stats] ✅ New data detected for ${team} ${category}${filterSuffix}, updating cache...`);
+    } else if (oldCached) {
+      console.log(`[Team Tracking Stats] ℹ️ No changes detected for ${team} ${category}${filterSuffix}, updating TTL only`);
+    }
+
     // Cache the result (both all games and opponent-specific)
     // Store in both Supabase (persistent, shared across all users) and in-memory
+    // The upsert will replace old entry, effectively deleting it
     await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
     console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory for ${CACHE_TTL.TRACKING_STATS} minutes (available instantly for all users)`);

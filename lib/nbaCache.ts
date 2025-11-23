@@ -48,7 +48,7 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
   try {
     const { data, error } = await supabaseAdmin
       .from('nba_api_cache')
-      .select('data, expires_at')
+      .select('data, expires_at, updated_at, created_at')
       .eq('cache_key', cacheKey)
       .single();
 
@@ -62,7 +62,7 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     }
 
     // Type assertion for Supabase response
-    const cacheData = data as { data: T; expires_at: string };
+    const cacheData = data as { data: T; expires_at: string; updated_at?: string; created_at?: string };
     
     // Check if expired
     const expiresAt = new Date(cacheData.expires_at);
@@ -75,6 +75,16 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
           .eq('cache_key', cacheKey);
       }
       return null;
+    }
+
+    // Attach metadata to data for refresh checking
+    const dataWithMetadata = cacheData.data;
+    if (dataWithMetadata && typeof dataWithMetadata === 'object') {
+      (dataWithMetadata as any).__cache_metadata = {
+        updated_at: cacheData.updated_at,
+        created_at: cacheData.created_at,
+        expires_at: cacheData.expires_at
+      };
     }
 
     return cacheData.data;
@@ -105,12 +115,14 @@ export async function setNBACache(
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
 
+    const now = new Date();
     const cacheEntry = {
       cache_key: cacheKey,
       cache_type: cacheType,
       data: data,
       expires_at: expiresAt.toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: now.toISOString(),
+      created_at: now.toISOString() // Will be set on insert, updated on upsert
     };
 
     const { error } = await supabaseAdmin
