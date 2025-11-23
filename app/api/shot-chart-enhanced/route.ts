@@ -407,17 +407,20 @@ export async function GET(request: NextRequest) {
                 }
               };
             } else {
-              // No cached rankings or stats - trigger background fetch (non-blocking)
-              // This won't help current request but will populate cache for future requests
-              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Triggering background fetch...`);
+              // No cached rankings or stats - trigger background fetch for ALL teams (non-blocking)
+              // This will populate the all-teams rankings cache with actual ranks (1-30)
+              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Triggering background fetch for all 30 teams to calculate ranks...`);
               
-              // Trigger background fetch without awaiting (non-blocking)
-              const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
-              if (opponentTeamId && process.env.NODE_ENV === 'development') {
-                const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-                // Don't await - let it run in background
-                fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season).catch(err => {
-                  console.warn(`[Shot Chart Enhanced] Background fetch failed for ${opponentTeam}:`, err.message);
+              // Trigger all-teams rankings endpoint in background (non-blocking)
+              // This will calculate ranks by comparing all teams
+              if (process.env.NODE_ENV === 'development') {
+                const host = request.headers.get('host') || 'localhost:3000';
+                const protocol = 'http';
+                const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+                
+                // Don't await - let it run in background (this can take 30-60 seconds)
+                fetch(rankingsUrl).catch(err => {
+                  console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
                 });
               }
             }
@@ -656,17 +659,20 @@ export async function GET(request: NextRequest) {
             }
           };
         } else {
-          // No cached rankings or stats - trigger background fetch (non-blocking)
-          // This won't help current request but will populate cache for future requests
-          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Triggering background fetch...`);
+          // No cached rankings or stats - trigger background fetch for ALL teams (non-blocking)
+          // This will populate the all-teams rankings cache with actual ranks (1-30)
+          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Triggering background fetch for all 30 teams to calculate ranks...`);
           
-          // Trigger background fetch without awaiting (non-blocking)
-          const opponentTeamId = NBA_TEAM_MAP[opponentTeam];
-          if (opponentTeamId && process.env.NODE_ENV === 'development') {
-            const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-            // Don't await - let it run in background
-            fetchSingleTeamDefenseStats(opponentTeam, opponentTeamId, seasonStr, season).catch(err => {
-              console.warn(`[Shot Chart Enhanced] Background fetch failed for ${opponentTeam}:`, err.message);
+          // Trigger all-teams rankings endpoint in background (non-blocking)
+          // This will calculate ranks by comparing all teams
+          if (process.env.NODE_ENV === 'development') {
+            const host = request.headers.get('host') || 'localhost:3000';
+            const protocol = 'http';
+            const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+            
+            // Don't await - let it run in background (this can take 30-60 seconds)
+            fetch(rankingsUrl).catch(err => {
+              console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
             });
           }
         }
