@@ -371,10 +371,45 @@ export async function GET(request: NextRequest) {
             console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
             defenseRankings = cachedRankings.rankings;
           } else {
-            // No cached rankings - skip fetching (NBA API is too slow/unreliable)
-            // Defensive rankings are optional - shot chart works fine without them
-            console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
-            // Don't fetch - just return without rankings to avoid blocking the response
+            // Check for single team stats cache (without rank, but still useful)
+            const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
+            const singleTeamStats = cache.get<any>(singleTeamCacheKey);
+            
+            if (singleTeamStats) {
+              console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
+              // Convert single team stats to rankings format (without rank)
+              defenseRankings = {
+                [opponentTeam]: {
+                  restrictedArea: {
+                    ...singleTeamStats.restrictedArea,
+                    rank: 0 // No rank available without all teams comparison
+                  },
+                  paint: {
+                    ...singleTeamStats.paint,
+                    rank: 0
+                  },
+                  midRange: {
+                    ...singleTeamStats.midRange,
+                    rank: 0
+                  },
+                  leftCorner3: {
+                    ...singleTeamStats.leftCorner3,
+                    rank: 0
+                  },
+                  rightCorner3: {
+                    ...singleTeamStats.rightCorner3,
+                    rank: 0
+                  },
+                  aboveBreak3: {
+                    ...singleTeamStats.aboveBreak3,
+                    rank: 0
+                  }
+                }
+              };
+            } else {
+              // No cached rankings or stats - skip fetching (NBA API is too slow/unreliable)
+              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
+            }
           }
           
           // Add opponent rankings to cached response
@@ -573,13 +608,46 @@ export async function GET(request: NextRequest) {
       if (cachedRankings?.rankings && Object.keys(cachedRankings.rankings).length > 0) {
         console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(cachedRankings.rankings).length} teams)`);
         defenseRankings = cachedRankings.rankings;
-      } else {
-        // No cached rankings - skip fetching (NBA API is too slow/unreliable)
-        // Defensive rankings are optional - shot chart works fine without them
-        if (opponentTeam && opponentTeam !== 'N/A') {
-          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
+      } else if (opponentTeam && opponentTeam !== 'N/A') {
+        // Check for single team stats cache (without rank, but still useful)
+        const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
+        const singleTeamStats = cache.get<any>(singleTeamCacheKey);
+        
+        if (singleTeamStats) {
+          console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
+          // Convert single team stats to rankings format (without rank)
+          defenseRankings = {
+            [opponentTeam]: {
+              restrictedArea: {
+                ...singleTeamStats.restrictedArea,
+                rank: 0 // No rank available without all teams comparison
+              },
+              paint: {
+                ...singleTeamStats.paint,
+                rank: 0
+              },
+              midRange: {
+                ...singleTeamStats.midRange,
+                rank: 0
+              },
+              leftCorner3: {
+                ...singleTeamStats.leftCorner3,
+                rank: 0
+              },
+              rightCorner3: {
+                ...singleTeamStats.rightCorner3,
+                rank: 0
+              },
+              aboveBreak3: {
+                ...singleTeamStats.aboveBreak3,
+                rank: 0
+              }
+            }
+          };
+        } else {
+          // No cached rankings or stats - skip fetching (NBA API is too slow/unreliable)
+          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings or stats found for ${opponentTeam}. Shot chart will return without defensive rankings.`);
         }
-        // Don't fetch - just return without rankings to avoid blocking the response
       }
     } catch (err) {
       console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
