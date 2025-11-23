@@ -90,7 +90,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       // Network errors - retry
       if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNRESET')) {
         lastError = error;
-        if (attempt < retries) {
+        if (attempt < actualRetries) {
           console.log(`[Team Tracking Stats] Network error on attempt ${attempt + 1}: ${error.message}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
