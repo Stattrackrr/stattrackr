@@ -228,17 +228,19 @@ export async function GET(request: NextRequest) {
     || request.headers.get('AUTHORIZATION');
   
   // Also check query parameter as fallback (easier for testing with PowerShell)
-  const { searchParams } = new URL(request.url);
-  const secretFromQuery = searchParams.get('secret');
+  const requestUrl = new URL(request.url);
+  const secretFromQuery = requestUrl.searchParams.get('secret');
   
-  // Debug: Log all headers to see what's being received
+  // Debug: Log all headers and URL details
   const allHeaders: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     allHeaders[key] = value;
   });
+  console.log('[NBA Stats Refresh] Request URL:', request.url);
+  console.log('[NBA Stats Refresh] URL search params:', requestUrl.search);
   console.log('[NBA Stats Refresh] All headers:', Object.keys(allHeaders));
   console.log('[NBA Stats Refresh] Authorization header (get):', authHeader || 'NOT FOUND');
-  console.log('[NBA Stats Refresh] Secret from query:', secretFromQuery ? 'PROVIDED' : 'NOT PROVIDED');
+  console.log('[NBA Stats Refresh] Secret from query:', secretFromQuery ? `PROVIDED (length: ${secretFromQuery.length})` : 'NOT PROVIDED');
   
   // Check if this is a Vercel Cron call (they send x-vercel-cron header)
   const isVercelCron = request.headers.get('x-vercel-cron') === '1';
