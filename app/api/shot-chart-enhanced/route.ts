@@ -278,15 +278,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Auto-convert BallDontLie ID to NBA Stats ID if needed
-    nbaPlayerId = playerId;
     const originalPlayerId = playerId;
     
     // Try to convert any ID format using the smart detection
     console.log(`[Shot Chart Enhanced] Received player ID: ${playerId} (length: ${playerId.length})`);
     
-    // Validate player ID format (should be 6-9 digits for NBA Stats API)
-    if (playerId.length > 9) {
-      console.error(`[Shot Chart Enhanced] ❌ Invalid player ID: ${playerId} (too long, max 9 digits)`);
+    // Convert to NBA Stats ID first (handles BDL IDs and other formats)
+    const converted = getNbaStatsId(playerId);
+    nbaPlayerId = converted || playerId;
+    
+    // Validate NBA Stats ID format (should be 6-10 digits after conversion)
+    // NBA Stats IDs are typically 6-7 digits, but some newer players have longer IDs
+    if (nbaPlayerId.length > 10) {
+      console.error(`[Shot Chart Enhanced] ❌ Invalid player ID: ${playerId} -> ${nbaPlayerId} (too long after conversion, max 10 digits)`);
       return NextResponse.json({
         playerId: playerId,
         season: `${season}-${String(season + 1).slice(-2)}`,
@@ -305,13 +309,10 @@ export async function GET(request: NextRequest) {
       }, { status: 200 });
     }
     
-    const converted = getNbaStatsId(playerId);
-    
     if (converted && converted !== playerId) {
       // Conversion happened
-      nbaPlayerId = converted;
       console.log(`[Shot Chart Enhanced] ✅ Converted ${playerId} → ${nbaPlayerId}`);
-    } else if (converted === playerId) {
+    } else if (converted === playerId || nbaPlayerId === playerId) {
       // Already NBA Stats ID
       console.log(`[Shot Chart Enhanced] ✅ Player ID ${playerId} is already NBA Stats format`);
     } else {

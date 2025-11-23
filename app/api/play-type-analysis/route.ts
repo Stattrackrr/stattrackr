@@ -195,6 +195,14 @@ export async function GET(request: NextRequest) {
       let playerTeamAbbr: string | null = null;
       let playerName: string | null = null;
 
+      // Try to get player name from mapping first (fallback if API fails)
+      const { getPlayerNameFromMapping } = await import('@/lib/playerIdMapping');
+      const mappedName = getPlayerNameFromMapping(playerId) || getPlayerNameFromMapping(nbaPlayerId);
+      if (mappedName) {
+        playerName = mappedName;
+        console.log(`[Play Type Analysis] Got player name from mapping: ${playerName}`);
+      }
+
       try {
         const playerInfoParams = new URLSearchParams({
         LeagueID: '00',
@@ -217,13 +225,23 @@ export async function GET(request: NextRequest) {
           playerTeamAbbr = teamAbbrIdx >= 0 ? row[teamAbbrIdx] : null;
           const firstName = firstNameIdx >= 0 ? row[firstNameIdx] : '';
           const lastName = lastNameIdx >= 0 ? row[lastNameIdx] : '';
-          playerName = `${firstName} ${lastName}`.trim();
+          const apiName = `${firstName} ${lastName}`.trim();
+          
+          // Use API name if available, otherwise keep mapped name
+          if (apiName) {
+            playerName = apiName;
+          }
           
           console.log(`[Play Type Analysis] Player info: ${playerName}, Team: ${playerTeamAbbr}`);
         }
       }
       } catch (err) {
         console.warn(`[Play Type Analysis] Could not fetch player info:`, err);
+        // If we have a mapped name, use it as fallback
+        if (!playerName && mappedName) {
+          playerName = mappedName;
+          console.log(`[Play Type Analysis] Using mapped name as fallback: ${playerName}`);
+        }
       }
 
       // Step 1: Fetch player play type stats
