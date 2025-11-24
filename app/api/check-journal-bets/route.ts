@@ -311,9 +311,20 @@ export async function GET(request: Request) {
   const bypassAuth = isDevelopment && request.headers.get('x-bypass-auth') === 'true';
   
   if (!bypassAuth) {
-    const authResult = authorizeCronRequest(request);
-    if (!authResult.authorized) {
-      return authResult.response;
+    // Check for secret in query parameter (for easier manual triggering)
+    const url = new URL(request.url);
+    const querySecret = url.searchParams.get('secret');
+    const cronSecret = process.env.CRON_SECRET;
+    
+    // If secret provided in query, validate it
+    if (querySecret && cronSecret && querySecret === cronSecret) {
+      // Secret matches, allow request
+    } else {
+      // Otherwise, use standard header-based auth
+      const authResult = authorizeCronRequest(request);
+      if (!authResult.authorized) {
+        return authResult.response;
+      }
     }
 
     const rateResult = checkRateLimit(request, strictRateLimiter);
