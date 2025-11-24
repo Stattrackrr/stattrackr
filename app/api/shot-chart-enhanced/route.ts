@@ -340,6 +340,9 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Shot Chart Enhanced] Request for player ${nbaPlayerId} (original: ${originalPlayerId}), opponent: ${opponentTeam || 'none'}, season: ${season}, bypassCache: ${bypassCache}`);
 
+    // Define seasonStr early so it's available throughout the function
+    const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+
     // Check cache (unless bypassed) - use NBA ID for cache key
     cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
     
@@ -448,22 +451,61 @@ export async function GET(request: NextRequest) {
                 }
               };
             } else {
-              // No cached rankings or stats - trigger background fetch for ALL teams (non-blocking)
-              // This will populate the all-teams rankings cache with actual ranks (1-30)
-              console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Triggering background fetch for all 30 teams to calculate ranks...`);
-              
-              // Trigger all-teams rankings endpoint in background (non-blocking)
-              // This will calculate ranks by comparing all teams
-              // Works in both dev and production - uses Supabase cache if available
-              const host = request.headers.get('host') || 'localhost:3000';
-              const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-              const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-              
-              // Don't await - let it run in background (this can take 30-60 seconds)
-              // In production, this will use Supabase cache if available, avoiding timeouts
-              fetch(rankingsUrl).catch(err => {
-                console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
-              });
+              // No cached rankings or stats - try to fetch single team stats synchronously (faster than all teams)
+              console.log(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Fetching single team defensive stats for ${opponentTeam}...`);
+              try {
+                const singleTeamStats = await fetchSingleTeamDefenseStats(opponentTeam, NBA_TEAM_MAP[opponentTeam], seasonStr, season);
+                if (singleTeamStats) {
+                  console.log(`[Shot Chart Enhanced] ✅ Fetched single team stats for ${opponentTeam}`);
+                  // Convert to rankings format (without rank, but with stats)
+                  defenseRankings = {
+                    [opponentTeam]: {
+                      restrictedArea: {
+                        ...singleTeamStats.restrictedArea,
+                        rank: 0 // No rank available without all teams comparison
+                      },
+                      paint: {
+                        ...singleTeamStats.paint,
+                        rank: 0
+                      },
+                      midRange: {
+                        ...singleTeamStats.midRange,
+                        rank: 0
+                      },
+                      leftCorner3: {
+                        ...singleTeamStats.leftCorner3,
+                        rank: 0
+                      },
+                      rightCorner3: {
+                        ...singleTeamStats.rightCorner3,
+                        rank: 0
+                      },
+                      aboveBreak3: {
+                        ...singleTeamStats.aboveBreak3,
+                        rank: 0
+                      }
+                    }
+                  };
+                } else {
+                  // If single team fetch fails, trigger background fetch for ALL teams (non-blocking)
+                  console.warn(`[Shot Chart Enhanced] ⚠️ Single team fetch failed. Triggering background fetch for all 30 teams...`);
+                  const host = request.headers.get('host') || 'localhost:3000';
+                  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+                  const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+                  fetch(rankingsUrl).catch(err => {
+                    console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
+                  });
+                }
+              } catch (err) {
+                console.error(`[Shot Chart Enhanced] ⚠️ Error fetching single team stats:`, err);
+                // Trigger background fetch as fallback
+                const host = request.headers.get('host') || 'localhost:3000';
+                const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+                const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+                fetch(rankingsUrl).catch(fetchErr => {
+                  console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, fetchErr.message);
+                });
+              }
             }
           }
           
@@ -472,6 +514,8 @@ export async function GET(request: NextRequest) {
             cached.opponentRankings = defenseRankings[opponentTeam];
             cached.opponentTeam = opponentTeam; // Ensure opponentTeam is set
             console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam} to cached response`);
+          } else {
+            console.warn(`[Shot Chart Enhanced] ⚠️ No defensive rankings available for ${opponentTeam}`);
           }
         } catch (err) {
           console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
@@ -489,8 +533,6 @@ export async function GET(request: NextRequest) {
     console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season}`);
 
     console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (bypassCache=true)`);
-
-    const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
 
     // Fetch player shot chart detail (has actual zone data)
     const playerParams = new URLSearchParams({

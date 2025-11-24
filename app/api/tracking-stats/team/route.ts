@@ -312,11 +312,19 @@ export async function GET(request: NextRequest) {
       
       if (cached) {
         // Validate cached data - ensure it has actual player data
-        const hasValidData = cached.players && Array.isArray(cached.players) && cached.players.length > 0;
+        // Note: Some teams might legitimately have no players in certain categories (e.g., rookies, injured players)
+        // So we check if it's a valid structure, not just if it has players
+        const hasValidStructure = cached.players && Array.isArray(cached.players);
+        const hasPlayers = hasValidStructure && cached.players.length > 0;
         
-        if (!hasValidData) {
-          console.log(`[Team Tracking Stats] ⚠️ Cached data has no players, treating as invalid cache. Fetching fresh data...`);
+        if (!hasValidStructure) {
+          console.log(`[Team Tracking Stats] ⚠️ Cached data has invalid structure (missing players array), treating as invalid cache. Fetching fresh data...`);
           cached = null; // Treat as cache miss
+        } else if (!hasPlayers) {
+          // Valid structure but no players - this might be legitimate (e.g., team has no players in this category)
+          // But we should still try to fetch fresh data to be sure
+          console.log(`[Team Tracking Stats] ⚠️ Cached data has no players (might be legitimate). Fetching fresh data to verify...`);
+          cached = null; // Treat as cache miss to verify
         } else {
           const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
           
