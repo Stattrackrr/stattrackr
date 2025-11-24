@@ -220,6 +220,9 @@ async function refreshTeamTrackingStats(
   }
 }
 
+const SHOULD_TRIGGER_LEAGUE_BULK =
+  process.env.ENABLE_LEAGUE_BULK === 'true' || process.env.NODE_ENV !== 'production';
+
 export async function GET(request: NextRequest) {
   // Verify cron secret (optional but recommended)
   // Try multiple header name variations (HTTP headers are case-insensitive)
@@ -301,6 +304,7 @@ export async function GET(request: NextRequest) {
     errors: 0,
     details: [] as Array<{ team: string; category: string; status: string; error?: string }>
   };
+  let bulkPlayTypeStatus: 'fresh' | 'needs_refresh' | 'skipped_disabled_in_production' = SHOULD_TRIGGER_LEAGUE_BULK ? 'fresh' : 'skipped_disabled_in_production';
 
   try {
     console.log('[NBA Stats Refresh] Starting daily refresh...');
@@ -352,50 +356,62 @@ export async function GET(request: NextRequest) {
     }
 
     // Also refresh bulk play type cache if stale
-    console.log('[NBA Stats Refresh] Checking bulk play type cache...');
     const seasonStr = `${currentSeason}-${String(currentSeason + 1).slice(-2)}`;
-    const bulkPlayTypeCacheKey = `player_playtypes_bulk_${seasonStr}`;
-    const bulkPlayTypeCache = await getNBACache<any>(bulkPlayTypeCacheKey);
-    const bulkCacheMetadata = bulkPlayTypeCache?.__cache_metadata;
-    const isBulkStale = !bulkPlayTypeCache || isStale(bulkCacheMetadata?.updated_at);
-    
-    if (isBulkStale) {
-      console.log('[NBA Stats Refresh] Bulk play type cache is stale or missing, refreshing...');
-      // Trigger refresh by calling the play type endpoint (it will populate bulk cache)
-      // We'll just trigger it - the next user request will use the refreshed cache
-      // For now, we'll note it needs refresh
+
+    if (SHOULD_TRIGGER_LEAGUE_BULK) {
+      console.log('[NBA Stats Refresh] Checking bulk play type cache...');
+      const bulkPlayTypeCacheKey = `player_playtypes_bulk_${seasonStr}`;
+      const bulkPlayTypeCache = await getNBACache<any>(bulkPlayTypeCacheKey);
+      const bulkCacheMetadata = bulkPlayTypeCache?.__cache_metadata;
+      const isBulkStale = !bulkPlayTypeCache || isStale(bulkCacheMetadata?.updated_at);
+      
+      bulkPlayTypeStatus = isBulkStale ? 'needs_refresh' : 'fresh';
+      if (isBulkStale) {
+        console.log('[NBA Stats Refresh] Bulk play type cache is stale or missing, refreshing...');
+        results.details.push({ 
+          team: 'BULK_PLAY_TYPES', 
+          category: 'all_play_types', 
+          status: 'needs_refresh_on_next_request' 
+        });
+      } else {
+        console.log('[NBA Stats Refresh] Bulk play type cache is fresh');
+      }
+
+      console.log('[NBA Stats Refresh] Triggering defensive rankings cache refresh...');
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const cacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${currentSeason}`;
+      
+      fetch(cacheUrl).then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[NBA Stats Refresh] ✅ Defensive rankings cache refreshed:', data.summary);
+        } else {
+          console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh failed:', response.status);
+        }
+      }).catch((err) => {
+        console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh error:', err.message);
+      });
+      
+      results.details.push({ 
+        team: 'DEFENSIVE_RANKINGS', 
+        category: 'play_type_rankings', 
+        status: 'triggered_in_background' 
+      });
+    } else {
+      console.log('[NBA Stats Refresh] Skipping league bulk cache (disabled in production). Set ENABLE_LEAGUE_BULK=true to re-enable.');
+      bulkPlayTypeStatus = 'skipped_disabled_in_production';
       results.details.push({ 
         team: 'BULK_PLAY_TYPES', 
         category: 'all_play_types', 
-        status: 'needs_refresh_on_next_request' 
+        status: 'skipped_disabled_in_production' 
       });
-    } else {
-      console.log('[NBA Stats Refresh] Bulk play type cache is fresh');
+      results.details.push({ 
+        team: 'DEFENSIVE_RANKINGS', 
+        category: 'play_type_rankings', 
+        status: 'skipped_disabled_in_production' 
+      });
     }
-
-    // Refresh defensive rankings cache (play type and zone rankings) - trigger in background
-    console.log('[NBA Stats Refresh] Triggering defensive rankings cache refresh...');
-    const host = request.headers.get('host') || 'localhost:3000';
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const cacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${currentSeason}`;
-    
-    // Trigger in background (non-blocking - this takes 2-3 minutes)
-    fetch(cacheUrl).then(async (response) => {
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[NBA Stats Refresh] ✅ Defensive rankings cache refreshed:', data.summary);
-      } else {
-        console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh failed:', response.status);
-      }
-    }).catch((err) => {
-      console.warn('[NBA Stats Refresh] ⚠️ Defensive rankings cache refresh error:', err.message);
-    });
-    
-    results.details.push({ 
-      team: 'DEFENSIVE_RANKINGS', 
-      category: 'play_type_rankings', 
-      status: 'triggered_in_background' 
-    });
 
     // Refresh individual player caches (shot charts and play type analysis) - trigger in background
     // Query Supabase for existing player cache entries and refresh stale ones
@@ -499,7 +515,7 @@ export async function GET(request: NextRequest) {
       results: {
         ...results,
         duration: `${duration}s`,
-        bulkPlayTypeCache: isBulkStale ? 'needs_refresh' : 'fresh'
+        bulkPlayTypeCache: bulkPlayTypeStatus
       },
       timestamp: new Date().toISOString()
     });

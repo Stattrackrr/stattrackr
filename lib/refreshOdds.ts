@@ -542,7 +542,7 @@ export async function refreshOddsData(
         await Promise.race([
           saveOddsSnapshots(games),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Snapshot save timeout after 30s')), 30000)
+            setTimeout(() => reject(new Error('Snapshot save timeout after 60s')), 60000)
           )
         ]);
         console.log('📸 Odds snapshots saved to database');
