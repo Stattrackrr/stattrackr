@@ -63,12 +63,21 @@ async function fetchNBAStats(url: string, timeout = 20000): Promise<any> {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`NBA API ${response.status}: ${response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      const errorMsg = `NBA API ${response.status}: ${response.statusText}${errorText ? ` - ${errorText.slice(0, 200)}` : ''}`;
+      console.error(`[fetchNBAStats] API error: ${errorMsg}`);
+      throw new Error(errorMsg);
     }
 
     return await response.json();
   } catch (error: any) {
     clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      const timeoutError = new Error(`Request timeout after ${timeout}ms`);
+      console.error(`[fetchNBAStats] Timeout: ${timeoutError.message}`);
+      throw timeoutError;
+    }
+    console.error(`[fetchNBAStats] Error: ${error.message || error}`);
     throw error;
   }
 }
@@ -165,10 +174,13 @@ async function refreshTeamTrackingStats(
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        console.log(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} (timeout: ${timeoutMs}ms)...`);
         const data = await fetchNBAStats(url, timeoutMs);
 
         if (!data?.resultSets?.[0]) {
-          return { success: false, changed: false, error: 'No resultSets' };
+          const errorMsg = 'No resultSets in response';
+          console.error(`[Team Tracking Stats] ${team} ${category}: ${errorMsg}`);
+          return { success: false, changed: false, error: errorMsg };
         }
 
         const resultSet = data.resultSets[0];
@@ -180,7 +192,9 @@ async function refreshTeamTrackingStats(
         const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
 
         if (playerIdIdx === -1 || playerNameIdx === -1) {
-          return { success: false, changed: false, error: 'Missing columns' };
+          const errorMsg = `Missing required columns (PLAYER_ID: ${playerIdIdx}, PLAYER_NAME: ${playerNameIdx})`;
+          console.error(`[Team Tracking Stats] ${team} ${category}: ${errorMsg}`);
+          return { success: false, changed: false, error: errorMsg };
         }
 
         const teamPlayers = rows
@@ -232,17 +246,22 @@ async function refreshTeamTrackingStats(
         await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
         cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
 
+        console.log(`[Team Tracking Stats] ✅ ${team} ${category} refreshed successfully on attempt ${attempt}/${maxAttempts}`);
         return { success: true, changed: hasChanged };
       } catch (error: any) {
-        lastError = error.message;
+        lastError = error.message || String(error);
         console.warn(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} failed: ${lastError}`);
         if (attempt < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          const delay = 1000 * attempt;
+          console.log(`[Team Tracking Stats] Retrying ${team} ${category} after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
 
-    return { success: false, changed: false, error: lastError ?? 'Unknown error' };
+    const finalError = lastError ?? 'Unknown error - all attempts exhausted';
+    console.error(`[Team Tracking Stats] ❌ ${team} ${category} failed after ${maxAttempts} attempts: ${finalError}`);
+    return { success: false, changed: false, error: finalError };
   } catch (error: any) {
     return { success: false, changed: false, error: error.message };
   }
