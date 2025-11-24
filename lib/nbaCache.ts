@@ -310,6 +310,8 @@ export async function setNBACache(
       created_at: now.toISOString() // Will be set on insert, updated on upsert
     };
 
+    console.log(`[NBA Cache] 💾 Writing to Supabase: ${cacheKey.substring(0, 50)}... (type: ${cacheType})`);
+    
     const { error } = await supabaseAdmin
       .from('nba_api_cache')
       .upsert(cacheEntry as any, {
@@ -317,10 +319,11 @@ export async function setNBACache(
       });
 
     if (error) {
-      console.error(`[NBA Cache] Error writing to Supabase for key ${cacheKey}:`, error.message || error);
+      console.error(`[NBA Cache] ❌ Error writing to Supabase for key ${cacheKey}:`, error.message || error);
       return false;
     }
 
+    console.log(`[NBA Cache] ✅ Successfully cached to Supabase: ${cacheKey.substring(0, 50)}... (expires: ${expiresAt.toISOString()})`);
     return true;
   } catch (error: any) {
     // Fail gracefully - in-memory cache will still work
