@@ -305,16 +305,46 @@ export async function GET(request: NextRequest) {
     details: [] as Array<{ team: string; category: string; status: string; error?: string }>
   };
   let bulkPlayTypeStatus: 'fresh' | 'needs_refresh' | 'skipped_disabled_in_production' = SHOULD_TRIGGER_LEAGUE_BULK ? 'fresh' : 'skipped_disabled_in_production';
+  const teamsParam = requestUrl.searchParams.get('teams');
+  const teamLimitParam = requestUrl.searchParams.get('teamLimit');
+  const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
+
+  let teamsToProcess = teamsParam
+    ? teamsParam
+        .split(',')
+        .map((t) => t.trim().toUpperCase())
+        .filter((t) => NBA_TEAM_IDS[t])
+    : [...NBA_TEAMS];
+
+  if (teamLimitParam) {
+    const limit = parseInt(teamLimitParam, 10);
+    if (!Number.isNaN(limit) && limit > 0) {
+      teamsToProcess = teamsToProcess.slice(0, limit);
+    }
+  }
+
+  const trackingBatchSize = Math.max(
+    1,
+    parseInt(
+      trackingBatchParam ??
+        process.env.TRACKING_BATCH_SIZE ??
+        '4',
+      10
+    ) || 4
+  );
+
+  console.log('[NBA Stats Refresh] Teams to process:', teamsToProcess.length, teamsToProcess.join(','));
+  console.log('[NBA Stats Refresh] Tracking batch size:', trackingBatchSize);
 
   try {
     console.log('[NBA Stats Refresh] Starting daily refresh...');
 
     // Refresh all teams' tracking stats (passing and rebounding) in parallel batches
     // Process in batches of 10 to avoid overwhelming the API
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = trackingBatchSize;
     const refreshPromises: Promise<void>[] = [];
     
-    for (const team of NBA_TEAMS) {
+    for (const team of teamsToProcess) {
       for (const category of ['passing', 'rebounding'] as const) {
         results.total++;
         
