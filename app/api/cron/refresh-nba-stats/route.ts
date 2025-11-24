@@ -281,18 +281,20 @@ async function refreshTeamTrackingStats(
         return { success: true, changed: hasChanged };
       } catch (error: any) {
         lastError = error.message || String(error);
-        const isTransientError = 
-          lastError.includes('ECONNRESET') ||
-          lastError.includes('ETIMEDOUT') ||
-          lastError.includes('fetch failed') ||
-          lastError.includes('timeout');
+        const isTransientError = lastError
+          ? (lastError.includes('ECONNRESET') ||
+             lastError.includes('ETIMEDOUT') ||
+             lastError.includes('fetch failed') ||
+             lastError.includes('timeout'))
+          : false;
         
-        console.warn(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} failed: ${lastError}`);
+        console.warn(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} failed: ${lastError || 'Unknown error'}`);
         
         if (attempt < maxAttempts && isTransientError) {
           // Exponential backoff: 2s, 4s, 8s, 16s, etc. (max 30s)
           const delay = Math.min(2000 * Math.pow(2, attempt - 1), 30000);
-          console.log(`[Team Tracking Stats] Retrying ${team} ${category} after ${delay}ms (transient error: ${lastError.substring(0, 50)})...`);
+          const errorPreview = lastError ? lastError.substring(0, 50) : 'Unknown error';
+          console.log(`[Team Tracking Stats] Retrying ${team} ${category} after ${delay}ms (transient error: ${errorPreview})...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else if (attempt < maxAttempts) {
           // Non-transient error, shorter delay
