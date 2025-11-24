@@ -43,8 +43,9 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  const actualTimeout = Math.max(4000, Math.min(timeout, 30000));
-  const actualRetries = Math.max(0, Math.min(retries, 2));
+  // Increased timeout to 120s for slow NBA API
+  const actualTimeout = Math.max(4000, Math.min(timeout, 120000)); // 120s max
+  const actualRetries = Math.max(0, Math.min(retries, 3)); // 3 retries = 4 total attempts
   const maxAttempts = actualRetries + 1;
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
@@ -134,8 +135,8 @@ async function fetchTeamDefenseStats(teamAbbr: string, teamId: string, seasonStr
 
     const defenseUrl = `${NBA_STATS_BASE}/shotchartdetail?${defenseParams.toString()}`;
     console.log(`[Team Defense Rankings] Fetching defense for ${teamAbbr}...`);
-    // Use shorter timeout (5s) for individual teams to speed up overall fetch
-    const defenseData = await fetchNBAStats(defenseUrl, 5000);
+    // Use longer timeout (120s) for slow NBA API
+    const defenseData = await fetchNBAStats(defenseUrl, 120000, 3);
 
     if (defenseData?.resultSets?.[0]) {
       const resultSet = defenseData.resultSets[0];
@@ -426,22 +427,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Team Defense Rankings] Failed to fetch ${abbr}:`, err);
       }
       
-      // Add delay between requests (except for last one)
+      // Add longer delay between requests to avoid rate limiting (except for last one)
       if (i < teams.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay to avoid rate limiting
       }
     }
 
     console.log(`[Team Defense Rankings] Successfully fetched ${validTeams.length}/30 teams`);
 
-    // Require at least 20 teams for meaningful rankings
-    if (validTeams.length < 20) {
-      console.warn(`[Team Defense Rankings] ⚠️ Only ${validTeams.length} teams fetched, need at least 20 for rankings`);
+    // Require at least 10 teams for meaningful rankings (lowered from 20 due to API unreliability)
+    if (validTeams.length < 10) {
+      console.warn(`[Team Defense Rankings] ⚠️ Only ${validTeams.length} teams fetched, need at least 10 for rankings`);
       return NextResponse.json({
         error: 'Insufficient data',
-        message: `Only ${validTeams.length}/30 teams available, need at least 20 for rankings. Please run /api/cache/nba-league-data to populate cache.`,
+        message: `Only ${validTeams.length}/30 teams available, need at least 10 for rankings. Please run /api/cache/nba-league-data to populate cache.`,
         teamsProcessed: validTeams.length
       }, { status: 503 });
+    }
+    
+    if (validTeams.length < 30) {
+      console.warn(`[Team Defense Rankings] ⚠️ Only ${validTeams.length}/30 teams fetched - returning partial data`);
     }
 
     // Calculate rankings

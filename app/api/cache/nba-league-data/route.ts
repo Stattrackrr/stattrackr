@@ -55,8 +55,9 @@ function parsePlayTypeFilter(param: string | null): string[] | null {
 }
 
 async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
-  const actualTimeout = Math.max(4000, Math.min(timeout, 60000));
-  const actualRetries = retryOn500 ? Math.max(0, Math.min(retries, 2)) : Math.max(0, Math.min(retries, 1));
+  // Increased timeout to 120s for slow NBA API, allow longer for bulk fetches
+  const actualTimeout = Math.max(4000, Math.min(timeout, 120000)); // 120s max
+  const actualRetries = retryOn500 ? Math.max(0, Math.min(retries, 3)) : Math.max(0, Math.min(retries, 2));
   const maxAttempts = actualRetries + 1;
   
   let lastError: Error | null = null;
@@ -218,9 +219,9 @@ export async function GET(request: NextRequest) {
         }
         
         // Delay between requests to avoid rate limiting
-        // Reduced to 500ms in dev (was 2s) - NBA API is slow but we can reduce delays
+        // Increased delays to reduce rate limiting issues
         if (i < playTypesToFetch.length - 1) {
-          const delay = process.env.NODE_ENV === 'production' ? 2000 : 500; // 500ms in dev, 2s in prod
+          const delay = process.env.NODE_ENV === 'production' ? 3000 : 2000; // 2s in dev, 3s in prod
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (err: any) {
@@ -309,7 +310,7 @@ export async function GET(request: NextRequest) {
         while (true) {
           params.set('Offset', String(offset));
           const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-          const data = await fetchNBAStats(url, 30000, 2, true); // allow longer timeout + retries
+          const data = await fetchNBAStats(url, 120000, 3, true); // 120s timeout, 3 retries
           const resultSet = data?.resultSets?.[0];
           
           if (!resultSet) break;
@@ -339,7 +340,7 @@ export async function GET(request: NextRequest) {
         
         // Delay between requests to avoid rate limiting
         if (i < playerPlayTypes.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
         }
       } catch (err: any) {
         console.error(`[NBA League Data Cache] ❌ Error fetching player ${key}:`, err.message);
