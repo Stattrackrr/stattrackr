@@ -44,6 +44,16 @@ const PLAY_TYPES = [
   { key: 'OffRebound', displayName: 'Putbacks' },
 ];
 
+function parsePlayTypeFilter(param: string | null): string[] | null {
+  if (!param || param.toLowerCase() === 'all') return null;
+  const allowed = new Set(PLAY_TYPES.map(pt => pt.key));
+  const requested = param
+    .split(',')
+    .map(key => key.trim())
+    .filter(key => !!key && allowed.has(key));
+  return requested.length ? requested : null;
+}
+
 async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
   const actualTimeout = Math.max(4000, Math.min(timeout, 30000));
   const actualRetries = retryOn500 ? Math.max(0, Math.min(retries, 2)) : Math.max(0, Math.min(retries, 1));
@@ -109,6 +119,8 @@ export async function GET(request: NextRequest) {
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     const forceRefresh = searchParams.get('force') === 'true';
     const retry = searchParams.get('retry') === 'true';
+    const defensiveFilter = parsePlayTypeFilter(searchParams.get('defensePlayTypes'));
+    const playerFilter = parsePlayTypeFilter(searchParams.get('playerPlayTypes') || searchParams.get('playerTypes'));
     
     // Allow all requests - this endpoint is only called by cron jobs or manually
     // Vercel Cron will call this automatically via the cron schedule
@@ -130,7 +142,10 @@ export async function GET(request: NextRequest) {
     // 1. Fetch all play type defensive rankings
     // If retry mode, only fetch missing play types from cache
     const playTypeRankings: Record<string, Array<{ team: string; ppp: number }>> = {};
-    let playTypesToFetch = PLAY_TYPES;
+    const defensivePlayTypes = defensiveFilter
+      ? PLAY_TYPES.filter(pt => defensiveFilter.includes(pt.key))
+      : PLAY_TYPES;
+    let playTypesToFetch = defensivePlayTypes;
     
     if (retry) {
       // Retry mode: check cache and only fetch missing play types
@@ -146,15 +161,16 @@ export async function GET(request: NextRequest) {
       
       if (existingCache) {
         // Only fetch play types that are missing from cache
-        playTypesToFetch = PLAY_TYPES.filter(({ key }) => !existingCache[key]);
+        const missing = defensivePlayTypes.filter(({ key }) => !existingCache[key]);
+        playTypesToFetch = missing;
         Object.assign(playTypeRankings, existingCache); // Start with existing cache
-        console.log(`[NBA League Data Cache] Retry mode: Found ${Object.keys(existingCache).length} cached play types, fetching ${playTypesToFetch.length} missing ones`);
+        console.log(`[NBA League Data Cache] Retry mode: Found ${Object.keys(existingCache).length} cached play types, fetching ${playTypesToFetch.length} missing ones (filtered=${defensiveFilter ? defensiveFilter.join(',') : 'all'})`);
       } else {
-        console.log(`[NBA League Data Cache] Retry mode: No cache found, fetching all play types`);
+        console.log(`[NBA League Data Cache] Retry mode: No cache found, fetching ${playTypesToFetch.length} play types (filtered=${defensiveFilter ? defensiveFilter.join(',') : 'all'})`);
       }
     }
     
-    console.log(`[NBA League Data Cache] Fetching ${playTypesToFetch.length} play type defensive rankings...`);
+    console.log(`[NBA League Data Cache] Fetching ${playTypesToFetch.length} play type defensive rankings (filtered=${defensiveFilter ? defensiveFilter.join(',') : 'all'})...`);
     
     for (let i = 0; i < playTypesToFetch.length; i++) {
       const { key } = playTypesToFetch[i];
@@ -261,12 +277,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Fetch all player play type stats (bulk fetch - one call per play type gets all players)
-    console.log(`[NBA League Data Cache] Fetching player play type stats (bulk)...`);
+    const playerPlayTypes = playerFilter
+      ? PLAY_TYPES.filter(pt => playerFilter.includes(pt.key))
+      : PLAY_TYPES;
+    
+    console.log(`[NBA League Data Cache] Fetching player play type stats (bulk) for ${playerPlayTypes.length} play types (filtered=${playerFilter ? playerFilter.join(',') : 'all'})...`);
     const playerPlayTypesData: Record<string, any> = {};
     
-    for (let i = 0; i < PLAY_TYPES.length; i++) {
-      const { key } = PLAY_TYPES[i];
-      console.log(`[NBA League Data Cache] Fetching player ${key} stats (${i + 1}/${PLAY_TYPES.length})...`);
+    for (let i = 0; i < playerPlayTypes.length; i++) {
+      const { key } = playerPlayTypes[i];
+      console.log(`[NBA League Data Cache] Fetching player ${key} stats (${i + 1}/${playerPlayTypes.length})...`);
       
       try {
         const params = new URLSearchParams({
@@ -280,7 +300,6 @@ export async function GET(request: NextRequest) {
         });
 
         const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        // Use longer timeout with retries for defensive rankings (NBA API can be slow)
         const data = await fetchNBAStats(url, 20000, 2, true); // 20s timeout, 2 retries, retry on 500 errors
         const resultSet = data?.resultSets?.[0];
         
@@ -299,7 +318,7 @@ export async function GET(request: NextRequest) {
         }
         
         // Delay between requests to avoid rate limiting
-        if (i < PLAY_TYPES.length - 1) {
+        if (i < playerPlayTypes.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
         }
       } catch (err: any) {
