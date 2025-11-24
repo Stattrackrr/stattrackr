@@ -73,13 +73,13 @@ if ($PlayerIds.Count -gt 0) {
         if ($playersResponse.results -and $playersResponse.results.Count -gt 0) {
             # Extract player IDs (BDL IDs - will be converted to NBA Stats IDs by the API)
             $playersToCache = $playersResponse.results | ForEach-Object { $_.id } | Where-Object { $_ -ne $null }
-            Write-Host "  ✅ Found $($playersToCache.Count) active players" -ForegroundColor Green
+            Write-Host "  [OK] Found $($playersToCache.Count) active players" -ForegroundColor Green
         } else {
-            Write-Host "  ⚠️ No players found, using default common players..." -ForegroundColor Yellow
+            Write-Host "  [WARN] No players found, using default common players..." -ForegroundColor Yellow
             $playersToCache = $commonPlayers
         }
     } catch {
-        Write-Host "  ❌ Failed to fetch players: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  [ERROR] Failed to fetch players: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host "  Using default common players instead..." -ForegroundColor Yellow
         $playersToCache = $commonPlayers
     }
@@ -124,14 +124,14 @@ if (-not $SkipShotCharts) {
                              $response.shotZones.aboveBreak3.fga
                 
                 if ($totalShots -gt 0) {
-                    Write-Host "  ✅ Shot Chart: $totalShots shots" -ForegroundColor Green
+                    Write-Host "  [OK] Shot Chart: $totalShots shots" -ForegroundColor Green
                     $shotChartSuccess++
                 } else {
-                    Write-Host "  ⚠️ No shot data" -ForegroundColor Yellow
+                    Write-Host "  [WARN] No shot data" -ForegroundColor Yellow
                 }
             }
         } catch {
-            Write-Host "  ❌ Failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "  [ERROR] Failed: $($_.Exception.Message)" -ForegroundColor Red
             $shotChartFail++
         }
         
@@ -155,13 +155,13 @@ if (-not $SkipPlayTypes) {
             
             if ($response.playTypes -and $response.playTypes.Count -gt 0) {
                 $validPlayTypes = ($response.playTypes | Where-Object { $_.points -gt 0 }).Count
-                Write-Host "  ✅ Play Types: $validPlayTypes play types with data" -ForegroundColor Green
+                Write-Host "  [OK] Play Types: $validPlayTypes play types with data" -ForegroundColor Green
                 $playTypeSuccess++
             } else {
-                Write-Host "  ⚠️ No play type data" -ForegroundColor Yellow
+                Write-Host "  [WARN] No play type data" -ForegroundColor Yellow
             }
         } catch {
-            Write-Host "  ❌ Failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "  [ERROR] Failed: $($_.Exception.Message)" -ForegroundColor Red
             $playTypeFail++
         }
         
@@ -191,13 +191,13 @@ if (-not $SkipPotentials) {
                 $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 120
                 
                 if ($response.players -and $response.players.Count -gt 0) {
-                    Write-Host "  ✅ $team $category: $($response.players.Count) players" -ForegroundColor Green
+                    Write-Host "  [OK] $team $category: $($response.players.Count) players" -ForegroundColor Green
                     $potentialsSuccess++
                 } else {
-                    Write-Host "  ⚠️ No players" -ForegroundColor Yellow
+                    Write-Host "  [WARN] No players" -ForegroundColor Yellow
                 }
             } catch {
-                Write-Host "  ❌ Failed: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  [ERROR] Failed: $($_.Exception.Message)" -ForegroundColor Red
                 $potentialsFail++
             }
             
@@ -211,13 +211,13 @@ Write-Host "Bulk Cache Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 
 if (-not $SkipShotCharts) {
-    Write-Host "Shot Charts: ✅ $shotChartSuccess success, ❌ $shotChartFail failed" -ForegroundColor $(if ($shotChartFail -eq 0) { "Green" } else { "Yellow" })
+    Write-Host "Shot Charts: [OK] $shotChartSuccess success, [ERROR] $shotChartFail failed" -ForegroundColor $(if ($shotChartFail -eq 0) { "Green" } else { "Yellow" })
 }
 if (-not $SkipPlayTypes) {
-    Write-Host "Play Types: ✅ $playTypeSuccess success, ❌ $playTypeFail failed" -ForegroundColor $(if ($playTypeFail -eq 0) { "Green" } else { "Yellow" })
+    Write-Host "Play Types: [OK] $playTypeSuccess success, [ERROR] $playTypeFail failed" -ForegroundColor $(if ($playTypeFail -eq 0) { "Green" } else { "Yellow" })
 }
 if (-not $SkipPotentials) {
-    Write-Host "Potentials: ✅ $potentialsSuccess success, ❌ $potentialsFail failed" -ForegroundColor $(if ($potentialsFail -eq 0) { "Green" } else { "Yellow" })
+    Write-Host "Potentials: [OK] $potentialsSuccess success, [ERROR] $potentialsFail failed" -ForegroundColor $(if ($potentialsFail -eq 0) { "Green" } else { "Yellow" })
 }
 
 Write-Host "`nProduction can now read all cached data!" -ForegroundColor Green
