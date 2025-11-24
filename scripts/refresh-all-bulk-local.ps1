@@ -58,8 +58,8 @@ foreach ($team in $teams) {
             Write-Host "  ❌ Exception: $team $cat - $($_.Exception.Message)" -ForegroundColor Red
         }
         
-        # Small delay between calls
-        Start-Sleep -Seconds 2
+        # Longer delay between calls to avoid rate limiting
+        Start-Sleep -Seconds 5
     }
 }
 
