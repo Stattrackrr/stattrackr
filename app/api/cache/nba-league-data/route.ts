@@ -45,13 +45,9 @@ const PLAY_TYPES = [
 ];
 
 async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
-  // Timeout: Use provided timeout (can be longer for defensive rankings)
-  // Retry logic: Allow retries when retryOn500 is true (for critical data like defensive rankings)
-  const isProduction = process.env.NODE_ENV === 'production';
-  // Don't cap timeout in production - allow longer timeouts for slow NBA API calls
-  const actualTimeout = timeout;
-  // For defensive rankings (retryOn500=true), allow retries even in production
-  const actualRetries = retryOn500 ? Math.min(retries, 2) : (isProduction ? 0 : Math.min(retries, 1));
+  const actualTimeout = Math.max(4000, Math.min(timeout, 30000));
+  const actualRetries = retryOn500 ? Math.max(0, Math.min(retries, 2)) : Math.max(0, Math.min(retries, 1));
+  const maxAttempts = actualRetries + 1;
   
   let lastError: Error | null = null;
   let lastStatusCode: number | null = null;
@@ -73,7 +69,7 @@ async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn5
       lastStatusCode = response.status;
       // Retry on 500 errors if retryOn500 is true
       if (response.status >= 500 && retryOn500 && attempt < actualRetries) {
-        console.log(`[NBA League Data Cache] Server error ${response.status} on attempt ${attempt + 1}, retrying...`);
+        console.log(`[NBA League Data Cache] Server error ${response.status} on attempt ${attempt + 1}/${maxAttempts}, retrying...`);
         await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Longer delay for 500 errors
         continue;
       }
@@ -85,7 +81,7 @@ async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn5
     clearTimeout(timeoutId);
     
     if (error.name === 'AbortError') {
-      lastError = new Error(`Request timeout after ${actualTimeout}ms`);
+      lastError = new Error(`Request timeout after ${actualTimeout}ms (attempt ${attempt + 1}/${maxAttempts})`);
       if (attempt < actualRetries) {
         console.log(`[NBA League Data Cache] Timeout on attempt ${attempt + 1}, retrying...`);
         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
