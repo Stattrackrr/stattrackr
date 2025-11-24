@@ -85,8 +85,87 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
   console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
 
   try {
+    // Use REST API directly in production (faster than JS client)
+    // This bypasses the JS client overhead and goes straight to PostgREST
+    if (process.env.NODE_ENV === 'production' && supabaseUrl && supabaseServiceKey) {
+      console.log(`[NBA Cache] 📡 Using REST API directly for: ${cacheKey.substring(0, 50)}...`);
+      
+      try {
+        const restUrl = `${supabaseUrl}/rest/v1/nba_api_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=data,expires_at,updated_at,created_at`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for REST API
+        
+        const response = await fetch(restUrl, {
+          method: 'GET',
+          headers: {
+            'apikey': supabaseServiceKey,
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 406) {
+            // No rows found - this is normal
+            console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+            return null;
+          }
+          throw new Error(`REST API error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // REST API returns array, not single object
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+          return null;
+        }
+        
+        const cacheEntry = data[0];
+        
+        // Check if expired
+        const expiresAt = new Date(cacheEntry.expires_at);
+        if (expiresAt < new Date()) {
+          console.log(`[NBA Cache] ⏰ Cache expired (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+          return null;
+        }
+        
+        // Validate data
+        if (!cacheEntry.data || (typeof cacheEntry.data === 'object' && Object.keys(cacheEntry.data).length === 0)) {
+          console.warn(`[NBA Cache] ⚠️ Invalid data structure (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+          return null;
+        }
+        
+        console.log(`[NBA Cache] ✅ Cache HIT (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+        
+        // Attach metadata
+        if (cacheEntry.data && typeof cacheEntry.data === 'object') {
+          (cacheEntry.data as any).__cache_metadata = {
+            updated_at: cacheEntry.updated_at,
+            created_at: cacheEntry.created_at,
+            expires_at: cacheEntry.expires_at
+          };
+        }
+        
+        return cacheEntry.data as T;
+      } catch (restError: any) {
+        if (restError.name === 'AbortError') {
+          console.warn(`[NBA Cache] ⏱️ REST API timeout (8s) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
+          // Fall through to JS client as fallback
+        } else {
+          console.warn(`[NBA Cache] ⚠️ REST API error for key: ${cacheKey.substring(0, 50)}..., falling back to JS client:`, restError.message);
+          // Fall through to JS client as fallback
+        }
+      }
+    }
+    
+    // Fallback to JS client (for dev or if REST API fails)
     // Add timeout to prevent hanging in production (increased for network latency)
-    const timeoutMs = process.env.NODE_ENV === 'production' ? 10000 : 5000; // 10s in prod, 5s in dev
+    const timeoutMs = process.env.NODE_ENV === 'production' ? 15000 : 5000; // 15s in prod, 5s in dev
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
         console.warn(`[NBA Cache] ⏱️ Query timeout (${timeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
@@ -100,7 +179,7 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       .eq('cache_key', cacheKey)
       .single();
 
-    console.log(`[NBA Cache] 📡 Starting Supabase query for: ${cacheKey.substring(0, 50)}...`);
+    console.log(`[NBA Cache] 📡 Starting Supabase query (JS client) for: ${cacheKey.substring(0, 50)}...`);
     const result = await Promise.race([queryPromise, timeoutPromise]);
 
     if (result === null) {
