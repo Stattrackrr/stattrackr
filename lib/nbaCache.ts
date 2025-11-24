@@ -85,12 +85,13 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
   console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
 
   try {
-    // Add timeout to prevent hanging in production
+    // Add timeout to prevent hanging in production (increased for network latency)
+    const timeoutMs = process.env.NODE_ENV === 'production' ? 10000 : 5000; // 10s in prod, 5s in dev
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.warn(`[NBA Cache] ⏱️ Query timeout (5s) for key: ${cacheKey.substring(0, 50)}...`);
+        console.warn(`[NBA Cache] ⏱️ Query timeout (${timeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
         resolve(null);
-      }, 5000); // 5 second timeout
+      }, timeoutMs);
     });
 
     const queryPromise = supabaseAdmin

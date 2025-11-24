@@ -595,12 +595,12 @@ export async function GET(request: NextRequest) {
           
           console.log(`[Shot Chart Enhanced] Querying Supabase for stale cache key: ${cacheKey}`);
           
-          // Get cache even if expired
+          // Get cache even if expired (use .maybeSingle() to handle 0 rows gracefully)
           const { data: staleData, error: staleError } = await supabaseAdmin
             .from('nba_api_cache')
             .select('data')
             .eq('cache_key', cacheKey)
-            .single();
+            .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows
           
           if (staleError) {
             console.warn(`[Shot Chart Enhanced] Supabase query error for stale cache:`, staleError.message || staleError);
