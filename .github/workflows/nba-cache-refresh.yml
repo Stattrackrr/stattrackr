@@ -11,16 +11,25 @@ on:
 jobs:
   check-changed:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm install dotenv @supabase/supabase-js
+      
+      - name: Generate player ID mappings
+        run: node scripts/export-player-mappings.js
       
       - name: Check for changed players
         env:
@@ -29,19 +38,29 @@ jobs:
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
         run: node scripts/check-changed-players.js
         if: github.event.schedule == '0 11 * * *' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
 
   refresh-changed:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm install dotenv @supabase/supabase-js
+      
+      - name: Generate player ID mappings
+        run: node scripts/export-player-mappings.js
       
       - name: Refresh changed players
         env:
@@ -49,4 +68,5 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/refresh-changed-players.js
         if: github.event.schedule == '0 13 * * *' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
 
