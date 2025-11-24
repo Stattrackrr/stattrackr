@@ -219,7 +219,7 @@ if (-not $SkipPotentials) {
                 $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 120
                 
                 if ($response.players -and $response.players.Count -gt 0) {
-                    Write-Host "  [OK] $team $category: $($response.players.Count) players" -ForegroundColor Green
+                    Write-Host "  [OK] ${team} ${category}: $($response.players.Count) players" -ForegroundColor Green
                     $potentialsSuccess++
                 } else {
                     Write-Host "  [WARN] No players" -ForegroundColor Yellow
