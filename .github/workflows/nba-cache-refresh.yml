@@ -1,0 +1,52 @@
+name: NBA Cache Refresh
+
+on:
+  schedule:
+    # Check for changed players at 10 PM AEDT (11:00 UTC previous day)
+    - cron: '0 11 * * *'
+    # Refresh changed players at 12 AM AEDT (13:00 UTC previous day)
+    - cron: '0 13 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-changed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install dotenv @supabase/supabase-js
+      
+      - name: Check for changed players
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+        run: node scripts/check-changed-players.js
+        if: github.event.schedule == '0 11 * * *' || github.event_name == 'workflow_dispatch'
+
+  refresh-changed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install dotenv @supabase/supabase-js
+      
+      - name: Refresh changed players
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/refresh-changed-players.js
+        if: github.event.schedule == '0 13 * * *' || github.event_name == 'workflow_dispatch'
+
