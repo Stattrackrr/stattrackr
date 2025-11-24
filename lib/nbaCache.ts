@@ -14,19 +14,42 @@ let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
 if (supabaseUrl && supabaseServiceKey) {
   try {
+    console.log('[NBA Cache] 🔧 Initializing Supabase client...', {
+      url: supabaseUrl.substring(0, 30) + '...',
+      keyLength: supabaseServiceKey.length,
+      namespace: process.env.NODE_ENV || 'unknown'
+    });
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
-    console.log('[NBA Cache] ✅ Supabase client initialized:', {
-      url: supabaseUrl.substring(0, 30) + '...',
-      keyLength: supabaseServiceKey.length,
-      namespace: process.env.NODE_ENV || 'unknown'
+    console.log('[NBA Cache] ✅ Supabase client initialized successfully');
+    
+    // Test connectivity with a simple query (non-blocking, don't await)
+    if (supabaseAdmin) {
+      Promise.resolve(
+        supabaseAdmin
+          .from('nba_api_cache')
+          .select('cache_key')
+          .limit(1)
+      ).then(({ error }) => {
+        if (error) {
+          console.error('[NBA Cache] ⚠️ Supabase connectivity test failed:', error.message);
+        } else {
+          console.log('[NBA Cache] ✅ Supabase connectivity test passed');
+        }
+      }).catch((err: any) => {
+        console.error('[NBA Cache] ⚠️ Supabase connectivity test error:', err?.message || String(err));
+      });
+    }
+  } catch (error: any) {
+    console.error('[NBA Cache] ❌ Failed to initialize Supabase client:', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
     });
-  } catch (error) {
-    console.error('[NBA Cache] ❌ Failed to initialize Supabase client:', error);
   }
 } else {
   const missing = [];
@@ -53,14 +76,21 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     if (process.env.NODE_ENV === 'production') {
       console.error('[NBA Cache] ❌ Supabase client not initialized in PRODUCTION - cache will not work!');
       console.error('[NBA Cache] Check Vercel environment variables: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+    } else {
+      console.warn('[NBA Cache] ⚠️ Supabase client not initialized (dev mode)');
     }
     return null;
   }
 
+  console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
+
   try {
     // Add timeout to prevent hanging in production
     const timeoutPromise = new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), 5000); // 5 second timeout
+      setTimeout(() => {
+        console.warn(`[NBA Cache] ⏱️ Query timeout (5s) for key: ${cacheKey.substring(0, 50)}...`);
+        resolve(null);
+      }, 5000); // 5 second timeout
     });
 
     const queryPromise = supabaseAdmin
@@ -69,10 +99,11 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       .eq('cache_key', cacheKey)
       .single();
 
+    console.log(`[NBA Cache] 📡 Starting Supabase query for: ${cacheKey.substring(0, 50)}...`);
     const result = await Promise.race([queryPromise, timeoutPromise]);
 
     if (result === null) {
-      console.warn(`[NBA Cache] Query timeout for key: ${cacheKey}`);
+      console.warn(`[NBA Cache] ⏱️ Query timeout (5s) for key: ${cacheKey.substring(0, 50)}...`);
       return null;
     }
 
@@ -80,20 +111,28 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
 
     if (error) {
       // Log error in production for debugging
-      if (error.code === 'PGRST116') {
+      if (error.code === 'PGRST116' || error.code === 'PGRST301') {
         // No rows returned - this is normal, not an error
+        console.log(`[NBA Cache] ℹ️ No cache found for key: ${cacheKey.substring(0, 50)}... (PGRST116/PGRST301)`);
         return null;
       }
-      console.error(`[NBA Cache] Supabase query error for ${cacheKey}:`, error.message || error);
+      console.error(`[NBA Cache] ❌ Supabase query error for ${cacheKey.substring(0, 50)}...:`, {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       return null;
     }
 
     if (!data) {
+      console.log(`[NBA Cache] ℹ️ Query returned no data for key: ${cacheKey.substring(0, 50)}...`);
       return null;
     }
 
     // Type guard for data
     if (!data || typeof data !== 'object' || !('expires_at' in data) || !('data' in data)) {
+      console.warn(`[NBA Cache] ⚠️ Invalid data structure for key: ${cacheKey.substring(0, 50)}...`);
       return null;
     }
 
@@ -103,6 +142,7 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     // Check if expired
     const expiresAt = new Date(cacheData.expires_at);
     if (expiresAt < new Date()) {
+      console.log(`[NBA Cache] ⏰ Cache expired for key: ${cacheKey.substring(0, 50)}... (expired at ${expiresAt.toISOString()})`);
       // Auto-delete expired entry
       if (supabaseAdmin) {
         await supabaseAdmin
@@ -112,6 +152,8 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       }
       return null;
     }
+
+    console.log(`[NBA Cache] ✅ Cache HIT for key: ${cacheKey.substring(0, 50)}... (expires at ${expiresAt.toISOString()})`);
 
     // Validate that data is not empty (for objects, check if it has any keys beyond metadata)
     const dataToReturn = cacheData.data;
@@ -143,7 +185,12 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     // Fail gracefully - return null so in-memory cache can be used
     // Log in both dev and production for debugging
     const errorMsg = error?.message || String(error);
-    console.error(`[NBA Cache] Error reading from Supabase for key ${cacheKey}:`, errorMsg);
+    console.error(`[NBA Cache] ❌ Exception reading from Supabase for key ${cacheKey.substring(0, 50)}...:`, {
+      message: errorMsg,
+      name: error?.name,
+      code: error?.code,
+      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
+    });
     if (error?.stack && process.env.NODE_ENV === 'development') {
       console.error('[NBA Cache] Stack trace:', error.stack);
     }
