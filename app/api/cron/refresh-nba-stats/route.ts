@@ -53,6 +53,7 @@ async function fetchNBAStats(url: string, timeout = 20000): Promise<any> {
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
+    console.log(`[fetchNBAStats] Fetching: ${url.substring(0, 150)}...`);
     const response = await fetch(url, {
       headers: NBA_HEADERS,
       signal: controller.signal,
@@ -77,8 +78,37 @@ async function fetchNBAStats(url: string, timeout = 20000): Promise<any> {
       console.error(`[fetchNBAStats] Timeout: ${timeoutError.message}`);
       throw timeoutError;
     }
-    console.error(`[fetchNBAStats] Error: ${error.message || error}`);
-    throw error;
+    
+    // Capture more details about fetch failures
+    const errorDetails: any = {
+      message: error.message || String(error),
+      name: error.name,
+      code: error.code,
+      cause: error.cause,
+      stack: error.stack?.split('\n').slice(0, 3).join('\n')
+    };
+    
+    // Check for common network error patterns
+    let diagnosticMsg = error.message || String(error);
+    if (error.message?.includes('ECONNREFUSED') || error.code === 'ECONNREFUSED') {
+      diagnosticMsg = `Connection refused - NBA API may be down or unreachable`;
+    } else if (error.message?.includes('ENOTFOUND') || error.code === 'ENOTFOUND') {
+      diagnosticMsg = `DNS resolution failed - Cannot resolve stats.nba.com`;
+    } else if (error.message?.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+      diagnosticMsg = `Connection timeout - NBA API took too long to respond`;
+    } else if (error.message?.includes('ECONNRESET') || error.code === 'ECONNRESET') {
+      diagnosticMsg = `Connection reset - NBA API closed the connection`;
+    } else if (error.message?.includes('fetch failed')) {
+      diagnosticMsg = `Network fetch failed - ${error.code || 'unknown error code'}. Check if stats.nba.com is reachable.`;
+    }
+    
+    console.error(`[fetchNBAStats] Error details:`, {
+      ...errorDetails,
+      diagnostic: diagnosticMsg,
+      url: url.substring(0, 100)
+    });
+    
+    throw new Error(diagnosticMsg);
   }
 }
 
