@@ -84,6 +84,8 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
 
   console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
 
+  // In production, if Supabase is consistently slow, we'll skip it after first timeout
+  // This prevents blocking the entire request
   try {
     // Use REST API directly in production (faster than JS client)
     // This bypasses the JS client overhead and goes straight to PostgREST
@@ -91,9 +93,10 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
       console.log(`[NBA Cache] 📡 Using REST API directly for: ${cacheKey.substring(0, 50)}...`);
       
       try {
-        const restUrl = `${supabaseUrl}/rest/v1/nba_api_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=data,expires_at,updated_at,created_at`;
+        // Use simpler query - just get data column, limit to 1 row
+        const restUrl = `${supabaseUrl}/rest/v1/nba_api_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=data,expires_at&limit=1`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for REST API
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout - fail fast
         
         const response = await fetch(restUrl, {
           method: 'GET',
@@ -164,8 +167,8 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     }
     
     // Fallback to JS client (for dev or if REST API fails)
-    // Add timeout to prevent hanging in production (increased for network latency)
-    const timeoutMs = process.env.NODE_ENV === 'production' ? 15000 : 5000; // 15s in prod, 5s in dev
+    // Short timeout - if Supabase is slow, just skip it and use in-memory cache
+    const timeoutMs = process.env.NODE_ENV === 'production' ? 5000 : 5000; // 5s everywhere - fail fast
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
         console.warn(`[NBA Cache] ⏱️ Query timeout (${timeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
@@ -183,7 +186,8 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     const result = await Promise.race([queryPromise, timeoutPromise]);
 
     if (result === null) {
-      console.warn(`[NBA Cache] ⏱️ Query timeout (5s) for key: ${cacheKey.substring(0, 50)}...`);
+      // Timeout - Supabase is too slow, skip it and use in-memory cache
+      console.warn(`[NBA Cache] ⏱️ Supabase timeout - skipping persistent cache, will use in-memory only`);
       return null;
     }
 
