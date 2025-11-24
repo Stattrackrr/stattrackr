@@ -56,22 +56,44 @@ $nbaTeams = @('ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GS
 # Determine which players to cache
 $playersToCache = @()
 
-if ($TopPlayers -gt 0) {
-    Write-Host "Using top $TopPlayers common players..." -ForegroundColor Yellow
-    $playersToCache = $commonPlayers[0..([Math]::Min($TopPlayers - 1, $commonPlayers.Length - 1))]
-} elseif ($PlayerIds.Count -gt 0) {
+if ($PlayerIds.Count -gt 0) {
     Write-Host "Using provided player IDs..." -ForegroundColor Yellow
     $playersToCache = $PlayerIds
+} elseif ($TopPlayers -gt 0) {
+    Write-Host "Using top $TopPlayers common players..." -ForegroundColor Yellow
+    $playersToCache = $commonPlayers[0..([Math]::Min($TopPlayers - 1, $commonPlayers.Length - 1))]
 } else {
-    Write-Host "No players specified. Using default common players..." -ForegroundColor Yellow
-    $playersToCache = $commonPlayers
+    Write-Host "Fetching ALL active players from API..." -ForegroundColor Yellow
+    try {
+        # Fetch all active players from BDL API
+        $playersUrl = "$baseUrl/api/bdl/players?all=true&max_hops=60&per_page=100"
+        Write-Host "  Calling: $playersUrl" -ForegroundColor Gray
+        $playersResponse = Invoke-RestMethod -Uri $playersUrl -Method GET -TimeoutSec 120
+        
+        if ($playersResponse.results -and $playersResponse.results.Count -gt 0) {
+            # Extract player IDs (BDL IDs - will be converted to NBA Stats IDs by the API)
+            $playersToCache = $playersResponse.results | ForEach-Object { $_.id } | Where-Object { $_ -ne $null }
+            Write-Host "  ✅ Found $($playersToCache.Count) active players" -ForegroundColor Green
+        } else {
+            Write-Host "  ⚠️ No players found, using default common players..." -ForegroundColor Yellow
+            $playersToCache = $commonPlayers
+        }
+    } catch {
+        Write-Host "  ❌ Failed to fetch players: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Using default common players instead..." -ForegroundColor Yellow
+        $playersToCache = $commonPlayers
+    }
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Bulk Player Data Cache" -ForegroundColor Yellow
-Write-Host "Players to cache: $($playersToCache.Count)" -ForegroundColor Gray
+Write-Host "Players to cache: $($playersToCache.Count)" -ForegroundColor $(if ($playersToCache.Count -gt 100) { "Green" } else { "Gray" })
 Write-Host "Season: $Season" -ForegroundColor Gray
 Write-Host "Delay between requests: ${DelaySeconds}s" -ForegroundColor Gray
+if ($playersToCache.Count -gt 100) {
+    $estimatedTime = [math]::Round(($playersToCache.Count * 3 * $DelaySeconds) / 60, 1)
+    Write-Host "Estimated time: ~$estimatedTime minutes" -ForegroundColor Yellow
+}
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 $shotChartSuccess = 0
