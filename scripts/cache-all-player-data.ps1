@@ -2,9 +2,9 @@
 # Caches: Shot Charts, Play Type Analysis, Team Tracking Stats (Potentials)
 # 
 # Usage:
-#   .\scripts\cache-all-player-data.ps1 -PlayerIds @(203076, 201939, 2544)
-#   .\scripts\cache-all-player-data.ps1 -TopPlayers 50
-#   .\scripts\cache-all-player-data.ps1  # Uses default common players
+#   .\scripts\cache-all-player-data.ps1  # Fetches and caches ALL active players (~500+)
+#   .\scripts\cache-all-player-data.ps1 -TopPlayers 50  # Cache only top 50 common players
+#   .\scripts\cache-all-player-data.ps1 -PlayerIds @(203076, 201939, 2544)  # Cache specific players
 
 param(
     [Parameter(Mandatory=$false)]
