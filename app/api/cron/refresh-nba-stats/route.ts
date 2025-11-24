@@ -85,10 +85,12 @@ function isStale(updatedAt: string | undefined): boolean {
 /**
  * Refresh tracking stats for a team
  */
+type TrackingCategory = 'passing' | 'rebounding';
+
 async function refreshTeamTrackingStats(
   team: string,
   season: number,
-  category: 'passing' | 'rebounding',
+  category: TrackingCategory,
   opponentTeam: string | null = null,
   options?: {
     timeoutMs?: number;
@@ -333,7 +335,8 @@ export async function GET(request: NextRequest) {
   let bulkPlayTypeStatus: 'fresh' | 'needs_refresh' | 'skipped_disabled_in_production' = SHOULD_TRIGGER_LEAGUE_BULK ? 'fresh' : 'skipped_disabled_in_production';
   const teamsParam = requestUrl.searchParams.get('teams');
   const teamLimitParam = requestUrl.searchParams.get('teamLimit');
-  const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
+const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
+  const trackingCategoriesParam = requestUrl.searchParams.get('trackingCategories');
 
   let teamsToProcess = teamsParam
     ? teamsParam
@@ -379,8 +382,16 @@ export async function GET(request: NextRequest) {
     ) || 5
     );
 
+  const trackingCategories: TrackingCategory[] = trackingCategoriesParam
+    ? trackingCategoriesParam
+        .split(',')
+        .map((c) => c.trim().toLowerCase())
+        .filter((c): c is TrackingCategory => c === 'passing' || c === 'rebounding')
+    : ['passing', 'rebounding'];
+
   console.log('[NBA Stats Refresh] Teams to process:', teamsToProcess.length, teamsToProcess.join(','));
   console.log('[NBA Stats Refresh] Tracking batch size:', trackingBatchSize);
+  console.log('[NBA Stats Refresh] Tracking categories:', trackingCategories.join(','));
 
   try {
     console.log('[NBA Stats Refresh] Starting daily refresh...');
@@ -391,7 +402,7 @@ export async function GET(request: NextRequest) {
     const refreshPromises: Promise<void>[] = [];
     
     for (const team of teamsToProcess) {
-      for (const category of ['passing', 'rebounding'] as const) {
+      for (const category of trackingCategories) {
         results.total++;
         
         // Add to batch
