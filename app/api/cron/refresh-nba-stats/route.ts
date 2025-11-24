@@ -193,7 +193,7 @@ async function refreshTeamTrackingStats(
     const maxAttempts = Math.max(
       1,
       (options?.maxAttempts ??
-        (parseInt(process.env.TRACKING_RETRY_ATTEMPTS ?? '5', 10) || 5))
+        (parseInt(process.env.TRACKING_RETRY_ATTEMPTS ?? '3', 10) || 3))
     );
     const timeoutMs = Math.max(
       10000,
@@ -210,6 +210,7 @@ async function refreshTeamTrackingStats(
         if (!data?.resultSets?.[0]) {
           const errorMsg = 'No resultSets in response';
           console.error(`[Team Tracking Stats] ${team} ${category}: ${errorMsg}`);
+          // Don't retry on invalid response - this is a data issue, not network
           return { success: false, changed: false, error: errorMsg };
         }
 
@@ -280,11 +281,27 @@ async function refreshTeamTrackingStats(
         return { success: true, changed: hasChanged };
       } catch (error: any) {
         lastError = error.message || String(error);
+        const isTransientError = 
+          lastError.includes('ECONNRESET') ||
+          lastError.includes('ETIMEDOUT') ||
+          lastError.includes('fetch failed') ||
+          lastError.includes('timeout');
+        
         console.warn(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} failed: ${lastError}`);
-        if (attempt < maxAttempts) {
+        
+        if (attempt < maxAttempts && isTransientError) {
+          // Exponential backoff: 2s, 4s, 8s, 16s, etc. (max 30s)
+          const delay = Math.min(2000 * Math.pow(2, attempt - 1), 30000);
+          console.log(`[Team Tracking Stats] Retrying ${team} ${category} after ${delay}ms (transient error: ${lastError.substring(0, 50)})...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else if (attempt < maxAttempts) {
+          // Non-transient error, shorter delay
           const delay = 1000 * attempt;
           console.log(`[Team Tracking Stats] Retrying ${team} ${category} after ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          // Last attempt failed, don't retry
+          break;
         }
       }
     }
