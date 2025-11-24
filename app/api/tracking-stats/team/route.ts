@@ -311,39 +311,47 @@ export async function GET(request: NextRequest) {
       }
       
       if (cached) {
-        const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+        // Validate cached data - ensure it has actual player data
+        const hasValidData = cached.players && Array.isArray(cached.players) && cached.players.length > 0;
         
-        // Check if data is stale (older than 24 hours for daily updates)
-        const cacheMetadata = (cached as any).__cache_metadata;
-        const isStale = cacheMetadata?.updated_at 
-          ? (Date.now() - new Date(cacheMetadata.updated_at).getTime()) > (24 * 60 * 60 * 1000)
-          : false;
-        
-        // If stale, trigger background refresh but return old data immediately
-        if (isStale && process.env.NODE_ENV !== 'production') {
-          console.log(`[Team Tracking Stats] ⚠️ Cache is stale (older than 24h) for ${team} ${category}${filterSuffix}, refreshing in background...`);
+        if (!hasValidData) {
+          console.log(`[Team Tracking Stats] ⚠️ Cached data has no players, treating as invalid cache. Fetching fresh data...`);
+          cached = null; // Treat as cache miss
+        } else {
+          const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
           
-          // Trigger background refresh (don't await)
-          refreshTrackingStatsInBackground(team, season, category, opponentTeam, cacheKey).catch(err => {
-            console.error(`[Team Tracking Stats] Background refresh failed:`, err);
+          // Check if data is stale (older than 24 hours for daily updates)
+          const cacheMetadata = (cached as any).__cache_metadata;
+          const isStale = cacheMetadata?.updated_at 
+            ? (Date.now() - new Date(cacheMetadata.updated_at).getTime()) > (24 * 60 * 60 * 1000)
+            : false;
+          
+          // If stale, trigger background refresh but return old data immediately
+          if (isStale && process.env.NODE_ENV !== 'production') {
+            console.log(`[Team Tracking Stats] ⚠️ Cache is stale (older than 24h) for ${team} ${category}${filterSuffix}, refreshing in background...`);
+            
+            // Trigger background refresh (don't await)
+            refreshTrackingStatsInBackground(team, season, category, opponentTeam, cacheKey).catch(err => {
+              console.error(`[Team Tracking Stats] Background refresh failed:`, err);
+            });
+          }
+          
+          // Remove metadata before returning
+          if ((cached as any).__cache_metadata) {
+            delete (cached as any).__cache_metadata;
+          }
+          
+          console.log(`[Team Tracking Stats] ✅ Cache hit (${cacheSource}${isStale ? ', stale' : ''}) for ${team} ${category}${filterSuffix} (season ${season}, ${cached.players.length} players)`);
+          return NextResponse.json(cached, {
+            status: 200,
+            headers: {
+              'X-Cache-Status': isStale ? 'STALE' : 'HIT',
+              'X-Cache-Source': cacheSource,
+              'X-Refresh-In-Progress': isStale ? 'true' : 'false',
+              'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' // 24h cache, 48h stale
+            }
           });
         }
-        
-        // Remove metadata before returning
-        if ((cached as any).__cache_metadata) {
-          delete (cached as any).__cache_metadata;
-        }
-        
-        console.log(`[Team Tracking Stats] ✅ Cache hit (${cacheSource}${isStale ? ', stale' : ''}) for ${team} ${category}${filterSuffix} (season ${season})`);
-        return NextResponse.json(cached, {
-          status: 200,
-          headers: {
-            'X-Cache-Status': isStale ? 'STALE' : 'HIT',
-            'X-Cache-Source': cacheSource,
-            'X-Refresh-In-Progress': isStale ? 'true' : 'false',
-            'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' // 24h cache, 48h stale
-          }
-        });
       }
       
       const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
@@ -556,22 +564,27 @@ export async function GET(request: NextRequest) {
       cachedAt: new Date().toISOString()
     };
 
-    // Check if we have old data to compare
-    const oldCached = await getNBACache<any>(cacheKey);
-    const hasChanged = oldCached && !deepEqual(oldCached, responsePayload);
-    
-    if (hasChanged) {
-      console.log(`[Team Tracking Stats] ✅ New data detected for ${team} ${category}${filterSuffix}, updating cache...`);
-    } else if (oldCached) {
-      console.log(`[Team Tracking Stats] ℹ️ No changes detected for ${team} ${category}${filterSuffix}, updating TTL only`);
-    }
+    // Only cache if we have actual player data
+    if (teamPlayers.length > 0) {
+      // Check if we have old data to compare
+      const oldCached = await getNBACache<any>(cacheKey);
+      const hasChanged = oldCached && !deepEqual(oldCached, responsePayload);
+      
+      if (hasChanged) {
+        console.log(`[Team Tracking Stats] ✅ New data detected for ${team} ${category}${filterSuffix}, updating cache...`);
+      } else if (oldCached) {
+        console.log(`[Team Tracking Stats] ℹ️ No changes detected for ${team} ${category}${filterSuffix}, updating TTL only`);
+      }
 
-    // Cache the result (both all games and opponent-specific)
-    // Store in both Supabase (persistent, shared across all users) and in-memory
-    // The upsert will replace old entry, effectively deleting it
-    await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
-    cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
-    console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory for ${CACHE_TTL.TRACKING_STATS} minutes (available instantly for all users)`);
+      // Cache the result (both all games and opponent-specific)
+      // Store in both Supabase (persistent, shared across all users) and in-memory
+      // The upsert will replace old entry, effectively deleting it
+      await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
+      cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
+      console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory for ${CACHE_TTL.TRACKING_STATS} minutes (available instantly for all users)`);
+    } else {
+      console.warn(`[Team Tracking Stats] ⚠️ No players found for ${team} ${category}${filterSuffix}. Not caching empty data.`);
+    }
 
     return NextResponse.json(
       responsePayload,

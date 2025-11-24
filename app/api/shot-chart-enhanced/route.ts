@@ -361,15 +361,30 @@ export async function GET(request: NextRequest) {
     }
     
     if (cached) {
-      console.log(`[Shot Chart Enhanced] ✅ Cache hit for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
-        restrictedArea: cached.shotZones?.restrictedArea?.fga || 0,
-        paint: cached.shotZones?.paint?.fga || 0,
-        midRange: cached.shotZones?.midRange?.fga || 0,
-        leftCorner3: cached.shotZones?.leftCorner3?.fga || 0,
-        rightCorner3: cached.shotZones?.rightCorner3?.fga || 0,
-        aboveBreak3: cached.shotZones?.aboveBreak3?.fga || 0,
-      });
+      // Validate cached data - if all zones have 0 attempts, treat as invalid cache
+      const totalAttempts = (cached.shotZones?.restrictedArea?.fga || 0) +
+                           (cached.shotZones?.paint?.fga || 0) +
+                           (cached.shotZones?.midRange?.fga || 0) +
+                           (cached.shotZones?.leftCorner3?.fga || 0) +
+                           (cached.shotZones?.rightCorner3?.fga || 0) +
+                           (cached.shotZones?.aboveBreak3?.fga || 0);
       
+      if (totalAttempts === 0) {
+        console.log(`[Shot Chart Enhanced] ⚠️ Cached data has 0 shot attempts, treating as invalid cache. Fetching fresh data...`);
+        cached = null; // Treat as cache miss
+      } else {
+        console.log(`[Shot Chart Enhanced] ✅ Cache hit for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
+          restrictedArea: cached.shotZones?.restrictedArea?.fga || 0,
+          paint: cached.shotZones?.paint?.fga || 0,
+          midRange: cached.shotZones?.midRange?.fga || 0,
+          leftCorner3: cached.shotZones?.leftCorner3?.fga || 0,
+          rightCorner3: cached.shotZones?.rightCorner3?.fga || 0,
+          aboveBreak3: cached.shotZones?.aboveBreak3?.fga || 0,
+        });
+      }
+    }
+    
+    if (cached) {
       // If opponent team is provided, fetch defensive rankings even on cache hit
       // (rankings are opponent-specific, so they may not be in the cached response)
       if (opponentTeam && opponentTeam !== 'N/A') {
@@ -698,6 +713,30 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[Shot Chart Enhanced] Final shot zones (with percentages):`, JSON.stringify(shotZones, null, 2));
+
+    // Validate that we have actual shot data before proceeding
+    const totalAttempts = shotZones.restrictedArea.fga +
+                         shotZones.paint.fga +
+                         shotZones.midRange.fga +
+                         shotZones.leftCorner3.fga +
+                         shotZones.rightCorner3.fga +
+                         shotZones.aboveBreak3.fga;
+    
+    if (totalAttempts === 0) {
+      console.warn(`[Shot Chart Enhanced] ⚠️ No shot attempts found for player ${nbaPlayerId}. This might be a rookie or player with no games this season.`);
+      // Don't cache empty data - return it but don't cache
+      return NextResponse.json({
+        playerId: nbaPlayerId,
+        originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
+        season: seasonStr,
+        shotZones,
+        opponentTeam,
+        opponentDefense: null,
+        opponentRankings: null,
+        error: 'No shot data available for this player this season',
+        cachedAt: new Date().toISOString()
+      }, { status: 200 });
+    }
 
     // Fetch league-wide defense rankings (all 30 teams)
     // This is optional - if it fails, we'll just not show rankings
