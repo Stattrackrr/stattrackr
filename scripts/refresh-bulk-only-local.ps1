@@ -4,11 +4,31 @@
 # Refreshes:
 # 1. Bulk player play types + defensive rankings
 # 2. Team defense rankings (zone rankings)
+#
+# Run this daily to keep production cache fresh
 
 $baseUrl = "http://localhost:3000"
 
+# Calculate current NBA season (same logic as currentNbaSeason() in TypeScript)
+# NBA season starts around October 15th
+$now = Get-Date
+$month = $now.Month  # 1-12
+$day = $now.Day
+
+if ($month -eq 10 -and $day -ge 15) {
+    # October 15th or later - new season starting
+    $season = $now.Year
+} elseif ($month -ge 11) {
+    # November through December - current year
+    $season = $now.Year
+} else {
+    # January through September - previous year
+    $season = $now.Year - 1
+}
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "NBA Bulk Stats Refresh (Bulk Only)" -ForegroundColor Yellow
+Write-Host "Season: $season" -ForegroundColor Gray
 Write-Host "Skipping team tracking stats (too unreliable)" -ForegroundColor Gray
 Write-Host "========================================`n" -ForegroundColor Cyan
 
@@ -16,7 +36,7 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 Write-Host "[1/2] Refreshing bulk player play types + defensive rankings..." -ForegroundColor Yellow
 
 try {
-    $url = "$baseUrl/api/cache/nba-league-data?season=2025"
+    $url = "$baseUrl/api/cache/nba-league-data?season=$season"
     $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 600  # 10 min timeout
     
     Write-Host "  ✅ Success: Bulk player play types + defensive rankings refreshed" -ForegroundColor Green
@@ -31,7 +51,7 @@ try {
 Write-Host "`n[2/2] Refreshing team defense rankings (zone rankings)..." -ForegroundColor Yellow
 
 try {
-    $url = "$baseUrl/api/team-defense-rankings?season=2025"
+    $url = "$baseUrl/api/team-defense-rankings?season=$season"
     $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 600  # 10 min timeout
     
     Write-Host "  ✅ Success: Team defense rankings refreshed" -ForegroundColor Green
