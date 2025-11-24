@@ -1,5 +1,5 @@
 # PowerShell script to bulk cache ALL player data needed for dashboard
-# Caches: Shot Charts, Play Type Analysis, Team Tracking Stats (Potentials)
+# Caches: Shot Charts, Play Type Analysis, Defensive Rankings, Team Tracking Stats (Potentials)
 # 
 # Usage:
 #   .\scripts\cache-all-player-data.ps1  # Fetches and caches ALL active players (~500+)
@@ -171,10 +171,38 @@ if (-not $SkipPlayTypes) {
     }
 }
 
-# Step 3: Cache Team Tracking Stats (Potentials)
+# Step 3: Cache Defensive Rankings (for shot chart opponent ranks & play type filter)
+Write-Host "`n[3/4] Caching Defensive Rankings..." -ForegroundColor Yellow
+Write-Host "========================================" -ForegroundColor Cyan
+
+# 3a: Zone Defense Rankings (for shot chart opponent ranks)
+Write-Host "[3a/4] Zone Defense Rankings (for shot chart opponent ranks)..." -ForegroundColor Gray
+try {
+    $url = "$baseUrl/api/team-defense-rankings?season=$Season"
+    $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 600  # 10 min timeout
+    
+    Write-Host "  [OK] Zone defense rankings cached" -ForegroundColor Green
+} catch {
+    Write-Host "  [ERROR] Zone defense rankings failed: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+Start-Sleep -Seconds $DelaySeconds
+
+# 3b: Play Type Defensive Rankings (for play type filter)
+Write-Host "[3b/4] Play Type Defensive Rankings (for play type filter)..." -ForegroundColor Gray
+try {
+    $url = "$baseUrl/api/cache/nba-league-data?season=$Season"
+    $response = Invoke-RestMethod -Uri $url -Method GET -TimeoutSec 600  # 10 min timeout
+    
+    Write-Host "  [OK] Play type defensive rankings cached" -ForegroundColor Green
+} catch {
+    Write-Host "  [ERROR] Play type defensive rankings failed: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+# Step 4: Cache Team Tracking Stats (Potentials)
 # This requires getting player's team first, then caching tracking stats
 if (-not $SkipPotentials) {
-    Write-Host "`n[3/3] Caching Team Tracking Stats (Potentials)..." -ForegroundColor Yellow
+    Write-Host "`n[4/4] Caching Team Tracking Stats (Potentials)..." -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Note: This caches all teams for 'passing' and 'rebounding' categories" -ForegroundColor Gray
     Write-Host "      Potentials will work for any player once their team is cached" -ForegroundColor Gray
@@ -221,6 +249,10 @@ if (-not $SkipPotentials) {
 }
 
 Write-Host "`nProduction can now read all cached data!" -ForegroundColor Green
-Write-Host "`nNote: Zone defense rankings and play type defensive rankings" -ForegroundColor Gray
-Write-Host "      should be cached via: .\scripts\refresh-bulk-only-local.ps1" -ForegroundColor Gray
+Write-Host "`nAll data cached to Supabase!" -ForegroundColor Green
+Write-Host "  - Shot Charts (with opponent ranks)" -ForegroundColor Gray
+Write-Host "  - Play Type Analysis (with defensive rankings)" -ForegroundColor Gray
+Write-Host "  - Zone Defense Rankings" -ForegroundColor Gray
+Write-Host "  - Play Type Defensive Rankings" -ForegroundColor Gray
+Write-Host "  - Team Tracking Stats (Potentials)" -ForegroundColor Gray
 
