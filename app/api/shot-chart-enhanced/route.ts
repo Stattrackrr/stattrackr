@@ -180,17 +180,17 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   
   // Aggressive timeouts: 5s in dev, 8s in production (fail fast, rely on cache)
   // No retries in production, 1 retry max in dev
-  const actualTimeout = isProduction 
-    ? Math.min(timeout, 8000) // 8s max in production - fail fast
-    : Math.min(timeout, 5000); // 5s max in dev - fail fast
-  const actualRetries = isProduction ? 0 : Math.min(retries, 1); // 0 retries in production, 1 max in dev
+  const actualTimeout = Math.max(4000, Math.min(timeout, 30000)); // allow longer requests (up to 30s)
+  const actualRetries = Math.max(0, Math.min(retries, 2)); // honor requested retries (max 2)
   
+  const maxAttempts = actualRetries + 1;
+
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
     try {
-      console.log(`[Shot Chart Enhanced] Fetching NBA API (attempt ${attempt + 1}/${retries + 1}): ${url.substring(0, 100)}...`);
+      console.log(`[Shot Chart Enhanced] Fetching NBA API (attempt ${attempt + 1}/${maxAttempts}): ${url.substring(0, 100)}...`);
       
       const response = await fetch(url, {
         headers: NBA_HEADERS,
@@ -205,7 +205,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (!response.ok) {
         const text = await response.text();
         const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
-        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${actualRetries + 1}):`, text.slice(0, 500));
+        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${maxAttempts}):`, text.slice(0, 500));
         
         // Don't retry on 4xx errors (client errors) except 429 (rate limit)
         if (response.status === 429 || (response.status >= 500 && attempt < actualRetries)) {

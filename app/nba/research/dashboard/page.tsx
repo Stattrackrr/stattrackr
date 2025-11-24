@@ -4,6 +4,7 @@ import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useRef, useEffect, memo, useCallback, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -2454,6 +2455,11 @@ const ChartControls = function ChartControls({
 }: any) {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [advancedFilterTop, setAdvancedFilterTop] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   // Track the latest in-progress line while the user is holding +/-
   const transientLineRef = useRef<number | null>(null);
   const holdDelayRef = useRef<any>(null);
@@ -4033,13 +4039,12 @@ const ChartControls = function ChartControls({
                   >
                     Advanced
                   </button>
-                  {isAdvancedFiltersOpen && advancedFilterTop !== null && (
+                  {isAdvancedFiltersOpen && advancedFilterTop !== null && mounted && createPortal(
                     <div 
                       className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
                       style={{ 
                         top: `${advancedFilterTop}px`,
-                        position: 'fixed',
-                        willChange: 'transform'
+                        position: 'fixed'
                       }}
                     >
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
@@ -4190,7 +4195,8 @@ const ChartControls = function ChartControls({
                           </span>
                         </button>
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
               )}

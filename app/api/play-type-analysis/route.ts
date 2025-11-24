@@ -49,12 +49,9 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Timeouts: 15s in dev (NBA API is slow), 8s in production (fail fast, rely on cache)
-  // No retries in production, 1 retry max in dev
-  const actualTimeout = isProduction 
-    ? Math.min(timeout, 8000) // 8s max in production - fail fast
-    : Math.min(timeout, 15000); // 15s max in dev - NBA API can take 10-20s
-  const actualRetries = isProduction ? 0 : Math.min(retries, 1); // 0 retries in production, 1 max in dev
+  const actualTimeout = Math.max(4000, Math.min(timeout, 30000));
+  const actualRetries = Math.max(0, Math.min(retries, 2));
+  const maxAttempts = actualRetries + 1;
   
   for (let attempt = 0; attempt <= actualRetries; attempt++) {
     const controller = new AbortController();
@@ -74,7 +71,7 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (!response.ok) {
         const text = await response.text().catch(() => '');
         const errorMsg = `NBA API ${response.status}`;
-        console.error(`[Play Type Analysis] NBA API error ${response.status} (attempt ${attempt + 1}/${retries + 1}):`, text.slice(0, 200));
+        console.error(`[Play Type Analysis] NBA API error ${response.status} (attempt ${attempt + 1}/${maxAttempts}):`, text.slice(0, 200));
         
         // Don't retry on 4xx errors (client errors) except 429 (rate limit)
         if (response.status === 429 || (response.status >= 500 && attempt < actualRetries)) {
