@@ -20,11 +20,19 @@ if (supabaseUrl && supabaseServiceKey) {
         persistSession: false
       }
     });
+    console.log('[NBA Cache] ✅ Supabase client initialized:', {
+      url: supabaseUrl.substring(0, 30) + '...',
+      keyLength: supabaseServiceKey.length,
+      namespace: process.env.NODE_ENV || 'unknown'
+    });
   } catch (error) {
-    console.warn('[NBA Cache] Failed to initialize Supabase client:', error);
+    console.error('[NBA Cache] ❌ Failed to initialize Supabase client:', error);
   }
 } else {
-  console.warn('[NBA Cache] Supabase credentials not configured - cache will use in-memory only');
+  const missing = [];
+  if (!supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
+  if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  console.error(`[NBA Cache] ❌ Supabase credentials not configured (missing: ${missing.join(', ')}) - cache will use in-memory only`);
 }
 
 export interface NBACacheEntry {
@@ -42,17 +50,45 @@ export interface NBACacheEntry {
 export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> {
   // If Supabase not configured, return null (will fallback to in-memory cache)
   if (!supabaseAdmin) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[NBA Cache] ❌ Supabase client not initialized in PRODUCTION - cache will not work!');
+      console.error('[NBA Cache] Check Vercel environment variables: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+    }
     return null;
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    // Add timeout to prevent hanging in production
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), 5000); // 5 second timeout
+    });
+
+    const queryPromise = supabaseAdmin
       .from('nba_api_cache')
       .select('data, expires_at, updated_at, created_at')
       .eq('cache_key', cacheKey)
       .single();
 
-    if (error || !data) {
+    const result = await Promise.race([queryPromise, timeoutPromise]);
+
+    if (result === null) {
+      console.warn(`[NBA Cache] Query timeout for key: ${cacheKey}`);
+      return null;
+    }
+
+    const { data, error } = result as any;
+
+    if (error) {
+      // Log error in production for debugging
+      if (error.code === 'PGRST116') {
+        // No rows returned - this is normal, not an error
+        return null;
+      }
+      console.error(`[NBA Cache] Supabase query error for ${cacheKey}:`, error.message || error);
+      return null;
+    }
+
+    if (!data) {
       return null;
     }
 
@@ -103,10 +139,13 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     }
 
     return dataToReturn;
-  } catch (error) {
+  } catch (error: any) {
     // Fail gracefully - return null so in-memory cache can be used
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[NBA Cache] Error reading from Supabase (will use in-memory cache):', error);
+    // Log in both dev and production for debugging
+    const errorMsg = error?.message || String(error);
+    console.error(`[NBA Cache] Error reading from Supabase for key ${cacheKey}:`, errorMsg);
+    if (error?.stack && process.env.NODE_ENV === 'development') {
+      console.error('[NBA Cache] Stack trace:', error.stack);
     }
     return null;
   }
@@ -147,18 +186,15 @@ export async function setNBACache(
       });
 
     if (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[NBA Cache] Error writing to Supabase (in-memory cache will still work):', error);
-      }
+      console.error(`[NBA Cache] Error writing to Supabase for key ${cacheKey}:`, error.message || error);
       return false;
     }
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
     // Fail gracefully - in-memory cache will still work
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[NBA Cache] Error setting cache (in-memory cache will still work):', error);
-    }
+    const errorMsg = error?.message || String(error);
+    console.error(`[NBA Cache] Error setting cache for key ${cacheKey}:`, errorMsg);
     return false;
   }
 }
