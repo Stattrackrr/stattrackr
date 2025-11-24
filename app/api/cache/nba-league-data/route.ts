@@ -55,7 +55,7 @@ function parsePlayTypeFilter(param: string | null): string[] | null {
 }
 
 async function fetchNBAStats(url: string, timeout = 15000, retries = 1, retryOn500 = false) {
-  const actualTimeout = Math.max(4000, Math.min(timeout, 30000));
+  const actualTimeout = Math.max(4000, Math.min(timeout, 60000));
   const actualRetries = retryOn500 ? Math.max(0, Math.min(retries, 2)) : Math.max(0, Math.min(retries, 1));
   const maxAttempts = actualRetries + 1;
   
@@ -297,17 +297,37 @@ export async function GET(request: NextRequest) {
           SeasonYear: seasonStr,
           PlayType: key,
           TypeGrouping: 'offensive',
+          Count: '5000',
+          Offset: '0'
         });
 
-        const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-        const data = await fetchNBAStats(url, 20000, 2, true); // 20s timeout, 2 retries, retry on 500 errors
-        const resultSet = data?.resultSets?.[0];
-        
-        if (resultSet) {
-          const headers = resultSet.headers || [];
-          const rows = resultSet.rowSet || [];
+        const rows: any[] = [];
+        let headers: string[] | undefined;
+        let offset = 0;
+        const pageSize = 5000;
+
+        while (true) {
+          params.set('Offset', String(offset));
+          const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
+          const data = await fetchNBAStats(url, 30000, 2, true); // allow longer timeout + retries
+          const resultSet = data?.resultSets?.[0];
           
-          // Store all player data for this play type
+          if (!resultSet) break;
+          
+          headers = resultSet.headers || headers;
+          const pageRows = resultSet.rowSet || [];
+          rows.push(...pageRows);
+          
+          console.log(`[NBA League Data Cache] ${key}: fetched ${pageRows.length} rows at offset ${offset}`);
+          
+          if (pageRows.length < pageSize) {
+            break; // no more data
+          }
+          
+          offset += pageSize;
+        }
+        
+        if (headers && rows.length) {
           playerPlayTypesData[key] = {
             headers,
             rows,
