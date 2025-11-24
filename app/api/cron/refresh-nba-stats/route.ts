@@ -89,7 +89,11 @@ async function refreshTeamTrackingStats(
   team: string,
   season: number,
   category: 'passing' | 'rebounding',
-  opponentTeam: string | null = null
+  opponentTeam: string | null = null,
+  options?: {
+    timeoutMs?: number;
+    maxAttempts?: number;
+  }
 ): Promise<{ success: boolean; changed: boolean; error?: string }> {
   try {
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
@@ -147,13 +151,19 @@ async function refreshTeamTrackingStats(
     const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
     const maxAttempts = Math.max(
       1,
-      parseInt(process.env.TRACKING_RETRY_ATTEMPTS ?? '3', 10) || 3
+      (options?.maxAttempts ??
+        (parseInt(process.env.TRACKING_RETRY_ATTEMPTS ?? '5', 10) || 5))
+    );
+    const timeoutMs = Math.max(
+      10000,
+      (options?.timeoutMs ??
+        (parseInt(process.env.TRACKING_TIMEOUT_MS ?? '60000', 10) || 60000))
     );
     let lastError: string | null = null;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const data = await fetchNBAStats(url, 40000); // allow up to 40s for team-level stats
+        const data = await fetchNBAStats(url, timeoutMs);
 
         if (!data?.resultSets?.[0]) {
           return { success: false, changed: false, error: 'No resultSets' };
@@ -343,11 +353,31 @@ export async function GET(request: NextRequest) {
     1,
     parseInt(
       trackingBatchParam ??
-        process.env.TRACKING_BATCH_SIZE ??
-        '2',
+        (process.env.TRACKING_BATCH_SIZE ??
+        '1'),
       10
-    ) || 2
+    ) || 1
   );
+  const trackingTimeoutParam = requestUrl.searchParams.get('trackingTimeout');
+  const trackingRetriesParam = requestUrl.searchParams.get('trackingRetries');
+  const trackingTimeoutMs = Math.max(
+    10000,
+    parseInt(
+      (trackingTimeoutParam ??
+        (process.env.TRACKING_TIMEOUT_MS ??
+        '60000')),
+      10
+    ) || 60000
+  );
+  const trackingMaxAttempts = Math.max(
+      1,
+      parseInt(
+      (trackingRetriesParam ??
+        (process.env.TRACKING_RETRY_ATTEMPTS ??
+        '5')),
+      10
+    ) || 5
+    );
 
   console.log('[NBA Stats Refresh] Teams to process:', teamsToProcess.length, teamsToProcess.join(','));
   console.log('[NBA Stats Refresh] Tracking batch size:', trackingBatchSize);
@@ -366,7 +396,10 @@ export async function GET(request: NextRequest) {
         
         // Add to batch
         refreshPromises.push(
-          refreshTeamTrackingStats(team, currentSeason, category).then((result) => {
+          refreshTeamTrackingStats(team, currentSeason, category, null, {
+            timeoutMs: trackingTimeoutMs,
+            maxAttempts: trackingMaxAttempts
+          }).then((result) => {
             if (result.success) {
               if (result.changed) {
                 results.changed++;
