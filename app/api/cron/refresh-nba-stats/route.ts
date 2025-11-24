@@ -145,76 +145,92 @@ async function refreshTeamTrackingStats(
     });
 
     const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
-    const data = await fetchNBAStats(url, 30000); // 30s timeout for cron
+    const maxAttempts = Math.max(
+      1,
+      parseInt(process.env.TRACKING_RETRY_ATTEMPTS ?? '3', 10) || 3
+    );
+    let lastError: string | null = null;
 
-    if (!data?.resultSets?.[0]) {
-      return { success: false, changed: false, error: 'No resultSets' };
-    }
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const data = await fetchNBAStats(url, 40000); // allow up to 40s for team-level stats
 
-    const resultSet = data.resultSets[0];
-    const headers = resultSet.headers || [];
-    const rows = resultSet.rowSet || [];
-
-    const playerIdIdx = headers.indexOf('PLAYER_ID');
-    const playerNameIdx = headers.indexOf('PLAYER_NAME');
-    const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-
-    if (playerIdIdx === -1 || playerNameIdx === -1) {
-      return { success: false, changed: false, error: 'Missing columns' };
-    }
-
-    const teamPlayers = rows
-      .filter((row: any[]) => row[teamAbbrIdx] === team)
-      .map((row: any[]) => {
-        const stats: any = {};
-        headers.forEach((header: string, idx: number) => {
-          stats[header] = row[idx];
-        });
-
-        const player: any = {
-          playerId: String(stats.PLAYER_ID),
-          playerName: stats.PLAYER_NAME,
-          gp: stats.GP || 0,
-        };
-
-        if (category === 'passing') {
-          player.potentialAst = stats.POTENTIAL_AST;
-          player.ast = stats.AST_ADJ || stats.AST;
-          player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
-          player.passesMade = stats.PASSES_MADE;
-          player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
-        } else {
-          player.rebChances = stats.REB_CHANCES;
-          player.reb = stats.REB;
-          player.rebChancePct = stats.REB_CHANCE_PCT;
-          player.rebContest = stats.REB_CONTEST;
-          player.rebUncontest = stats.REB_UNCONTEST;
-          player.avgRebDist = stats.AVG_REB_DIST;
-          player.drebChances = stats.DREB_CHANCES;
-          player.drebChancePct = stats.DREB_CHANCE_PCT;
-          player.avgDrebDist = stats.AVG_DREB_DIST;
+        if (!data?.resultSets?.[0]) {
+          return { success: false, changed: false, error: 'No resultSets' };
         }
 
-        return player;
-      });
+        const resultSet = data.resultSets[0];
+        const headers = resultSet.headers || [];
+        const rows = resultSet.rowSet || [];
 
-    const newPayload = { 
-      team,
-      season: seasonStr,
-      category,
-      players: teamPlayers,
-      opponentTeam: opponentTeam || undefined,
-      cachedAt: new Date().toISOString()
-    };
+        const playerIdIdx = headers.indexOf('PLAYER_ID');
+        const playerNameIdx = headers.indexOf('PLAYER_NAME');
+        const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
 
-    // Compare with old data
-    const hasChanged = !cached || JSON.stringify(cached) !== JSON.stringify(newPayload);
-    
-    // Update cache
-    await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
-    cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+        if (playerIdIdx === -1 || playerNameIdx === -1) {
+          return { success: false, changed: false, error: 'Missing columns' };
+        }
 
-    return { success: true, changed: hasChanged };
+        const teamPlayers = rows
+          .filter((row: any[]) => row[teamAbbrIdx] === team)
+          .map((row: any[]) => {
+            const stats: any = {};
+            headers.forEach((header: string, idx: number) => {
+              stats[header] = row[idx];
+            });
+
+            const player: any = {
+              playerId: String(stats.PLAYER_ID),
+              playerName: stats.PLAYER_NAME,
+              gp: stats.GP || 0,
+            };
+
+            if (category === 'passing') {
+              player.potentialAst = stats.POTENTIAL_AST;
+              player.ast = stats.AST_ADJ || stats.AST;
+              player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+              player.passesMade = stats.PASSES_MADE;
+              player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+            } else {
+              player.rebChances = stats.REB_CHANCES;
+              player.reb = stats.REB;
+              player.rebChancePct = stats.REB_CHANCE_PCT;
+              player.rebContest = stats.REB_CONTEST;
+              player.rebUncontest = stats.REB_UNCONTEST;
+              player.avgRebDist = stats.AVG_REB_DIST;
+              player.drebChances = stats.DREB_CHANCES;
+              player.drebChancePct = stats.DREB_CHANCE_PCT;
+              player.avgDrebDist = stats.AVG_DREB_DIST;
+            }
+
+            return player;
+          });
+
+        const newPayload = { 
+          team,
+          season: seasonStr,
+          category,
+          players: teamPlayers,
+          opponentTeam: opponentTeam || undefined,
+          cachedAt: new Date().toISOString()
+        };
+
+        const hasChanged = !cached || JSON.stringify(cached) !== JSON.stringify(newPayload);
+
+        await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
+        cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+
+        return { success: true, changed: hasChanged };
+      } catch (error: any) {
+        lastError = error.message;
+        console.warn(`[Team Tracking Stats] ${team} ${category} attempt ${attempt}/${maxAttempts} failed: ${lastError}`);
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    return { success: false, changed: false, error: lastError ?? 'Unknown error' };
   } catch (error: any) {
     return { success: false, changed: false, error: error.message };
   }
@@ -328,9 +344,9 @@ export async function GET(request: NextRequest) {
     parseInt(
       trackingBatchParam ??
         process.env.TRACKING_BATCH_SIZE ??
-        '4',
+        '2',
       10
-    ) || 4
+    ) || 2
   );
 
   console.log('[NBA Stats Refresh] Teams to process:', teamsToProcess.length, teamsToProcess.join(','));
