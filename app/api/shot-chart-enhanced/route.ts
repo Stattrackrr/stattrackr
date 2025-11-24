@@ -346,8 +346,14 @@ export async function GET(request: NextRequest) {
     // Check cache (unless bypassed) - use NBA ID for cache key
     cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
     
+    // Log Supabase status for debugging
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log(`[Shot Chart Enhanced] Supabase config check: URL=${supabaseUrl ? 'SET' : 'MISSING'}, KEY=${supabaseKey ? 'SET' : 'MISSING'}`);
+    
     // Try Supabase cache first (persistent, shared across instances)
     let cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
+    console.log(`[Shot Chart Enhanced] Cache check result: ${cached ? 'FOUND in Supabase' : 'NOT FOUND in Supabase'}`);
     
     // Fallback to in-memory cache
     if (!cached && !bypassCache) {
@@ -580,29 +586,39 @@ export async function GET(request: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
+        console.log(`[Shot Chart Enhanced] Checking stale cache - Supabase URL: ${supabaseUrl ? 'SET' : 'MISSING'}, Key: ${supabaseServiceKey ? 'SET' : 'MISSING'}`);
+        
         if (supabaseUrl && supabaseServiceKey) {
           const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
             auth: { autoRefreshToken: false, persistSession: false }
           });
           
+          console.log(`[Shot Chart Enhanced] Querying Supabase for stale cache key: ${cacheKey}`);
+          
           // Get cache even if expired
-          const { data: staleData } = await supabaseAdmin
+          const { data: staleData, error: staleError } = await supabaseAdmin
             .from('nba_api_cache')
             .select('data')
             .eq('cache_key', cacheKey)
             .single();
           
-          if (staleData?.data && staleData.data.shotZones) {
+          if (staleError) {
+            console.warn(`[Shot Chart Enhanced] Supabase query error for stale cache:`, staleError.message || staleError);
+          } else if (staleData?.data && staleData.data.shotZones) {
             console.log(`[Shot Chart Enhanced] ⚠️ Returning stale cached data due to API failure`);
             return NextResponse.json({
               ...staleData.data,
               error: 'Using cached data - fresh data unavailable',
               stale: true
             }, { status: 200 });
+          } else {
+            console.log(`[Shot Chart Enhanced] No stale cache found in Supabase for key: ${cacheKey}`);
           }
+        } else {
+          console.error(`[Shot Chart Enhanced] ❌ Cannot check stale cache - Supabase credentials missing!`);
         }
-      } catch (staleError) {
-        console.warn(`[Shot Chart Enhanced] Could not retrieve stale cache:`, staleError);
+      } catch (staleError: any) {
+        console.error(`[Shot Chart Enhanced] ❌ Error checking stale cache:`, staleError.message || staleError);
       }
       
       // If fetch fails in production, try to trigger background cache population
