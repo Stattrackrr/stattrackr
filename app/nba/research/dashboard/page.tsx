@@ -258,6 +258,13 @@ const parseBallDontLieTipoff = (game: any): Date | null => {
 
 type MatchupInfo = { tipoffLocal?: string | null; tipoffDate?: string | null } | null;
 
+export interface PredictedOutcomeResult {
+  overProb: number | null;
+  underProb: number | null;
+  confidence: 'High' | 'Medium' | 'Low';
+  expectedValue?: number | null;
+}
+
 export interface OfficialOddsCardProps {
   isDark: boolean;
   derivedOdds: DerivedOdds;
@@ -278,6 +285,13 @@ export interface OfficialOddsCardProps {
     lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
   } | null;
   selectedStat?: string;
+  predictedOutcome?: PredictedOutcomeResult | null;
+  calculatedImpliedOdds?: {
+    overImpliedProb: number | null;
+    underImpliedProb: number | null;
+  } | null;
+  selectedBookmakerName?: string | null;
+  selectedBookmakerLine?: number | null;
 }
 
 /* ==== Types (BDL) ==== */
@@ -4643,6 +4657,10 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   lineMovementEnabled,
   lineMovementData,
   selectedStat,
+  predictedOutcome,
+  calculatedImpliedOdds,
+  selectedBookmakerName,
+  selectedBookmakerLine,
 }: OfficialOddsCardProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -4650,207 +4668,202 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     setMounted(true);
   }, []);
 
+  // Helper to render donut chart wheel (hollow, green on left, red on right)
+  const renderWheel = (overPercent: number, underPercent: number, label: string, size = 120) => {
+    const radius = size / 2 - 20; // Inner radius for donut (hollow center)
+    const circumference = 2 * Math.PI * radius;
+    const overLength = circumference * (overPercent / 100);
+    const underLength = circumference * (underPercent / 100);
+    
+    return (
+      <div className="flex flex-col items-center">
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+          {/* Background circle (full circle, light gray) */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={mounted && isDark ? "#374151" : "#e5e7eb"}
+            strokeWidth="16"
+          />
+          {/* Under (red, right side) - draw first so it's on the right */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth="16"
+            strokeDasharray={`${underLength} ${circumference}`}
+            strokeDashoffset={-overLength}
+            strokeLinecap="round"
+          />
+          {/* Over (green, left side) - draw second so it's on the left */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="16"
+            strokeDasharray={`${overLength} ${circumference}`}
+            strokeDashoffset={0}
+            strokeLinecap="round"
+          />
+          {/* Center text - counter-rotate to keep it upright */}
+          <text
+            x={size / 2}
+            y={size / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            transform={`rotate(90 ${size / 2} ${size / 2})`}
+            className={`text-sm font-semibold ${mounted && isDark ? 'fill-white' : 'fill-gray-900'}`}
+          >
+            {overPercent.toFixed(1)}%
+          </text>
+        </svg>
+        <div className={`text-xs mt-2 font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+          {label}
+        </div>
+      </div>
+    );
+  };
+
+  const fd = (books || []).find((b: any) => {
+    const baseName = ((b as any)?.meta?.baseName || b?.name || '').toLowerCase();
+    return baseName === 'fanduel';
+  });
+
+  const displayHalfLine = (s: string) => {
+    const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+    if (Number.isNaN(v)) return s;
+    const frac = Math.abs(v * 10) % 10;
+    if (frac === 0) {
+      const adj = v - 0.5;
+      return adj.toFixed(1);
+    }
+    return Number.isFinite(v) ? v.toFixed(1) : s;
+  };
+
+  const spreadLine = fd?.Spread?.line ? displayHalfLine(fd.Spread.line) : 'N/A';
+  const spreadDisplay = spreadLine !== 'N/A' && !spreadLine.startsWith('-') 
+    ? `+${spreadLine}` 
+    : spreadLine;
+
   return (
     <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
-      <div className="p-3 sm:p-4 md:p-6 space-y-6">
-        {!lineMovementEnabled ? (
-          <div className="rounded-md border border-yellow-300 bg-yellow-50 dark:border-yellow-600 dark:bg-yellow-900/20 px-3 py-2 text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
-            Line movement tracking is temporarily disabled while we reduce Supabase storage usage.
-          </div>
-        ) : latestMovement ? (
-          <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 px-3 py-2 text-xs sm:text-sm text-gray-700 dark:text-slate-200 flex items-center justify-between">
-            <span className="font-semibold">Latest line:</span>
-            <span className="font-mono">
-              {latestMovement.line.toFixed(1)} ({latestMovement.change})
-            </span>
-            <span className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              {latestMovement.timeLabel}
-            </span>
-          </div>
-        ) : (
-          <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 px-3 py-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-            Awaiting line movement data&hellip;
-          </div>
-        )}
-
-        {/* Combined Odds Content */}
+      <div className="p-3 sm:p-4 md:p-6">
+        {/* Market Predicted Outcomes - Full Width */}
         <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Left: Matchup Odds */}
-            <div>
-            <div className="text-sm sm:text-base font-semibold mb-3 text-gray-900 dark:text-white">Matchup Odds</div>
-            <div className="flex items-center gap-1.5 mb-3">
-              {selectedTeamLogoUrl && <img src={selectedTeamLogoUrl} alt={selectedTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!selectedTeam || selectedTeam === 'N/A') ? '' : selectedTeam}</span>
-              <span className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs'}>vs</span>
-              <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' text-base sm:text-sm font-bold'}>{(!opponentTeam || opponentTeam === '') ? '' : opponentTeam}</span>
-              {opponentTeamLogoUrl && <img src={opponentTeamLogoUrl} alt={opponentTeam} className="w-6 h-6 sm:w-5 sm:h-5 object-contain" />}
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 p-4 h-full flex flex-col gap-3">
+            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              Market Predicted Outcomes
             </div>
-            <div className={'text-gray-600 dark:text-gray-400 text-sm sm:text-xs mb-3'}>
-              Tipoff: {matchupInfo?.tipoffLocal || ''}
-            </div>
-            {(() => {
-              const fd = (books || []).find(b => b.name.toLowerCase() === 'fanduel');
-              if (!fd) {
-                return (
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    No odds data available
-                  </div>
-                );
-              }
-
-              const displayHalfLine = (s: string) => {
-                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-                if (Number.isNaN(v)) return s;
-                const frac = Math.abs(v * 10) % 10;
-                if (frac === 0) {
-                  const adj = v - 0.5;
-                  return adj.toFixed(1);
-                }
-                return Number.isFinite(v) ? v.toFixed(1) : s;
-              };
-
-              return (
-                <div className="space-y-2">
-                  <div className="text-xs sm:text-[10px] text-gray-500 dark:text-gray-400 mb-2">@ FanDuel</div>
-                  <div className="grid gap-x-4 gap-y-2 text-sm sm:text-xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
-                    <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Moneyline</div>
-                    <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                      <div className="space-y-0.5">
-                        <div>
-                          {(selectedTeam || 'HOME')}: <span className="font-semibold">{fmtOdds(fd.H2H.home)}</span>
-                        </div>
-                        <div className="opacity-90">
-                          {(opponentTeam || 'AWAY')}: <span className="font-semibold">{fmtOdds(fd.H2H.away)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Spread</div>
-                    <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                      <div className="space-y-0.5">
-                        <div>{displayHalfLine(fd.Spread.line)} (<span className="font-semibold">{fmtOdds(fd.Spread.over)}</span>)</div>
-                        <div>+{displayHalfLine(fd.Spread.line)} (<span className="font-semibold">{fmtOdds(fd.Spread.under)}</span>)</div>
-                      </div>
-                    </div>
-
-                    <div className={mounted && isDark ? 'text-slate-300' : 'text-slate-600'}>Total</div>
-                    <div className={(mounted && isDark ? 'text-slate-300' : 'text-slate-600') + ' font-mono'}>
-                      <div className="space-y-0.5">
-                        <div>O {displayHalfLine(fd.Total.line)} (<span className="font-semibold">{fmtOdds(fd.Total.over)}</span>)</div>
-                        <div>U {displayHalfLine(fd.Total.line)} (<span className="font-semibold">{fmtOdds(fd.Total.under)}</span>)</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-            </div>
-
-            {/* Right: Implied Odds + Official Odds Combined */}
-            <div className="space-y-4">
-              {/* Implied Odds */}
-              <div>
-                <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Implied Odds</div>
-                {(((lineMovementData as any)?.overImpliedProb !== null && (lineMovementData as any)?.overImpliedProb !== undefined) ||
-                  (lineMovementData?.impliedOdds !== null && lineMovementData?.impliedOdds !== undefined)) ? (
-                  <div className="space-y-2 text-base sm:text-sm">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Over:</span>
-                      <span className={`font-semibold ${
-                        (lineMovementData as any)?.isOverFavorable === true 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : (lineMovementData as any)?.isOverFavorable === false
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {((lineMovementData as any)?.overImpliedProb ?? lineMovementData?.impliedOdds ?? 0).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-gray-700 dark:text-gray-200">Under:</span>
-                      <span className={`font-semibold ${
-                        (lineMovementData as any)?.isOverFavorable === false 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : (lineMovementData as any)?.isOverFavorable === true
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {((lineMovementData as any)?.underImpliedProb ?? (lineMovementData?.impliedOdds ? (100 - lineMovementData.impliedOdds) : 0)).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedStat ? `No ${selectedStat.toUpperCase()} odds available at this time, check back later!` : 'No odds available at this time'}
-                  </div>
-                )}
-              </div>
               
-              {/* Official Odds */}
-              <div>
-                <div className={`text-sm sm:text-base font-semibold mb-3 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Official Odds</div>
-                {(() => {
-                  // Map selected stat to bookmaker property
-                  const statToBookKey: Record<string, string> = {
-                    'pts': 'PTS',
-                    'reb': 'REB',
-                    'ast': 'AST',
-                    'fg3m': 'THREES',
-                    'pra': 'PRA',
-                    'pr': 'PR',
-                    'pa': 'PA',
-                    'ra': 'RA',
-                  };
-                  const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
-                  
-                  // Get current line from books (realOddsData) - use first available bookmaker with data
-                  let currentLineFromBooks: { line: number; bookmaker: string } | null = null;
-                  if (books && books.length > 0) {
-                    for (const book of books) {
-                      const bookData = (book as any)[bookKey];
-                      if (bookData && bookData.line && bookData.line !== 'N/A') {
-                        const lineValue = parseFloat(String(bookData.line).replace(/[^0-9.+-]/g, ''));
-                        if (!Number.isNaN(lineValue)) {
-                          currentLineFromBooks = {
-                            line: lineValue,
-                            bookmaker: book.name,
-                          };
-                          break;
-                        }
-                      }
-                    }
-                  }
-                  
-                  return (
-                    <div className="space-y-2 text-base sm:text-sm">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">Opening:</span>
-                        <span className="text-gray-900 dark:text-white">
-                          {lineMovementData?.openingLine ? `${lineMovementData.openingLine.line.toFixed(1)} (${lineMovementData.openingLine.bookmaker})` : ''}
-                        </span>
+              {/* FanDuel Moneyline and Spread at top */}
+              {fd && (
+                <div className="flex items-center gap-4 text-xs sm:text-sm mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>ML:</span>
+                    <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
+                      {selectedTeam || 'HOME'} {fmtOdds(fd.H2H.home)} / {opponentTeam || 'AWAY'} {fmtOdds(fd.H2H.away)}
+                    </span>
+                  </div>
+                  {fd.Spread && (
+                    <div className="flex items-center gap-2">
+                      <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>Spread:</span>
+                      <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
+                        {spreadDisplay} ({fmtOdds(fd.Spread.over)} / {fmtOdds(fd.Spread.under)})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Two wheels side by side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center justify-center">
+                {/* StatTrackr Prediction Wheel */}
+                <div className="flex flex-col items-center">
+                  {predictedOutcome ? (
+                    <>
+                      {renderWheel(
+                        predictedOutcome.overProb ?? 50,
+                        predictedOutcome.underProb ?? 50,
+                        'StatTrackr Prediction',
+                        140
+                      )}
+                      <div className="mt-3 text-center">
+                        <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          StatTrackr Prob: <span className="font-semibold">{predictedOutcome.overProb?.toFixed(1) ?? 'N/A'}%</span>
+                        </div>
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">Current:</span>
-                        <span className="text-gray-900 dark:text-white">
-                          {currentLineFromBooks 
-                            ? `${currentLineFromBooks.line.toFixed(1)} (${currentLineFromBooks.bookmaker})`
-                            : lineMovementData?.currentLine 
-                              ? `${lineMovementData.currentLine.line.toFixed(1)} (${lineMovementData.currentLine.bookmaker})`
-                              : ''}
-                        </span>
+                    </>
+                  ) : (
+                    <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Calculating prediction...
+                    </div>
+                  )}
+                </div>
+
+                {/* Bookmaker/Implied Odds Wheel */}
+                <div className="flex flex-col items-center">
+                  {calculatedImpliedOdds ? (
+                    <>
+                      {renderWheel(
+                        calculatedImpliedOdds.overImpliedProb ?? 50,
+                        calculatedImpliedOdds.underImpliedProb ?? 50,
+                        'Bookmaker/Implied Odds',
+                        140
+                      )}
+                      <div className="mt-3 text-center">
+                        <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          Market Prob: <span className="font-semibold">{calculatedImpliedOdds.overImpliedProb?.toFixed(1) ?? 'N/A'}%</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No market odds available
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Confidence and EV */}
+              {predictedOutcome && (
+                <div className="flex items-center justify-center gap-6 mt-2">
+                  <div className="text-center">
+                    <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Confidence</div>
+                    <div className={`text-sm font-semibold ${
+                      predictedOutcome.confidence === 'High' 
+                        ? 'text-green-600 dark:text-green-400'
+                        : predictedOutcome.confidence === 'Medium'
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {predictedOutcome.confidence}
+                    </div>
+                  </div>
+                  {predictedOutcome.expectedValue !== null && predictedOutcome.expectedValue !== undefined && (
+                    <div className="text-center">
+                      <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected Value</div>
+                      <div className={`text-sm font-semibold ${
+                        predictedOutcome.expectedValue > 0
+                          ? 'text-green-600 dark:text-green-400'
+                          : predictedOutcome.expectedValue < 0
+                          ? 'text-red-600 dark:text-red-400'
+                          : mounted && isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        {predictedOutcome.expectedValue > 0 ? '+' : ''}{predictedOutcome.expectedValue.toFixed(1)}%
                       </div>
                     </div>
-                  );
-                })()}
-              </div>
-            </div>
+                  )}
+                </div>
+              )}
           </div>
         </div>
       </div>
-      {(derivedOdds.openingLine == null && derivedOdds.currentLine == null) && (
-        <div className="mt-2 px-3 sm:px-4 md:px-6 pb-3 text-[10px] text-gray-500 dark:text-gray-400">Awaiting odds data...</div>
-      )}
     </div>
   );
 }, (prev, next) => {
@@ -4864,7 +4877,11 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     prev.opponentTeamLogoUrl === next.opponentTeamLogoUrl &&
     prev.matchupInfo?.tipoffLocal === next.matchupInfo?.tipoffLocal &&
     prev.oddsFormat === next.oddsFormat &&
-    prev.books === next.books
+    prev.books === next.books &&
+    prev.predictedOutcome === next.predictedOutcome &&
+    prev.calculatedImpliedOdds === next.calculatedImpliedOdds &&
+    prev.selectedBookmakerName === next.selectedBookmakerName &&
+    prev.selectedBookmakerLine === next.selectedBookmakerLine
   );
 });
 
@@ -9234,6 +9251,27 @@ const lineMovementInFlightRef = useRef(false);
     const filtered = filterByMarket(oddsSnapshots, marketKey);
     return deriveOpeningCurrentMovement(filtered);
   }, [mergedLineMovementData, oddsSnapshots, marketKey]);
+
+  // Helper function to map selected stat to bookmaker row key
+  const getBookRowKey = useCallback((stat: string): string | null => {
+    const statToBookKey: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'fg3m': 'THREES',
+      'pra': 'PRA',
+      'pr': 'PR',
+      'pa': 'PA',
+      'ra': 'RA',
+    };
+    return statToBookKey[stat] || null;
+  }, []);
+
+  // Prediction state
+  const [predictedOutcome, setPredictedOutcome] = useState<PredictedOutcomeResult | null>(null);
+  
+  // Hardcode to FanDuel only
+  const selectedBookmakerForPrediction = 'fanduel';
   
   // Update intraday movements to use merged data for accurate current line
   const intradayMovementsFinal = useMemo(() => {
@@ -9585,6 +9623,295 @@ const lineMovementInFlightRef = useRef(false);
     return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
   };
 
+  // Available bookmakers with valid over/under odds for selected stat
+  const availableBookmakers = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return [];
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return [];
+    
+    const bookmakers = new Map<string, { name: string; displayName: string }>();
+    
+    for (const book of realOddsData) {
+      const statData = (book as any)[bookRowKey];
+      if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
+        const meta = (book as any)?.meta;
+        // Exclude alternate lines (variantLabel indicates alternate)
+        if (!meta?.variantLabel) {
+          const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+          const displayName = meta?.baseName || book?.name || 'Unknown';
+          if (!bookmakers.has(baseName)) {
+            bookmakers.set(baseName, { name: baseName, displayName });
+          }
+        }
+      }
+    }
+    
+    return Array.from(bookmakers.values());
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
+  // Extract FanDuel's line and odds for selected stat
+  const selectedBookmakerData = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    // Always use FanDuel, main line only (no alternates)
+    const fanduelBook = realOddsData.find((book: any) => {
+      const baseName = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
+      return baseName === 'fanduel';
+    });
+    
+    if (!fanduelBook) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const meta = (fanduelBook as any)?.meta;
+    // Exclude alternate lines (variantLabel indicates alternate)
+    if (meta?.variantLabel) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const statData = (fanduelBook as any)[bookRowKey];
+    if (!statData || statData.line === 'N/A') {
+      return { line: null, name: null, overOdds: null, underOdds: null };
+    }
+    
+    const lineValue = parseFloat(statData.line);
+    const displayName = (meta?.baseName || fanduelBook?.name || 'FanDuel');
+    
+    // Parse odds
+    const overOddsStr = statData.over;
+    const underOddsStr = statData.under;
+    
+    const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
+      ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
+      : null;
+    const underOdds = (underOddsStr && underOddsStr !== 'N/A')
+      ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
+      : null;
+    
+    return {
+      line: Number.isFinite(lineValue) ? lineValue : null,
+      name: displayName,
+      overOdds: Number.isFinite(overOdds) ? overOdds : null,
+      underOdds: Number.isFinite(underOdds) ? underOdds : null,
+    };
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
+  const selectedBookmakerLine = selectedBookmakerData.line;
+  const selectedBookmakerName = selectedBookmakerData.name;
+
+  // Calculate implied odds from FanDuel, with fallback to consensus
+  const calculatedImpliedOdds = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return null;
+    
+    // Try FanDuel first
+    const fanduelBook = realOddsData.find((book: any) => {
+      const baseName = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
+      return baseName === 'fanduel';
+    });
+    
+    if (fanduelBook) {
+      const meta = (fanduelBook as any)?.meta;
+      if (!meta?.variantLabel) {
+        const statData = (fanduelBook as any)[bookRowKey];
+        if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
+          const overOddsStr = statData.over;
+          const underOddsStr = statData.under;
+          
+          const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
+            ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
+            : null;
+          const underOdds = (underOddsStr && underOddsStr !== 'N/A')
+            ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
+            : null;
+          
+          if (Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
+            const impliedProbabilityFromAmerican = (american: number): number => {
+              if (american > 0) {
+                return (100 / (american + 100)) * 100;
+              } else {
+                return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
+              }
+            };
+            
+            const overProb = impliedProbabilityFromAmerican(overOdds);
+            const underProb = impliedProbabilityFromAmerican(underOdds);
+            const totalProb = overProb + underProb;
+            
+            if (totalProb > 0) {
+              return {
+                overImpliedProb: (overProb / totalProb) * 100,
+                underImpliedProb: (underProb / totalProb) * 100,
+              };
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback to consensus (average of all bookmakers with valid odds)
+    const validBooks: Array<{ over: number; under: number }> = [];
+    
+    for (const book of realOddsData) {
+      const meta = (book as any)?.meta;
+      if (meta?.variantLabel) continue; // Skip alternates
+      
+      const statData = (book as any)[bookRowKey];
+      if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
+        const overOddsStr = statData.over;
+        const underOddsStr = statData.under;
+        
+        const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
+          ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
+          : null;
+        const underOdds = (underOddsStr && underOddsStr !== 'N/A')
+          ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
+          : null;
+        
+        if (Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
+          const impliedProbabilityFromAmerican = (american: number): number => {
+            if (american > 0) {
+              return (100 / (american + 100)) * 100;
+            } else {
+              return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
+            }
+          };
+          
+          const overProb = impliedProbabilityFromAmerican(overOdds);
+          const underProb = impliedProbabilityFromAmerican(underOdds);
+          const totalProb = overProb + underProb;
+          
+          if (totalProb > 0) {
+            validBooks.push({
+              over: (overProb / totalProb) * 100,
+              under: (underProb / totalProb) * 100,
+            });
+          }
+        }
+      }
+    }
+    
+    if (validBooks.length > 0) {
+      const avgOver = validBooks.reduce((sum, b) => sum + b.over, 0) / validBooks.length;
+      const avgUnder = validBooks.reduce((sum, b) => sum + b.under, 0) / validBooks.length;
+      return {
+        overImpliedProb: avgOver,
+        underImpliedProb: avgUnder,
+      };
+    }
+    
+    return null;
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
+  // Prediction calculation useEffect
+  useEffect(() => {
+    if (propsMode !== 'player' || !selectedPlayer || !selectedStat) {
+      setPredictedOutcome(null);
+      return;
+    }
+    
+    // Use FanDuel's line with fallback to bettingLine
+    const predictionLine = selectedBookmakerLine ?? bettingLine;
+    
+    // Calculate prediction based on historical data
+    // This is a simplified version - you'll need to implement the full prediction logic
+    const calculatePrediction = async () => {
+      try {
+        // Calculate average from chartData
+        const validValues = chartData.filter((d: any) => Number.isFinite(d.value)).map((d: any) => d.value);
+        if (validValues.length === 0) {
+          setPredictedOutcome(null);
+          return;
+        }
+        
+        const seasonAvg = validValues.reduce((sum: number, val: number) => sum + val, 0) / validValues.length;
+        
+        if (Number.isFinite(seasonAvg) && Number.isFinite(predictionLine)) {
+          // Simple probability calculation (you'll need to replace this with your actual logic)
+          const diff = seasonAvg - predictionLine;
+          const stdDev = 5; // Placeholder - should come from actual data
+          const zScore = diff / stdDev;
+          
+          // Convert z-score to probability (simplified)
+          const overProb = 50 + (zScore * 10); // Clamp between 0-100
+          const clampedOverProb = Math.max(0, Math.min(100, overProb));
+          const clampedUnderProb = 100 - clampedOverProb;
+          
+          // Get market probabilities
+          let marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
+          let marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
+          
+          // Fallback: Calculate from selectedBookmakerData if calculatedImpliedOdds is null
+          if (marketOverProb === null) {
+            if (selectedBookmakerData && selectedBookmakerData.overOdds !== null && selectedBookmakerData.underOdds !== null) {
+              const impliedProbabilityFromAmerican = (american: number): number => {
+                if (american > 0) {
+                  return (100 / (american + 100)) * 100;
+                } else {
+                  return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
+                }
+              };
+              
+              const overProb = impliedProbabilityFromAmerican(selectedBookmakerData.overOdds);
+              const underProb = impliedProbabilityFromAmerican(selectedBookmakerData.underOdds);
+              const totalProb = overProb + underProb;
+              
+              if (totalProb > 0) {
+                marketOverProb = (overProb / totalProb) * 100;
+                marketUnderProb = (underProb / totalProb) * 100;
+              }
+            }
+          }
+          
+          const isOver = clampedOverProb >= 50;
+          const statProb = isOver ? clampedOverProb : clampedUnderProb;
+          const marketProb = isOver ? marketOverProb : marketUnderProb;
+          
+          // Calculate edge and confidence
+          const edge = marketProb != null ? statProb - marketProb : null;
+          let confidence: 'High' | 'Medium' | 'Low' = 'Low';
+          if (edge != null) {
+            const absEdge = Math.abs(edge);
+            confidence = absEdge >= 12 ? 'High' : absEdge >= 6 ? 'Medium' : 'Low';
+          }
+          
+          // Calculate Expected Value (EV)
+          let expectedValue: number | null = null;
+          
+          if (marketProb !== null && marketProb > 0 && marketProb <= 100) {
+            // EV = (StatTrackr Probability / Market Implied Probability - 1) × 100
+            expectedValue = (statProb / marketProb - 1) * 100;
+          }
+          
+          setPredictedOutcome({
+            overProb: clampedOverProb,
+            underProb: clampedUnderProb,
+            confidence,
+            expectedValue,
+          });
+        } else {
+          setPredictedOutcome(null);
+        }
+      } catch (error) {
+        console.error('Error calculating prediction:', error);
+        setPredictedOutcome(null);
+      }
+    };
+    
+    calculatePrediction();
+  }, [
+    propsMode,
+    selectedPlayer,
+    selectedStat,
+    selectedBookmakerLine,
+    bettingLine,
+    calculatedImpliedOdds,
+    selectedBookmakerData,
+    chartData,
+  ]);
+
   return (
 <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <style jsx global>{`
@@ -9780,7 +10107,7 @@ const lineMovementInFlightRef = useRef(false);
 <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
- className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 overflow-y-auto overflow-x-hidden overscroll-contain px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
+            className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 overflow-y-auto overflow-x-hidden overscroll-contain pl-0 pr-2 sm:pl-0 sm:pr-2 md:px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
               sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
             }`}
             style={{
@@ -11420,7 +11747,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 6. Official Odds Card Container (Mobile) - Line Movement */}
             {useMemo(() => (
-<div className="lg:hidden">
+              <div className="lg:hidden">
                 <OfficialOddsCard
                   isDark={isDark}
                   derivedOdds={derivedOdds}
@@ -11433,12 +11760,16 @@ const lineMovementInFlightRef = useRef(false);
                   oddsFormat={oddsFormat}
                   books={realOddsData}
                   fmtOdds={fmtOdds}
-                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                  lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                   lineMovementData={mergedLineMovementData}
                   selectedStat={selectedStat}
+                  predictedOutcome={predictedOutcome}
+                  calculatedImpliedOdds={calculatedImpliedOdds}
+                  selectedBookmakerName={selectedBookmakerName}
+                  selectedBookmakerLine={selectedBookmakerLine}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
 
             {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
             <BestOddsTable
@@ -11578,25 +11909,29 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
             {useMemo(() => (
-<div className="hidden lg:block">
+              <div className="hidden lg:block">
                 <OfficialOddsCard
-                isDark={isDark}
-                derivedOdds={derivedOdds}
-                intradayMovements={intradayMovementsFinal}
-                selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-                opponentTeam={opponentTeam}
-                selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
-                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-                matchupInfo={matchupInfo}
-                oddsFormat={oddsFormat}
-                books={realOddsData}
-                fmtOdds={fmtOdds}
-                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-                lineMovementData={mergedLineMovementData}
-                selectedStat={selectedStat}
-              />
+                  isDark={isDark}
+                  derivedOdds={derivedOdds}
+                  intradayMovements={intradayMovementsFinal}
+                  selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+                  opponentTeam={opponentTeam}
+                  selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                  opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                  matchupInfo={matchupInfo}
+                  oddsFormat={oddsFormat}
+                  books={realOddsData}
+                  fmtOdds={fmtOdds}
+                  lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                  lineMovementData={mergedLineMovementData}
+                  selectedStat={selectedStat}
+                  predictedOutcome={predictedOutcome}
+                  calculatedImpliedOdds={calculatedImpliedOdds}
+                  selectedBookmakerName={selectedBookmakerName}
+                  selectedBookmakerLine={selectedBookmakerLine}
+                />
               </div>
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
@@ -11713,7 +12048,7 @@ const lineMovementInFlightRef = useRef(false);
 
           {/* Right Panel - Mobile: Single column containers, Desktop: Right sidebar */}
           <div 
- className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 fade-scrollbar custom-scrollbar ${
+            className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar ${
               sidebarOpen ? 'lg:flex-[3] xl:flex-[3.3]' : 'lg:flex-[4] xl:flex-[4]'
             }`}
           >
