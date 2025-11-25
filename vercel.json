@@ -9,12 +9,16 @@
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/odds/cleanup",
+      "path": "/api/odds/refresh",
       "schedule": "0 */3 * * *"
     },
     {
       "path": "/api/odds/refresh",
-      "schedule": "*/20 * * * *"
+      "schedule": "30 1-22/3 * * *"
+    },
+    {
+      "path": "/api/odds/cleanup",
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/cron/refresh-nba-stats",
@@ -22,7 +26,7 @@
     },
     {
       "path": "/api/cron/cleanup-odds-snapshots",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "functions": {

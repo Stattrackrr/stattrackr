@@ -19,20 +19,15 @@ Your cache system is fully configured and working. Here's what's happening:
 - ✅ Player search
 - ✅ ESPN player data
 
-### 2. **Vercel Cron Job** (Also Cloud-Based!)
-
-**Location:** `app/api/cron/refresh-nba-stats/route.ts`
+### 2. **Vercel Cron Jobs** (Also Cloud-Based!)
 
 **Runs on:** Vercel's servers (cloud) - **Your PC does NOT need to be on!**
 
-**Schedule:** Daily (configured in `vercel.json`)
-
-**What it refreshes:**
-- ✅ **Team tracking stats** (potentials - passing, rebounding)
-- ✅ **Bulk play type cache** (all player play types)
-- ✅ **Defensive rankings** (play type defensive rankings)
-- ✅ **Team defense rankings** (zone rankings for shot charts)
-- ✅ **Odds** (NEW! - now included)
+| Cron | Path | Schedule | Purpose |
+|------|------|----------|---------|
+| NBA Stats Refresh | `/api/cron/refresh-nba-stats` | Daily | Potentials, play types, defensive rankings, team defense |
+| Odds Refresh (NEW) | `/api/odds/refresh` | Every 90 minutes (00:00, 01:30, 03:00...) | Updates odds cache + saves to Supabase |
+| Odds Cleanup (NEW cadence) | `/api/odds/cleanup` & `/api/cron/cleanup-odds-snapshots` | Daily (24h) | Purges odds snapshots older than 24h |
 
 ### 3. **Supabase Cache** (Persistent, Shared)
 
@@ -51,7 +46,7 @@ All refreshed data is saved to Supabase, so:
 | Defensive Rankings | Vercel Cron | Daily | ✅ Yes |
 | Team Defense Rankings | Vercel Cron | Daily | ✅ Yes |
 | Shot Charts | On-demand | When accessed | ✅ Yes |
-| **Odds** | **Vercel Cron** | **Daily** | **✅ Yes (NEW!)** |
+| **Odds** | **Vercel Cron** | **Every 90 minutes + daily cleanup** | ✅ Yes |
 
 ## 🎯 Summary
 
@@ -60,5 +55,5 @@ All refreshed data is saved to Supabase, so:
 - Vercel Cron runs on Vercel's servers
 - All data is saved to Supabase (persistent, shared)
 
-**Odds are now included** in the daily refresh! 🎉
+**Odds are now refreshed every 90 minutes** and **cleaned up daily**, so you get fresh data without Supabase bloat. 🎉
 

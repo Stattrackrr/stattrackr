@@ -13,25 +13,29 @@ const supabaseAdmin = createClient(
   }
 );
 
+const DEFAULT_RETENTION_HOURS = 24;
+
 /**
  * Clean up odds snapshots for finished games
- * Deletes all snapshots older than 100 hours (~4 days)
- * This keeps recent data for analysis while cleaning up very old data
+ * Deletes all snapshots older than retention window (default 24 hours)
+ * This keeps recent data for analysis while preventing storage bloat
  */
 export async function cleanupFinishedGameSnapshots() {
   try {
     console.log('🧹 Starting cleanup of old odds snapshots...');
     const startTime = Date.now();
 
-    // Delete all snapshots older than 100 hours (~4 days)
-    // This keeps recent data for analysis while cleaning up very old data
+    const retentionHours = parseInt(
+      process.env.ODDS_RETENTION_HOURS || String(DEFAULT_RETENTION_HOURS),
+      10
+    );
     const now = new Date();
-    const cutoffTime = new Date(now.getTime() - 100 * 60 * 60 * 1000); // 100 hours ago
+    const cutoffTime = new Date(now.getTime() - retentionHours * 60 * 60 * 1000);
     const cutoffISO = cutoffTime.toISOString();
 
+    console.log(`⏰ Retention window: ${retentionHours} hours`);
     console.log(`⏰ Deleting all snapshots older than: ${cutoffISO}`);
     console.log(`⏰ Current time: ${now.toISOString()}`);
-    console.log(`⏰ Cutoff is 100 hours (${100 * 60 * 60 * 1000 / (24 * 60 * 60 * 1000)} days) ago`);
 
     // First, check how many snapshots exist older than cutoff for debugging
     const { count: oldSnapshotCount, error: countError } = await supabaseAdmin
