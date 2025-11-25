@@ -9727,7 +9727,7 @@ const lineMovementInFlightRef = useRef(false);
             ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
             : null;
           
-          if (Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
+          if (overOdds !== null && underOdds !== null && Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
             const impliedProbabilityFromAmerican = (american: number): number => {
               if (american > 0) {
                 return (100 / (american + 100)) * 100;
