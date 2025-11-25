@@ -166,9 +166,50 @@ export async function GET(request: NextRequest) {
         
         if (zeroValuePlayTypes.length === 0 && hasFreeThrows) {
           // All play types have values and FreeThrows exists
-          // But we still need to add defensive rankings if opponent team is provided
+          // Return cached data immediately, add defensive rankings if available (fast path)
           console.log(`[Play Type Analysis] ✅ Cache hit for player ${playerId} (all play types have values, including FreeThrows)`);
-          // Don't return early - continue to add defensive rankings below
+          
+          // If opponent team is specified, quickly check in-memory cache for rankings (synchronous, fast)
+          if (opponentTeam && opponentTeam !== 'N/A') {
+            const defensiveRankingsCacheKey = `playtype_defensive_rankings_${seasonStr}`;
+            const inMemoryRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+            
+            if (inMemoryRankings) {
+              // Add opponent ranks to cached response (fast - in-memory lookup)
+              const normalizedOpponent = opponentTeam.toUpperCase();
+              const updatedPlayTypes = cachedData.playTypes.map((pt: any) => {
+                const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
+                if (inMemoryRankings[playTypeKey]) {
+                  const ranking = inMemoryRankings[playTypeKey].findIndex((r: any) => r.team.toUpperCase() === normalizedOpponent);
+                  return {
+                    ...pt,
+                    oppRank: ranking >= 0 ? ranking + 1 : null
+                  };
+                }
+                return pt;
+              });
+              
+              console.log(`[Play Type Analysis] ✅ Added defensive rankings from in-memory cache for ${opponentTeam}`);
+              
+              return NextResponse.json({
+                ...cachedData,
+                playTypes: updatedPlayTypes,
+                opponentTeam: opponentTeam || null,
+              }, {
+                status: 200,
+                headers: { 'X-Cache-Status': 'HIT' }
+              });
+            }
+          }
+          
+          // Return cached data immediately (rankings will be added later if available)
+          return NextResponse.json({
+            ...cachedData,
+            opponentTeam: opponentTeam || null,
+          }, {
+            status: 200,
+            headers: { 'X-Cache-Status': 'HIT' }
+          });
         } else {
           if (zeroValuePlayTypes.length > 0) {
             console.log(`[Play Type Analysis] ⚠️ Cache hit but ${zeroValuePlayTypes.length} play types have 0.0 - will retry those`);
