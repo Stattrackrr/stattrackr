@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import cache, { CACHE_TTL } from './cache';
+import { setNBACache } from './nbaCache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
 import { createClient } from '@supabase/supabase-js';
 
@@ -542,8 +543,10 @@ export async function refreshOddsData(
       nextUpdate: nextUpdate.toISOString(),
     };
 
-    // Cache the data
+    // Cache the data in both in-memory and Supabase (persistent, shared across instances)
     cache.set(ODDS_CACHE_KEY, oddsCache, CACHE_TTL.ODDS);
+    await setNBACache(ODDS_CACHE_KEY, 'odds', oddsCache, CACHE_TTL.ODDS);
+    console.log(`[Odds Cache] 💾 Cached odds data to Supabase (${games.length} games)`);
 
     // Save snapshots to database for line movement tracking
     // Skip in development to prevent server freezing

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
+import { getNBACache } from '@/lib/nbaCache';
 import { ensureOddsCache } from '@/lib/refreshOdds';
 import type { OddsCache } from '@/app/api/odds/refresh/route';
 
@@ -48,8 +49,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Player name required' }, { status: 400 });
     }
 
-    // Get cached odds data
-    let oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
+    // Get cached odds data - check Supabase first (persistent, shared across instances)
+    let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
+      restTimeoutMs: 10000, // 10s timeout for odds cache
+      jsTimeoutMs: 10000,
+    });
+    
+    // Fallback to in-memory cache
+    if (!oddsCache) {
+      oddsCache = cache.get(ODDS_CACHE_KEY);
+    }
     
     if (!oddsCache) {
       try {

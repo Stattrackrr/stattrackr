@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
+import { getNBACache } from '@/lib/nbaCache';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { gameInvolvesTeam } from '@/lib/teamMapping';
 import { ensureOddsCache } from '@/lib/refreshOdds';
@@ -44,12 +45,20 @@ export async function GET(request: NextRequest) {
     const player = searchParams.get('player');
     const team = searchParams.get('team');
     
-    // Get bulk cached odds data
-    let oddsCache: OddsCache | null = cache.get(ODDS_CACHE_KEY);
+    // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
+    let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
+      restTimeoutMs: 10000, // 10s timeout for odds cache
+      jsTimeoutMs: 10000,
+    });
+    
+    // Fallback to in-memory cache
+    if (!oddsCache) {
+      oddsCache = cache.get(ODDS_CACHE_KEY);
+    }
     
     // If no cache, trigger background refresh but don't wait for it
     if (!oddsCache) {
-      console.warn('No odds data in cache - triggering background refresh');
+      console.warn('No odds data in cache (Supabase or in-memory) - triggering background refresh');
       // Trigger refresh in background (don't await - return immediately)
       ensureOddsCache({ source: 'api/odds' }).catch(err => {
         console.error('Background odds refresh failed:', err);
