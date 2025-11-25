@@ -169,18 +169,35 @@ export async function GET(request: NextRequest) {
           // Return cached data immediately, add defensive rankings if available (fast path)
           console.log(`[Play Type Analysis] ✅ Cache hit for player ${playerId} (all play types have values, including FreeThrows)`);
           
-          // If opponent team is specified, quickly check in-memory cache for rankings (synchronous, fast)
+          // If opponent team is specified, check for defensive rankings (in-memory first, then Supabase)
           if (opponentTeam && opponentTeam !== 'N/A') {
             const defensiveRankingsCacheKey = `playtype_defensive_rankings_${seasonStr}`;
-            const inMemoryRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
             
-            if (inMemoryRankings) {
-              // Add opponent ranks to cached response (fast - in-memory lookup)
+            // Check in-memory cache first (fastest)
+            let rankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+            
+            // If not in-memory, check Supabase (with shorter timeout for fast response)
+            if (!rankings) {
+              console.log(`[Play Type Analysis] Rankings not in-memory, checking Supabase...`);
+              rankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
+                restTimeoutMs: 8000, // Shorter timeout for fast response
+                jsTimeoutMs: 8000,
+              });
+              
+              // If found in Supabase, also cache in-memory for next time
+              if (rankings) {
+                cache.set(defensiveRankingsCacheKey, rankings, CACHE_TTL.TRACKING_STATS);
+                console.log(`[Play Type Analysis] ✅ Loaded rankings from Supabase and cached in-memory`);
+              }
+            }
+            
+            if (rankings) {
+              // Add opponent ranks to cached response
               const normalizedOpponent = opponentTeam.toUpperCase();
               const updatedPlayTypes = cachedData.playTypes.map((pt: any) => {
                 const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
-                if (inMemoryRankings[playTypeKey]) {
-                  const ranking = inMemoryRankings[playTypeKey].findIndex((r: any) => r.team.toUpperCase() === normalizedOpponent);
+                if (rankings![playTypeKey]) {
+                  const ranking = rankings![playTypeKey].findIndex((r: any) => r.team.toUpperCase() === normalizedOpponent);
                   return {
                     ...pt,
                     oppRank: ranking >= 0 ? ranking + 1 : null
@@ -189,7 +206,7 @@ export async function GET(request: NextRequest) {
                 return pt;
               });
               
-              console.log(`[Play Type Analysis] ✅ Added defensive rankings from in-memory cache for ${opponentTeam}`);
+              console.log(`[Play Type Analysis] ✅ Added defensive rankings for ${opponentTeam}`);
               
               return NextResponse.json({
                 ...cachedData,
@@ -199,6 +216,8 @@ export async function GET(request: NextRequest) {
                 status: 200,
                 headers: { 'X-Cache-Status': 'HIT' }
               });
+            } else {
+              console.log(`[Play Type Analysis] ⚠️ No defensive rankings found for ${opponentTeam}`);
             }
           }
           
