@@ -267,34 +267,82 @@ export async function GET(request: NextRequest) {
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     const cacheKey = `team_defense_rankings_${season}`;
 
-    // Check in-memory cache first (unless bypassed)
-    const cached = !bypassCache ? cache.get<any>(cacheKey) : null;
+    // Check Supabase cache FIRST (persistent, shared across instances) - this is the primary source
+    // Use longer timeout for large cache entries
+    let cached = !bypassCache 
+      ? await getNBACache<any>(cacheKey, {
+          restTimeoutMs: 20000, // 20s for large payloads
+          jsTimeoutMs: 20000,
+        })
+      : null;
+    
     if (cached) {
+      // Handle both formats: direct rankings object or wrapped in rankings property
+      const rankings = cached.rankings || cached;
+      
       // Validate that cached data has actual rankings
-      const hasValidRankings = cached.rankings && 
-                               typeof cached.rankings === 'object' && 
-                               Object.keys(cached.rankings).length > 0;
+      const hasValidRankings = rankings && 
+                               typeof rankings === 'object' && 
+                               Object.keys(rankings).length > 0;
       
       if (hasValidRankings) {
-        console.log(`[Team Defense Rankings] ✅ Cache hit for season ${season} (${Object.keys(cached.rankings).length} teams)`);
-        return NextResponse.json(cached, {
+        console.log(`[Team Defense Rankings] ✅ Supabase cache hit for season ${season} (${Object.keys(rankings).length} teams)`);
+        
+        // Normalize response format
+        const response = {
+          season: cached.season || seasonStr,
+          rankings: rankings,
+          cachedAt: cached.cachedAt || new Date().toISOString(),
+          teamsProcessed: cached.teamsProcessed || Object.keys(rankings).length,
+          source: 'supabase_cache'
+        };
+        
+        // Also cache in-memory for faster subsequent requests
+        cache.set(cacheKey, response, 1440);
+        
+        return NextResponse.json(response, {
           status: 200,
-          headers: { 'X-Cache-Status': 'HIT' }
+          headers: { 'X-Cache-Status': 'HIT-SUPABASE' }
         });
       } else {
-        console.warn(`[Team Defense Rankings] ⚠️ In-memory cache exists but is corrupted (0 teams) - deleting and checking Supabase`);
-        // Delete corrupted in-memory cache
-        cache.delete(cacheKey);
-        // Fall through to check Supabase cache
+        console.warn(`[Team Defense Rankings] ⚠️ Supabase cache exists but is corrupted (0 teams) - deleting and checking fallbacks`);
+        // Delete corrupted cache
+        const { deleteNBACache } = await import('@/lib/nbaCache');
+        await deleteNBACache(cacheKey);
+        cached = null;
       }
     }
 
-    // Check Supabase cache for zone rankings (populated by background job)
+    // Check in-memory cache as fallback (unless bypassed)
+    if (!cached && !bypassCache) {
+      cached = cache.get<any>(cacheKey);
+      if (cached) {
+        // Validate that cached data has actual rankings
+        const rankings = cached.rankings || cached;
+        const hasValidRankings = rankings && 
+                                 typeof rankings === 'object' && 
+                                 Object.keys(rankings).length > 0;
+        
+        if (hasValidRankings) {
+          console.log(`[Team Defense Rankings] ✅ In-memory cache hit for season ${season} (${Object.keys(rankings).length} teams)`);
+          return NextResponse.json(cached, {
+            status: 200,
+            headers: { 'X-Cache-Status': 'HIT-MEMORY' }
+          });
+        } else {
+          console.warn(`[Team Defense Rankings] ⚠️ In-memory cache exists but is corrupted (0 teams) - deleting`);
+          cache.delete(cacheKey);
+          cached = null;
+        }
+      }
+    }
+
+    // Check Supabase cache for zone rankings (alternative format, populated by background job)
     const zoneCacheKey = `zone_defensive_rankings_${seasonStr}`;
-    const zoneRankingsCache = !bypassCache
+    const zoneRankingsCache = !bypassCache && !cached
       ? await getNBACache<Record<string, Array<{ team: string; fgPct: number }>>>(zoneCacheKey, {
-          restTimeoutMs: 15000,
-          jsTimeoutMs: 15000,
+          restTimeoutMs: 20000,
+          jsTimeoutMs: 20000,
         })
       : null;
     
@@ -413,6 +461,22 @@ export async function GET(request: NextRequest) {
         cache.delete(zoneCacheKey);
         // Fall through to fetch from NBA API
       }
+    }
+
+    // In production, don't fetch all 30 teams unless explicitly bypassed (will timeout)
+    // Instead, return an error asking user to run cache refresh locally
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !bypassCache) {
+      console.warn(`[Team Defense Rankings] ⚠️ No cache found in production. Fetching all 30 teams would timeout.`);
+      console.warn(`[Team Defense Rankings] 💡 To populate cache, run locally: Invoke-RestMethod "http://localhost:3000/api/team-defense-rankings?season=${season}&bypassCache=true"`);
+      
+      return NextResponse.json({
+        error: 'Cache not available',
+        message: `Team defense rankings cache not found. Please run the cache refresh locally to populate Supabase cache.`,
+        instructions: `Run this command locally: Invoke-RestMethod "http://localhost:3000/api/team-defense-rankings?season=${season}&bypassCache=true"`,
+        season: seasonStr,
+        teamsProcessed: 0
+      }, { status: 503 });
     }
 
     console.log(`[Team Defense Rankings] ⚠️ No cache found, fetching from NBA API (this may timeout - consider running /api/cache/nba-league-data first)`);
