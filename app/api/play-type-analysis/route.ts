@@ -147,7 +147,11 @@ export async function GET(request: NextRequest) {
     
     if (!bypassCache) {
       // Try Supabase cache first (persistent, shared across instances)
-      cachedData = await getNBACache<any>(cacheKey);
+      // Use longer timeout for large cache entries
+      cachedData = await getNBACache<any>(cacheKey, {
+        restTimeoutMs: 20000,
+        jsTimeoutMs: 20000,
+      });
       
       // Fallback to in-memory cache
       if (!cachedData) {
@@ -323,8 +327,8 @@ export async function GET(request: NextRequest) {
     const bulkPlayerDataCacheKey = `player_playtypes_bulk_${seasonStr}`;
     let bulkPlayerData = !bypassCache
       ? await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey, {
-          restTimeoutMs: 15000,
-          jsTimeoutMs: 15000,
+          restTimeoutMs: 20000,
+          jsTimeoutMs: 20000,
         })
       : null;
     
@@ -695,8 +699,8 @@ export async function GET(request: NextRequest) {
       
       // Try Supabase cache first (persistent, shared across instances)
       let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
-        restTimeoutMs: 15000,
-        jsTimeoutMs: 15000,
+        restTimeoutMs: 20000,
+        jsTimeoutMs: 20000,
       });
       console.log(`[Play Type Analysis] Supabase cache result: ${cachedRankings ? `found (${Object.keys(cachedRankings || {}).length} play types)` : 'not found'}`);
       
