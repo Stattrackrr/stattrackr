@@ -401,6 +401,7 @@ export async function GET(request: NextRequest) {
     details: [] as Array<{ team: string; category: string; status: string; error?: string }>
   };
   let bulkPlayTypeStatus: 'fresh' | 'needs_refresh' | 'skipped_disabled_in_production' | 'refreshed' | 'error' | 'triggered_in_background' = 'triggered_in_background';
+  let oddsStatus: 'refreshed' | 'error' | 'triggered_in_background' = 'triggered_in_background';
   const teamsParam = requestUrl.searchParams.get('teams');
   const teamLimitParam = requestUrl.searchParams.get('teamLimit');
 const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
@@ -549,6 +550,23 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       console.warn('[NBA Stats Refresh] ⚠️ Team defense rankings refresh error:', err.message);
     });
     
+    // Trigger odds refresh (saves to Supabase for all instances)
+    console.log('[NBA Stats Refresh] Triggering odds refresh...');
+    const oddsRefreshUrl = `${protocol}://${host}/api/odds/refresh`;
+    fetch(oddsRefreshUrl).then(async (response) => {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[NBA Stats Refresh] ✅ Odds refreshed:', data.gamesCount ? `${data.gamesCount} games` : 'success');
+        oddsStatus = 'refreshed';
+      } else {
+        console.warn('[NBA Stats Refresh] ⚠️ Odds refresh failed:', response.status);
+        oddsStatus = 'error';
+      }
+    }).catch((err) => {
+      console.warn('[NBA Stats Refresh] ⚠️ Odds refresh error:', err.message);
+      oddsStatus = 'error';
+    });
+    
     results.details.push({ 
       team: 'BULK_PLAY_TYPES', 
       category: 'all_play_types', 
@@ -563,6 +581,11 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       team: 'ZONE_DEFENSE_RANKINGS', 
       category: 'zone_rankings', 
       status: 'triggered_in_background' 
+    });
+    results.details.push({ 
+      team: 'ODDS', 
+      category: 'all_nba_odds', 
+      status: oddsStatus 
     });
 
     // Skip individual player cache refreshes - we only use bulk cache now
@@ -583,7 +606,8 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       results: {
         ...results,
         duration: `${duration}s`,
-        bulkPlayTypeCache: bulkPlayTypeStatus
+        bulkPlayTypeCache: bulkPlayTypeStatus,
+        oddsCache: oddsStatus
       },
       timestamp: new Date().toISOString()
     });
