@@ -2455,6 +2455,8 @@ const ChartControls = function ChartControls({
   setTeammateFilterId,
   loadingTeammateGames,
   clearTeammateFilter,
+  lineMovementEnabled,
+  intradayMovements,
 }: any) {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [advancedFilterTop, setAdvancedFilterTop] = useState<number | null>(null);
@@ -2463,7 +2465,7 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     setMounted(true);
   }, []);
-  const latestMovement = lineMovementEnabled && intradayMovements.length > 0
+  const latestMovement = lineMovementEnabled && intradayMovements && intradayMovements.length > 0
     ? intradayMovements[0]
     : null;
   // Track the latest in-progress line while the user is holding +/-
@@ -4454,6 +4456,8 @@ const ChartContainer = function ChartContainer({
   loadingTeammateGames,
   clearTeammateFilter,
   hitRateStats,
+  lineMovementEnabled,
+  intradayMovements,
 }: any) {
   const totalSamples = hitRateStats?.total ?? chartData.length;
   const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
@@ -4524,6 +4528,8 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         setTeammateFilterId={setTeammateFilterId}
         loadingTeammateGames={loadingTeammateGames}
         clearTeammateFilter={clearTeammateFilter}
+        lineMovementEnabled={lineMovementEnabled}
+        intradayMovements={intradayMovements}
       />
       {/* Mobile: Over Rate pill above chart */}
       <div className="sm:hidden px-2 pb-2">
@@ -10873,6 +10879,8 @@ const lineMovementInFlightRef = useRef(false);
               loadingTeammateGames={loadingTeammateGames}
       clearTeammateFilter={clearTeammateFilter}
       hitRateStats={hitRateStats}
+      lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+      intradayMovements={intradayMovementsFinal}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
