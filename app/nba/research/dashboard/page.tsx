@@ -2463,6 +2463,9 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     setMounted(true);
   }, []);
+  const latestMovement = lineMovementEnabled && intradayMovements.length > 0
+    ? intradayMovements[0]
+    : null;
   // Track the latest in-progress line while the user is holding +/-
   const transientLineRef = useRef<number | null>(null);
   const holdDelayRef = useRef<any>(null);
@@ -4643,46 +4646,29 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
 
   return (
     <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        {/* First: Line Movement (most important) */}
-        <div className="p-3 sm:p-4 md:p-6 lg:border-r border-gray-200 dark:border-gray-700">
-          <div className={`text-sm sm:text-base font-semibold mb-2 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Line Movement</div>
-          <div className="border-b border-gray-300 dark:border-gray-600 mb-3"></div>
-          <div className="relative">
-            <div className="space-y-2.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 pb-8">
-            {!lineMovementEnabled ? (
-              <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 text-sm text-center px-4">
-                Line movement tracking is temporarily disabled while we reduce Supabase storage usage.
-              </div>
-            ) : intradayMovements.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 text-sm">
-                No line movement data available
-              </div>
-            ) : (
-              intradayMovements.map((m: any, idx: number) => (
-                <div key={`${m.ts}-${idx}`} className="grid grid-cols-[128px_auto_auto] gap-3 items-center text-xs">
-                  <span className={`font-mono ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.timeLabel}</span>
-                  <span className={
-                    (m.direction === 'up'
-                      ? (mounted && isDark ? 'text-green-400' : 'text-green-600')
-                      : m.direction === 'down'
-                      ? (mounted && isDark ? 'text-red-400' : 'text-red-600')
-                      : (mounted && isDark ? 'text-white' : 'text-gray-900')) + ' font-mono font-bold justify-self-end'
-                  }>
-                    {m.line.toFixed(1)} {m.direction === 'up' ? '↗' : m.direction === 'down' ? '↘' : '—'}
-                  </span>
-                  <span className={`text-[10px] font-mono justify-self-end ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.change}</span>
-                </div>
-              ))
-            )}
-            </div>
-            {/* Fade gradient at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-t from-white via-white/80 dark:from-slate-800 dark:via-slate-800/80 to-transparent"></div>
+      <div className="p-3 sm:p-4 md:p-6 space-y-6">
+        {!lineMovementEnabled ? (
+          <div className="rounded-md border border-yellow-300 bg-yellow-50 dark:border-yellow-600 dark:bg-yellow-900/20 px-3 py-2 text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
+            Line movement tracking is temporarily disabled while we reduce Supabase storage usage.
           </div>
-        </div>
-        
-        {/* Second: Matchup Odds & Implied/Official Odds */}
-        <div className="p-3 sm:p-4 md:p-6 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700">
+        ) : latestMovement ? (
+          <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 px-3 py-2 text-xs sm:text-sm text-gray-700 dark:text-slate-200 flex items-center justify-between">
+            <span className="font-semibold">Latest line:</span>
+            <span className="font-mono">
+              {latestMovement.line.toFixed(1)} ({latestMovement.change})
+            </span>
+            <span className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {latestMovement.timeLabel}
+            </span>
+          </div>
+        ) : (
+          <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 px-3 py-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+            Awaiting line movement data&hellip;
+          </div>
+        )}
+
+        {/* Combined Odds Content */}
+        <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Left: Matchup Odds */}
             <div>
