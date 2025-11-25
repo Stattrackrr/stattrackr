@@ -29,6 +29,9 @@ const supabaseAdmin = createClient(
 // Store all odds data in a single cache entry
 const ODDS_CACHE_KEY = 'all_nba_odds';
 
+// Temporary flag to disable line movement + odds snapshots (reduces Supabase size)
+const LINE_MOVEMENT_ENABLED = process.env.ENABLE_LINE_MOVEMENT === 'true';
+
 const PICKEM_BOOKMAKERS = [
   'draftkings pick6',
   'pick6',
@@ -95,6 +98,10 @@ type MovementSnapshot = {
 };
 
 async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
+  if (!LINE_MOVEMENT_ENABLED) {
+    console.log('[Line Movement] ⏸️ Disabled - skipping movement state save');
+    return;
+  }
   console.log(`📊 Starting line movement state save for ${movementSnapshots.length} snapshots...`);
   const keys = Array.from(new Set(movementSnapshots.map((m) => m.compositeKey)));
 
@@ -302,6 +309,10 @@ function isAllowedBookmaker(bookmakerName: string): boolean {
 }
 
 async function saveOddsSnapshots(games: GameOdds[]) {
+  if (!LINE_MOVEMENT_ENABLED) {
+    console.log(`[Line Movement] ⏸️ Disabled - skipping odds snapshots for ${games.length} games`);
+    return;
+  }
   const snapshots: any[] = [];
   const movementSnapshots: MovementSnapshot[] = [];
   const now = new Date().toISOString();

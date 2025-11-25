@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 
 export const runtime = 'nodejs';
 
+const LINE_MOVEMENT_ENABLED = process.env.ENABLE_LINE_MOVEMENT === 'true';
+
 /**
  * Get line movement for a player's stat in a specific game
  * Query params:
@@ -13,6 +15,13 @@ export const runtime = 'nodejs';
  * - date (optional): Game date in YYYY-MM-DD format, defaults to today
  */
 export async function GET(request: NextRequest) {
+  if (!LINE_MOVEMENT_ENABLED) {
+    return NextResponse.json({
+      success: true,
+      disabled: true,
+      message: 'Line movement tracking is temporarily disabled to reduce Supabase usage.'
+    }, { status: 200 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');

@@ -103,6 +103,8 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
   },
 ];
 
+const LINE_MOVEMENT_ENABLED = process.env.NEXT_PUBLIC_ENABLE_LINE_MOVEMENT === 'true';
+
 const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
   if (skipMerge) return books;
 
@@ -268,6 +270,7 @@ export interface OfficialOddsCardProps {
   oddsFormat: OddsFormat;
   books: BookRow[];
   fmtOdds: (odds: string) => string;
+  lineMovementEnabled: boolean;
   lineMovementData?: {
   openingLine: { line: number; bookmaker: string; timestamp: string } | null;
   currentLine: { line: number; bookmaker: string; timestamp: string } | null;
@@ -4628,6 +4631,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   oddsFormat,
   books,
   fmtOdds,
+  lineMovementEnabled,
   lineMovementData,
   selectedStat,
 }: OfficialOddsCardProps) {
@@ -4646,7 +4650,11 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
           <div className="border-b border-gray-300 dark:border-gray-600 mb-3"></div>
           <div className="relative">
             <div className="space-y-2.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 pb-8">
-            {intradayMovements.length === 0 ? (
+            {!lineMovementEnabled ? (
+              <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 text-sm text-center px-4">
+                Line movement tracking is temporarily disabled while we reduce Supabase storage usage.
+              </div>
+            ) : intradayMovements.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 text-sm">
                 No line movement data available
               </div>
@@ -6466,6 +6474,9 @@ const lineMovementInFlightRef = useRef(false);
 
   // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
+    if (!LINE_MOVEMENT_ENABLED) {
+      return [];
+    }
     if (lineMovementData) {
       const { lineMovement = [], openingLine, currentLine } = lineMovementData;
 
@@ -6654,6 +6665,11 @@ const lineMovementInFlightRef = useRef(false);
   
   // Fetch line movement data when game, player, and stat change
   useEffect(() => {
+    if (!LINE_MOVEMENT_ENABLED) {
+      setLineMovementLoading(false);
+      setLineMovementData(null);
+      return;
+    }
     const fetchLineMovement = async () => {
       console.log('📊 Line Movement Fetch Check:', { propsMode, selectedPlayer: selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat });
       
@@ -9174,7 +9190,7 @@ const lineMovementInFlightRef = useRef(false);
   
   // Merge line movement data with live odds to get accurate current line
   const mergedLineMovementData = useMemo(() => {
-    if (!lineMovementData) return null;
+    if (!LINE_MOVEMENT_ENABLED || !lineMovementData) return null;
     
     // Map selected stat to bookmaker property
     const statToBookKey: Record<string, string> = {
@@ -9216,7 +9232,7 @@ const lineMovementInFlightRef = useRef(false);
   }, [lineMovementData, realOddsData, selectedStat]);
   
   const derivedOdds = useMemo(() => {
-    if (mergedLineMovementData) {
+    if (LINE_MOVEMENT_ENABLED && mergedLineMovementData) {
       return {
         openingLine: mergedLineMovementData.openingLine?.line ?? null,
         currentLine: mergedLineMovementData.currentLine?.line ?? null,
@@ -9229,6 +9245,9 @@ const lineMovementInFlightRef = useRef(false);
   
   // Update intraday movements to use merged data for accurate current line
   const intradayMovementsFinal = useMemo(() => {
+    if (!LINE_MOVEMENT_ENABLED || !mergedLineMovementData) {
+      return [];
+    }
     if (mergedLineMovementData) {
       const { lineMovement = [], openingLine, currentLine } = mergedLineMovementData;
 
@@ -11420,6 +11439,7 @@ const lineMovementInFlightRef = useRef(false);
                   oddsFormat={oddsFormat}
                   books={realOddsData}
                   fmtOdds={fmtOdds}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                   lineMovementData={mergedLineMovementData}
                   selectedStat={selectedStat}
                 />
@@ -11577,6 +11597,7 @@ const lineMovementInFlightRef = useRef(false);
                 oddsFormat={oddsFormat}
                 books={realOddsData}
                 fmtOdds={fmtOdds}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                 lineMovementData={mergedLineMovementData}
                 selectedStat={selectedStat}
               />

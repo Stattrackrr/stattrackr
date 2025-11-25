@@ -174,6 +174,37 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
   }
 }
 
+function computeLeagueAverageRankings(rankings: Record<string, any>) {
+  if (!rankings || Object.keys(rankings).length === 0) {
+    return null;
+  }
+  const zones = ['restrictedArea', 'paint', 'midRange', 'leftCorner3', 'rightCorner3', 'aboveBreak3'];
+  const averages: Record<string, { rank: number; fgPct: number; fga: number; fgm: number; totalTeams: number }> = {};
+
+  zones.forEach((zone) => {
+    let total = 0;
+    let count = 0;
+    Object.values(rankings).forEach((team: any) => {
+      const zoneData = team?.[zone];
+      if (zoneData && typeof zoneData.fgPct === 'number') {
+        total += zoneData.fgPct;
+        count++;
+      }
+    });
+    if (count > 0) {
+      averages[zone] = {
+        rank: 0,
+        fgPct: total / count,
+        fga: 0,
+        fgm: 0,
+        totalTeams: count,
+      };
+    }
+  });
+
+  return Object.keys(averages).length > 0 ? averages : null;
+}
+
 async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
   let lastError: Error | null = null;
   const isProduction = process.env.NODE_ENV === 'production';
@@ -398,6 +429,7 @@ export async function GET(request: NextRequest) {
       // (rankings are opponent-specific, so they may not be in the cached response)
       if (opponentTeam && opponentTeam !== 'N/A') {
         let defenseRankings = null;
+        let leagueAverageRankings = null;
         try {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
           // Try Supabase cache first (persistent, shared across instances)
@@ -414,6 +446,7 @@ export async function GET(request: NextRequest) {
           if (rankings && Object.keys(rankings).length > 0) {
             console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
             defenseRankings = rankings;
+            leagueAverageRankings = computeLeagueAverageRankings(rankings);
           } else {
             // Check for single team stats cache (without rank, but still useful)
             const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
@@ -456,6 +489,8 @@ export async function GET(request: NextRequest) {
                   }
                 }
               };
+              leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
+              leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
             } else {
               // No cached rankings or stats - try to fetch single team stats synchronously (faster than all teams)
               console.log(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Fetching single team defensive stats for ${opponentTeam}...`);
@@ -492,6 +527,7 @@ export async function GET(request: NextRequest) {
                       }
                     }
                   };
+                  leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
                 } else {
                   // If single team fetch fails, trigger background fetch for ALL teams (non-blocking)
                   console.warn(`[Shot Chart Enhanced] ⚠️ Single team fetch failed. Triggering background fetch for all 30 teams...`);
@@ -518,8 +554,13 @@ export async function GET(request: NextRequest) {
           // Add opponent rankings to cached response
           if (defenseRankings && defenseRankings[opponentTeam]) {
             cached.opponentRankings = defenseRankings[opponentTeam];
+            cached.opponentRankingsSource = 'team';
             cached.opponentTeam = opponentTeam; // Ensure opponentTeam is set
             console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam} to cached response`);
+          } else if (leagueAverageRankings) {
+            cached.opponentRankings = leagueAverageRankings;
+            cached.opponentRankingsSource = 'league_average';
+            console.warn(`[Shot Chart Enhanced] ⚠️ No defensive rankings available for ${opponentTeam}, using league average`);
           } else {
             console.warn(`[Shot Chart Enhanced] ⚠️ No defensive rankings available for ${opponentTeam}`);
           }
@@ -799,6 +840,7 @@ export async function GET(request: NextRequest) {
     // Fetch league-wide defense rankings (all 30 teams)
     // This is optional - if it fails, we'll just not show rankings
     let defenseRankings = null;
+    let leagueAverageRankings = null;
       try {
         const rankingsCacheKey = `team_defense_rankings_${season}`;
         // Try Supabase cache first (persistent, shared across instances)
@@ -815,6 +857,7 @@ export async function GET(request: NextRequest) {
         if (rankings && Object.keys(rankings).length > 0) {
           console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
           defenseRankings = rankings;
+          leagueAverageRankings = computeLeagueAverageRankings(rankings);
         } else if (opponentTeam && opponentTeam !== 'N/A') {
           // Check for single team stats cache (without rank, but still useful)
           const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
@@ -857,6 +900,7 @@ export async function GET(request: NextRequest) {
               }
             }
           };
+          leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
         } else {
           // No cached rankings or stats - trigger background fetch for ALL teams (non-blocking)
           // This will populate the all-teams rankings cache with actual ranks (1-30)
@@ -887,9 +931,15 @@ export async function GET(request: NextRequest) {
 
     // Add opponent defense rankings if available
     let opponentRankings = null;
+    let opponentRankingsSource: 'team' | 'league_average' | null = null;
     if (opponentTeam && opponentTeam !== 'N/A' && defenseRankings && defenseRankings[opponentTeam]) {
       opponentRankings = defenseRankings[opponentTeam];
+      opponentRankingsSource = 'team';
       console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam}:`, opponentRankings);
+    } else if (leagueAverageRankings) {
+      opponentRankings = leagueAverageRankings;
+      opponentRankingsSource = 'league_average';
+      console.warn('[Shot Chart Enhanced] ⚠️ Using league-average rankings (no opponent specified or data missing)');
     }
 
     const response = {
@@ -900,6 +950,7 @@ export async function GET(request: NextRequest) {
       opponentTeam,
       opponentDefense,
       opponentRankings, // Rankings for opponent team (rank 1 = best defense)
+      opponentRankingsSource,
       cachedAt: new Date().toISOString()
     };
 

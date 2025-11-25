@@ -52,6 +52,7 @@ interface EnhancedShotData {
     rightCorner3: ZoneRanking;
     aboveBreak3: ZoneRanking;
   } | null;
+  opponentRankingsSource?: 'team' | 'league_average' | null;
 }
 
 interface ShotChartProps {
@@ -387,7 +388,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           >
             Makes
           </button>
-          {enhancedData?.opponentRankings && opponentTeam && opponentTeam !== 'N/A' && (
+          {enhancedData?.opponentRankings && (
             <>
               <button
                 onClick={() => {
@@ -405,6 +406,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             </>
           )}
         </div>
+        {enhancedData?.opponentRankings && enhancedData?.opponentRankingsSource === 'league_average' && (
+          <div className="text-[11px] text-purple-600 dark:text-purple-300 mt-1">
+            Showing league-average defense. Select an opponent to view specific team rankings.
+          </div>
+        )}
       </div>
       
       {/* SVG Chart */}
