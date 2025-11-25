@@ -321,7 +321,12 @@ export async function GET(request: NextRequest) {
     // Check for bulk cached player play type data first
     // Try Supabase cache first (persistent, shared across instances)
     const bulkPlayerDataCacheKey = `player_playtypes_bulk_${seasonStr}`;
-    let bulkPlayerData = !bypassCache ? await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey) : null;
+    let bulkPlayerData = !bypassCache
+      ? await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey, {
+          restTimeoutMs: 15000,
+          jsTimeoutMs: 15000,
+        })
+      : null;
     
     // Fallback to in-memory cache
     if (!bulkPlayerData) {
@@ -689,7 +694,10 @@ export async function GET(request: NextRequest) {
       console.log(`[Play Type Analysis] Cache key: ${defensiveRankingsCacheKey}`);
       
       // Try Supabase cache first (persistent, shared across instances)
-      let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+      let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
+        restTimeoutMs: 15000,
+        jsTimeoutMs: 15000,
+      });
       console.log(`[Play Type Analysis] Supabase cache result: ${cachedRankings ? `found (${Object.keys(cachedRankings || {}).length} play types)` : 'not found'}`);
       
       // Fallback to in-memory cache

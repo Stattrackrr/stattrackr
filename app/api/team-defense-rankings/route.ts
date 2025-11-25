@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { currentNbaSeason } from '@/lib/nbaUtils';
-import { getNBACache } from '@/lib/nbaCache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -291,7 +291,12 @@ export async function GET(request: NextRequest) {
 
     // Check Supabase cache for zone rankings (populated by background job)
     const zoneCacheKey = `zone_defensive_rankings_${seasonStr}`;
-    const zoneRankingsCache = !bypassCache ? await getNBACache<Record<string, Array<{ team: string; fgPct: number }>>>(zoneCacheKey) : null;
+    const zoneRankingsCache = !bypassCache
+      ? await getNBACache<Record<string, Array<{ team: string; fgPct: number }>>>(zoneCacheKey, {
+          restTimeoutMs: 15000,
+          jsTimeoutMs: 15000,
+        })
+      : null;
     
     if (zoneRankingsCache) {
       // Filter out metadata keys that get attached by getNBACache
@@ -383,7 +388,7 @@ export async function GET(request: NextRequest) {
           }
           console.log(`[Team Defense Rankings] Converted rankings for ${Object.keys(rankings).length} teams`);
 
-          const response = {
+        const response = {
             season: seasonStr,
             rankings,
             cachedAt: new Date().toISOString(),
@@ -391,8 +396,9 @@ export async function GET(request: NextRequest) {
             source: 'supabase_cache'
           };
 
-          // Also cache in-memory for faster access
-          cache.set(cacheKey, response, 1440);
+        // Also cache in-memory and persist so other environments can reuse
+        cache.set(cacheKey, response, 1440);
+        await setNBACache(cacheKey, 'team_defense_rankings', response, 1440);
           
           return NextResponse.json(response, {
             status: 200,
@@ -460,8 +466,9 @@ export async function GET(request: NextRequest) {
       source: 'nba_api'
     };
 
-    // Cache for 24 hours (1440 minutes)
+    // Cache for 24 hours (1440 minutes) in both layers
     cache.set(cacheKey, response, 1440);
+    await setNBACache(cacheKey, 'team_defense_rankings', response, 1440);
     console.log(`[Team Defense Rankings] 💾 Cached rankings for season ${season}`);
 
     return NextResponse.json(response, {

@@ -433,7 +433,10 @@ export async function GET(request: NextRequest) {
         try {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
           // Try Supabase cache first (persistent, shared across instances)
-          let cachedRankings = await getNBACache<any>(rankingsCacheKey);
+          let cachedRankings = await getNBACache<any>(rankingsCacheKey, {
+            restTimeoutMs: 15000,
+            jsTimeoutMs: 15000,
+          });
           
           // Fallback to in-memory cache
           if (!cachedRankings) {
@@ -844,7 +847,10 @@ export async function GET(request: NextRequest) {
       try {
         const rankingsCacheKey = `team_defense_rankings_${season}`;
         // Try Supabase cache first (persistent, shared across instances)
-        let cachedRankings = await getNBACache<any>(rankingsCacheKey);
+        let cachedRankings = await getNBACache<any>(rankingsCacheKey, {
+          restTimeoutMs: 15000,
+          jsTimeoutMs: 15000,
+        });
         
         // Fallback to in-memory cache
         if (!cachedRankings) {

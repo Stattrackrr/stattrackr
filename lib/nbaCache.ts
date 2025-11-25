@@ -67,10 +67,25 @@ export interface NBACacheEntry {
   updated_at: string;
 }
 
+export interface GetCacheOptions {
+  /**
+   * Timeout for the REST API shortcut (ms). Defaults to 5s.
+   */
+  restTimeoutMs?: number;
+  /**
+   * Timeout for the Supabase JS client query (ms). Defaults to 5s.
+   */
+  jsTimeoutMs?: number;
+  /**
+   * Force skipping the REST API shortcut (use JS client only).
+   */
+  disableRest?: boolean;
+}
+
 /**
  * Get cached NBA API data from Supabase
  */
-export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> {
+export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOptions = {}): Promise<T | null> {
   // If Supabase not configured, return null (will fallback to in-memory cache)
   if (!supabaseAdmin) {
     if (process.env.NODE_ENV === 'production') {
@@ -84,19 +99,22 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
 
   console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
 
+  const restTimeoutMs = Math.max(3000, options.restTimeoutMs ?? 5000);
+  const jsTimeoutMs = Math.max(3000, options.jsTimeoutMs ?? 5000);
+
   // In production, if Supabase is consistently slow, we'll skip it after first timeout
   // This prevents blocking the entire request
   try {
     // Use REST API directly in production (faster than JS client)
     // This bypasses the JS client overhead and goes straight to PostgREST
-    if (process.env.NODE_ENV === 'production' && supabaseUrl && supabaseServiceKey) {
+    if (!options.disableRest && process.env.NODE_ENV === 'production' && supabaseUrl && supabaseServiceKey) {
       console.log(`[NBA Cache] 📡 Using REST API directly for: ${cacheKey.substring(0, 50)}...`);
       
       try {
         // Use simpler query - just get data column, limit to 1 row
         const restUrl = `${supabaseUrl}/rest/v1/nba_api_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=data,expires_at&limit=1`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout - fail fast
+        const timeoutId = setTimeout(() => controller.abort(), restTimeoutMs);
         
         const response = await fetch(restUrl, {
           method: 'GET',
@@ -157,7 +175,7 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
         return cacheEntry.data as T;
       } catch (restError: any) {
         if (restError.name === 'AbortError') {
-          console.warn(`[NBA Cache] ⏱️ REST API timeout (8s) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
+          console.warn(`[NBA Cache] ⏱️ REST API timeout (${restTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
           // Fall through to JS client as fallback
         } else {
           console.warn(`[NBA Cache] ⚠️ REST API error for key: ${cacheKey.substring(0, 50)}..., falling back to JS client:`, restError.message);
@@ -168,12 +186,11 @@ export async function getNBACache<T = any>(cacheKey: string): Promise<T | null> 
     
     // Fallback to JS client (for dev or if REST API fails)
     // Short timeout - if Supabase is slow, just skip it and use in-memory cache
-    const timeoutMs = process.env.NODE_ENV === 'production' ? 5000 : 5000; // 5s everywhere - fail fast
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.warn(`[NBA Cache] ⏱️ Query timeout (${timeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
+        console.warn(`[NBA Cache] ⏱️ Query timeout (${jsTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
         resolve(null);
-      }, timeoutMs);
+      }, jsTimeoutMs);
     });
 
     const queryPromise = supabaseAdmin
