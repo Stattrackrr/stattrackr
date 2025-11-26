@@ -63,31 +63,34 @@ export async function GET(req: NextRequest) {
       });
     }
     
+    // TypeScript: html is guaranteed to be defined here
+    const htmlContent: string = html;
+    
     // Check for key indicators
-    const hasLineups = html.toLowerCase().includes('lineup') || html.toLowerCase().includes('starting');
-    const hasPositions = html.includes('PG') || html.includes('SG') || html.includes('SF') || html.includes('PF') || html.includes('C');
-    const hasTeam = html.toUpperCase().includes(teamAbbr);
-    const hasPredicted = html.toLowerCase().includes('predicted') || html.toLowerCase().includes('projected');
-    const hasConfirmed = html.toLowerCase().includes('confirmed') || html.toLowerCase().includes('official');
-    const hasHistorical = html.toLowerCase().includes('previous') || html.toLowerCase().includes('past') || html.toLowerCase().includes('history') || html.match(/\d{4}-\d{2}-\d{2}/);
-    const hasDatePicker = html.toLowerCase().includes('date') && (html.includes('input') || html.includes('select'));
+    const hasLineups = htmlContent.toLowerCase().includes('lineup') || htmlContent.toLowerCase().includes('starting');
+    const hasPositions = htmlContent.includes('PG') || htmlContent.includes('SG') || htmlContent.includes('SF') || htmlContent.includes('PF') || htmlContent.includes('C');
+    const hasTeam = htmlContent.toUpperCase().includes(teamAbbr);
+    const hasPredicted = htmlContent.toLowerCase().includes('predicted') || htmlContent.toLowerCase().includes('projected');
+    const hasConfirmed = htmlContent.toLowerCase().includes('confirmed') || htmlContent.toLowerCase().includes('official');
+    const hasHistorical = htmlContent.toLowerCase().includes('previous') || htmlContent.toLowerCase().includes('past') || htmlContent.toLowerCase().includes('history') || htmlContent.match(/\d{4}-\d{2}-\d{2}/);
+    const hasDatePicker = htmlContent.toLowerCase().includes('date') && (htmlContent.includes('input') || htmlContent.includes('select'));
     
     // Check if it's JavaScript rendered
-    const isJS = html.includes('react') || html.includes('__NEXT_DATA__') || html.includes('window.__INITIAL_STATE__') || html.includes('vue') || html.includes('angular');
+    const isJS = htmlContent.includes('react') || htmlContent.includes('__NEXT_DATA__') || htmlContent.includes('window.__INITIAL_STATE__') || htmlContent.includes('vue') || htmlContent.includes('angular');
     
     // Look for API endpoints
-    const apiMatches = html.match(/["']https?:\/\/[^"']*api[^"']*["']/gi) || [];
-    const lineupApiMatches = html.match(/["']https?:\/\/[^"']*lineup[^"']*["']/gi) || [];
+    const apiMatches = htmlContent.match(/["']https?:\/\/[^"']*api[^"']*["']/gi) || [];
+    const lineupApiMatches = htmlContent.match(/["']https?:\/\/[^"']*lineup[^"']*["']/gi) || [];
     
     // Check for table structure (easier to parse)
-    const hasTable = html.includes('<table') || html.includes('table');
-    const hasDivStructure = html.match(/<div[^>]*class[^>]*lineup/gi)?.length || 0;
+    const hasTable = htmlContent.includes('<table') || htmlContent.includes('table');
+    const hasDivStructure = htmlContent.match(/<div[^>]*class[^>]*lineup/gi)?.length || 0;
     
     // Sample HTML around team name
-    const teamIndex = html.toUpperCase().indexOf(teamAbbr);
+    const teamIndex = htmlContent.toUpperCase().indexOf(teamAbbr);
     const sampleHtml = teamIndex > 0 
-      ? html.substring(Math.max(0, teamIndex - 500), Math.min(html.length, teamIndex + 2000))
-      : html.substring(0, 3000);
+      ? htmlContent.substring(Math.max(0, teamIndex - 500), Math.min(htmlContent.length, teamIndex + 2000))
+      : htmlContent.substring(0, 3000);
     
     return NextResponse.json({
       source: 'BasketballMonsters',
@@ -104,7 +107,7 @@ export async function GET(req: NextRequest) {
         isJavaScriptRendered: isJS,
         hasTable,
         hasDivStructure,
-        htmlLength: html.length
+        htmlLength: htmlContent.length
       },
       apiEndpoints: {
         total: apiMatches.length,
