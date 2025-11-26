@@ -137,7 +137,7 @@ async function fetchRotowireLineupForDate(date: string, teamAbbr: string): Promi
     // Rotowire might have lineups in a table
     const tableMatch = teamSection.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
     if (tableMatch) {
-      const tableHtml = tableSection[1];
+      const tableHtml = tableMatch[1];
       // Parse table rows for players and positions
       // This would need more specific parsing based on Rotowire's actual HTML structure
     }
