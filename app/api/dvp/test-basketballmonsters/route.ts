@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const url = `https://basketballmonsters.com/nbalineups`;
     console.log(`[Test BasketballMonsters] Testing ${url}...`);
     
-    let html: string | undefined;
+    let html: string | undefined = undefined;
     let fetchError: any = null;
     
     // Try multiple URL variations (the actual URL is .aspx)
