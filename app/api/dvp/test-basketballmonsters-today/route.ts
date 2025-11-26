@@ -78,8 +78,10 @@ export async function GET(req: NextRequest) {
       const playerLinks = row.match(/<a[^>]*href=['"]playerinfo\.aspx\?i=\d+['"][^>]*>([^<]+)<\/a>/gi) || [];
       
       if (playerLinks.length >= 2) {
-        const player1 = playerLinks[0].match(/>([^<]+)</)?.[1]?.trim() || '';
-        const player2 = playerLinks[1].match(/>([^<]+)</)?.[1]?.trim() || '';
+        const player1Match = playerLinks[0]?.match(/>([^<]+)</);
+        const player2Match = playerLinks[1]?.match(/>([^<]+)</);
+        const player1 = player1Match?.[1]?.trim() || '';
+        const player2 = player2Match?.[1]?.trim() || '';
         const selected = isFirstTeam ? player1 : player2;
         
         starters.push({ position, player1, player2, selected });
