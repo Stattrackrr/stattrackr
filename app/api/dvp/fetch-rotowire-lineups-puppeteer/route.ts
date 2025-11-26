@@ -105,7 +105,6 @@ async function scrapeRotowireLineupForDate(date: string, teamAbbr: string): Prom
     
     // Parse lineups from HTML/text
     const starters: Array<{ name: string; position: string }> = [];
-    const teamUpper = teamAbbr.toUpperCase();
     
     // Find team section
     const teamIndex = text.toUpperCase().indexOf(teamUpper);
