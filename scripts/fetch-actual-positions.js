@@ -63,6 +63,39 @@ function idx(headers, ...names) {
 }
 
 async function nbaFetch(pathAndQuery) {
+  // Try using our API endpoint first (server-side, works better)
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  if (pathAndQuery.includes('teamgamelog')) {
+    // Extract team and season from query
+    const teamMatch = pathAndQuery.match(/TeamID=(\d+)/);
+    const seasonMatch = pathAndQuery.match(/Season=([^&]+)/);
+    if (teamMatch && seasonMatch) {
+      const teamId = parseInt(teamMatch[1], 10);
+      const seasonLabel = decodeURIComponent(seasonMatch[1]);
+      // Find team abbreviation
+      const teamAbbr = Object.entries(ABBR_TO_TEAM_ID).find(([_, id]) => id === teamId)?.[0];
+      if (teamAbbr) {
+        // Extract year from season label (e.g., "2024-25" -> 2024)
+        const year = parseInt(seasonLabel.split('-')[0], 10);
+        try {
+          const apiRes = await fetch(`${baseUrl}/api/dvp/fetch-positions?team=${teamAbbr}&season=${year}`);
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            // Convert to expected format
+            if (apiData.players && apiData.players.length > 0) {
+              // Return mock resultSet format with game IDs
+              // For now, return empty and let the script use direct API
+              // This is a fallback - the API endpoint can be called directly
+            }
+          }
+        } catch (e) {
+          // Fall through to direct API call
+        }
+      }
+    }
+  }
+  
+  // Direct NBA API call (original method)
   const url = `https://stats.nba.com/stats/${pathAndQuery}`;
   const res = await fetch(url, { headers: NBA_HEADERS });
   if (!res.ok) {
@@ -81,15 +114,29 @@ async function fetchTeamGameLog(teamId, seasonLabel) {
   try {
     const data = await nbaFetch(`teamgamelog?TeamID=${teamId}&Season=${encodeURIComponent(seasonLabel)}&SeasonType=Regular+Season`);
     const rs = (data?.resultSets || []).find(r => (r?.name || '').toLowerCase().includes('teamgamelog')) || data?.resultSets?.[0];
+    
+    if (!rs) {
+      console.error(`   No resultSet found in response for team ${teamId}`);
+      return [];
+    }
+    
     const headers = rs?.headers || [];
     const rows = rs?.rowSet || [];
     const iGameId = idx(headers, 'GAME_ID', 'Game_ID');
     
-    if (iGameId < 0) return [];
+    if (iGameId < 0) {
+      console.error(`   GAME_ID column not found in headers:`, headers);
+      return [];
+    }
+    
+    if (rows.length === 0) {
+      console.log(`   No games found in resultSet (this is normal if season hasn't started or team has no games)`);
+    }
     
     return rows.map(r => String(r[iGameId])).filter(Boolean);
   } catch (e) {
-    console.error(`Error fetching game log for team ${teamId}:`, e.message);
+    console.error(`   Error fetching game log for team ${teamId}:`, e.message);
+    if (e.stack) console.error(`   Stack:`, e.stack.split('\n').slice(0, 3).join('\n'));
     return [];
   }
 }

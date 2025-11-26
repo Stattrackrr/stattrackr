@@ -268,9 +268,8 @@ async function refreshTrackingStatsInBackground(
       await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
       cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
     } else {
-      console.log(`[Team Tracking Stats] ℹ️ Background refresh: No changes for ${team} ${category}, updating TTL only`);
-      await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
-      cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+      console.log(`[Team Tracking Stats] ℹ️ Background refresh: No changes for ${team} ${category}, keeping existing cache (no expiration update)`);
+      // Don't update cache if data hasn't changed - preserve original expiration
     }
   } catch (error: any) {
     console.error(`[Team Tracking Stats] Background refresh failed for ${team} ${category}:`, error);
@@ -576,22 +575,26 @@ export async function GET(request: NextRequest) {
     if (teamPlayers.length > 0) {
       // Check if we have old data to compare
       const oldCached = await getNBACache<any>(cacheKey);
-      const hasChanged = oldCached && !deepEqual(oldCached, responsePayload);
+      const hasChanged = !oldCached || !deepEqual(oldCached, responsePayload);
       
+      // Only update cache if data has changed (preserve old cache if no changes)
       if (hasChanged) {
         console.log(`[Team Tracking Stats] ✅ New data detected for ${team} ${category}${filterSuffix}, updating cache...`);
-      } else if (oldCached) {
-        console.log(`[Team Tracking Stats] ℹ️ No changes detected for ${team} ${category}${filterSuffix}, updating TTL only`);
+        // Cache the result (both all games and opponent-specific)
+        // Store in both Supabase (persistent, shared across all users) and in-memory
+        await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
+        cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
+        console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory (available instantly for all users)`);
+      } else {
+        console.log(`[Team Tracking Stats] ℹ️ No changes detected for ${team} ${category}${filterSuffix}, keeping existing cache (no expiration update)`);
+        // Don't update cache if data hasn't changed - preserve original expiration
       }
-
-      // Cache the result (both all games and opponent-specific)
-      // Store in both Supabase (persistent, shared across all users) and in-memory
-      // The upsert will replace old entry, effectively deleting it
-      await setNBACache(cacheKey, 'team_tracking', responsePayload, CACHE_TTL.TRACKING_STATS);
-      cache.set(cacheKey, responsePayload, CACHE_TTL.TRACKING_STATS);
-      console.log(`[Team Tracking Stats] 💾 Cached ${team} ${category}${filterSuffix} in Supabase + memory for ${CACHE_TTL.TRACKING_STATS} minutes (available instantly for all users)`);
     } else {
       console.warn(`[Team Tracking Stats] ⚠️ No players found for ${team} ${category}${filterSuffix}. Not caching empty data.`);
+      // Log uncached teams in development/staging only
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Cache Miss Log] ❌ Team ${team} (${category}${filterSuffix}) not cached: No players found in API response`);
+      }
     }
 
     return NextResponse.json(

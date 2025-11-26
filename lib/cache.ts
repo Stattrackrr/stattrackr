@@ -219,9 +219,11 @@ export const CACHE_TTL = {
   // Rationale: Injury status can change quickly on game days
   INJURIES: 30,
   
-  // Tracking stats (potentials) - 24 hours
-  // Rationale: Tracking stats are cumulative season data that updates once daily
-  TRACKING_STATS: 24 * 60,
+  // Tracking stats (potentials) - Never expire (persist until new data found)
+  // Rationale: Tracking stats are cumulative season data that updates once daily.
+  // Cache persists until daily refresh finds new data, then replaces old cache.
+  // Using 365 days as "never expire" (effectively permanent until replaced)
+  TRACKING_STATS: 365 * 24 * 60, // 365 days = effectively never expire
 } as const;
 
 // Cache key generators

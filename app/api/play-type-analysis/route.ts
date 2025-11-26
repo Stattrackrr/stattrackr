@@ -744,6 +744,10 @@ export async function GET(request: NextRequest) {
     
     if (!foundData || playerRowsFound === 0) {
       console.warn(`[Play Type Analysis] ⚠️ No player play type data found`);
+      // Log uncached players in development/staging only
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Cache Miss Log] ❌ Player ${playerId} (play type analysis) not cached: No play type data found for season ${seasonStr}`);
+      }
     }
 
     // Step 2: Fetch team defensive stats for rankings (optional - don't fail if this times out)
@@ -1074,10 +1078,16 @@ export async function GET(request: NextRequest) {
 
     // Cache only play types with values > 0 (24 hour TTL)
     // Store in both Supabase (persistent) and in-memory
+    const zeroCount = playTypeAnalysis.length - playTypesToCache.length;
+    
+    // Log if no play types to cache (all zeros)
+    if (playTypesToCache.length === 0 && process.env.NODE_ENV !== 'production') {
+      console.warn(`[Cache Miss Log] ❌ Player ${playerId} (play type analysis) not cached: All play types have 0 points for season ${seasonStr}`);
+    }
+    
     await setNBACache(cacheKey, 'play_type', cachedResponse, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, cachedResponse, CACHE_TTL.TRACKING_STATS);
-      const zeroCount = playTypeAnalysis.length - playTypesToCache.length;
-      console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);
+    console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);
 
       return { response, cacheStatus: 'MISS' };
     };

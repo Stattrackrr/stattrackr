@@ -274,8 +274,14 @@ async function refreshTeamTrackingStats(
 
         const hasChanged = !cached || JSON.stringify(cached) !== JSON.stringify(newPayload);
 
-        await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
-        cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+        // Only update cache if data has changed (preserve old cache if no changes)
+        if (hasChanged) {
+          console.log(`[Team Tracking Stats] 📊 Data changed for ${team} ${category}, updating cache...`);
+          await setNBACache(cacheKey, 'team_tracking', newPayload, CACHE_TTL.TRACKING_STATS);
+          cache.set(cacheKey, newPayload, CACHE_TTL.TRACKING_STATS);
+        } else {
+          console.log(`[Team Tracking Stats] ℹ️ No changes for ${team} ${category}, keeping existing cache (no expiration update)`);
+        }
 
         console.log(`[Team Tracking Stats] ✅ ${team} ${category} refreshed successfully on attempt ${attempt}/${maxAttempts}`);
         return { success: true, changed: hasChanged };
@@ -492,10 +498,18 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
             } else {
               results.errors++;
               results.details.push({ team, category, status: 'error', error: result.error });
+              // Log uncached teams in development/staging only
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(`[Cache Miss Log] ❌ Team ${team} (${category}) failed to cache: ${result.error || 'Unknown error'}`);
+              }
             }
           }).catch((err) => {
             results.errors++;
             results.details.push({ team, category, status: 'error', error: err.message });
+            // Log uncached teams in development/staging only
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn(`[Cache Miss Log] ❌ Team ${team} (${category}) failed to cache: ${err.message || 'Unknown error'}`);
+            }
           })
         );
         

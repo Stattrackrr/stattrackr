@@ -1,0 +1,57 @@
+name: Populate NBA Cache
+
+on:
+  schedule:
+    # Run twice daily: 3 AM ET (8 AM UTC) and 3 PM ET (8 PM UTC)
+    - cron: '0 8 * * *'  # 3 AM ET / 8 AM UTC
+    - cron: '0 20 * * *' # 3 PM ET / 8 PM UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  populate-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # Script can take 10-20 minutes
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check environment variables
+        id: check_env
+        run: |
+          SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}"
+          if [ -z "$SUPABASE_URL" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Supabase secrets not configured - skipping cache population"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Populate NBA Cache
+        if: steps.check_env.outputs.configured == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY || secrets.BALL_DONT_LIE_API_KEY }}
+          NBA_SEASON: ${{ secrets.NBA_SEASON || '2025' }}
+          NODE_ENV: production
+        run: |
+          echo "🚀 Starting NBA cache population..."
+          echo "Season: ${NBA_SEASON:-2025}"
+          node scripts/populate-all-nba-cache.js || exit 1
+          echo "✅ NBA cache population complete!"
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ NBA cache population failed!"
+          echo "Check the logs above for details."
+

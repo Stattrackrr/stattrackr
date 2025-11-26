@@ -148,12 +148,14 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         
         const cacheEntry = data[0];
         
-        // Check if expired
-        const expiresAt = new Date(cacheEntry.expires_at);
-        if (expiresAt < new Date()) {
-          console.log(`[NBA Cache] ⏰ Cache expired (REST API) for key: ${cacheKey.substring(0, 50)}...`);
-          return null;
-        }
+    // Check if expired (skip check for very long TTLs - effectively never expire)
+    const expiresAt = new Date(cacheEntry.expires_at);
+    const daysUntilExpiry = (expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
+    // If expiration is more than 300 days away, treat as "never expire" (persist until replaced)
+    if (daysUntilExpiry < 300 && expiresAt < new Date()) {
+      console.log(`[NBA Cache] ⏰ Cache expired (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+      return null;
+    }
         
         // Validate data
         if (!cacheEntry.data || (typeof cacheEntry.data === 'object' && Object.keys(cacheEntry.data).length === 0)) {
@@ -240,9 +242,11 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     // Type assertion for Supabase response
     const cacheData = data as { data: T; expires_at: string; updated_at?: string; created_at?: string };
     
-    // Check if expired
+    // Check if expired (skip check for very long TTLs - effectively never expire)
     const expiresAt = new Date(cacheData.expires_at);
-    if (expiresAt < new Date()) {
+    const daysUntilExpiry = (expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
+    // If expiration is more than 300 days away, treat as "never expire" (persist until replaced)
+    if (daysUntilExpiry < 300 && expiresAt < new Date()) {
       console.log(`[NBA Cache] ⏰ Cache expired for key: ${cacheKey.substring(0, 50)}... (expired at ${expiresAt.toISOString()})`);
       // Auto-delete expired entry
       if (supabaseAdmin) {

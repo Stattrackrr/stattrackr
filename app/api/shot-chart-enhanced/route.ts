@@ -826,6 +826,10 @@ export async function GET(request: NextRequest) {
     
     if (totalAttempts === 0) {
       console.warn(`[Shot Chart Enhanced] ⚠️ No shot attempts found for player ${nbaPlayerId}. This might be a rookie or player with no games this season.`);
+      // Log uncached players in development/staging only
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Cache Miss Log] ❌ Player ${nbaPlayerId} (shot chart) not cached: No shot attempts found for season ${seasonStr}`);
+      }
       // Don't cache empty data - return it but don't cache
       return NextResponse.json({
         playerId: nbaPlayerId,
