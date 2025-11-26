@@ -142,7 +142,7 @@ async function fetchBoxscorePositions(gameId: string, teamId: number) {
       
       if (!playerName || !minutes || minutes === '') continue;
       
-      const isStarter = startPos && startPos.length > 0;
+      const isStarter = Boolean(startPos && startPos.length > 0);
       let finalPosition = startPos;
       
       // Handle generic positions
