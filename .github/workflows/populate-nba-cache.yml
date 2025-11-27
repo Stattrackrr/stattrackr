@@ -49,11 +49,13 @@ jobs:
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY || secrets.BALL_DONT_LIE_API_KEY }}
           NBA_SEASON: ${{ secrets.NBA_SEASON || '2025' }}
           NODE_ENV: production
+        shell: powershell
         run: |
-          echo "🚀 Starting NBA cache population..."
-          echo "Season: ${NBA_SEASON:-2025}"
-          node scripts/populate-all-nba-cache.js || exit 1
-          echo "✅ NBA cache population complete!"
+          Write-Host "🚀 Starting NBA cache population..."
+          Write-Host ("Season: {0}" -f $env:NBA_SEASON)
+          node scripts/populate-all-nba-cache.js
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "✅ NBA cache population complete!"
 
       - name: Report failure
         if: failure()
