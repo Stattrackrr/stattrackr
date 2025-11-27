@@ -28,14 +28,18 @@ jobs:
 
       - name: Check environment variables
         id: check_env
+        shell: pwsh
         run: |
-          SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}"
-          if [ -z "$SUPABASE_URL" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
-            echo "configured=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Supabase secrets not configured - skipping cache population"
-          else
-            echo "configured=true" >> $GITHUB_OUTPUT
-          fi
+          $supabaseUrl = "${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}"
+          $serviceKey = "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+
+          if ([string]::IsNullOrWhiteSpace($supabaseUrl) -or [string]::IsNullOrWhiteSpace($serviceKey)) {
+            "configured=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            Write-Host "⚠️ Supabase secrets not configured - skipping cache population"
+          }
+          else {
+            "configured=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
 
       - name: Populate NBA Cache
         if: steps.check_env.outputs.configured == 'true'
