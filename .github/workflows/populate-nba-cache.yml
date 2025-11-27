@@ -28,7 +28,7 @@ jobs:
 
       - name: Check environment variables
         id: check_env
-        shell: pwsh
+        shell: powershell
         run: |
           $supabaseUrl = "${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}"
           $serviceKey = "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
