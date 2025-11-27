@@ -142,8 +142,38 @@ export async function GET(req: NextRequest) {
     // Cache key - note: custom positions are now only used as fallback, so stored game positions take priority
     // Cache is based on stored game data, not custom positions (since we respect per-game positions)
     const cacheKey = `dvp:${team}:${seasonYear}:${metric}:${limitGames}:split=${wantSplit?1:0}`;
-    const hit = !forceRefresh ? cache.get<any>(cacheKey) : undefined;
-    if (hit) return NextResponse.json(hit);
+    
+    // Check cache, but also verify file hasn't been updated recently
+    // If file was modified in the last 2 hours, invalidate cache to ensure fresh data
+    if (!forceRefresh && storeFile) {
+      const hit = cache.get<any>(cacheKey);
+      if (hit) {
+        try {
+          // Check file modification time - if file was modified recently, invalidate cache
+          const stats = await fs.stat(storeFile);
+          const fileModifiedTime = stats.mtime.getTime();
+          const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+          
+          // If file was modified in last 2 hours, it likely has new game data
+          // Invalidate cache to ensure dashboard shows latest DvP stats
+          if (fileModifiedTime > twoHoursAgo) {
+            cache.delete(cacheKey);
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`[DvP API] Cache invalidated for ${team} - file modified ${Math.round((Date.now() - fileModifiedTime) / 60000)} minutes ago`);
+            }
+          } else {
+            // File hasn't been modified recently, use cached data
+            return NextResponse.json(hit);
+          }
+        } catch (e) {
+          // If we can't check file stats, use cached data anyway
+          return NextResponse.json(hit);
+        }
+      }
+    } else if (!forceRefresh) {
+      const hit = cache.get<any>(cacheKey);
+      if (hit) return NextResponse.json(hit);
+    }
 
 // Optional name alias map to fix edge cases (populate as needed)
 let NAME_ALIASES: Record<string, string> = {

@@ -1,18 +1,18 @@
 /**
  * Fetch starting lineups from BasketballMonster.com
- * Has historical games via back/next buttons, shows both projected and verified lineups
+ * ONLY scrapes today and future games (no historical games - those should be manually fixed in DvP store)
+ * Shows both projected and verified lineups
  * Caches results in Supabase for instant subsequent requests
  * 
  * Usage: /api/dvp/fetch-basketballmonsters-lineups?team=MIL&season=2025
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
-// Puppeteer requires Node.js runtime
-export const runtime = "nodejs";
-export const maxDuration = 60;
+// No Puppeteer needed - only scraping today and future games
+export const runtime = "edge";
+export const maxDuration = 30;
 
 const BDL_BASE = 'https://api.balldontlie.io/v1';
 const BDL_HEADERS: Record<string, string> = {
@@ -26,6 +26,43 @@ const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
   HOU:11,IND:12,LAC:13,LAL:14,MEM:15,MIA:16,MIL:17,MIN:18,NOP:19,NYK:20,
   OKC:21,ORL:22,PHI:23,PHX:24,POR:25,SAC:26,SAS:27,TOR:28,UTA:29,WAS:30,
 };
+
+// BasketballMonsters uses different abbreviations than standard NBA
+// Map BasketballMonsters abbreviations to standard abbreviations
+const BM_TO_STANDARD_ABBR: Record<string, string> = {
+  'PHO': 'PHX',  // Phoenix
+  'GS': 'GSW',   // Golden State
+  'NO': 'NOP',   // New Orleans
+  'NY': 'NYK',   // New York
+  'SA': 'SAS',   // San Antonio
+  'UTAH': 'UTA', // Utah
+  'WSH': 'WAS',  // Washington
+};
+
+// Reverse mapping: standard abbreviations to BasketballMonsters abbreviations
+// Only teams that use different abbreviations on BasketballMonsters need to be mapped
+// All other teams (23 teams) use the same abbreviation on both systems
+const STANDARD_TO_BM_ABBR: Record<string, string> = {
+  'PHX': 'PHO',  // Phoenix Suns
+  'GSW': 'GS',   // Golden State Warriors
+  'NOP': 'NO',   // New Orleans Pelicans
+  'NYK': 'NY',   // New York Knicks
+  'SAS': 'SA',   // San Antonio Spurs
+  'UTA': 'UTAH', // Utah Jazz
+  'WAS': 'WSH',  // Washington Wizards
+};
+
+// Normalize team abbreviation (convert BasketballMonsters format to standard)
+function normalizeTeamAbbr(bmAbbr: string): string {
+  const upper = bmAbbr.toUpperCase();
+  return BM_TO_STANDARD_ABBR[upper] || upper;
+}
+
+// Get BasketballMonsters abbreviation from standard abbreviation
+function getBMAbbr(standardAbbr: string): string {
+  const upper = standardAbbr.toUpperCase();
+  return STANDARD_TO_BM_ABBR[upper] || upper;
+}
 
 function normName(name: string): string {
   return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
@@ -71,10 +108,20 @@ async function getTeamRoster(teamAbbr: string, season: number): Promise<Set<stri
       const lastName = (player.last_name || '').trim();
       if (firstName && lastName) {
         const fullName = `${firstName} ${lastName}`;
-        roster.add(normName(fullName));
-        // Also add last name only for matching
+        const normalized = normName(fullName);
+        roster.add(normalized);
+        // Also add variations: "First Last", "F. Last", "Last" only
+        const firstInitial = firstName.charAt(0).toLowerCase();
+        roster.add(normName(`${firstInitial}. ${lastName}`));
+        roster.add(normName(`${firstInitial} ${lastName}`));
         roster.add(normName(lastName));
+        // Add without special characters
+        roster.add(normalized.replace(/[^a-z0-9\s]/g, ''));
       }
+    }
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Roster for ${teamAbbr}: ${roster.size} normalized names`);
     }
     
     return roster;
@@ -122,7 +169,7 @@ async function getGameOpponent(date: string, teamAbbr: string): Promise<{ oppone
   }
 }
 
-async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: string, bypassCache: boolean = false, expectedOpponent?: string | null, teamRoster?: Set<string>): Promise<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>> {
+export async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: string, bypassCache: boolean = false, expectedOpponent?: string | null, teamRoster?: Set<string>): Promise<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>> {
   const logKey = `${teamAbbr}:${date}`;
   if (!debugLogs.has(logKey)) {
     debugLogs.set(logKey, []);
@@ -131,7 +178,10 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
   
   const addLog = (msg: string) => {
     logs.push(`[${date}] ${msg}`);
-    console.log(`[BasketballMonsters] ${msg}`);
+    // Only log in development to reduce console spam
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] ${msg}`);
+    }
   };
   // Check cache first (unless bypassed)
   const cacheKey = `basketballmonsters:lineup:${teamAbbr}:${date}`;
@@ -150,247 +200,101 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
   addLog(`🔍 Scraping lineups for ${teamAbbr} on ${date}...`);
   
   // Calculate how many days back we need to go
-  const targetDate = new Date(date);
+  // Parse date string as local date (YYYY-MM-DD format)
+  // Use local timezone to avoid off-by-one day issues
+  const targetDateParts = date.split('-');
+  const year = parseInt(targetDateParts[0]);
+  const month = parseInt(targetDateParts[1]) - 1; // 0-indexed
+  const day = parseInt(targetDateParts[2]);
+  
+  // Create date in local timezone (not UTC)
+  const targetDate = new Date(year, month, day, 0, 0, 0, 0);
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  targetDate.setHours(0, 0, 0, 0);
+  today.setMinutes(0, 0, 0);
+  today.setSeconds(0, 0);
+  today.setMilliseconds(0);
+  
   const daysDiff = Math.floor((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
   
-  addLog(`Date calculation: target=${date}, today=${today.toISOString().split('T')[0]}, daysDiff=${daysDiff}`);
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const targetDateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+  addLog(`Date calculation: target=${date}, today=${todayStr}, targetDate=${targetDateStr}, daysDiff=${daysDiff}`);
+  
+  // ONLY scrape today and future games - skip past games
+  if (daysDiff > 0) {
+    // Only log in development
+    if (process.env.NODE_ENV !== 'production') {
+      addLog(`⚠️ Skipping past date (${daysDiff} days ago) - only scraping today and future games`);
+      addLog(`   Past game starters should be manually fixed in DvP store`);
+    }
+    return [];
+  }
+  
+  // ONLY process today's game - skip all future dates (BasketballMonsters only shows today)
+  if (daysDiff < 0) {
+    // Only log in development
+    if (process.env.NODE_ENV !== 'production') {
+      addLog(`⚠️ Skipping future date (${Math.abs(daysDiff)} days ahead) - only today's games are available on BasketballMonsters`);
+    }
+    return [];
+  }
   
   let html = '';
-  let browser: any = null;
   
   try {
-    // For today (daysDiff === 0) or very recent dates (daysDiff <= 2), try direct fetch first
-    // BasketballMonster's main page might show recent games
-    // For older dates (daysDiff > 2), always use Puppeteer
-    const useDirectFetch = daysDiff <= 2;
+    // For today and future dates, use direct fetch (main page shows these games)
+    const useDirectFetch = daysDiff <= 0;
     
-    if (useDirectFetch) {
-      // For today or recent dates, try direct fetch first
-      addLog(`${daysDiff === 0 ? "Today's" : `Recent (${daysDiff} days ago)`} date - attempting direct fetch first...`);
-      try {
-        const url = `https://basketballmonster.com/nbalineups.aspx`;
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html',
-            'Referer': 'https://basketballmonster.com/',
-          },
-          cache: 'no-store'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        html = await response.text();
-        addLog(`Got HTML via direct fetch: ${html.length} characters`);
-        
-        // Check if our team's game is actually on this page
-        const teamUpper = teamAbbr.toUpperCase();
-        const hasGame = html.match(new RegExp(`${teamUpper}\\s*@|@\\s*${teamUpper}`, 'i'));
-        if (hasGame) {
-          addLog(`✅ Found ${teamAbbr} game on main page - will parse directly`);
-          // For recent dates, the main page might show today's game, not the target date
-          // We'll validate the opponent later to ensure we got the right game
-        } else {
-          addLog(`⚠️ ${teamAbbr} game not found on main page - will need Puppeteer`);
-          html = ''; // Clear HTML so we fall through to Puppeteer
-        }
-      } catch (e: any) {
-        addLog(`Direct fetch failed: ${e.message}, will try Puppeteer`);
-        // Fall through to Puppeteer
+    // For today and future dates, use direct fetch (main page shows these games)
+    addLog(`${daysDiff === 0 ? "Today's" : "Future"} date - attempting direct fetch...`);
+    try {
+      const url = `https://basketballmonster.com/nbalineups.aspx`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html',
+          'Referer': 'https://basketballmonster.com/',
+        },
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    } else {
-      addLog(`Historical date (${daysDiff} days ago) - must use Puppeteer to navigate to correct date`);
+      
+      html = await response.text();
+      addLog(`Got HTML via direct fetch: ${html.length} characters`);
+      
+      // Check if our team's game is actually on this page
+      // BasketballMonsters may use different abbreviations (e.g., PHO instead of PHX)
+      const teamUpper = teamAbbr.toUpperCase();
+      const bmAbbr = getBMAbbr(teamUpper);
+      
+      // Check for both standard abbreviation and BasketballMonsters abbreviation
+      const standardPattern = new RegExp(`${teamUpper}\\s*@|@\\s*${teamUpper}`, 'i');
+      const bmPattern = new RegExp(`${bmAbbr}\\s*@|@\\s*${bmAbbr}`, 'i');
+      const hasGame = html.match(standardPattern) || html.match(bmPattern);
+      
+      if (hasGame) {
+        addLog(`✅ Found ${teamAbbr} game on main page (checked ${teamUpper} and ${bmAbbr}) - will parse directly`);
+      } else {
+        addLog(`⚠️ ${teamAbbr} game not found on main page (checked ${teamUpper} and ${bmAbbr})`);
+        html = '';
+      }
+    } catch (e: any) {
+      addLog(`Direct fetch failed: ${e.message}`);
+      html = '';
     }
     
-    // Use Puppeteer for historical dates or if direct fetch failed
-    if (!html) {
-      addLog(`Historical date (${daysDiff} days ago) - using Puppeteer to navigate`);
-      
-      // Retry Puppeteer up to 3 times
-      let retries = 3;
-      let lastError: any = null;
-      
-      while (retries > 0 && !html) {
-        try {
-          addLog(`🚀 Launching Puppeteer... (${4 - retries}/3 attempts)`);
-          
-          // More robust Puppeteer launch options
-          browser = await puppeteer.launch({
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-accelerated-2d-canvas',
-              '--disable-gpu',
-              '--no-first-run',
-              '--disable-extensions',
-              '--disable-background-networking',
-              '--disable-background-timer-throttling',
-              '--disable-renderer-backgrounding',
-              '--disable-backgrounding-occluded-windows',
-              '--disable-breakpad',
-              '--disable-component-extensions-with-background-pages',
-              '--disable-features=TranslateUI',
-              '--disable-ipc-flooding-protection',
-              '--disable-hang-monitor',
-              '--disable-prompt-on-repost',
-              '--disable-sync',
-              '--metrics-recording-only',
-              '--no-default-browser-check',
-              '--no-first-run',
-              '--safebrowsing-disable-auto-update',
-              '--enable-automation',
-              '--password-store=basic',
-              '--use-mock-keychain',
-              '--single-process'
-            ],
-            timeout: 60000, // Increased timeout
-            protocolTimeout: 120000 // Protocol timeout
-          });
-          
-          addLog(`✅ Puppeteer launched successfully`);
-          
-          const page = await browser.newPage();
-          
-          // Set longer timeouts
-          page.setDefaultNavigationTimeout(120000);
-          page.setDefaultTimeout(120000);
-          
-          // Set viewport
-          await page.setViewport({ width: 1920, height: 1080 });
-          
-          // Set user agent to avoid bot detection
-          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-          
-          const url = `https://basketballmonster.com/nbalineups.aspx`;
-          addLog(`Navigating to ${url}...`);
-          
-          // Navigate with retry logic
-          try {
-            await page.goto(url, { 
-              waitUntil: 'networkidle0', // Changed to networkidle0 for more reliable loading
-              timeout: 120000 
-            });
-            addLog(`Page loaded successfully`);
-          } catch (navError: any) {
-            addLog(`Navigation warning: ${navError.message}, continuing anyway...`);
-            // Continue even if navigation has warnings
-          }
-          
-          // Wait for page to be ready
-          await page.waitForTimeout(2000);
-          
-          // Click "back" the appropriate number of times
-          addLog(`Navigating ${daysDiff} days back...`);
-          for (let i = 0; i < daysDiff; i++) {
-            try {
-              addLog(`Looking for back button (attempt ${i + 1}/${daysDiff})...`);
-              
-              // Wait for page to be interactive
-              await page.waitForSelector('a', { timeout: 10000 }).catch(() => {
-                addLog(`No links found, page may not be loaded`);
-              });
-              
-              const clicked = await page.evaluate(() => {
-                const links = Array.from(document.querySelectorAll('a'));
-                const backLink = links.find(a => {
-                  const text = a.textContent?.toLowerCase() || '';
-                  return text.includes('back') && !text.includes('background');
-                });
-                if (backLink) {
-                  (backLink as HTMLElement).click();
-                  return true;
-                }
-                return false;
-              });
-              
-              if (clicked) {
-                addLog(`Clicked back button`);
-                // Wait for navigation to complete
-                await page.waitForTimeout(4000); // Increased wait time
-                // Wait for network to be idle (Puppeteer doesn't have waitForLoadState)
-                await page.waitForTimeout(2000);
-              } else {
-                addLog(`Back button not found on attempt ${i + 1}`);
-                // Try to continue anyway - maybe we're already at the target date
-                break;
-              }
-            } catch (e: any) {
-              addLog(`Error clicking back (attempt ${i + 1}): ${e.message}`);
-              // Continue to next iteration
-            }
-          }
-          
-          // Final wait for page to stabilize
-          await page.waitForTimeout(3000);
-          
-          // Get HTML content
-          html = await page.content();
-          addLog(`Got HTML via Puppeteer: ${html.length} characters`);
-          
-          // Verify we got valid HTML
-          if (html && html.length > 1000 && html.includes(teamAbbr.toUpperCase())) {
-            addLog(`✅ Successfully retrieved HTML for historical date`);
-            break; // Success, exit retry loop
-          } else {
-            throw new Error(`HTML too short or doesn't contain team: ${html?.length || 0} chars`);
-          }
-          
-        } catch (e: any) {
-          lastError = e;
-          addLog(`❌ Puppeteer attempt failed: ${e.message}`);
-          retries--;
-          
-          // Close browser if it exists
-          if (browser) {
-            try {
-              await browser.close();
-            } catch (closeError: any) {
-              addLog(`Error closing browser: ${closeError.message}`);
-            }
-            browser = null;
-          }
-          
-          if (retries > 0) {
-            const waitTime = (4 - retries) * 2000; // Exponential backoff: 2s, 4s, 6s
-            addLog(`Retrying in ${waitTime}ms... (${retries} attempts remaining)`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-          }
-        }
-      }
-      
-      // Final cleanup
-      if (browser) {
-        try {
-          await browser.close();
-          addLog(`Browser closed`);
-        } catch (closeError: any) {
-          addLog(`Error closing browser: ${closeError.message}`);
-        }
-      }
-      
-      if (!html && lastError) {
-        // Don't throw - let it fall through to return empty array
-        // The caller will track this as a skipped game
-        addLog(`⚠️ All Puppeteer retries failed: ${lastError.message}`);
-        addLog(`⚠️ This game will be skipped. Puppeteer connection issues may be due to serverless environment limitations.`);
-        addLog(`💡 Tip: For dates within 2 days, direct fetch is used (no Puppeteer needed).`);
-      }
-    }
-    
+    // No Puppeteer needed - we only handle today and future games
     if (!html) {
       addLog(`❌ No HTML obtained - cannot scrape lineup for this date`);
-      addLog(`This game will be skipped. Try again later or check if Puppeteer is available.`);
+      addLog(`This game will be skipped. Only today and future games are supported.`);
       return [];
     }
     const teamUpper = teamAbbr.toUpperCase();
-    const starters: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> = [];
     
     // Find the specific game box that contains our team
     // BasketballMonster shows multiple games, each in its own box/table
@@ -408,44 +312,79 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
     
     // Validate that we're on the correct date's page
     // Check if the page contains date indicators that match our target date
-    const targetDateStr = formatDate(date);
+    const targetDateObj = new Date(date);
+    const targetDateStr = formatDate(date); // Format: "MM/DD/YYYY"
+    const targetDay = targetDateObj.getDate();
+    const targetMonth = targetDateObj.getMonth() + 1;
+    const targetYear = targetDateObj.getFullYear();
+    
+    // Look for date patterns in the HTML (check a larger section)
+    const dateSection = html.substring(0, 100000); // Check first 100k chars
     const datePatterns = [
-      new RegExp(targetDateStr.replace(/\//g, '[/-]'), 'i'), // Match "11/26/2025" or "11-26-2025"
-      new RegExp(String(new Date(date).getDate()), 'i'), // Match day of month
+      new RegExp(`${targetMonth}[/-]${targetDay}[/-]${targetYear}`, 'i'), // "11/26/2025" or "11-26-2025"
+      new RegExp(`${targetMonth.toString().padStart(2, '0')}[/-]${targetDay.toString().padStart(2, '0')}[/-]${targetYear}`, 'i'), // "11/26/2025" with padding
+      new RegExp(String(targetYear), 'i'), // At least the year should match
     ];
-    const hasDateMatch = datePatterns.some(pattern => pattern.test(html.substring(0, 50000))); // Check first 50k chars
+    const hasDateMatch = datePatterns.some(pattern => pattern.test(dateSection));
+    
+    // Also check if page shows future dates (which would be wrong for past games)
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = formatDate(tomorrow);
+    const hasFutureDate = dateSection.includes(tomorrowStr) || dateSection.includes(formatDate(new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)));
+    
     if (daysDiff > 0 && !hasDateMatch) {
       addLog(`⚠️ WARNING: Page may not be for target date ${targetDateStr} (daysDiff=${daysDiff})`);
       addLog(`This could mean Puppeteer navigation failed or page shows wrong date`);
+      if (hasFutureDate) {
+        addLog(`❌ ERROR: Page appears to show future dates instead of target date ${targetDateStr}`);
+        addLog(`Skipping this game - Puppeteer navigation likely failed`);
+        return [];
+      }
     }
     
     // Find all game matchups on the page
     // Format: "MIL @ MIA" means MIL (away) @ MIA (home)
     // BasketballMonster typically shows HOME team in first column, AWAY team in second column
     const allGameMatches = Array.from(html.matchAll(/([A-Z]{3})\s*@\s*([A-Z]{3})/gi));
+    addLog(`Found ${allGameMatches.length} game matchups on page`);
+    if (allGameMatches.length > 0) {
+      const sampleMatches = allGameMatches.slice(0, 10).map(m => m[0]).join(', ');
+      addLog(`Sample matchups: ${sampleMatches}`);
+    }
+    
     let targetGameMatch: RegExpMatchArray | null = null;
     let matchupIndex = -1;
     let isFirstTeam = false; // Track if our team is the first team in the matchup string
     let isHomeTeam = false; // Track if our team is the home team (first column in table)
     
     // Find the matchup that includes our team
-    // If we have expected opponent, prefer matches that include the opponent, but don't skip if not found
+    // Validate opponent if we have it - use normalized abbreviations for matching
+    addLog(`Looking for team: ${teamUpper}, expected opponent: ${gameInfo.opponent || 'ANY'}`);
     for (const match of allGameMatches) {
-      const team1 = match[1].toUpperCase(); // Away team (first in "TEAM1 @ TEAM2")
-      const team2 = match[2].toUpperCase(); // Home team (second in "TEAM1 @ TEAM2")
+      const team1Raw = match[1].toUpperCase(); // Away team (first in "TEAM1 @ TEAM2")
+      const team2Raw = match[2].toUpperCase(); // Home team (second in "TEAM1 @ TEAM2")
+      
+      // Normalize BasketballMonsters abbreviations to standard
+      const team1 = normalizeTeamAbbr(team1Raw);
+      const team2 = normalizeTeamAbbr(team2Raw);
       
       // Must include our team
       if (team1 !== teamUpper && team2 !== teamUpper) {
         continue; // Skip this matchup - doesn't include our team
       }
       
-      // If we have expected opponent, validate but only warn (don't skip)
+      // If we have expected opponent, check if it matches (using normalized abbreviations)
       if (gameInfo.opponent) {
-        const hasOpponent = team1 === gameInfo.opponent || team2 === gameInfo.opponent;
+        const opponentUpper = gameInfo.opponent.toUpperCase();
+        const normalizedOpponent = normalizeTeamAbbr(opponentUpper);
+        const hasOpponent = team1 === normalizedOpponent || team2 === normalizedOpponent;
+        
         if (!hasOpponent) {
-          addLog(`⚠️ WARNING: Matchup ${match[0]} doesn't match expected opponent ${gameInfo.opponent}, but continuing anyway`);
+          addLog(`⚠️ SKIPPING: Matchup ${match[0]} (normalized: ${team1} @ ${team2}) doesn't match expected opponent ${gameInfo.opponent} (normalized: ${normalizedOpponent})`);
+          continue; // Skip this game - wrong opponent
         } else {
-          addLog(`✅ Matchup ${match[0]} matches expected opponent ${gameInfo.opponent}`);
+          addLog(`✅ Matchup ${match[0]} (normalized: ${team1} @ ${team2}) matches expected opponent ${gameInfo.opponent}`);
         }
       }
       
@@ -453,13 +392,13 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
         targetGameMatch = match;
         matchupIndex = match.index || -1;
         isFirstTeam = true; // Our team is first in matchup string (away team)
-        isHomeTeam = false; // Away team is in second column
+        isHomeTeam = false; // Away team is in FIRST column (player1) - BasketballMonster format
         break;
       } else if (team2 === teamUpper) {
         targetGameMatch = match;
         matchupIndex = match.index || -1;
         isFirstTeam = false; // Our team is second in matchup string (home team)
-        isHomeTeam = true; // Home team is in first column
+        isHomeTeam = true; // Home team is in SECOND column (player2) - BasketballMonster format
         break;
       }
     }
@@ -467,10 +406,20 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
     if (!targetGameMatch || matchupIndex === -1) {
       addLog(`❌ No game found with team ${teamAbbr} on ${date}`);
       addLog(`   Searched for: ${teamUpper}`);
+      addLog(`   Expected opponent: ${gameInfo.opponent || 'ANY'}`);
       addLog(`   Found ${allGameMatches.length} game matchups on page`);
       if (allGameMatches.length > 0) {
-        const sampleMatches = allGameMatches.slice(0, 5).map(m => m[0]).join(', ');
-        addLog(`   Sample matchups found: ${sampleMatches}`);
+        const allMatchups = allGameMatches.map(m => m[0]).join(', ');
+        addLog(`   All matchups found: ${allMatchups}`);
+        // Check if our team appears in any matchup
+        const hasOurTeam = allGameMatches.some(m => 
+          m[1].toUpperCase() === teamUpper || m[2].toUpperCase() === teamUpper
+        );
+        if (hasOurTeam) {
+          addLog(`   ⚠️ Our team ${teamUpper} found in matchups, but opponent didn't match expected ${gameInfo.opponent || 'ANY'}`);
+        } else {
+          addLog(`   ⚠️ Our team ${teamUpper} not found in any matchup`);
+        }
       }
       return [];
     }
@@ -507,7 +456,9 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
     }
     
     const teamSection = html.substring(boxStart, boxEnd);
-    console.log(`[BasketballMonsters] Isolated game box for ${teamAbbr}: ${boxEnd - boxStart} chars`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Isolated game box for ${teamAbbr}: ${boxEnd - boxStart} chars`);
+    }
     
     // BasketballMonster format: Table structure
     // <tr>
@@ -610,19 +561,114 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
     }
     
     const foundPositions = new Set<string>();
+    const positionToPlayer = new Map<string, { name: string; isVerified: boolean; isProjected: boolean; confidence: 'high' | 'medium' | 'low' }>();
     
-    // Also need to determine which column is our team
-    // BasketballMonster has two columns - we need to figure out which one
-    // Look for team name indicators in the table structure
-    const teamColumnIndex = gameTableHtml.toUpperCase().indexOf(teamUpper);
+    // Track which column we're using for consistency (all 5 players must come from same column)
+    let selectedColumn: 'player1' | 'player2' | null = null;
+    let columnRosterMatches = { player1: 0, player2: 0 };
     
+    // Helper function to check if a player is on the roster (defined at function scope)
+    const isPlayerOnRoster = (playerName: string): boolean => {
+      if (!teamRoster || teamRoster.size === 0) return true; // No roster = assume valid
+      const normalized = normName(playerName);
+      const nameParts = normalized.split(' ');
+      const lastName = nameParts[nameParts.length - 1];
+      const firstName = nameParts[0];
+      
+      // Try multiple matching strategies
+      const matches = Boolean(
+        teamRoster.has(normalized) || 
+        teamRoster.has(lastName) ||
+        (firstName && lastName && teamRoster.has(`${firstName} ${lastName}`)) ||
+        (lastName && teamRoster.has(lastName.toLowerCase()))
+      );
+      
+      // Debug logging in development
+      if (process.env.NODE_ENV !== 'production' && !matches && playerName) {
+        // Check if similar names exist
+        const similarNames = Array.from(teamRoster).filter(r => 
+          r.includes(lastName) || lastName.includes(r) || 
+          normalized.includes(r) || r.includes(normalized)
+        );
+        if (similarNames.length > 0) {
+          addLog(`[DEBUG] Player "${playerName}" (normalized: "${normalized}") not found, but similar names: ${similarNames.slice(0, 3).join(', ')}`);
+        }
+      }
+      
+      return matches;
+    };
+    
+    // FIRST PASS: Count roster matches per column to determine which column to use
+    for (const row of tableRows) {
+      const positionMatch = row.match(/<span[^>]*>(PG|SG|SF|PF|C)<\/span>/i);
+      if (!positionMatch) continue;
+      
+      const playerLinks = row.match(/<a[^>]*href=['"]playerinfo\.aspx\?i=\d+['"][^>]*>([^<]+)<\/a>/gi) || [];
+      if (playerLinks.length >= 2 && playerLinks[0] && playerLinks[1]) {
+        const player1Match = playerLinks[0].match(/>([^<]+)</);
+        const player2Match = playerLinks[1].match(/>([^<]+)</);
+        
+        if (player1Match && player2Match) {
+          const player1 = player1Match[1].trim();
+          const player2 = player2Match[1].trim();
+          
+          if (player1.length >= 2 && /[a-z]/i.test(player1) && isPlayerOnRoster(player1)) {
+            columnRosterMatches.player1++;
+          }
+          if (player2.length >= 2 && /[a-z]/i.test(player2) && isPlayerOnRoster(player2)) {
+            columnRosterMatches.player2++;
+          }
+        }
+      }
+    }
+    
+    // Determine which column to use based on roster matches
+    if (columnRosterMatches.player1 > columnRosterMatches.player2) {
+      selectedColumn = 'player1';
+    } else if (columnRosterMatches.player2 > columnRosterMatches.player1) {
+      selectedColumn = 'player2';
+    } else {
+      // Tie or no matches - use correct column based on home/away
+      selectedColumn = isHomeTeam ? 'player2' : 'player1';
+    }
+    
+    addLog(`[Column Selection] Selected column: ${selectedColumn} (player1 matches: ${columnRosterMatches.player1}, player2 matches: ${columnRosterMatches.player2}, isHomeTeam: ${isHomeTeam})`);
+    
+    // Helper function to select player from the determined column
+    const selectCorrectPlayer = (player1: string, player2: string, position: string): { player: string; column: string; confidence: 'high' | 'medium' | 'low' } | null => {
+      const p1OnRoster = isPlayerOnRoster(player1);
+      const p2OnRoster = isPlayerOnRoster(player2);
+      
+      // BasketballMonster column structure (CORRECTED):
+      // - Column 1 (player1): AWAY team (first team in "AWAY @ HOME")
+      // - Column 2 (player2): HOME team (second team in "AWAY @ HOME")
+      
+      // Use the pre-determined column consistently
+      const useColumn = selectedColumn!;
+      const selectedPlayer = useColumn === 'player1' ? player1 : player2;
+      const selectedOnRoster = useColumn === 'player1' ? p1OnRoster : p2OnRoster;
+      const columnLabel = useColumn === 'player1' ? 'player1 (AWAY)' : 'player2 (HOME)';
+      
+      if (selectedOnRoster) {
+        addLog(`Position ${position}: Using ${useColumn} player "${selectedPlayer}" (on roster: true)`);
+        return { player: selectedPlayer, column: columnLabel, confidence: 'high' };
+      } else {
+        addLog(`⚠️ Position ${position}: Using ${useColumn} player "${selectedPlayer}" (on roster: false, but using for consistency)`);
+        return { player: selectedPlayer, column: columnLabel, confidence: 'medium' };
+      }
+    };
+    
+    // SECOND PASS: Process all rows and collect players from the selected column
     for (const row of tableRows) {
       // Extract position from <span>PG</span> or <span>SG</span> etc.
       const positionMatch = row.match(/<span[^>]*>(PG|SG|SF|PF|C)<\/span>/i);
       if (!positionMatch) continue;
       
       const position = positionMatch[1].toUpperCase();
-      if (foundPositions.has(position)) continue;
+      if (foundPositions.has(position)) {
+        addLog(`⚠️ Duplicate position ${position} found - skipping duplicate`);
+        continue;
+      }
       
       // Extract player names from <a> tags
       const playerLinks = row.match(/<a[^>]*href=['"]playerinfo\.aspx\?i=\d+['"][^>]*>([^<]+)<\/a>/gi) || [];
@@ -636,75 +682,54 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
           const player1 = player1Match[1].trim();
           const player2 = player2Match[1].trim();
           
-          // Determine which column is our team based on home/away
-          // BasketballMonster shows: first column = HOME team, second column = AWAY team
-          // If our team is home (second in "MIA @ MIL"), we want player1 (first column = HOME)
-          // If our team is away (first in "MIL @ MIA"), we want player2 (second column = AWAY)
-          // BUT WAIT - the logs show player1 is AWAY and player2 is HOME, so it's reversed!
-          // Actually: player1 = AWAY, player2 = HOME (opposite of what we thought)
-          // So: if our team is away, we want player1; if our team is home, we want player2
-          const selectedPlayer = isHomeTeam ? player2 : player1;
+          // Basic validation: check if player names look reasonable
+          const p1Valid = player1.length >= 2 && /[a-z]/i.test(player1);
+          const p2Valid = player2.length >= 2 && /[a-z]/i.test(player2);
           
-          // Debug: Log the selection
-          addLog(`Position ${position}: player1="${player1}" (${isHomeTeam ? 'HOME' : 'AWAY'}), player2="${player2}" (${isHomeTeam ? 'AWAY' : 'HOME'}), selected="${selectedPlayer}" (isHomeTeam=${isHomeTeam})`);
-          
-          // Validate: Check if selected player actually belongs to the team
-          if (selectedPlayer) {
-            // Basic validation: check if player name looks reasonable (not empty, has letters)
-            const playerNameLower = selectedPlayer.toLowerCase().trim();
-            if (playerNameLower.length < 2 || !/[a-z]/.test(playerNameLower)) {
-              addLog(`⚠️ WARNING: Invalid player name "${selectedPlayer}" - skipping`);
-              continue;
-            }
-            
-            // Validate against team roster if available
-            if (teamRoster && teamRoster.size > 0) {
-              const normalizedPlayer = normName(selectedPlayer);
-              const nameParts = normalizedPlayer.split(' ');
-              const lastName = nameParts[nameParts.length - 1];
-              
-              const isOnRoster = teamRoster.has(normalizedPlayer) || teamRoster.has(lastName);
-              
-              if (!isOnRoster) {
-                addLog(`⚠️ WARNING: Player "${selectedPlayer}" (normalized: "${normalizedPlayer}") NOT found in ${teamAbbr} roster`);
-                addLog(`   This might indicate wrong column selection or incorrect data from BasketballMonster`);
-                // Don't skip - BasketballMonster might have correct data that roster doesn't have yet
-              } else {
-                addLog(`✅ Player "${selectedPlayer}" validated against ${teamAbbr} roster`);
-              }
-            }
-            
-            // Log selection
-            if (gameInfo.opponent) {
-              addLog(`Selected player "${selectedPlayer}" for ${teamAbbr} vs ${gameInfo.opponent}`);
-            }
+          if (!p1Valid && !p2Valid) {
+            addLog(`⚠️ Position ${position}: Both players invalid - skipping`);
+            continue;
           }
           
-          // Use the section-level verification status (determined above)
-          // Individual rows may also have indicators, but section-level is more reliable
+          // Select the correct player
+          const selection = selectCorrectPlayer(
+            p1Valid ? player1 : '',
+            p2Valid ? player2 : '',
+            position
+          );
+          
+          // If selection is null, it means neither player is on the roster - skip this position
+          if (!selection) {
+            addLog(`⚠️ Position ${position}: Skipped - no player matches team roster`);
+            continue;
+          }
+          
+          if (!selection.player || selection.player.length < 2) {
+            addLog(`⚠️ Position ${position}: No valid player selected - skipping`);
+            continue;
+          }
+          
+          // Determine verification status
           const rowIsVerified = row.includes("class='verified'") ||
                                row.includes('class="verified"') ||
                                row.includes('verified') ||
                                row.match(/class=['"]verified['"]/i) !== null;
           
-          // Prefer section-level status, but allow row-level override
-          // If section is unknown, default to projected (most lineups are projected)
           const isVerified = isVerifiedSection || (rowIsVerified && !isProjectedSection);
           const isProjected = !isVerified;
           
-          starters.push({
-            name: selectedPlayer,
-            position: position,
-            isVerified: isVerified,
-            isProjected: isProjected
+          positionToPlayer.set(position, {
+            name: selection.player,
+            isVerified,
+            isProjected,
+            confidence: selection.confidence
           });
           
           foundPositions.add(position);
-          
-          if (starters.length === 5) break;
+          addLog(`✅ Position ${position}: Selected "${selection.player}" (${selection.column}, confidence: ${selection.confidence})`);
         }
       } else if (playerLinks.length === 1) {
-        // Only one player - check if it's in our team's context
+        // Only one player - use it if it's in our team's context
         const playerMatch = playerLinks[0].match(/>([^<]+)</);
         if (playerMatch) {
           const playerName = playerMatch[1].trim();
@@ -713,46 +738,234 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
             Math.min(gameTableHtml.length, gameTableHtml.indexOf(row) + row.length + 500)
           );
           
-          if (rowContext.toUpperCase().includes(teamUpper)) {
+          if (rowContext.toUpperCase().includes(teamUpper) || isPlayerOnRoster(playerName)) {
             const rowIsVerified = row.includes("class='verified'") ||
                               row.includes('class="verified"') ||
                               row.includes('verified') ||
                               rowContext.includes('Verified Lineup') ||
                               rowContext.match(/class=['"]verified['"]/i) !== null;
             const isVerified = isVerifiedSection || (rowIsVerified && !isProjectedSection);
-            starters.push({
+            
+            positionToPlayer.set(position, {
               name: playerName,
-              position: position,
-              isVerified: isVerified,
-              isProjected: !isVerified
+              isVerified,
+              isProjected: !isVerified,
+              confidence: isPlayerOnRoster(playerName) ? 'high' : 'medium'
             });
+            
             foundPositions.add(position);
+            addLog(`✅ Position ${position}: Selected "${playerName}" (single player, confidence: ${isPlayerOnRoster(playerName) ? 'high' : 'medium'})`);
           }
         }
       }
     }
     
-    // Cache the result (24 hour TTL)
-    if (starters.length > 0) {
-      await setNBACache(cacheKey, 'basketballmonsters_lineup', starters, 24 * 60);
-      const verifiedCount = starters.filter(s => s.isVerified).length;
-      const projectedCount = starters.filter(s => s.isProjected).length;
-      addLog(`Cached ${starters.length} starters (${verifiedCount} verified, ${projectedCount} projected): ${starters.map(s => s.name).join(', ')}`);
-    } else {
-      addLog(`No starters found for ${teamAbbr}`);
-    }
+    // Second pass: Build starters array, ensuring we have all 5 positions
+    const requiredPositions = ['PG', 'SG', 'SF', 'PF', 'C'];
+    const starters: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> = [];
     
-    return starters;
-    
-  } catch (e: any) {
-    if (browser) {
-      try {
-        await browser.close();
-        addLog(`Browser closed`);
-      } catch (closeError: any) {
-        addLog(`Error closing browser: ${closeError.message}`);
+    for (const pos of requiredPositions) {
+      const playerData = positionToPlayer.get(pos);
+      if (playerData) {
+        starters.push({
+          name: playerData.name,
+          position: pos,
+          isVerified: playerData.isVerified,
+          isProjected: playerData.isProjected
+        });
+      } else {
+        // Missing position - try to find it from other rows or use fallback
+        addLog(`⚠️ Position ${pos} not found in table - checking for alternatives...`);
+        
+        // Look for any row that might have this position but wasn't captured
+        for (const row of tableRows) {
+          const positionMatch = row.match(/<span[^>]*>(PG|SG|SF|PF|C)<\/span>/i);
+          if (!positionMatch || positionMatch[1].toUpperCase() !== pos) continue;
+          
+          const playerLinks = row.match(/<a[^>]*href=['"]playerinfo\.aspx\?i=\d+['"][^>]*>([^<]+)<\/a>/gi) || [];
+          if (playerLinks.length >= 1) {
+            const playerMatch = playerLinks[0]?.match(/>([^<]+)</);
+            if (playerMatch && playerMatch[1]) {
+              const playerName = playerMatch[1].trim();
+              // Use this player even if we're not 100% sure - better than missing a position
+              addLog(`⚠️ Using fallback player "${playerName}" for position ${pos}`);
+              starters.push({
+                name: playerName,
+                position: pos,
+                isVerified: false,
+                isProjected: true
+              });
+              break;
+            }
+          }
+        }
+        
+        // If still no player found, we'll have fewer than 5 - log warning
+        if (starters.length < requiredPositions.indexOf(pos) + 1) {
+          addLog(`❌ CRITICAL: Position ${pos} could not be found - lineup will be incomplete`);
+        }
       }
     }
+    
+    // Final validation: Ensure we have exactly 5 starters
+    if (starters.length < 5) {
+      addLog(`⚠️ WARNING: Only found ${starters.length} starters (expected 5)`);
+      
+      // Try one more time to find missing positions by re-scanning all rows
+      const missingPositions = requiredPositions.filter(pos => 
+        !starters.some(s => s.position === pos)
+      );
+      
+      addLog(`Missing positions: ${missingPositions.join(', ')}`);
+      
+      // For each missing position, try to find ANY player from that row
+      for (const missingPos of missingPositions) {
+        for (const row of tableRows) {
+          const positionMatch = row.match(/<span[^>]*>(PG|SG|SF|PF|C)<\/span>/i);
+          if (!positionMatch || positionMatch[1].toUpperCase() !== missingPos) continue;
+          
+          // Try both columns if available
+          const playerLinks = row.match(/<a[^>]*href=['"]playerinfo\.aspx\?i=\d+['"][^>]*>([^<]+)<\/a>/gi) || [];
+          
+          if (playerLinks.length >= 2 && playerLinks[0] && playerLinks[1]) {
+            // Try both players - use the one that's on roster, or default to home/away logic
+            const p1Match = playerLinks[0].match(/>([^<]+)</);
+            const p2Match = playerLinks[1].match(/>([^<]+)</);
+            
+            if (p1Match && p1Match[1] && p2Match && p2Match[1]) {
+              const p1 = p1Match[1].trim();
+              const p2 = p2Match[1].trim();
+              
+              // Use the one that's on roster, or default to home/away
+              const p1OnRoster = isPlayerOnRoster(p1);
+              const p2OnRoster = isPlayerOnRoster(p2);
+              
+              let selectedPlayer = '';
+              if (p1OnRoster && !p2OnRoster) {
+                selectedPlayer = p1;
+              } else if (p2OnRoster && !p1OnRoster) {
+                selectedPlayer = p2;
+              } else {
+                // Both or neither - use home/away logic
+                selectedPlayer = isHomeTeam ? p2 : p1;
+              }
+              
+              if (selectedPlayer && selectedPlayer.length >= 2) {
+                addLog(`✅ Found fallback player "${selectedPlayer}" for missing position ${missingPos}`);
+                starters.push({
+                  name: selectedPlayer,
+                  position: missingPos,
+                  isVerified: false,
+                  isProjected: true
+                });
+                break;
+              }
+            }
+          } else if (playerLinks.length === 1) {
+            const playerMatch = playerLinks[0].match(/>([^<]+)</);
+            if (playerMatch) {
+              const playerName = playerMatch[1].trim();
+              if (playerName.length >= 2) {
+                addLog(`✅ Found fallback player "${playerName}" for missing position ${missingPos}`);
+                starters.push({
+                  name: playerName,
+                  position: missingPos,
+                  isVerified: false,
+                  isProjected: true
+                });
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Final check - if we still don't have 5, log error but return what we have
+    if (starters.length < 5) {
+      addLog(`❌ CRITICAL ERROR: Only ${starters.length} starters found after all attempts (expected 5)`);
+      addLog(`   This may indicate: wrong game, incorrect HTML structure, or BasketballMonster data issue`);
+      addLog(`   Returning ${starters.length} starters: ${starters.map(s => `${s.position}:${s.name}`).join(', ')}`);
+    } else if (starters.length === 5) {
+      addLog(`✅ SUCCESS: Found all 5 starters`);
+    } else {
+      addLog(`⚠️ WARNING: Found ${starters.length} starters (more than expected 5) - taking first 5`);
+      starters.splice(5);
+    }
+    
+    // Ensure we have exactly 5 positions (no duplicates)
+    const finalStarters: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> = [];
+    const usedPositions = new Set<string>();
+    
+    for (const starter of starters) {
+      if (!usedPositions.has(starter.position)) {
+        finalStarters.push(starter);
+        usedPositions.add(starter.position);
+      } else {
+        addLog(`⚠️ Skipping duplicate position ${starter.position} (already have ${finalStarters.find(s => s.position === starter.position)?.name})`);
+      }
+    }
+    
+    // CRITICAL VALIDATION: Verify that the extracted players actually belong to the requested team
+    // This prevents caching wrong team's lineup
+    if (finalStarters.length === 5 && teamRoster && teamRoster.size > 0) {
+      const playersOnRoster = finalStarters.filter(starter => {
+        const normalized = normName(starter.name);
+        const nameParts = normalized.split(' ');
+        const lastName = nameParts[nameParts.length - 1];
+        return teamRoster.has(normalized) || teamRoster.has(lastName);
+      });
+      
+      const rosterMatchCount = playersOnRoster.length;
+      const rosterMatchPercent = (rosterMatchCount / 5) * 100;
+      
+      addLog(`🔍 Roster validation: ${rosterMatchCount}/5 players match ${teamAbbr} roster (${rosterMatchPercent.toFixed(0)}%)`);
+      addLog(`   Players: ${finalStarters.map(s => s.name).join(', ')}`);
+      addLog(`   Matches: ${playersOnRoster.map(s => s.name).join(', ')}`);
+      
+      // Require at least 2 out of 5 players to be on the roster (40% match)
+      // This is very lenient because roster data might be incomplete or names might not match exactly
+      // But still strict enough to catch completely wrong team assignments
+      if (rosterMatchCount < 2) {
+        addLog(`❌ REJECTED: Only ${rosterMatchCount}/5 players match ${teamAbbr} roster - this appears to be the wrong team's lineup!`);
+        addLog(`   Expected team: ${teamAbbr}`);
+        addLog(`   Extracted players: ${finalStarters.map(s => s.name).join(', ')}`);
+        addLog(`   Matched players: ${playersOnRoster.map(s => s.name).join(', ')}`);
+        addLog(`   Roster size: ${teamRoster.size} normalized names`);
+        // Log sample roster names for debugging
+        if (process.env.NODE_ENV !== 'production') {
+          const sampleRoster = Array.from(teamRoster).slice(0, 10);
+          addLog(`   Sample roster names: ${sampleRoster.join(', ')}`);
+        }
+        addLog(`   This lineup will NOT be cached to prevent wrong team assignment`);
+        return []; // Return empty array - don't cache wrong team's lineup
+      }
+      
+      // If 2-3 players match, log a warning but still accept
+      if (rosterMatchCount < 4) {
+        addLog(`⚠️ WARNING: Only ${rosterMatchCount}/5 players match ${teamAbbr} roster (${rosterMatchPercent.toFixed(0)}%)`);
+        addLog(`   This might indicate roster issues, name variations, or recent trades, but accepting lineup`);
+      }
+      
+      addLog(`✅ VALIDATED: ${rosterMatchCount}/5 players confirmed on ${teamAbbr} roster - lineup is correct`);
+    } else if (finalStarters.length === 5 && (!teamRoster || teamRoster.size === 0)) {
+      addLog(`⚠️ WARNING: Cannot validate roster (roster not available) - caching lineup anyway`);
+      addLog(`   This may result in wrong team assignment if roster validation fails`);
+    }
+    
+    // Cache the result (24 hour TTL) - only if validation passed
+    if (finalStarters.length === 5) {
+      await setNBACache(cacheKey, 'basketballmonsters_lineup', finalStarters, 24 * 60);
+      const verifiedCount = finalStarters.filter(s => s.isVerified).length;
+      const projectedCount = finalStarters.filter(s => s.isProjected).length;
+      addLog(`✅ Cached ${finalStarters.length} starters for ${teamAbbr} (${verifiedCount} verified, ${projectedCount} projected): ${finalStarters.map(s => `${s.position}:${s.name}`).join(', ')}`);
+    } else {
+      addLog(`❌ No starters found for ${teamAbbr} - cannot cache`);
+    }
+    
+    return finalStarters;
+    
+  } catch (e: any) {
     addLog(`❌ Error scraping: ${e.message}`);
     addLog(`Stack: ${e.stack?.split('\n').slice(0, 3).join(' | ')}`);
     console.error(`[BasketballMonsters] Error scraping ${date}:`, e.message);
@@ -761,7 +974,10 @@ async function scrapeBasketballMonstersLineupForDate(date: string, teamAbbr: str
 }
 
 export async function GET(req: NextRequest) {
-  console.log(`[BasketballMonsters] ===== API CALLED =====`);
+  // Only log in development
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[BasketballMonsters] ===== API CALLED =====`);
+  }
   try {
     const { searchParams } = new URL(req.url);
     const teamAbbr = searchParams.get('team')?.toUpperCase();
@@ -769,7 +985,9 @@ export async function GET(req: NextRequest) {
     const season = seasonParam ? parseInt(seasonParam, 10) : 2025;
     const bypassCache = searchParams.get('bypassCache') === 'true';
     
-    console.log(`[BasketballMonsters] Request params: team=${teamAbbr}, season=${season}, bypassCache=${bypassCache}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Request params: team=${teamAbbr}, season=${season}, bypassCache=${bypassCache}`);
+    }
     
     if (!teamAbbr) {
       console.log(`[BasketballMonsters] ERROR: No team provided`);
@@ -778,11 +996,15 @@ export async function GET(req: NextRequest) {
     
     const bdlTeamId = ABBR_TO_TEAM_ID_BDL[teamAbbr];
     if (!bdlTeamId) {
-      console.log(`[BasketballMonsters] ERROR: Invalid team ${teamAbbr}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[BasketballMonsters] ERROR: Invalid team ${teamAbbr}`);
+      }
       return NextResponse.json({ error: `Invalid team: ${teamAbbr}` }, { status: 400 });
     }
     
-    console.log(`[BasketballMonsters] Fetching lineups for ${teamAbbr} (season ${season}, BDL ID: ${bdlTeamId})...`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Fetching lineups for ${teamAbbr} (season ${season}, BDL ID: ${bdlTeamId})...`);
+    }
     
     // Get games from BDL
     const gamesUrl = new URL(`${BDL_BASE}/games`);
@@ -790,7 +1012,9 @@ export async function GET(req: NextRequest) {
     gamesUrl.searchParams.append('seasons[]', String(season));
     gamesUrl.searchParams.append('team_ids[]', String(bdlTeamId));
     
-    console.log(`[BasketballMonsters] Fetching games from: ${gamesUrl.toString()}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Fetching games from: ${gamesUrl.toString()}`);
+    }
     
     let gamesData;
     try {
@@ -809,7 +1033,9 @@ export async function GET(req: NextRequest) {
     }
     
     const games = Array.isArray(gamesData?.data) ? gamesData.data : [];
-    console.log(`[BasketballMonsters] BDL returned ${games.length} games`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] BDL returned ${games.length} games`);
+    }
     
     if (games.length === 0) {
       return NextResponse.json({
@@ -823,30 +1049,79 @@ export async function GET(req: NextRequest) {
       });
     }
     
-    // Filter out future games (only process games that have already happened)
+    // BasketballMonsters shows tomorrow's games on the main page if there are no games today
+    // So we need to check both today and tomorrow
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const pastGames = games.filter((game: any) => {
-      const gameDate = new Date(game.date);
-      gameDate.setHours(0, 0, 0, 0);
-      return gameDate <= today;
+    // Use Eastern Time to match BasketballMonsters
+    const easternTime = new Date(today.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    easternTime.setHours(0, 0, 0, 0);
+    const todayStr = `${easternTime.getFullYear()}-${String(easternTime.getMonth() + 1).padStart(2, '0')}-${String(easternTime.getDate()).padStart(2, '0')}`;
+    
+    // Calculate tomorrow
+    const tomorrow = new Date(easternTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Looking for today's (${todayStr}) or tomorrow's (${tomorrowStr}) game in ${games.length} total games...`);
+    }
+    
+    // Helper to extract date string from game date
+    const getGameDateStr = (game: any): string | null => {
+      if (!game.date) return null;
+      
+      if (typeof game.date === 'string') {
+        return game.date.includes('T') ? game.date.split('T')[0] : game.date;
+      } else {
+        const gameDate = new Date(game.date);
+        return `${gameDate.getFullYear()}-${String(gameDate.getMonth() + 1).padStart(2, '0')}-${String(gameDate.getDate()).padStart(2, '0')}`;
+      }
+    };
+    
+    // Find today's game first, then tomorrow's if no game today
+    let targetGame = games.find((game: any) => {
+      const gameDateStr = getGameDateStr(game);
+      return gameDateStr === todayStr;
     });
     
-    console.log(`[BasketballMonsters] Found ${games.length} total games, ${pastGames.length} past games, scraping lineups...`);
+    let targetDate = todayStr;
     
-    if (pastGames.length === 0) {
+    // If no game today, check tomorrow (BasketballMonsters shows tomorrow if no games today)
+    if (!targetGame) {
+      targetGame = games.find((game: any) => {
+        const gameDateStr = getGameDateStr(game);
+        return gameDateStr === tomorrowStr;
+      });
+      targetDate = tomorrowStr;
+    }
+    
+    if (process.env.NODE_ENV !== 'production') {
+      if (targetGame) {
+        console.log(`[BasketballMonsters] ✅ Found game for ${targetDate === todayStr ? 'today' : 'tomorrow'}: ${targetGame.date}`);
+      } else {
+        console.log(`[BasketballMonsters] ❌ No game found for today (${todayStr}) or tomorrow (${tomorrowStr})`);
+        // Show sample game dates for debugging
+        const sampleDates = games.slice(0, 5).map((g: any) => getGameDateStr(g)).filter(Boolean).join(', ');
+        console.log(`[BasketballMonsters] Sample game dates: ${sampleDates}`);
+      }
+    }
+    
+    if (!targetGame) {
       return NextResponse.json({
         team: teamAbbr,
         season,
-        error: 'No past games found (all games are in the future)',
+        error: `No game found for today (${todayStr}) or tomorrow (${tomorrowStr})`,
         players: [],
         debug: {
-          messages: [`All ${games.length} games are in the future`, `Today: ${today.toISOString().split('T')[0]}`]
+          messages: [`No game scheduled for today or tomorrow`, `Today: ${todayStr}, Tomorrow: ${tomorrowStr}`, `Total games in season: ${games.length}`, `Note: BasketballMonsters shows tomorrow's games if there are no games today`]
         }
       });
     }
     
-    // Track positions per player
+    // Store the actual lineup from the most recent game (for today/tomorrow)
+    let actualLineup: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> | null = null;
+    
+    // Track positions per player (for aggregated data - kept for backward compatibility)
     const playerPositions = new Map<string, {
       name: string;
       positions: Record<string, { count: number; verifiedCount: number }>;
@@ -854,21 +1129,20 @@ export async function GET(req: NextRequest) {
     }>();
     
     // Get team roster for player validation
-    console.log(`[BasketballMonsters] Fetching roster for ${teamAbbr}...`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Fetching roster for ${teamAbbr}...`);
+    }
     const teamRoster = await getTeamRoster(teamAbbr, season);
-    console.log(`[BasketballMonsters] Roster has ${teamRoster.size} players`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BasketballMonsters] Roster has ${teamRoster.size} players`);
+    }
     
-    // Process games in reverse order (most recent first)
-    // This ensures we process today's games first (direct fetch, fast)
-    // Then work backwards through recent games
-    // Note: Only games from today (daysDiff === 0) will work without Puppeteer
-    const gamesToProcess = pastGames.slice().reverse().slice(0, 20);
+    // Process the target game (today or tomorrow)
+    const gamesToProcess = [targetGame];
     let processed = 0;
     let skipped = 0;
     
     for (const game of gamesToProcess) {
-      const gameDate = game.date;
-      
       // Get opponent for validation
       const homeId = game.home_team?.id;
       const visitorId = game.visitor_team?.id;
@@ -880,10 +1154,17 @@ export async function GET(req: NextRequest) {
       const awayAbbr = visitorId ? teamIdToAbbr[visitorId] : null;
       const opponent = teamAbbr === homeAbbr ? awayAbbr : homeAbbr;
       
+      // Use the target date (today or tomorrow) - BasketballMonsters shows tomorrow if no games today
+      const gameDate = targetDate;
+      
       try {
-        const lineup = await scrapeBasketballMonstersLineupForDate(gameDate, teamAbbr, bypassCache, opponent);
+        const lineup = await scrapeBasketballMonstersLineupForDate(gameDate, teamAbbr, bypassCache, opponent, teamRoster);
         
         if (lineup.length === 5) {
+          // Store the actual lineup (this is what the frontend needs)
+          actualLineup = lineup;
+          
+          // Also track for aggregated data (backward compatibility)
           for (const starter of lineup) {
             const normalized = normName(starter.name);
             
@@ -905,21 +1186,28 @@ export async function GET(req: NextRequest) {
             if (starter.isVerified) {
               p.positions[starter.position].verifiedCount++;
             }
-            // Log verification status for debugging
-            if (starter.isProjected) {
-              console.log(`[BasketballMonsters] Game ${gameDate}: ${starter.name} (${starter.position}) is PROJECTED`);
-            } else if (starter.isVerified) {
-              console.log(`[BasketballMonsters] Game ${gameDate}: ${starter.name} (${starter.position}) is VERIFIED`);
+            // Log verification status for debugging (only in development)
+            if (process.env.NODE_ENV !== 'production') {
+              if (starter.isProjected) {
+                console.log(`[BasketballMonsters] Game ${gameDate}: ${starter.name} (${starter.position}) is PROJECTED`);
+              } else if (starter.isVerified) {
+                console.log(`[BasketballMonsters] Game ${gameDate}: ${starter.name} (${starter.position}) is VERIFIED`);
+              }
             }
           }
           
           processed++;
         } else if (lineup.length > 0) {
-          console.log(`[BasketballMonsters] Game ${gameDate}: Only found ${lineup.length} starters (expected 5)`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BasketballMonsters] Game ${gameDate}: Only found ${lineup.length} starters (expected 5)`);
+          }
           skipped++; // Count as skipped since we need exactly 5
         } else {
           // No lineup found - might be Puppeteer failure for historical dates
-          console.log(`[BasketballMonsters] Game ${gameDate}: No lineup found (empty array returned)`);
+          // Only log in development to reduce console spam
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BasketballMonsters] Game ${gameDate}: No lineup found (empty array returned)`);
+          }
           skipped++;
         }
         
@@ -928,8 +1216,11 @@ export async function GET(req: NextRequest) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (e: any) {
-        console.error(`[BasketballMonsters] Error processing game ${gameDate}:`, e.message);
-        console.error(`[BasketballMonsters] Stack:`, e.stack?.split('\n').slice(0, 3).join(' | '));
+        // Only log errors in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(`[BasketballMonsters] Error processing game ${gameDate}:`, e.message);
+          console.error(`[BasketballMonsters] Stack:`, e.stack?.split('\n').slice(0, 3).join(' | '));
+        }
         skipped++;
         
         // Add error to debug logs
@@ -951,6 +1242,25 @@ export async function GET(req: NextRequest) {
       }
     }
     
+    // If we have an actual lineup, return it directly (this is what the frontend needs)
+    if (actualLineup && actualLineup.length === 5) {
+      return NextResponse.json({
+        team: teamAbbr,
+        season,
+        date: targetDate,
+        source: 'BasketballMonster.com',
+        gamesProcessed: processed,
+        gamesSkipped: skipped,
+        totalGames: games.length,
+        players: actualLineup, // Return the actual lineup with position property
+        debug: {
+          messages: [`Successfully scraped lineup for ${targetDate}`, `Found ${actualLineup.length} starters`],
+          detailedLogs: allLogs.slice(0, 50),
+          note: 'Check detailedLogs for step-by-step scraping info'
+        }
+      });
+    }
+    
     if (playerPositions.size === 0) {
       return NextResponse.json({
         team: teamAbbr,
@@ -958,7 +1268,7 @@ export async function GET(req: NextRequest) {
         gamesProcessed: processed,
         gamesSkipped: skipped,
         totalGames: games.length,
-        error: `No starting lineups found. Processed ${processed} games, skipped ${skipped} games (likely Puppeteer failures for historical dates).`,
+        error: `No starting lineups found. Processed ${processed} games, skipped ${skipped} games. Note: Only today and future games are scraped - past games should be manually fixed in DvP store.`,
         players: [],
         debug: {
           messages: [`Processed ${processed} games, skipped ${skipped} games, found 0 players`],
@@ -968,7 +1278,7 @@ export async function GET(req: NextRequest) {
       });
     }
     
-    // Calculate most common position (prioritize verified lineups)
+    // Calculate most common position (prioritize verified lineups) - for backward compatibility
     const results = Array.from(playerPositions.entries()).map(([key, data]) => {
       let mostCommonPos = '';
       let maxCount = 0;

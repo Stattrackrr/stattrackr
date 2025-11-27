@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { normalizeAbbr, NBA_TEAMS } from '@/lib/nbaAbbr';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 
 export const runtime = 'nodejs';
@@ -71,11 +72,44 @@ export async function GET(req: NextRequest){
     }
 
     const cacheKey = `dvp_rank:${metric}:${pos}:${seasonYear}:${games}`;
-    const hit = cache.get<any>(cacheKey);
-    if (hit) return NextResponse.json(hit);
-
     const teams = Object.keys(NBA_TEAMS);
     const storeDir = path.resolve(process.cwd(), 'data', 'dvp_store', String(seasonYear));
+    
+    // Check cache, but also verify if any team file was recently modified
+    // If any file was modified in last 2 hours, invalidate cache to ensure fresh rankings
+    const hit = cache.get<any>(cacheKey);
+    if (hit) {
+      try {
+        // Check if any team file was modified recently
+        let anyFileModifiedRecently = false;
+        const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+        
+        for (const t of teams) {
+          const teamAbbr = normalizeAbbr(t);
+          const filePath = path.join(storeDir, `${teamAbbr}.json`);
+          if (fs.existsSync(filePath)) {
+            const stats = await fsPromises.stat(filePath);
+            if (stats.mtime.getTime() > twoHoursAgo) {
+              anyFileModifiedRecently = true;
+              break;
+            }
+          }
+        }
+        
+        if (anyFileModifiedRecently) {
+          cache.delete(cacheKey);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[DvP Rank API] Cache invalidated - team files modified recently`);
+          }
+        } else {
+          // No files modified recently, use cached data
+          return NextResponse.json(hit);
+        }
+      } catch (e) {
+        // If we can't check file stats, use cached data anyway
+        return NextResponse.json(hit);
+      }
+    }
 
     // Read directly from stored files instead of making API calls
     const results = teams.map((t) => {

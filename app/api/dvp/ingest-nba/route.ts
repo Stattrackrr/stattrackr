@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { normalizeAbbr } from "@/lib/nbaAbbr";
+import { getNBACache } from "@/lib/nbaCache";
 
 export const runtime = "nodejs";
 
@@ -110,6 +111,121 @@ function loadTeamCustom(abbr: string): { aliases: Record<string,string> }{
     }
     return { aliases: {} };
   }
+}
+
+// Fetch BasketballMonsters lineup positions for a game date (if available)
+// Returns a map of normalized player name -> position
+// For today/future games: Can scrape fresh data
+// For past games (up to 7 days): Only uses cached data (lineups were cached before game finished)
+// PREFERS verified lineups over projected ones
+async function fetchBasketballMonstersLineupPositions(
+  teamAbbr: string, 
+  gameDate: Date | null,
+  preferVerified: boolean = true
+): Promise<Record<string, 'PG'|'SG'|'SF'|'PF'|'C'>> {
+  if (!gameDate) return {};
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const gameDateOnly = new Date(gameDate);
+  gameDateOnly.setHours(0, 0, 0, 0);
+  
+  // Allow checking cache for games up to 7 days in the past
+  // (lineups were cached when game was today/future, so cache should still have them)
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  // Skip games older than 7 days (cache likely expired or never existed)
+  if (gameDateOnly.getTime() < sevenDaysAgo.getTime()) {
+    return {};
+  }
+  
+  try {
+    // Format date as YYYY-MM-DD
+    const dateStr = `${gameDateOnly.getFullYear()}-${String(gameDateOnly.getMonth() + 1).padStart(2, '0')}-${String(gameDateOnly.getDate()).padStart(2, '0')}`;
+    const cacheKey = `basketballmonsters:lineup:${teamAbbr.toUpperCase()}:${dateStr}`;
+    
+    // IMPORTANT: For past games, ONLY check cache - never try to scrape
+    // BasketballMonsters only has today/future games, so past games won't be on their site
+    // But if we cached the lineup when the game WAS today, we can still use it
+    const isPastGame = gameDateOnly.getTime() < today.getTime();
+    
+    // Check cache for lineup (works for both today and past games)
+    // For past games, use the last projected lineup if verified never came through
+    let cached = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey);
+    
+    // If it's a past game and not in cache, return empty (don't try to scrape)
+    if (isPastGame && (!cached || !Array.isArray(cached) || cached.length !== 5)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DvP Ingest-NBA] Past game ${teamAbbr} on ${dateStr} - no cached lineup available, will use fallback methods`);
+      }
+      return {};
+    }
+    
+    // For past games, if we have a lineup (even if projected), use it
+    // This ensures we use the last projected lineup if it never got confirmed
+    if (cached && Array.isArray(cached) && cached.length === 5) {
+      // Check if lineup is verified (all players verified)
+      const allVerified = cached.every(p => p.isVerified && !p.isProjected);
+      const hasAnyVerified = cached.some(p => p.isVerified && !p.isProjected);
+      
+      // For past games: always use the cached lineup (even if projected)
+      // This is the "last projected lineup" that was cached before the game finished
+      if (isPastGame) {
+        // Convert lineup to position map (use it regardless of verification status)
+        const positionMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+        for (const player of cached) {
+          const normalizedName = normName(player.name);
+          const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
+          if (['PG','SG','SF','PF','C'].includes(pos)) {
+            positionMap[normalizedName] = pos;
+          }
+        }
+        
+        if (process.env.NODE_ENV !== 'production') {
+          const verifiedCount = cached.filter(p => p.isVerified).length;
+          console.log(`[DvP Ingest-NBA] Using cached lineup for past game ${teamAbbr} on ${dateStr}: ${verifiedCount}/5 verified (using last available lineup)`);
+        }
+        
+        return positionMap;
+      }
+      
+      // For today/future games: prefer verified, but can wait if preferVerified is true
+      if (preferVerified && !allVerified) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[DvP Ingest-NBA] Lineup for ${teamAbbr} on ${dateStr} is not fully verified (${cached.filter(p => p.isVerified).length}/5 verified) - skipping to wait for confirmed lineup`);
+        }
+        return {}; // Return empty to use fallback methods, but don't use projected lineup
+      }
+      
+      // If we have at least some verified players, or preferVerified is false, use the lineup
+      if (!preferVerified || hasAnyVerified || allVerified) {
+        // Convert lineup to position map
+        const positionMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+        for (const player of cached) {
+          const normalizedName = normName(player.name);
+          const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
+          if (['PG','SG','SF','PF','C'].includes(pos)) {
+            positionMap[normalizedName] = pos;
+          }
+        }
+        
+        if (process.env.NODE_ENV !== 'production') {
+          const verifiedCount = cached.filter(p => p.isVerified).length;
+          console.log(`[DvP Ingest-NBA] Using BasketballMonsters lineup for ${teamAbbr} on ${dateStr}: ${verifiedCount}/5 verified`);
+        }
+        
+        return positionMap;
+      }
+    }
+  } catch (error) {
+    // Silently fail - fallback to other methods
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DvP Ingest-NBA] Could not fetch BasketballMonsters lineup for ${teamAbbr} on ${gameDate}:`, error);
+    }
+  }
+  
+  return {};
 }
 
 async function fetchDepthChartBestMap(teamAbbr: string, host?: string): Promise<Record<string,'PG'|'SG'|'SF'|'PF'|'C'>>{
@@ -361,6 +477,16 @@ export async function GET(req: NextRequest){
       const oppAbbr = home.toUpperCase() === team ? away : home;
       const host = req.headers.get('host') || undefined;
 const depthMap = await fetchDepthChartBestMap(oppAbbr, host).catch(()=> ({}));
+      
+      // Fetch BasketballMonsters lineup positions (highest priority - only for today/future games)
+      // First try verified, then projected if verified not available
+      const gameDate = g?.date ? new Date(g.date) : null;
+      const bmLineupMapVerified = await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, true);
+      const bmLineupMap = bmLineupMapVerified && Object.keys(bmLineupMapVerified).length > 0 
+        ? bmLineupMapVerified 
+        : await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, false);
+      const usedVerifiedLineup = Object.keys(bmLineupMapVerified).length > 0;
+      
       // Build starters override map directly from depth chart to ensure exact starters
       const base = host ? `http://${host}` : (process.env.NEXT_PUBLIC_BASE_URL || '');
       const dcUrl = base ? `${base}/api/depth-chart?team=${encodeURIComponent(oppAbbr)}&refresh=1` : `/api/depth-chart?team=${encodeURIComponent(oppAbbr)}&refresh=1`;
@@ -467,11 +593,26 @@ for (const r of oppRows2){
         const key = normName(name);
         const lookup = teamCustom.aliases[key] || key;
         const keys = altKeys(lookup);
-        // Starters override first, then effective best mapping (try alt keys for apostrophes)
-        let starterPos: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
-        for (const kv of keys){ if ((startersMap as any)[kv] && activeSet.has(kv)) { starterPos = (startersMap as any)[kv]; break; } }
-        let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = starterPos;
-        if (!bucket){ for (const kv of keys){ if ((effectiveMap as any)[kv]) { bucket = (effectiveMap as any)[kv]; break; } }
+        
+        // PRIORITY 1: BasketballMonsters lineup (highest priority - most accurate for today/future games)
+        let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
+        for (const kv of keys) {
+          if (bmLineupMap[kv]) {
+            bucket = bmLineupMap[kv];
+            break;
+          }
+        }
+        
+        // PRIORITY 2: Starters from depth chart (for games without BasketballMonsters data)
+        if (!bucket) {
+          let starterPos: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
+          for (const kv of keys){ if ((startersMap as any)[kv] && activeSet.has(kv)) { starterPos = (startersMap as any)[kv]; break; } }
+          bucket = starterPos;
+        }
+        
+        // PRIORITY 3: Effective depth chart mapping (for bench players)
+        if (!bucket){ 
+          for (const kv of keys){ if ((effectiveMap as any)[kv]) { bucket = (effectiveMap as any)[kv]; break; } }
         }
         if (!bucket){
           const partsNk = lookup.split(' ').filter(Boolean);
@@ -514,7 +655,13 @@ for (const r of oppRows2){
           }catch{}
         }
         if (!bucket) continue;
-        const isStarter = Boolean(starterPos);
+        
+        // Determine if player is a starter
+        // Priority: BasketballMonsters lineup > depth chart starters > active set
+        const isStarter = keys.some(kv => 
+          bmLineupMap[kv] !== undefined || // BasketballMonsters lineup (highest priority)
+          ((startersMap as any)[kv] && activeSet.has(kv)) // Depth chart starter
+        );
         const val = Number(r?.pts||0);
         buckets[bucket]+=val;
         players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00' });
@@ -532,7 +679,21 @@ for (const r of oppRows2){
         }
       }catch{}
 
-out.push({ gameId: gidBdl, date: when, opponent: oppAbbr, team, season: seasonLabelFromYear(seasonYear), buckets, players, source: 'bdl+espn' });
+      // Add metadata about lineup source
+      const lineupSource = usedVerifiedLineup ? 'basketballmonsters-verified' : 
+                          (Object.keys(bmLineupMap).length > 0 ? 'basketballmonsters-projected' : 'bdl+espn');
+      
+      out.push({ 
+        gameId: gidBdl, 
+        date: when, 
+        opponent: oppAbbr, 
+        team, 
+        season: seasonLabelFromYear(seasonYear), 
+        buckets, 
+        players, 
+        source: lineupSource,
+        lineupVerified: usedVerifiedLineup // Track if positions came from verified BasketballMonsters lineup
+      });
     }
 
     // Try to write to file, but don't fail if it's read-only (serverless)

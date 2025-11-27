@@ -583,9 +583,116 @@ export async function GET(req: NextRequest) {
       out[k] = stableUnique(out[k]).slice(0, 5);
     }
 
+    // Redistribute bench players to avoid duplicate positions (unless more than 4 bench players)
+    // Keep starters (first player at each position) fixed, redistribute bench players
+    const redistributeBenchPlayers = (positions: Record<'PG'|'SG'|'SF'|'PF'|'C', string[]>) => {
+      const result: Record<'PG'|'SG'|'SF'|'PF'|'C', string[]> = {
+        PG: [],
+        SG: [],
+        SF: [],
+        PF: [],
+        C: []
+      };
+      
+      // Extract starters (first player at each position)
+      const starters: Record<'PG'|'SG'|'SF'|'PF'|'C', string> = {
+        PG: positions.PG[0] || '',
+        SG: positions.SG[0] || '',
+        SF: positions.SF[0] || '',
+        PF: positions.PF[0] || '',
+        C: positions.C[0] || ''
+      };
+      
+      // Collect all bench players (positions 2+)
+      const benchPlayers: Array<{ name: string; originalPos: 'PG'|'SG'|'SF'|'PF'|'C'; depth: number }> = [];
+      for (const k of KEYS) {
+        for (let i = 1; i < positions[k].length; i++) {
+          benchPlayers.push({
+            name: positions[k][i],
+            originalPos: k,
+            depth: i
+          });
+        }
+      }
+      
+      // Count total bench players
+      const totalBench = benchPlayers.length;
+      
+      // If 4 or fewer bench players, ensure no duplicate positions
+      // If more than 4, allow duplicates (realistic scenario)
+      if (totalBench <= 4) {
+        // Redistribute bench players to fill positions without duplicates
+        const positionCounts: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+        const assigned: Record<'PG'|'SG'|'SF'|'PF'|'C', string[]> = { PG: [], SG: [], SF: [], PF: [], C: [] };
+        
+        // Position priority for redistribution (guards can play either guard position, forwards can play either forward position)
+        const getAlternatePositions = (pos: 'PG'|'SG'|'SF'|'PF'|'C'): Array<'PG'|'SG'|'SF'|'PF'|'C'> => {
+          if (pos === 'PG') return ['SG', 'SF'];
+          if (pos === 'SG') return ['PG', 'SF'];
+          if (pos === 'SF') return ['SG', 'PF'];
+          if (pos === 'PF') return ['SF', 'C'];
+          if (pos === 'C') return ['PF', 'SF'];
+          return [];
+        };
+        
+        // Sort bench players by depth (prioritize original position order)
+        benchPlayers.sort((a, b) => {
+          if (a.originalPos !== b.originalPos) {
+            const posOrder = ['PG', 'SG', 'SF', 'PF', 'C'];
+            return posOrder.indexOf(a.originalPos) - posOrder.indexOf(b.originalPos);
+          }
+          return a.depth - b.depth;
+        });
+        
+        // Assign bench players to positions
+        for (const player of benchPlayers) {
+          // Try original position first
+          if (positionCounts[player.originalPos] === 0) {
+            assigned[player.originalPos].push(player.name);
+            positionCounts[player.originalPos] = 1;
+          } else {
+            // Try alternate positions
+            const alternates = getAlternatePositions(player.originalPos);
+            let assignedTo = null;
+            
+            for (const altPos of alternates) {
+              if (positionCounts[altPos] === 0) {
+                assigned[altPos].push(player.name);
+                positionCounts[altPos] = 1;
+                assignedTo = altPos;
+                break;
+              }
+            }
+            
+            // If no alternate available, assign to original position (duplicate allowed if > 4 bench)
+            if (!assignedTo) {
+              assigned[player.originalPos].push(player.name);
+              positionCounts[player.originalPos]++;
+            }
+          }
+        }
+        
+        // Build final result: starters + redistributed bench
+        for (const k of KEYS) {
+          result[k] = [starters[k]].filter(Boolean);
+          result[k].push(...assigned[k]);
+        }
+      } else {
+        // More than 4 bench players - keep original distribution (duplicates allowed)
+        for (const k of KEYS) {
+          result[k] = positions[k];
+        }
+      }
+      
+      return result;
+    };
+    
+    // Redistribute bench players
+    const redistributed = redistributeBenchPlayers(out);
+
     // Build response with jerseys and optional player alignment
     const depthChart = KEYS.reduce((acc, k) => {
-      const uniq = Array.from(new Set(out[k] || [])).slice(0, 5);
+      const uniq = Array.from(new Set(redistributed[k] || [])).slice(0, 5);
       acc[k] = uniq.map(name => ({ name, jersey: findJersey(name) }));
       return acc;
     }, {} as Record<'PG'|'SG'|'SF'|'PF'|'C', { name: string; jersey: string }[]>);

@@ -4675,7 +4675,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     const overLength = circumference * (overPercent / 100);
     const underLength = circumference * (underPercent / 100);
     
-    return (
+                return (
       <div className="flex flex-col items-center">
         <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
           {/* Background circle (full circle, light gray) */}
@@ -4726,8 +4726,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
         <div className={`text-xs mt-2 font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {label}
         </div>
-      </div>
-    );
+                  </div>
+                );
   };
 
   const fd = (books || []).find((b: any) => {
@@ -4735,31 +4735,31 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     return baseName === 'fanduel';
   });
 
-  const displayHalfLine = (s: string) => {
-    const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-    if (Number.isNaN(v)) return s;
-    const frac = Math.abs(v * 10) % 10;
-    if (frac === 0) {
-      const adj = v - 0.5;
-      return adj.toFixed(1);
-    }
-    return Number.isFinite(v) ? v.toFixed(1) : s;
-  };
+              const displayHalfLine = (s: string) => {
+                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
+                if (Number.isNaN(v)) return s;
+                const frac = Math.abs(v * 10) % 10;
+                if (frac === 0) {
+                  const adj = v - 0.5;
+                  return adj.toFixed(1);
+                }
+                return Number.isFinite(v) ? v.toFixed(1) : s;
+              };
 
   const spreadLine = fd?.Spread?.line ? displayHalfLine(fd.Spread.line) : 'N/A';
   const spreadDisplay = spreadLine !== 'N/A' && !spreadLine.startsWith('-') 
     ? `+${spreadLine}` 
     : spreadLine;
 
-  return (
+              return (
     <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
       <div className="p-3 sm:p-4 md:p-6">
         {/* Market Predicted Outcomes - Full Width */}
-        <div>
+                        <div>
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 p-4 h-full flex flex-col gap-3">
             <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
               Market Predicted Outcomes
-            </div>
+                        </div>
               
               {/* FanDuel Moneyline and Spread at top */}
               {fd && (
@@ -4769,16 +4769,16 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                     <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
                       {selectedTeam || 'HOME'} {fmtOdds(fd.H2H.home)} / {opponentTeam || 'AWAY'} {fmtOdds(fd.H2H.away)}
                     </span>
-                  </div>
+                        </div>
                   {fd.Spread && (
                     <div className="flex items-center gap-2">
                       <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>Spread:</span>
                       <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
                         {spreadDisplay} ({fmtOdds(fd.Spread.over)} / {fmtOdds(fd.Spread.under)})
                       </span>
-                    </div>
+                      </div>
                   )}
-                </div>
+                    </div>
               )}
 
               {/* Two wheels side by side */}
@@ -4796,7 +4796,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                       <div className="mt-3 text-center">
                         <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           StatTrackr Prob: <span className="font-semibold">{predictedOutcome.overProb?.toFixed(1) ?? 'N/A'}%</span>
-                        </div>
+                      </div>
                       </div>
                     </>
                   ) : (
@@ -4804,7 +4804,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                       Calculating prediction...
                     </div>
                   )}
-                </div>
+                    </div>
 
                 {/* Bookmaker/Implied Odds Wheel */}
                 <div className="flex flex-col items-center">
@@ -4819,16 +4819,16 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                       <div className="mt-3 text-center">
                         <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           Market Prob: <span className="font-semibold">{calculatedImpliedOdds.overImpliedProb?.toFixed(1) ?? 'N/A'}%</span>
-                        </div>
                       </div>
+                    </div>
                     </>
                   ) : (
                     <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                       No market odds available
-                    </div>
+                  </div>
                   )}
                 </div>
-              </div>
+            </div>
 
               {/* Confidence and EV */}
               {predictedOutcome && (
@@ -4837,11 +4837,11 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                     <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Confidence</div>
                     <div className={`text-sm font-semibold ${
                       predictedOutcome.confidence === 'High' 
-                        ? 'text-green-600 dark:text-green-400'
+                          ? 'text-green-600 dark:text-green-400' 
                         : predictedOutcome.confidence === 'Medium'
                         ? 'text-yellow-600 dark:text-yellow-400'
                         : 'text-red-600 dark:text-red-400'
-                    }`}>
+                      }`}>
                       {predictedOutcome.confidence}
                     </div>
                   </div>
@@ -4850,20 +4850,20 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                       <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected Value</div>
                       <div className={`text-sm font-semibold ${
                         predictedOutcome.expectedValue > 0
-                          ? 'text-green-600 dark:text-green-400'
+                          ? 'text-green-600 dark:text-green-400' 
                           : predictedOutcome.expectedValue < 0
                           ? 'text-red-600 dark:text-red-400'
                           : mounted && isDark ? 'text-gray-300' : 'text-gray-600'
                       }`}>
                         {predictedOutcome.expectedValue > 0 ? '+' : ''}{predictedOutcome.expectedValue.toFixed(1)}%
-                      </div>
                     </div>
+                  </div>
                   )}
-                </div>
-              )}
-          </div>
-        </div>
-      </div>
+                  </div>
+                )}
+              </div>
+                      </div>
+                      </div>
     </div>
   );
 }, (prev, next) => {
@@ -6591,6 +6591,30 @@ const lineMovementInFlightRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   
+  // Clear odds data when player changes (odds are separate from player stats)
+  // Player stats are cleared by handlePlayerSelect functions at the start
+  useEffect(() => {
+    if (selectedPlayer === null) {
+      // Player cleared - reset odds only
+      setRealOddsData([]);
+      setOddsSnapshots([]);
+      setLineMovementData(null);
+      setBettingLines({});
+      return;
+    }
+    
+    // Player changed - clear odds data only
+    // Player stats are managed by handlePlayerSelect functions
+    setRealOddsData([]);
+    setOddsSnapshots([]);
+    setLineMovementData(null);
+    setOddsLoading(false);
+    setOddsError(null);
+    setBettingLines({});
+    setBookOpeningLine(null);
+    setBookCurrentLine(null);
+  }, [selectedPlayer]);
+  
   // Advanced stats state
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
   const [advancedStatsLoading, setAdvancedStatsLoading] = useState(false);
@@ -8116,6 +8140,13 @@ const lineMovementInFlightRef = useRef(false);
     setAdvancedStatsLoading(false);
     setShotDistanceLoading(false);
     
+    // Clear all odds data when switching players
+    setRealOddsData([]);
+    setOddsSnapshots([]);
+    setLineMovementData(null);
+    setOddsLoading(false);
+    setOddsError(null);
+    
     // Clear opponent team when switching players to force re-detection
     console.log(`[Player Select] Clearing opponent team for player switch to: ${player.full}`);
     setOpponentTeam('N/A');
@@ -8225,6 +8256,13 @@ const lineMovementInFlightRef = useRef(false);
     setShotDistanceData(null);
     setAdvancedStatsLoading(false);
     setShotDistanceLoading(false);
+    
+    // Clear all odds data when switching players
+    setRealOddsData([]);
+    setOddsSnapshots([]);
+    setLineMovementData(null);
+    setOddsLoading(false);
+    setOddsError(null);
     
     try {
       const pid = String(r.id);
@@ -11747,7 +11785,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 6. Official Odds Card Container (Mobile) - Line Movement */}
             {useMemo(() => (
-              <div className="lg:hidden">
+<div className="lg:hidden">
                 <OfficialOddsCard
                   isDark={isDark}
                   derivedOdds={derivedOdds}
@@ -11760,7 +11798,7 @@ const lineMovementInFlightRef = useRef(false);
                   oddsFormat={oddsFormat}
                   books={realOddsData}
                   fmtOdds={fmtOdds}
-                  lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                   lineMovementData={mergedLineMovementData}
                   selectedStat={selectedStat}
                   predictedOutcome={predictedOutcome}
@@ -11909,27 +11947,27 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
             {useMemo(() => (
-              <div className="hidden lg:block">
+<div className="hidden lg:block">
                 <OfficialOddsCard
-                  isDark={isDark}
-                  derivedOdds={derivedOdds}
-                  intradayMovements={intradayMovementsFinal}
-                  selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-                  opponentTeam={opponentTeam}
-                  selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
-                  opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-                  matchupInfo={matchupInfo}
-                  oddsFormat={oddsFormat}
-                  books={realOddsData}
-                  fmtOdds={fmtOdds}
-                  lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-                  lineMovementData={mergedLineMovementData}
-                  selectedStat={selectedStat}
+                isDark={isDark}
+                derivedOdds={derivedOdds}
+                intradayMovements={intradayMovementsFinal}
+                selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+                opponentTeam={opponentTeam}
+                selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                matchupInfo={matchupInfo}
+                oddsFormat={oddsFormat}
+                books={realOddsData}
+                fmtOdds={fmtOdds}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                lineMovementData={mergedLineMovementData}
+                selectedStat={selectedStat}
                   predictedOutcome={predictedOutcome}
                   calculatedImpliedOdds={calculatedImpliedOdds}
                   selectedBookmakerName={selectedBookmakerName}
                   selectedBookmakerLine={selectedBookmakerLine}
-                />
+              />
               </div>
             ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
 
