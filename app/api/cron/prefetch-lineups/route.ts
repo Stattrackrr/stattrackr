@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeCronRequest } from "@/lib/cronAuth";
 import { checkRateLimit, strictRateLimiter } from "@/lib/rateLimit";
 import { getNBACache, setNBACache } from "@/lib/nbaCache";
-import { scrapeBasketballMonstersLineupForDate } from "../../dvp/fetch-basketballmonsters-lineups/route";
+import { scrapeBasketballMonstersLineupForDate } from "@/lib/basketballmonsters";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
@@ -110,7 +110,7 @@ async function fetchAndCacheLineup(
     const allVerified = verifiedCount === 5;
     
     // Store the lineup in cache (this is what ingest will use)
-    await setNBACache(cacheKey, lineup, 7 * 24 * 60 * 60); // Cache for 7 days
+    await setNBACache(cacheKey, 'basketballmonsters_lineup', lineup, 7 * 24 * 60); // Cache for 7 days (in minutes)
 
     // Store metadata about lock status
     const metadata: LineupCacheEntry = {
@@ -121,7 +121,7 @@ async function fetchAndCacheLineup(
       lastUpdated: new Date().toISOString(),
       verifiedCount
     };
-    await setNBACache(`lineup:meta:${teamAbbr.toUpperCase()}:${date}`, metadata, 7 * 24 * 60 * 60);
+    await setNBACache(`lineup:meta:${teamAbbr.toUpperCase()}:${date}`, 'lineup_metadata', metadata, 7 * 24 * 60); // Cache for 7 days (in minutes)
 
     return {
       success: true,
