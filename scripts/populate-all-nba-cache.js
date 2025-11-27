@@ -843,15 +843,13 @@ async function populateAllPlayerShotCharts(season = 2025, forceAllPlayers = fals
     const { playerIds } = await getPlayersWhoPlayedOnDate(date);
 
     if (!playerIds.size) {
-      console.log(`  ⚠️  No player stats found for ${date}. Marking as processed.`);
-      await setLastShotChartIngestDate(date);
+      console.log(`  ⚠️  No player stats found for ${date}. Will retry on next run.`);
       continue;
     }
 
     const subset = Array.from(playerIds).map(id => playerMap.get(id)).filter(Boolean);
     if (subset.length === 0) {
-      console.log(`  ⚠️  No matching active players for ${date}. Marking as processed.`);
-      await setLastShotChartIngestDate(date);
+      console.log(`  ⚠️  Player IDs found for ${date} but no matching active players. Will retry.`);
       continue;
     }
 
