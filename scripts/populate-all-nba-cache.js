@@ -112,11 +112,8 @@ function getEasternDateInfo(date = new Date()) {
 
 function getEffectiveShotChartDate() {
   const { isoDate, hour } = getEasternDateInfo(new Date());
-  let effectiveDate = isoDate;
-  // If we're before 6 AM ET, use previous day to ensure games are completed
-  if (hour < 6) {
-    effectiveDate = addDaysToISO(isoDate, -1);
-  }
+  // Always use the previous day's date to ensure games have finished
+  let effectiveDate = addDaysToISO(isoDate, -1);
   return effectiveDate;
 }
 
