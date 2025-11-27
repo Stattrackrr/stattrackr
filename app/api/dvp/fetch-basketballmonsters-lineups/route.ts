@@ -40,6 +40,9 @@ async function bdlFetch(url: string) {
   return res.json();
 }
 
+// Store debug logs per date for API response
+const debugLogs: Map<string, string[]> = new Map();
+
 // Helper to get team roster from BDL for player validation
 async function getTeamRoster(teamAbbr: string, season: number): Promise<Set<string>> {
   try {
