@@ -70,6 +70,8 @@ const skipPlayers = args.includes('--skip-players');
 const skipRankings = args.includes('--skip-rankings');
 const processAllPlayers = args.includes('--all-players');
 
+const TARGET_SEASON = parseInt(process.env.NBA_SEASON || '2025');
+
 const METADATA_CACHE_TYPE = 'metadata';
 const SHOT_CHART_LAST_DATE_KEY = 'shot_chart_last_date';
 
@@ -315,6 +317,7 @@ async function setLastShotChartIngestDate(dateString) {
 // Load player ID mappings
 let playerIdMappings = null;
 let normalizedNameMap = null;
+let nbaNameToIdMap = null;
 
 function loadPlayerIdMappings() {
   if (playerIdMappings) return playerIdMappings;
@@ -338,8 +341,48 @@ function loadPlayerIdMappings() {
   }
 }
 
+async function loadNbaNameToIdMap() {
+  if (nbaNameToIdMap) return nbaNameToIdMap;
+
+  try {
+    const seasonStr = `${TARGET_SEASON}-${String(TARGET_SEASON + 1).slice(-2)}`;
+    const params = new URLSearchParams({
+      LeagueID: '00',
+      Season: seasonStr,
+      IsOnlyCurrentSeason: '0'
+    });
+
+    const url = `${NBA_STATS_BASE}/commonallplayers?${params.toString()}`;
+    const data = await fetchNBAStats(url, 30000);
+    const resultSet = data?.resultSets?.[0];
+    if (!resultSet) throw new Error('Invalid response from NBA players list');
+
+    const headers = resultSet.headers || [];
+    const rows = resultSet.rowSet || [];
+    const personIdx = headers.indexOf('PERSON_ID');
+    const nameIdx = headers.indexOf('DISPLAY_FIRST_LAST');
+
+    const map = new Map();
+    rows.forEach(row => {
+      const id = String(row[personIdx]);
+      const name = row[nameIdx] || '';
+      const normalized = normalizePlayerName(name);
+      if (normalized) {
+        map.set(normalized, id);
+      }
+    });
+
+    nbaNameToIdMap = map;
+    return nbaNameToIdMap;
+  } catch (error) {
+    console.warn(`⚠️  Could not load NBA player list: ${error.message}`);
+    nbaNameToIdMap = null;
+    return nbaNameToIdMap;
+  }
+}
+
 // Convert BDL player ID to NBA Stats ID
-function getNbaStatsId(bdlPlayerId, playerName) {
+async function getNbaStatsId(bdlPlayerId, playerName) {
   const mappings = loadPlayerIdMappings();
   const bdlIdStr = String(bdlPlayerId);
   const mapping = mappings.find(m => m.bdlId === bdlIdStr);
@@ -354,6 +397,16 @@ function getNbaStatsId(bdlPlayerId, playerName) {
     if (normalizedMatch) {
       console.log(`  ℹ️  Matched ${playerName} to NBA ID ${normalizedMatch} via normalized name`);
       return normalizedMatch;
+    }
+  }
+
+  if (playerName) {
+    const normalized = normalizePlayerName(playerName);
+    const nameMap = await loadNbaNameToIdMap();
+    if (nameMap && nameMap.has(normalized)) {
+      const nbaId = nameMap.get(normalized);
+      console.log(`  ℹ️  Matched ${playerName} to NBA ID ${nbaId} via NBA player list`);
+      return nbaId;
     }
   }
   
@@ -633,7 +686,7 @@ async function getAllActivePlayers() {
 
 async function cachePlayerShotChart(playerId, season, seasonStr, playerName) {
   try {
-    const nbaPlayerId = getNbaStatsId(playerId, playerName);
+    const nbaPlayerId = await getNbaStatsId(playerId, playerName);
     
     if (!nbaPlayerId) {
       return { success: false, error: 'No NBA Stats ID mapping' };
@@ -872,7 +925,7 @@ async function main() {
   console.log(`Supabase Key: ${supabaseServiceKey ? '✅' : '❌'}`);
   console.log(`BDL API Key: ${bdlApiKey ? '✅' : '❌'}\n`);
 
-  const season = parseInt(process.env.NBA_SEASON || '2025');
+  const season = TARGET_SEASON;
 
   try {
     if (!skipRankings) {
