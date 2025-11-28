@@ -407,12 +407,15 @@ function JournalContent() {
   
   // Left sidebar remains open on desktop for the desktop-focused layout
 
-  // Fetch bets from Supabase and check subscription - independent per tab
+  // Fetch bets from Supabase and check subscription
+  // Cache subscription status to avoid frequent checks
   useEffect(() => {
     let isMounted = true;
+    let subscriptionCheckInterval: NodeJS.Timeout | null = null;
+    let lastSubscriptionStatus: { isActive: boolean; isPro: boolean } | null = null;
     
-    const checkSubscriptionAndLoadBets = async () => {
-      // Get session independently for this tab
+    const checkSubscriptionAndLoadBets = async (skipCache = false) => {
+      // Get session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -424,41 +427,56 @@ function JournalContent() {
         return;
       }
 
-      // Check Pro access independently - query database directly
-      // This ensures each tab has its own subscription check without interference
-      const { data: profile } = await (supabase
-        .from('profiles') as any)
-        .select('subscription_status, subscription_tier')
-        .eq('id', session.user.id)
-        .single();
-      
-      let isActive = false;
-      let isPro = false;
-      
-      if (profile) {
-        // Use profiles table if available
-        const profileData = profile as any;
-        isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-        isPro = profileData.subscription_tier === 'pro';
-      } else {
-        // Fallback to user_metadata for dev testing
-        const metadata = session.user.user_metadata || {};
-        isActive = metadata.subscription_status === 'active';
-        isPro = metadata.subscription_plan === 'pro';
-      }
-      
-      if (!isMounted) return;
-      
-      console.log('🔐 Journal Pro Status Check (independent):', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
-      setHasProAccess(isActive && isPro);
-      
-      // Set user info for profile menu
-      setIsPro(isActive && isPro);
-      setAvatarUrl(session.user.user_metadata?.avatar_url || null);
-      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-      setUserEmail(session.user.email || null);
-
       try {
+        // Check Pro access - query database directly
+        const { data: profile } = await (supabase
+          .from('profiles') as any)
+          .select('subscription_status, subscription_tier')
+          .eq('id', session.user.id)
+          .single();
+        
+        let isActive = false;
+        let isPro = false;
+        
+        if (profile) {
+          // Use profiles table if available
+          const profileData = profile as any;
+          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
+          isPro = profileData.subscription_tier === 'pro';
+        } else {
+          // Fallback to user_metadata for dev testing
+          const metadata = session.user.user_metadata || {};
+          isActive = metadata.subscription_status === 'active';
+          isPro = metadata.subscription_plan === 'pro';
+        }
+        
+        // Cache active subscription status (to prevent logouts on errors)
+        // But always update if subscription expires (isActive becomes false)
+        if (isActive) {
+          lastSubscriptionStatus = { isActive: true, isPro };
+        } else {
+          // Subscription expired - clear cache and update immediately
+          lastSubscriptionStatus = null;
+        }
+        
+        if (!isMounted) return;
+        
+        // Always update if status changed, subscription expired, or if this is the first check
+        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== isPro || !isActive || skipCache) {
+          console.log('🔐 Journal Pro Status Check:', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
+          setHasProAccess(isActive && isPro);
+          setIsPro(isActive && isPro);
+          
+          if (isActive) {
+            lastSubscriptionStatus = { isActive, isPro };
+          }
+        }
+        
+        // Set user info for profile menu
+        setAvatarUrl(session.user.user_metadata?.avatar_url || null);
+        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
+        setUserEmail(session.user.email || null);
+
         // Fetch bets
         const { data, error } = await supabase
           .from('bets')
@@ -474,8 +492,14 @@ function JournalContent() {
           setBets(data || []);
         }
       } catch (error) {
+        console.error('Error checking subscription:', error);
+        // If we have a cached active subscription, keep it (never log out active subscribers)
+        if (lastSubscriptionStatus?.isActive && isMounted) {
+          console.log('🔐 Using cached active subscription status due to error');
+          setHasProAccess(lastSubscriptionStatus.isPro);
+          setIsPro(lastSubscriptionStatus.isPro);
+        }
         if (!isMounted) return;
-        console.error('Unexpected error fetching bets:', error);
         setBets([]);
       } finally {
         if (isMounted) {
@@ -485,46 +509,38 @@ function JournalContent() {
     };
     
     // Initial check
-    checkSubscriptionAndLoadBets();
+    checkSubscriptionAndLoadBets(true);
     
-    // Only listen for SIGNED_OUT events to handle logout
-    // Don't listen for other auth changes that could interfere with other tabs
+    // Periodic check every 5 minutes (instead of on every token refresh)
+    subscriptionCheckInterval = setInterval(() => {
+      if (isMounted) {
+        checkSubscriptionAndLoadBets();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Only listen for SIGNED_OUT and SIGNED_IN events (not TOKEN_REFRESHED)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Only react to sign out - let each tab manage its own subscription check
       if (event === 'SIGNED_OUT') {
         if (isMounted) {
+          lastSubscriptionStatus = null;
           setHasProAccess(false);
           setIsPro(false);
           setLoading(false);
           router.push("/");
         }
       }
-      // For SIGNED_IN or TOKEN_REFRESHED, re-check subscription independently
-      else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (isMounted && session) {
-          // Re-check subscription independently without affecting other tabs
-          const { data: profile } = await (supabase
-            .from('profiles') as any)
-            .select('subscription_status, subscription_tier')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            const profileData = profile as any;
-            const isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-            const isPro = profileData.subscription_tier === 'pro';
-            if (isMounted) {
-              setHasProAccess(isActive && isPro);
-              setIsPro(isActive && isPro);
-            }
-          }
-        }
+      // Only check on SIGNED_IN (not TOKEN_REFRESHED to avoid frequent checks)
+      else if (event === 'SIGNED_IN' && isMounted && session) {
+        checkSubscriptionAndLoadBets(true);
       }
     });
     
     // Cleanup listener on unmount
     return () => {
       isMounted = false;
+      if (subscriptionCheckInterval) {
+        clearInterval(subscriptionCheckInterval);
+      }
       subscription?.unsubscribe();
     };
   }, [router]);
