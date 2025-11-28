@@ -1,7 +1,7 @@
 // lib/playerIdMapping.ts
 // Auto-generated player ID mapping
 // Generated: 2025-11-21T12:48:15.988Z
-// Total mappings: 518
+// Total mappings: 519
 
 export interface PlayerIdMapping {
   bdlId: string;      // BallDontLie ID
@@ -529,6 +529,7 @@ export const PLAYER_ID_MAPPINGS: PlayerIdMapping[] = [
   { bdlId: '1058091815', nbaId: '1631451', name: 'Javonte Cooke' },
   { bdlId: '1060010671', nbaId: '1630828', name: 'Alex Antetokounmpo' },
   { bdlId: '1028028405', nbaId: '1642259', name: 'Alexandre Sarr' },
+  { bdlId: '666508', nbaId: '1629651', name: 'Nicolas Claxton' },
 ];
 
 // Helper maps for quick lookups
