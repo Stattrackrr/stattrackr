@@ -222,6 +222,32 @@ export const SAMPLE_PLAYERS: NBAPlayer[] = [
     heightInches: 4,
     weight: 210,
     college: 'None'
+  },
+  {
+    id: '1028028405',  // Ball Don't Lie API ID for Alexandre Sarr
+    full: 'Alexandre Sarr',
+    firstName: 'Alexandre',
+    lastName: 'Sarr',
+    teamAbbr: 'WAS',
+    position: 'C',
+    jersey: 25,
+    heightFeet: 7,
+    heightInches: 1,
+    weight: 217,
+    college: 'None'
+  },
+  {
+    id: '666508',  // Ball Don't Lie API ID for Nicolas Claxton
+    full: 'Nicolas Claxton',
+    firstName: 'Nicolas',
+    lastName: 'Claxton',
+    teamAbbr: 'BKN',
+    position: 'C',
+    jersey: 33,
+    heightFeet: 6,
+    heightInches: 11,
+    weight: 215,
+    college: 'Georgia'
   }
 ];
 
