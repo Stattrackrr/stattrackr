@@ -483,10 +483,17 @@ function JournalContent() {
           const response = await fetch('/api/check-journal-bets', {
             credentials: 'include', // Include cookies for authentication
           });
-          const data = await response.json();
-          console.log('[Journal] check-journal-bets response:', data);
+          
+          if (!response.ok) {
+            console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+            const errorData = await response.text().catch(() => '');
+            console.error('[Journal] Error response:', errorData);
+          } else {
+            const data = await response.json();
+            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
+          }
         } catch (error) {
-          console.error('Failed to check journal bets:', error);
+          console.error('[Journal] ❌ Failed to check journal bets:', error);
           // Continue anyway to fetch current data
         }
 
