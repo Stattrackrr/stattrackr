@@ -63,12 +63,19 @@ export async function GET(req: NextRequest) {
     const teams = teamsData.sports[0].leagues[0].teams;
     let foundPlayer = null;
     
-    // Filter teams if team parameter provided
+    // Filter teams if team parameter provided (check multiple fields for better matching)
     const teamsToSearch = team
       ? teams.filter((teamData: any) => {
           const filterCanon = normalizeEspnTeamCode(team);
-          const teamCanon = normalizeEspnTeamCode(teamData.team?.abbreviation);
-          return filterCanon && teamCanon && teamCanon === filterCanon;
+          if (!filterCanon) return false;
+          
+          // Check multiple fields: abbreviation, shortDisplayName, name, displayName
+          const abbr = normalizeEspnTeamCode(teamData.team?.abbreviation);
+          const shortName = normalizeEspnTeamCode(teamData.team?.shortDisplayName);
+          const name = normalizeEspnTeamCode(teamData.team?.name);
+          const displayName = normalizeEspnTeamCode(teamData.team?.displayName);
+          
+          return filterCanon === abbr || filterCanon === shortName || filterCanon === name || filterCanon === displayName;
         })
       : teams;
     
