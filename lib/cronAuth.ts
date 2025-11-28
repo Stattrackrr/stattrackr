@@ -33,7 +33,16 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
     ? authHeader.slice(7).trim()
     : null;
 
-  const providedSecret = headerSecret || bearerSecret;
+  // Also check query parameter for easier manual testing
+  let querySecret = null;
+  try {
+    const url = new URL(request.url);
+    querySecret = url.searchParams.get('secret');
+  } catch (e) {
+    // Ignore URL parsing errors
+  }
+
+  const providedSecret = querySecret || headerSecret || bearerSecret;
 
   if (!providedSecret || providedSecret !== cronSecret) {
     return {
