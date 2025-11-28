@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -343,20 +344,45 @@ export async function GET(request: Request) {
   const bypassAuth = isDevelopment && request.headers.get('x-bypass-auth') === 'true';
   
   if (!bypassAuth) {
-    // Check for secret in query parameter (for easier manual triggering)
+    let isAuthorized = false;
+    
+    // Check if this is a cron request (Vercel cron or manual with secret)
     const url = new URL(request.url);
     const querySecret = url.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
     
-    // If secret provided in query, validate it
+    // Check for cron secret in query parameter
     if (querySecret && cronSecret && querySecret === cronSecret) {
-      // Secret matches, allow request
+      isAuthorized = true;
     } else {
-      // Otherwise, use standard header-based auth
+      // Check for cron authorization (Vercel cron or header-based)
       const authResult = authorizeCronRequest(request);
-      if (!authResult.authorized) {
-        return authResult.response;
+      if (authResult.authorized) {
+        isAuthorized = true;
       }
+    }
+    
+    // If not a cron request, check if user is authenticated
+    if (!isAuthorized) {
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (user && !error) {
+          // User is authenticated, allow request
+          isAuthorized = true;
+        }
+      } catch (error) {
+        // If auth check fails, deny request
+        console.error('[check-journal-bets] Auth check failed:', error);
+      }
+    }
+    
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Must be a cron request or authenticated user' },
+        { status: 401 }
+      );
     }
 
     const rateResult = checkRateLimit(request, strictRateLimiter);
