@@ -4930,7 +4930,20 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       setError(null);
       const targetOpp = oppSel || opponentTeam;
       const targetPos = posSel || selectedPosition;
-      if (!targetOpp || !targetPos) return;
+      // Allow manual position selection even if selectedPosition is null
+      if (!targetOpp || !targetPos) {
+        // If we have an opponent but no position, clear stats but don't return early
+        // This allows the user to manually select a position
+        if (!targetOpp) return;
+        if (!targetPos) {
+          setPerStat({});
+          setPerRank({});
+          setSample(0);
+          setLoading(false);
+          return;
+        }
+        return;
+      }
 
       // Check if we have both team DVP and rank data cached
       const teamCacheKey = `${targetOpp}:82`;
@@ -5107,7 +5120,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
     return isPercentage ? `${v.toFixed(1)}%` : v.toFixed(1);
   };
 
-  const posLabel = posSel || selectedPosition || '';
+  const posLabel = posSel || selectedPosition || 'Select Position';
 
   return (
     <div className="mb-6">
@@ -5184,8 +5197,8 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             )}
           </div>
         </div>
-        {!selectedPosition ? (
-          <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a player to determine position.</div>
+        {!posSel && !selectedPosition ? (
+          <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>
         ) : (
 <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-48 sm:max-h-56 md:max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
             {DVP_METRICS.map((m) => {
