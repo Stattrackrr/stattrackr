@@ -309,11 +309,12 @@ export default function RightSidebar({
     setIsRefreshing(false);
   };
 
+  // Load journal bets on mount and when tab changes to journal
   useEffect(() => {
     if (isMounted) {
       fetchJournalBets();
     }
-  }, [isMounted]);
+  }, [isMounted, activeTab]); // Also reload when switching to journal tab
 
   const removeBet = async (id: string) => {
     // Remove from Supabase
