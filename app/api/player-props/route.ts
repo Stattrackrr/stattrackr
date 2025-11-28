@@ -75,6 +75,84 @@ export async function GET(req: NextRequest) {
       }, { status: 503 });
     }
 
+    // Helper function for fuzzy player name matching (same as /api/odds)
+    const normalizePlayerNameForMatching = (name: string): string => {
+      return name.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-z0-9]/g, ' ') // Replace non-alphanumeric with space
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    };
+
+    const getPlayerNameVariations = (name: string): string[] => {
+      const normalized = normalizePlayerNameForMatching(name);
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length < 2) return [normalized];
+      
+      const firstName = parts[0];
+      const lastName = parts[parts.length - 1];
+      const variations: string[] = [normalized, `${firstName} ${lastName}`];
+      
+      // Handle common name variations
+      if (firstName === 'alexandre' || firstName === 'alex') {
+        variations.push(`alex ${lastName}`, `alexandre ${lastName}`);
+      }
+      if (firstName === 'nicolas' || firstName === 'nic') {
+        variations.push(`nic ${lastName}`, `nicolas ${lastName}`);
+      }
+      if (firstName === 'michael' || firstName === 'mike') {
+        variations.push(`mike ${lastName}`, `michael ${lastName}`);
+      }
+      if (firstName === 'christopher' || firstName === 'chris') {
+        variations.push(`chris ${lastName}`, `christopher ${lastName}`);
+      }
+      if (firstName === 'william' || firstName === 'will') {
+        variations.push(`will ${lastName}`, `william ${lastName}`);
+      }
+      if (firstName === 'james' || firstName === 'jim' || firstName === 'jimmy') {
+        variations.push(`james ${lastName}`, `jim ${lastName}`, `jimmy ${lastName}`);
+      }
+      
+      return [...new Set(variations)]; // Remove duplicates
+    };
+
+    const findMatchingPlayerKey = (playerName: string, availableKeys: string[]): string | null => {
+      const searchVariations = getPlayerNameVariations(playerName);
+      
+      // Try exact match first (case-insensitive)
+      const exactMatch = availableKeys.find(
+        p => p.toLowerCase() === playerName.toLowerCase()
+      );
+      if (exactMatch) return exactMatch;
+      
+      // Try normalized exact match
+      const normalizedSearch = normalizePlayerNameForMatching(playerName);
+      const normalizedMatch = availableKeys.find(
+        p => normalizePlayerNameForMatching(p) === normalizedSearch
+      );
+      if (normalizedMatch) return normalizedMatch;
+      
+      // Try variations
+      for (const variation of searchVariations) {
+        const match = availableKeys.find(
+          p => normalizePlayerNameForMatching(p) === variation
+        );
+        if (match) return match;
+      }
+      
+      // Try partial match (contains)
+      const partialMatch = availableKeys.find(
+        p => {
+          const normalizedP = normalizePlayerNameForMatching(p);
+          return normalizedP.includes(normalizedSearch) || normalizedSearch.includes(normalizedP);
+        }
+      );
+      if (partialMatch) return partialMatch;
+      
+      return null;
+    };
+
     const statKey = STAT_TO_KEY[statType] || 'PTS';
     const playerProps: PlayerPropOdds[] = [];
 
@@ -93,17 +171,8 @@ export async function GET(req: NextRequest) {
       const hasPlayerProps = Array.from(allBookNames).some(name => {
         const bookmakerProps = playerPropsByBookmaker[name];
         if (!bookmakerProps) return false;
-        
-        // Try exact match first
-        if (bookmakerProps[playerName]) return true;
-        
-        // Try case-insensitive match
-        const matchingPlayerKey = Object.keys(bookmakerProps).find(
-          p => p.toLowerCase() === playerName.toLowerCase() ||
-               p.toLowerCase().includes(playerName.toLowerCase()) ||
-               playerName.toLowerCase().includes(p.toLowerCase())
-        );
-        return !!matchingPlayerKey;
+        const availablePlayerKeys = Object.keys(bookmakerProps);
+        return !!findMatchingPlayerKey(playerName, availablePlayerKeys);
       });
       
       if (!hasPlayerProps) continue;
@@ -113,14 +182,9 @@ export async function GET(req: NextRequest) {
         const bookmakerProps = playerPropsByBookmaker[bookmakerName];
         if (!bookmakerProps) continue;
         
-        // Find the actual player key (case-insensitive match)
-        const actualPlayerKey = bookmakerProps[playerName]
-          ? playerName
-          : Object.keys(bookmakerProps).find(
-              p => p.toLowerCase() === playerName.toLowerCase() ||
-                   p.toLowerCase().includes(playerName.toLowerCase()) ||
-                   playerName.toLowerCase().includes(p.toLowerCase())
-            );
+        // Find the actual player key using fuzzy matching
+        const availablePlayerKeys = Object.keys(bookmakerProps);
+        const actualPlayerKey = findMatchingPlayerKey(playerName, availablePlayerKeys);
         
         if (!actualPlayerKey) continue;
         
