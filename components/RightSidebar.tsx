@@ -202,7 +202,9 @@ export default function RightSidebar({
     
     try {
       // First, trigger the check-tracked-bets API to update any completed games
-      await fetch('/api/check-tracked-bets');
+      await fetch('/api/check-bets', {
+        credentials: 'include', // Include cookies for authentication
+      });
     } catch (error) {
       console.error('Failed to check tracked bets:', error);
       // Continue anyway to fetch current data
@@ -273,7 +275,9 @@ export default function RightSidebar({
     
     try {
       // First, trigger the check-journal-bets API to update any completed games
-      await fetch('/api/check-journal-bets');
+      await fetch('/api/check-journal-bets', {
+        credentials: 'include', // Include cookies for authentication
+      });
     } catch (error) {
       console.error('Failed to check journal bets:', error);
       // Continue anyway to fetch current data
