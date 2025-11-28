@@ -55,10 +55,21 @@ async function fetchEspnRosterMapByDate(dateStr: string, homeAbbr: string, awayA
     const events = sb?.events || [];
     let evt: any = null;
     
+    // Helper to match team by checking multiple fields
+    const matchTeam = (comp: any, targetAbbr: string): boolean => {
+      const target = String(targetAbbr).toUpperCase();
+      const abbr = String(comp?.team?.abbreviation || '').toUpperCase();
+      const shortName = String(comp?.team?.shortDisplayName || '').toUpperCase();
+      const name = String(comp?.team?.name || '').toUpperCase();
+      const displayName = String(comp?.team?.displayName || '').toUpperCase();
+      return abbr === target || shortName === target || name === target || displayName === target;
+    };
+    
     for (const e of events) {
       const comps = e?.competitions?.[0]?.competitors || [];
-      const abbrs = comps.map((c: any) => String(c?.team?.abbreviation || '').toUpperCase());
-      if (abbrs.includes(String(homeAbbr).toUpperCase()) && abbrs.includes(String(awayAbbr).toUpperCase())) {
+      const homeMatch = comps.some((c: any) => matchTeam(c, homeAbbr));
+      const awayMatch = comps.some((c: any) => matchTeam(c, awayAbbr));
+      if (homeMatch && awayMatch) {
         evt = e;
         break;
       }
@@ -74,10 +85,10 @@ async function fetchEspnRosterMapByDate(dateStr: string, homeAbbr: string, awayA
     const starters: string[] = [];
     const starterPositions: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
     
-    // Get team IDs from competitors to match players to teams
+    // Get team IDs from competitors to match players to teams (using multi-field matching)
     const comps = evt?.competitions?.[0]?.competitors || [];
-    const homeTeamId = comps.find((c: any) => String(c?.team?.abbreviation || '').toUpperCase() === homeAbbr)?.team?.id;
-    const awayTeamId = comps.find((c: any) => String(c?.team?.abbreviation || '').toUpperCase() === awayAbbr)?.team?.id;
+    const homeTeamId = comps.find((c: any) => matchTeam(c, homeAbbr))?.team?.id;
+    const awayTeamId = comps.find((c: any) => matchTeam(c, awayAbbr))?.team?.id;
     const targetTeamId = targetTeam === homeAbbr ? homeTeamId : (targetTeam === awayAbbr ? awayTeamId : null);
     
     const addAth = (a: any, teamId?: string, teamAbbr?: string) => {
