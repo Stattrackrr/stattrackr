@@ -221,7 +221,7 @@ async function getPlayersWithGames(): Promise<Array<{
 async function getPlayerStats(playerId: string, season: number): Promise<Record<string, any>> {
   // Check cache first (player stats don't change until next game)
   const statsCacheKey = `${PLAYER_STATS_CACHE_PREFIX}${playerId}:${season}`;
-  const cachedStats = await getNBACache<Record<string, any>>(statsCacheKey);
+  const cachedStats = await getNBACache<Record<string, any>>(statsCacheKey, { quiet: true });
   if (cachedStats && Object.keys(cachedStats).length > 0) {
     return cachedStats;
   }
@@ -274,7 +274,7 @@ async function getPlayerStats(playerId: string, season: number): Promise<Record<
     };
     
     // Cache stats for 24 hours (they only change after games)
-    await setNBACache(statsCacheKey, 'player_stats', result, 24 * 60);
+    await setNBACache(statsCacheKey, 'player_stats', result, 24 * 60, true);
     
     return result;
   } catch (error: any) {
@@ -362,7 +362,7 @@ async function updatePlayerOddsCache(
   const cacheKey = `${PLAYER_ODDS_CACHE_PREFIX}${player.playerId}:${player.gameId}`;
   
   // Get existing cache
-  const existingCache = await getNBACache<PlayerOddsCache>(cacheKey);
+  const existingCache = await getNBACache<PlayerOddsCache>(cacheKey, { quiet: true });
   
   if (!bulkOddsResult) {
     console.warn(`[refresh-player-odds] No bulk odds data for ${player.playerName}`);
@@ -398,7 +398,7 @@ async function updatePlayerOddsCache(
       lastUpdateScan: new Date().toISOString(),
     };
     
-    await setNBACache(cacheKey, 'player_odds', playerCache, CACHE_TTL_MINUTES);
+    await setNBACache(cacheKey, 'player_odds', playerCache, CACHE_TTL_MINUTES, true);
     // Count all lines across all bookmakers and stats
     for (const bookmakerOdds of Object.values(newOdds)) {
       for (const statOdds of Object.values(bookmakerOdds)) {
@@ -451,7 +451,7 @@ async function updatePlayerOddsCache(
       lastUpdateScan: new Date().toISOString(),
     };
     
-    await setNBACache(cacheKey, 'player_odds', playerCache, CACHE_TTL_MINUTES);
+    await setNBACache(cacheKey, 'player_odds', playerCache, CACHE_TTL_MINUTES, true);
   }
   
   return { updated, unchanged };
@@ -491,7 +491,7 @@ export async function GET(req: NextRequest) {
     
     // Check if we should do a full scan (every 120 minutes)
     const lastFullScanKey = 'player_odds:last_full_scan';
-    const lastFullScan = await getNBACache<string>(lastFullScanKey);
+    const lastFullScan = await getNBACache<string>(lastFullScanKey, { quiet: true });
     const now = Date.now();
     const lastFullScanTime = lastFullScan ? new Date(lastFullScan).getTime() : 0;
     const timeSinceLastFullScan = now - lastFullScanTime;
@@ -546,7 +546,7 @@ export async function GET(req: NextRequest) {
     
     // Update last full scan timestamp if we did a full scan
     if (actualScanType === 'full') {
-      await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), CACHE_TTL_MINUTES);
+      await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), CACHE_TTL_MINUTES, true);
     }
     
     console.log(`[refresh-player-odds] Completed: ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);

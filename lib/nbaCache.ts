@@ -80,6 +80,10 @@ export interface GetCacheOptions {
    * Force skipping the REST API shortcut (use JS client only).
    */
   disableRest?: boolean;
+  /**
+   * Suppress verbose logging (only log errors). Useful for bulk operations.
+   */
+  quiet?: boolean;
 }
 
 /**
@@ -97,7 +101,11 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     return null;
   }
 
-  console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
+  const quiet = options.quiet ?? process.env.NBA_CACHE_QUIET === 'true';
+  
+  if (!quiet) {
+    console.log(`[NBA Cache] 🔍 Querying Supabase for key: ${cacheKey.substring(0, 50)}...`);
+  }
 
   const restTimeoutMs = Math.max(3000, options.restTimeoutMs ?? 5000);
   const jsTimeoutMs = Math.max(3000, options.jsTimeoutMs ?? 5000);
@@ -108,7 +116,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     // Use REST API directly in production (faster than JS client)
     // This bypasses the JS client overhead and goes straight to PostgREST
     if (!options.disableRest && process.env.NODE_ENV === 'production' && supabaseUrl && supabaseServiceKey) {
-      console.log(`[NBA Cache] 📡 Using REST API directly for: ${cacheKey.substring(0, 50)}...`);
+      if (!quiet) {
+        console.log(`[NBA Cache] 📡 Using REST API directly for: ${cacheKey.substring(0, 50)}...`);
+      }
       
       try {
         // Use simpler query - just get data column, limit to 1 row
@@ -132,7 +142,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         if (!response.ok) {
           if (response.status === 404 || response.status === 406) {
             // No rows found - this is normal
-            console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+            if (!quiet) {
+              console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+            }
             return null;
           }
           throw new Error(`REST API error: ${response.status} ${response.statusText}`);
@@ -142,7 +154,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         
         // REST API returns array, not single object
         if (!data || !Array.isArray(data) || data.length === 0) {
-          console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+          if (!quiet) {
+            console.log(`[NBA Cache] ℹ️ No cache found (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+          }
           return null;
         }
         
@@ -153,7 +167,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     const daysUntilExpiry = (expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
     // If expiration is more than 300 days away, treat as "never expire" (persist until replaced)
     if (daysUntilExpiry < 300 && expiresAt < new Date()) {
-      console.log(`[NBA Cache] ⏰ Cache expired (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+      if (!quiet) {
+        console.log(`[NBA Cache] ⏰ Cache expired (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+      }
       return null;
     }
         
@@ -163,7 +179,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
           return null;
         }
         
-        console.log(`[NBA Cache] ✅ Cache HIT (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+        if (!quiet) {
+          console.log(`[NBA Cache] ✅ Cache HIT (REST API) for key: ${cacheKey.substring(0, 50)}...`);
+        }
         
         // Attach metadata
         if (cacheEntry.data && typeof cacheEntry.data === 'object') {
@@ -177,7 +195,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         return cacheEntry.data as T;
       } catch (restError: any) {
         if (restError.name === 'AbortError') {
-          console.warn(`[NBA Cache] ⏱️ REST API timeout (${restTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
+          if (!quiet) {
+            console.warn(`[NBA Cache] ⏱️ REST API timeout (${restTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
+          }
           // Fall through to JS client as fallback
         } else {
           console.warn(`[NBA Cache] ⚠️ REST API error for key: ${cacheKey.substring(0, 50)}..., falling back to JS client:`, restError.message);
@@ -190,7 +210,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     // Short timeout - if Supabase is slow, just skip it and use in-memory cache
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.warn(`[NBA Cache] ⏱️ Query timeout (${jsTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
+        if (!quiet) {
+          console.warn(`[NBA Cache] ⏱️ Query timeout (${jsTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
+        }
         resolve(null);
       }, jsTimeoutMs);
     });
@@ -201,12 +223,16 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
       .eq('cache_key', cacheKey)
       .single();
 
-    console.log(`[NBA Cache] 📡 Starting Supabase query (JS client) for: ${cacheKey.substring(0, 50)}...`);
+    if (!quiet) {
+      console.log(`[NBA Cache] 📡 Starting Supabase query (JS client) for: ${cacheKey.substring(0, 50)}...`);
+    }
     const result = await Promise.race([queryPromise, timeoutPromise]);
 
     if (result === null) {
       // Timeout - Supabase is too slow, skip it and use in-memory cache
-      console.warn(`[NBA Cache] ⏱️ Supabase timeout - skipping persistent cache, will use in-memory only`);
+      if (!quiet) {
+        console.warn(`[NBA Cache] ⏱️ Supabase timeout - skipping persistent cache, will use in-memory only`);
+      }
       return null;
     }
 
@@ -216,7 +242,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
       // Log error in production for debugging
       if (error.code === 'PGRST116' || error.code === 'PGRST301') {
         // No rows returned - this is normal, not an error
-        console.log(`[NBA Cache] ℹ️ No cache found for key: ${cacheKey.substring(0, 50)}... (PGRST116/PGRST301)`);
+        if (!quiet) {
+          console.log(`[NBA Cache] ℹ️ No cache found for key: ${cacheKey.substring(0, 50)}... (PGRST116/PGRST301)`);
+        }
         return null;
       }
       console.error(`[NBA Cache] ❌ Supabase query error for ${cacheKey.substring(0, 50)}...:`, {
@@ -229,7 +257,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     }
 
     if (!data) {
-      console.log(`[NBA Cache] ℹ️ Query returned no data for key: ${cacheKey.substring(0, 50)}...`);
+      if (!quiet) {
+        console.log(`[NBA Cache] ℹ️ Query returned no data for key: ${cacheKey.substring(0, 50)}...`);
+      }
       return null;
     }
 
@@ -247,7 +277,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     const daysUntilExpiry = (expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
     // If expiration is more than 300 days away, treat as "never expire" (persist until replaced)
     if (daysUntilExpiry < 300 && expiresAt < new Date()) {
-      console.log(`[NBA Cache] ⏰ Cache expired for key: ${cacheKey.substring(0, 50)}... (expired at ${expiresAt.toISOString()})`);
+      if (!quiet) {
+        console.log(`[NBA Cache] ⏰ Cache expired for key: ${cacheKey.substring(0, 50)}... (expired at ${expiresAt.toISOString()})`);
+      }
       // Auto-delete expired entry
       if (supabaseAdmin) {
         await supabaseAdmin
@@ -258,7 +290,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
       return null;
     }
 
-    console.log(`[NBA Cache] ✅ Cache HIT for key: ${cacheKey.substring(0, 50)}... (expires at ${expiresAt.toISOString()})`);
+    if (!quiet) {
+      console.log(`[NBA Cache] ✅ Cache HIT for key: ${cacheKey.substring(0, 50)}... (expires at ${expiresAt.toISOString()})`);
+    }
 
     // Validate that data is not empty (for objects, check if it has any keys beyond metadata)
     const dataToReturn = cacheData.data;
@@ -310,7 +344,8 @@ export async function setNBACache(
   cacheKey: string,
   cacheType: string,
   data: any,
-  ttlMinutes: number
+  ttlMinutes: number,
+  quiet?: boolean
 ): Promise<boolean> {
   // If Supabase not configured, return false (in-memory cache will still work)
   if (!supabaseAdmin) {
@@ -331,7 +366,11 @@ export async function setNBACache(
       created_at: now.toISOString() // Will be set on insert, updated on upsert
     };
 
-    console.log(`[NBA Cache] 💾 Writing to Supabase: ${cacheKey.substring(0, 50)}... (type: ${cacheType})`);
+    const isQuiet = quiet ?? process.env.NBA_CACHE_QUIET === 'true';
+    
+    if (!isQuiet) {
+      console.log(`[NBA Cache] 💾 Writing to Supabase: ${cacheKey.substring(0, 50)}... (type: ${cacheType})`);
+    }
     
     const { error } = await supabaseAdmin
       .from('nba_api_cache')
@@ -344,7 +383,9 @@ export async function setNBACache(
       return false;
     }
 
-    console.log(`[NBA Cache] ✅ Successfully cached to Supabase: ${cacheKey.substring(0, 50)}... (expires: ${expiresAt.toISOString()})`);
+    if (!isQuiet) {
+      console.log(`[NBA Cache] ✅ Successfully cached to Supabase: ${cacheKey.substring(0, 50)}... (expires: ${expiresAt.toISOString()})`);
+    }
     return true;
   } catch (error: any) {
     // Fail gracefully - in-memory cache will still work
