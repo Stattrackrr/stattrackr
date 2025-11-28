@@ -366,6 +366,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log('[check-journal-bets] Starting journal bet check...');
+    
     // Fetch all pending journal bets with NBA player props (including parlays)
     // First get single player prop bets
     const { data: singleBets, error: singleError } = await supabaseAdmin
@@ -754,11 +756,15 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    const result = {
       message: `Checked ${journalBets.length} journal bets (${singleBetsList.length} single, ${parlayBetsList.length} parlays), updated ${updatedCountRef.value}`,
       updated: updatedCountRef.value,
       total: journalBets.length,
-    });
+    };
+    
+    console.log(`[check-journal-bets] Completed: ${result.message}`);
+    
+    return NextResponse.json(result);
 
   } catch (error: any) {
     console.error('Error checking journal bets:', error);

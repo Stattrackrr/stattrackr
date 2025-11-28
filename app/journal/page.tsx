@@ -479,7 +479,10 @@ function JournalContent() {
 
         // First, trigger check-journal-bets to update any completed games
         try {
-          await fetch('/api/check-journal-bets');
+          console.log('[Journal] Calling /api/check-journal-bets to update completed games...');
+          const response = await fetch('/api/check-journal-bets');
+          const data = await response.json();
+          console.log('[Journal] check-journal-bets response:', data);
         } catch (error) {
           console.error('Failed to check journal bets:', error);
           // Continue anyway to fetch current data
@@ -532,7 +535,10 @@ function JournalContent() {
       if (isMounted) {
         try {
           // Trigger check-journal-bets to update completed games
-          await fetch('/api/check-journal-bets');
+          console.log('[Journal] Periodic refresh: calling /api/check-journal-bets...');
+          const response = await fetch('/api/check-journal-bets');
+          const data = await response.json();
+          console.log('[Journal] Periodic refresh response:', data);
           
           // Then refresh bets from database
           const { data: { session } } = await supabase.auth.getSession();
