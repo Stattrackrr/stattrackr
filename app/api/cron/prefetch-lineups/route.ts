@@ -78,6 +78,7 @@ async function fetchAndCacheLineup(
     // Check if we already have a locked (verified) lineup
     const existing = await getNBACache<LineupCacheEntry>(`lineup:meta:${teamAbbr.toUpperCase()}:${date}`);
     if (existing?.isLocked) {
+      console.log(`[prefetch-lineups] ✅ ${teamAbbr} on ${date}: Already locked (${existing.verifiedCount}/5 verified)`);
       return {
         success: true,
         isLocked: true,
@@ -88,6 +89,7 @@ async function fetchAndCacheLineup(
 
     // Fetch fresh lineup from BasketballMonsters (bypass cache to get latest)
     // Note: scrapeBasketballMonstersLineupForDate signature: (date, teamAbbr, bypassCache, expectedOpponent, teamRoster)
+    console.log(`[prefetch-lineups] 🔍 Fetching lineup for ${teamAbbr} on ${date}...`);
     const lineup = await scrapeBasketballMonstersLineupForDate(
       date,
       teamAbbr,
@@ -97,6 +99,7 @@ async function fetchAndCacheLineup(
     );
 
     if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
+      console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup`);
       return {
         success: false,
         isLocked: false,
@@ -123,13 +126,16 @@ async function fetchAndCacheLineup(
     };
     await setNBACache(`lineup:meta:${teamAbbr.toUpperCase()}:${date}`, 'lineup_metadata', metadata, 7 * 24 * 60); // Cache for 7 days (in minutes)
 
+    const statusMsg = allVerified 
+      ? `✅ Locked in (${verifiedCount}/5 verified)` 
+      : `📋 Projected (${verifiedCount}/5 verified) - will continue polling`;
+    console.log(`[prefetch-lineups] ${statusMsg} - ${teamAbbr} on ${date}`);
+
     return {
       success: true,
       isLocked: allVerified,
       verifiedCount,
-      message: allVerified 
-        ? `✅ Locked in (${verifiedCount}/5 verified)` 
-        : `📋 Projected (${verifiedCount}/5 verified) - will continue polling`
+      message: statusMsg
     };
   } catch (e: any) {
     console.error(`[prefetch-lineups] Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
@@ -158,6 +164,18 @@ export async function GET(req: NextRequest) {
 
     // Get all games for today and tomorrow
     const games = await fetchGamesForTodayAndTomorrow();
+    
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    // Count games by date for logging
+    const todayGames = games.filter(g => g.date === todayStr).length;
+    const tomorrowGames = games.filter(g => g.date === tomorrowStr).length;
+    
+    console.log(`[prefetch-lineups] Found ${games.length} games: ${todayGames} today (${todayStr}), ${tomorrowGames} tomorrow (${tomorrowStr})`);
     
     if (games.length === 0) {
       return NextResponse.json({
