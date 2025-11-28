@@ -33,12 +33,15 @@ async function fetchGamesForTodayAndTomorrow(): Promise<Array<{ home: string; aw
       throw new Error('BALLDONTLIE_API_KEY environment variable is required');
     }
 
-    const today = new Date();
-    const tomorrow = new Date();
+    // Use Eastern Time to match BasketballMonsters (they use Eastern Time)
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const today = new Date(easternTime);
+    const tomorrow = new Date(easternTime);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
     const url = `https://api.balldontlie.io/v1/games?start_date=${todayStr}&end_date=${tomorrowStr}`;
     const res = await fetch(url, {
@@ -165,11 +168,15 @@ export async function GET(req: NextRequest) {
     // Get all games for today and tomorrow
     const games = await fetchGamesForTodayAndTomorrow();
     
-    const today = new Date();
-    const tomorrow = new Date();
+    // Use Eastern Time to match BasketballMonsters (they use Eastern Time)
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const today = new Date(easternTime);
+    const tomorrow = new Date(easternTime);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const todayStr = today.toISOString().split('T')[0];
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
     
     // Count games by date for logging
     const todayGames = games.filter(g => g.date === todayStr).length;

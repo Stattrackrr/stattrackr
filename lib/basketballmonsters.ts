@@ -228,20 +228,26 @@ export async function scrapeBasketballMonstersLineupForDate(
     return [];
   }
   
-  // ONLY process today's game - skip all future dates (BasketballMonsters only shows today)
-  if (daysDiff < 0) {
+  // Allow today and tomorrow (BasketballMonsters shows tomorrow's games if no games today)
+  // Skip dates more than 1 day in the future
+  if (daysDiff < -1) {
     // Only log in development
     if (process.env.NODE_ENV !== 'production') {
-      addLog(`⚠️ Skipping future date (${Math.abs(daysDiff)} days ahead) - only today's games are available on BasketballMonsters`);
+      addLog(`⚠️ Skipping future date (${Math.abs(daysDiff)} days ahead) - only today and tomorrow's games are available on BasketballMonsters`);
     }
     return [];
+  }
+  
+  // For tomorrow's games, BasketballMonsters shows them on the main page
+  if (daysDiff === -1) {
+    addLog(`📅 Tomorrow's game - BasketballMonsters should show this on main page`);
   }
   
   let html = '';
   
   try {
-    // For today and future dates, use direct fetch (main page shows these games)
-    addLog(`${daysDiff === 0 ? "Today's" : "Future"} date - attempting direct fetch...`);
+    // For today and tomorrow, use direct fetch (main page shows these games)
+    addLog(`${daysDiff === 0 ? "Today's" : daysDiff === -1 ? "Tomorrow's" : "Future"} date - attempting direct fetch...`);
     try {
       const url = `https://basketballmonster.com/nbalineups.aspx`;
       const response = await fetch(url, {
