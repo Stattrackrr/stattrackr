@@ -277,19 +277,19 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   }
 }
 
-// Allowed bookmakers for odds snapshots (to reduce database size)
-// Only these bookmakers will have their snapshots saved to reduce database usage
+// Allowed bookmakers for odds snapshots and general filtering (to reduce database size and API calls)
+// Only these bookmakers will be included - all others are excluded
 const ALLOWED_BOOKMAKERS = [
+  'draftkings',
   'fanduel',
   'prizepicks',
   'prize picks', // Handle space variation
-  'draftkings',
-  'betonline',
-  'betonline.ag',
-  'betonlineag',
+  'underdog',
+  'underdog fantasy',
   'fanatics',
   'fanatics sportsbook', // Handle full name variation
-  'fanatics betting and gaming' // Handle full name variation
+  'fanatics betting and gaming', // Handle full name variation
+  'caesars',
 ];
 
 /**
@@ -431,7 +431,8 @@ type RefreshSource =
   | 'api/odds/refresh'
   | 'api/odds'
   | 'api/player-props'
-  | 'ensureOddsCache';
+  | 'ensureOddsCache'
+  | 'cron/refresh-player-odds';
 
 let ongoingRefresh: Promise<OddsCache | null> | null = null;
 
@@ -628,8 +629,13 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
       playerPropsByBookmaker: {},
     };
 
-    // Process bookmakers for game odds
+    // Process bookmakers for game odds (only allowed bookmakers)
     for (const bookmaker of game.bookmakers || []) {
+      // Filter: Only include allowed bookmakers
+      if (!isAllowedBookmaker(bookmaker.title)) {
+        continue; // Skip this bookmaker
+      }
+      
       const bookRow: any = {
         name: bookmaker.title,
         H2H: { home: 'N/A', away: 'N/A' },
@@ -698,11 +704,21 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
       }
     }
     
+    if (allBookmakers.size > 0) {
+      const sortedBookmakers = Array.from(allBookmakers).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      console.log(`📊 Found ${allBookmakers.size} unique bookmakers in player props:`, sortedBookmakers.join(', '));
+    }
+    
     for (const game of playerPropsData) {
       const matchingGame = games.find(g => g.gameId === game.id);
       if (!matchingGame) continue;
 
       for (const bookmaker of game.bookmakers || []) {
+        // Filter: Only include allowed bookmakers
+        if (!isAllowedBookmaker(bookmaker.title)) {
+          continue; // Skip this bookmaker
+        }
+        
         const ensureBookmakerEntry = (name: string) => {
           if (!matchingGame.playerPropsByBookmaker[name]) {
             matchingGame.playerPropsByBookmaker[name] = {};
