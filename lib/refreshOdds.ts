@@ -292,6 +292,17 @@ const ALLOWED_BOOKMAKERS = [
   'caesars',
 ];
 
+// The Odds API bookmaker codes (used in the API request)
+// These are the exact codes The Odds API expects
+const ODDS_API_BOOKMAKER_CODES = [
+  'draftkings',
+  'fanduel',
+  'prizepicks',
+  'underdog',
+  'fanatics',
+  'caesars',
+].join(','); // Comma-separated for API parameter
+
 /**
  * Normalize bookmaker name and check if it's in the allowed list
  * Handles variations in naming (case, spaces, punctuation)
@@ -450,6 +461,7 @@ export async function refreshOddsData(
   
   try {
     // Fetch all NBA games with game odds (H2H, spreads, totals)
+    // Filter bookmakers at API level to reduce data and API calls
     const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
     const baseRegions = process.env.ODDS_REGIONS || 'us,us_dfs';
     const gamesParams = new URLSearchParams({
@@ -458,6 +470,7 @@ export async function refreshOddsData(
       markets: 'h2h,spreads,totals',
       oddsFormat: 'american',
       dateFormat: 'iso',
+      bookmakers: ODDS_API_BOOKMAKER_CODES, // Filter at API level
     });
 
     const gamesResponse = await fetch(`${gamesUrl}?${gamesParams}`);
@@ -513,6 +526,7 @@ export async function refreshOddsData(
           markets: playerPropsMarkets,
           oddsFormat: 'american',
           dateFormat: 'iso',
+          bookmakers: ODDS_API_BOOKMAKER_CODES, // Filter at API level
         });
         
         const response = await fetch(`${eventUrl}?${eventParams}`);
@@ -531,6 +545,7 @@ export async function refreshOddsData(
     console.log(`✅ Player props fetched for ${playerPropsData.length}/${gamesData.length} games`);
     console.log(`⚠️  Note: Each game with props counts as 1 additional API call`);
     console.log(`📊 Total API calls: ${1 + playerPropsData.length} (1 games + ${playerPropsData.length} props)`);
+    console.log(`🎯 Filtering bookmakers at API level: ${ODDS_API_BOOKMAKER_CODES}`);
     
 
     // Transform the data
@@ -706,7 +721,10 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
     
     if (allBookmakers.size > 0) {
       const sortedBookmakers = Array.from(allBookmakers).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-      console.log(`📊 Found ${allBookmakers.size} unique bookmakers in player props:`, sortedBookmakers.join(', '));
+      // Only log if we're not filtering at API level (for debugging)
+      if (allBookmakers.size > 0) {
+        console.log(`📊 Found ${allBookmakers.size} unique bookmakers in player props (filtered at API level):`, sortedBookmakers.join(', '));
+      }
     }
     
     for (const game of playerPropsData) {
