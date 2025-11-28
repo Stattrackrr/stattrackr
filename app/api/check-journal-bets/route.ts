@@ -365,6 +365,11 @@ export async function GET(request: Request) {
     // If not a cron request, check if user is authenticated
     if (!isAuthorized) {
       try {
+        // Log cookies for debugging
+        const cookieHeader = request.headers.get('cookie');
+        console.log('[check-journal-bets] Cookie header present:', !!cookieHeader);
+        console.log('[check-journal-bets] Cookie header length:', cookieHeader?.length || 0);
+        
         const supabase = await createClient();
         // Use getSession() instead of getUser() - getSession() reads from cookies
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -372,19 +377,29 @@ export async function GET(request: Request) {
         console.log('[check-journal-bets] Session auth check:', { 
           hasSession: !!session, 
           userId: session?.user?.id, 
-          error: error?.message 
+          userEmail: session?.user?.email,
+          error: error?.message,
+          errorCode: error?.status 
         });
         
         if (session && session.user && !error) {
           // User is authenticated, allow request
           isAuthorized = true;
-          console.log('[check-journal-bets] User authenticated, allowing request');
+          console.log('[check-journal-bets] ✅ User authenticated, allowing request');
         } else {
-          console.log('[check-journal-bets] User not authenticated:', error?.message || 'No session found');
+          console.log('[check-journal-bets] ❌ User not authenticated:', {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            error: error?.message || 'No session found',
+            errorStatus: error?.status
+          });
         }
-      } catch (error) {
+      } catch (error: any) {
         // If auth check fails, deny request
-        console.error('[check-journal-bets] Auth check failed:', error);
+        console.error('[check-journal-bets] Auth check exception:', {
+          message: error?.message,
+          stack: error?.stack
+        });
       }
     }
     
