@@ -366,20 +366,21 @@ export async function GET(request: Request) {
     if (!isAuthorized) {
       try {
         const supabase = await createClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // Use getSession() instead of getUser() - getSession() reads from cookies
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('[check-journal-bets] User auth check:', { 
-          hasUser: !!user, 
-          userId: user?.id, 
+        console.log('[check-journal-bets] Session auth check:', { 
+          hasSession: !!session, 
+          userId: session?.user?.id, 
           error: error?.message 
         });
         
-        if (user && !error) {
+        if (session && session.user && !error) {
           // User is authenticated, allow request
           isAuthorized = true;
           console.log('[check-journal-bets] User authenticated, allowing request');
         } else {
-          console.log('[check-journal-bets] User not authenticated:', error?.message || 'No user found');
+          console.log('[check-journal-bets] User not authenticated:', error?.message || 'No session found');
         }
       } catch (error) {
         // If auth check fails, deny request
