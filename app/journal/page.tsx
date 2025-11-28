@@ -480,7 +480,9 @@ function JournalContent() {
         // First, trigger check-journal-bets to update any completed games
         try {
           console.log('[Journal] Calling /api/check-journal-bets to update completed games...');
-          const response = await fetch('/api/check-journal-bets');
+          const response = await fetch('/api/check-journal-bets', {
+            credentials: 'include', // Include cookies for authentication
+          });
           const data = await response.json();
           console.log('[Journal] check-journal-bets response:', data);
         } catch (error) {
@@ -536,7 +538,9 @@ function JournalContent() {
         try {
           // Trigger check-journal-bets to update completed games
           console.log('[Journal] Periodic refresh: calling /api/check-journal-bets...');
-          const response = await fetch('/api/check-journal-bets');
+          const response = await fetch('/api/check-journal-bets', {
+            credentials: 'include', // Include cookies for authentication
+          });
           const data = await response.json();
           console.log('[Journal] Periodic refresh response:', data);
           

@@ -368,9 +368,18 @@ export async function GET(request: Request) {
         const supabase = await createClient();
         const { data: { user }, error } = await supabase.auth.getUser();
         
+        console.log('[check-journal-bets] User auth check:', { 
+          hasUser: !!user, 
+          userId: user?.id, 
+          error: error?.message 
+        });
+        
         if (user && !error) {
           // User is authenticated, allow request
           isAuthorized = true;
+          console.log('[check-journal-bets] User authenticated, allowing request');
+        } else {
+          console.log('[check-journal-bets] User not authenticated:', error?.message || 'No user found');
         }
       } catch (error) {
         // If auth check fails, deny request
