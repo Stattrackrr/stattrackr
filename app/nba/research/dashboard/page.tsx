@@ -15,6 +15,7 @@ import { getPlayerById, formatHeight, NBAPlayer, SAMPLE_PLAYERS } from '@/lib/nb
 import { BallDontLieAPI } from './api';
 import { AdvancedStats } from './types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
+import { getFullTeamName, getTeamAbbr } from '@/lib/teamMapping';
 import { OddsSnapshot, deriveOpeningCurrentMovement, filterByMarket } from '@/lib/odds';
 import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
@@ -139,12 +140,24 @@ const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
     if (!mergedMap.has(baseKey)) {
       const clone = JSON.parse(JSON.stringify(book));
       clone.name = displayName;
+      // Preserve metadata (including gameHomeTeam/gameAwayTeam)
+      if (book.meta && !clone.meta) {
+        clone.meta = { ...book.meta };
+      }
       mergedMap.set(baseKey, clone);
       order.push(baseKey);
       continue;
     }
 
     const target = mergedMap.get(baseKey);
+    
+    // Preserve metadata from source if target doesn't have it
+    if (book.meta && !target.meta) {
+      target.meta = { ...book.meta };
+    } else if (book.meta && target.meta) {
+      // Merge metadata, preserving gameHomeTeam/gameAwayTeam
+      target.meta = { ...target.meta, ...book.meta };
+    }
 
     for (const key of MERGE_KEYS) {
       const sourceVal = book[key];
@@ -2725,6 +2738,9 @@ const ChartControls = function ChartControls({
       'pr': 'PR',
       'pa': 'PA',
       'ra': 'RA',
+      'spread': 'Spread',
+      'total_pts': 'Total',
+      'moneyline': 'H2H',
     };
     return stat ? (map[stat] || null) : null;
   };
@@ -3029,13 +3045,31 @@ const ChartControls = function ChartControls({
             {/* Alt Lines Dropdown - Desktop only */}
             {(() => {
               const bookRowKey = getBookRowKey(selectedStat);
+              const isMoneyline = selectedStat === 'moneyline';
               
               // Get all available lines for dropdown
               const altLines: AltLineItem[] = realOddsData && realOddsData.length > 0 && bookRowKey
                 ? (realOddsData
                     .map((book: any) => {
                       const statData = (book as any)[bookRowKey];
-                      if (!statData || statData.line === 'N/A') return null;
+                      if (!statData) return null;
+                      
+                      // For moneyline (H2H), handle home/away odds differently
+                      if (isMoneyline) {
+                        if (statData.home === 'N/A' && statData.away === 'N/A') return null;
+                        const meta = (book as any).meta || {};
+                        return {
+                          bookmaker: meta.baseName || book.name,
+                          line: 0, // Moneyline doesn't have a line value
+                          over: statData.home, // Use home as "over"
+                          under: statData.away, // Use away as "under"
+                          isPickem: meta.isPickem ?? false,
+                          variantLabel: meta.variantLabel ?? null,
+                        } as AltLineItem;
+                      }
+                      
+                      // For spread/total (has line value)
+                      if (statData.line === 'N/A') return null;
                       const lineValue = parseFloat(statData.line);
                       if (isNaN(lineValue)) return null;
                       const meta = (book as any).meta || {};
@@ -3055,6 +3089,10 @@ const ChartControls = function ChartControls({
                 const isPickemA = a.isPickem ? 0 : 1;
                 const isPickemB = b.isPickem ? 0 : 1;
                 if (isPickemA !== isPickemB) return isPickemA - isPickemB;
+                // For moneyline, sort by bookmaker name instead of line
+                if (isMoneyline) {
+                  return (a.bookmaker || '').localeCompare(b.bookmaker || '');
+                }
                 return a.line - b.line;
               });
               const { primary: primaryAltLines, alternate: alternateAltLines } = partitionAltLineItems(altLines);
@@ -3105,9 +3143,16 @@ const ChartControls = function ChartControls({
                       {/* Line and Bookmaker Name */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                            {fmtLine(altLine.line)}
-                          </span>
+                          {!isMoneyline && (
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                              {fmtLine(altLine.line)}
+                            </span>
+                          )}
+                          {isMoneyline && (
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                              ML
+                            </span>
+                          )}
                           <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                             {bookmakerInfo.name}
                           </span>
@@ -3119,13 +3164,21 @@ const ChartControls = function ChartControls({
                     {!isPickemAlt ? (
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                         {altLine.over && altLine.over !== 'N/A' && altLine.over !== 'Pick\'em' && (
-                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
-                            O {fmtOdds(altLine.over)}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                            isMoneyline 
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          }`}>
+                            {isMoneyline ? 'Home' : 'O'} {fmtOdds(altLine.over)}
                           </span>
                         )}
                         {altLine.under && altLine.under !== 'N/A' && altLine.under !== 'Pick\'em' && (
-                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
-                            U {fmtOdds(altLine.under)}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                            isMoneyline 
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' 
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          }`}>
+                            {isMoneyline ? 'Away' : 'U'} {fmtOdds(altLine.under)}
                           </span>
                         )}
                       </div>
@@ -3424,15 +3477,23 @@ const ChartControls = function ChartControls({
                             />
                           ) : !displayIsPickem ? (
                             <div className="flex flex-col items-start gap-0.5 min-w-0">
-                              {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
-                                <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                                  O&nbsp;{fmtOdds(displayBookmaker.over)}
+                              {isMoneyline ? (
+                                <span className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+                                  {bookmakerInfo.name}
                                 </span>
-                              )}
-                              {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
-                                <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                                  U&nbsp;{fmtOdds(displayBookmaker.under)}
-                                </span>
+                              ) : (
+                                <>
+                                  {displayBookmaker.over && displayBookmaker.over !== 'N/A' && (
+                                    <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                                      O&nbsp;{fmtOdds(displayBookmaker.over)}
+                                    </span>
+                                  )}
+                                  {displayBookmaker.under && displayBookmaker.under !== 'N/A' && (
+                                    <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                                      U&nbsp;{fmtOdds(displayBookmaker.under)}
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           ) : (
@@ -3506,14 +3567,31 @@ const ChartControls = function ChartControls({
                 {/* Alt Lines Button - Mobile only */}
                 {(() => {
                   const bookRowKey = getBookRowKey(selectedStat);
+                  const isMoneyline = selectedStat === 'moneyline';
                   
                   // Get all available lines for dropdown
               const altLines: AltLineItem[] = realOddsData && realOddsData.length > 0 && bookRowKey
                 ? (realOddsData
                     .map((book: any) => {
                       const statData = (book as any)[bookRowKey];
-                      if (!statData || statData.line === 'N/A') return null;
+                      if (!statData) return null;
                       
+                      // For moneyline (H2H), handle home/away odds differently
+                      if (isMoneyline) {
+                        if (statData.home === 'N/A' && statData.away === 'N/A') return null;
+                        const meta = (book as any).meta || {};
+                        return {
+                          bookmaker: meta.baseName || book.name,
+                          line: 0, // Moneyline doesn't have a line value
+                          over: statData.home, // Use home as "over"
+                          under: statData.away, // Use away as "under"
+                          isPickem: meta.isPickem ?? false,
+                          variantLabel: meta.variantLabel ?? null,
+                        } as AltLineItem;
+                      }
+                      
+                      // For spread/total (has line value)
+                      if (statData.line === 'N/A') return null;
                       const lineValue = parseFloat(statData.line);
                       if (isNaN(lineValue)) return null;
                       const meta = (book as any).meta || {};
@@ -3584,9 +3662,16 @@ const ChartControls = function ChartControls({
                       {/* Line and Bookmaker Name */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                            {fmtLine(altLine.line)}
-                          </span>
+                          {!isMoneyline && (
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                              {fmtLine(altLine.line)}
+                            </span>
+                          )}
+                          {isMoneyline && (
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                              ML
+                            </span>
+                          )}
                           <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                             {bookmakerInfo.name}
                           </span>
@@ -3598,13 +3683,21 @@ const ChartControls = function ChartControls({
                     {!isPickemAlt ? (
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                         {altLine.over && altLine.over !== 'N/A' && altLine.over !== 'Pick\'em' && (
-                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
-                            O {fmtOdds(altLine.over)}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                            isMoneyline 
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          }`}>
+                            {isMoneyline ? 'Home' : 'O'} {fmtOdds(altLine.over)}
                           </span>
                         )}
                         {altLine.under && altLine.under !== 'N/A' && altLine.under !== 'Pick\'em' && (
-                          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
-                            U {fmtOdds(altLine.under)}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                            isMoneyline 
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' 
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          }`}>
+                            {isMoneyline ? 'Away' : 'U'} {fmtOdds(altLine.under)}
                           </span>
                         )}
                       </div>
@@ -3976,57 +4069,113 @@ const ChartControls = function ChartControls({
                     </div>
                   );
                 })()}
-                <input
-                  id="betting-line-input"
-                  type="number" 
-                  step="0.5" 
-                  {...((['spread', 'moneyline'].includes(selectedStat)) ? {} : { min: "0" })}
-                  key={selectedStat}
-                  defaultValue={bettingLine}
-                  onChange={(e) => {
-                    const v = parseFloat((e.currentTarget as HTMLInputElement).value);
-                    if (!Number.isFinite(v)) return;
-                    transientLineRef.current = v;
-                    hasManuallySetLineRef.current = true; // Mark as manually set to prevent auto-updates
+                {selectedStat === 'moneyline' ? (
+                  // For moneyline, show odds instead of betting line input
+                  (() => {
+                    const bookRowKey = getBookRowKey(selectedStat);
+                    const displayBookmaker = (() => {
+                      if (!realOddsData || realOddsData.length === 0 || !bookRowKey) return null;
+                      // For moneyline, just get the first available bookmaker
+                      for (const book of realOddsData) {
+                        const statData = (book as any)[bookRowKey];
+                        if (statData && (statData.home !== 'N/A' || statData.away !== 'N/A')) {
+                          const meta = (book as any).meta || {};
+                          return {
+                            bookmaker: meta.baseName || book.name,
+                            over: statData.home,
+                            under: statData.away,
+                          };
+                        }
+                      }
+                      return null;
+                    })();
                     
-                    // Update displayLine immediately for instant bookmaker detection
-                    setDisplayLine(v);
-                    
-                    // Update visual elements immediately (no lag)
-                    updateBettingLinePosition(yAxisConfig, v);
-                    recolorBarsFast(v);
-                    updateOverRatePillFast(v);
-                    try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
-                    
-                    // Debounce state update to reduce re-renders (bookmaker detection will run after debounce)
-                    if (bettingLineDebounceRef.current) {
-                      clearTimeout(bettingLineDebounceRef.current);
+                    if (displayBookmaker) {
+                      const bookmakerInfo = getBookmakerInfo(displayBookmaker.bookmaker);
+                      return (
+                        <div className="flex items-center gap-2 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                          {bookmakerInfo?.logoUrl ? (
+                            <img 
+                              src={bookmakerInfo.logoUrl} 
+                              alt={bookmakerInfo.name}
+                              className="w-5 h-5 rounded object-contain flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <span className="text-sm">{bookmakerInfo?.logo || ''}</span>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-mono text-blue-600 dark:text-blue-400">
+                              Home {fmtOdds(displayBookmaker.over)}
+                            </span>
+                            <span className="text-xs sm:text-sm font-mono text-orange-600 dark:text-orange-400">
+                              Away {fmtOdds(displayBookmaker.under)}
+                            </span>
+                          </div>
+                        </div>
+                      );
                     }
-                    bettingLineDebounceRef.current = setTimeout(() => {
-                      onChangeBettingLine(v);
-                      bettingLineDebounceRef.current = null;
-                    }, 300);
-                  }}
-                  onBlur={(e) => {
-                    const v = parseFloat((e.currentTarget as HTMLInputElement).value);
-                    if (Number.isFinite(v)) {
+                    return (
+                      <div className="px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 dark:text-gray-400">
+                        No odds available
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <input
+                    id="betting-line-input"
+                    type="number" 
+                    step="0.5" 
+                    {...((['spread', 'moneyline'].includes(selectedStat)) ? {} : { min: "0" })}
+                    key={selectedStat}
+                    defaultValue={bettingLine}
+                    onChange={(e) => {
+                      const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                      if (!Number.isFinite(v)) return;
                       transientLineRef.current = v;
-                      hasManuallySetLineRef.current = true; // Mark as manually set
+                      hasManuallySetLineRef.current = true; // Mark as manually set to prevent auto-updates
                       
-                      // Update displayLine immediately
+                      // Update displayLine immediately for instant bookmaker detection
                       setDisplayLine(v);
                       
-                      // Clear any pending debounce and update immediately
+                      // Update visual elements immediately (no lag)
+                      updateBettingLinePosition(yAxisConfig, v);
+                      recolorBarsFast(v);
+                      updateOverRatePillFast(v);
+                      try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
+                      
+                      // Debounce state update to reduce re-renders (bookmaker detection will run after debounce)
                       if (bettingLineDebounceRef.current) {
                         clearTimeout(bettingLineDebounceRef.current);
-                        bettingLineDebounceRef.current = null;
                       }
-                      onChangeBettingLine(v);
-                      // selectedBookmaker will be auto-updated by useEffect if a matching bookmaker is found
-                    }
-                  }}
-                  className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                />
+                      bettingLineDebounceRef.current = setTimeout(() => {
+                        onChangeBettingLine(v);
+                        bettingLineDebounceRef.current = null;
+                      }, 300);
+                    }}
+                    onBlur={(e) => {
+                      const v = parseFloat((e.currentTarget as HTMLInputElement).value);
+                      if (Number.isFinite(v)) {
+                        transientLineRef.current = v;
+                        hasManuallySetLineRef.current = true; // Mark as manually set
+                        
+                        // Update displayLine immediately
+                        setDisplayLine(v);
+                        
+                        // Clear any pending debounce and update immediately
+                        if (bettingLineDebounceRef.current) {
+                          clearTimeout(bettingLineDebounceRef.current);
+                          bettingLineDebounceRef.current = null;
+                        }
+                        onChangeBettingLine(v);
+                        // selectedBookmaker will be auto-updated by useEffect if a matching bookmaker is found
+                      }
+                    }}
+                    className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                )}
               </div>
             </div>
             {/* Mobile: Filters inline with line input */}
@@ -5590,18 +5739,67 @@ const BestOddsTable = memo(function BestOddsTable({
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
   const hasRealOdds = realOddsData.length > 0;
+  
+  // Helper to normalize team abbreviations for matching
+  const normalizeAbbrForMatch = (abbr: string) => abbr?.toUpperCase().trim() || '';
+  
   const books = useMemo(
     () => {
       const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
-      return merged.filter((book: any) => {
+      const filtered = merged.filter((book: any) => {
         const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
         return !name.includes('underdog') && 
                !name.includes('bovada') && 
                !name.includes('draftkings') && 
                !name.includes('prizepicks');
       });
+      
+      // If selected team is away, flip spread and swap odds for team mode
+      if (propsMode === 'team' && filtered.length > 0) {
+        const firstBook = filtered[0] as any;
+        const gameHomeTeam = firstBook?.meta?.gameHomeTeam;
+        const gameAwayTeam = firstBook?.meta?.gameAwayTeam;
+        const selectedTeamAbbr = gamePropsTeam;
+        
+        if (gameHomeTeam && gameAwayTeam && selectedTeamAbbr) {
+          // Convert team names to abbreviations for comparison
+          const gameHomeAbbr = getTeamAbbr(gameHomeTeam);
+          const gameAwayAbbr = getTeamAbbr(gameAwayTeam);
+          const isAway = normalizeAbbrForMatch(gameAwayAbbr) === normalizeAbbrForMatch(selectedTeamAbbr);
+          
+          if (isAway) {
+            // Flip spread sign and swap over/under odds, swap H2H odds
+            return filtered.map((book: any) => {
+              const flipped = JSON.parse(JSON.stringify(book));
+              
+              // Flip spread: if home is -8.5, away should be +8.5
+              if (flipped.Spread && flipped.Spread.line !== 'N/A') {
+                const lineVal = parseFloat(String(flipped.Spread.line).replace(/[^0-9.+-]/g, ''));
+                if (!Number.isNaN(lineVal)) {
+                  flipped.Spread.line = String(-lineVal); // Flip sign
+                  // Swap over/under odds
+                  const tempOver = flipped.Spread.over;
+                  flipped.Spread.over = flipped.Spread.under;
+                  flipped.Spread.under = tempOver;
+                }
+              }
+              
+              // Swap H2H odds (home becomes away, away becomes home)
+              if (flipped.H2H) {
+                const tempHome = flipped.H2H.home;
+                flipped.H2H.home = flipped.H2H.away;
+                flipped.H2H.away = tempHome;
+              }
+              
+              return flipped;
+            });
+          }
+        }
+      }
+      
+      return filtered;
     },
-    [hasRealOdds, realOddsData]
+    [hasRealOdds, realOddsData, propsMode, gamePropsTeam]
   );
 
   const americanToNumber = (s: string) => {
@@ -5922,18 +6120,67 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
   const hasRealOdds = realOddsData.length > 0;
+  
+  // Helper to normalize team abbreviations for matching
+  const normalizeAbbrForMatch = (abbr: string) => abbr?.toUpperCase().trim() || '';
+  
   const books = useMemo(
     () => {
       const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
-      return merged.filter((book: any) => {
+      const filtered = merged.filter((book: any) => {
         const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
         return !name.includes('underdog') && 
                !name.includes('bovada') && 
                !name.includes('draftkings') && 
                !name.includes('prizepicks');
       });
+      
+      // If selected team is away, flip spread and swap odds for team mode
+      if (propsMode === 'team' && filtered.length > 0) {
+        const firstBook = filtered[0] as any;
+        const gameHomeTeam = firstBook?.meta?.gameHomeTeam;
+        const gameAwayTeam = firstBook?.meta?.gameAwayTeam;
+        const selectedTeamAbbr = gamePropsTeam;
+        
+        if (gameHomeTeam && gameAwayTeam && selectedTeamAbbr) {
+          // Convert team names to abbreviations for comparison
+          const gameHomeAbbr = getTeamAbbr(gameHomeTeam);
+          const gameAwayAbbr = getTeamAbbr(gameAwayTeam);
+          const isAway = normalizeAbbrForMatch(gameAwayAbbr) === normalizeAbbrForMatch(selectedTeamAbbr);
+          
+          if (isAway) {
+            // Flip spread sign and swap over/under odds, swap H2H odds
+            return filtered.map((book: any) => {
+              const flipped = JSON.parse(JSON.stringify(book));
+              
+              // Flip spread: if home is -8.5, away should be +8.5
+              if (flipped.Spread && flipped.Spread.line !== 'N/A') {
+                const lineVal = parseFloat(String(flipped.Spread.line).replace(/[^0-9.+-]/g, ''));
+                if (!Number.isNaN(lineVal)) {
+                  flipped.Spread.line = String(-lineVal); // Flip sign
+                  // Swap over/under odds
+                  const tempOver = flipped.Spread.over;
+                  flipped.Spread.over = flipped.Spread.under;
+                  flipped.Spread.under = tempOver;
+                }
+              }
+              
+              // Swap H2H odds (home becomes away, away becomes home)
+              if (flipped.H2H) {
+                const tempHome = flipped.H2H.home;
+                flipped.H2H.home = flipped.H2H.away;
+                flipped.H2H.away = tempHome;
+              }
+              
+              return flipped;
+            });
+          }
+        }
+      }
+      
+      return filtered;
     },
-    [hasRealOdds, realOddsData]
+    [hasRealOdds, realOddsData, propsMode, gamePropsTeam]
   );
 
   const americanToNumber = (s: string) => {
@@ -9450,6 +9697,9 @@ const lineMovementInFlightRef = useRef(false);
       'pr': 'PR',
       'pa': 'PA',
       'ra': 'RA',
+      'spread': 'Spread',
+      'total_pts': 'Total',
+      'moneyline': 'H2H',
     };
     return statToBookKey[stat] || null;
   }, []);
@@ -9712,10 +9962,24 @@ const lineMovementInFlightRef = useRef(false);
           return;
         }
         params = new URLSearchParams({ team: gamePropsTeam });
+        // Add refresh parameter if this is a retry due to missing metadata
+        if (retryCount > 0) {
+          params.set('refresh', '1');
+        }
       }
       
       const response = await fetch(`/api/odds?${params}`);
       const data = await response.json();
+      
+      console.log('[fetchOddsData] API response:', {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        homeTeam: data.homeTeam,
+        awayTeam: data.awayTeam,
+        propsMode,
+        gamePropsTeam,
+        hasLoading: !!data.loading
+      });
       
       // Handle background loading state
       if (data.loading) {
@@ -9751,7 +10015,50 @@ const lineMovementInFlightRef = useRef(false);
         return;
       }
       
+      // If team mode and metadata is missing, trigger a refresh
+      if (propsMode === 'team' && (!data.homeTeam || !data.awayTeam) && data.data && data.data.length > 0) {
+        console.log('[fetchOddsData] Missing team metadata - triggering cache refresh...');
+        // Trigger a refresh with the refresh parameter
+        const refreshParams = new URLSearchParams();
+        if (gamePropsTeam) refreshParams.set('team', gamePropsTeam);
+        refreshParams.set('refresh', '1');
+        
+        // Retry after a short delay to allow cache to refresh
+        setTimeout(() => {
+          fetchOddsData(retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
       setRealOddsData(data.data || []);
+      
+      // Store home/away teams for team mode
+      if (propsMode === 'team' && data.homeTeam && data.awayTeam) {
+        // Store these in a way we can access in BestOddsTable
+        // We'll add them to each bookmaker as metadata
+        if (data.data && data.data.length > 0) {
+          console.log('[fetchOddsData] Setting game teams:', {
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            gamePropsTeam,
+            bookCount: data.data.length
+          });
+          data.data.forEach((book: any) => {
+            if (!book.meta) book.meta = {};
+            book.meta.gameHomeTeam = data.homeTeam;
+            book.meta.gameAwayTeam = data.awayTeam;
+          });
+        } else {
+          console.log('[fetchOddsData] No bookmakers in data, cannot set team metadata');
+        }
+      } else if (propsMode === 'team') {
+        console.log('[fetchOddsData] Not setting team metadata:', {
+          propsMode,
+          hasHomeTeam: !!data.homeTeam,
+          hasAwayTeam: !!data.awayTeam
+        });
+      }
+      
       const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
       const target = propsMode === 'player' ? playerName : gamePropsTeam;
       console.log(`📊 Loaded ${data.data?.length || 0} bookmaker odds for ${target}`);
@@ -9786,6 +10093,10 @@ const lineMovementInFlightRef = useRef(false);
   
   // Fetch odds when player/team or mode changes
   useEffect(() => {
+    // For team mode, add a small delay to ensure gamePropsTeam is set
+    if (propsMode === 'team' && !gamePropsTeam) {
+      return;
+    }
     fetchOddsData();
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
@@ -11487,23 +11798,19 @@ const lineMovementInFlightRef = useRef(false);
                   let teamValue: number = 0;
                   let opponentValue: number = 0;
                   let isPercentage = false;
-                  let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                   
                   switch (selectedComparison) {
                     case 'points':
                       teamValue = currentStats.pts || 0;
                       opponentValue = opponentStats.pts || 0;
-                      isDefensiveStat = true;
                       break;
                     case 'rebounds':
                       teamValue = currentStats.reb || 0;
                       opponentValue = opponentStats.reb || 0;
-                      isDefensiveStat = true;
                       break;
                     case 'assists':
                       teamValue = currentStats.ast || 0;
                       opponentValue = opponentStats.ast || 0;
-                      isDefensiveStat = true;
                       break;
                     case 'fg_pct':
                       teamValue = currentStats.fg_pct || 0;
@@ -11586,30 +11893,19 @@ const lineMovementInFlightRef = useRef(false);
                     let teamValue: number = 0;
                     let opponentValue: number = 0;
                     let isPercentage = false;
-                    let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                     
                     switch (selectedComparison) {
                       case 'points':
-                        // For defensive stats, invert: lower allowed = better, so invert the values
-                        // Use max of 150 points allowed as baseline
-                        const maxPoints = 150;
-                        teamValue = maxPoints - (currentStats.pts || 0);
-                        opponentValue = maxPoints - (opponentStats.pts || 0);
-                        isDefensiveStat = true;
+                        teamValue = currentStats.pts || 0;
+                        opponentValue = opponentStats.pts || 0;
                         break;
                       case 'rebounds':
-                        // Invert rebounds allowed: lower allowed = better
-                        const maxRebounds = 60;
-                        teamValue = maxRebounds - (currentStats.reb || 0);
-                        opponentValue = maxRebounds - (opponentStats.reb || 0);
-                        isDefensiveStat = true;
+                        teamValue = currentStats.reb || 0;
+                        opponentValue = opponentStats.reb || 0;
                         break;
                       case 'assists':
-                        // Invert assists allowed: lower allowed = better
-                        const maxAssists = 35;
-                        teamValue = maxAssists - (currentStats.ast || 0);
-                        opponentValue = maxAssists - (opponentStats.ast || 0);
-                        isDefensiveStat = true;
+                        teamValue = currentStats.ast || 0;
+                        opponentValue = opponentStats.ast || 0;
                         break;
                       case 'fg_pct':
                         teamValue = currentStats.fg_pct || 0;
@@ -11623,24 +11919,14 @@ const lineMovementInFlightRef = useRef(false);
                         break;
                     }
                     
-                    // Store original values for display (before inversion)
-                    const originalTeamValue = isDefensiveStat 
-                      ? (selectedComparison === 'points' ? (currentStats.pts || 0) :
-                         selectedComparison === 'rebounds' ? (currentStats.reb || 0) :
-                         (currentStats.ast || 0))
-                      : teamValue;
-                    const originalOpponentValue = isDefensiveStat
-                      ? (selectedComparison === 'points' ? (opponentStats.pts || 0) :
-                         selectedComparison === 'rebounds' ? (opponentStats.reb || 0) :
-                         (opponentStats.ast || 0))
-                      : opponentValue;
+                    // Use values directly for display (offensive stats - higher is better)
+                    const originalTeamValue = teamValue;
+                    const originalOpponentValue = opponentValue;
                     
-                    console.log('📊 Team Matchup Pie Data:', {
+                    console.log('📊 Team Matchup Pie Data (Offensive Stats):', {
                       comparison: selectedComparison,
                       teamValue,
                       opponentValue,
-                      originalTeamValue,
-                      originalOpponentValue,
                       currentTeam,
                       currentOpponent,
                       currentStats,
@@ -12595,30 +12881,19 @@ const lineMovementInFlightRef = useRef(false);
                           let teamValue: number = 0;
                           let opponentValue: number = 0;
                           let isPercentage = false;
-                          let isDefensiveStat = false; // Track if this is a defensive stat (lower is better)
                           
                           switch (selectedComparison) {
                             case 'points':
-                              // For defensive stats, invert: lower allowed = better, so invert the values
-                              // Use max of 150 points allowed as baseline
-                              const maxPoints = 150;
-                              teamValue = maxPoints - (currentStats.pts || 0);
-                              opponentValue = maxPoints - (opponentStats.pts || 0);
-                              isDefensiveStat = true;
+                              teamValue = currentStats.pts || 0;
+                              opponentValue = opponentStats.pts || 0;
                               break;
                             case 'rebounds':
-                              // Invert rebounds allowed: lower allowed = better
-                              const maxRebounds = 60;
-                              teamValue = maxRebounds - (currentStats.reb || 0);
-                              opponentValue = maxRebounds - (opponentStats.reb || 0);
-                              isDefensiveStat = true;
+                              teamValue = currentStats.reb || 0;
+                              opponentValue = opponentStats.reb || 0;
                               break;
                             case 'assists':
-                              // Invert assists allowed: lower allowed = better
-                              const maxAssists = 35;
-                              teamValue = maxAssists - (currentStats.ast || 0);
-                              opponentValue = maxAssists - (opponentStats.ast || 0);
-                              isDefensiveStat = true;
+                              teamValue = currentStats.ast || 0;
+                              opponentValue = opponentStats.ast || 0;
                               break;
                             case 'fg_pct':
                               teamValue = currentStats.fg_pct || 0;
@@ -12632,17 +12907,9 @@ const lineMovementInFlightRef = useRef(false);
                               break;
                           }
                           
-                          // Store original values for display (before inversion)
-                          const originalTeamValue = isDefensiveStat 
-                            ? (selectedComparison === 'points' ? (currentStats.pts || 0) :
-                               selectedComparison === 'rebounds' ? (currentStats.reb || 0) :
-                               (currentStats.ast || 0))
-                            : teamValue;
-                          const originalOpponentValue = isDefensiveStat
-                            ? (selectedComparison === 'points' ? (opponentStats.pts || 0) :
-                               selectedComparison === 'rebounds' ? (opponentStats.reb || 0) :
-                               (opponentStats.ast || 0))
-                            : opponentValue;
+                          // Use values directly for display (offensive stats - higher is better)
+                          const originalTeamValue = teamValue;
+                          const originalOpponentValue = opponentValue;
 
                           const pieData = createTeamComparisonPieData(
                             teamValue,

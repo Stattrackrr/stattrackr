@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
-import { getNBACache } from '@/lib/nbaCache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { gameInvolvesTeam } from '@/lib/teamMapping';
 import { ensureOddsCache } from '@/lib/refreshOdds';
@@ -44,6 +44,24 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');
     const team = searchParams.get('team');
+    const forceRefresh = searchParams.get('refresh') === '1';
+    
+    // If force refresh is requested, clear cache and refresh
+    if (forceRefresh) {
+      console.log('[Odds API] Force refresh requested - clearing cache and refreshing...');
+      // Clear the in-memory cache
+      cache.delete(ODDS_CACHE_KEY);
+      // Trigger refresh (this will overwrite the Supabase cache)
+      ensureOddsCache({ source: 'api/odds/refresh' }).catch(err => {
+        console.error('Background odds refresh failed:', err);
+      });
+      return NextResponse.json({
+        success: true,
+        data: [],
+        loading: true,
+        message: 'Cache cleared, refreshing odds data...'
+      });
+    }
     
     // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
@@ -80,7 +98,7 @@ export async function GET(request: NextRequest) {
       );
       
       if (!game) {
-        console.log(`No game found for team: ${team}. Available games:`, oddsCache.games.map((g: any) => `${g.homeTeam} vs ${g.awayTeam}`));
+        console.log(`[Odds API] No game found for team: ${team}. Available games:`, oddsCache.games.map((g: any) => `${g.homeTeam} vs ${g.awayTeam}`));
         return NextResponse.json({
           success: true,
           data: [],
@@ -88,12 +106,33 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      return NextResponse.json({
+      console.log('[Odds API] Returning game odds for team:', {
+        team,
+        gameHomeTeam: game.homeTeam,
+        gameAwayTeam: game.awayTeam,
+        bookmakerCount: game.bookmakers?.length || 0,
+        hasHomeTeam: !!game.homeTeam,
+        hasAwayTeam: !!game.awayTeam
+      });
+      
+      // Ensure we always return homeTeam and awayTeam
+      const response = {
         success: true,
         data: game.bookmakers || [],
+        homeTeam: game.homeTeam || null,
+        awayTeam: game.awayTeam || null,
         lastUpdated: oddsCache.lastUpdated,
         nextUpdate: oddsCache.nextUpdate
+      };
+      
+      console.log('[Odds API] Response structure:', {
+        hasData: !!response.data,
+        dataLength: response.data?.length || 0,
+        homeTeam: response.homeTeam,
+        awayTeam: response.awayTeam
       });
+      
+      return NextResponse.json(response);
     }
     
     // Helper function for fuzzy player name matching
