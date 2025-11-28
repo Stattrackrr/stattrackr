@@ -196,27 +196,29 @@ export async function scrapeBasketballMonstersLineupForDate(
   addLog(`🔍 Scraping lineups for ${teamAbbr} on ${date}...`);
   
   // Calculate how many days back we need to go
-  // Parse date string as local date (YYYY-MM-DD format)
-  // Use local timezone to avoid off-by-one day issues
-  const targetDateParts = date.split('-');
-  const year = parseInt(targetDateParts[0]);
-  const month = parseInt(targetDateParts[1]) - 1; // 0-indexed
-  const day = parseInt(targetDateParts[2]);
-  
-  // Create date in local timezone (not UTC)
-  const targetDate = new Date(year, month, day, 0, 0, 0, 0);
-  
-  const today = new Date();
+  // Use Eastern Time to match BasketballMonsters (they use Eastern Time)
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const today = new Date(easternTime);
   today.setHours(0, 0, 0, 0);
   today.setMinutes(0, 0, 0);
   today.setSeconds(0, 0);
   today.setMilliseconds(0);
   
+  // Parse target date string (YYYY-MM-DD format)
+  const targetDateParts = date.split('-');
+  const year = parseInt(targetDateParts[0]);
+  const month = parseInt(targetDateParts[1]) - 1; // 0-indexed
+  const day = parseInt(targetDateParts[2]);
+  
+  // Create target date in Eastern Time
+  const targetDate = new Date(year, month, day, 0, 0, 0, 0);
+  
   const daysDiff = Math.floor((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
   
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const targetDateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
-  addLog(`Date calculation: target=${date}, today=${todayStr}, targetDate=${targetDateStr}, daysDiff=${daysDiff}`);
+  addLog(`Date calculation (Eastern Time): target=${date}, today=${todayStr}, targetDate=${targetDateStr}, daysDiff=${daysDiff}`);
   
   // ONLY scrape today and future games - skip past games
   if (daysDiff > 0) {
