@@ -8456,7 +8456,17 @@ const lineMovementInFlightRef = useRef(false);
       });
       
       // Fallback to sample players data if BDL doesn't have jersey or height
-      const samplePlayer = SAMPLE_PLAYERS.find(p => p.full.toLowerCase() === r.full.toLowerCase());
+      // Try exact match first, then try partial match for name variations (e.g., "Alex" vs "Alexandre")
+      const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const searchName = normalizeName(r.full);
+      const samplePlayer = SAMPLE_PLAYERS.find(p => {
+        const playerName = normalizeName(p.full);
+        return playerName === searchName || 
+               playerName.includes(searchName) || 
+               searchName.includes(playerName) ||
+               (p.firstName && normalizeName(p.firstName + p.lastName) === searchName) ||
+               (p.lastName && normalizeName(p.lastName) === normalizeName(r.full.split(' ').pop() || ''));
+      });
       if (samplePlayer) {
         if (!jerseyNumber && samplePlayer.jersey) {
           jerseyNumber = samplePlayer.jersey;

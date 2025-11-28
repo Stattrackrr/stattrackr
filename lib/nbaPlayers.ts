@@ -237,6 +237,19 @@ export const SAMPLE_PLAYERS: NBAPlayer[] = [
     college: 'None'
   },
   {
+    id: '1028028405',  // Also add as "Alex Sarr" for name matching
+    full: 'Alex Sarr',
+    firstName: 'Alex',
+    lastName: 'Sarr',
+    teamAbbr: 'WAS',
+    position: 'C',
+    jersey: 25,
+    heightFeet: 7,
+    heightInches: 1,
+    weight: 217,
+    college: 'None'
+  },
+  {
     id: '666508',  // Ball Don't Lie API ID for Nicolas Claxton
     full: 'Nicolas Claxton',
     firstName: 'Nicolas',
