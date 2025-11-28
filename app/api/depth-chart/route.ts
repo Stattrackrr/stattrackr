@@ -102,8 +102,28 @@ export async function GET(req: NextRequest) {
     const teamsJson = await teamsResp.json();
     const allTeams: any[] = teamsJson?.sports?.[0]?.leagues?.[0]?.teams?.map((t: any) => t.team) || [];
     const cands = abbrCandidates(inputTeam);
-    const team = allTeams.find((t: any) => cands.includes(String(t?.abbreviation || '').toUpperCase()));
-    const debug: Record<string, any> = { inputTeam, candidates: cands, matchedTeam: team?.abbreviation || null, endpoints: {} };
+    
+    // Try multiple fields: abbreviation, shortDisplayName, name, displayName
+    const team = allTeams.find((t: any) => {
+      const abbr = String(t?.abbreviation || '').toUpperCase();
+      const shortName = String(t?.shortDisplayName || '').toUpperCase();
+      const name = String(t?.name || '').toUpperCase();
+      const displayName = String(t?.displayName || '').toUpperCase();
+      return cands.includes(abbr) || cands.includes(shortName) || cands.includes(name) || cands.includes(displayName);
+    });
+    
+    const debug: Record<string, any> = { 
+      inputTeam, 
+      candidates: cands, 
+      matchedTeam: team?.abbreviation || team?.shortDisplayName || team?.name || null,
+      allTeamAbbrs: allTeams.map(t => ({ 
+        abbr: t?.abbreviation, 
+        shortName: t?.shortDisplayName, 
+        name: t?.name,
+        id: t?.id 
+      })),
+      endpoints: {} 
+    };
     if (!team?.id) return NextResponse.json({ success: false, error: `Unknown team: ${inputTeam}` , debug }, { status: 404 });
 
     // Fetch roster for jersey numbers
