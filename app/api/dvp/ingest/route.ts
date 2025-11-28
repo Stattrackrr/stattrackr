@@ -590,6 +590,12 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
       
       // Track if we used verified lineup (for metadata)
       const usedVerifiedLineup = Object.keys(bmLineupMapVerified).length > 0;
+      
+      // Log BasketballMonsters lineup usage
+      const bmPlayerCount = Object.keys(bmLineupMap).length;
+      if (bmPlayerCount > 0) {
+        console.log(`[DvP Ingest] 🏀 BasketballMonsters lineup available for ${meta.oppAbbr} on ${when}: ${bmPlayerCount} players (${usedVerifiedLineup ? 'VERIFIED' : 'PROJECTED'})`);
+      }
 
       // Get NBA starter order for this game (resolve GameID and pull boxscore)
       let starterOrder: string[] = [];
@@ -647,6 +653,9 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
       const players: any[] = [];
       const buckets = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
       const toTitle = (k: string)=> k.split(' ').map(w=> w? (w[0].toUpperCase()+w.slice(1)) : w).join(' ');
+      
+      // Track how many players got positions from BasketballMonsters
+      let bmPositionCount = 0;
 
       for (const r of oppRows){
         const name = `${r?.player?.first_name||''} ${r?.player?.last_name||''}`.trim();
@@ -660,6 +669,7 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
         for (const kv of keyVars) {
           if (bmLineupMap[kv]) {
             bucket = bmLineupMap[kv];
+            bmPositionCount++; // Track that we used BasketballMonsters position
             break;
           }
         }
@@ -820,6 +830,11 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
       const lineupSource = usedVerifiedLineup ? 'basketballmonsters-verified' : 
                           (Object.keys(bmLineupMap).length > 0 ? 'basketballmonsters-projected' : 'bdl+nba');
       
+      // Log summary of BasketballMonsters usage for this game
+      if (bmPositionCount > 0) {
+        console.log(`[DvP Ingest] ✅ Saved ${bmPositionCount} players with BasketballMonsters positions for ${meta.oppAbbr} vs ${team} on ${when} (${usedVerifiedLineup ? 'VERIFIED' : 'PROJECTED'})`);
+      }
+      
       out.push({ 
         gameId: gid, 
         date: when, 
@@ -829,7 +844,8 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
         buckets: finalBuckets, 
         players, 
         source: lineupSource,
-        lineupVerified: usedVerifiedLineup // Track if positions came from verified BasketballMonsters lineup
+        lineupVerified: usedVerifiedLineup, // Track if positions came from verified BasketballMonsters lineup
+        bmPlayersCount: bmPositionCount // Track how many players got positions from BasketballMonsters
       });
     }
 
