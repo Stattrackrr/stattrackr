@@ -8270,11 +8270,12 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       // OPTIMIZATION: Lazy load premium stats
-      // Fetch critical path data first: game stats + BDL player data
+      // Fetch critical path data first: game stats + BDL player data + ESPN (as fallback)
       // Then load premium features (advanced stats, shot distance) in background
-      const [rows, bdlPlayerData] = await Promise.all([
+      const [rows, bdlPlayerData, espnData] = await Promise.all([
         fetchSortedStats(pid),
-        fetchBdlPlayerData(pid)
+        fetchBdlPlayerData(pid),
+        fetchEspnPlayerData(player.full, player.teamAbbr).catch(() => null) // Fetch ESPN in parallel as fallback
       ]);
       
       // Start premium fetches in background (don't await)
@@ -8409,11 +8410,12 @@ const lineMovementInFlightRef = useRef(false);
       } as any;
       
       // OPTIMIZATION: Lazy load premium stats
-      // Fetch critical path data first: game stats + BDL player data
+      // Fetch critical path data first: game stats + BDL player data + ESPN (as fallback)
       // Then load premium features (advanced stats, shot distance) in background
-      const [rows, bdlPlayerData] = await Promise.all([
+      const [rows, bdlPlayerData, espnData] = await Promise.all([
         fetchSortedStats(pid),
-        fetchBdlPlayerData(pid)
+        fetchBdlPlayerData(pid),
+        fetchEspnPlayerData(r.full, r.team).catch(() => null) // Fetch ESPN in parallel as fallback
       ]);
       
       // Start premium fetches in background (don't await)
