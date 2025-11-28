@@ -8015,6 +8015,48 @@ const lineMovementInFlightRef = useRef(false);
     }
   };
 
+  // Fetch full player data from Ball Don't Lie API (includes height, jersey_number, etc.)
+  const fetchBdlPlayerData = async (playerId: string): Promise<any | null> => {
+    try {
+      const res = await fetch(`/api/bdl/player/${playerId}`);
+      if (!res.ok) {
+        console.warn(`Failed to fetch BDL player data: ${res.status}`);
+        return null;
+      }
+      const json = await res.json();
+      return json.data || null;
+    } catch (error) {
+      console.warn('Failed to fetch BDL player data:', error);
+      return null;
+    }
+  };
+
+  // Parse BDL height format (can be "6-10", "6'10\"", or total inches as number/string)
+  const parseBdlHeight = (height: string | number | null | undefined): { feet?: number; inches?: number } => {
+    if (!height) return {};
+    
+    // If it's a number (total inches)
+    if (typeof height === 'number' || /^\d+$/.test(String(height))) {
+      const totalInches = parseInt(String(height), 10);
+      const feet = Math.floor(totalInches / 12);
+      const inches = totalInches % 12;
+      return { feet, inches };
+    }
+    
+    // Convert to string for parsing
+    const heightStr = String(height);
+    
+    // BDL format is typically "6-10" or "6'10" or "6'10\""
+    const match = heightStr.match(/(\d+)['-](\d+)/);
+    if (match) {
+      const feet = parseInt(match[1], 10);
+      const inches = parseInt(match[2], 10);
+      return { feet, inches };
+    }
+    
+    return {};
+  };
+
   
   // Track current fetch to prevent race conditions
   const advancedStatsFetchRef = useRef<string | null>(null);
@@ -8215,11 +8257,11 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       // OPTIMIZATION: Lazy load premium stats
-      // Fetch critical path data first: game stats + ESPN data
+      // Fetch critical path data first: game stats + BDL player data
       // Then load premium features (advanced stats, shot distance) in background
-      const [rows, espnData] = await Promise.all([
+      const [rows, bdlPlayerData] = await Promise.all([
         fetchSortedStats(pid),
-        fetchEspnPlayerData(player.full, player.teamAbbr)
+        fetchBdlPlayerData(pid)
       ]);
       
       // Start premium fetches in background (don't await)
@@ -8237,11 +8279,15 @@ const lineMovementInFlightRef = useRef(false);
       setOriginalPlayerTeam(currentTeam); // Track the original player's team
       setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
-  // Parse ESPN height data and merge with sample player data
-      const heightData = parseEspnHeight(espnData?.height);
+      // Parse BDL height data and merge with sample player data
+      const heightData = parseBdlHeight(bdlPlayerData?.height);
       
-      // Try to get jersey from ESPN, then from player data, then from depth chart roster
-      let jerseyNumber = Number(espnData?.jersey || player.jersey || 0);
+      // Get jersey and height from BDL, with fallbacks to player object
+      let jerseyNumber = Number(bdlPlayerData?.jersey_number || player.jersey || 0);
+      let heightFeetData: number | undefined = heightData.feet || player.heightFeet || undefined;
+      let heightInchesData: number | undefined = heightData.inches || player.heightInches || undefined;
+      
+      // Fallback to depth chart roster for jersey if still missing
       if (!jerseyNumber && playerTeamRoster) {
         // Search all positions in roster for this player
         const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
@@ -8264,8 +8310,8 @@ const lineMovementInFlightRef = useRef(false);
       setSelectedPlayer({
         ...player,
         jersey: jerseyNumber,
-        heightFeet: Number(heightData.feet || player.heightFeet || 0),
-        heightInches: Number(heightData.inches || player.heightInches || 0),
+        heightFeet: heightFeetData || undefined,
+        heightInches: heightInchesData || undefined,
       });
       
       // Reset betting lines to default for new player
@@ -8339,11 +8385,11 @@ const lineMovementInFlightRef = useRef(false);
       } as any;
       
       // OPTIMIZATION: Lazy load premium stats
-      // Fetch critical path data first: game stats + ESPN data
+      // Fetch critical path data first: game stats + BDL player data
       // Then load premium features (advanced stats, shot distance) in background
-      const [rows, espnData] = await Promise.all([
+      const [rows, bdlPlayerData] = await Promise.all([
         fetchSortedStats(pid),
-        fetchEspnPlayerData(r.full, r.team)
+        fetchBdlPlayerData(pid)
       ]);
       
       // Start premium fetches in background (don't await)
@@ -8361,18 +8407,18 @@ const lineMovementInFlightRef = useRef(false);
       setOriginalPlayerTeam(currentTeam); // Track the original player's team
       setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
-      // Parse ESPN height data
-      const heightData = parseEspnHeight(espnData?.height);
+      // Parse BDL height data
+      const heightData = parseBdlHeight(bdlPlayerData?.height);
       
-      // Debug ESPN data
-      console.log('🏀 Full ESPN data:', espnData);
+      // Debug BDL data
+      console.log('🏀 Full BDL player data:', bdlPlayerData);
       
-      // Try to get jersey from ESPN, then from depth chart roster, then from sample data
-      let jerseyNumber = Number(espnData?.jersey || 0);
-      let heightFeetData = heightData.feet;
-      let heightInchesData = heightData.inches;
+      // Get jersey and height from BDL, with fallbacks
+      let jerseyNumber = Number(bdlPlayerData?.jersey_number || 0);
+      let heightFeetData: number | undefined = heightData.feet;
+      let heightInchesData: number | undefined = heightData.inches;
       
-      // Fallback to sample players data if ESPN doesn't have jersey or height
+      // Fallback to sample players data if BDL doesn't have jersey or height
       const samplePlayer = SAMPLE_PLAYERS.find(p => p.full.toLowerCase() === r.full.toLowerCase());
       if (samplePlayer) {
         if (!jerseyNumber && samplePlayer.jersey) {
@@ -8389,6 +8435,7 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
+      // Fallback to depth chart roster for jersey if still missing
       if (!jerseyNumber && playerTeamRoster) {
         // Search all positions in roster for this player
         const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
@@ -8409,15 +8456,15 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
-      // Update player object with search API team + ESPN data
+      // Update player object with search API team + BDL data
       setSelectedPlayer({
         ...tempPlayer,
         teamAbbr: currentTeam,
         jersey: jerseyNumber,
-        heightFeet: heightFeetData || null,
-        heightInches: heightInchesData || null,
+        heightFeet: heightFeetData,
+        heightInches: heightInchesData,
         // Add raw height as fallback for debugging
-        rawHeight: espnData?.height || null,
+        rawHeight: bdlPlayerData?.height || undefined,
       });
       
       // Reset betting lines to default for new player
