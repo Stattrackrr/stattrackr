@@ -78,33 +78,86 @@ export async function GET(req: NextRequest) {
     const statKey = STAT_TO_KEY[statType] || 'PTS';
     const playerProps: PlayerPropOdds[] = [];
 
-    // Search through all games for this player's props
+    // Search through all games for this player's props (same logic as /api/odds)
     for (const game of oddsCache.games) {
       const playerPropsByBookmaker = game.playerPropsByBookmaker || {};
       
-      // Check each bookmaker
-      for (const [bookmakerName, players] of Object.entries(playerPropsByBookmaker)) {
-        const bookmakerPlayers = players as Record<string, any>;
+      // Get all bookmaker names (from both game.bookmakers and playerPropsByBookmaker)
+      const allBookNames = new Set<string>();
+      for (const book of game.bookmakers) allBookNames.add(book.name);
+      for (const bookName of Object.keys(playerPropsByBookmaker)) {
+        allBookNames.add(bookName);
+      }
+      
+      // Check if this player has props in any bookmaker
+      const hasPlayerProps = Array.from(allBookNames).some(name => {
+        const bookmakerProps = playerPropsByBookmaker[name];
+        if (!bookmakerProps) return false;
         
-        // Find matching player (case-insensitive)
-        for (const [cachedPlayerName, props] of Object.entries(bookmakerPlayers)) {
-          if (cachedPlayerName.toLowerCase().includes(playerName.toLowerCase()) ||
-              playerName.toLowerCase().includes(cachedPlayerName.toLowerCase())) {
+        // Try exact match first
+        if (bookmakerProps[playerName]) return true;
+        
+        // Try case-insensitive match
+        const matchingPlayerKey = Object.keys(bookmakerProps).find(
+          p => p.toLowerCase() === playerName.toLowerCase() ||
+               p.toLowerCase().includes(playerName.toLowerCase()) ||
+               playerName.toLowerCase().includes(p.toLowerCase())
+        );
+        return !!matchingPlayerKey;
+      });
+      
+      if (!hasPlayerProps) continue;
+      
+      // Extract props for this player and stat
+      for (const bookmakerName of allBookNames) {
+        const bookmakerProps = playerPropsByBookmaker[bookmakerName];
+        if (!bookmakerProps) continue;
+        
+        // Find the actual player key (case-insensitive match)
+        const actualPlayerKey = bookmakerProps[playerName]
+          ? playerName
+          : Object.keys(bookmakerProps).find(
+              p => p.toLowerCase() === playerName.toLowerCase() ||
+                   p.toLowerCase().includes(playerName.toLowerCase()) ||
+                   playerName.toLowerCase().includes(p.toLowerCase())
+            );
+        
+        if (!actualPlayerKey) continue;
+        
+        const playerData = bookmakerProps[actualPlayerKey] as any;
+        if (!playerData) continue;
+        
+        // Get stat props - handle both single object and array
+        const statData = playerData[statKey];
+        if (!statData) continue;
+        
+        const statEntries = Array.isArray(statData) ? statData : [statData];
+        
+        // Extract each line for this stat
+        for (const entry of statEntries) {
+          const entryAny = entry as any;
+          
+          if (entryAny?.line && entryAny?.over && entryAny?.under) {
+            // Parse odds (handle string or number)
+            const overOdds = typeof entryAny.over === 'string' 
+              ? parseFloat(entryAny.over.replace(/[^+\-\d]/g, ''))
+              : entryAny.over;
+            const underOdds = typeof entryAny.under === 'string'
+              ? parseFloat(entryAny.under.replace(/[^+\-\d]/g, ''))
+              : entryAny.under;
             
-            const statProps = props[statKey];
-            if (statProps && statProps.line && statProps.over && statProps.under) {
+            if (!isNaN(overOdds) && !isNaN(underOdds) && !isNaN(parseFloat(entryAny.line))) {
               // Convert American odds to decimal
-              const overDecimal = americanToDecimal(parseFloat(statProps.over));
-              const underDecimal = americanToDecimal(parseFloat(statProps.under));
+              const overDecimal = americanToDecimal(overOdds);
+              const underDecimal = americanToDecimal(underOdds);
               
               playerProps.push({
                 bookmaker: bookmakerName,
-                line: parseFloat(statProps.line),
+                line: parseFloat(entryAny.line),
                 overPrice: overDecimal,
                 underPrice: underDecimal,
               });
             }
-            break; // Found player, move to next bookmaker
           }
         }
       }
