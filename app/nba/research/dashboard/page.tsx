@@ -8020,13 +8020,26 @@ const lineMovementInFlightRef = useRef(false);
     try {
       const res = await fetch(`/api/bdl/player/${playerId}`);
       if (!res.ok) {
-        console.warn(`Failed to fetch BDL player data: ${res.status}`);
+        console.warn(`❌ Failed to fetch BDL player data for ${playerId}: ${res.status}`);
         return null;
       }
       const json = await res.json();
-      return json.data || null;
+      const playerData = json.data || null;
+      
+      if (playerData) {
+        console.log(`✅ BDL player data fetched for ${playerId}:`, {
+          jersey_number: playerData.jersey_number,
+          height: playerData.height,
+          hasJersey: !!playerData.jersey_number && playerData.jersey_number !== '',
+          hasHeight: !!playerData.height && playerData.height !== ''
+        });
+      } else {
+        console.warn(`⚠️ BDL player data is null for ${playerId}`);
+      }
+      
+      return playerData;
     } catch (error) {
-      console.warn('Failed to fetch BDL player data:', error);
+      console.warn('❌ Failed to fetch BDL player data:', error);
       return null;
     }
   };
@@ -8283,9 +8296,20 @@ const lineMovementInFlightRef = useRef(false);
       const heightData = parseBdlHeight(bdlPlayerData?.height);
       
       // Get jersey and height from BDL, with fallbacks to player object
-      let jerseyNumber = Number(bdlPlayerData?.jersey_number || player.jersey || 0);
+      // BDL returns jersey_number as string, so check for empty string too
+      const bdlJersey = bdlPlayerData?.jersey_number;
+      const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
+        ? Number(bdlJersey) 
+        : 0;
+      let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : (player.jersey || 0);
       let heightFeetData: number | undefined = heightData.feet || player.heightFeet || undefined;
       let heightInchesData: number | undefined = heightData.inches || player.heightInches || undefined;
+      
+      console.log(`🔍 BDL data for ${player.full}:`, {
+        jersey_number: bdlJersey,
+        height: bdlPlayerData?.height,
+        parsedHeight: heightData
+      });
       
       // Fallback to depth chart roster for jersey if still missing
       if (!jerseyNumber && playerTeamRoster) {
@@ -8414,9 +8438,20 @@ const lineMovementInFlightRef = useRef(false);
       console.log('🏀 Full BDL player data:', bdlPlayerData);
       
       // Get jersey and height from BDL, with fallbacks
-      let jerseyNumber = Number(bdlPlayerData?.jersey_number || 0);
+      // BDL returns jersey_number as string, so check for empty string too
+      const bdlJersey = bdlPlayerData?.jersey_number;
+      const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
+        ? Number(bdlJersey) 
+        : 0;
+      let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : 0;
       let heightFeetData: number | undefined = heightData.feet;
       let heightInchesData: number | undefined = heightData.inches;
+      
+      console.log(`🔍 BDL data for ${r.full}:`, {
+        jersey_number: bdlJersey,
+        height: bdlPlayerData?.height,
+        parsedHeight: heightData
+      });
       
       // Fallback to sample players data if BDL doesn't have jersey or height
       const samplePlayer = SAMPLE_PLAYERS.find(p => p.full.toLowerCase() === r.full.toLowerCase());
@@ -8452,6 +8487,22 @@ const lineMovementInFlightRef = useRef(false);
               console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
               break;
             }
+          }
+        }
+      }
+      
+      // Final fallback to ESPN if BDL and other sources don't have data
+      if (espnData) {
+        if (!jerseyNumber && espnData.jersey) {
+          jerseyNumber = Number(espnData.jersey);
+          console.log(`✅ Found jersey #${jerseyNumber} from ESPN for ${r.full}`);
+        }
+        if (!heightFeetData && espnData.height) {
+          const espnHeightData = parseEspnHeight(espnData.height);
+          if (espnHeightData.feet) {
+            heightFeetData = espnHeightData.feet;
+            heightInchesData = espnHeightData.inches;
+            console.log(`✅ Found height ${heightFeetData}'${heightInchesData}" from ESPN for ${r.full}`);
           }
         }
       }

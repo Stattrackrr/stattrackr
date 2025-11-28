@@ -31,6 +31,16 @@ export async function GET(
     }
     
     const json = await res.json();
+    
+    // Log the response structure for debugging
+    console.log(`[BDL Player API] Response for player ${id}:`, {
+      hasJersey: !!json?.jersey_number,
+      jerseyNumber: json?.jersey_number,
+      hasHeight: !!json?.height,
+      height: json?.height,
+      hasData: !!json
+    });
+    
     return NextResponse.json({ data: json });
   } catch (error: any) {
     console.error('Error fetching BDL player data:', error);
