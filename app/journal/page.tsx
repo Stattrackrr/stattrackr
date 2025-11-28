@@ -477,6 +477,14 @@ function JournalContent() {
         setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
         setUserEmail(session.user.email || null);
 
+        // First, trigger check-journal-bets to update any completed games
+        try {
+          await fetch('/api/check-journal-bets');
+        } catch (error) {
+          console.error('Failed to check journal bets:', error);
+          // Continue anyway to fetch current data
+        }
+
         // Fetch bets
         const { data, error } = await supabase
           .from('bets')
@@ -511,12 +519,38 @@ function JournalContent() {
     // Initial check
     checkSubscriptionAndLoadBets(true);
     
-    // Periodic check every 5 minutes (instead of on every token refresh)
+    // Periodic check every 5 minutes for subscription (instead of on every token refresh)
     subscriptionCheckInterval = setInterval(() => {
       if (isMounted) {
         checkSubscriptionAndLoadBets();
       }
     }, 5 * 60 * 1000); // 5 minutes
+    
+    // Periodic refresh of bets every 10 minutes to check for completed games
+    let betsRefreshInterval: NodeJS.Timeout | null = null;
+    betsRefreshInterval = setInterval(async () => {
+      if (isMounted) {
+        try {
+          // Trigger check-journal-bets to update completed games
+          await fetch('/api/check-journal-bets');
+          
+          // Then refresh bets from database
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && isMounted) {
+            const { data, error } = await supabase
+              .from('bets')
+              .select('*')
+              .order('date', { ascending: false });
+            
+            if (!error && data && isMounted) {
+              setBets(data || []);
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing bets:', error);
+        }
+      }
+    }, 10 * 60 * 1000); // 10 minutes
     
     // Only listen for SIGNED_OUT and SIGNED_IN events (not TOKEN_REFRESHED)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -540,6 +574,9 @@ function JournalContent() {
       isMounted = false;
       if (subscriptionCheckInterval) {
         clearInterval(subscriptionCheckInterval);
+      }
+      if (betsRefreshInterval) {
+        clearInterval(betsRefreshInterval);
       }
       subscription?.unsubscribe();
     };

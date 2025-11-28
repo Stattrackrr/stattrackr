@@ -128,13 +128,45 @@ async function resolveParlayBet(
       let legResolved = false;
       
       for (const game of games) {
-        // Check if game is final
+        // Check if game is completed (same logic as single bets)
         const rawStatus = String(game.status || '');
         const gameStatus = rawStatus.toLowerCase();
         
-        if (!gameStatus.includes('final')) {
+        let isCompleted = false;
+        let completedAt: Date | null = null;
+        const tipoffTime = Date.parse(rawStatus);
+        const now = Date.now();
+        
+        if (!Number.isNaN(tipoffTime)) {
+          const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
+          const tenMinutesMs = 10 * 60 * 1000;
+          const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+          const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
+          
+          if (gameStatus.includes('final')) {
+            isCompleted = true;
+            completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+          } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
+            isCompleted = true;
+            completedAt = new Date(estimatedCompletionTime);
+          }
+        } else if (gameStatus.includes('final')) {
+          isCompleted = true;
+          completedAt = new Date();
+        }
+        
+        // Only process if game is completed AND completed at least 10 minutes ago
+        if (!isCompleted) {
           allLegsResolved = false;
-          continue; // Game not final yet, can't resolve this leg
+          continue; // Game not completed yet, can't resolve this leg
+        }
+        
+        if (completedAt) {
+          const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
+          if (completedAt > tenMinutesAgo) {
+            allLegsResolved = false;
+            continue; // Game completed less than 10 minutes ago, wait
+          }
         }
         
         // Try to find player in this game by searching stats
@@ -451,17 +483,42 @@ export async function GET(request: Request) {
         
         // Check if game is live by looking at tipoff time
         let isLive = false;
+        let isCompleted = false;
+        let completedAt: Date | null = null;
         const tipoffTime = Date.parse(rawStatus);
+        const now = Date.now();
+        
         if (!Number.isNaN(tipoffTime)) {
-          const now = Date.now();
           const timeSinceTipoff = now - tipoffTime;
           const threeHoursMs = 3 * 60 * 60 * 1000;
+          const tenMinutesMs = 10 * 60 * 1000;
+          const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
+          
           // Game is live if it started and hasn't been 3 hours yet
           isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+          
+          // Game is completed if:
+          // 1. Status explicitly says "final"
+          // 2. OR tipoff was more than 2.5 hours ago (estimated game duration) AND more than 10 minutes have passed since estimated completion
+          const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+          const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
+          
+          if (gameStatus.includes('final')) {
+            isCompleted = true;
+            completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+          } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
+            // Game likely completed more than 10 minutes ago (based on tipoff + estimated duration)
+            isCompleted = true;
+            completedAt = new Date(estimatedCompletionTime);
+          }
+        } else if (gameStatus.includes('final')) {
+          // Status says final but no tipoff time - assume it's completed
+          isCompleted = true;
+          completedAt = new Date(); // Use current time as fallback
         }
         
-        // If game is live but not final, update status to 'live'
-        if (isLive && !gameStatus.includes('final')) {
+        // If game is live but not completed, update status to 'live'
+        if (isLive && !isCompleted) {
           await supabaseAdmin
             .from('bets')
             .update({ status: 'live' })
@@ -472,10 +529,19 @@ export async function GET(request: Request) {
           continue;
         }
         
-        // Check if game is final
-        if (!gameStatus.includes('final')) {
-          logDebug(`Game ${bet.team} vs ${bet.opponent} is ${game.status}, not final yet`);
+        // Only process if game is completed AND completed at least 10 minutes ago
+        if (!isCompleted) {
+          logDebug(`Game ${bet.team} vs ${bet.opponent} is ${game.status}, not completed yet`);
           continue;
+        }
+        
+        // Check if game completed at least 10 minutes ago
+        if (completedAt) {
+          const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
+          if (completedAt > tenMinutesAgo) {
+            logDebug(`Game ${bet.team} vs ${bet.opponent} completed recently (${Math.round((now - completedAt.getTime()) / 60000)} minutes ago), waiting for 10 minute buffer`);
+            continue;
+          }
         }
 
         // Fetch player stats for this game
