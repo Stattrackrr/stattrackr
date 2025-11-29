@@ -664,7 +664,16 @@ for (const r of oppRows2){
         );
         const val = Number(r?.pts||0);
         buckets[bucket]+=val;
-        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00' });
+        // Check if this position came from BasketballMonsters
+        let bmPosition: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
+        for (const kv of keys) {
+          if (bmLineupMap[kv]) {
+            bmPosition = bmLineupMap[kv];
+            break;
+          }
+        }
+        
+        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00', bmPosition });
       }
       
       // Add zero-line entries for depth-chart players missing from BDL stats

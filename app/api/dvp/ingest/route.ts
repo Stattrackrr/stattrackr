@@ -736,7 +736,17 @@ let espnInfo: EspnRosterInfo = { pos: {}, starters: [] } as any;
           }
         }
         buckets[bucket] += val;
-        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: rebVal, ast: astVal, fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fga: Number(r?.fga||0), fgm: Number(r?.fgm||0), stl: Number(r?.stl||0), blk: blkVal });
+        
+        // Check if this position came from BasketballMonsters
+        let bmPosition: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
+        for (const kv of keyVars) {
+          if (bmLineupMap[kv]) {
+            bmPosition = bmLineupMap[kv];
+            break;
+          }
+        }
+        
+        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: rebVal, ast: astVal, fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fga: Number(r?.fga||0), fgm: Number(r?.fgm||0), stl: Number(r?.stl||0), blk: blkVal, bmPosition });
       }
 
       // Add zero-line entries for depth-chart players missing from BDL stats (e.g., DNPs or apostrophe parsing)

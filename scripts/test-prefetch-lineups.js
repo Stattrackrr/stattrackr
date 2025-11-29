@@ -6,7 +6,8 @@ const CRON_SECRET = process.env.CRON_SECRET;
 async function testPrefetchLineups() {
   try {
     console.log(`\n🧪 Testing prefetch-lineups cron job`);
-    console.log(`📡 Calling: ${PROD_URL}/api/cron/prefetch-lineups\n`);
+    console.log(`📡 Calling: ${PROD_URL}/api/cron/prefetch-lineups`);
+    console.log(`\n📋 Note: Check your server console/Vercel logs for detailed BasketballMonsters fetching logs\n`);
     
     const url = `${PROD_URL}/api/cron/prefetch-lineups${CRON_SECRET ? `?secret=${CRON_SECRET}` : ''}`;
     const response = await fetch(url, {

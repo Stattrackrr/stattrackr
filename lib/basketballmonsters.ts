@@ -274,8 +274,9 @@ export async function scrapeBasketballMonstersLineupForDate(
       const bmAbbr = getBMAbbr(teamUpper);
       
       // Check for both standard abbreviation and BasketballMonsters abbreviation
-      const standardPattern = new RegExp(`${teamUpper}\\s*@|@\\s*${teamUpper}`, 'i');
-      const bmPattern = new RegExp(`${bmAbbr}\\s*@|@\\s*${bmAbbr}`, 'i');
+      // Note: Some teams use 2-letter abbreviations (GS, NO) so we need word boundaries
+      const standardPattern = new RegExp(`\\b${teamUpper}\\b\\s*@|@\\s*\\b${teamUpper}\\b`, 'i');
+      const bmPattern = new RegExp(`\\b${bmAbbr}\\b\\s*@|@\\s*\\b${bmAbbr}\\b`, 'i');
       const hasGame = html.match(standardPattern) || html.match(bmPattern);
       
       if (hasGame) {
@@ -347,7 +348,8 @@ export async function scrapeBasketballMonstersLineupForDate(
     // Find all game matchups on the page
     // Format: "MIL @ MIA" means MIL (away) @ MIA (home)
     // BasketballMonster typically shows HOME team in first column, AWAY team in second column
-    const allGameMatches = Array.from(html.matchAll(/([A-Z]{3})\s*@\s*([A-Z]{3})/gi));
+    // Note: Some teams use 2-letter abbreviations (GS, NO) so we need to match both 2 and 3 letters
+    const allGameMatches = Array.from(html.matchAll(/([A-Z]{2,3})\s*@\s*([A-Z]{2,3})/gi));
     addLog(`Found ${allGameMatches.length} game matchups on page`);
     if (allGameMatches.length > 0) {
       const sampleMatches = allGameMatches.slice(0, 10).map(m => m[0]).join(', ');
@@ -450,7 +452,7 @@ export async function scrapeBasketballMonstersLineupForDate(
     // Find where this game box ends - look for the next game matchup
     let boxEnd = Math.min(html.length, matchupIndex + 20000);
     const afterMatchup = html.substring(matchupIndex + targetGameMatch[0].length);
-    const nextGameMatch = afterMatchup.match(/([A-Z]{3})\s*@\s*([A-Z]{3})/i);
+    const nextGameMatch = afterMatchup.match(/([A-Z]{2,3})\s*@\s*([A-Z]{2,3})/i);
     
     if (nextGameMatch && nextGameMatch.index !== undefined) {
       boxEnd = Math.min(boxEnd, matchupIndex + targetGameMatch[0].length + nextGameMatch.index);

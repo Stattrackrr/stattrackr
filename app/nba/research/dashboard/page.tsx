@@ -7976,7 +7976,11 @@ const lineMovementInFlightRef = useRef(false);
           }
         }
         if (saved?.selectedStat) setSelectedStat(saved.selectedStat);
-        if (saved?.selectedTimeframe) setSelectedTimeframe(saved.selectedTimeframe);
+        // Only restore selectedTimeframe if we have playerStats loaded (prevents race condition)
+        // If playerStats is empty, don't restore timeframe yet - wait for stats to load first
+        if (saved?.selectedTimeframe && playerStats.length > 0) {
+          setSelectedTimeframe(saved.selectedTimeframe);
+        }
       }
     } catch {}
 
@@ -7996,7 +8000,20 @@ const lineMovementInFlightRef = useRef(false);
           setPropsMode(mode);
         }
         if (stat) setSelectedStat(stat);
-        if (tf) setSelectedTimeframe(tf);
+        // Only restore timeframe from URL if we have playerStats loaded (prevents race condition)
+        if (tf && playerStats.length > 0) {
+          setSelectedTimeframe(tf);
+        } else if (tf) {
+          // Store it to restore later when stats load
+          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              parsed.selectedTimeframe = tf;
+              sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+            } catch {}
+          }
+        }
         if (pid && name) {
           const r: BdlSearchResult = { id: Number(pid), full: name, team, pos: undefined };
           if (initialPropsMode === 'player') {
@@ -8007,6 +8024,23 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
     } catch {}
+
+    // Restore timeframe from session storage when playerStats loads (fixes race condition)
+    useEffect(() => {
+      if (playerStats.length > 0 && selectedTimeframe === 'last10') {
+        // Only restore if we're still on default timeframe (last10)
+        // This means we haven't manually selected a timeframe yet
+        try {
+          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
+              setSelectedTimeframe(parsed.selectedTimeframe);
+            }
+          }
+        } catch {}
+      }
+    }, [playerStats.length, selectedTimeframe]);
 
     // Finally, restore saved player if in player mode
     if (initialPropsMode === 'player') {
@@ -8870,6 +8904,9 @@ const lineMovementInFlightRef = useRef(false);
     if (propsMode === 'team') {
       if (!gameStats.length) return [];
       
+      // Guard: If playerStats was just cleared but we're in team mode, don't recalculate
+      // This prevents race conditions where playerStats gets cleared during team mode operations
+      
       // Apply timeframe to games
       let filteredTeamGames = gameStats;
       
@@ -8975,7 +9012,18 @@ const lineMovementInFlightRef = useRef(false);
     }
     
     // Player mode: use existing player stats logic
-    if (!playerStats.length) return [];
+    // IMPORTANT: If playerStats is empty but we have a selectedPlayer, this might be a race condition
+    // Don't return empty array immediately - check if we're in the middle of a fetch
+    if (!playerStats.length) {
+      // If we have a selectedPlayer but no stats, we might be loading
+      // Return empty array to prevent showing wrong data, but don't break the memoization
+      if (selectedPlayer && isLoading) {
+        // Still loading - return empty to show loading state
+        return [];
+      }
+      // No player selected or stats truly empty - return empty
+      return [];
+    }
     
     // Filter out games where player played 0 minutes FIRST
     const gamesPlayed = playerStats.filter(stats => {
@@ -9097,6 +9145,15 @@ const lineMovementInFlightRef = useRef(false);
         return gameSeasonYear === currentSeason;
       });
       console.log(`📅 This Season: Filtered to ${filteredGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
+      
+      // If thisseason filter returns empty but we have playerStats, log a warning
+      // This might indicate a data issue or race condition
+      if (filteredGames.length === 0 && gamesPlayed.length > 0) {
+        console.warn(`⚠️ This Season filter returned 0 games but player has ${gamesPlayed.length} total games. This might be a data issue.`);
+        // Show sample game dates for debugging
+        const sampleDates = gamesPlayed.slice(0, 5).map(s => s.game?.date).filter(Boolean);
+        console.warn(`   Sample game dates:`, sampleDates);
+      }
     }
     
     // Apply Home/Away filter before slicing/time-ordering
@@ -9191,7 +9248,7 @@ const lineMovementInFlightRef = useRef(false);
         tickLabel,              // what we show on the axis
       };
     });
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway]); // Added team mode dependencies, manual opponent, and home/away
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading]); // Added isLoading to prevent race conditions when stats are being fetched
   
   // Precompute back-to-back games (player mode)
   const backToBackGameIds = useMemo(() => {

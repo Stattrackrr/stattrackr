@@ -648,7 +648,27 @@ async function main() {
   console.log(`Players: ${playerNames.join(', ')}\n`);
   
   for (const playerName of playerNames) {
-    const player = await findPlayerByName(playerName);
+    let player;
+    
+    // Check if it's a BDL ID (numeric string)
+    if (/^\d+$/.test(playerName.trim())) {
+      console.log(`🔍 Looking up player by BDL ID: ${playerName}`);
+      try {
+        const url = `${BDL_BASE}/players/${playerName.trim()}`;
+        const data = await fetchBDL(url);
+        player = data.data || data;
+        if (player && player.id) {
+          console.log(`✅ Found by ID: ${player.first_name} ${player.last_name} (BDL ID: ${player.id})`);
+        }
+      } catch (error) {
+        console.log(`❌ Could not fetch player by ID: ${error.message}`);
+      }
+    }
+    
+    // If not found by ID, try by name
+    if (!player) {
+      player = await findPlayerByName(playerName);
+    }
     
     if (!player) {
       console.log(`❌ Player "${playerName}" not found`);
