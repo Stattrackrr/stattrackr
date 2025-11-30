@@ -113,7 +113,7 @@ async function resolveParlayBet(
     
     console.log(`[check-journal-bets] Parlay ${bet.id}: Parsed ${legs.length} legs: ${legs.map(l => `${l.playerName} ${l.overUnder} ${l.line} ${l.statType}`).join(', ')}`);
     
-    const legResults: Array<{ won: boolean; leg: any }> = [];
+    const legResults: Array<{ won: boolean; void: boolean; leg: any }> = [];
     let allLegsResolved = true;
     
     // Get the parlay date to filter games
@@ -317,7 +317,7 @@ async function resolveParlayBet(
           // If we've checked all games from the parlay date and player still not found, mark as void
           if (parlayDate && isFromParlayDate && gamesCheckedFromParlayDate === totalGamesFromParlayDate && totalGamesFromParlayDate > 0) {
             console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in any game from ${parlayDate} (checked ${gamesCheckedFromParlayDate}/${totalGamesFromParlayDate} games). Marking leg as void (player didn't play).`);
-            legResults.push({ won: false, leg });
+            legResults.push({ won: false, void: true, leg });
             legResolved = true;
             break;
           }
@@ -334,8 +334,8 @@ async function resolveParlayBet(
         const totalMinutes = (mins || 0) + ((secs || 0) / 60);
         
         if (totalMinutes === 0) {
-          // Player didn't play - leg is void, which means parlay loses
-          legResults.push({ won: false, leg });
+          // Player didn't play - leg is void (excluded from parlay calculation)
+          legResults.push({ won: false, void: true, leg });
           legResolved = true;
           break;
         }
@@ -390,7 +390,7 @@ async function resolveParlayBet(
           ? actualValue > leg.line 
           : actualValue < leg.line;
         
-        legResults.push({ won: legWon, leg });
+        legResults.push({ won: legWon, void: false, leg });
         legResolved = true;
         break;
       }
@@ -409,8 +409,10 @@ async function resolveParlayBet(
       return;
     }
     
-    // Determine parlay result: all legs must win for parlay to win
-    const parlayWon = legResults.every(r => r.won);
+    // Determine parlay result: exclude void legs, all non-void legs must win for parlay to win
+    const nonVoidLegs = legResults.filter(r => !r.void);
+    const voidLegs = legResults.filter(r => r.void);
+    const parlayWon = nonVoidLegs.length > 0 && nonVoidLegs.every(r => r.won);
     const result: 'win' | 'loss' = parlayWon ? 'win' : 'loss';
     
     // Update parlay bet
@@ -426,7 +428,10 @@ async function resolveParlayBet(
     if (updateError) {
       console.error(`Failed to update parlay bet ${bet.id}:`, updateError);
     } else {
-      console.log(`[check-journal-bets] ✅ Resolved parlay ${bet.id}: ${result} (${legResults.filter(r => r.won).length}/${legs.length} legs won)`);
+      const voidCount = voidLegs.length;
+      const wonCount = nonVoidLegs.filter(r => r.won).length;
+      const totalNonVoid = nonVoidLegs.length;
+      console.log(`[check-journal-bets] ✅ Resolved parlay ${bet.id}: ${result} (${wonCount}/${totalNonVoid} non-void legs won${voidCount > 0 ? `, ${voidCount} void leg${voidCount > 1 ? 's' : ''} excluded` : ''})`);
       updatedCountRef.value++;
     }
   } catch (error: any) {
