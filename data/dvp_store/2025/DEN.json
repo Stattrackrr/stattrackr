@@ -5577,8 +5577,8 @@
     "team": "DEN",
     "season": "2025-26",
     "buckets": {
-      "PG": 39,
-      "SG": 18,
+      "PG": 15,
+      "SG": 42,
       "SF": 27,
       "PF": 20,
       "C": 8
@@ -5598,13 +5598,14 @@
         "fga": 18,
         "stl": 1,
         "blk": 0,
-        "min": "28"
+        "min": "28",
+        "bmPosition": "SF"
       },
       {
         "playerId": 351,
         "name": "Royce O'Neale",
         "bucket": "PF",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 15,
         "reb": 6,
         "ast": 1,
@@ -5614,7 +5615,8 @@
         "fga": 13,
         "stl": 2,
         "blk": 0,
-        "min": "29"
+        "min": "29",
+        "bmPosition": "PF"
       },
       {
         "playerId": 1028036515,
@@ -5651,7 +5653,7 @@
       {
         "playerId": 57,
         "name": "Devin Booker",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": true,
         "pts": 24,
         "reb": 4,
@@ -5662,7 +5664,8 @@
         "fga": 11,
         "stl": 1,
         "blk": 0,
-        "min": "35"
+        "min": "35",
+        "bmPosition": "SG"
       },
       {
         "playerId": 44477062,
@@ -5716,7 +5719,7 @@
         "playerId": 38017727,
         "name": "Collin Gillespie",
         "bucket": "PG",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 12,
         "reb": 0,
         "ast": 2,
@@ -5726,7 +5729,8 @@
         "fga": 11,
         "stl": 1,
         "blk": 1,
-        "min": "29"
+        "min": "29",
+        "bmPosition": "PG"
       },
       {
         "playerId": 18678058,
@@ -5844,7 +5848,7 @@
         "playerId": 38017698,
         "name": "Mark Williams",
         "bucket": "C",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -5854,7 +5858,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "C"
       },
       {
         "playerId": 0,
@@ -5889,7 +5894,7 @@
         "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

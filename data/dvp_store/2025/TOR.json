@@ -5854,7 +5854,8 @@
         "fga": 10,
         "stl": 2,
         "blk": 0,
-        "min": "37"
+        "min": "37",
+        "bmPosition": "SG"
       },
       {
         "playerId": 62,
@@ -5870,7 +5871,8 @@
         "fga": 23,
         "stl": 1,
         "blk": 0,
-        "min": "42"
+        "min": "42",
+        "bmPosition": "PF"
       },
       {
         "playerId": 38017725,
@@ -6094,7 +6096,8 @@
         "fga": 4,
         "stl": 1,
         "blk": 1,
-        "min": "22"
+        "min": "22",
+        "bmPosition": "C"
       },
       {
         "playerId": 56677823,
@@ -6110,7 +6113,8 @@
         "fga": 13,
         "stl": 0,
         "blk": 2,
-        "min": "25"
+        "min": "25",
+        "bmPosition": "SF"
       },
       {
         "playerId": 3547239,
@@ -6126,10 +6130,11 @@
         "fga": 16,
         "stl": 0,
         "blk": 0,
-        "min": "22"
+        "min": "22",
+        "bmPosition": "PG"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]
