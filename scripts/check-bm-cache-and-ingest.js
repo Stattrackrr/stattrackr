@@ -53,19 +53,20 @@ async function checkCache(teamAbbr, date) {
   
   try {
     const { data, error } = await supabase
-      .from('nba_cache')
-      .select('*')
+      .from('nba_api_cache')
+      .select('data')
       .eq('cache_key', cacheKey)
       .eq('cache_type', 'basketballmonsters_lineup')
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to avoid error if not found
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+    if (error) {
       console.error(`   Error checking cache: ${error.message}`);
       return null;
     }
     
-    if (data) {
-      return JSON.parse(data.cache_data || '[]');
+    if (data && data.data) {
+      // Data is already parsed JSON in the 'data' column
+      return Array.isArray(data.data) ? data.data : null;
     }
     
     return null;
@@ -130,21 +131,22 @@ async function main() {
     console.log(`\n🏀 ${visitorTeam} @ ${homeTeam} (${gameStatus})`);
     
     // Get the actual game date from BDL and convert to Eastern Time for cache lookup
-    // BDL returns dates in ISO format, we need to extract the date part and convert to Eastern
+    // BDL returns dates in UTC ISO format (e.g., "2025-11-29T20:00:00Z")
+    // We need to convert the UTC date to Eastern Time date for cache lookup
     let cacheDate = todayEastern; // Default fallback
     if (game.date) {
       try {
-        // BDL date is typically in ISO format or YYYY-MM-DD
-        const gameDateStr = game.date.split('T')[0]; // Get YYYY-MM-DD part
-        // Convert this date to Eastern Time for cache lookup
-        const [year, month, day] = gameDateStr.split('-').map(Number);
-        const gameDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid DST issues
-        const easternTime = new Date(gameDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        // Parse the UTC date from BDL
+        const utcDate = new Date(game.date);
+        // Convert to Eastern Time
+        const easternTime = new Date(utcDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const easternYear = easternTime.getFullYear();
         const easternMonth = String(easternTime.getMonth() + 1).padStart(2, '0');
         const easternDay = String(easternTime.getDate()).padStart(2, '0');
         cacheDate = `${easternYear}-${easternMonth}-${easternDay}`;
-        console.log(`   Game date: ${gameDateStr} → Eastern cache date: ${cacheDate}`);
+        
+        const gameDateStr = game.date.split('T')[0]; // UTC date for display
+        console.log(`   Game date (UTC): ${gameDateStr} → Eastern cache date: ${cacheDate}`);
       } catch (e) {
         console.log(`   ⚠️  Could not parse game date, using default: ${cacheDate}`);
       }
