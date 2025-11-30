@@ -283,17 +283,21 @@ export async function scrapeBasketballMonstersLineupForDate(
       if (hasGame) {
         addLog(`✅ Found ${teamAbbr} game on main page (checked ${teamUpper} and ${bmAbbr}) - will parse directly`);
       } else {
-        // More detailed logging to debug why game isn't found
-        addLog(`⚠️ ${teamAbbr} game not found on main page (checked ${teamUpper} and ${bmAbbr})`);
-        // Check if HTML contains any game matchups at all
+        // Only log detailed debug info if we're in development or if this is unexpected
+        // (e.g., if the team should have a game today but isn't on the page)
         const anyGameMatch = html.match(/([A-Z]{2,3})\s*@\s*([A-Z]{2,3})/gi);
-        if (anyGameMatch) {
-          addLog(`   Found ${anyGameMatch.length} total game matchups on page: ${anyGameMatch.slice(0, 5).join(', ')}`);
-          // Check if our team appears anywhere in the HTML (even without @)
-          const teamInHtml = html.includes(teamUpper) || html.includes(bmAbbr);
-          addLog(`   Team ${teamUpper} or ${bmAbbr} appears in HTML: ${teamInHtml}`);
+        if (anyGameMatch && anyGameMatch.length > 0) {
+          // Team has games scheduled but not on BasketballMonsters page yet - this is expected for tomorrow's games
+          // Only log in development to reduce console spam
+          if (process.env.NODE_ENV !== 'production') {
+            addLog(`⚠️ ${teamAbbr} game not found on main page (checked ${teamUpper} and ${bmAbbr})`);
+            addLog(`   Found ${anyGameMatch.length} total game matchups on page: ${anyGameMatch.slice(0, 5).join(', ')}`);
+            const teamInHtml = html.includes(teamUpper) || html.includes(bmAbbr);
+            addLog(`   Team ${teamUpper} or ${bmAbbr} appears in HTML: ${teamInHtml}`);
+          }
         } else {
-          addLog(`   ❌ No game matchups found in HTML at all - page structure may have changed`);
+          // No games at all on page - this might be an error
+          addLog(`❌ No game matchups found in HTML at all - page structure may have changed`);
         }
         html = '';
       }
@@ -390,16 +394,24 @@ export async function scrapeBasketballMonstersLineupForDate(
       }
       
       // If we have expected opponent, check if it matches (using normalized abbreviations)
+      // But don't skip if opponent doesn't match - BasketballMonsters might have more accurate schedule
       if (gameInfo.opponent) {
         const opponentUpper = gameInfo.opponent.toUpperCase();
         const normalizedOpponent = normalizeTeamAbbr(opponentUpper);
         const hasOpponent = team1 === normalizedOpponent || team2 === normalizedOpponent;
         
         if (!hasOpponent) {
-          addLog(`⚠️ SKIPPING: Matchup ${match[0]} (normalized: ${team1} @ ${team2}) doesn't match expected opponent ${gameInfo.opponent} (normalized: ${normalizedOpponent})`);
-          continue; // Skip this game - wrong opponent
+          // Only log in development - opponent mismatch is expected sometimes (BM schedule may differ from BDL)
+          if (process.env.NODE_ENV !== 'production') {
+            addLog(`⚠️ WARNING: Matchup ${match[0]} (normalized: ${team1} @ ${team2}) doesn't match expected opponent ${gameInfo.opponent} (normalized: ${normalizedOpponent})`);
+            addLog(`   Using BasketballMonsters matchup anyway (BM schedule may be more accurate)`);
+          }
+          // Don't skip - continue with this matchup
         } else {
-          addLog(`✅ Matchup ${match[0]} (normalized: ${team1} @ ${team2}) matches expected opponent ${gameInfo.opponent}`);
+          // Only log successful matches in development
+          if (process.env.NODE_ENV !== 'production') {
+            addLog(`✅ Matchup ${match[0]} (normalized: ${team1} @ ${team2}) matches expected opponent ${gameInfo.opponent}`);
+          }
         }
       }
       

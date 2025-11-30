@@ -101,19 +101,24 @@ async function fetchAndCacheLineup(
       undefined // teamRoster
     );
     
-    // Log detailed result for debugging
-    if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
-      console.error(`[prefetch-lineups] ❌ Failed to get lineup for ${teamAbbr} on ${date}:`);
-      console.error(`   - Lineup type: ${typeof lineup}`);
-      console.error(`   - Is array: ${Array.isArray(lineup)}`);
-      console.error(`   - Length: ${lineup ? (Array.isArray(lineup) ? lineup.length : 'N/A') : 'null/undefined'}`);
-    }
-
     if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
       const lineupLength = lineup ? (Array.isArray(lineup) ? lineup.length : 'not array') : 'null/undefined';
       const debugLogs = getDebugLogs(teamAbbr, date);
-      console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup (got: ${lineupLength})`);
-      console.log(`[prefetch-lineups] Debug logs for ${teamAbbr} on ${date}:`, debugLogs.slice(-10).join('\n')); // Last 10 log entries
+      
+      // Only log detailed errors in development or if it's an unexpected error
+      // Expected failures (team not on page, lineup not posted yet) should be quiet
+      const isExpectedFailure = debugLogs.some(log => 
+        log.includes('game not found on main page') || 
+        log.includes('No HTML obtained') ||
+        log.includes('Team') && log.includes('appears in HTML: false')
+      );
+      
+      if (!isExpectedFailure || process.env.NODE_ENV !== 'production') {
+        console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup (got: ${lineupLength})`);
+        if (debugLogs.length > 0 && process.env.NODE_ENV !== 'production') {
+          console.log(`[prefetch-lineups] Debug logs for ${teamAbbr} on ${date}:`, debugLogs.slice(-5).join('\n')); // Last 5 log entries
+        }
+      }
       return {
         success: false,
         isLocked: false,
@@ -154,9 +159,21 @@ async function fetchAndCacheLineup(
     };
   } catch (e: any) {
     const debugLogs = getDebugLogs(teamAbbr, date);
-    console.error(`[prefetch-lineups] ❌ Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
-    console.error(`[prefetch-lineups] Stack trace:`, e.stack);
-    console.error(`[prefetch-lineups] Debug logs for ${teamAbbr} on ${date}:`, debugLogs.slice(-10).join('\n'));
+    // Only log errors in development or for unexpected errors
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[prefetch-lineups] ❌ Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
+      if (debugLogs.length > 0) {
+        console.error(`[prefetch-lineups] Debug logs:`, debugLogs.slice(-5).join('\n'));
+      }
+    } else {
+      // In production, only log unexpected errors (not "team not found" type errors)
+      const isExpectedError = e.message?.includes('No lineup found') || 
+                             e.message?.includes('incomplete lineup') ||
+                             debugLogs.some(log => log.includes('game not found'));
+      if (!isExpectedError) {
+        console.error(`[prefetch-lineups] ❌ Unexpected error for ${teamAbbr} on ${date}:`, e.message);
+      }
+    }
     return {
       success: false,
       isLocked: false,
