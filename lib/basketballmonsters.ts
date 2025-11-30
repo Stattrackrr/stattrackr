@@ -275,10 +275,16 @@ export async function scrapeBasketballMonstersLineupForDate(
       const bmAbbr = getBMAbbr(teamUpper);
       
       // Check for both standard abbreviation and BasketballMonsters abbreviation
-      // Note: Some teams use 2-letter abbreviations (GS, NO) so we need word boundaries
+      // Note: Some teams use 2-letter abbreviations (GS, NO) or 3-letter (NOR) so we need word boundaries
       const standardPattern = new RegExp(`\\b${teamUpper}\\b\\s*@|@\\s*\\b${teamUpper}\\b`, 'i');
       const bmPattern = new RegExp(`\\b${bmAbbr}\\b\\s*@|@\\s*\\b${bmAbbr}\\b`, 'i');
-      const hasGame = html.match(standardPattern) || html.match(bmPattern);
+      // For NOP, also check NOR (BasketballMonsters uses NOR in matchup strings, not just NO)
+      const norPattern = teamUpper === 'NOP' ? new RegExp(`\\bNOR\\b\\s*@|@\\s*\\bNOR\\b`, 'i') : null;
+      const hasGame = html.match(standardPattern) || html.match(bmPattern) || (norPattern && html.match(norPattern));
+      
+      if (hasGame && teamUpper === 'NOP') {
+        addLog(`✅ Found NOP game using ${html.match(norPattern!) ? 'NOR' : html.match(bmPattern) ? 'NO' : 'NOP'} abbreviation`);
+      }
       
       if (hasGame) {
         addLog(`✅ Found ${teamAbbr} game on main page (checked ${teamUpper} and ${bmAbbr}) - will parse directly`);
@@ -388,8 +394,11 @@ export async function scrapeBasketballMonstersLineupForDate(
       const team1 = normalizeTeamAbbr(team1Raw);
       const team2 = normalizeTeamAbbr(team2Raw);
       
-      // Must include our team
-      if (team1 !== teamUpper && team2 !== teamUpper) {
+      // Must include our team (check both normalized and raw for NOP/NOR case)
+      const team1Matches = team1 === teamUpper || (teamUpper === 'NOP' && (team1Raw === 'NOR' || team1Raw === 'NO'));
+      const team2Matches = team2 === teamUpper || (teamUpper === 'NOP' && (team2Raw === 'NOR' || team2Raw === 'NO'));
+      
+      if (!team1Matches && !team2Matches) {
         continue; // Skip this matchup - doesn't include our team
       }
       
