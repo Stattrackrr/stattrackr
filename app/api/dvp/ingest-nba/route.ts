@@ -612,6 +612,11 @@ export async function GET(req: NextRequest){
       const buckets: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG:0, SG:0, SF:0, PF:0, C:0 };
       const players: any[] = [];
       const toTitle = (k: string)=> k.split(' ').map(w=> w? (w[0].toUpperCase()+w.slice(1)) : w).join(' ');
+// Helper to normalize name like BasketballMonsters does (simpler normalization)
+function bmNormName(name: string): string {
+  return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+}
+
 for (const r of oppRows2){
         const name = `${r?.player?.first_name||''} ${r?.player?.last_name||''}`.trim();
         const key = normName(name);
@@ -619,13 +624,30 @@ for (const r of oppRows2){
         const keys = altKeys(lookup);
         
         // PRIORITY 1: BasketballMonsters lineup (highest priority - most accurate for today/future games)
+        // Use BM-style normalization for matching against bmLineupMap
         let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         let bmPositionFromBucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
-        for (const kv of keys) {
-          if (bmLineupMap[kv]) {
-            bucket = bmLineupMap[kv];
-            bmPositionFromBucket = bmLineupMap[kv]; // Track that bucket came from BM
-            break;
+        
+        // Try matching with BM-style normalization first (most likely to match)
+        const bmNormalizedName = bmNormName(name);
+        if (bmLineupMap[bmNormalizedName]) {
+          bucket = bmLineupMap[bmNormalizedName];
+          bmPositionFromBucket = bmLineupMap[bmNormalizedName];
+        } else {
+          // Fallback to regular keys matching
+          for (const kv of keys) {
+            const bmKey = bmNormName(kv); // Normalize key like BM does
+            if (bmLineupMap[bmKey]) {
+              bucket = bmLineupMap[bmKey];
+              bmPositionFromBucket = bmLineupMap[bmKey]; // Track that bucket came from BM
+              break;
+            }
+            // Also try direct match (in case BM used same normalization)
+            if (bmLineupMap[kv]) {
+              bucket = bmLineupMap[kv];
+              bmPositionFromBucket = bmLineupMap[kv];
+              break;
+            }
           }
         }
         
@@ -697,10 +719,22 @@ for (const r of oppRows2){
         
         // If not set from bucket, try to find in bmLineupMap by name matching
         if (!bmPosition) {
-          for (const kv of keys) {
-            if (bmLineupMap[kv]) {
-              bmPosition = bmLineupMap[kv];
-              break;
+          // Try BM-style normalization first
+          const bmNormalizedName = bmNormName(name);
+          if (bmLineupMap[bmNormalizedName]) {
+            bmPosition = bmLineupMap[bmNormalizedName];
+          } else {
+            // Fallback to regular keys
+            for (const kv of keys) {
+              const bmKey = bmNormName(kv);
+              if (bmLineupMap[bmKey]) {
+                bmPosition = bmLineupMap[bmKey];
+                break;
+              }
+              if (bmLineupMap[kv]) {
+                bmPosition = bmLineupMap[kv];
+                break;
+              }
             }
           }
         }
