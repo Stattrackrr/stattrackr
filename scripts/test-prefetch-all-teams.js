@@ -83,6 +83,9 @@ async function testPrefetch() {
         if (failedCount > 0) {
           failed.forEach(f => {
             console.log(`      ❌ ${f.date}: ${f.message}`);
+            if (f.debugLogs && f.debugLogs.length > 0) {
+              console.log(`         Debug: ${f.debugLogs.slice(-3).join(' | ')}`); // Show last 3 log entries
+            }
           });
         }
       });

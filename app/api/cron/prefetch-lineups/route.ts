@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeCronRequest } from "@/lib/cronAuth";
 import { checkRateLimit, strictRateLimiter } from "@/lib/rateLimit";
 import { getNBACache, setNBACache } from "@/lib/nbaCache";
-import { scrapeBasketballMonstersLineupForDate } from "@/lib/basketballmonsters";
+import { scrapeBasketballMonstersLineupForDate, getDebugLogs } from "@/lib/basketballmonsters";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
@@ -111,12 +111,15 @@ async function fetchAndCacheLineup(
 
     if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
       const lineupLength = lineup ? (Array.isArray(lineup) ? lineup.length : 'not array') : 'null/undefined';
+      const debugLogs = getDebugLogs(teamAbbr, date);
       console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup (got: ${lineupLength})`);
+      console.log(`[prefetch-lineups] Debug logs for ${teamAbbr} on ${date}:`, debugLogs.slice(-10).join('\n')); // Last 10 log entries
       return {
         success: false,
         isLocked: false,
         verifiedCount: 0,
-        message: `No lineup found or incomplete lineup (got: ${lineupLength})`
+        message: `No lineup found or incomplete lineup (got: ${lineupLength})`,
+        debugLogs: debugLogs.slice(-10) // Include last 10 log entries in response
       };
     }
 
@@ -150,13 +153,16 @@ async function fetchAndCacheLineup(
       message: statusMsg
     };
   } catch (e: any) {
+    const debugLogs = getDebugLogs(teamAbbr, date);
     console.error(`[prefetch-lineups] ❌ Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
     console.error(`[prefetch-lineups] Stack trace:`, e.stack);
+    console.error(`[prefetch-lineups] Debug logs for ${teamAbbr} on ${date}:`, debugLogs.slice(-10).join('\n'));
     return {
       success: false,
       isLocked: false,
       verifiedCount: 0,
-      message: `Error: ${e.message}`
+      message: `Error: ${e.message}`,
+      debugLogs: debugLogs.slice(-10) // Include last 10 log entries in response
     };
   }
 }

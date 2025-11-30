@@ -965,3 +965,9 @@ export async function scrapeBasketballMonstersLineupForDate(
     return [];
   }
 }
+
+// Export function to get debug logs for a specific team/date
+export function getDebugLogs(teamAbbr: string, date: string): string[] {
+  const logKey = `${teamAbbr}:${date}`;
+  return debugLogs.get(logKey) || [];
+}
