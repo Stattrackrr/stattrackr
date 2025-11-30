@@ -6157,15 +6157,15 @@
     "buckets": {
       "PG": 28,
       "SG": 15,
-      "SF": 39,
-      "PF": 13,
+      "SF": 34,
+      "PF": 18,
       "C": 35
     },
     "players": [
       {
         "playerId": 1028255289,
         "name": "Spencer Jones",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": true,
         "pts": 16,
         "reb": 9,
@@ -6176,12 +6176,13 @@
         "fga": 10,
         "stl": 0,
         "blk": 1,
-        "min": "27"
+        "min": "27",
+        "bmPosition": "PF"
       },
       {
         "playerId": 38017721,
         "name": "Peyton Watson",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": true,
         "pts": 11,
         "reb": 5,
@@ -6192,7 +6193,8 @@
         "fga": 4,
         "stl": 0,
         "blk": 0,
-        "min": "28"
+        "min": "28",
+        "bmPosition": "SF"
       },
       {
         "playerId": 246,
@@ -6208,7 +6210,8 @@
         "fga": 7,
         "stl": 0,
         "blk": 0,
-        "min": "31"
+        "min": "31",
+        "bmPosition": "C"
       },
       {
         "playerId": 666679,
@@ -6224,7 +6227,8 @@
         "fga": 9,
         "stl": 0,
         "blk": 1,
-        "min": "35"
+        "min": "35",
+        "bmPosition": "SG"
       },
       {
         "playerId": 335,
@@ -6240,7 +6244,8 @@
         "fga": 18,
         "stl": 1,
         "blk": 0,
-        "min": "37"
+        "min": "37",
+        "bmPosition": "PG"
       },
       {
         "playerId": 69,
@@ -6435,7 +6440,7 @@
         "min": "00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

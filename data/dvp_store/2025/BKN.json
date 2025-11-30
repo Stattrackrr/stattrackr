@@ -5529,9 +5529,9 @@
     "team": "BKN",
     "season": "2025-26",
     "buckets": {
-      "PG": 15,
-      "SG": 10,
-      "SF": 22,
+      "PG": 25,
+      "SG": 5,
+      "SF": 17,
       "PF": 42,
       "C": 27
     },
@@ -5550,7 +5550,8 @@
         "fga": 7,
         "stl": 0,
         "blk": 0,
-        "min": "23"
+        "min": "23",
+        "bmPosition": "SF"
       },
       {
         "playerId": 15,
@@ -5566,7 +5567,8 @@
         "fga": 15,
         "stl": 2,
         "blk": 0,
-        "min": "19"
+        "min": "19",
+        "bmPosition": "PF"
       },
       {
         "playerId": 452,
@@ -5582,7 +5584,8 @@
         "fga": 7,
         "stl": 0,
         "blk": 1,
-        "min": "22"
+        "min": "22",
+        "bmPosition": "C"
       },
       {
         "playerId": 666849,
@@ -5603,7 +5606,7 @@
       {
         "playerId": 38017712,
         "name": "Ryan Rollins",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": true,
         "pts": 10,
         "reb": 2,
@@ -5614,7 +5617,8 @@
         "fga": 10,
         "stl": 4,
         "blk": 0,
-        "min": "31"
+        "min": "31",
+        "bmPosition": "PG"
       },
       {
         "playerId": 2148,
@@ -5747,8 +5751,8 @@
       {
         "playerId": 3089,
         "name": "Gary Trent Jr.",
-        "bucket": "SF",
-        "isStarter": false,
+        "bucket": "SG",
+        "isStarter": true,
         "pts": 5,
         "reb": 2,
         "ast": 1,
@@ -5758,7 +5762,8 @@
         "fga": 9,
         "stl": 0,
         "blk": 0,
-        "min": "25"
+        "min": "25",
+        "bmPosition": "SG"
       },
       {
         "playerId": 1060010671,
@@ -5825,7 +5830,7 @@
         "min": "00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

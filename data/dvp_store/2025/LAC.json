@@ -5851,8 +5851,8 @@
     "season": "2025-26",
     "buckets": {
       "PG": 22,
-      "SG": 38,
-      "SF": 23,
+      "SG": 3,
+      "SF": 58,
       "PF": 18,
       "C": 13
     },
@@ -5860,7 +5860,7 @@
       {
         "playerId": 1057262088,
         "name": "Cooper Flagg",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": true,
         "pts": 35,
         "reb": 8,
@@ -5871,7 +5871,8 @@
         "fga": 22,
         "stl": 0,
         "blk": 0,
-        "min": "38"
+        "min": "38",
+        "bmPosition": "SF"
       },
       {
         "playerId": 379,
@@ -5893,7 +5894,7 @@
         "playerId": 38017697,
         "name": "Max Christie",
         "bucket": "SG",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 3,
         "reb": 2,
         "ast": 1,
@@ -5903,7 +5904,8 @@
         "fga": 9,
         "stl": 0,
         "blk": 0,
-        "min": "20"
+        "min": "20",
+        "bmPosition": "SG"
       },
       {
         "playerId": 1057847894,
@@ -5940,8 +5942,8 @@
       {
         "playerId": 666950,
         "name": "P.J. Washington",
-        "bucket": "SF",
-        "isStarter": false,
+        "bucket": "PF",
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -5951,7 +5953,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "PF"
       },
       {
         "playerId": 3547293,
@@ -6036,8 +6039,8 @@
       {
         "playerId": 117,
         "name": "Anthony Davis",
-        "bucket": "PF",
-        "isStarter": false,
+        "bucket": "C",
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -6047,7 +6050,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "C"
       },
       {
         "playerId": 151,
@@ -6117,7 +6121,7 @@
         "playerId": 24489167,
         "name": "Brandon Williams",
         "bucket": "PG",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 14,
         "reb": 1,
         "ast": 7,
@@ -6127,7 +6131,8 @@
         "fga": 14,
         "stl": 3,
         "blk": 1,
-        "min": "26"
+        "min": "26",
+        "bmPosition": "PG"
       },
       {
         "playerId": 56677840,
@@ -6178,7 +6183,7 @@
         "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

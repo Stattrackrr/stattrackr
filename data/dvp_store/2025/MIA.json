@@ -5774,7 +5774,8 @@
         "fga": 9,
         "stl": 1,
         "blk": 0,
-        "min": "31"
+        "min": "30",
+        "bmPosition": "SF"
       },
       {
         "playerId": 200,
@@ -5790,7 +5791,8 @@
         "fga": 12,
         "stl": 0,
         "blk": 0,
-        "min": "31"
+        "min": "31",
+        "bmPosition": "PF"
       },
       {
         "playerId": 3547267,
@@ -5822,7 +5824,8 @@
         "fga": 14,
         "stl": 1,
         "blk": 1,
-        "min": "32"
+        "min": "32",
+        "bmPosition": "SG"
       },
       {
         "playerId": 17896075,
@@ -5838,7 +5841,8 @@
         "fga": 25,
         "stl": 2,
         "blk": 1,
-        "min": "38"
+        "min": "38",
+        "bmPosition": "PG"
       },
       {
         "playerId": 666604,
@@ -5956,7 +5960,7 @@
         "playerId": 38017694,
         "name": "Jalen Duren",
         "bucket": "C",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -5966,7 +5970,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "C"
       },
       {
         "playerId": 1028205331,
@@ -6049,7 +6054,7 @@
         "min": "00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

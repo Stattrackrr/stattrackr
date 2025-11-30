@@ -6054,7 +6054,7 @@
         "playerId": 17896027,
         "name": "Ziaire Williams",
         "bucket": "SF",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 10,
         "reb": 2,
         "ast": 1,
@@ -6064,7 +6064,8 @@
         "fga": 10,
         "stl": 1,
         "blk": 0,
-        "min": "20"
+        "min": "20",
+        "bmPosition": "SF"
       },
       {
         "playerId": 56677843,
@@ -6080,13 +6081,14 @@
         "fga": 3,
         "stl": 0,
         "blk": 0,
-        "min": "21"
+        "min": "21",
+        "bmPosition": "PF"
       },
       {
         "playerId": 666508,
         "name": "Nicolas Claxton",
         "bucket": "C",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 7,
         "reb": 4,
         "ast": 3,
@@ -6096,7 +6098,8 @@
         "fga": 4,
         "stl": 0,
         "blk": 0,
-        "min": "25"
+        "min": "25",
+        "bmPosition": "C"
       },
       {
         "playerId": 38017722,
@@ -6128,7 +6131,8 @@
         "fga": 8,
         "stl": 2,
         "blk": 0,
-        "min": "21"
+        "min": "21",
+        "bmPosition": "SG"
       },
       {
         "playerId": 1043947937,
@@ -6201,7 +6205,7 @@
         "isStarter": false,
         "pts": 7,
         "reb": 7,
-        "ast": 1,
+        "ast": 2,
         "fg3m": 1,
         "fg3a": 2,
         "fgm": 2,
@@ -6246,7 +6250,7 @@
         "playerId": 1057266813,
         "name": "Egor Demin",
         "bucket": "PG",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -6256,7 +6260,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "PG"
       },
       {
         "playerId": 3092,
@@ -6355,7 +6360,7 @@
         "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

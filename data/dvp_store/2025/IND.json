@@ -6037,7 +6037,7 @@
         "playerId": 666956,
         "name": "Coby White",
         "bucket": "SG",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 0,
         "reb": 0,
         "ast": 0,
@@ -6047,13 +6047,14 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "00"
+        "min": "00",
+        "bmPosition": "SG"
       },
       {
         "playerId": 221,
         "name": "Kevin Huerter",
         "bucket": "SF",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 15,
         "reb": 3,
         "ast": 1,
@@ -6063,7 +6064,8 @@
         "fga": 14,
         "stl": 1,
         "blk": 0,
-        "min": "32"
+        "min": "32",
+        "bmPosition": "SF"
       },
       {
         "playerId": 1028025177,
@@ -6079,7 +6081,8 @@
         "fga": 9,
         "stl": 1,
         "blk": 3,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "PF"
       },
       {
         "playerId": 460,
@@ -6095,7 +6098,8 @@
         "fga": 14,
         "stl": 1,
         "blk": 0,
-        "min": "30"
+        "min": "30",
+        "bmPosition": "C"
       },
       {
         "playerId": 17895983,
@@ -6127,7 +6131,8 @@
         "fga": 13,
         "stl": 0,
         "blk": 0,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "PG"
       },
       {
         "playerId": 87,
@@ -6210,7 +6215,7 @@
         "min": "11"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]
