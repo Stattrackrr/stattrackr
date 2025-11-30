@@ -32,28 +32,23 @@ async function testPrefetch() {
     console.log(`   - Projected: ${data.projected || 0}`);
     console.log(`   - Message: ${data.message || 'N/A'}`);
     
-    // Count teams by date
+    // Count teams by date (now only today)
     if (data.results && Array.isArray(data.results)) {
-      const today = new Date().toISOString().split('T')[0];
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const now = new Date();
+      const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const today = new Date(easternTime);
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
       const teamsToday = new Set();
-      const teamsTomorrow = new Set();
       
       data.results.forEach(r => {
-        if (r.date === today) {
+        if (r.date === todayStr) {
           teamsToday.add(r.team);
-        } else if (r.date === tomorrowStr) {
-          teamsTomorrow.add(r.team);
         }
       });
       
       console.log(`\n📅 Games breakdown:`);
-      console.log(`   - Teams playing TODAY (${today}): ${teamsToday.size} teams`);
-      console.log(`   - Teams playing TOMORROW (${tomorrowStr}): ${teamsTomorrow.size} teams`);
-      console.log(`   - Total unique teams: ${new Set([...teamsToday, ...teamsTomorrow]).size} teams`);
+      console.log(`   - Teams playing TODAY (${todayStr}): ${teamsToday.size} teams`);
     }
     
     if (data.results && Array.isArray(data.results)) {

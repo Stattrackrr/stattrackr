@@ -26,7 +26,7 @@ interface LineupCacheEntry {
   verifiedCount: number; // number of verified players (0-5)
 }
 
-async function fetchGamesForTodayAndTomorrow(): Promise<Array<{ home: string; away: string; date: string }>> {
+async function fetchGamesForToday(): Promise<Array<{ home: string; away: string; date: string }>> {
   try {
     const apiKey = process.env.BALLDONTLIE_API_KEY;
     if (!apiKey) {
@@ -34,16 +34,14 @@ async function fetchGamesForTodayAndTomorrow(): Promise<Array<{ home: string; aw
     }
 
     // Use Eastern Time to match BasketballMonsters (they use Eastern Time)
+    // Only fetch TODAY's games - when tomorrow becomes today, we'll get it then
     const now = new Date();
     const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternTime);
-    const tomorrow = new Date(easternTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
     
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
-    const url = `https://api.balldontlie.io/v1/games?start_date=${todayStr}&end_date=${tomorrowStr}`;
+    const url = `https://api.balldontlie.io/v1/games?start_date=${todayStr}&end_date=${todayStr}`;
     const res = await fetch(url, {
       headers: {
         'Accept': 'application/json',
@@ -63,7 +61,7 @@ async function fetchGamesForTodayAndTomorrow(): Promise<Array<{ home: string; aw
     return games.map((game: any) => ({
       home: game.home_team?.abbreviation?.toUpperCase() || '',
       away: game.visitor_team?.abbreviation?.toUpperCase() || '',
-      date: game.date ? game.date.split('T')[0] : todayStr, // Extract date part
+      date: todayStr, // Always use today's date
     })).filter((g: any) => g.home && g.away);
   } catch (e: any) {
     console.error('[prefetch-lineups] Error fetching games:', e.message);
@@ -198,24 +196,18 @@ export async function GET(req: NextRequest) {
   try {
     console.log('[prefetch-lineups] Cron job triggered');
 
-    // Get all games for today and tomorrow
-    const games = await fetchGamesForTodayAndTomorrow();
+    // Get all games for TODAY only
+    // When tomorrow becomes today, we'll get it then
+    const games = await fetchGamesForToday();
     
     // Use Eastern Time to match BasketballMonsters (they use Eastern Time)
     const now = new Date();
     const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternTime);
-    const tomorrow = new Date(easternTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
     
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
     
-    // Count games by date for logging
-    const todayGames = games.filter(g => g.date === todayStr).length;
-    const tomorrowGames = games.filter(g => g.date === tomorrowStr).length;
-    
-    console.log(`[prefetch-lineups] Found ${games.length} games: ${todayGames} today (${todayStr}), ${tomorrowGames} tomorrow (${tomorrowStr})`);
+    console.log(`[prefetch-lineups] Found ${games.length} games for today (${todayStr})`);
     
     if (games.length === 0) {
       return NextResponse.json({
