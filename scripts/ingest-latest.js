@@ -27,14 +27,25 @@ http.get(url, (res) => {
         if (result.results) {
           const withNewGames = result.results.filter(r => r.data?.stored_games > 0);
           const withErrors = result.results.filter(r => !r.ok);
+          const withBM = result.results.filter(r => r.data?.basketballmonsters?.games_using_bm > 0);
           
           if (withNewGames.length > 0) {
             console.log(`\n📊 Teams with new games: ${withNewGames.length}`);
             withNewGames.forEach(r => {
-              console.log(`  ✅ ${r.team}: ${r.data.stored_games} new game(s)`);
+              const bmInfo = r.data?.basketballmonsters;
+              const bmStatus = bmInfo ? ` (BM: ${bmInfo.games_using_bm} games, ${bmInfo.players_with_bm_positions} players)` : '';
+              console.log(`  ✅ ${r.team}: ${r.data.stored_games} new game(s)${bmStatus}`);
             });
           } else {
             console.log('\nℹ️  No new games found (all games already ingested)');
+          }
+          
+          if (withBM.length > 0) {
+            console.log(`\n🏀 Teams using BasketballMonsters lineups: ${withBM.length}`);
+            const totalBMGames = withBM.reduce((sum, r) => sum + (r.data?.basketballmonsters?.games_using_bm || 0), 0);
+            const totalBMVerified = withBM.reduce((sum, r) => sum + (r.data?.basketballmonsters?.games_verified || 0), 0);
+            const totalBMPlayers = withBM.reduce((sum, r) => sum + (r.data?.basketballmonsters?.players_with_bm_positions || 0), 0);
+            console.log(`   Total: ${totalBMGames} games (${totalBMVerified} verified, ${totalBMGames - totalBMVerified} projected), ${totalBMPlayers} players`);
           }
           
           if (withErrors.length > 0) {

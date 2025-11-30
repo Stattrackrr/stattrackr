@@ -138,12 +138,18 @@ async function main() {
       try {
         // Parse the UTC date from BDL
         const utcDate = new Date(game.date);
-        // Convert to Eastern Time
-        const easternTime = new Date(utcDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-        const easternYear = easternTime.getFullYear();
-        const easternMonth = String(easternTime.getMonth() + 1).padStart(2, '0');
-        const easternDay = String(easternTime.getDate()).padStart(2, '0');
-        cacheDate = `${easternYear}-${easternMonth}-${easternDay}`;
+        // Use Intl.DateTimeFormat to get the date in Eastern Time
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        const parts = formatter.formatToParts(utcDate);
+        const year = parts.find(p => p.type === 'year')?.value;
+        const month = parts.find(p => p.type === 'month')?.value;
+        const day = parts.find(p => p.type === 'day')?.value;
+        cacheDate = `${year}-${month}-${day}`;
         
         const gameDateStr = game.date.split('T')[0]; // UTC date for display
         console.log(`   Game date (UTC): ${gameDateStr} → Eastern cache date: ${cacheDate}`);

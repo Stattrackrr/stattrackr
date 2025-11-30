@@ -747,6 +747,25 @@ for (const r of oppRows2){
       }
     }
     
+    // Calculate BasketballMonsters usage statistics
+    const bmStats = {
+      gamesWithBM: 0,
+      gamesWithVerifiedBM: 0,
+      totalPlayersWithBMPos: 0
+    };
+    
+    for (const game of out) {
+      if (game.source === 'basketballmonsters' || game.lineupVerified !== undefined) {
+        bmStats.gamesWithBM++;
+        if (game.lineupVerified === true) {
+          bmStats.gamesWithVerifiedBM++;
+        }
+        // Count players with bmPosition in this game
+        const players = Array.isArray(game.players) ? game.players : [];
+        bmStats.totalPlayersWithBMPos += players.filter((p: any) => p.bmPosition).length;
+      }
+    }
+    
     // Always return success - data was computed even if not persisted
     return NextResponse.json({ 
       success: true, 
@@ -755,7 +774,13 @@ for (const r of oppRows2){
       stored_games: out.length, 
       file: fileWritten ? file.replace(process.cwd(),'') : null, 
       serverless: isServerless || !fileWritten,
-      note: fileWritten ? undefined : 'Data computed but not persisted (serverless/read-only filesystem)'
+      note: fileWritten ? undefined : 'Data computed but not persisted (serverless/read-only filesystem)',
+      basketballmonsters: bmStats.gamesWithBM > 0 ? {
+        games_using_bm: bmStats.gamesWithBM,
+        games_verified: bmStats.gamesWithVerifiedBM,
+        games_projected: bmStats.gamesWithBM - bmStats.gamesWithVerifiedBM,
+        players_with_bm_positions: bmStats.totalPlayersWithBMPos
+      } : null
     });
   }catch(e:any){
     // If it's a filesystem error (serverless), still return success - data computation may have succeeded
