@@ -617,6 +617,54 @@ function bmNormName(name: string): string {
   return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
 }
 
+// Helper to get last name from normalized name (for fuzzy matching)
+function getLastName(normalized: string): string {
+  const parts = normalized.split(' ').filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1] : '';
+}
+
+// Helper to fuzzy match player name against BM lineup map
+function findBMPlayerMatch(playerName: string, bmLineupMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'>): string | null {
+  const normalized = bmNormName(playerName);
+  const lastName = getLastName(normalized);
+  
+  // Try exact match first
+  if (bmLineupMap[normalized]) {
+    return normalized;
+  }
+  
+  // Try matching by last name (most reliable)
+  if (lastName && lastName.length >= 3) {
+    for (const [bmKey, pos] of Object.entries(bmLineupMap)) {
+      const bmLastName = getLastName(bmKey);
+      if (bmLastName === lastName) {
+        // Also check if first names are similar (first letter or first few letters)
+        const playerFirst = normalized.split(' ')[0] || '';
+        const bmFirst = bmKey.split(' ')[0] || '';
+        if (playerFirst.length > 0 && bmFirst.length > 0) {
+          // Match if first letters match or first 2-3 chars match
+          if (playerFirst[0] === bmFirst[0] || 
+              (playerFirst.length >= 2 && bmFirst.length >= 2 && playerFirst.substring(0, 2) === bmFirst.substring(0, 2))) {
+            return bmKey;
+          }
+        } else {
+          // If no first name in normalized, just match by last name
+          return bmKey;
+        }
+      }
+    }
+  }
+  
+  // Try partial match (contains)
+  for (const bmKey of Object.keys(bmLineupMap)) {
+    if (normalized.includes(bmKey) || bmKey.includes(normalized)) {
+      return bmKey;
+    }
+  }
+  
+  return null;
+}
+
 for (const r of oppRows2){
         const name = `${r?.player?.first_name||''} ${r?.player?.last_name||''}`.trim();
         const key = normName(name);
@@ -624,29 +672,31 @@ for (const r of oppRows2){
         const keys = altKeys(lookup);
         
         // PRIORITY 1: BasketballMonsters lineup (highest priority - most accurate for today/future games)
-        // Use BM-style normalization for matching against bmLineupMap
+        // Use fuzzy matching to find player in bmLineupMap
         let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         let bmPositionFromBucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         
-        // Try matching with BM-style normalization first (most likely to match)
-        const bmNormalizedName = bmNormName(name);
-        if (bmLineupMap[bmNormalizedName]) {
-          bucket = bmLineupMap[bmNormalizedName];
-          bmPositionFromBucket = bmLineupMap[bmNormalizedName];
-        } else {
-          // Fallback to regular keys matching
-          for (const kv of keys) {
-            const bmKey = bmNormName(kv); // Normalize key like BM does
-            if (bmLineupMap[bmKey]) {
-              bucket = bmLineupMap[bmKey];
-              bmPositionFromBucket = bmLineupMap[bmKey]; // Track that bucket came from BM
-              break;
-            }
-            // Also try direct match (in case BM used same normalization)
-            if (bmLineupMap[kv]) {
-              bucket = bmLineupMap[kv];
-              bmPositionFromBucket = bmLineupMap[kv];
-              break;
+        if (Object.keys(bmLineupMap).length > 0) {
+          // Try fuzzy matching to find the player in BM lineup
+          const matchedKey = findBMPlayerMatch(name, bmLineupMap);
+          if (matchedKey && bmLineupMap[matchedKey]) {
+            bucket = bmLineupMap[matchedKey];
+            bmPositionFromBucket = bmLineupMap[matchedKey];
+          } else {
+            // Fallback: try all key variations
+            const bmNormalizedName = bmNormName(name);
+            const nameVariations = [
+              bmNormalizedName,
+              ...keys.map(k => bmNormName(k)),
+              ...keys
+            ];
+            
+            for (const variation of nameVariations) {
+              if (bmLineupMap[variation]) {
+                bucket = bmLineupMap[variation];
+                bmPositionFromBucket = bmLineupMap[variation];
+                break;
+              }
             }
           }
         }
