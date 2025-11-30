@@ -102,12 +102,13 @@ async function fetchAndCacheLineup(
     );
 
     if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
-      console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup`);
+      const lineupLength = lineup ? (Array.isArray(lineup) ? lineup.length : 'not array') : 'null/undefined';
+      console.log(`[prefetch-lineups] ⚠️ ${teamAbbr} on ${date}: No lineup found or incomplete lineup (got: ${lineupLength})`);
       return {
         success: false,
         isLocked: false,
         verifiedCount: 0,
-        message: 'No lineup found or incomplete lineup'
+        message: `No lineup found or incomplete lineup (got: ${lineupLength})`
       };
     }
 
@@ -141,7 +142,8 @@ async function fetchAndCacheLineup(
       message: statusMsg
     };
   } catch (e: any) {
-    console.error(`[prefetch-lineups] Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
+    console.error(`[prefetch-lineups] ❌ Error fetching lineup for ${teamAbbr} on ${date}:`, e.message);
+    console.error(`[prefetch-lineups] Stack trace:`, e.stack);
     return {
       success: false,
       isLocked: false,
@@ -196,10 +198,23 @@ export async function GET(req: NextRequest) {
 
     // Collect all unique teams and dates
     const teamDatePairs = new Set<string>();
+    const teamsSeen = new Set<string>();
     games.forEach(game => {
-      if (game.home) teamDatePairs.add(`${game.home}:${game.date}`);
-      if (game.away) teamDatePairs.add(`${game.away}:${game.date}`);
+      if (game.home) {
+        teamDatePairs.add(`${game.home}:${game.date}`);
+        teamsSeen.add(game.home);
+      }
+      if (game.away) {
+        teamDatePairs.add(`${game.away}:${game.date}`);
+        teamsSeen.add(game.away);
+      }
     });
+
+    console.log(`[prefetch-lineups] Found ${teamDatePairs.size} unique team-date pairs from ${games.length} games`);
+    console.log(`[prefetch-lineups] Teams with games: ${Array.from(teamsSeen).sort().join(', ')} (${teamsSeen.size} teams)`);
+    
+    // Store teamsSeen for response
+    const allTeamsProcessed = Array.from(teamsSeen).sort();
 
     const results: Array<{
       team: string;
@@ -246,7 +261,9 @@ export async function GET(req: NextRequest) {
       successful,
       locked: lockedCount,
       projected: projectedCount,
-      results: results.slice(0, 20) // Limit response size
+      results: results.slice(0, 50), // Limit response size (increased from 20 to 50)
+      teamsProcessed: allTeamsProcessed,
+      totalTeams: allTeamsProcessed.length
     });
   } catch (e: any) {
     console.error('[prefetch-lineups] Error:', e.message);
