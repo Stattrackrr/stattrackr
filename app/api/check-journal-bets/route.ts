@@ -143,6 +143,9 @@ async function resolveParlayBet(
           const gameDate = g.date ? g.date.split('T')[0] : null;
           return gameDate === parlayDate;
         }).length;
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found ${totalGamesFromParlayDate} games from parlay date ${parlayDate} (out of ${games.length} total games)`);
+      } else {
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No parlay date found (bet.date=${bet.date}, bet.game_date=${bet.game_date})`);
       }
       
       for (const game of games) {
