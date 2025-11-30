@@ -400,8 +400,11 @@ async function resolveParlayBet(
       }
     }
     
+    // Check if all legs are resolved by comparing legResults length to legs length
+    const allLegsActuallyResolved = legResults.length === legs.length;
+    
     // If not all legs are resolved yet, skip this parlay
-    if (!allLegsResolved) {
+    if (!allLegsActuallyResolved) {
       console.log(`[check-journal-bets] Parlay ${bet.id}: Not all legs resolved yet (${legResults.length}/${legs.length} resolved). Legs: ${legs.map(l => l.playerName).join(', ')}`);
       return;
     }
