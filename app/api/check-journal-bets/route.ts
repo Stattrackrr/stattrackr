@@ -204,12 +204,24 @@ async function resolveParlayBet(
         // Normalize names for better matching
         const normalizeName = (name: string) => {
           return name.toLowerCase()
-            .replace(/[^\w\s]/g, '') // Remove special characters
+            .replace(/\./g, '') // Remove periods (C.J. -> CJ)
+            .replace(/[^\w\s]/g, '') // Remove other special characters
             .replace(/\s+/g, ' ') // Normalize whitespace
             .trim();
         };
         
         const legNameNormalized = normalizeName(leg.playerName);
+        
+        // For debugging: log first few player names in game stats (only for first game check per leg)
+        if (game.id === games[0]?.id) {
+          const samplePlayerNames = statsData.data.slice(0, 5).map((stat: any) => {
+            const playerName = stat.player?.full_name || 
+                              (stat.player?.first_name + ' ' + stat.player?.last_name) || '';
+            return playerName;
+          });
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Sample player names in game ${game.id}: ${samplePlayerNames.join(', ')}`);
+        }
+        
         const playerStat = statsData.data.find((stat: any) => {
           const playerName = stat.player?.full_name || 
                             (stat.player?.first_name + ' ' + stat.player?.last_name) || '';
@@ -239,7 +251,22 @@ async function resolveParlayBet(
         });
         
         if (!playerStat) {
-          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
+          // Only log for games where the player's team might be playing (to reduce noise)
+          const isRelevantGame = game.home_team?.abbreviation === 'NOP' || 
+                                 game.visitor_team?.abbreviation === 'NOP' ||
+                                 game.home_team?.abbreviation === 'POR' ||
+                                 game.visitor_team?.abbreviation === 'POR';
+          
+          if (isRelevantGame || leg.playerName.toLowerCase().includes('mccollum')) {
+            const allPlayerNames = statsData.data.map((stat: any) => {
+              const playerName = stat.player?.full_name || 
+                                (stat.player?.first_name + ' ' + stat.player?.last_name) || '';
+              return playerName;
+            }).join(', ');
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}). Available players: ${allPlayerNames.substring(0, 200)}...`);
+          } else {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
+          }
           allLegsResolved = false;
           continue; // Player not in this game
         }
