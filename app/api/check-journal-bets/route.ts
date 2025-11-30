@@ -139,12 +139,13 @@ async function resolveParlayBet(
         
         let isCompleted = false;
         let completedAt: Date | null = null;
-        const tipoffTime = Date.parse(rawStatus);
+        // Use game.date (scheduled time) instead of trying to parse game.status
+        const tipoffTime = game.date ? Date.parse(game.date) : NaN;
         const now = Date.now();
         
         if (!Number.isNaN(tipoffTime)) {
           const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
-          const tenMinutesMs = 10 * 60 * 1000;
+          const tenMinutesMs = 10 * 60 * 1000; // 10 minutes
           const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
           const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
           
@@ -156,8 +157,10 @@ async function resolveParlayBet(
             completedAt = new Date(estimatedCompletionTime);
           }
         } else if (gameStatus.includes('final')) {
+          // If status is final but no date, assume it completed long ago (more than 10 minutes)
           isCompleted = true;
-          completedAt = new Date();
+          // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
+          completedAt = new Date(now - (60 * 60 * 1000));
         }
         
         // Only process if game is completed AND completed at least 10 minutes ago
@@ -561,7 +564,8 @@ export async function GET(request: Request) {
         let isLive = false;
         let isCompleted = false;
         let completedAt: Date | null = null;
-        const tipoffTime = Date.parse(rawStatus);
+        // Use game.date (scheduled time) instead of trying to parse game.status
+        const tipoffTime = game.date ? Date.parse(game.date) : NaN;
         const now = Date.now();
         
         if (!Number.isNaN(tipoffTime)) {
@@ -588,9 +592,10 @@ export async function GET(request: Request) {
             completedAt = new Date(estimatedCompletionTime);
           }
         } else if (gameStatus.includes('final')) {
-          // Status says final but no tipoff time - assume it's completed
+          // Status says final but no date - assume it's completed long ago (more than 10 minutes)
           isCompleted = true;
-          completedAt = new Date(); // Use current time as fallback
+          // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
+          completedAt = new Date(now - (60 * 60 * 1000));
         }
         
         // If game is live but not completed, update status to 'live'
