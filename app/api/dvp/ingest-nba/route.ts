@@ -156,13 +156,21 @@ async function fetchBasketballMonstersLineupPositions(
     
     // Check cache for lineup (works for both today and past games)
     // For past games, use the last projected lineup if verified never came through
-    let cached = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey);
+    console.log(`[DvP Ingest-NBA] 🔍 Looking up cache for key: ${cacheKey}`);
+    let cached = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey, { quiet: false });
+    
+    if (cached && Array.isArray(cached)) {
+      console.log(`[DvP Ingest-NBA] ✅ Cache hit for ${teamAbbr} on ${dateStr}: Found ${cached.length} players`);
+      if (cached.length > 0) {
+        console.log(`   Players: ${cached.map(p => `${p.name} (${p.position})`).join(', ')}`);
+      }
+    } else {
+      console.log(`[DvP Ingest-NBA] ❌ Cache miss for ${teamAbbr} on ${dateStr} - key: ${cacheKey}`);
+    }
     
     // If it's a past game and not in cache, return empty (don't try to scrape)
     if (isPastGame && (!cached || !Array.isArray(cached) || cached.length !== 5)) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[DvP Ingest-NBA] Past game ${teamAbbr} on ${dateStr} - no cached lineup available, will use fallback methods`);
-      }
+      console.log(`[DvP Ingest-NBA] Past game ${teamAbbr} on ${dateStr} - no cached lineup available, will use fallback methods`);
       return {};
     }
     
