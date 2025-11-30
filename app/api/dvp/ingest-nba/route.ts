@@ -156,21 +156,21 @@ async function fetchBasketballMonstersLineupPositions(
     
     // Check cache for lineup (works for both today and past games)
     // For past games, use the last projected lineup if verified never came through
-    console.log(`[DvP Ingest-NBA] 🔍 Looking up cache for key: ${cacheKey}`);
+    console.error(`[DvP Ingest-NBA] 🔍 Looking up cache for key: ${cacheKey}`);
     let cached = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey, { quiet: false });
     
     if (cached && Array.isArray(cached)) {
-      console.log(`[DvP Ingest-NBA] ✅ Cache hit for ${teamAbbr} on ${dateStr}: Found ${cached.length} players`);
+      console.error(`[DvP Ingest-NBA] ✅ Cache hit for ${teamAbbr} on ${dateStr}: Found ${cached.length} players`);
       if (cached.length > 0) {
-        console.log(`   Players: ${cached.map(p => `${p.name} (${p.position})`).join(', ')}`);
+        console.error(`   Players: ${cached.map(p => `${p.name} (${p.position})`).join(', ')}`);
       }
     } else {
-      console.log(`[DvP Ingest-NBA] ❌ Cache miss for ${teamAbbr} on ${dateStr} - key: ${cacheKey}`);
+      console.error(`[DvP Ingest-NBA] ❌ Cache miss for ${teamAbbr} on ${dateStr} - key: ${cacheKey}`);
     }
     
     // If it's a past game and not in cache, return empty (don't try to scrape)
     if (isPastGame && (!cached || !Array.isArray(cached) || cached.length !== 5)) {
-      console.log(`[DvP Ingest-NBA] Past game ${teamAbbr} on ${dateStr} - no cached lineup available, will use fallback methods`);
+      console.error(`[DvP Ingest-NBA] Past game ${teamAbbr} on ${dateStr} - no cached lineup available, will use fallback methods`);
       return {};
     }
     
@@ -501,11 +501,11 @@ export async function GET(req: NextRequest){
       // Debug: Log BM lineup data if available
       if (Object.keys(bmLineupMap).length > 0) {
         const bmKeys = Object.keys(bmLineupMap);
-        console.log(`[DvP Ingest-NBA] ✅ BM lineup found for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}: ${bmKeys.length} players`);
-        console.log(`   BM players: ${bmKeys.slice(0, 5).join(', ')}`);
-        console.log(`   BM positions: ${bmKeys.slice(0, 5).map(k => `${k}=${bmLineupMap[k]}`).join(', ')}`);
+        console.error(`[DvP Ingest-NBA] ✅ BM lineup found for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}: ${bmKeys.length} players`);
+        console.error(`   BM players: ${bmKeys.slice(0, 5).join(', ')}`);
+        console.error(`   BM positions: ${bmKeys.slice(0, 5).map(k => `${k}=${bmLineupMap[k]}`).join(', ')}`);
       } else {
-        console.log(`[DvP Ingest-NBA] ⚠️ No BM lineup for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}`);
+        console.error(`[DvP Ingest-NBA] ⚠️ No BM lineup for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}`);
       }
       
       // Check if this game is already stored
@@ -720,10 +720,10 @@ for (const r of oppRows2){
             // Debug logging if we have BM data but no match
             if (!bucket && Object.keys(bmLineupMap).length > 0) {
               const bmKeys = Object.keys(bmLineupMap).slice(0, 5);
-              console.log(`[DvP Ingest-NBA] ❌ No BM match for "${name}" (normalized: "${bmNormalizedName}")`);
-              console.log(`   BM keys available: ${bmKeys.join(', ')}`);
-              console.log(`   Keys tried: ${nameVariations.slice(0, 3).join(', ')}`);
-              console.log(`   Fuzzy match result: ${findBMPlayerMatch(name, bmLineupMap) || 'null'}`);
+              console.error(`[DvP Ingest-NBA] ❌ No BM match for "${name}" (normalized: "${bmNormalizedName}")`);
+              console.error(`   BM keys available: ${bmKeys.join(', ')}`);
+              console.error(`   Keys tried: ${nameVariations.slice(0, 3).join(', ')}`);
+              console.error(`   Fuzzy match result: ${findBMPlayerMatch(name, bmLineupMap) || 'null'}`);
             }
           }
         }

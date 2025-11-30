@@ -66,9 +66,13 @@ jobs:
       - name: Show server logs (for debugging)
         if: always()
         run: |
-          echo "=== Server Logs (last 200 lines) ==="
+          echo "=== Server Logs (last 500 lines) ==="
           if [ -f server.log ]; then
-            tail -n 200 server.log | grep -E "(DvP Ingest-NBA|BasketballMonsters|BM lineup|Cache|bmPosition)" || echo "No relevant logs found"
+            echo "--- All logs (filtered) ---"
+            tail -n 500 server.log | grep -E "(DvP Ingest-NBA|BasketballMonsters|BM lineup|Cache|bmPosition|Looking up cache|Cache hit|Cache miss|BM players|No BM match)" || echo "No relevant logs found in filtered output"
+            echo ""
+            echo "--- Last 100 lines (unfiltered) ---"
+            tail -n 100 server.log
           else
             echo "No server.log file found"
           fi
