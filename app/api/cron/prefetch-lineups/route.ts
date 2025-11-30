@@ -74,7 +74,7 @@ async function fetchGamesForTodayAndTomorrow(): Promise<Array<{ home: string; aw
 async function fetchAndCacheLineup(
   teamAbbr: string,
   date: string
-): Promise<{ success: boolean; isLocked: boolean; verifiedCount: number; message: string }> {
+): Promise<{ success: boolean; isLocked: boolean; verifiedCount: number; message: string; debugLogs?: string[] }> {
   try {
     const cacheKey = `basketballmonsters:lineup:${teamAbbr.toUpperCase()}:${date}`;
     
@@ -97,9 +97,17 @@ async function fetchAndCacheLineup(
       date,
       teamAbbr,
       true, // bypass cache to get fresh data from BasketballMonsters
-      null, // expectedOpponent
+      null, // expectedOpponent - let it fetch from BDL
       undefined // teamRoster
     );
+    
+    // Log detailed result for debugging
+    if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
+      console.error(`[prefetch-lineups] ❌ Failed to get lineup for ${teamAbbr} on ${date}:`);
+      console.error(`   - Lineup type: ${typeof lineup}`);
+      console.error(`   - Is array: ${Array.isArray(lineup)}`);
+      console.error(`   - Length: ${lineup ? (Array.isArray(lineup) ? lineup.length : 'N/A') : 'null/undefined'}`);
+    }
 
     if (!lineup || !Array.isArray(lineup) || lineup.length !== 5) {
       const lineupLength = lineup ? (Array.isArray(lineup) ? lineup.length : 'not array') : 'null/undefined';

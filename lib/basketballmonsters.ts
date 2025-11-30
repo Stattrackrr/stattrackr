@@ -23,7 +23,8 @@ const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
 const BM_TO_STANDARD_ABBR: Record<string, string> = {
   'PHO': 'PHX',  // Phoenix
   'GS': 'GSW',   // Golden State
-  'NO': 'NOP',   // New Orleans
+  'NO': 'NOP',   // New Orleans (short)
+  'NOR': 'NOP',  // New Orleans (full)
   'NY': 'NYK',   // New York
   'SA': 'SAS',   // San Antonio
   'UTAH': 'UTA', // Utah
@@ -282,7 +283,18 @@ export async function scrapeBasketballMonstersLineupForDate(
       if (hasGame) {
         addLog(`✅ Found ${teamAbbr} game on main page (checked ${teamUpper} and ${bmAbbr}) - will parse directly`);
       } else {
+        // More detailed logging to debug why game isn't found
         addLog(`⚠️ ${teamAbbr} game not found on main page (checked ${teamUpper} and ${bmAbbr})`);
+        // Check if HTML contains any game matchups at all
+        const anyGameMatch = html.match(/([A-Z]{2,3})\s*@\s*([A-Z]{2,3})/gi);
+        if (anyGameMatch) {
+          addLog(`   Found ${anyGameMatch.length} total game matchups on page: ${anyGameMatch.slice(0, 5).join(', ')}`);
+          // Check if our team appears anywhere in the HTML (even without @)
+          const teamInHtml = html.includes(teamUpper) || html.includes(bmAbbr);
+          addLog(`   Team ${teamUpper} or ${bmAbbr} appears in HTML: ${teamInHtml}`);
+        } else {
+          addLog(`   ❌ No game matchups found in HTML at all - page structure may have changed`);
+        }
         html = '';
       }
     } catch (e: any) {
