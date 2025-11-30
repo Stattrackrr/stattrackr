@@ -480,6 +480,8 @@ export async function GET(req: NextRequest){
       }
     }
 
+    console.error(`[DvP Ingest-NBA] Processing ${picked.length} games for team ${team}`);
+    
     for (const g of picked){
       const gidBdl = String(g?.id);
       if (!gidBdl) continue;
@@ -489,9 +491,12 @@ export async function GET(req: NextRequest){
       const oppAbbr = home.toUpperCase() === team ? away : home;
       const host = req.headers.get('host') || undefined;
       
+      const gameDate = g?.date ? new Date(g.date) : null;
+      const gameDateStr = gameDate ? gameDate.toISOString().split('T')[0] : 'unknown';
+      console.error(`[DvP Ingest-NBA] Processing game ${gidBdl}: ${away} @ ${home} on ${gameDateStr} - Looking for BM lineup for opponent: ${oppAbbr}`);
+      
       // Fetch BasketballMonsters lineup positions (highest priority - only for today/future games)
       // First try verified, then projected if verified not available
-      const gameDate = g?.date ? new Date(g.date) : null;
       const bmLineupMapVerified = await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, true);
       const bmLineupMap = bmLineupMapVerified && Object.keys(bmLineupMapVerified).length > 0 
         ? bmLineupMapVerified 
@@ -834,6 +839,20 @@ for (const r of oppRows2){
       // Add metadata about lineup source
       const lineupSource = usedVerifiedLineup ? 'basketballmonsters-verified' : 
                           (Object.keys(bmLineupMap).length > 0 ? 'basketballmonsters-projected' : 'bdl+espn');
+      
+      // Summary log for this game
+      const playersWithBmPosition = players.filter(p => p.bmPosition).length;
+      const totalPlayers = players.length;
+      const bmLineupCount = Object.keys(bmLineupMap).length;
+      console.error(`[DvP Ingest-NBA] 📊 Game ${gidBdl} (${away} @ ${home} on ${gameDateStr}) summary:`);
+      console.error(`   - BM lineup available: ${bmLineupCount} players`);
+      console.error(`   - Total players processed: ${totalPlayers}`);
+      console.error(`   - Players with bmPosition: ${playersWithBmPosition}`);
+      if (bmLineupCount > 0 && playersWithBmPosition === 0) {
+        console.error(`   ⚠️ WARNING: BM lineup has ${bmLineupCount} players but 0 matched!`);
+        console.error(`   - BM players: ${Object.keys(bmLineupMap).slice(0, 10).join(', ')}`);
+        console.error(`   - BDL players (first 10): ${players.slice(0, 10).map(p => p.name).join(', ')}`);
+      }
       
       out.push({ 
         gameId: gidBdl, 
