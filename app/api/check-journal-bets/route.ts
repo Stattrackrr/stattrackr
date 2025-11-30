@@ -116,6 +116,9 @@ async function resolveParlayBet(
     const legResults: Array<{ won: boolean; leg: any }> = [];
     let allLegsResolved = true;
     
+    // Get the parlay date to filter games
+    const parlayDate = bet.date || bet.game_date;
+    
     // Check each leg
     for (const leg of legs) {
       console.log(`[check-journal-bets] Parlay ${bet.id}: Checking leg "${leg.playerName} ${leg.overUnder} ${leg.line} ${leg.statType}"`);
@@ -129,9 +132,26 @@ async function resolveParlayBet(
       // Try to find a game that might contain this player
       // We'll need to check all games and find the player
       let legResolved = false;
+      let gamesCheckedFromParlayDate = 0;
+      let totalGamesFromParlayDate = 0;
       
       console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Checking ${games.length} games`);
+      
+      // Count games from parlay date
+      if (parlayDate) {
+        totalGamesFromParlayDate = games.filter((g: any) => {
+          const gameDate = g.date ? g.date.split('T')[0] : null;
+          return gameDate === parlayDate;
+        }).length;
+      }
+      
       for (const game of games) {
+        const gameDate = game.date ? game.date.split('T')[0] : null;
+        const isFromParlayDate = parlayDate && gameDate === parlayDate;
+        if (isFromParlayDate) {
+          gamesCheckedFromParlayDate++;
+        }
+        
         console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Checking game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}), status: ${game.status}`);
         // Check if game is completed (same logic as single bets)
         const rawStatus = String(game.status || '');
@@ -240,14 +260,37 @@ async function resolveParlayBet(
           if (legWords.length >= 2 && playerWords.length >= 2) {
             const legLastName = legWords[legWords.length - 1];
             const playerLastName = playerWords[playerWords.length - 1];
-            if (legLastName === playerLastName && legWords.length === playerWords.length) {
+            // Match if last names match and first name/initial matches
+            if (legLastName === playerLastName) {
+              // Check if first name or initial matches
+              const legFirstName = legWords[0];
+              const playerFirstName = playerWords[0];
+              // Match if first names match, or if one is a single letter (initial)
+              if (legFirstName === playerFirstName || 
+                  legFirstName.length === 1 && playerFirstName.startsWith(legFirstName) ||
+                  playerFirstName.length === 1 && legFirstName.startsWith(playerFirstName)) {
+                return true;
+              }
+            }
+          }
+          
+          // Fallback to substring match (check if either name contains the other)
+          if (playerNameNormalized.includes(legNameNormalized) ||
+              legNameNormalized.includes(playerNameNormalized)) {
+            return true;
+          }
+          
+          // Additional fallback: check if last name matches and first name/initial is similar
+          if (legWords.length >= 2 && playerWords.length >= 2) {
+            const legLastName = legWords[legWords.length - 1];
+            const playerLastName = playerWords[playerWords.length - 1];
+            if (legLastName === playerLastName) {
+              // Last name matches, accept it (might be a nickname vs full name issue)
               return true;
             }
           }
           
-          // Fallback to substring match
-          return playerNameNormalized.includes(legNameNormalized) ||
-                 legNameNormalized.includes(playerNameNormalized);
+          return false;
         });
         
         if (!playerStat) {
@@ -267,6 +310,15 @@ async function resolveParlayBet(
           } else {
             console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
           }
+          
+          // If we've checked all games from the parlay date and player still not found, mark as void
+          if (parlayDate && isFromParlayDate && gamesCheckedFromParlayDate === totalGamesFromParlayDate && totalGamesFromParlayDate > 0) {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in any game from ${parlayDate} (checked ${gamesCheckedFromParlayDate}/${totalGamesFromParlayDate} games). Marking leg as void (player didn't play).`);
+            legResults.push({ won: false, leg });
+            legResolved = true;
+            break;
+          }
+          
           allLegsResolved = false;
           continue; // Player not in this game
         }
