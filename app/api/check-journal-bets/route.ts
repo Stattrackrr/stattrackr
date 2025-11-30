@@ -813,11 +813,14 @@ export async function GET(request: Request) {
         }
 
         // Determine result
+        // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
+        // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
+        const isWholeNumber = bet.line % 1 === 0;
         let result: 'win' | 'loss';
         if (bet.over_under === 'over') {
-          result = actualValue > bet.line ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue >= bet.line : actualValue > bet.line) ? 'win' : 'loss';
         } else {
-          result = actualValue < bet.line ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue <= bet.line : actualValue < bet.line) ? 'win' : 'loss';
         }
 
         // Update the journal bet with result

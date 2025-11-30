@@ -474,13 +474,12 @@ export async function GET(req: NextRequest){
 
     for (const g of picked){
       const gidBdl = String(g?.id);
-      if (!gidBdl || have.has(gidBdl)) continue;
+      if (!gidBdl) continue;
       const when = String(g?.date||'');
       const home = String(g?.home_team?.abbreviation||'');
       const away = String(g?.visitor_team?.abbreviation||'');
       const oppAbbr = home.toUpperCase() === team ? away : home;
       const host = req.headers.get('host') || undefined;
-const depthMap = await fetchDepthChartBestMap(oppAbbr, host).catch(()=> ({}));
       
       // Fetch BasketballMonsters lineup positions (highest priority - only for today/future games)
       // First try verified, then projected if verified not available
@@ -490,6 +489,27 @@ const depthMap = await fetchDepthChartBestMap(oppAbbr, host).catch(()=> ({}));
         ? bmLineupMapVerified 
         : await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, false);
       const usedVerifiedLineup = Object.keys(bmLineupMapVerified).length > 0;
+      
+      // Check if this game is already stored
+      const alreadyStored = have.has(gidBdl);
+      
+      // If game is already stored but BM data is now available, re-process it
+      // This handles the case where games were ingested before BM lineups were cached
+      if (alreadyStored && Object.keys(bmLineupMap).length > 0) {
+        console.log(`[ingest-nba] Game ${gidBdl} already stored but BM data now available - re-processing with BM positions`);
+        // Remove from have set so it gets processed
+        have.delete(gidBdl);
+        // Also remove from out array if it exists
+        const existingIndex = out.findIndex((x: any) => String(x.gameId) === gidBdl);
+        if (existingIndex >= 0) {
+          out.splice(existingIndex, 1);
+        }
+      } else if (alreadyStored) {
+        // Game already stored and no BM data available - skip it
+        continue;
+      }
+      
+      const depthMap = await fetchDepthChartBestMap(oppAbbr, host).catch(()=> ({}));
       
       // Build starters override map directly from depth chart to ensure exact starters
       const base = host ? `http://${host}` : (process.env.NEXT_PUBLIC_BASE_URL || '');
