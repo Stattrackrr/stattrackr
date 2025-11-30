@@ -63,6 +63,17 @@ jobs:
           echo "Ingest script completed"
         continue-on-error: true
 
+      - name: Show server logs (for debugging)
+        if: always()
+        run: |
+          echo "=== Server Logs (last 200 lines) ==="
+          if [ -f server.log ]; then
+            tail -n 200 server.log | grep -E "(DvP Ingest-NBA|BasketballMonsters|BM lineup|Cache|bmPosition)" || echo "No relevant logs found"
+          else
+            echo "No server.log file found"
+          fi
+        continue-on-error: true
+
       - name: Stop dev server
         if: always()
         run: |
