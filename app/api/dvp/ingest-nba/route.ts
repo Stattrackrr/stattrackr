@@ -490,6 +490,16 @@ export async function GET(req: NextRequest){
         : await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, false);
       const usedVerifiedLineup = Object.keys(bmLineupMapVerified).length > 0;
       
+      // Debug: Log BM lineup data if available
+      if (Object.keys(bmLineupMap).length > 0) {
+        const bmKeys = Object.keys(bmLineupMap);
+        console.log(`[DvP Ingest-NBA] ✅ BM lineup found for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}: ${bmKeys.length} players`);
+        console.log(`   BM players: ${bmKeys.slice(0, 5).join(', ')}`);
+        console.log(`   BM positions: ${bmKeys.slice(0, 5).map(k => `${k}=${bmLineupMap[k]}`).join(', ')}`);
+      } else {
+        console.log(`[DvP Ingest-NBA] ⚠️ No BM lineup for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}`);
+      }
+      
       // Check if this game is already stored
       const alreadyStored = have.has(gidBdl);
       
@@ -697,6 +707,15 @@ for (const r of oppRows2){
                 bmPositionFromBucket = bmLineupMap[variation];
                 break;
               }
+            }
+            
+            // Debug logging if we have BM data but no match
+            if (!bucket && Object.keys(bmLineupMap).length > 0) {
+              const bmKeys = Object.keys(bmLineupMap).slice(0, 5);
+              console.log(`[DvP Ingest-NBA] ❌ No BM match for "${name}" (normalized: "${bmNormalizedName}")`);
+              console.log(`   BM keys available: ${bmKeys.join(', ')}`);
+              console.log(`   Keys tried: ${nameVariations.slice(0, 3).join(', ')}`);
+              console.log(`   Fuzzy match result: ${findBMPlayerMatch(name, bmLineupMap) || 'null'}`);
             }
           }
         }
