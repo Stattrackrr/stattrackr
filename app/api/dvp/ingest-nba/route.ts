@@ -476,7 +476,11 @@ export async function GET(req: NextRequest){
         notStored.sort((a,b)=> new Date(a?.date||0).getTime() - new Date(b?.date||0).getTime());
         picked = notStored.slice(-1); // only newest not stored
       } else {
-        picked = [];
+        // All games stored - include most recent stored games to check for BM data re-processing
+        const storedGames = finals.filter(g => have.has(String(g?.id)));
+        storedGames.sort((a,b)=> new Date(b?.date||0).getTime() - new Date(a?.date||0).getTime());
+        picked = storedGames.slice(0, 3); // Check last 3 stored games for BM data
+        console.error(`[DvP Ingest-NBA] All games stored for ${team} - checking last ${picked.length} games for BM data re-processing`);
       }
     }
 
