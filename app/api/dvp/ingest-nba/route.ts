@@ -125,10 +125,14 @@ async function fetchBasketballMonstersLineupPositions(
 ): Promise<Record<string, 'PG'|'SG'|'SF'|'PF'|'C'>> {
   if (!gameDate) return {};
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const gameDateOnly = new Date(gameDate);
-  gameDateOnly.setHours(0, 0, 0, 0);
+  // Use Eastern Time to match BasketballMonsters cache keys (they use Eastern Time)
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const today = new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate(), 0, 0, 0, 0);
+  
+  // Convert game date to Eastern Time for comparison
+  const gameDateEastern = new Date(gameDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const gameDateOnly = new Date(gameDateEastern.getFullYear(), gameDateEastern.getMonth(), gameDateEastern.getDate(), 0, 0, 0, 0);
   
   // Allow checking cache for games up to 7 days in the past
   // (lineups were cached when game was today/future, so cache should still have them)
@@ -141,7 +145,7 @@ async function fetchBasketballMonstersLineupPositions(
   }
   
   try {
-    // Format date as YYYY-MM-DD
+    // Format date as YYYY-MM-DD (using Eastern Time to match cache keys)
     const dateStr = `${gameDateOnly.getFullYear()}-${String(gameDateOnly.getMonth() + 1).padStart(2, '0')}-${String(gameDateOnly.getDate()).padStart(2, '0')}`;
     const cacheKey = `basketballmonsters:lineup:${teamAbbr.toUpperCase()}:${dateStr}`;
     
