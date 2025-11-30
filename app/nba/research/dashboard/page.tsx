@@ -8025,23 +8025,6 @@ const lineMovementInFlightRef = useRef(false);
       }
     } catch {}
 
-    // Restore timeframe from session storage when playerStats loads (fixes race condition)
-    useEffect(() => {
-      if (playerStats.length > 0 && selectedTimeframe === 'last10') {
-        // Only restore if we're still on default timeframe (last10)
-        // This means we haven't manually selected a timeframe yet
-        try {
-          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
-              setSelectedTimeframe(parsed.selectedTimeframe);
-            }
-          }
-        } catch {}
-      }
-    }, [playerStats.length, selectedTimeframe]);
-
     // Finally, restore saved player if in player mode
     if (initialPropsMode === 'player') {
       try {
@@ -8071,6 +8054,23 @@ const lineMovementInFlightRef = useRef(false);
       // Players should only be loaded when explicitly searched for or from URL sharing
     }
   }, []); // Only run once on mount
+
+  // Restore timeframe from session storage when playerStats loads (fixes race condition)
+  useEffect(() => {
+    if (playerStats.length > 0 && selectedTimeframe === 'last10') {
+      // Only restore if we're still on default timeframe (last10)
+      // This means we haven't manually selected a timeframe yet
+      try {
+        const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
+            setSelectedTimeframe(parsed.selectedTimeframe);
+          }
+        }
+      } catch {}
+    }
+  }, [playerStats.length, selectedTimeframe]);
 
   /* --------- Live search (debounced) using /api/bdl/players ---------- */
   useEffect(() => {
