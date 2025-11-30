@@ -386,9 +386,12 @@ async function resolveParlayBet(
         }
         
         // Determine if leg won
+        // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
+        // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
+        const isWholeNumber = leg.line % 1 === 0;
         const legWon = leg.overUnder === 'over' 
-          ? actualValue > leg.line 
-          : actualValue < leg.line;
+          ? (isWholeNumber ? actualValue >= leg.line : actualValue > leg.line)
+          : (isWholeNumber ? actualValue <= leg.line : actualValue < leg.line);
         
         legResults.push({ won: legWon, void: false, leg });
         legResolved = true;

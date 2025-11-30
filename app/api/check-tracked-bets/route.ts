@@ -291,11 +291,14 @@ export async function GET(request: Request) {
         }
 
         // Determine result
+        // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
+        // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
+        const isWholeNumber = prop.line % 1 === 0;
         let result: 'win' | 'loss';
         if (prop.over_under === 'over') {
-          result = actualValue > prop.line ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue >= prop.line : actualValue > prop.line) ? 'win' : 'loss';
         } else {
-          result = actualValue < prop.line ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue <= prop.line : actualValue < prop.line) ? 'win' : 'loss';
         }
 
         // Update the tracked prop with individual stat breakdown
