@@ -620,9 +620,11 @@ for (const r of oppRows2){
         
         // PRIORITY 1: BasketballMonsters lineup (highest priority - most accurate for today/future games)
         let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
+        let bmPositionFromBucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         for (const kv of keys) {
           if (bmLineupMap[kv]) {
             bucket = bmLineupMap[kv];
+            bmPositionFromBucket = bmLineupMap[kv]; // Track that bucket came from BM
             break;
           }
         }
@@ -689,11 +691,17 @@ for (const r of oppRows2){
         const val = Number(r?.pts||0);
         buckets[bucket]+=val;
         // Check if this position came from BasketballMonsters
-        let bmPosition: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
-        for (const kv of keys) {
-          if (bmLineupMap[kv]) {
-            bmPosition = bmLineupMap[kv];
-            break;
+        // If bucket was set from BM, use that as bmPosition
+        // Otherwise, try to match player name to bmLineupMap
+        let bmPosition: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = bmPositionFromBucket;
+        
+        // If not set from bucket, try to find in bmLineupMap by name matching
+        if (!bmPosition) {
+          for (const kv of keys) {
+            if (bmLineupMap[kv]) {
+              bmPosition = bmLineupMap[kv];
+              break;
+            }
           }
         }
         
