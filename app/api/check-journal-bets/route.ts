@@ -103,20 +103,22 @@ async function resolveParlayBet(
   updatedCountRef: { value: number }
 ): Promise<void> {
   try {
-    const legs = parseParlayLegs(bet.selection || '');
+    console.log(`[check-journal-bets] 🔍 Processing parlay bet ${bet.id}: "${bet.market || bet.selection}"`);
+    const legs = parseParlayLegs(bet.selection || bet.market || '');
     
     if (legs.length === 0) {
-      console.error(`Could not parse parlay legs for bet ${bet.id}. Selection text: "${bet.selection}"`);
+      console.error(`[check-journal-bets] ❌ Could not parse parlay legs for bet ${bet.id}. Selection text: "${bet.selection || bet.market}"`);
       return;
     }
     
-    logDebug(`Resolving parlay ${bet.id} with ${legs.length} legs:`, legs.map(l => `${l.playerName} ${l.overUnder} ${l.line} ${l.statType}`));
+    console.log(`[check-journal-bets] Parlay ${bet.id}: Parsed ${legs.length} legs: ${legs.map(l => `${l.playerName} ${l.overUnder} ${l.line} ${l.statType}`).join(', ')}`);
     
     const legResults: Array<{ won: boolean; leg: any }> = [];
     let allLegsResolved = true;
     
     // Check each leg
     for (const leg of legs) {
+      console.log(`[check-journal-bets] Parlay ${bet.id}: Checking leg "${leg.playerName} ${leg.overUnder} ${leg.line} ${leg.statType}"`);
       // leg.statType is already normalized to stat key (pts, reb, ast, etc.)
       const statKey = leg.statType;
       
@@ -128,7 +130,9 @@ async function resolveParlayBet(
       // We'll need to check all games and find the player
       let legResolved = false;
       
+      console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Checking ${games.length} games`);
       for (const game of games) {
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Checking game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}), status: ${game.status}`);
         // Check if game is completed (same logic as single bets)
         const rawStatus = String(game.status || '');
         const gameStatus = rawStatus.toLowerCase();
@@ -158,6 +162,7 @@ async function resolveParlayBet(
         
         // Only process if game is completed AND completed at least 10 minutes ago
         if (!isCompleted) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}) not completed yet. Status: ${game.status}`);
           allLegsResolved = false;
           continue; // Game not completed yet, can't resolve this leg
         }
@@ -165,6 +170,8 @@ async function resolveParlayBet(
         if (completedAt) {
           const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
           if (completedAt > tenMinutesAgo) {
+            const minutesAgo = Math.round((now - completedAt.getTime()) / 60000);
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${game.id} completed ${minutesAgo} minutes ago, waiting for 10-minute buffer`);
             allLegsResolved = false;
             continue; // Game completed less than 10 minutes ago, wait
           }
@@ -229,11 +236,12 @@ async function resolveParlayBet(
         });
         
         if (!playerStat) {
-          logDebug(`Player "${leg.playerName}" not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player not found in game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
+          allLegsResolved = false;
           continue; // Player not in this game
         }
         
-        logDebug(`Found player "${leg.playerName}" in game ${game.id}`);
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found player in game ${game.id}`);
         
         // Check if player played
         const minutesPlayed = playerStat.min || '0:00';
@@ -309,7 +317,7 @@ async function resolveParlayBet(
     
     // If not all legs are resolved yet, skip this parlay
     if (!allLegsResolved) {
-      logDebug(`Parlay ${bet.id} not all legs resolved yet (${legResults.length}/${legs.length} resolved)`);
+      console.log(`[check-journal-bets] Parlay ${bet.id}: Not all legs resolved yet (${legResults.length}/${legs.length} resolved). Legs: ${legs.map(l => l.playerName).join(', ')}`);
       return;
     }
     
@@ -330,7 +338,7 @@ async function resolveParlayBet(
     if (updateError) {
       console.error(`Failed to update parlay bet ${bet.id}:`, updateError);
     } else {
-      logDebug(`Resolved parlay ${bet.id}: ${result} (${legResults.filter(r => r.won).length}/${legs.length} legs won)`);
+      console.log(`[check-journal-bets] ✅ Resolved parlay ${bet.id}: ${result} (${legResults.filter(r => r.won).length}/${legs.length} legs won)`);
       updatedCountRef.value++;
     }
   } catch (error: any) {
@@ -407,6 +415,7 @@ export async function GET(request: Request) {
 
   try {
     console.log('[check-journal-bets] Starting journal bet check...');
+    console.log('[check-journal-bets] ========================================');
     
     // Fetch all pending journal bets with NBA player props (including parlays)
     // First get single player prop bets
@@ -438,18 +447,36 @@ export async function GET(request: Request) {
     
     const journalBets = [...(singleBets || []), ...(parlayBets || [])];
 
-    logDebug('Fetched journal bets:', journalBets?.length || 0);
+    console.log(`[check-journal-bets] Fetched ${journalBets?.length || 0} journal bets (${singleBets?.length || 0} single, ${parlayBets?.length || 0} parlays)`);
 
     if (!journalBets || journalBets.length === 0) {
-      logDebug('No pending journal bets found');
+      console.log('[check-journal-bets] No pending journal bets found');
       return NextResponse.json({ message: 'No pending journal bets', updated: 0 });
     }
+    
+    console.log(`[check-journal-bets] Processing ${journalBets.length} journal bets...`);
 
     const updatedCountRef = { value: 0 };
 
     // Separate parlays from single bets
     const singleBetsList = journalBets.filter((bet: any) => !bet.market || !bet.market.startsWith('Parlay'));
     const parlayBetsList = journalBets.filter((bet: any) => bet.market && bet.market.startsWith('Parlay'));
+    
+    console.log(`[check-journal-bets] Found ${singleBetsList.length} single bets and ${parlayBetsList.length} parlay bets`);
+    
+    // Log parlay bet details for debugging
+    if (parlayBetsList.length > 0) {
+      console.log(`[check-journal-bets] Parlay bet details:`);
+      parlayBetsList.forEach((bet: any, idx: number) => {
+        console.log(`[check-journal-bets]   Parlay ${idx + 1} (ID: ${bet.id}):`);
+        console.log(`[check-journal-bets]     - market: "${bet.market}"`);
+        console.log(`[check-journal-bets]     - selection: "${bet.selection}"`);
+        console.log(`[check-journal-bets]     - date: "${bet.date}"`);
+        console.log(`[check-journal-bets]     - game_date: "${bet.game_date}"`);
+        console.log(`[check-journal-bets]     - result: "${bet.result}"`);
+        console.log(`[check-journal-bets]     - status: "${bet.status}"`);
+      });
+    }
     
     // Group single bets by game date to minimize API calls
     const gamesByDate = singleBetsList.reduce((acc: any, bet: any) => {
@@ -462,8 +489,15 @@ export async function GET(request: Request) {
     
     // Group parlays by date (use the date field from the bet)
     const parlaysByDate = parlayBetsList.reduce((acc: any, bet: any) => {
-      const date = bet.date ? bet.date.split('T')[0] : null;
-      if (!date) return acc;
+      // Try multiple date fields: date, game_date, created_at
+      const date = bet.date ? bet.date.split('T')[0] : 
+                   bet.game_date ? bet.game_date.split('T')[0] :
+                   bet.created_at ? bet.created_at.split('T')[0] : null;
+      
+      if (!date) {
+        console.log(`[check-journal-bets] ⚠️  Parlay bet ${bet.id} has no date field (date: ${bet.date}, game_date: ${bet.game_date}, created_at: ${bet.created_at}), skipping`);
+        return acc;
+      }
       if (!acc[date]) acc[date] = [];
       acc[date].push(bet);
       return acc;
@@ -515,7 +549,7 @@ export async function GET(request: Request) {
         });
 
         if (!game) {
-          logDebug(`Game not found for ${bet.team} vs ${bet.opponent}`);
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
           continue;
         }
 
@@ -567,13 +601,13 @@ export async function GET(request: Request) {
             .eq('id', bet.id)
             .eq('result', 'pending'); // Only update if still pending
           
-          logDebug(`Game ${bet.team} vs ${bet.opponent} is live, updated status`);
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
           continue;
         }
         
         // Only process if game is completed AND completed at least 10 minutes ago
         if (!isCompleted) {
-          logDebug(`Game ${bet.team} vs ${bet.opponent} is ${game.status}, not completed yet`);
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is ${game.status}, not completed yet`);
           continue;
         }
         
@@ -581,7 +615,8 @@ export async function GET(request: Request) {
         if (completedAt) {
           const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
           if (completedAt > tenMinutesAgo) {
-            logDebug(`Game ${bet.team} vs ${bet.opponent} completed recently (${Math.round((now - completedAt.getTime()) / 60000)} minutes ago), waiting for 10 minute buffer`);
+            const minutesAgo = Math.round((now - completedAt.getTime()) / 60000);
+            console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} completed ${minutesAgo} minutes ago, waiting for 10-minute buffer`);
             continue;
           }
         }
@@ -604,7 +639,7 @@ export async function GET(request: Request) {
         const statsData = await statsResponse.json();
         
         if (!statsData.data || statsData.data.length === 0) {
-          logDebug(`No stats found for player ${bet.player_name}`);
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): No stats found for player in game ${game.id}`);
           continue;
         }
 
@@ -728,8 +763,11 @@ export async function GET(request: Request) {
       }
     }
     
+    console.log(`[check-journal-bets] Grouped ${parlayBetsList.length} parlays into ${Object.keys(parlaysByDate).length} date groups: ${Object.keys(parlaysByDate).join(', ')}`);
+    
     // Process each parlay
     for (const [date, parlays] of Object.entries(parlaysByDate)) {
+      console.log(`[check-journal-bets] 📅 Processing ${(parlays as any[]).length} parlays for date ${date}`);
       // Get games for this date (or fetch if not cached)
       let games = dateCache.get(date) || [];
       
@@ -791,7 +829,9 @@ export async function GET(request: Request) {
       
       // Process parlays for this date
       const parlaysList = parlays as any[];
+      console.log(`[check-journal-bets] Processing ${parlaysList.length} parlays for date ${date}`);
       for (const parlayBet of parlaysList) {
+        console.log(`[check-journal-bets] About to process parlay bet ${parlayBet.id} with ${allGames.length} games available`);
         await resolveParlayBet(parlayBet, allGames, updatedCountRef);
       }
     }
@@ -803,6 +843,10 @@ export async function GET(request: Request) {
     };
     
     console.log(`[check-journal-bets] Completed: ${result.message}`);
+    
+    if (updatedCountRef.value === 0 && journalBets.length > 0) {
+      console.log(`[check-journal-bets] ⚠️  No bets were updated. Check the logs above for details on why each bet wasn't resolved.`);
+    }
     
     return NextResponse.json(result);
 
