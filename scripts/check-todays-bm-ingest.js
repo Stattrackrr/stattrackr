@@ -11,15 +11,27 @@ if (!BALLDONTLIE_API_KEY) {
 }
 
 /**
- * Get today's date in YYYY-MM-DD format (Eastern Time)
+ * Get today's date in local timezone (YYYY-MM-DD)
  */
-function getTodayEastern() {
+function getTodayLocal() {
   const now = new Date();
-  const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const year = easternTime.getFullYear();
-  const month = String(easternTime.getMonth() + 1).padStart(2, '0');
-  const day = String(easternTime.getDate()).padStart(2, '0');
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convert local date to Eastern Time date (for cache key lookup)
+ */
+function localToEasternDate(localDateStr) {
+  const [year, month, day] = localDateStr.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day, 12, 0, 0);
+  const easternTime = new Date(localDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const easternYear = easternTime.getFullYear();
+  const easternMonth = String(easternTime.getMonth() + 1).padStart(2, '0');
+  const easternDay = String(easternTime.getDate()).padStart(2, '0');
+  return `${easternYear}-${easternMonth}-${easternDay}`;
 }
 
 /**
@@ -89,12 +101,16 @@ function checkTeamGame(teamAbbr, gameDate, opponentAbbr) {
  * Main function
  */
 async function checkTodaysIngest() {
-  const today = getTodayEastern();
-  console.log(`\n🔍 Checking BasketballMonsters ingestion for ${today}\n`);
+  const todayLocal = getTodayLocal();
+  const todayEastern = localToEasternDate(todayLocal);
+  
+  console.log(`\n🔍 Checking BasketballMonsters ingestion`);
+  console.log(`   Local date: ${todayLocal}`);
+  console.log(`   Eastern date (for cache): ${todayEastern}\n`);
   console.log('='.repeat(60));
   
-  // Fetch today's games from BDL
-  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${today}&per_page=100`;
+  // Fetch games for local date
+  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${todayLocal}&per_page=100`;
   
   console.log(`\n📡 Fetching games from Ball Don't Lie API...`);
   const gamesResponse = await fetch(gamesUrl, {
@@ -112,7 +128,7 @@ async function checkTodaysIngest() {
   const games = gamesData.data || [];
   
   if (games.length === 0) {
-    console.log(`\n✅ No games found for ${today}`);
+    console.log(`\n✅ No games found for ${todayLocal}`);
     return;
   }
   
@@ -134,9 +150,10 @@ async function checkTodaysIngest() {
     console.log(`   Status: ${gameStatus}`);
     console.log(`   Game ID: ${game.id}`);
     
-    // Check both teams
-    const homeResult = checkTeamGame(homeTeam, today, visitorTeam);
-    const visitorResult = checkTeamGame(visitorTeam, today, homeTeam);
+    // Check both teams - use game date from BDL (which should match local date we queried)
+    const gameDate = game.date ? new Date(game.date).toISOString().split('T')[0] : todayLocal;
+    const homeResult = checkTeamGame(homeTeam, gameDate, visitorTeam);
+    const visitorResult = checkTeamGame(visitorTeam, gameDate, homeTeam);
     
     // Home team
     console.log(`\n   📋 ${homeTeam}:`);

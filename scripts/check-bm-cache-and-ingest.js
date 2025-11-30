@@ -19,15 +19,30 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 /**
- * Get today's date in Eastern Time (YYYY-MM-DD)
+ * Get today's date in local timezone (YYYY-MM-DD)
+ * Note: BasketballMonsters cache keys use Eastern Time, but we check local date
+ * and then convert to Eastern when looking up cache keys
  */
-function getTodayEastern() {
+function getTodayLocal() {
   const now = new Date();
-  const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const year = easternTime.getFullYear();
-  const month = String(easternTime.getMonth() + 1).padStart(2, '0');
-  const day = String(easternTime.getDate()).padStart(2, '0');
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convert local date to Eastern Time date (for cache key lookup)
+ */
+function localToEasternDate(localDateStr) {
+  // Parse local date and convert to Eastern
+  const [year, month, day] = localDateStr.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid DST issues
+  const easternTime = new Date(localDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const easternYear = easternTime.getFullYear();
+  const easternMonth = String(easternTime.getMonth() + 1).padStart(2, '0');
+  const easternDay = String(easternTime.getDate()).padStart(2, '0');
+  return `${easternYear}-${easternMonth}-${easternDay}`;
 }
 
 /**
@@ -64,12 +79,16 @@ async function checkCache(teamAbbr, date) {
  * Main function
  */
 async function main() {
-  const today = getTodayEastern();
-  console.log(`\n🔍 Checking BasketballMonsters cache and triggering ingest for ${today}\n`);
+  const todayLocal = getTodayLocal();
+  const todayEastern = localToEasternDate(todayLocal);
+  
+  console.log(`\n🔍 Checking BasketballMonsters cache and triggering ingest`);
+  console.log(`   Local date: ${todayLocal}`);
+  console.log(`   Eastern date (for cache): ${todayEastern}\n`);
   console.log('='.repeat(60));
   
-  // Fetch today's games
-  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${today}&per_page=100`;
+  // Fetch games for local date (BDL API uses dates as provided)
+  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${todayLocal}&per_page=100`;
   
   console.log(`\n📡 Fetching games from Ball Don't Lie API...`);
   const gamesResponse = await fetch(gamesUrl, {
@@ -104,9 +123,9 @@ async function main() {
     
     console.log(`\n🏀 ${visitorTeam} @ ${homeTeam} (${gameStatus})`);
     
-    // Check cache for both teams
-    const homeCache = await checkCache(homeTeam, today);
-    const visitorCache = await checkCache(visitorTeam, today);
+    // Check cache using Eastern Time date (cache keys use Eastern Time)
+    const homeCache = await checkCache(homeTeam, todayEastern);
+    const visitorCache = await checkCache(visitorTeam, todayEastern);
     
     console.log(`   ${homeTeam}: ${homeCache ? `✅ Cached (${homeCache.length} players)` : '❌ Not cached'}`);
     console.log(`   ${visitorTeam}: ${visitorCache ? `✅ Cached (${visitorCache.length} players)` : '❌ Not cached'}`);
