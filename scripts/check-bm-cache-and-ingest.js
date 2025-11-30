@@ -106,7 +106,7 @@ async function main() {
   const games = gamesData.data || [];
   
   if (games.length === 0) {
-    console.log(`\n✅ No games found for ${today}`);
+    console.log(`\n✅ No games found for ${todayLocal}`);
     return;
   }
   
@@ -123,9 +123,30 @@ async function main() {
     
     console.log(`\n🏀 ${visitorTeam} @ ${homeTeam} (${gameStatus})`);
     
+    // Get the actual game date from BDL and convert to Eastern Time for cache lookup
+    // BDL returns dates in ISO format, we need to extract the date part and convert to Eastern
+    let cacheDate = todayEastern; // Default fallback
+    if (game.date) {
+      try {
+        // BDL date is typically in ISO format or YYYY-MM-DD
+        const gameDateStr = game.date.split('T')[0]; // Get YYYY-MM-DD part
+        // Convert this date to Eastern Time for cache lookup
+        const [year, month, day] = gameDateStr.split('-').map(Number);
+        const gameDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid DST issues
+        const easternTime = new Date(gameDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const easternYear = easternTime.getFullYear();
+        const easternMonth = String(easternTime.getMonth() + 1).padStart(2, '0');
+        const easternDay = String(easternTime.getDate()).padStart(2, '0');
+        cacheDate = `${easternYear}-${easternMonth}-${easternDay}`;
+        console.log(`   Game date: ${gameDateStr} → Eastern cache date: ${cacheDate}`);
+      } catch (e) {
+        console.log(`   ⚠️  Could not parse game date, using default: ${cacheDate}`);
+      }
+    }
+    
     // Check cache using Eastern Time date (cache keys use Eastern Time)
-    const homeCache = await checkCache(homeTeam, todayEastern);
-    const visitorCache = await checkCache(visitorTeam, todayEastern);
+    const homeCache = await checkCache(homeTeam, cacheDate);
+    const visitorCache = await checkCache(visitorTeam, cacheDate);
     
     console.log(`   ${homeTeam}: ${homeCache ? `✅ Cached (${homeCache.length} players)` : '❌ Not cached'}`);
     console.log(`   ${visitorTeam}: ${visitorCache ? `✅ Cached (${visitorCache.length} players)` : '❌ Not cached'}`);

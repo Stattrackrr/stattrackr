@@ -150,10 +150,23 @@ async function checkTodaysIngest() {
     console.log(`   Status: ${gameStatus}`);
     console.log(`   Game ID: ${game.id}`);
     
-    // Check both teams - use game date from BDL (which should match local date we queried)
-    const gameDate = game.date ? new Date(game.date).toISOString().split('T')[0] : todayLocal;
-    const homeResult = checkTeamGame(homeTeam, gameDate, visitorTeam);
-    const visitorResult = checkTeamGame(visitorTeam, gameDate, homeTeam);
+    // Get the actual game date from BDL
+    // BDL returns the date the game was played (in America/Eastern timezone)
+    // We need to use this date to check the DvP store
+    let gameDateForStore = todayLocal; // Default fallback
+    if (game.date) {
+      try {
+        // BDL date is typically in ISO format, extract YYYY-MM-DD
+        gameDateForStore = game.date.split('T')[0];
+        console.log(`   Game date from BDL: ${gameDateForStore}`);
+      } catch (e) {
+        console.log(`   ⚠️  Could not parse game date`);
+      }
+    }
+    
+    // Check both teams using the actual game date from BDL
+    const homeResult = checkTeamGame(homeTeam, gameDateForStore, visitorTeam);
+    const visitorResult = checkTeamGame(visitorTeam, gameDateForStore, homeTeam);
     
     // Home team
     console.log(`\n   📋 ${homeTeam}:`);
