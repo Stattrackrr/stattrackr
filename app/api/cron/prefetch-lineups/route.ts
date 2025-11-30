@@ -237,6 +237,7 @@ export async function GET(req: NextRequest) {
       isLocked: boolean;
       verifiedCount: number;
       message: string;
+      debugLogs?: string[];
     }> = [];
 
     let lockedCount = 0;
@@ -250,7 +251,7 @@ export async function GET(req: NextRequest) {
       results.push({
         team,
         date,
-        ...result
+        ...result // This includes debugLogs if present
       });
 
       if (result.isLocked) {

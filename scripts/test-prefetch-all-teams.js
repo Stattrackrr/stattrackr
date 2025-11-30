@@ -68,7 +68,8 @@ async function testPrefetch() {
           success: r.success,
           isLocked: r.isLocked,
           verifiedCount: r.verifiedCount,
-          message: r.message
+          message: r.message,
+          debugLogs: r.debugLogs // Include debug logs
         });
       });
       
@@ -83,8 +84,13 @@ async function testPrefetch() {
         if (failedCount > 0) {
           failed.forEach(f => {
             console.log(`      ❌ ${f.date}: ${f.message}`);
-            if (f.debugLogs && f.debugLogs.length > 0) {
-              console.log(`         Debug: ${f.debugLogs.slice(-3).join(' | ')}`); // Show last 3 log entries
+            if (f.debugLogs && Array.isArray(f.debugLogs) && f.debugLogs.length > 0) {
+              console.log(`         Debug (last 3):`);
+              f.debugLogs.slice(-3).forEach(log => {
+                console.log(`            - ${log}`);
+              });
+            } else {
+              console.log(`         (No debug logs available)`);
             }
           });
         }
