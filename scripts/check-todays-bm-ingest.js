@@ -104,13 +104,19 @@ async function checkTodaysIngest() {
   const todayLocal = getTodayLocal();
   const todayEastern = localToEasternDate(todayLocal);
   
+  // Also check yesterday (games played yesterday in America might be today for user)
+  const yesterdayLocal = new Date();
+  yesterdayLocal.setDate(yesterdayLocal.getDate() - 1);
+  const yesterdayLocalStr = `${yesterdayLocal.getFullYear()}-${String(yesterdayLocal.getMonth() + 1).padStart(2, '0')}-${String(yesterdayLocal.getDate()).padStart(2, '0')}`;
+  const yesterdayEastern = localToEasternDate(yesterdayLocalStr);
+  
   console.log(`\n🔍 Checking BasketballMonsters ingestion`);
-  console.log(`   Local date: ${todayLocal}`);
-  console.log(`   Eastern date (for cache): ${todayEastern}\n`);
+  console.log(`   Local dates: ${yesterdayLocalStr} (yesterday), ${todayLocal} (today)`);
+  console.log(`   Eastern dates: ${yesterdayEastern} (yesterday), ${todayEastern} (today)\n`);
   console.log('='.repeat(60));
   
-  // Fetch games for local date
-  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${todayLocal}&per_page=100`;
+  // Fetch games for both today and yesterday to catch games played in America
+  const gamesUrl = `https://api.balldontlie.io/v1/games?dates[]=${yesterdayLocalStr}&dates[]=${todayLocal}&per_page=100`;
   
   console.log(`\n📡 Fetching games from Ball Don't Lie API...`);
   const gamesResponse = await fetch(gamesUrl, {
