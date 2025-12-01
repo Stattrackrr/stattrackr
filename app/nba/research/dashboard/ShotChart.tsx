@@ -339,11 +339,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   const midRangeWidth = 80; // Width of mid-range zone
 
   return (
-    <div className="w-full flex flex-col bg-transparent dark:bg-transparent px-2 sm:p-4 gap-2 sm:gap-4" style={{ minHeight: '400px' }}>
+    <div className="w-full flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
       {/* Title with Info Button and Season Label */}
-      <div className="flex items-center justify-between w-full flex-wrap gap-2">
+      <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2 relative">
-          <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
           <button
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
@@ -352,7 +352,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             ?
           </button>
           {showTooltip && (
-            <div className="absolute z-50 left-0 top-8 w-56 sm:w-64 px-2 sm:px-3 py-2 text-[10px] sm:text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+            <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
               <strong>Shot Chart Views</strong><br/>
               <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player's shot distribution<br/>
               <span className="text-green-600 dark:text-green-400">Makes</span> - Player's make distribution<br/>
@@ -360,13 +360,13 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               setShowMakes(false);
               setShowOppDef(false);
             }}
-            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-colors ${
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
               !showMakes && !showOppDef
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -379,7 +379,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               setShowMakes(true);
               setShowOppDef(false);
             }}
-            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-colors ${
+            className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
               showMakes && !showOppDef
                 ? 'bg-green-600 text-white hover:bg-green-700'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -394,7 +394,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                   setShowOppDef(true);
                   setShowOppDefMakes(false);
                 }}
-                className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-colors ${
+                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
                   showOppDef && !showOppDefMakes
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -405,15 +405,10 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             </>
           )}
         </div>
-        {enhancedData?.opponentRankings && enhancedData?.opponentRankingsSource === 'league_average' && (
-          <div className="text-[9px] sm:text-[11px] text-purple-600 dark:text-purple-300 mt-1 text-center sm:text-left">
-            Showing league-average defense. Select an opponent to view specific team rankings.
-          </div>
-        )}
       </div>
       
       {/* SVG Chart */}
-      <svg viewBox="0 0 500 380" className="w-full" style={{ height: 'auto', maxHeight: '380px', width: '100%' }} preserveAspectRatio="xMidYMid meet">
+      <svg viewBox="0 0 500 380" className="w-full" style={{ height: 'auto', width: '100%' }} preserveAspectRatio="xMidYMid meet">
         {/* Define clip path for rounded corners */}
         <defs>
           <clipPath id="roundedCourt">
@@ -692,43 +687,43 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       
       {/* Color Legend */}
       {showOppDef && enhancedData?.opponentRankings ? (
-        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-medium flex-wrap justify-center">
-          <span className="text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">Defense Ranking:</span>
+        <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+          <span className="text-gray-700 dark:text-gray-300">Defense Ranking:</span>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">#1-5 (Elite)</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#1-5 (Elite)</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">#6-11 (Good)</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#f97316' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#6-11 (Good)</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">#12-21 (Avg)</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#12-21 (Avg)</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">#22-30 (Weak)</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">#22-30 (Weak)</span>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-medium flex-wrap justify-center">
-          <span className="text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">{showMakes ? 'Make Distribution:' : 'Shot Distribution:'}</span>
+        <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+          <span className="text-gray-700 dark:text-gray-300">{showMakes ? 'Make Distribution:' : 'Shot Distribution:'}</span>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#10b981' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">≥30%</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">≥30%</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#22c55e' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">25-29%</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#22c55e' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">25-29%</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#f97316' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">10-24%</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#f97316' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">10-24%</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-            <span className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">&lt;10%</span>
+            <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
           </div>
         </div>
       )}
