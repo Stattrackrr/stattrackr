@@ -6109,15 +6109,15 @@
     "buckets": {
       "PG": 40,
       "SG": 37,
-      "SF": 24,
-      "PF": 2,
+      "SF": 10,
+      "PF": 16,
       "C": 30
     },
     "players": [
       {
         "playerId": 666609,
         "name": "Rui Hachimura",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": true,
         "pts": 14,
         "reb": 2,
@@ -6128,7 +6128,8 @@
         "fga": 14,
         "stl": 0,
         "blk": 0,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "PF"
       },
       {
         "playerId": 22,
@@ -6144,7 +6145,8 @@
         "fga": 9,
         "stl": 0,
         "blk": 4,
-        "min": "27"
+        "min": "27",
+        "bmPosition": "C"
       },
       {
         "playerId": 17553995,
@@ -6160,7 +6162,8 @@
         "fga": 15,
         "stl": 1,
         "blk": 1,
-        "min": "40"
+        "min": "40",
+        "bmPosition": "SG"
       },
       {
         "playerId": 132,
@@ -6176,7 +6179,25 @@
         "fga": 22,
         "stl": 1,
         "blk": 1,
-        "min": "35"
+        "min": "35",
+        "bmPosition": "PG"
+      },
+      {
+        "playerId": 38017728,
+        "name": "Jake LaRavia",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 10,
+        "reb": 5,
+        "ast": 2,
+        "fg3m": 2,
+        "fg3a": 7,
+        "fgm": 4,
+        "fga": 14,
+        "stl": 0,
+        "blk": 1,
+        "min": "25",
+        "bmPosition": "SF"
       },
       {
         "playerId": 666626,
@@ -6225,22 +6246,6 @@
         "stl": 0,
         "blk": 1,
         "min": "17"
-      },
-      {
-        "playerId": 38017728,
-        "name": "Jake LaRavia",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 10,
-        "reb": 5,
-        "ast": 2,
-        "fg3m": 2,
-        "fg3a": 7,
-        "fgm": 4,
-        "fga": 14,
-        "stl": 0,
-        "blk": 1,
-        "min": "25"
       },
       {
         "playerId": 420,
@@ -6293,7 +6298,7 @@
       {
         "playerId": 457,
         "name": "Jarred Vanderbilt",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -6387,7 +6392,7 @@
         "min": "25"
       }
     ],
-    "source": "bdl+espn",
-    "lineupVerified": false
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
   }
 ]

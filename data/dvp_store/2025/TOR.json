@@ -5835,8 +5835,8 @@
     "buckets": {
       "PG": 24,
       "SG": 27,
-      "SF": 34,
-      "PF": 7,
+      "SF": 14,
+      "PF": 27,
       "C": 24
     },
     "players": [
@@ -5854,13 +5854,14 @@
         "fga": 10,
         "stl": 2,
         "blk": 2,
-        "min": "33"
+        "min": "33",
+        "bmPosition": "SF"
       },
       {
         "playerId": 202,
         "name": "Josh Hart",
-        "bucket": "SF",
-        "isStarter": false,
+        "bucket": "PF",
+        "isStarter": true,
         "pts": 20,
         "reb": 12,
         "ast": 7,
@@ -5870,7 +5871,8 @@
         "fga": 12,
         "stl": 3,
         "blk": 0,
-        "min": "35"
+        "min": "35",
+        "bmPosition": "PF"
       },
       {
         "playerId": 447,
@@ -5886,7 +5888,8 @@
         "fga": 15,
         "stl": 0,
         "blk": 0,
-        "min": "31"
+        "min": "31",
+        "bmPosition": "C"
       },
       {
         "playerId": 73,
@@ -5902,7 +5905,8 @@
         "fga": 19,
         "stl": 0,
         "blk": 0,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "PG"
       },
       {
         "playerId": 17896033,
@@ -5918,7 +5922,8 @@
         "fga": 11,
         "stl": 2,
         "blk": 0,
-        "min": "35"
+        "min": "35",
+        "bmPosition": "SG"
       },
       {
         "playerId": 100,
@@ -6051,7 +6056,7 @@
       {
         "playerId": 1028025498,
         "name": "Pacome Dadiet",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -6113,7 +6118,7 @@
         "min": "00"
       }
     ],
-    "source": "bdl+espn",
+    "source": "basketballmonsters-projected",
     "lineupVerified": false
   },
   {
@@ -6163,6 +6168,57 @@
         "blk": 0,
         "min": "42",
         "bmPosition": "PF"
+      },
+      {
+        "playerId": 1057384362,
+        "name": "Ryan Kalkbrenner",
+        "bucket": "C",
+        "isStarter": true,
+        "pts": 8,
+        "reb": 6,
+        "ast": 2,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 3,
+        "fga": 4,
+        "stl": 1,
+        "blk": 1,
+        "min": "22",
+        "bmPosition": "C"
+      },
+      {
+        "playerId": 56677823,
+        "name": "Brandon Miller",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 7,
+        "reb": 2,
+        "ast": 3,
+        "fg3m": 0,
+        "fg3a": 6,
+        "fgm": 1,
+        "fga": 13,
+        "stl": 0,
+        "blk": 2,
+        "min": "25",
+        "bmPosition": "SF"
+      },
+      {
+        "playerId": 3547239,
+        "name": "LaMelo Ball",
+        "bucket": "PG",
+        "isStarter": true,
+        "pts": 14,
+        "reb": 2,
+        "ast": 5,
+        "fg3m": 1,
+        "fg3a": 6,
+        "fgm": 6,
+        "fga": 16,
+        "stl": 0,
+        "blk": 0,
+        "min": "22",
+        "bmPosition": "PG"
       },
       {
         "playerId": 38017725,
@@ -6247,7 +6303,7 @@
       {
         "playerId": 1028038100,
         "name": "Antonio Reeves",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -6371,60 +6427,9 @@
         "stl": 0,
         "blk": 0,
         "min": "00"
-      },
-      {
-        "playerId": 1057384362,
-        "name": "Ryan Kalkbrenner",
-        "bucket": "C",
-        "isStarter": true,
-        "pts": 8,
-        "reb": 6,
-        "ast": 2,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 3,
-        "fga": 4,
-        "stl": 1,
-        "blk": 1,
-        "min": "22",
-        "bmPosition": "C"
-      },
-      {
-        "playerId": 56677823,
-        "name": "Brandon Miller",
-        "bucket": "SF",
-        "isStarter": true,
-        "pts": 7,
-        "reb": 2,
-        "ast": 3,
-        "fg3m": 0,
-        "fg3a": 6,
-        "fgm": 1,
-        "fga": 13,
-        "stl": 0,
-        "blk": 2,
-        "min": "25",
-        "bmPosition": "SF"
-      },
-      {
-        "playerId": 3547239,
-        "name": "LaMelo Ball",
-        "bucket": "PG",
-        "isStarter": true,
-        "pts": 14,
-        "reb": 2,
-        "ast": 5,
-        "fg3m": 1,
-        "fg3a": 6,
-        "fgm": 6,
-        "fga": 16,
-        "stl": 0,
-        "blk": 0,
-        "min": "22",
-        "bmPosition": "PG"
       }
     ],
-    "source": "basketballmonsters-verified",
-    "lineupVerified": true
+    "source": "basketballmonsters-projected",
+    "lineupVerified": false
   }
 ]

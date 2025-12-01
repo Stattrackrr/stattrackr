@@ -5003,7 +5003,8 @@
         "fga": 9,
         "stl": 1,
         "blk": 0,
-        "min": "25"
+        "min": "25",
+        "bmPosition": "SG"
       },
       {
         "playerId": 297,
@@ -5019,7 +5020,8 @@
         "fga": 12,
         "stl": 0,
         "blk": 0,
-        "min": "30"
+        "min": "30",
+        "bmPosition": "PF"
       },
       {
         "playerId": 349,
@@ -5035,23 +5037,8 @@
         "fga": 7,
         "stl": 0,
         "blk": 1,
-        "min": "19"
-      },
-      {
-        "playerId": 1057260888,
-        "name": "Airious Bailey",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 19,
-        "reb": 2,
-        "ast": 1,
-        "fg3m": 3,
-        "fg3a": 5,
-        "fgm": 8,
-        "fga": 12,
-        "stl": 0,
-        "blk": 0,
-        "min": "32"
+        "min": "19",
+        "bmPosition": "C"
       },
       {
         "playerId": 56677834,
@@ -5067,7 +5054,41 @@
         "fga": 6,
         "stl": 0,
         "blk": 1,
-        "min": "19"
+        "min": "19",
+        "bmPosition": "PG"
+      },
+      {
+        "playerId": 0,
+        "name": "Ace Bailey",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 1057260888,
+        "name": "Airious Bailey",
+        "bucket": "SF",
+        "isStarter": false,
+        "pts": 19,
+        "reb": 2,
+        "ast": 1,
+        "fg3m": 3,
+        "fg3a": 5,
+        "fgm": 8,
+        "fga": 12,
+        "stl": 0,
+        "blk": 0,
+        "min": "32",
+        "bmPosition": "SF"
       },
       {
         "playerId": 12,
@@ -5152,7 +5173,7 @@
       {
         "playerId": 344,
         "name": "Georges Niang",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5200,7 +5221,7 @@
       {
         "playerId": 56677824,
         "name": "Taylor Hendricks",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5264,7 +5285,7 @@
       {
         "playerId": 1028029291,
         "name": "Cody Williams",
-        "bucket": "SF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5276,25 +5297,9 @@
         "stl": 0,
         "blk": 0,
         "min": "00"
-      },
-      {
-        "playerId": 0,
-        "name": "Ace Bailey",
-        "bucket": "SF",
-        "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
+    "source": "basketballmonsters-projected",
     "lineupVerified": false
   }
 ]
