@@ -5048,8 +5048,8 @@
     "season": "2025-26",
     "buckets": {
       "PG": 20,
-      "SG": 12,
-      "SF": 32,
+      "SG": 5,
+      "SF": 39,
       "PF": 19,
       "C": 46
     },
@@ -5222,7 +5222,7 @@
       {
         "playerId": 356,
         "name": "Josh Okogie",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 7,
         "reb": 5,
@@ -5254,7 +5254,7 @@
       {
         "playerId": 1028203948,
         "name": "Isaiah Crawford",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,

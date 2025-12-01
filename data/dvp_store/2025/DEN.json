@@ -5568,8 +5568,8 @@
     "buckets": {
       "PG": 26,
       "SG": 38,
-      "SF": 42,
-      "PF": 14,
+      "SF": 39,
+      "PF": 17,
       "C": 19
     },
     "players": [
@@ -5677,7 +5677,7 @@
       {
         "playerId": 1057271360,
         "name": "Carter Bryant",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 3,
         "reb": 2,
@@ -5805,7 +5805,7 @@
       {
         "playerId": 1028046464,
         "name": "Harrison Ingram",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,

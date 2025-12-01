@@ -5450,16 +5450,16 @@
     "buckets": {
       "PG": 33,
       "SG": 18,
-      "SF": 35,
-      "PF": 27,
-      "C": 2
+      "SF": 27,
+      "PF": 8,
+      "C": 29
     },
     "players": [
       {
         "playerId": 666656,
         "name": "De'Andre Hunter",
-        "bucket": "SF",
-        "isStarter": false,
+        "bucket": "PF",
+        "isStarter": true,
         "pts": 8,
         "reb": 3,
         "ast": 1,
@@ -5469,13 +5469,14 @@
         "fga": 10,
         "stl": 0,
         "blk": 0,
-        "min": "27"
+        "min": "27",
+        "bmPosition": "PF"
       },
       {
         "playerId": 1028028993,
         "name": "Jaylon Tyson",
         "bucket": "SF",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 17,
         "reb": 5,
         "ast": 1,
@@ -5485,12 +5486,13 @@
         "fga": 18,
         "stl": 2,
         "blk": 2,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "SF"
       },
       {
         "playerId": 17896076,
         "name": "Evan Mobley",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": true,
         "pts": 27,
         "reb": 14,
@@ -5501,7 +5503,8 @@
         "fga": 17,
         "stl": 0,
         "blk": 0,
-        "min": "39"
+        "min": "39",
+        "bmPosition": "C"
       },
       {
         "playerId": 322,
@@ -5517,7 +5520,8 @@
         "fga": 16,
         "stl": 3,
         "blk": 0,
-        "min": "39"
+        "min": "39",
+        "bmPosition": "SG"
       },
       {
         "playerId": 666581,
@@ -5533,7 +5537,24 @@
         "fga": 16,
         "stl": 0,
         "blk": 0,
-        "min": "31"
+        "min": "31",
+        "bmPosition": "PG"
+      },
+      {
+        "playerId": 0,
+        "name": "De X Andre Hunter",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
       },
       {
         "playerId": 27,
@@ -5618,7 +5639,7 @@
       {
         "playerId": 1028267470,
         "name": "Luke Travers",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5666,7 +5687,7 @@
       {
         "playerId": 56677854,
         "name": "Chris Livingston",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5729,22 +5750,6 @@
       },
       {
         "playerId": 0,
-        "name": "De X Andre Hunter",
-        "bucket": "SF",
-        "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Nae X Qwan Tomlin",
         "bucket": "SF",
         "isStarter": false,
@@ -5760,7 +5765,7 @@
         "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
+    "source": "basketballmonsters-projected",
     "lineupVerified": false
   },
   {
@@ -6041,7 +6046,7 @@
       {
         "playerId": 340,
         "name": "Larry Nance Jr.",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
