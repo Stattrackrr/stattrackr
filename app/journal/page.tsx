@@ -2580,10 +2580,7 @@ function JournalContent() {
       )}
       
       {/* Mobile Bottom Navigation - Always visible on mobile */}
-      <div
-        className="lg:hidden fixed left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom"
-        style={{ bottom: 'max(env(safe-area-inset-bottom), 24px)' }}
-      >
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
         {/* Profile Dropdown Menu - Shows above bottom nav */}
         {showProfileDropdown && (
           <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">

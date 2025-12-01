@@ -29,6 +29,14 @@
   }
 }
 
+/* iOS standalone mode: Add safe area padding to body to prevent content from going under status bar */
+/* Only applies when in standalone mode (added to home screen), not in Safari */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);

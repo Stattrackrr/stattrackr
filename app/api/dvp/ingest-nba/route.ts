@@ -1117,7 +1117,63 @@ for (const r of oppRows2){
           }
         }
         
-        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: (r as any)?.min || '0:00', bmPosition });
+        // Skip players with 0 minutes or very low minutes (< 5 minutes = garbage time only)
+        const playerMin = (r as any)?.min || '0:00';
+        const playerMinSeconds = parseMinToSeconds(playerMin);
+        if (playerMinSeconds < 300) { // 5 minutes = 300 seconds
+          continue;
+        }
+        
+        players.push({ playerId: Number(r?.player?.id)||0, name, bucket, isStarter, pts: val, reb: Number(r?.reb||0), ast: Number(r?.ast||0), fg3m: Number(r?.fg3m||0), fg3a: Number(r?.fg3a||0), fgm: Number(r?.fgm||0), fga: Number(r?.fga||0), stl: Number(r?.stl||0), blk: Number(r?.blk||0), min: playerMin, bmPosition });
+      }
+      
+      // NOTE: DvP store should ONLY contain opponent players, not the team's own players
+      // The team's own players are NOT added to the DvP store because DvP tracks
+      // how the team defends against opposing players at each position
+      
+      // Fallback: If no starters were detected, mark top 5 players by minutes as starters
+      const detectedStarters = players.filter(p => p.isStarter).length;
+      if (detectedStarters === 0 && players.length > 0) {
+        // Sort by minutes and mark top 5 as starters
+        const sortedByMinutes = [...players].sort((a, b) => {
+          const aMin = parseMinToSeconds(a.min);
+          const bMin = parseMinToSeconds(b.min);
+          return bMin - aMin; // Descending
+        });
+        // Mark top 5 as starters
+        const top5Ids = new Set(sortedByMinutes.slice(0, 5).map(p => p.playerId));
+        players.forEach(p => {
+          if (top5Ids.has(p.playerId)) {
+            p.isStarter = true;
+          }
+        });
+      }
+      
+      // Limit to top 13 players by minutes played (5 starters + 8 bench max)
+      // This prevents including too many garbage-time players
+      if (players.length > 13) {
+        // Sort by minutes (descending) and keep top 13
+        players.sort((a, b) => {
+          const aMin = parseMinToSeconds(a.min);
+          const bMin = parseMinToSeconds(b.min);
+          return bMin - aMin; // Descending
+        });
+        // Keep top 13, but always keep all starters
+        const starters = players.filter(p => p.isStarter);
+        const bench = players.filter(p => !p.isStarter);
+        const topBench = bench.slice(0, Math.max(0, 13 - starters.length));
+        players = [...starters, ...topBench];
+        
+        // Recalculate buckets after limiting players
+        const newBuckets: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+        players.forEach(p => {
+          const bucket = p.bucket;
+          const pts = Number(p.pts || 0);
+          if (bucket && ['PG','SG','SF','PF','C'].includes(bucket)) {
+            newBuckets[bucket as 'PG'|'SG'|'SF'|'PF'|'C'] += pts;
+          }
+        });
+        Object.assign(buckets, newBuckets); // Update the original buckets object
       }
       
       // Add zero-line entries for depth-chart players missing from BDL stats

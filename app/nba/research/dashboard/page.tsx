@@ -2486,12 +2486,6 @@ const ChartControls = function ChartControls({
   intradayMovements,
 }: any) {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-  const [advancedFilterTop, setAdvancedFilterTop] = useState<number | null>(null);
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   const latestMovement = lineMovementEnabled && intradayMovements && intradayMovements.length > 0
     ? intradayMovements[0]
     : null;
@@ -2621,6 +2615,7 @@ const ChartControls = function ChartControls({
   // Close Advanced when clicking outside (desktop or mobile containers)
   const advancedDesktopRef = useRef<HTMLDivElement | null>(null);
   const advancedMobileRef = useRef<HTMLDivElement | null>(null);
+  const advancedMobilePortalRef = useRef<HTMLDivElement | null>(null);
 
   // (With/Without teammate options now come directly from depth chart roster)
   useEffect(() => {
@@ -2630,7 +2625,8 @@ const ChartControls = function ChartControls({
       if (!target) return;
       const inDesktop = advancedDesktopRef.current?.contains(target);
       const inMobile = advancedMobileRef.current?.contains(target);
-      if (inDesktop || inMobile) return;
+      const inMobilePortal = advancedMobilePortalRef.current?.contains(target);
+      if (inDesktop || inMobile || inMobilePortal) return;
       setIsAdvancedFiltersOpen(false);
     };
     document.addEventListener('mousedown', handleOutside);
@@ -2641,12 +2637,6 @@ const ChartControls = function ChartControls({
     };
   }, [isAdvancedFiltersOpen]);
 
-  // Reset advancedFilterTop when dropdown closes
-  useEffect(() => {
-    if (!isAdvancedFiltersOpen) {
-      setAdvancedFilterTop(null);
-    }
-  }, [isAdvancedFiltersOpen]);
   
   // Update Over Rate when committed line or data changes
   useEffect(() => {
@@ -2943,9 +2933,9 @@ const ChartControls = function ChartControls({
   }, [displayLine, realOddsData, selectedStat]);
   
    const StatPills = useMemo(() => (
-      <div className="mb-2 sm:mb-3 md:mb-4 mt-1 sm:mt-0">
+      <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0">
         <div
-          className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar"
+          className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar"
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
             {currentStatOptions.map((s: any) => (
@@ -4198,24 +4188,22 @@ const ChartControls = function ChartControls({
               {propsMode === 'player' && (
                 <div className="relative" ref={advancedMobileRef}>
                   <button
-                    onClick={(e) => {
-                      if (!isAdvancedFiltersOpen) {
-                        const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        // Position directly below button, centered - use viewport position (fixed)
-                        setAdvancedFilterTop(buttonRect.bottom + 4); // 4px gap below button
-                      }
-                      setIsAdvancedFiltersOpen((v: boolean) => !v);
-                    }}
+                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
                     className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
                   >
                     Advanced
                   </button>
-                  {isAdvancedFiltersOpen && advancedFilterTop !== null && mounted && createPortal(
+                  {isAdvancedFiltersOpen && (
                     <div 
-                      className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
-                      style={{ 
-                        top: `${advancedFilterTop}px`,
-                        position: 'fixed'
+                      ref={advancedMobilePortalRef}
+                      className="absolute right-0 top-full mt-1 w-[min(calc(100vw-2rem),20rem)] sm:w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
+                      onClick={(e) => {
+                        // Prevent clicks inside the dropdown from closing it
+                        e.stopPropagation();
+                      }}
+                      onTouchStart={(e) => {
+                        // Prevent touch events inside the dropdown from closing it
+                        e.stopPropagation();
                       }}
                     >
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
@@ -4366,8 +4354,7 @@ const ChartControls = function ChartControls({
                           </span>
                         </button>
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               )}
@@ -10561,6 +10548,16 @@ const lineMovementInFlightRef = useRef(false);
           .fade-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.2); }
         }
 
+        /* Mobile-only: thinner scrollbar for stats slider */
+        @media (max-width: 639px) {
+          .stats-slider-scrollbar::-webkit-scrollbar {
+            height: 4px;
+          }
+          .stats-slider-scrollbar {
+            scrollbar-width: thin;
+          }
+        }
+
         /* Mobile-only: hide X/Y axis ticks and lines inside the chart */
         @media (max-width: 639px) {
           /* Hide tick groups and text for both axes */
@@ -12072,7 +12069,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
             {propsMode === 'player' && (
-              <div className="lg:hidden w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
+              <div className="lg:hidden w-full flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
@@ -12089,169 +12086,6 @@ const lineMovementInFlightRef = useRef(false);
               </div>
             )}
 
-            {/* 5. Advanced Stats Container (Mobile) - Player Props mode only */}
-            {propsMode === 'player' && (
-              <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
-                </div>
-                {advancedStats ? (
-                  <div className="space-y-3">
-                    {/* Mobile: Single column layout with sections */}
-                    
-                    {/* Offensive Metrics */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>OFF RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.offensive_rating ? 'text-gray-400' :
-                            advancedStats.offensive_rating >= 115 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.offensive_rating >= 108 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.offensive_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>TS%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.true_shooting_percentage ? 'text-gray-400' :
-                            (advancedStats.true_shooting_percentage * 100) >= 58 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.true_shooting_percentage * 100) >= 54 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.true_shooting_percentage ? (advancedStats.true_shooting_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>eFG%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.effective_field_goal_percentage ? 'text-gray-400' :
-                            (advancedStats.effective_field_goal_percentage * 100) >= 55 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.effective_field_goal_percentage * 100) >= 50 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.effective_field_goal_percentage ? (advancedStats.effective_field_goal_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>USG%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.usage_percentage ? 'text-gray-400' :
-                            (advancedStats.usage_percentage * 100) >= 28 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.usage_percentage * 100) >= 22 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.usage_percentage ? (advancedStats.usage_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Impact & Defensive Metrics */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact & Defense</h4>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>NET RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.net_rating ? 'text-gray-400' :
-                            advancedStats.net_rating >= 3 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.net_rating >= -2 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.net_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>DEF RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.defensive_rating ? 'text-gray-400' :
-                            advancedStats.defensive_rating <= 108 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.defensive_rating <= 112 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>PIE</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.pie ? 'text-gray-400' :
-                            (advancedStats.pie * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.pie * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.pie ? (advancedStats.pie * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>PACE</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.pace ? 'text-gray-400' :
-                            advancedStats.pace >= 102 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.pace >= 98 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.pace?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Rebounding & Playmaking */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding & Playmaking</h4>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>REB%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.rebound_percentage ? 'text-gray-400' :
-                            (advancedStats.rebound_percentage * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.rebound_percentage * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.rebound_percentage ? (advancedStats.rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>AST%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.assist_percentage ? 'text-gray-400' :
-                            (advancedStats.assist_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.assist_percentage * 100) >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.assist_percentage ? (advancedStats.assist_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>OREB%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.offensive_rebound_percentage ? 'text-gray-400' :
-                            (advancedStats.offensive_rebound_percentage * 100) >= 8 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.offensive_rebound_percentage * 100) >= 4 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.offensive_rebound_percentage ? (advancedStats.offensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>AST/TO</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.assist_to_turnover ? 'text-gray-400' :
-                            advancedStats.assist_to_turnover >= 2.0 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.assist_to_turnover >= 1.5 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : advancedStatsLoading ? (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading advanced stats...</div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No advanced stats available</div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* 5.5. Tracking Stats Container (Mobile) - Team Rankings */}
             {useMemo(() => {
@@ -13224,7 +13058,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Shot Chart (Desktop) - only in Player Props mode */}
             {propsMode === 'player' && (
-              <div className="hidden lg:block w-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
+              <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
@@ -13240,8 +13074,8 @@ const lineMovementInFlightRef = useRef(false);
                 />
               </div>
             )}
-            
-            {/* Advanced Stats Container (Desktop) - only in Player Props mode, below Shot Chart */}
+
+            {/* Advanced Stats Container (Desktop - Right Panel) - only in Player Props mode, below Shot Chart */}
             {propsMode === 'player' && (
               <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
                 <div className="flex items-center justify-between mb-3">
@@ -13402,7 +13236,7 @@ const lineMovementInFlightRef = useRef(false);
                 )}
               </div>
             )}
-            
+
             {/* ESP Injury Report (Desktop) - always visible in both modes */}
             <div className="hidden lg:block">
               <InjuryContainer
