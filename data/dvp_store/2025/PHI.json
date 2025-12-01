@@ -5079,8 +5079,8 @@
     "team": "PHI",
     "season": "2025-26",
     "buckets": {
-      "PG": 25,
-      "SG": 36,
+      "PG": 42,
+      "SG": 19,
       "SF": 17,
       "PF": 54,
       "C": 10
@@ -5100,7 +5100,8 @@
         "fga": 11,
         "stl": 0,
         "blk": 1,
-        "min": "30"
+        "min": "30",
+        "bmPosition": "SF"
       },
       {
         "playerId": 17896040,
@@ -5116,7 +5117,59 @@
         "fga": 21,
         "stl": 1,
         "blk": 1,
-        "min": "45"
+        "min": "45",
+        "bmPosition": "PF"
+      },
+      {
+        "playerId": 38017677,
+        "name": "Dyson Daniels",
+        "bucket": "SG",
+        "isStarter": true,
+        "pts": 17,
+        "reb": 9,
+        "ast": 8,
+        "fg3m": 0,
+        "fg3a": 3,
+        "fgm": 8,
+        "fga": 14,
+        "stl": 2,
+        "blk": 0,
+        "min": "44",
+        "bmPosition": "SG"
+      },
+      {
+        "playerId": 666400,
+        "name": "Nickeil Alexander-Walker",
+        "bucket": "PG",
+        "isStarter": true,
+        "pts": 34,
+        "reb": 8,
+        "ast": 7,
+        "fg3m": 6,
+        "fg3a": 11,
+        "fgm": 11,
+        "fga": 22,
+        "stl": 1,
+        "blk": 1,
+        "min": "45",
+        "bmPosition": "PG"
+      },
+      {
+        "playerId": 378,
+        "name": "Kristaps Porzingis",
+        "bucket": "C",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00",
+        "bmPosition": "C"
       },
       {
         "playerId": 3547244,
@@ -5133,38 +5186,6 @@
         "stl": 1,
         "blk": 0,
         "min": "47"
-      },
-      {
-        "playerId": 38017677,
-        "name": "Dyson Daniels",
-        "bucket": "PG",
-        "isStarter": true,
-        "pts": 17,
-        "reb": 9,
-        "ast": 8,
-        "fg3m": 0,
-        "fg3a": 3,
-        "fgm": 8,
-        "fga": 14,
-        "stl": 2,
-        "blk": 0,
-        "min": "44"
-      },
-      {
-        "playerId": 666400,
-        "name": "Nickeil Alexander-Walker",
-        "bucket": "SG",
-        "isStarter": true,
-        "pts": 34,
-        "reb": 8,
-        "ast": 7,
-        "fg3m": 6,
-        "fg3a": 11,
-        "fgm": 11,
-        "fga": 22,
-        "stl": 1,
-        "blk": 1,
-        "min": "45"
       },
       {
         "playerId": 56677806,
@@ -5247,22 +5268,6 @@
         "min": "01"
       },
       {
-        "playerId": 378,
-        "name": "Kristaps Porzingis",
-        "bucket": "C",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "00"
-      },
-      {
         "playerId": 45088184,
         "name": "Keaton Wallace",
         "bucket": "PG",
@@ -5313,7 +5318,7 @@
       {
         "playerId": 1057847875,
         "name": "Eli John Ndiaye",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5391,7 +5396,7 @@
         "min": "0:00"
       }
     ],
-    "source": "bdl+espn",
+    "source": "basketballmonsters-projected",
     "lineupVerified": false
   },
   {

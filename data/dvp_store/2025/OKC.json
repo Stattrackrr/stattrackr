@@ -5786,8 +5786,8 @@
     "season": "2025-26",
     "buckets": {
       "PG": 46,
-      "SG": 12,
-      "SF": 32,
+      "SG": 25,
+      "SF": 19,
       "PF": 18,
       "C": 7
     },
@@ -5896,7 +5896,7 @@
       {
         "playerId": 56677791,
         "name": "Kris Murray",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 13,
         "reb": 6,
@@ -6024,7 +6024,7 @@
       {
         "playerId": 666923,
         "name": "Matisse Thybulle",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
