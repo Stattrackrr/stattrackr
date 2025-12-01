@@ -14,22 +14,6 @@
     },
     "players": [
       {
-        "playerId": 399,
-        "name": "Mitchell Robinson",
-        "bucket": "C",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "00"
-      },
-      {
         "playerId": 18,
         "name": "OG Anunoby",
         "bucket": "SF",
@@ -94,6 +78,22 @@
         "min": "32"
       },
       {
+        "playerId": 399,
+        "name": "Mitchell Robinson",
+        "bucket": "SF",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "00"
+      },
+      {
         "playerId": 414,
         "name": "Landry Shamet",
         "bucket": "SG",
@@ -128,7 +128,7 @@
       {
         "playerId": 1028025498,
         "name": "Pacome Dadiet",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 1,
@@ -144,7 +144,7 @@
       {
         "playerId": 1057393207,
         "name": "Mohamed Diawara",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -160,7 +160,7 @@
       {
         "playerId": 202,
         "name": "Josh Hart",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 12,
         "reb": 10,
@@ -192,7 +192,7 @@
       {
         "playerId": 64269023,
         "name": "Trey Jemison",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -208,7 +208,7 @@
       {
         "playerId": 1028036898,
         "name": "Tyler Kolek",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 2,
         "reb": 0,
@@ -256,7 +256,7 @@
       {
         "playerId": 64268165,
         "name": "Tosan Evbuomwan",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -305,7 +305,7 @@
       {
         "playerId": 3547251,
         "name": "Cole Anthony",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 9,
         "reb": 2,
@@ -337,7 +337,7 @@
       {
         "playerId": 196,
         "name": "Gary Harris",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -401,7 +401,7 @@
       {
         "playerId": 666849,
         "name": "Kevin Porter Jr.",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 10,
         "reb": 0,
@@ -417,7 +417,7 @@
       {
         "playerId": 56677852,
         "name": "Andre Jackson Jr.",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -449,7 +449,7 @@
       {
         "playerId": 377,
         "name": "Bobby Portis",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 6,
@@ -465,7 +465,7 @@
       {
         "playerId": 383,
         "name": "Taurean Prince",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 11,
         "reb": 1,
@@ -497,7 +497,7 @@
       {
         "playerId": 17896063,
         "name": "Jericho Sims",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 2,
         "reb": 0,
@@ -513,7 +513,7 @@
       {
         "playerId": 1060010671,
         "name": "Alex Antetokounmpo",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -529,7 +529,7 @@
       {
         "playerId": 64270026,
         "name": "Pete Nance",
-        "bucket": "PF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -545,7 +545,7 @@
       {
         "playerId": 1057848654,
         "name": "Mark Sears",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -706,7 +706,7 @@
       {
         "playerId": 3547293,
         "name": "Naji Marshall",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 7,
         "reb": 6,
@@ -722,7 +722,7 @@
       {
         "playerId": 666747,
         "name": "Caleb Martin",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -738,7 +738,7 @@
       {
         "playerId": 1057847894,
         "name": "Ryan Nembhard",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 1,
@@ -754,7 +754,7 @@
       {
         "playerId": 379,
         "name": "Dwight Powell",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -770,7 +770,7 @@
       {
         "playerId": 405,
         "name": "D'Angelo Russell",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 1,
         "reb": 2,
@@ -786,7 +786,7 @@
       {
         "playerId": 24489167,
         "name": "Brandon Williams",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -802,7 +802,7 @@
       {
         "playerId": 151,
         "name": "Dante Exum",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -818,7 +818,7 @@
       {
         "playerId": 666577,
         "name": "Daniel Gafford",
-        "bucket": "PF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -834,7 +834,7 @@
       {
         "playerId": 228,
         "name": "Kyrie Irving",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -850,7 +850,7 @@
       {
         "playerId": 1057847026,
         "name": "Miles Kelly",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -995,7 +995,7 @@
       {
         "playerId": 1057384156,
         "name": "Sion James",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 13,
         "reb": 0,
@@ -1011,7 +1011,7 @@
       {
         "playerId": 17896036,
         "name": "Tre Mann",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 2,
@@ -1027,7 +1027,7 @@
       {
         "playerId": 1057278805,
         "name": "Liam McNeeley",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 1,
@@ -1043,7 +1043,7 @@
       {
         "playerId": 371,
         "name": "Mason Plumlee",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 2,
@@ -1075,7 +1075,7 @@
       {
         "playerId": 3547258,
         "name": "Josh Green",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1091,7 +1091,7 @@
       {
         "playerId": 56677823,
         "name": "Brandon Miller",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1107,7 +1107,7 @@
       {
         "playerId": 64270311,
         "name": "Drew Peterson",
-        "bucket": "PF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1123,7 +1123,7 @@
       {
         "playerId": 1028038100,
         "name": "Antonio Reeves",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1139,7 +1139,7 @@
       {
         "playerId": 1028038474,
         "name": "K.J. Simpson",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1155,7 +1155,7 @@
       {
         "playerId": 666965,
         "name": "Grant Williams",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1188,7 +1188,7 @@
       {
         "playerId": 1028214238,
         "name": "Justin Edwards",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 3,
         "reb": 0,
@@ -1268,7 +1268,7 @@
       {
         "playerId": 1028034846,
         "name": "Adem Bona",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 5,
@@ -1284,7 +1284,7 @@
       {
         "playerId": 1057382509,
         "name": "Johni Broome",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1316,7 +1316,7 @@
       {
         "playerId": 178,
         "name": "Eric Gordon",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1348,7 +1348,7 @@
       {
         "playerId": 286,
         "name": "Kyle Lowry",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1364,7 +1364,7 @@
       {
         "playerId": 1057848561,
         "name": "Hunter Sallis",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1380,7 +1380,7 @@
       {
         "playerId": 38017711,
         "name": "Jabari Walker",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 8,
         "reb": 2,
@@ -1412,7 +1412,7 @@
       {
         "playerId": 38017730,
         "name": "Dominick Barlow",
-        "bucket": "PF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1428,7 +1428,7 @@
       {
         "playerId": 172,
         "name": "Paul George",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1444,7 +1444,7 @@
       {
         "playerId": 1028027372,
         "name": "Jared McCain",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1493,7 +1493,7 @@
       {
         "playerId": 89,
         "name": "Alex Caruso",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 2,
@@ -1509,7 +1509,7 @@
       {
         "playerId": 38017716,
         "name": "Ousmane Dieng",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 2,
         "reb": 0,
@@ -1525,7 +1525,7 @@
       {
         "playerId": 3547272,
         "name": "Isaiah Joe",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 20,
         "reb": 6,
@@ -1573,7 +1573,7 @@
       {
         "playerId": 38017685,
         "name": "Chet Holmgren",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1605,7 +1605,7 @@
       {
         "playerId": 1028028932,
         "name": "Nikola Topic",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1621,7 +1621,7 @@
       {
         "playerId": 666541,
         "name": "Luguentz Dort",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 7,
         "reb": 6,
@@ -1637,7 +1637,7 @@
       {
         "playerId": 17896078,
         "name": "Aaron Wiggins",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 8,
         "reb": 4,
@@ -1701,7 +1701,7 @@
       {
         "playerId": 38017703,
         "name": "Jalen Williams",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1717,7 +1717,7 @@
       {
         "playerId": 480,
         "name": "Kenrich Williams",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1750,7 +1750,7 @@
       {
         "playerId": 17896026,
         "name": "Franz Wagner",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 25,
         "reb": 6,
@@ -1782,7 +1782,7 @@
       {
         "playerId": 85,
         "name": "Wendell Carter Jr.",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 16,
         "reb": 12,
@@ -1862,7 +1862,7 @@
       {
         "playerId": 1028025497,
         "name": "Tristan Da Silva",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 2,
@@ -1878,7 +1878,7 @@
       {
         "playerId": 56677839,
         "name": "Jett Howard",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 3,
         "reb": 1,
@@ -1910,7 +1910,7 @@
       {
         "playerId": 462,
         "name": "Moritz Wagner",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1926,7 +1926,7 @@
       {
         "playerId": 249,
         "name": "Tyus Jones",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 6,
         "reb": 2,
@@ -1942,7 +1942,7 @@
       {
         "playerId": 1057385481,
         "name": "Noah Penda",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 3,
         "reb": 2,
@@ -1958,7 +1958,7 @@
       {
         "playerId": 1057279571,
         "name": "Jase Richardson",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 1,
@@ -1974,7 +1974,7 @@
       {
         "playerId": 38017734,
         "name": "Jamal Cain",
-        "bucket": "PF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -1990,7 +1990,7 @@
       {
         "playerId": 56677738,
         "name": "Colin Castleton",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2006,7 +2006,7 @@
       {
         "playerId": 39398582,
         "name": "Orlando Robinson",
-        "bucket": "C",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2119,7 +2119,7 @@
       {
         "playerId": 58,
         "name": "Chris Boucher",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2199,7 +2199,7 @@
       {
         "playerId": 1028028434,
         "name": "Baylor Scheierman",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2247,7 +2247,7 @@
       {
         "playerId": 38017717,
         "name": "Ron Harper Jr.",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2326,22 +2326,6 @@
     },
     "players": [
       {
-        "playerId": 666656,
-        "name": "De'Andre Hunter",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 8,
-        "reb": 5,
-        "ast": 2,
-        "fg3m": 0,
-        "fg3a": 3,
-        "fgm": 2,
-        "fga": 9,
-        "stl": 1,
-        "blk": 0,
-        "min": "21"
-      },
-      {
         "playerId": 17896076,
         "name": "Evan Mobley",
         "bucket": "PF",
@@ -2406,9 +2390,41 @@
         "min": "28"
       },
       {
+        "playerId": 0,
+        "name": "De X Andre Hunter",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 666656,
+        "name": "De'Andre Hunter",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 8,
+        "reb": 5,
+        "ast": 2,
+        "fg3m": 0,
+        "fg3a": 3,
+        "fgm": 2,
+        "fga": 9,
+        "stl": 1,
+        "blk": 0,
+        "min": "21"
+      },
+      {
         "playerId": 74,
         "name": "Thomas Bryant",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 4,
         "reb": 2,
@@ -2440,7 +2456,7 @@
       {
         "playerId": 340,
         "name": "Larry Nance Jr.",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 5,
         "reb": 2,
@@ -2472,7 +2488,7 @@
       {
         "playerId": 1028028993,
         "name": "Jaylon Tyson",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 10,
         "reb": 4,
@@ -2504,7 +2520,7 @@
       {
         "playerId": 56677854,
         "name": "Chris Livingston",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2536,7 +2552,7 @@
       {
         "playerId": 666940,
         "name": "Dean Wade",
-        "bucket": "SF",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2599,24 +2615,8 @@
       },
       {
         "playerId": 0,
-        "name": "De X Andre Hunter",
-        "bucket": "SF",
-        "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Nae X Qwan Tomlin",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2677,6 +2677,22 @@
         "stl": 1,
         "blk": 1,
         "min": "37"
+      },
+      {
+        "playerId": 0,
+        "name": "Dx Angelo Russell",
+        "bucket": "PG",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
       },
       {
         "playerId": 666577,
@@ -2777,7 +2793,7 @@
       {
         "playerId": 666747,
         "name": "Caleb Martin",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2793,7 +2809,7 @@
       {
         "playerId": 1057847894,
         "name": "Ryan Nembhard",
-        "bucket": "PG",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2841,7 +2857,7 @@
       {
         "playerId": 117,
         "name": "Anthony Davis",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2857,7 +2873,7 @@
       {
         "playerId": 151,
         "name": "Dante Exum",
-        "bucket": "PG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2873,7 +2889,7 @@
       {
         "playerId": 228,
         "name": "Kyrie Irving",
-        "bucket": "PG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -2936,24 +2952,8 @@
       },
       {
         "playerId": 0,
-        "name": "Dx Angelo Russell",
-        "bucket": "PG",
-        "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Rj Nembhard",
-        "bucket": "PG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3194,7 +3194,7 @@
       {
         "playerId": 1028203948,
         "name": "Isaiah Crawford",
-        "bucket": "SF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3242,7 +3242,7 @@
       {
         "playerId": 458,
         "name": "Fred VanVleet",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3258,7 +3258,7 @@
       {
         "playerId": 0,
         "name": "Jae X Sean Tate",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3288,38 +3288,6 @@
       "C": 27
     },
     "players": [
-      {
-        "playerId": 666604,
-        "name": "Javonte Green",
-        "bucket": "SG",
-        "isStarter": false,
-        "pts": 11,
-        "reb": 11,
-        "ast": 3,
-        "fg3m": 1,
-        "fg3a": 5,
-        "fgm": 4,
-        "fga": 11,
-        "stl": 1,
-        "blk": 2,
-        "min": "38"
-      },
-      {
-        "playerId": 1028026508,
-        "name": "Ronald Holland II",
-        "bucket": "PF",
-        "isStarter": false,
-        "pts": 5,
-        "reb": 1,
-        "ast": 1,
-        "fg3m": 0,
-        "fg3a": 3,
-        "fgm": 1,
-        "fga": 4,
-        "stl": 1,
-        "blk": 0,
-        "min": "24"
-      },
       {
         "playerId": 38017694,
         "name": "Jalen Duren",
@@ -3369,6 +3337,38 @@
         "min": "45"
       },
       {
+        "playerId": 666604,
+        "name": "Javonte Green",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 11,
+        "reb": 11,
+        "ast": 3,
+        "fg3m": 1,
+        "fg3a": 5,
+        "fgm": 4,
+        "fga": 11,
+        "stl": 1,
+        "blk": 2,
+        "min": "38"
+      },
+      {
+        "playerId": 1028026508,
+        "name": "Ronald Holland II",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 5,
+        "reb": 1,
+        "ast": 1,
+        "fg3m": 0,
+        "fg3a": 3,
+        "fgm": 1,
+        "fga": 4,
+        "stl": 1,
+        "blk": 0,
+        "min": "24"
+      },
+      {
         "playerId": 1028240128,
         "name": "Daniss Jenkins",
         "bucket": "PG",
@@ -3387,7 +3387,7 @@
       {
         "playerId": 1028205331,
         "name": "Isaac Jones",
-        "bucket": "C",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3403,7 +3403,7 @@
       {
         "playerId": 1028036878,
         "name": "Bobi Klintman",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 3,
         "reb": 2,
@@ -3435,7 +3435,7 @@
       {
         "playerId": 38017700,
         "name": "Wendell Moore Jr.",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3451,7 +3451,7 @@
       {
         "playerId": 3547270,
         "name": "Paul Reed",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 8,
         "reb": 9,
@@ -3467,7 +3467,7 @@
       {
         "playerId": 1028267166,
         "name": "Tolu Smith",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3483,7 +3483,7 @@
       {
         "playerId": 200,
         "name": "Tobias Harris",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3499,7 +3499,7 @@
       {
         "playerId": 38017682,
         "name": "Jaden Ivey",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3626,22 +3626,6 @@
         "min": "30"
       },
       {
-        "playerId": 666508,
-        "name": "Nicolas Claxton",
-        "bucket": "C",
-        "isStarter": false,
-        "pts": 17,
-        "reb": 9,
-        "ast": 7,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 5,
-        "fga": 7,
-        "stl": 0,
-        "blk": 4,
-        "min": "30"
-      },
-      {
         "playerId": 1057266813,
         "name": "Egor Demin",
         "bucket": "PG",
@@ -3672,6 +3656,38 @@
         "stl": 0,
         "blk": 0,
         "min": "29"
+      },
+      {
+        "playerId": 0,
+        "name": "Nic Claxton",
+        "bucket": "C",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 666508,
+        "name": "Nicolas Claxton",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 17,
+        "reb": 9,
+        "ast": 7,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 5,
+        "fga": 7,
+        "stl": 0,
+        "blk": 4,
+        "min": "30"
       },
       {
         "playerId": 1043947937,
@@ -3804,7 +3820,7 @@
       {
         "playerId": 1057279760,
         "name": "Ben Saraf",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3820,7 +3836,7 @@
       {
         "playerId": 17896048,
         "name": "Cam Thomas",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3867,22 +3883,6 @@
       },
       {
         "playerId": 0,
-        "name": "Nic Claxton",
-        "bucket": "C",
-        "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Day X Ron Sharpe",
         "bucket": "C",
         "isStarter": false,
@@ -3914,22 +3914,6 @@
       "C": 9
     },
     "players": [
-      {
-        "playerId": 104,
-        "name": "Mike Conley",
-        "bucket": "PG",
-        "isStarter": false,
-        "pts": 10,
-        "reb": 1,
-        "ast": 6,
-        "fg3m": 1,
-        "fg3a": 3,
-        "fgm": 1,
-        "fga": 4,
-        "stl": 1,
-        "blk": 0,
-        "min": "27"
-      },
       {
         "playerId": 3547238,
         "name": "Anthony Edwards",
@@ -3995,9 +3979,25 @@
         "min": "36"
       },
       {
+        "playerId": 104,
+        "name": "Mike Conley",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 10,
+        "reb": 1,
+        "ast": 6,
+        "fg3m": 1,
+        "fg3a": 3,
+        "fgm": 1,
+        "fga": 4,
+        "stl": 1,
+        "blk": 0,
+        "min": "27"
+      },
+      {
         "playerId": 1057271099,
         "name": "Joan Beringer",
-        "bucket": "C",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4013,7 +4013,7 @@
       {
         "playerId": 56677851,
         "name": "Jaylen Clark",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 7,
         "reb": 5,
@@ -4173,7 +4173,7 @@
       {
         "playerId": 1057397172,
         "name": "Rocco Zikarsky",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4189,7 +4189,7 @@
       {
         "playerId": 0,
         "name": "Bones Hyland",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4318,7 +4318,7 @@
       {
         "playerId": 1028243201,
         "name": "Jamison Battle",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 2,
         "reb": 2,
@@ -4350,7 +4350,7 @@
       {
         "playerId": 17896059,
         "name": "Sandro Mamukelashvili",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 23,
         "reb": 7,
@@ -4414,7 +4414,7 @@
       {
         "playerId": 1057846535,
         "name": "Chucky Hepburn",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4446,7 +4446,7 @@
       {
         "playerId": 1057389862,
         "name": "Alijah Martin",
-        "bucket": "PG",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4462,7 +4462,7 @@
       {
         "playerId": 1028037494,
         "name": "Jonathan Mogbo",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4524,22 +4524,6 @@
       "C": 37
     },
     "players": [
-      {
-        "playerId": 17895983,
-        "name": "Ayo Dosunmu",
-        "bucket": "SG",
-        "isStarter": false,
-        "pts": 8,
-        "reb": 5,
-        "ast": 1,
-        "fg3m": 1,
-        "fg3a": 4,
-        "fgm": 2,
-        "fga": 9,
-        "stl": 0,
-        "blk": 0,
-        "min": "29"
-      },
       {
         "playerId": 1028025177,
         "name": "Matas Buzelis",
@@ -4605,6 +4589,22 @@
         "min": "34"
       },
       {
+        "playerId": 17895983,
+        "name": "Ayo Dosunmu",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 8,
+        "reb": 5,
+        "ast": 1,
+        "fg3m": 1,
+        "fg3a": 4,
+        "fgm": 2,
+        "fga": 9,
+        "stl": 0,
+        "blk": 0,
+        "min": "29"
+      },
+      {
         "playerId": 87,
         "name": "Jevon Carter",
         "bucket": "PG",
@@ -4623,7 +4623,7 @@
       {
         "playerId": 1057272081,
         "name": "Noa Essengue",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4639,7 +4639,7 @@
       {
         "playerId": 221,
         "name": "Kevin Huerter",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 9,
         "reb": 1,
@@ -4655,7 +4655,7 @@
       {
         "playerId": 38017719,
         "name": "Dalen Terry",
-        "bucket": "SF",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4671,7 +4671,7 @@
       {
         "playerId": 1057395493,
         "name": "Lachlan Olbrich",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4687,7 +4687,7 @@
       {
         "playerId": 56677857,
         "name": "Julian Phillips",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 4,
         "reb": 3,
@@ -4719,7 +4719,7 @@
       {
         "playerId": 102,
         "name": "Zach Collins",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4735,7 +4735,7 @@
       {
         "playerId": 1028254340,
         "name": "Trentyn Flowers",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4783,7 +4783,7 @@
       {
         "playerId": 1028245974,
         "name": "Emanuel Miller",
-        "bucket": "SF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -4944,7 +4944,7 @@
       {
         "playerId": 4197387,
         "name": "Vit Krejci",
-        "bucket": "SF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 10,
         "reb": 1,
@@ -4992,7 +4992,7 @@
       {
         "playerId": 56677795,
         "name": "Jacob Toppin",
-        "bucket": "PF",
+        "bucket": "C",
         "isStarter": false,
         "pts": 2,
         "reb": 0,
@@ -5024,7 +5024,7 @@
       {
         "playerId": 1028243921,
         "name": "N'Faly Dante",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5040,7 +5040,7 @@
       {
         "playerId": 1028035632,
         "name": "Nikola Durisic",
-        "bucket": "SF",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5072,7 +5072,7 @@
       {
         "playerId": 1057847875,
         "name": "Eli John Ndiaye",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5104,7 +5104,7 @@
       {
         "playerId": 0,
         "name": "Nx Faly Dante",
-        "bucket": "C",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5143,8 +5143,8 @@
     "team": "WAS",
     "season": "2025-26",
     "buckets": {
-      "PG": 17,
-      "SG": 38,
+      "PG": 23,
+      "SG": 32,
       "SF": 10,
       "PF": 27,
       "C": 27
@@ -5164,7 +5164,8 @@
         "fga": 9,
         "stl": 0,
         "blk": 1,
-        "min": "23"
+        "min": "23",
+        "bmPosition": "SF"
       },
       {
         "playerId": 416,
@@ -5180,13 +5181,14 @@
         "fga": 20,
         "stl": 2,
         "blk": 0,
-        "min": "27"
+        "min": "27",
+        "bmPosition": "PF"
       },
       {
         "playerId": 17896103,
         "name": "Jay Huff",
         "bucket": "C",
-        "isStarter": false,
+        "isStarter": true,
         "pts": 12,
         "reb": 6,
         "ast": 2,
@@ -5196,7 +5198,8 @@
         "fga": 6,
         "stl": 0,
         "blk": 4,
-        "min": "22"
+        "min": "22",
+        "bmPosition": "C"
       },
       {
         "playerId": 38017686,
@@ -5212,13 +5215,14 @@
         "fga": 16,
         "stl": 1,
         "blk": 0,
-        "min": "34"
+        "min": "34",
+        "bmPosition": "SG"
       },
       {
         "playerId": 56677861,
         "name": "Ben Sheppard",
-        "bucket": "SG",
-        "isStarter": false,
+        "bucket": "PG",
+        "isStarter": true,
         "pts": 9,
         "reb": 3,
         "ast": 5,
@@ -5228,7 +5232,8 @@
         "fga": 5,
         "stl": 1,
         "blk": 0,
-        "min": "29"
+        "min": "29",
+        "bmPosition": "PG"
       },
       {
         "playerId": 60,
@@ -5236,7 +5241,7 @@
         "bucket": "C",
         "isStarter": false,
         "pts": 5,
-        "reb": 2,
+        "reb": 1,
         "ast": 1,
         "fg3m": 0,
         "fg3a": 0,
@@ -5244,7 +5249,7 @@
         "fga": 2,
         "stl": 0,
         "blk": 0,
-        "min": "08"
+        "min": "8"
       },
       {
         "playerId": 1028274126,
@@ -5266,7 +5271,7 @@
         "playerId": 17896035,
         "name": "Isaiah Jackson",
         "bucket": "C",
-        "isStarter": true,
+        "isStarter": false,
         "pts": 10,
         "reb": 2,
         "ast": 0,
@@ -5313,7 +5318,7 @@
       {
         "playerId": 1057395638,
         "name": "Taelon Peter",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 3,
         "reb": 0,
@@ -5332,7 +5337,7 @@
         "bucket": "PF",
         "isStarter": false,
         "pts": 3,
-        "reb": 10,
+        "reb": 11,
         "ast": 4,
         "fg3m": 1,
         "fg3a": 4,
@@ -5361,7 +5366,7 @@
       {
         "playerId": 3547245,
         "name": "Tyrese Haliburton",
-        "bucket": "SG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5377,7 +5382,7 @@
       {
         "playerId": 44477085,
         "name": "Quenton Jackson",
-        "bucket": "PG",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5393,7 +5398,7 @@
       {
         "playerId": 1057389374,
         "name": "Kam Jones",
-        "bucket": "SG",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5455,7 +5460,7 @@
         "min": "00"
       }
     ],
-    "source": "bdl+espn",
+    "source": "basketballmonsters-projected",
     "lineupVerified": false
   }
 ]

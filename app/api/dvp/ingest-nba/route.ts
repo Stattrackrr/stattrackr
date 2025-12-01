@@ -113,6 +113,11 @@ function loadTeamCustom(abbr: string): { aliases: Record<string,string> }{
   }
 }
 
+// Helper to normalize name like BasketballMonsters does (simpler normalization)
+function bmNormName(name: string): string {
+  return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+}
+
 // Fetch BasketballMonsters lineup positions for a game date (if available)
 // Returns a map of normalized player name -> position
 // For today/future games: Can scrape fresh data
@@ -184,15 +189,42 @@ async function fetchBasketballMonstersLineupPositions(
       // For past games: always use the cached lineup (even if projected)
       // This is the "last projected lineup" that was cached before the game finished
       if (isPastGame) {
-        // Convert lineup to position map (use it regardless of verification status)
+        // Return the cached lineup directly - don't normalize names yet
+        // We'll match using multiple normalization strategies when processing players
         const positionMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+        // Store both original names and normalized names for matching
+        // ALWAYS store all variations to ensure matching works
         for (const player of cached) {
-          const normalizedName = normName(player.name);
           const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
           if (['PG','SG','SF','PF','C'].includes(pos)) {
-            positionMap[normalizedName] = pos;
+            // Store with original name (exact match) - ALWAYS
+            positionMap[player.name] = pos;
+            
+            // Store with simple normalization (same as BasketballMonsters uses) - ALWAYS
+            const simpleNorm = bmNormName(player.name);
+            positionMap[simpleNorm] = pos;
+            
+            // Store with complex normalization (for BDL name matching) - ALWAYS
+            const complexNorm = normName(player.name);
+            positionMap[complexNorm] = pos;
+            
+            // Also store lowercase version of original for case-insensitive matching
+            const lowerOriginal = player.name.toLowerCase().trim();
+            positionMap[lowerOriginal] = pos;
+            
+            // Also store last name only (for fuzzy matching)
+            const nameParts = simpleNorm.split(' ');
+            if (nameParts.length > 1) {
+              const lastName = nameParts[nameParts.length - 1];
+              if (lastName.length >= 3) {
+                // Only use last name if it's long enough to avoid false matches
+                positionMap[`_lastname_${lastName}`] = pos;
+              }
+            }
           }
         }
+        
+        console.error(`[DvP Ingest-NBA] Built position map for ${teamAbbr} on ${dateStr}: ${Object.keys(positionMap).filter(k => !k.startsWith('_lastname_')).length} unique player keys`);
         
         if (process.env.NODE_ENV !== 'production') {
           const verifiedCount = cached.filter(p => p.isVerified).length;
@@ -212,15 +244,42 @@ async function fetchBasketballMonstersLineupPositions(
       
       // If we have at least some verified players, or preferVerified is false, use the lineup
       if (!preferVerified || hasAnyVerified || allVerified) {
-        // Convert lineup to position map
+        // Return the cached lineup directly - don't normalize names yet
+        // We'll match using multiple normalization strategies when processing players
         const positionMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+        // Store both original names and normalized names for matching
+        // ALWAYS store all variations to ensure matching works
         for (const player of cached) {
-          const normalizedName = normName(player.name);
           const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
           if (['PG','SG','SF','PF','C'].includes(pos)) {
-            positionMap[normalizedName] = pos;
+            // Store with original name (exact match) - ALWAYS
+            positionMap[player.name] = pos;
+            
+            // Store with simple normalization (same as BasketballMonsters uses) - ALWAYS
+            const simpleNorm = bmNormName(player.name);
+            positionMap[simpleNorm] = pos;
+            
+            // Store with complex normalization (for BDL name matching) - ALWAYS
+            const complexNorm = normName(player.name);
+            positionMap[complexNorm] = pos;
+            
+            // Also store lowercase version of original for case-insensitive matching
+            const lowerOriginal = player.name.toLowerCase().trim();
+            positionMap[lowerOriginal] = pos;
+            
+            // Also store last name only (for fuzzy matching)
+            const nameParts = simpleNorm.split(' ');
+            if (nameParts.length > 1) {
+              const lastName = nameParts[nameParts.length - 1];
+              if (lastName.length >= 3) {
+                // Only use last name if it's long enough to avoid false matches
+                positionMap[`_lastname_${lastName}`] = pos;
+              }
+            }
           }
         }
+        
+        console.error(`[DvP Ingest-NBA] Built position map for ${teamAbbr} on ${dateStr}: ${Object.keys(positionMap).filter(k => !k.startsWith('_lastname_')).length} unique player keys`);
         
         if (process.env.NODE_ENV !== 'production') {
           const verifiedCount = cached.filter(p => p.isVerified).length;
@@ -495,24 +554,94 @@ export async function GET(req: NextRequest){
       const oppAbbr = home.toUpperCase() === team ? away : home;
       const host = req.headers.get('host') || undefined;
       
-      const gameDate = g?.date ? new Date(g.date) : null;
-      const gameDateStr = gameDate ? gameDate.toISOString().split('T')[0] : 'unknown';
+      // BDL returns dates in ISO format (e.g., "2025-11-30T00:00:00.000Z")
+      // Extract just the date part (YYYY-MM-DD) - this is the game date regardless of timezone
+      const gameDateStr = g?.date ? String(g.date).split('T')[0] : 'unknown';
       console.error(`[DvP Ingest-NBA] Processing game ${gidBdl}: ${away} @ ${home} on ${gameDateStr} - Looking for BM lineup for opponent: ${oppAbbr}`);
       
-      // Fetch BasketballMonsters lineup positions (highest priority - only for today/future games)
-      // First try verified, then projected if verified not available
-      const bmLineupMapVerified = await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, true);
-      const bmLineupMap = bmLineupMapVerified && Object.keys(bmLineupMapVerified).length > 0 
-        ? bmLineupMapVerified 
-        : await fetchBasketballMonstersLineupPositions(oppAbbr, gameDate, false);
-      const usedVerifiedLineup = Object.keys(bmLineupMapVerified).length > 0;
+      // Fetch BasketballMonsters lineup directly from cache (same as dashboard uses)
+      // IMPORTANT: Cache keys are stored using Eastern Time dates in YYYY-MM-DD format
+      // But BDL game dates are in UTC. We need to try BOTH the UTC date AND the Eastern date
+      // because a game on 2025-11-30 UTC might be 2025-11-29 or 2025-12-01 in Eastern Time
+      const gameDate = g?.date ? new Date(g.date) : null;
+      let dateStr = gameDateStr; // Default to UTC date
+      let easternDateStr = gameDateStr;
+      
+      if (gameDate) {
+        // Calculate Eastern Time date (prefetch uses Eastern Time)
+        const easternDate = new Date(gameDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const year = easternDate.getFullYear();
+        const month = easternDate.getMonth() + 1;
+        const day = easternDate.getDate();
+        easternDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+      
+      // Try Eastern date first (prefetch uses Eastern Time)
+      let cacheKey = `basketballmonsters:lineup:${oppAbbr.toUpperCase()}:${easternDateStr}`;
+      let cachedLineup = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey, { quiet: true });
+      
+      // If not found, try UTC date as fallback
+      if (!cachedLineup && easternDateStr !== gameDateStr) {
+        cacheKey = `basketballmonsters:lineup:${oppAbbr.toUpperCase()}:${gameDateStr}`;
+        cachedLineup = await getNBACache<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }>>(cacheKey, { quiet: true });
+        dateStr = gameDateStr; // Use UTC date if that's what we found
+      } else {
+        dateStr = easternDateStr; // Use Eastern date
+      }
+      
+      // Debug: Show what date we're looking for
+      console.error(`[DvP Ingest-NBA] Game date (BDL/UTC): ${gameDateStr}, Eastern date: ${easternDateStr}, Using cache key: ${cacheKey}`);
+      const usedVerifiedLineup = cachedLineup && Array.isArray(cachedLineup) && cachedLineup.length === 5 
+        ? cachedLineup.every(p => p.isVerified && !p.isProjected)
+        : false;
+      
+      // Log what we got from cache (ALWAYS log for debugging)
+      if (cachedLineup && Array.isArray(cachedLineup) && cachedLineup.length === 5) {
+        console.error(`[DvP Ingest-NBA] ✅ Got cached lineup for ${oppAbbr} on ${dateStr}: ${cachedLineup.map(p => `${p.name} (${p.position})`).join(', ')}`);
+      } else {
+        console.error(`[DvP Ingest-NBA] ❌ No cached lineup for ${oppAbbr} on ${dateStr} (cacheKey: ${cacheKey})`);
+        if (cachedLineup) {
+          console.error(`   Got: ${Array.isArray(cachedLineup) ? `Array with ${cachedLineup.length} items` : typeof cachedLineup}`);
+        }
+      }
+      
+      // FORCE LOG: Show what we're about to match against
+      if (cachedLineup && Array.isArray(cachedLineup) && cachedLineup.length === 5) {
+        console.error(`[DvP Ingest-NBA] 📋 Will match BDL players against these ${oppAbbr} starters: ${cachedLineup.map(p => p.name).join(', ')}`);
+      }
+      
+      // Build position map from cached lineup (with all name variations)
+      const bmLineupMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+      if (cachedLineup && Array.isArray(cachedLineup) && cachedLineup.length === 5) {
+        for (const player of cachedLineup) {
+          const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
+          if (['PG','SG','SF','PF','C'].includes(pos)) {
+            // Store ALL variations to ensure matching works
+            bmLineupMap[player.name] = pos; // Original: "Payton Pritchard"
+            bmLineupMap[player.name.toLowerCase().trim()] = pos; // Lowercase: "payton pritchard"
+            bmLineupMap[bmNormName(player.name)] = pos; // Simple norm: "payton pritchard"
+            bmLineupMap[normName(player.name)] = pos; // Complex norm: (varies)
+            // Last name
+            const nameParts = bmNormName(player.name).split(' ');
+            if (nameParts.length > 1 && nameParts[nameParts.length - 1].length >= 3) {
+              bmLineupMap[`_lastname_${nameParts[nameParts.length - 1]}`] = pos;
+            }
+          }
+        }
+        console.error(`[DvP Ingest-NBA] Built position map with ${Object.keys(bmLineupMap).length} keys (${Object.keys(bmLineupMap).filter(k => !k.startsWith('_lastname_')).length} unique players)`);
+      }
       
       // Debug: Log BM lineup data if available
       if (Object.keys(bmLineupMap).length > 0) {
-        const bmKeys = Object.keys(bmLineupMap);
-        console.error(`[DvP Ingest-NBA] ✅ BM lineup found for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}: ${bmKeys.length} players`);
-        console.error(`   BM players: ${bmKeys.slice(0, 5).join(', ')}`);
-        console.error(`   BM positions: ${bmKeys.slice(0, 5).map(k => `${k}=${bmLineupMap[k]}`).join(', ')}`);
+        const bmKeys = Object.keys(bmLineupMap).filter(k => !k.startsWith('_lastname_'));
+        const sampleKeys = bmKeys.slice(0, 5);
+        console.error(`[DvP Ingest-NBA] ✅ BM lineup found for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}: ${bmKeys.length} unique keys (${Object.keys(bmLineupMap).length} total including variations)`);
+        console.error(`   Sample BM keys: ${sampleKeys.map(k => `"${k}"`).join(', ')}`);
+        console.error(`   Sample positions: ${sampleKeys.map(k => `${k}=${bmLineupMap[k]}`).join(', ')}`);
+        // Show all keys for first game to debug
+        if (out.length === 0) {
+          console.error(`   All BM keys in map:`, Object.keys(bmLineupMap).filter(k => !k.startsWith('_lastname_')).map(k => `"${k}"`).join(', '));
+        }
       } else {
         console.error(`[DvP Ingest-NBA] ⚠️ No BM lineup for ${oppAbbr} on ${gameDate?.toISOString().split('T')[0]}`);
       }
@@ -637,12 +766,8 @@ export async function GET(req: NextRequest){
         : { ...rawMap, ...depthMap };
 
       const buckets: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG:0, SG:0, SF:0, PF:0, C:0 };
-      const players: any[] = [];
+      let players: any[] = [];
       const toTitle = (k: string)=> k.split(' ').map(w=> w? (w[0].toUpperCase()+w.slice(1)) : w).join(' ');
-// Helper to normalize name like BasketballMonsters does (simpler normalization)
-function bmNormName(name: string): string {
-  return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
-}
 
 // Helper to get last name from normalized name (for fuzzy matching)
 function getLastName(normalized: string): string {
@@ -699,40 +824,170 @@ for (const r of oppRows2){
         const keys = altKeys(lookup);
         
         // PRIORITY 1: BasketballMonsters lineup (highest priority - most accurate for today/future games)
-        // Use fuzzy matching to find player in bmLineupMap
         let bucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         let bmPositionFromBucket: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = undefined;
         
-        if (Object.keys(bmLineupMap).length > 0) {
-          // Try fuzzy matching to find the player in BM lineup
-          const matchedKey = findBMPlayerMatch(name, bmLineupMap);
-          if (matchedKey && bmLineupMap[matchedKey]) {
-            bucket = bmLineupMap[matchedKey];
-            bmPositionFromBucket = bmLineupMap[matchedKey];
-          } else {
-            // Fallback: try all key variations
-            const bmNormalizedName = bmNormName(name);
-            const nameVariations = [
-              bmNormalizedName,
-              ...keys.map(k => bmNormName(k)),
-              ...keys
-            ];
-            
-            for (const variation of nameVariations) {
-              if (bmLineupMap[variation]) {
-                bucket = bmLineupMap[variation];
-                bmPositionFromBucket = bmLineupMap[variation];
+        // MATCH DIRECTLY AGAINST CACHED LINEUP ARRAY FIRST (most reliable - same as dashboard uses)
+        if (cachedLineup && Array.isArray(cachedLineup) && cachedLineup.length === 5) {
+          // Normalize name: lowercase, trim, collapse multiple spaces
+          const nameNormalized = name.toLowerCase().trim().replace(/\s+/g, ' ');
+          let matched = false;
+          for (const player of cachedLineup) {
+            // Normalize cached player name the same way
+            const playerNameNormalized = player.name.toLowerCase().trim().replace(/\s+/g, ' ');
+            // Exact match after normalization
+            if (playerNameNormalized === nameNormalized) {
+              const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
+              if (['PG','SG','SF','PF','C'].includes(pos)) {
+                bucket = pos;
+                bmPositionFromBucket = pos;
+                matched = true;
+                if (players.length < 5) {
+                  console.error(`[DvP Ingest-NBA] ✅ MATCHED: "${name}" => "${player.name}" => ${pos}`);
+                }
                 break;
               }
             }
+          }
+          // If exact match failed, try partial matching (last name only)
+          if (!matched) {
+            const nameParts = nameNormalized.split(' ');
+            const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+            if (lastName.length >= 3) {
+              for (const player of cachedLineup) {
+                const playerNameNormalized = player.name.toLowerCase().trim().replace(/\s+/g, ' ');
+                const playerParts = playerNameNormalized.split(' ');
+                const playerLastName = playerParts.length > 1 ? playerParts[playerParts.length - 1] : '';
+                if (lastName === playerLastName && lastName.length >= 3) {
+                  const pos = player.position.toUpperCase() as 'PG'|'SG'|'SF'|'PF'|'C';
+                  if (['PG','SG','SF','PF','C'].includes(pos)) {
+                    bucket = pos;
+                    bmPositionFromBucket = pos;
+                    matched = true;
+                    if (players.length < 5) {
+                      console.error(`[DvP Ingest-NBA] ✅ MATCHED (last name): "${name}" => "${player.name}" => ${pos}`);
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          if (!matched && players.length < 5) {
+            console.error(`[DvP Ingest-NBA] ❌ NO MATCH for "${name}" (normalized: "${nameNormalized}")`);
+            console.error(`   Cached lineup: ${cachedLineup.map(p => `"${p.name}" (normalized: "${p.name.toLowerCase().trim().replace(/\s+/g, ' ')}")`).join(', ')}`);
+          }
+        }
+        
+        // Fallback: Try position map if direct match didn't work
+        
+        // Fallback to position map if direct match didn't work
+        if (!bucket && Object.keys(bmLineupMap).length > 0) {
+          // Strategy 1: Try exact name match (case-insensitive)
+          const nameLower = name.toLowerCase().trim();
+          let foundKey = null;
+          for (const [key, pos] of Object.entries(bmLineupMap)) {
+            if (key.toLowerCase().trim() === nameLower) {
+              bucket = pos;
+              bmPositionFromBucket = pos;
+              foundKey = key;
+              break;
+            }
+          }
+          // Log first match attempt for debugging
+          if (foundKey && players.length < 3) {
+            console.error(`[DvP Ingest-NBA] ✅ Matched "${name}" to "${foundKey}" => ${bucket} (Strategy 1: exact case-insensitive)`);
+          }
+          
+          // Strategy 2: Try simple normalization (same as BasketballMonsters uses)
+          if (!bucket) {
+            const simpleNorm = bmNormName(name);
+            if (bmLineupMap[simpleNorm]) {
+              bucket = bmLineupMap[simpleNorm];
+              bmPositionFromBucket = bmLineupMap[simpleNorm];
+            }
+          }
+          
+          // Strategy 3: Try complex normalization (for BDL name variations)
+          if (!bucket) {
+            const complexNorm = normName(name);
+            if (bmLineupMap[complexNorm]) {
+              bucket = bmLineupMap[complexNorm];
+              bmPositionFromBucket = bmLineupMap[complexNorm];
+            }
+          }
+          
+          // Strategy 4: Try all key variations (aliases, etc.)
+          if (!bucket) {
+            for (const kv of keys) {
+              if (bmLineupMap[kv]) {
+                bucket = bmLineupMap[kv];
+                bmPositionFromBucket = bmLineupMap[kv];
+                break;
+              }
+              const kvSimple = bmNormName(kv);
+              if (bmLineupMap[kvSimple]) {
+                bucket = bmLineupMap[kvSimple];
+                bmPositionFromBucket = bmLineupMap[kvSimple];
+                break;
+              }
+              const kvComplex = normName(kv);
+              if (bmLineupMap[kvComplex]) {
+                bucket = bmLineupMap[kvComplex];
+                bmPositionFromBucket = bmLineupMap[kvComplex];
+                break;
+              }
+            }
+          }
+          
+          // Strategy 5: Try last name matching (for players with common first names)
+          if (!bucket) {
+            const simpleNorm = bmNormName(name);
+            const nameParts = simpleNorm.split(' ');
+            if (nameParts.length > 1) {
+              const lastName = nameParts[nameParts.length - 1];
+              if (lastName.length >= 3) {
+                const lastnameKey = `_lastname_${lastName}`;
+                if (bmLineupMap[lastnameKey]) {
+                  bucket = bmLineupMap[lastnameKey];
+                  bmPositionFromBucket = bmLineupMap[lastnameKey];
+                }
+              }
+            }
+          }
+          
+          // Strategy 6: Fuzzy matching (final fallback)
+          if (!bucket) {
+            const matchedKey = findBMPlayerMatch(name, bmLineupMap);
+            if (matchedKey && bmLineupMap[matchedKey]) {
+              bucket = bmLineupMap[matchedKey];
+              bmPositionFromBucket = bmLineupMap[matchedKey];
+            }
+          }
+          
+          // Debug logging if we have BM data but no match (only log first 5 players to avoid spam)
+          if (!bucket && Object.keys(bmLineupMap).length > 0 && players.length < 5) {
+            const bmKeys = Object.keys(bmLineupMap).filter(k => !k.startsWith('_lastname_'));
+            const simpleNorm = bmNormName(name);
+            const complexNorm = normName(name);
+            const nameLower = name.toLowerCase().trim();
             
-            // Debug logging if we have BM data but no match
-            if (!bucket && Object.keys(bmLineupMap).length > 0) {
-              const bmKeys = Object.keys(bmLineupMap).slice(0, 5);
-              console.error(`[DvP Ingest-NBA] ❌ No BM match for "${name}" (normalized: "${bmNormalizedName}")`);
-              console.error(`   BM keys available: ${bmKeys.join(', ')}`);
-              console.error(`   Keys tried: ${nameVariations.slice(0, 3).join(', ')}`);
-              console.error(`   Fuzzy match result: ${findBMPlayerMatch(name, bmLineupMap) || 'null'}`);
+            console.error(`[DvP Ingest-NBA] ❌ No BM match for "${name}" (BDL player)`);
+            console.error(`   Tried strategies:`);
+            console.error(`     1. Exact (case-insensitive): "${name}" => ${bmLineupMap[name] ? '✅' : '❌'}`);
+            console.error(`     2. Simple norm: "${simpleNorm}" => ${bmLineupMap[simpleNorm] ? '✅' : '❌'}`);
+            console.error(`     3. Complex norm: "${complexNorm}" => ${bmLineupMap[complexNorm] ? '✅' : '❌'}`);
+            console.error(`   BM keys in map (${bmKeys.length} total, showing first 10):`);
+            bmKeys.slice(0, 10).forEach(k => {
+              const kLower = k.toLowerCase().trim();
+              const matches = kLower === nameLower || simpleNorm === bmNormName(k) || complexNorm === normName(k);
+              console.error(`     - "${k}" => ${bmLineupMap[k]} ${matches ? '✅ MATCHES!' : ''}`);
+            });
+            
+            // Check if any BM key would match with case-insensitive comparison
+            const caseInsensitiveMatch = bmKeys.find(k => k.toLowerCase().trim() === nameLower);
+            if (caseInsensitiveMatch) {
+              console.error(`   ⚠️ FOUND case-insensitive match: "${caseInsensitiveMatch}" but Strategy 1 didn't catch it!`);
             }
           }
         }
@@ -800,26 +1055,63 @@ for (const r of oppRows2){
         buckets[bucket]+=val;
         // Check if this position came from BasketballMonsters
         // If bucket was set from BM, use that as bmPosition
-        // Otherwise, try to match player name to bmLineupMap
+        // Otherwise, try to match player name to bmLineupMap using same strategies
         let bmPosition: 'PG'|'SG'|'SF'|'PF'|'C' | undefined = bmPositionFromBucket;
         
-        // If not set from bucket, try to find in bmLineupMap by name matching
-        if (!bmPosition) {
-          // Try BM-style normalization first
-          const bmNormalizedName = bmNormName(name);
-          if (bmLineupMap[bmNormalizedName]) {
-            bmPosition = bmLineupMap[bmNormalizedName];
-          } else {
-            // Fallback to regular keys
+        // If not set from bucket, try to find in bmLineupMap by name matching (same strategies as above)
+        if (!bmPosition && Object.keys(bmLineupMap).length > 0) {
+          // Strategy 1: Exact name match
+          if (bmLineupMap[name]) {
+            bmPosition = bmLineupMap[name];
+          }
+          
+          // Strategy 2: Simple normalization
+          if (!bmPosition) {
+            const simpleNorm = bmNormName(name);
+            if (bmLineupMap[simpleNorm]) {
+              bmPosition = bmLineupMap[simpleNorm];
+            }
+          }
+          
+          // Strategy 3: Complex normalization
+          if (!bmPosition) {
+            const complexNorm = normName(name);
+            if (bmLineupMap[complexNorm]) {
+              bmPosition = bmLineupMap[complexNorm];
+            }
+          }
+          
+          // Strategy 4: Key variations
+          if (!bmPosition) {
             for (const kv of keys) {
-              const bmKey = bmNormName(kv);
-              if (bmLineupMap[bmKey]) {
-                bmPosition = bmLineupMap[bmKey];
-                break;
-              }
               if (bmLineupMap[kv]) {
                 bmPosition = bmLineupMap[kv];
                 break;
+              }
+              const kvSimple = bmNormName(kv);
+              if (bmLineupMap[kvSimple]) {
+                bmPosition = bmLineupMap[kvSimple];
+                break;
+              }
+              const kvComplex = normName(kv);
+              if (bmLineupMap[kvComplex]) {
+                bmPosition = bmLineupMap[kvComplex];
+                break;
+              }
+            }
+          }
+          
+          // Strategy 5: Last name matching
+          if (!bmPosition) {
+            const simpleNorm = bmNormName(name);
+            const nameParts = simpleNorm.split(' ');
+            if (nameParts.length > 1) {
+              const lastName = nameParts[nameParts.length - 1];
+              if (lastName.length >= 3) {
+                const lastnameKey = `_lastname_${lastName}`;
+                if (bmLineupMap[lastnameKey]) {
+                  bmPosition = bmLineupMap[lastnameKey];
+                }
               }
             }
           }
@@ -840,6 +1132,234 @@ for (const r of oppRows2){
         }
       }catch{}
 
+      // Redistribute bench player positions to avoid too many at same position
+      // Only redistribute bench players (starters keep their positions)
+      const benchPlayers = players.filter(p => !p.isStarter);
+      const starterPlayers = players.filter(p => p.isStarter);
+      
+      if (benchPlayers.length > 3) { // Only redistribute if more than 3 bench players
+        // Count positions for bench players
+        const posCount: Record<'PG'|'SG'|'SF'|'PF'|'C', number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+        benchPlayers.forEach(p => {
+          if (p.bucket && ['PG','SG','SF','PF','C'].includes(p.bucket)) {
+            const pos = p.bucket as 'PG'|'SG'|'SF'|'PF'|'C';
+            posCount[pos]++;
+          }
+        });
+        
+        // Maximum allowed per position based on bench size
+        // 4-5 bench: max 1 per position
+        // 6-8 bench: max 2 per position
+        // 9+ bench: max 3 per position
+        const maxPerPosition = benchPlayers.length <= 5 ? 1 : (benchPlayers.length <= 8 ? 2 : 3);
+        // Centers are always unlimited (they're listed separately)
+        const maxCenter = Infinity;
+        
+        // Find positions that are over the limit
+        // For guards: ensure balance (1 PG, 1 SG) when possible
+        // For forwards: ensure balance (1 SF, 1 PF) when possible
+        // Centers: unlimited
+        const overLimit: Array<{ pos: 'PG'|'SG'|'SF'|'PF'|'C', count: number, players: typeof benchPlayers }> = [];
+        const underLimit: Array<'PG'|'SG'|'SF'|'PF'|'C'> = [];
+        
+        (['PG','SG','SF','PF','C'] as const).forEach(pos => {
+          const maxAllowed = pos === 'C' ? maxCenter : maxPerPosition;
+          if (posCount[pos] > maxAllowed) {
+            overLimit.push({ 
+              pos, 
+              count: posCount[pos], 
+              players: benchPlayers.filter(p => p.bucket === pos) 
+            });
+          } else if (posCount[pos] < maxAllowed && pos !== 'C') {
+            // For non-centers, add to under-limit if below max
+            underLimit.push(pos);
+          }
+        });
+        
+        // Special handling for guard/forward balance in normal games (4-5 bench)
+        if (benchPlayers.length <= 5) {
+          // Ensure guards are balanced: prefer 1 PG, 1 SG
+          const totalGuards = posCount.PG + posCount.SG;
+          if (totalGuards > 2) {
+            // Too many guards, redistribute excess
+            if (posCount.PG > 1 && posCount.SG < 1) {
+              // Too many PGs, move one to SG
+              const pgPlayers = benchPlayers.filter(p => p.bucket === 'PG').sort((a, b) => {
+                const aMin = parseMinToSeconds(a.min);
+                const bMin = parseMinToSeconds(b.min);
+                return aMin - bMin;
+              });
+              if (pgPlayers.length > 0) {
+                pgPlayers[0].bucket = 'SG';
+                posCount.PG--;
+                posCount.SG++;
+              }
+            } else if (posCount.SG > 1 && posCount.PG < 1) {
+              // Too many SGs, move one to PG
+              const sgPlayers = benchPlayers.filter(p => p.bucket === 'SG').sort((a, b) => {
+                const aMin = parseMinToSeconds(a.min);
+                const bMin = parseMinToSeconds(b.min);
+                return aMin - bMin;
+              });
+              if (sgPlayers.length > 0) {
+                sgPlayers[0].bucket = 'PG';
+                posCount.SG--;
+                posCount.PG++;
+              }
+            }
+          }
+          
+          // Ensure forwards are balanced: prefer 1 SF, 1 PF
+          const totalForwards = posCount.SF + posCount.PF;
+          if (totalForwards > 2) {
+            // Too many forwards, redistribute excess
+            if (posCount.SF > 1 && posCount.PF < 1) {
+              // Too many SFs, move one to PF
+              const sfPlayers = benchPlayers.filter(p => p.bucket === 'SF').sort((a, b) => {
+                const aMin = parseMinToSeconds(a.min);
+                const bMin = parseMinToSeconds(b.min);
+                return aMin - bMin;
+              });
+              if (sfPlayers.length > 0) {
+                sfPlayers[0].bucket = 'PF';
+                posCount.SF--;
+                posCount.PF++;
+              }
+            } else if (posCount.PF > 1 && posCount.SF < 1) {
+              // Too many PFs, move one to SF
+              const pfPlayers = benchPlayers.filter(p => p.bucket === 'PF').sort((a, b) => {
+                const aMin = parseMinToSeconds(a.min);
+                const bMin = parseMinToSeconds(b.min);
+                return aMin - bMin;
+              });
+              if (pfPlayers.length > 0) {
+                pfPlayers[0].bucket = 'SF';
+                posCount.PF--;
+                posCount.SF++;
+              }
+            }
+          }
+          
+          // Recalculate position counts after guard/forward balance
+          posCount.PG = benchPlayers.filter(p => p.bucket === 'PG').length;
+          posCount.SG = benchPlayers.filter(p => p.bucket === 'SG').length;
+          posCount.SF = benchPlayers.filter(p => p.bucket === 'SF').length;
+          posCount.PF = benchPlayers.filter(p => p.bucket === 'PF').length;
+          posCount.C = benchPlayers.filter(p => p.bucket === 'C').length;
+        }
+        
+        // Recalculate overLimit and underLimit after any balance adjustments
+        const finalOverLimit: Array<{ pos: 'PG'|'SG'|'SF'|'PF'|'C', count: number, players: typeof benchPlayers }> = [];
+        const finalUnderLimit: Array<'PG'|'SG'|'SF'|'PF'|'C'> = [];
+        
+        (['PG','SG','SF','PF','C'] as const).forEach(pos => {
+          const maxAllowed = pos === 'C' ? maxCenter : maxPerPosition;
+          if (posCount[pos] > maxAllowed) {
+            finalOverLimit.push({ 
+              pos, 
+              count: posCount[pos], 
+              players: benchPlayers.filter(p => p.bucket === pos) 
+            });
+          } else if (posCount[pos] < maxAllowed && pos !== 'C') {
+            finalUnderLimit.push(pos);
+          }
+        });
+        
+        // Redistribute players from over-limit positions to under-limit positions
+        for (const { pos, players: posPlayers } of finalOverLimit) {
+          const maxAllowed = pos === 'C' ? maxCenter : maxPerPosition;
+          const excess = posCount[pos] - maxAllowed;
+          const toRedistribute = posPlayers
+            .sort((a, b) => {
+              // Prefer redistributing players with fewer minutes (less important players)
+              const aMin = parseMinToSeconds(a.min);
+              const bMin = parseMinToSeconds(b.min);
+              return aMin - bMin;
+            })
+            .slice(0, excess);
+          
+          for (const player of toRedistribute) {
+            // Find best alternative position
+            let newPos: 'PG'|'SG'|'SF'|'PF'|'C' | null = null;
+            
+            // Try adjacent positions first
+            const adjacent: Record<'PG'|'SG'|'SF'|'PF'|'C', Array<'PG'|'SG'|'SF'|'PF'|'C'>> = {
+              PG: ['SG', 'SF'],
+              SG: ['PG', 'SF'],
+              SF: ['SG', 'PF'],
+              PF: ['SF', 'C'],
+              C: ['PF', 'SF']
+            };
+            
+            // First try adjacent positions that are under limit
+            for (const adjPos of adjacent[pos]) {
+              if (finalUnderLimit.includes(adjPos)) {
+                newPos = adjPos;
+                break;
+              }
+            }
+            
+            // If no adjacent position available, try any under-limit position
+            if (!newPos && finalUnderLimit.length > 0) {
+              // Prefer positions that make sense based on original position
+              // For guards: prefer other guard position, then forwards
+              // For forwards: prefer other forward position, then guards
+              const preferredOrder: Array<'PG'|'SG'|'SF'|'PF'|'C'> = 
+                pos === 'PG' ? ['SG', 'SF', 'PF', 'C'] :  // Guard: prefer SG, then forwards
+                pos === 'SG' ? ['PG', 'SF', 'PF', 'C'] :  // Guard: prefer PG, then forwards
+                pos === 'SF' ? ['PF', 'SG', 'PG', 'C'] :  // Forward: prefer PF, then guards
+                pos === 'PF' ? ['SF', 'SG', 'PG', 'C'] :  // Forward: prefer SF, then guards
+                ['PF', 'SF', 'SG', 'PG'];  // Center: prefer forwards, then guards
+              
+              for (const prefPos of preferredOrder) {
+                // Skip centers unless it's the only option (centers are unlimited)
+                if (prefPos === 'C' && finalUnderLimit.filter(p => p !== 'C').length > 0) {
+                  continue;
+                }
+                if (finalUnderLimit.includes(prefPos)) {
+                  newPos = prefPos;
+                  break;
+                }
+              }
+              
+              // If still no match, just use first available (excluding centers if possible)
+              if (!newPos) {
+                const nonCenterOptions = finalUnderLimit.filter(p => p !== 'C');
+                newPos = nonCenterOptions.length > 0 ? nonCenterOptions[0] : finalUnderLimit[0];
+              }
+            }
+            
+            if (newPos) {
+              player.bucket = newPos;
+              const oldPos = pos as 'PG'|'SG'|'SF'|'PF'|'C';
+              posCount[oldPos]--;
+              posCount[newPos]++;
+              
+              // Update under/over limit lists
+              if (posCount[oldPos] <= maxPerPosition) {
+                const overIdx = overLimit.findIndex(o => o.pos === oldPos);
+                if (overIdx >= 0) {
+                  overLimit[overIdx].count = posCount[oldPos];
+                  if (posCount[oldPos] === maxPerPosition) {
+                    overLimit.splice(overIdx, 1);
+                  }
+                }
+              }
+              
+              if (posCount[newPos] >= (newPos === 'C' ? maxCenter : maxPerPosition)) {
+                const underIdx = finalUnderLimit.indexOf(newPos);
+                if (underIdx >= 0) {
+                  finalUnderLimit.splice(underIdx, 1);
+                }
+              }
+            }
+          }
+        }
+        
+        // Rebuild players array with redistributed positions
+        players = [...starterPlayers, ...benchPlayers];
+      }
+
       // Add metadata about lineup source
       const lineupSource = usedVerifiedLineup ? 'basketballmonsters-verified' : 
                           (Object.keys(bmLineupMap).length > 0 ? 'basketballmonsters-projected' : 'bdl+espn');
@@ -847,15 +1367,43 @@ for (const r of oppRows2){
       // Summary log for this game
       const playersWithBmPosition = players.filter(p => p.bmPosition).length;
       const totalPlayers = players.length;
-      const bmLineupCount = Object.keys(bmLineupMap).length;
+      
+      // DEBUG: Log first few players with their bmPosition status
+      if (players.length > 0 && Object.keys(bmLineupMap).length > 0) {
+        console.error(`[DvP Ingest-NBA] 📊 ${team} vs ${oppAbbr} (${gameDateStr}):`);
+        console.error(`   Total players: ${totalPlayers}, With bmPosition: ${playersWithBmPosition}`);
+        console.error(`   Cached lineup: ${cachedLineup ? `${cachedLineup.length} players` : 'NOT FOUND'}`);
+        if (cachedLineup && Array.isArray(cachedLineup)) {
+          console.error(`   Cached players: ${cachedLineup.map(p => p.name).join(', ')}`);
+        }
+        console.error(`   First 3 BDL players: ${players.slice(0, 3).map((p: any) => `${p.name} (bmPosition: ${p.bmPosition || 'NONE'})`).join(', ')}`);
+      }
+      
+      // Count unique BM players (excluding variations like _lastname_ keys)
+      const bmUniquePlayers = new Set(Object.keys(bmLineupMap).filter(k => !k.startsWith('_lastname_')).map(k => {
+        // Get the original name by finding the key that's not normalized
+        const keys = Object.keys(bmLineupMap).filter(key => bmLineupMap[key] === bmLineupMap[k] && !key.startsWith('_lastname_'));
+        return keys.find(key => key === key.trim() && key !== bmNormName(key) && key !== normName(key)) || keys[0];
+      }));
+      const bmLineupCount = bmUniquePlayers.size;
+      
       console.error(`[DvP Ingest-NBA] 📊 Game ${gidBdl} (${away} @ ${home} on ${gameDateStr}) summary:`);
-      console.error(`   - BM lineup available: ${bmLineupCount} players`);
+      console.error(`   - BM lineup available: ${bmLineupCount} unique players (${Object.keys(bmLineupMap).length} total keys including variations)`);
       console.error(`   - Total players processed: ${totalPlayers}`);
       console.error(`   - Players with bmPosition: ${playersWithBmPosition}`);
       if (bmLineupCount > 0 && playersWithBmPosition === 0) {
         console.error(`   ⚠️ WARNING: BM lineup has ${bmLineupCount} players but 0 matched!`);
-        console.error(`   - BM players: ${Object.keys(bmLineupMap).slice(0, 10).join(', ')}`);
-        console.error(`   - BDL players (first 10): ${players.slice(0, 10).map(p => p.name).join(', ')}`);
+        const bmSampleKeys = Array.from(bmUniquePlayers).slice(0, 5);
+        console.error(`   - BM players (sample): ${bmSampleKeys.join(', ')}`);
+        console.error(`   - BDL players (first 10): ${players.slice(0, 10).map(p => `"${p.name}"`).join(', ')}`);
+        // Show what normalizations we tried
+        if (players.length > 0) {
+          const samplePlayer = players[0];
+          console.error(`   - Sample matching attempt for "${samplePlayer.name}":`);
+          console.error(`     * Exact: "${samplePlayer.name}" => ${bmLineupMap[samplePlayer.name] ? '✅' : '❌'}`);
+          console.error(`     * Simple norm: "${bmNormName(samplePlayer.name)}" => ${bmLineupMap[bmNormName(samplePlayer.name)] ? '✅' : '❌'}`);
+          console.error(`     * Complex norm: "${normName(samplePlayer.name)}" => ${bmLineupMap[normName(samplePlayer.name)] ? '✅' : '❌'}`);
+        }
       }
       
       out.push({ 
@@ -897,7 +1445,7 @@ for (const r of oppRows2){
     };
     
     for (const game of out) {
-      if (game.source === 'basketballmonsters' || game.lineupVerified !== undefined) {
+      if (game.source?.startsWith('basketballmonsters') || game.lineupVerified !== undefined) {
         bmStats.gamesWithBM++;
         if (game.lineupVerified === true) {
           bmStats.gamesWithVerifiedBM++;
