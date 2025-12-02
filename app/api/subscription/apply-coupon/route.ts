@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
         const promotionCodes = await stripe.promotionCodes.list({
           code: couponCode,
           limit: 1,
+          expand: ['data.coupon'], // Expand coupon object
         });
 
         if (promotionCodes.data.length === 0) {
@@ -79,7 +80,20 @@ export async function POST(request: NextRequest) {
         }
 
         const promotionCode = promotionCodes.data[0];
-        coupon = await stripe.coupons.retrieve(promotionCode.coupon.id);
+        // With expand, coupon should be a Coupon object, but handle both cases
+        const couponData = (promotionCode as any).coupon;
+        if (typeof couponData === 'string') {
+          // If it's still a string ID, retrieve it
+          coupon = await stripe.coupons.retrieve(couponData);
+        } else if (couponData && typeof couponData === 'object' && couponData.id) {
+          // If expanded, use the coupon object directly
+          coupon = couponData;
+        } else {
+          return NextResponse.json(
+            { error: 'Invalid coupon code' },
+            { status: 400 }
+          );
+        }
       } catch (promoErr: any) {
         return NextResponse.json(
           { error: 'Invalid coupon code' },
