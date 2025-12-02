@@ -130,17 +130,35 @@ export async function POST(request: NextRequest) {
         ? subscription.discounts[0] 
         : null;
 
+      // Extract coupon info safely
+      let discountInfo = null;
+      if (activeDiscount) {
+        const couponData = activeDiscount.coupon;
+        if (typeof couponData === 'string') {
+          // If coupon is just an ID string, fetch the coupon details
+          const couponDetails = await stripe.coupons.retrieve(couponData);
+          discountInfo = {
+            coupon: couponDetails.id,
+            percent_off: couponDetails.percent_off,
+            amount_off: couponDetails.amount_off,
+          };
+        } else {
+          // If coupon is expanded object
+          discountInfo = {
+            coupon: couponData.id,
+            percent_off: couponData.percent_off,
+            amount_off: couponData.amount_off,
+          };
+        }
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Coupon applied successfully',
         subscription: {
           id: subscription.id,
           status: subscription.status,
-          discount: activeDiscount ? {
-            coupon: typeof activeDiscount.coupon === 'string' ? activeDiscount.coupon : activeDiscount.coupon.id,
-            percent_off: typeof activeDiscount.coupon === 'string' ? null : activeDiscount.coupon.percent_off,
-            amount_off: typeof activeDiscount.coupon === 'string' ? null : activeDiscount.coupon.amount_off,
-          } : null,
+          discount: discountInfo,
         },
       });
     } catch (stripeError: any) {
