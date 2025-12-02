@@ -125,41 +125,12 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ Applied coupon ${coupon.id} to subscription ${subscription.id}`);
 
-      // Get discount info from discounts array (plural)
-      const activeDiscount = subscription.discounts && subscription.discounts.length > 0 
-        ? subscription.discounts[0] 
-        : null;
-
-      // Extract coupon info safely
-      let discountInfo = null;
-      if (activeDiscount && typeof activeDiscount !== 'string') {
-        // activeDiscount is a Discount object, not a string
-        const couponData = activeDiscount.coupon;
-        if (typeof couponData === 'string') {
-          // If coupon is just an ID string, fetch the coupon details
-          const couponDetails = await stripe.coupons.retrieve(couponData);
-          discountInfo = {
-            coupon: couponDetails.id,
-            percent_off: couponDetails.percent_off,
-            amount_off: couponDetails.amount_off,
-          };
-        } else if (couponData && typeof couponData === 'object' && 'id' in couponData) {
-          // If coupon is expanded object
-          discountInfo = {
-            coupon: couponData.id,
-            percent_off: couponData.percent_off || null,
-            amount_off: couponData.amount_off || null,
-          };
-        }
-      }
-
       return NextResponse.json({
         success: true,
         message: 'Coupon applied successfully',
         subscription: {
           id: subscription.id,
           status: subscription.status,
-          discount: discountInfo,
         },
       });
     } catch (stripeError: any) {
