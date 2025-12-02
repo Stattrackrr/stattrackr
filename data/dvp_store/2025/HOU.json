@@ -4976,17 +4976,17 @@
     "source": "bdl+espn"
   },
   {
-    "gameId": "18447110",
-    "date": "2025-11-30",
+    "gameId": "18447125",
+    "date": "2025-12-01",
     "opponent": "UTA",
     "team": "HOU",
     "season": "2025-26",
     "buckets": {
-      "PG": 2,
-      "SG": 19,
-      "SF": 36,
-      "PF": 30,
-      "C": 14
+      "PG": 31,
+      "SG": 18,
+      "SF": 14,
+      "PF": 41,
+      "C": 29
     },
     "players": [
       {
@@ -5250,17 +5250,17 @@
     "lineupVerified": false
   },
   {
-    "gameId": "18447125",
-    "date": "2025-12-01",
+    "gameId": "18447110",
+    "date": "2025-11-30",
     "opponent": "UTA",
     "team": "HOU",
     "season": "2025-26",
     "buckets": {
-      "PG": 31,
-      "SG": 18,
-      "SF": 14,
-      "PF": 41,
-      "C": 29
+      "PG": 2,
+      "SG": 19,
+      "SF": 36,
+      "PF": 30,
+      "C": 14
     },
     "players": [
       {
