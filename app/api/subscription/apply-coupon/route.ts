@@ -112,10 +112,13 @@ export async function POST(request: NextRequest) {
 
     // Apply coupon to subscription
     try {
+      // Use discounts array to apply coupon (correct Stripe API format)
       const subscription = await stripe.subscriptions.update(
         profile.stripe_subscription_id,
         {
-          coupon: coupon.id,
+          discounts: [{
+            coupon: coupon.id,
+          }],
           proration_behavior: 'always_invoice', // Prorate the discount immediately
         }
       );
