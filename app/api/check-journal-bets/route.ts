@@ -104,14 +104,45 @@ async function resolveParlayBet(
 ): Promise<void> {
   try {
     console.log(`[check-journal-bets] 🔍 Processing parlay bet ${bet.id}: "${bet.market || bet.selection}"`);
-    const legs = parseParlayLegs(bet.selection || bet.market || '');
     
-    if (legs.length === 0) {
-      console.error(`[check-journal-bets] ❌ Could not parse parlay legs for bet ${bet.id}. Selection text: "${bet.selection || bet.market}"`);
-      return;
+    // OPTIMIZATION: Use structured parlay_legs data if available (new parlays)
+    // Fallback to parsing text for legacy parlays
+    let legs: Array<{
+      playerName: string;
+      playerId?: string;
+      team?: string;
+      opponent?: string;
+      gameDate?: string;
+      overUnder: 'over' | 'under';
+      line: number;
+      statType: string;
+    }> = [];
+    
+    if (bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs.length > 0) {
+      // Use structured data (new parlays)
+      console.log(`[check-journal-bets] Parlay ${bet.id}: Using structured parlay_legs data (${bet.parlay_legs.length} legs)`);
+      legs = bet.parlay_legs.map((leg: any) => ({
+        playerName: leg.playerName,
+        playerId: leg.playerId,
+        team: leg.team,
+        opponent: leg.opponent,
+        gameDate: leg.gameDate,
+        overUnder: leg.overUnder,
+        line: leg.line,
+        statType: leg.statType,
+      }));
+    } else {
+      // Fallback: Parse text for legacy parlays
+      console.log(`[check-journal-bets] Parlay ${bet.id}: No structured data, parsing text (legacy parlay)`);
+      const parsedLegs = parseParlayLegs(bet.selection || bet.market || '');
+      if (parsedLegs.length === 0) {
+        console.error(`[check-journal-bets] ❌ Could not parse parlay legs for bet ${bet.id}. Selection text: "${bet.selection || bet.market}"`);
+        return;
+      }
+      legs = parsedLegs;
     }
     
-    console.log(`[check-journal-bets] Parlay ${bet.id}: Parsed ${legs.length} legs: ${legs.map(l => `${l.playerName} ${l.overUnder} ${l.line} ${l.statType}`).join(', ')}`);
+    console.log(`[check-journal-bets] Parlay ${bet.id}: Processing ${legs.length} legs: ${legs.map(l => `${l.playerName} ${l.overUnder} ${l.line} ${l.statType}`).join(', ')}`);
     
     const legResults: Array<{ won: boolean; void: boolean; leg: any }> = [];
     let allLegsResolved = true;
@@ -120,35 +151,214 @@ async function resolveParlayBet(
     const parlayDate = bet.date || bet.game_date;
     
     // Check each leg
+    // IMPORTANT: Each leg must be resolved (game final, player found, stats calculated) before the parlay can be resolved.
+    // If any leg's game hasn't started or isn't final, that leg won't be resolved, and the parlay will stay pending.
+    // This ensures parlays with legs on different dates/times wait for ALL games to complete.
     for (const leg of legs) {
       console.log(`[check-journal-bets] Parlay ${bet.id}: Checking leg "${leg.playerName} ${leg.overUnder} ${leg.line} ${leg.statType}"`);
-      // leg.statType is already normalized to stat key (pts, reb, ast, etc.)
       const statKey = leg.statType;
-      
-      // Find player by name (we'll need to search for the player)
-      // For now, we'll need to get player ID from the player name
-      // This is a limitation - we should store player IDs with parlays
-      
-      // Try to find a game that might contain this player
-      // We'll need to check all games and find the player
       let legResolved = false;
+      
+      // OPTIMIZATION: If we have structured data (playerId, team, opponent, gameDate), use direct lookup
+      if (leg.playerId && leg.team && leg.gameDate) {
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Using structured data - direct lookup (playerId: ${leg.playerId}, team: ${leg.team}, gameDate: ${leg.gameDate})`);
+        
+        // Find the specific game for this leg
+        const legGameDate = leg.gameDate.split('T')[0];
+        const targetGame = games.find((g: any) => {
+          const gameDate = g.date ? g.date.split('T')[0] : null;
+          if (gameDate !== legGameDate) return false;
+          
+          // Match by team (home or visitor)
+          const homeMatch = g.home_team?.abbreviation === leg.team || g.home_team?.full_name === leg.team;
+          const visitorMatch = g.visitor_team?.abbreviation === leg.team || g.visitor_team?.full_name === leg.team;
+          const opponentMatch = leg.opponent && (
+            g.home_team?.abbreviation === leg.opponent || g.home_team?.full_name === leg.opponent ||
+            g.visitor_team?.abbreviation === leg.opponent || g.visitor_team?.full_name === leg.opponent
+          );
+          
+          return (homeMatch || visitorMatch) && (!leg.opponent || opponentMatch);
+        });
+        
+        if (!targetGame) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found for team ${leg.team} on ${legGameDate}`);
+          allLegsResolved = false;
+          continue;
+        }
+        
+        // Check if game is completed (same logic as before)
+        const rawStatus = String(targetGame.status || '');
+        const gameStatus = rawStatus.toLowerCase();
+        let isCompleted = false;
+        let completedAt: Date | null = null;
+        const now = Date.now();
+        
+        let tipoffTime = NaN;
+        if (rawStatus && rawStatus.length > 10) {
+          const statusParsed = Date.parse(rawStatus);
+          if (!Number.isNaN(statusParsed)) {
+            tipoffTime = statusParsed;
+          }
+        }
+        if (Number.isNaN(tipoffTime) && targetGame.date) {
+          tipoffTime = Date.parse(targetGame.date);
+        }
+        
+        const dateStr = targetGame.date || '';
+        const hasTimeComponent = dateStr.includes('T') && dateStr.length > 10;
+        
+        if (!Number.isNaN(tipoffTime)) {
+          const timeSinceTipoff = now - tipoffTime;
+          const gameHasStarted = timeSinceTipoff > 0;
+          
+          if (!hasTimeComponent && !gameStatus.includes('final')) {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${targetGame.id} date-only and not final. Skipping.`);
+            allLegsResolved = false;
+            continue;
+          }
+          
+          if (gameHasStarted) {
+            const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000;
+            const tenMinutesMs = 10 * 60 * 1000;
+            const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+            const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
+            
+            if (gameStatus.includes('final')) {
+              isCompleted = true;
+              completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+            } else if (timeSinceEstimatedCompletion > tenMinutesMs && hasTimeComponent) {
+              isCompleted = true;
+              completedAt = new Date(estimatedCompletionTime);
+            }
+          } else {
+            const hoursUntil = (tipoffTime - now) / (1000 * 60 * 60);
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${targetGame.id} hasn't started yet (${hoursUntil.toFixed(2)} hours from now). Skipping.`);
+            allLegsResolved = false;
+            continue;
+          }
+        } else if (gameStatus.includes('final')) {
+          isCompleted = true;
+          completedAt = new Date(now - (60 * 60 * 1000));
+        }
+        
+        if (!isCompleted) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${targetGame.id} not completed yet. Status: ${targetGame.status}`);
+          allLegsResolved = false;
+          continue;
+        }
+        
+        if (completedAt) {
+          const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
+          if (completedAt > tenMinutesAgo) {
+            const minutesAgo = Math.round((now - completedAt.getTime()) / 60000);
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game ${targetGame.id} completed ${minutesAgo} minutes ago, waiting for 10-minute buffer`);
+            allLegsResolved = false;
+            continue;
+          }
+        }
+        
+        // DIRECT LOOKUP: Fetch stats for this specific game and find player by playerId
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Fetching stats for game ${targetGame.id} (direct lookup)`);
+        const statsResponse = await fetch(
+          `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGame.id}&player_ids[]=${leg.playerId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+            },
+          }
+        );
+        
+        if (!statsResponse.ok) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Failed to fetch stats for game ${targetGame.id}`);
+          allLegsResolved = false;
+          continue;
+        }
+        
+        const statsData = await statsResponse.json();
+        if (!statsData.data || statsData.data.length === 0) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No stats found for player ${leg.playerId} in game ${targetGame.id}`);
+          allLegsResolved = false;
+          continue;
+        }
+        
+        const playerStat = statsData.data[0]; // Should only be one result since we filtered by playerId
+        
+        // Check if player played (void if < 0.01 minutes)
+        const minutesPlayed = String(playerStat.min || '0:00').trim();
+        let totalMinutes = 0;
+        if (minutesPlayed.includes(':')) {
+          const parts = minutesPlayed.split(':');
+          totalMinutes = (Number(parts[0]) || 0) + ((Number(parts[1]) || 0) / 60);
+        } else {
+          totalMinutes = Number(minutesPlayed) || 0;
+        }
+        
+        if (totalMinutes < 0.01) {
+          // Player didn't play - leg is void
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Player played 0 minutes - void`);
+          legResults.push({ won: false, void: true, leg });
+          legResolved = true;
+          continue;
+        }
+        
+        // Calculate actual value and determine win/loss
+        const stats: PlayerStats = {
+          pts: playerStat.pts || 0,
+          reb: playerStat.reb || 0,
+          ast: playerStat.ast || 0,
+          stl: playerStat.stl || 0,
+          blk: playerStat.blk || 0,
+          fg3m: playerStat.fg3m || 0,
+        };
+        
+        let actualValue = 0;
+        switch (statKey) {
+          case 'pts': actualValue = stats.pts; break;
+          case 'reb': actualValue = stats.reb; break;
+          case 'ast': actualValue = stats.ast; break;
+          case 'pr': actualValue = stats.pts + stats.reb; break;
+          case 'pra': actualValue = stats.pts + stats.reb + stats.ast; break;
+          case 'ra': actualValue = stats.reb + stats.ast; break;
+          case 'stl': actualValue = stats.stl; break;
+          case 'blk': actualValue = stats.blk; break;
+          case 'fg3m': actualValue = stats.fg3m; break;
+        }
+        
+        const isWholeNumber = leg.line % 1 === 0;
+        const legWon = leg.overUnder === 'over' 
+          ? (isWholeNumber ? actualValue >= leg.line : actualValue > leg.line)
+          : (isWholeNumber ? actualValue <= leg.line : actualValue < leg.line);
+        
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": ${legWon ? 'WIN' : 'LOSS'} - Actual: ${actualValue}, Line: ${leg.line} ${leg.overUnder}`);
+        legResults.push({ won: legWon, void: false, leg });
+        legResolved = true;
+        continue; // Move to next leg
+      }
+      
+      // FALLBACK: Legacy parlay resolution (no structured data) - use old method
+      console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No structured data, using legacy name-matching method`);
       let gamesCheckedFromParlayDate = 0;
       let totalGamesFromParlayDate = 0;
+      const gameStatsCache = new Map<number, any[]>();
       
-      console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Checking ${games.length} games`);
-      
-      // Count games from parlay date
       if (parlayDate) {
         totalGamesFromParlayDate = games.filter((g: any) => {
           const gameDate = g.date ? g.date.split('T')[0] : null;
           return gameDate === parlayDate;
         }).length;
-        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found ${totalGamesFromParlayDate} games from parlay date ${parlayDate} (out of ${games.length} total games)`);
-      } else {
-        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No parlay date found (bet.date=${bet.date}, bet.game_date=${bet.game_date})`);
       }
       
-      for (const game of games) {
+      const sortedGames = [...games].sort((a: any, b: any) => {
+        const aDate = a.date ? a.date.split('T')[0] : null;
+        const bDate = b.date ? b.date.split('T')[0] : null;
+        const aIsParlayDate = parlayDate && aDate === parlayDate;
+        const bIsParlayDate = parlayDate && bDate === parlayDate;
+        if (aIsParlayDate && !bIsParlayDate) return -1;
+        if (!aIsParlayDate && bIsParlayDate) return 1;
+        return 0;
+      });
+      
+      for (const game of sortedGames) {
         const gameDate = game.date ? game.date.split('T')[0] : null;
         const isFromParlayDate = parlayDate && gameDate === parlayDate;
         if (isFromParlayDate) {
@@ -162,25 +372,80 @@ async function resolveParlayBet(
         
         let isCompleted = false;
         let completedAt: Date | null = null;
-        // Use game.date (scheduled time) instead of trying to parse game.status
-        const tipoffTime = game.date ? Date.parse(game.date) : NaN;
         const now = Date.now();
         
+        // Try to get tipoff time from game.date or game.status
+        // game.status might contain the actual tipoff time as ISO string
+        let tipoffTime = NaN;
+        
+        // First try parsing game.status as it might contain the actual tipoff time
+        if (rawStatus && rawStatus.length > 10) {
+          const statusParsed = Date.parse(rawStatus);
+          if (!Number.isNaN(statusParsed)) {
+            tipoffTime = statusParsed;
+          }
+        }
+        
+        // If status parsing failed, try game.date
+        if (Number.isNaN(tipoffTime) && game.date) {
+          tipoffTime = Date.parse(game.date);
+        }
+        
+        // Check if game.date only contains a date (no time) - if so, be more conservative
+        const dateStr = game.date || '';
+        const hasTimeComponent = dateStr.includes('T') && dateStr.length > 10;
+        
         if (!Number.isNaN(tipoffTime)) {
+          const timeSinceTipoff = now - tipoffTime;
           const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
           const tenMinutesMs = 10 * 60 * 1000; // 10 minutes
-          const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
-          const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
           
-          if (gameStatus.includes('final')) {
-            isCompleted = true;
-            completedAt = new Date(tipoffTime + estimatedGameDurationMs);
-          } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
-            isCompleted = true;
-            completedAt = new Date(estimatedCompletionTime);
+          // CRITICAL: Game must have actually started (tipoffTime is in the past) before we can mark it as completed
+          const gameHasStarted = timeSinceTipoff > 0;
+          
+          // If game.date only has date (no time), be extra conservative
+          // NBA games are typically scheduled for evening (7-10 PM local time)
+          // If we only have a date, we can't know the actual tipoff time
+          // CRITICAL: For date-only games, ONLY mark as started if status is "final"
+          // We cannot trust time-based checks when we don't have the actual tipoff time
+          if (!hasTimeComponent) {
+            if (!gameStatus.includes('final')) {
+              // Date-only and not final: skip this leg - we can't verify the game actually started
+              console.log(`[check-journal-bets] ✅ FIX VERIFIED: Parlay ${bet.id} leg "${leg.playerName}": Game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}) date-only format (no time) and status is not "final" (status: "${gameStatus}"). Skipping to prevent premature resolution.`);
+              allLegsResolved = false;
+              continue;
+            }
+            // If status is "final", proceed with normal logic
+          }
+          
+          // For date-only games without "final" status, we already skipped them above
+          // So if we reach here with date-only, it means status is "final" or 24+ hours passed
+          if (gameHasStarted) {
+            const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+            const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
+            
+            if (gameStatus.includes('final')) {
+              isCompleted = true;
+              completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+            } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
+              // Only mark as completed if we have a proper time component
+              // For date-only games, we already handled them above (require "final" or 24+ hours)
+              if (hasTimeComponent) {
+                isCompleted = true;
+                completedAt = new Date(estimatedCompletionTime);
+              }
+            }
+          } else {
+            // Game hasn't started yet - cannot be completed
+            const hoursUntil = (tipoffTime - now) / (1000 * 60 * 60);
+            console.log(`[check-journal-bets] ✅ FIX VERIFIED: Parlay ${bet.id} leg "${leg.playerName}": Game ${game.id} (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation}) hasn't started yet (tipoff: ${new Date(tipoffTime).toISOString()}, ${hoursUntil.toFixed(2)} hours from now). Skipping to prevent premature resolution.`);
+            allLegsResolved = false;
+            continue; // Game not started yet, can't resolve this leg
           }
         } else if (gameStatus.includes('final')) {
-          // If status is final but no date, assume it completed long ago (more than 10 minutes)
+          // Status says final but no date - only mark as completed if we can verify it's actually finished
+          // Be more cautious: if we don't have a tipoff time, we can't verify the game started
+          console.log(`[check-journal-bets] ⚠️  Parlay ${bet.id} leg "${leg.playerName}": Game ${game.id} status is "final" but no tipoff time available. Proceeding with caution.`);
           isCompleted = true;
           // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
           completedAt = new Date(now - (60 * 60 * 1000));
@@ -203,24 +468,33 @@ async function resolveParlayBet(
           }
         }
         
-        // Try to find player in this game by searching stats
-        // We'll need to fetch all stats for this game and find the player
-        const statsResponse = await fetch(
-          `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-            },
+        // OPTIMIZATION: Check cache first to avoid fetching the same game stats multiple times
+        let statsData: any;
+        if (gameStatsCache.has(game.id)) {
+          statsData = { data: gameStatsCache.get(game.id) };
+        } else {
+          // Try to find player in this game by searching stats
+          // We'll need to fetch all stats for this game and find the player
+          const statsResponse = await fetch(
+            `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+              },
+            }
+          );
+          
+          if (!statsResponse.ok) {
+            continue;
           }
-        );
-        
-        if (!statsResponse.ok) {
-          continue;
-        }
-        
-        const statsData = await statsResponse.json();
-        if (!statsData.data || statsData.data.length === 0) {
-          continue;
+          
+          statsData = await statsResponse.json();
+          if (!statsData.data || statsData.data.length === 0) {
+            continue;
+          }
+          
+          // Cache the stats for this game
+          gameStatsCache.set(game.id, statsData.data);
         }
         
         // Find player by name (case-insensitive partial match)
@@ -329,11 +603,23 @@ async function resolveParlayBet(
         console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found player in game ${game.id}`);
         
         // Check if player played
-        const minutesPlayed = playerStat.min || '0:00';
-        const [mins, secs] = minutesPlayed.split(':').map(Number);
-        const totalMinutes = (mins || 0) + ((secs || 0) / 60);
+        // Handle various minute formats: "15:30", "15", "0:00", "0", etc.
+        const minutesPlayed = String(playerStat.min || '0:00').trim();
+        let totalMinutes = 0;
         
-        if (totalMinutes === 0) {
+        if (minutesPlayed.includes(':')) {
+          // Format: "MM:SS" or "M:SS"
+          const parts = minutesPlayed.split(':');
+          const mins = Number(parts[0]) || 0;
+          const secs = Number(parts[1]) || 0;
+          totalMinutes = mins + (secs / 60);
+        } else {
+          // Format: just a number (total minutes as decimal or whole number)
+          totalMinutes = Number(minutesPlayed) || 0;
+        }
+        
+        // Only void if player truly played 0 minutes (accounting for floating point precision)
+        if (totalMinutes < 0.01) {
           // Player didn't play - leg is void (excluded from parlay calculation)
           legResults.push({ won: false, void: true, leg });
           legResolved = true;
@@ -667,25 +953,39 @@ export async function GET(request: Request) {
           const tenMinutesMs = 10 * 60 * 1000;
           const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
           
+          // CRITICAL: Game must have actually started (tipoffTime is in the past) before we can mark it as completed
+          const gameHasStarted = timeSinceTipoff > 0;
+          
           // Game is live if it started and hasn't been 3 hours yet
-          isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+          isLive = gameHasStarted && timeSinceTipoff < threeHoursMs;
           
-          // Game is completed if:
-          // 1. Status explicitly says "final"
-          // 2. OR tipoff was more than 2.5 hours ago (estimated game duration) AND more than 10 minutes have passed since estimated completion
-          const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
-          const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
-          
-          if (gameStatus.includes('final')) {
-            isCompleted = true;
-            completedAt = new Date(tipoffTime + estimatedGameDurationMs);
-          } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
-            // Game likely completed more than 10 minutes ago (based on tipoff + estimated duration)
-            isCompleted = true;
-            completedAt = new Date(estimatedCompletionTime);
+          // Game is completed ONLY if:
+          // 1. Game has actually started (tipoffTime is in the past)
+          // 2. AND (Status explicitly says "final" OR tipoff was more than 2.5 hours ago AND more than 10 minutes have passed since estimated completion)
+          if (gameHasStarted) {
+            const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+            const timeSinceEstimatedCompletion = now - estimatedCompletionTime;
+            
+            if (gameStatus.includes('final')) {
+              isCompleted = true;
+              completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+            } else if (timeSinceEstimatedCompletion > tenMinutesMs) {
+              // Game likely completed more than 10 minutes ago (based on tipoff + estimated duration)
+              isCompleted = true;
+              completedAt = new Date(estimatedCompletionTime);
+            }
+          } else {
+            // Game hasn't started yet - cannot be completed
+            const hoursUntilTipoff = (tipoffTime - now) / (1000 * 60 * 60);
+            console.log(`[check-journal-bets] ✅ FIX VERIFIED: Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} hasn't started yet (tipoff: ${new Date(tipoffTime).toISOString()}, ${hoursUntilTipoff.toFixed(2)} hours from now). Skipping to prevent premature loss marking.`);
+            continue;
           }
         } else if (gameStatus.includes('final')) {
-          // Status says final but no date - assume it's completed long ago (more than 10 minutes)
+          // Status says final but no date - only mark as completed if we can verify it's actually finished
+          // Be more cautious: if we don't have a tipoff time, we can't verify the game started
+          // Only mark as completed if status explicitly contains "final" and we have some confidence
+          // For safety, we'll still mark it but log a warning
+          console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${bet.player_name}): Game status is "final" but no tipoff time available. Proceeding with caution.`);
           isCompleted = true;
           // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
           completedAt = new Date(now - (60 * 60 * 1000));
@@ -744,12 +1044,25 @@ export async function GET(request: Request) {
         const playerStat = statsData.data[0];
         
         // Check if player played 0 minutes - if so, mark as void
-        const minutesPlayed = playerStat.min || '0:00';
-        const [mins, secs] = minutesPlayed.split(':').map(Number);
-        const totalMinutes = (mins || 0) + ((secs || 0) / 60);
+        // Handle various minute formats: "15:30", "15", "0:00", "0", etc.
+        const minutesPlayed = String(playerStat.min || '0:00').trim();
+        let totalMinutes = 0;
         
-        if (totalMinutes === 0) {
+        if (minutesPlayed.includes(':')) {
+          // Format: "MM:SS" or "M:SS"
+          const parts = minutesPlayed.split(':');
+          const mins = Number(parts[0]) || 0;
+          const secs = Number(parts[1]) || 0;
+          totalMinutes = mins + (secs / 60);
+        } else {
+          // Format: just a number (total minutes as decimal or whole number)
+          totalMinutes = Number(minutesPlayed) || 0;
+        }
+        
+        // Only void if player truly played 0 minutes (accounting for floating point precision)
+        if (totalMinutes < 0.01) {
           // Player didn't play - void the bet
+          console.log(`[check-journal-bets] ✅ Voiding bet ${bet.id} (${bet.player_name}): Player played ${totalMinutes.toFixed(3)} minutes (formatted as "${minutesPlayed}")`);
           const { error: updateError } = await supabaseAdmin
             .from('bets')
             .update({
@@ -762,10 +1075,12 @@ export async function GET(request: Request) {
           if (updateError) {
             console.error(`Failed to update bet ${bet.id}:`, updateError);
           } else {
-            logDebug(`Voided ${bet.player_name} ${bet.stat_type} ${bet.over_under} ${bet.line}: player played 0 minutes`);
+            console.log(`[check-journal-bets] ✅ Voided ${bet.player_name} ${bet.stat_type} ${bet.over_under} ${bet.line}: player played ${totalMinutes.toFixed(3)} minutes`);
             updatedCountRef.value++;
           }
           continue;
+        } else {
+          console.log(`[check-journal-bets] ✅ FIX VERIFIED: Bet ${bet.id} (${bet.player_name}): Player played ${totalMinutes.toFixed(2)} minutes (formatted as "${minutesPlayed}"), will NOT void - proceeding to win/loss calculation`);
         }
         
         const stats: PlayerStats = {

@@ -44,6 +44,9 @@ export default function SubscriptionPage() {
   const [fullName, setFullName] = useState<string>('');
   const [hasTriedAutoRedirect, setHasTriedAutoRedirect] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -223,6 +226,53 @@ export default function SubscriptionPage() {
       alert(error.message || 'Failed to start checkout. Please try again.');
     }
     setCheckoutLoading(false);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponMessage({ type: 'error', text: 'Please enter a coupon code' });
+      return;
+    }
+
+    setApplyingCoupon(true);
+    setCouponMessage(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please log in to continue');
+      }
+
+      const response = await fetch('/api/subscription/apply-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          couponCode: couponCode.trim().toUpperCase(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to apply coupon');
+      }
+
+      setCouponMessage({ type: 'success', text: '✅ Coupon applied successfully! Your discount will be applied to your next billing cycle.' });
+      setCouponCode('');
+      
+      // Refresh subscription data to show updated info
+      setTimeout(() => {
+        refreshSubscription();
+      }, 1000);
+    } catch (error: any) {
+      console.error('Coupon error:', error);
+      setCouponMessage({ type: 'error', text: error.message || 'Failed to apply coupon' });
+    } finally {
+      setApplyingCoupon(false);
+    }
   };
 
   if (loading) {
@@ -434,6 +484,68 @@ export default function SubscriptionPage() {
                 )}
               </div>
             </div>
+
+            {/* Apply Promo Code - Show for active subscriptions */}
+            {hasActiveSubscription && (
+              <div className="bg-white border border-gray-200 rounded-lg mb-6">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Apply Promo Code</h3>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponMessage(null);
+                        }}
+                        placeholder="Enter promo code (e.g., FOUNDERS10)"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        disabled={applyingCoupon}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleApplyCoupon();
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={applyingCoupon || !couponCode.trim()}
+                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                          applyingCoupon || !couponCode.trim()
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {applyingCoupon ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Applying...
+                          </span>
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+                    {couponMessage && (
+                      <div className={`p-3 rounded-lg text-sm ${
+                        couponMessage.type === 'success'
+                          ? 'bg-green-50 text-green-800 border border-green-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}>
+                        {couponMessage.text}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      Enter a valid promo code to apply a discount to your subscription. The discount will be applied immediately and will continue on future renewals.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Subscription Management - Always show all options */}
             <div className="bg-white border border-gray-200 rounded-lg mb-6">

@@ -306,6 +306,18 @@ export default function AddToJournalModal({
           .map(sel => sel.bookmaker)
           .filter((name): name is string => Boolean(name && name.trim()));
 
+        // Store structured parlay leg data for efficient resolution
+        const parlayLegs = parlaySelections.map(sel => ({
+          playerId: sel.playerId,
+          playerName: sel.playerName,
+          team: sel.team,
+          opponent: sel.opponent,
+          gameDate: sel.gameDate,
+          statType: sel.statType,
+          line: sel.line,
+          overUnder: sel.overUnder,
+        }));
+
         const { error: insertError } = await (supabase
           .from('bets') as any)
           .insert({
@@ -320,9 +332,7 @@ export default function AddToJournalModal({
             result: 'pending',
             status: 'pending',
             bookmaker: bookmakers.length > 0 ? JSON.stringify(bookmakers) : null,
-            // Store parlay selections as JSON in a text field (we'll use selection field for now, or add a new column)
-            // For now, we'll store the JSON in a way that can be parsed later
-            // We can add a parlay_selections JSONB column later if needed
+            parlay_legs: parlayLegs, // Store structured leg data for efficient resolution
           });
 
         if (insertError) throw insertError;
