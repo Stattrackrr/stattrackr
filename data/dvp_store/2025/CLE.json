@@ -5801,8 +5801,8 @@
     "team": "CLE",
     "season": "2025-26",
     "buckets": {
-      "PG": 26,
-      "SG": 28,
+      "PG": 27,
+      "SG": 27,
       "SF": 7,
       "PF": 31,
       "C": 27
@@ -5907,7 +5907,7 @@
       {
         "playerId": 0,
         "name": "Ben Sheppard",
-        "bucket": "SG",
+        "bucket": "PG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5922,7 +5922,7 @@
       },
       {
         "playerId": 0,
-        "name": "Quenton Jackson",
+        "name": "Ethan Thompson",
         "bucket": "PG",
         "isStarter": false,
         "pts": 0,
@@ -5939,7 +5939,7 @@
       {
         "playerId": 0,
         "name": "Taelon Peter",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,

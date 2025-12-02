@@ -5207,8 +5207,8 @@
     "team": "LAL",
     "season": "2025-26",
     "buckets": {
-      "PG": 46,
-      "SG": 13,
+      "PG": 18,
+      "SG": 41,
       "SF": 33,
       "PF": 16,
       "C": 17
@@ -5296,7 +5296,7 @@
       },
       {
         "playerId": 0,
-        "name": "Collin Gillespie",
+        "name": "Jamaree Bouyea",
         "bucket": "PG",
         "isStarter": false,
         "pts": 0,
@@ -5312,7 +5312,7 @@
       },
       {
         "playerId": 0,
-        "name": "Jamaree Bouyea",
+        "name": "Collin Gillespie",
         "bucket": "PG",
         "isStarter": false,
         "pts": 0,

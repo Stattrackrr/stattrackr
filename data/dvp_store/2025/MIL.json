@@ -3936,8 +3936,8 @@
     "buckets": {
       "PG": 25,
       "SG": 7,
-      "SF": 10,
-      "PF": 19,
+      "SF": 23,
+      "PF": 6,
       "C": 38
     },
     "players": [
@@ -4120,7 +4120,7 @@
       {
         "playerId": 0,
         "name": "Jalen Wilson",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
