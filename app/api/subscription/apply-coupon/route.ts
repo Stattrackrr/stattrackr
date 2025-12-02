@@ -125,16 +125,21 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ Applied coupon ${coupon.id} to subscription ${subscription.id}`);
 
+      // Get discount info from discounts array (plural)
+      const activeDiscount = subscription.discounts && subscription.discounts.length > 0 
+        ? subscription.discounts[0] 
+        : null;
+
       return NextResponse.json({
         success: true,
         message: 'Coupon applied successfully',
         subscription: {
           id: subscription.id,
           status: subscription.status,
-          discount: subscription.discount ? {
-            coupon: subscription.discount.coupon.id,
-            percent_off: subscription.discount.coupon.percent_off,
-            amount_off: subscription.discount.coupon.amount_off,
+          discount: activeDiscount ? {
+            coupon: typeof activeDiscount.coupon === 'string' ? activeDiscount.coupon : activeDiscount.coupon.id,
+            percent_off: typeof activeDiscount.coupon === 'string' ? null : activeDiscount.coupon.percent_off,
+            amount_off: typeof activeDiscount.coupon === 'string' ? null : activeDiscount.coupon.amount_off,
           } : null,
         },
       });
