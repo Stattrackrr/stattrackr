@@ -5387,9 +5387,9 @@
     "buckets": {
       "PG": 20,
       "SG": 8,
-      "SF": 18,
-      "PF": 50,
-      "C": 13
+      "SF": 38,
+      "PF": 33,
+      "C": 10
     },
     "players": [
       {
@@ -5506,6 +5506,22 @@
       },
       {
         "playerId": 0,
+        "name": "Gary Trent",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
         "name": "Gary Harris",
         "bucket": "SG",
         "isStarter": false,
@@ -5522,24 +5538,8 @@
       },
       {
         "playerId": 0,
-        "name": "Gary Trent",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Kyle Kuzma",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5571,7 +5571,7 @@
       {
         "playerId": 0,
         "name": "Bobby Portis",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,

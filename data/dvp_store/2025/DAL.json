@@ -3542,7 +3542,7 @@
       {
         "playerId": 0,
         "name": "Bruce Brown",
-        "bucket": "PG",
+        "bucket": "SG",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3589,22 +3589,6 @@
       },
       {
         "playerId": 0,
-        "name": "Julian Strawther",
-        "bucket": "SG",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
         "name": "Tim Hardaway",
         "bucket": "SF",
         "isStarter": false,
@@ -3621,8 +3605,8 @@
       },
       {
         "playerId": 0,
-        "name": "Zeke Nnaji",
-        "bucket": "PF",
+        "name": "Hunter Tyson",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -3637,7 +3621,7 @@
       },
       {
         "playerId": 0,
-        "name": "Hunter Tyson",
+        "name": "Zeke Nnaji",
         "bucket": "PF",
         "isStarter": false,
         "pts": 0,
