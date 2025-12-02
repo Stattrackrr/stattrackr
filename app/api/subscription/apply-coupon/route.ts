@@ -132,7 +132,8 @@ export async function POST(request: NextRequest) {
 
       // Extract coupon info safely
       let discountInfo = null;
-      if (activeDiscount) {
+      if (activeDiscount && typeof activeDiscount !== 'string') {
+        // activeDiscount is a Discount object, not a string
         const couponData = activeDiscount.coupon;
         if (typeof couponData === 'string') {
           // If coupon is just an ID string, fetch the coupon details
@@ -142,12 +143,12 @@ export async function POST(request: NextRequest) {
             percent_off: couponDetails.percent_off,
             amount_off: couponDetails.amount_off,
           };
-        } else {
+        } else if (couponData && typeof couponData === 'object' && 'id' in couponData) {
           // If coupon is expanded object
           discountInfo = {
             coupon: couponData.id,
-            percent_off: couponData.percent_off,
-            amount_off: couponData.amount_off,
+            percent_off: couponData.percent_off || null,
+            amount_off: couponData.amount_off || null,
           };
         }
       }
