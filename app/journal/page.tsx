@@ -477,27 +477,7 @@ function JournalContent() {
         setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
         setUserEmail(session.user.email || null);
 
-        // First, trigger check-journal-bets to update any completed games
-        try {
-          console.log('[Journal] Calling /api/check-journal-bets to update completed games...');
-          const response = await fetch('/api/check-journal-bets', {
-            credentials: 'include', // Include cookies for authentication
-          });
-          
-          if (!response.ok) {
-            console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
-            const errorData = await response.text().catch(() => '');
-            console.error('[Journal] Error response:', errorData);
-          } else {
-            const data = await response.json();
-            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
-          }
-        } catch (error) {
-          console.error('[Journal] ❌ Failed to check journal bets:', error);
-          // Continue anyway to fetch current data
-        }
-
-        // Fetch bets
+        // Fetch bets immediately (don't wait for check-journal-bets)
         const { data, error } = await supabase
           .from('bets')
           .select('*')
@@ -511,6 +491,39 @@ function JournalContent() {
         } else {
           setBets(data || []);
         }
+
+        // Set loading to false immediately so UI shows
+        setLoading(false);
+
+        // Run check-journal-bets in background (non-blocking) to update completed games
+        // This will refresh the data after the page loads
+        fetch('/api/check-journal-bets', {
+          credentials: 'include',
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+              return;
+            }
+            const data = await response.json();
+            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
+            
+            // Refresh bets after check completes to show updated results
+            if (isMounted) {
+              const { data: refreshedBets } = await supabase
+                .from('bets')
+                .select('*')
+                .order('date', { ascending: false });
+              
+              if (isMounted && refreshedBets) {
+                setBets(refreshedBets);
+              }
+            }
+          })
+          .catch((error) => {
+            console.error('[Journal] ❌ Failed to check journal bets:', error);
+            // Non-blocking, so we don't need to handle this
+          });
       } catch (error) {
         console.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
