@@ -989,11 +989,6 @@ export async function GET(request: Request) {
     
     const { data: parlayBets, error: parlayError } = await parlayBetsQuery;
     
-    if (singleError) {
-      console.error('Error fetching single bets:', singleError);
-      throw singleError;
-    }
-    
     if (parlayError) {
       console.error('Error fetching parlay bets:', parlayError);
       throw parlayError;
