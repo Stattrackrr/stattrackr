@@ -654,7 +654,7 @@ export default function TrackPlayerModal({
                                             {showVariantLogo && (
                                               <img
                                                 src={odds.variantLabel === 'Goblin' ? '/images/goblin.png' : '/images/demon.png'}
-                                                alt={odds.variantLabel}
+                                                alt={odds.variantLabel || undefined}
                                                 className="absolute -bottom-1 -right-1 w-5 h-5 object-contain"
                                                 onError={(e) => {
                                                   (e.target as HTMLImageElement).style.display = 'none';
