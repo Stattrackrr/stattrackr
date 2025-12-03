@@ -145,7 +145,6 @@ export default function TrackPlayerModal({
       // Reset manual mode and manual line when switching stats/players
       setIsManualMode(false);
       setManualLine('');
-      setManualOdds('');
 
       try {
         let data: any;
