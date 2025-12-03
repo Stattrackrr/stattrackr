@@ -2320,7 +2320,7 @@ export default function AddToJournalModal({
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {getTeamNameOnly(selectedOdds.homeTeam)} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice, oddsFormat)}
+                  {getTeamNameOnly(selectedOdds.homeTeam || '')} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice || 0, oddsFormat)}
                 </button>
                 <button
                   type="button"
@@ -2331,7 +2331,7 @@ export default function AddToJournalModal({
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {getTeamNameOnly(selectedOdds.awayTeam)} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice, oddsFormat)}
+                  {getTeamNameOnly(selectedOdds.awayTeam || '')} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice || 0, oddsFormat)}
                 </button>
               </div>
             </div>
