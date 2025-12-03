@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { getBookmakerInfo } from "@/lib/bookmakers";
-import { formatOdds } from "@/lib/currencyUtils";
+import { formatOdds, americanToDecimal } from "@/lib/currencyUtils";
 import { useTrackedBets } from "@/contexts/TrackedBetsContext";
 
 // Helper function to extract team name without location (e.g., "Milwaukee Bucks" -> "Bucks")
