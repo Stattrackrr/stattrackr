@@ -3340,8 +3340,8 @@
     "team": "MIA",
     "season": "2025-26",
     "buckets": {
-      "PG": 19,
-      "SG": 18,
+      "PG": 11,
+      "SG": 26,
       "SF": 46,
       "PF": 16,
       "C": 24
@@ -3431,22 +3431,6 @@
         "blk": 0,
         "min": "0:00",
         "bmPosition": "C"
-      },
-      {
-        "playerId": 0,
-        "name": "Chris Paul",
-        "bucket": "PG",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
       },
       {
         "playerId": 0,

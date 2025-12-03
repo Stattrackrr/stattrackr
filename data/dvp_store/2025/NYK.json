@@ -5105,6 +5105,264 @@
     "source": "bdl+espn"
   },
   {
+    "gameId": "18447129",
+    "date": "2025-12-02",
+    "opponent": "BOS",
+    "team": "NYK",
+    "season": "2025-26",
+    "buckets": {
+      "PG": 34,
+      "SG": 14,
+      "SF": 48,
+      "PF": 19,
+      "C": 8
+    },
+    "players": [
+      {
+        "playerId": 0,
+        "name": "Payton Pritchard",
+        "bucket": "PG",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Derrick White",
+        "bucket": "SG",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Jaylen Brown",
+        "bucket": "SF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Jordan Walsh",
+        "bucket": "PF",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Neemias Queta",
+        "bucket": "C",
+        "isStarter": true,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Anfernee Simons",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Max Shulga",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Baylor Scheierman",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Hugo Gonzalez",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Sam Hauser",
+        "bucket": "SF",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Josh Minott",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Chris Boucher",
+        "bucket": "PF",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Xavier Tillman",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Luka Garza",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Amari Williams",
+        "bucket": "C",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      }
+    ],
+    "source": "basketballmonsters-verified",
+    "lineupVerified": true
+  },
+  {
     "gameId": "18447112",
     "date": "2025-11-30",
     "opponent": "TOR",
@@ -5132,8 +5390,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5149,8 +5406,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5182,8 +5438,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5199,8 +5454,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "C"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5232,8 +5486,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5392,9 +5645,9 @@
     "buckets": {
       "PG": 20,
       "SG": 8,
-      "SF": 18,
-      "PF": 50,
-      "C": 13
+      "SF": 38,
+      "PF": 33,
+      "C": 10
     },
     "players": [
       {
@@ -5427,8 +5680,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5444,8 +5696,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5461,8 +5712,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5478,8 +5728,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "C"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5515,6 +5764,22 @@
       },
       {
         "playerId": 0,
+        "name": "Gary Trent",
+        "bucket": "SG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
         "name": "Gary Harris",
         "bucket": "SG",
         "isStarter": false,
@@ -5531,25 +5796,8 @@
       },
       {
         "playerId": 0,
-        "name": "Gary Trent",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SG"
-      },
-      {
-        "playerId": 0,
         "name": "Kyle Kuzma",
-        "bucket": "PF",
+        "bucket": "SF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5581,7 +5829,7 @@
       {
         "playerId": 0,
         "name": "Bobby Portis",
-        "bucket": "C",
+        "bucket": "PF",
         "isStarter": false,
         "pts": 0,
         "reb": 0,
@@ -5656,8 +5904,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       }
     ],
     "source": "basketballmonsters-verified",

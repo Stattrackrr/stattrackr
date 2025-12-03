@@ -5801,8 +5801,8 @@
     "team": "CLE",
     "season": "2025-26",
     "buckets": {
-      "PG": 25,
-      "SG": 29,
+      "PG": 27,
+      "SG": 27,
       "SF": 7,
       "PF": 31,
       "C": 27
@@ -5822,12 +5822,11 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
-        "name": "Ben Sheppard",
+        "name": "Bennedict Mathurin",
         "bucket": "SG",
         "isStarter": true,
         "pts": 0,
@@ -5843,7 +5842,7 @@
       },
       {
         "playerId": 0,
-        "name": "Bennedict Mathurin",
+        "name": "Jarace Walker",
         "bucket": "SF",
         "isStarter": true,
         "pts": 0,
@@ -5855,8 +5854,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5872,8 +5870,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5889,8 +5886,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "C"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -5910,7 +5906,23 @@
       },
       {
         "playerId": 0,
-        "name": "Quenton Jackson",
+        "name": "Ben Sheppard",
+        "bucket": "PG",
+        "isStarter": false,
+        "pts": 0,
+        "reb": 0,
+        "ast": 0,
+        "fg3m": 0,
+        "fg3a": 0,
+        "fgm": 0,
+        "fga": 0,
+        "stl": 0,
+        "blk": 0,
+        "min": "0:00"
+      },
+      {
+        "playerId": 0,
+        "name": "Ethan Thompson",
         "bucket": "PG",
         "isStarter": false,
         "pts": 0,
@@ -5971,23 +5983,6 @@
         "stl": 0,
         "blk": 0,
         "min": "0:00"
-      },
-      {
-        "playerId": 0,
-        "name": "Jarace Walker",
-        "bucket": "SF",
-        "isStarter": false,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SF"
       },
       {
         "playerId": 0,
@@ -6085,8 +6080,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6102,8 +6096,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6119,8 +6112,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6136,8 +6128,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6153,8 +6144,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "C"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6348,8 +6338,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6365,8 +6354,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PG"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6382,8 +6370,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "SF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6399,8 +6386,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "PF"
+        "min": "0:00"
       },
       {
         "playerId": 0,
@@ -6576,8 +6562,7 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00",
-        "bmPosition": "C"
+        "min": "0:00"
       },
       {
         "playerId": 0,
