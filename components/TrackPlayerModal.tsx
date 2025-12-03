@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { getBookmakerInfo } from "@/lib/bookmakers";
@@ -541,7 +541,7 @@ export default function TrackPlayerModal({
                       });
                       
                       // Render odds grouped by bookmaker
-                      const renderedOdds: JSX.Element[] = [];
+                      const renderedOdds: React.ReactElement[] = [];
                       oddsByBookmaker.forEach((group, bookmakerName) => {
                         const bookmaker = getBookmakerInfo(bookmakerName);
                         
