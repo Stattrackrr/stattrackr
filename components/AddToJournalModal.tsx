@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { X, Loader2, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { getBookmakerInfo } from "@/lib/bookmakers";
@@ -2042,7 +2042,7 @@ export default function AddToJournalModal({
                       });
                       
                       // Render odds grouped by bookmaker - primary first, then alt lines below
-                      const renderedOdds: JSX.Element[] = [];
+                      const renderedOdds: React.ReactElement[] = [];
                       oddsByBookmaker.forEach((group, bookmakerName) => {
                         const bookmaker = getBookmakerInfo(bookmakerName);
                         
