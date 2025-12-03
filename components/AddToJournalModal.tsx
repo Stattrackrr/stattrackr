@@ -2538,7 +2538,7 @@ export default function AddToJournalModal({
                             : sel.playerName;
                           const selIsPrizePicks = isPrizePicks(sel.bookmaker);
                           const showMultiplier = selIsPrizePicks && sel.isPickem;
-                          const multiplier = showMultiplier ? getPrizePicksMultiplier(sel.variantLabel) : null;
+                          const multiplier = showMultiplier ? getPrizePicksMultiplier(null, sel.variantLabel) : null;
                           
                           // Format the selection text based on stat type
                           let selectionText = '';
@@ -2717,7 +2717,7 @@ export default function AddToJournalModal({
                       : sel.playerName;
                     const selIsPrizePicks = isPrizePicks(sel.bookmaker);
                     const showMultiplier = selIsPrizePicks && sel.isPickem;
-                    const multiplier = showMultiplier ? getPrizePicksMultiplier(sel.variantLabel) : null;
+                    const multiplier = showMultiplier ? getPrizePicksMultiplier(null, sel.variantLabel) : null;
                     
                     // Format the selection text based on stat type
                     let selectionText = '';
