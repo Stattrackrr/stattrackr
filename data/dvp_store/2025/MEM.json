@@ -6237,8 +6237,8 @@
     "team": "MEM",
     "season": "2025-26",
     "buckets": {
-      "PG": 28,
-      "SG": 14,
+      "PG": 23,
+      "SG": 19,
       "SF": 39,
       "PF": 12,
       "C": 14
@@ -6313,22 +6313,6 @@
         "name": "Ivica Zubac",
         "bucket": "C",
         "isStarter": true,
-        "pts": 0,
-        "reb": 0,
-        "ast": 0,
-        "fg3m": 0,
-        "fg3a": 0,
-        "fgm": 0,
-        "fga": 0,
-        "stl": 0,
-        "blk": 0,
-        "min": "0:00"
-      },
-      {
-        "playerId": 0,
-        "name": "Chris Paul",
-        "bucket": "PG",
-        "isStarter": false,
         "pts": 0,
         "reb": 0,
         "ast": 0,
