@@ -839,7 +839,7 @@ export default function TrackPlayerModal({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {getTeamNameOnly(selectedOdds.homeTeam)} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice, oddsFormat)}
+                      {getTeamNameOnly(selectedOdds.homeTeam || '')} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice || 0, oddsFormat)}
                     </button>
                     <button
                       type="button"
@@ -850,7 +850,7 @@ export default function TrackPlayerModal({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {getTeamNameOnly(selectedOdds.awayTeam)} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice, oddsFormat)}
+                      {getTeamNameOnly(selectedOdds.awayTeam || '')} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice || 0, oddsFormat)}
                     </button>
                   </>
                 ) : (
@@ -864,7 +864,7 @@ export default function TrackPlayerModal({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {getTeamNameOnly(selectedOdds.favoriteTeam)} {selectedOdds.favoriteSpread && selectedOdds.favoriteSpread < 0 ? selectedOdds.favoriteSpread : `-${Math.abs(selectedOdds.favoriteSpread || 0)}`} {formatOdds(selectedOdds.favoriteOdds || selectedOdds.overPrice, oddsFormat)}
+                      {getTeamNameOnly(selectedOdds.favoriteTeam || '')} {selectedOdds.favoriteSpread && selectedOdds.favoriteSpread < 0 ? selectedOdds.favoriteSpread : `-${Math.abs(selectedOdds.favoriteSpread || 0)}`} {formatOdds(selectedOdds.favoriteOdds || selectedOdds.overPrice || 0, oddsFormat)}
                     </button>
                     <button
                       type="button"
@@ -875,7 +875,7 @@ export default function TrackPlayerModal({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {getTeamNameOnly(selectedOdds.underdogTeam)} +{Math.abs(selectedOdds.underdogSpread || 0)} {formatOdds(selectedOdds.underdogOdds || selectedOdds.underPrice, oddsFormat)}
+                      {getTeamNameOnly(selectedOdds.underdogTeam || '')} +{Math.abs(selectedOdds.underdogSpread || 0)} {formatOdds(selectedOdds.underdogOdds || selectedOdds.underPrice || 0, oddsFormat)}
                     </button>
                   </>
                 )}
