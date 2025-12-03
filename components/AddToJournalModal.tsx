@@ -1497,10 +1497,10 @@ export default function AddToJournalModal({
                                         ) : gameStatType === 'spread' && odds.favoriteTeam && odds.underdogTeam ? (
                                           <>
                                             <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.favoriteTeam)}</span> {odds.favoriteSpread} {formatOdds(odds.favoriteOdds || odds.overPrice, oddsFormat)}
+                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.favoriteTeam || '')}</span> {odds.favoriteSpread ?? 0} {formatOdds(odds.favoriteOdds || odds.overPrice || 0, oddsFormat)}
                                             </span>
                                             <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.underdogTeam)}</span> {odds.underdogSpread} {formatOdds(odds.underdogOdds || odds.underPrice, oddsFormat)}
+                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.underdogTeam || '')}</span> {odds.underdogSpread ?? 0} {formatOdds(odds.underdogOdds || odds.underPrice || 0, oddsFormat)}
                                             </span>
                                           </>
                                         ) : (
@@ -1623,7 +1623,7 @@ export default function AddToJournalModal({
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            {getTeamNameOnly(gameSelectedOdds.favoriteTeam)} {gameSelectedOdds.favoriteSpread} {formatOdds(gameSelectedOdds.favoriteOdds || gameSelectedOdds.overPrice, oddsFormat)}
+                            {getTeamNameOnly(gameSelectedOdds.favoriteTeam || '')} {gameSelectedOdds.favoriteSpread ?? 0} {formatOdds(gameSelectedOdds.favoriteOdds || gameSelectedOdds.overPrice || 0, oddsFormat)}
                           </button>
                           <button
                             type="button"
@@ -1635,7 +1635,7 @@ export default function AddToJournalModal({
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            {getTeamNameOnly(gameSelectedOdds.underdogTeam)} {gameSelectedOdds.underdogSpread > 0 ? '+' : ''}{gameSelectedOdds.underdogSpread} {formatOdds(gameSelectedOdds.underdogOdds || gameSelectedOdds.underPrice, oddsFormat)}
+                            {getTeamNameOnly(gameSelectedOdds.underdogTeam || '')} {(gameSelectedOdds.underdogSpread ?? 0) > 0 ? '+' : ''}{gameSelectedOdds.underdogSpread ?? 0} {formatOdds(gameSelectedOdds.underdogOdds || gameSelectedOdds.underPrice || 0, oddsFormat)}
                           </button>
                         </div>
                       </div>
