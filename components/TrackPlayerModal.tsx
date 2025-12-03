@@ -7,6 +7,23 @@ import { getBookmakerInfo } from "@/lib/bookmakers";
 import { formatOdds } from "@/lib/currencyUtils";
 import { useTrackedBets } from "@/contexts/TrackedBetsContext";
 
+// Helper function to extract team name without location (e.g., "Milwaukee Bucks" -> "Bucks")
+function getTeamNameOnly(fullName: string): string {
+  if (!fullName) return fullName;
+  const parts = fullName.trim().split(/\s+/);
+  // Handle special cases with multi-word team names
+  const multiWordTeams = ['Trail Blazers', 'Golden State'];
+  for (const team of multiWordTeams) {
+    if (fullName.includes(team)) {
+      return team === 'Golden State' ? 'Warriors' : team;
+    }
+  }
+  // For most teams, take the last word (e.g., "Milwaukee Bucks" -> "Bucks")
+  // For teams like "New York Knicks", take last word
+  // For teams like "Los Angeles Lakers", take last word
+  return parts[parts.length - 1] || fullName;
+}
+
 interface TrackPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -63,6 +80,22 @@ interface BookmakerOdds {
   line: number;
   overPrice: number;
   underPrice: number;
+  isPickem?: boolean;
+  variantLabel?: string | null; // 'Goblin' or 'Demon' - indicates the type of line
+  multiplier?: number; // For PrizePicks pick'em, the actual multiplier calculated from counts
+  goblinCount?: number; // Number of goblin boosts on this line
+  demonCount?: number; // Number of demon discounts on this line
+  // For game props (moneylines and spreads)
+  homeTeam?: string; // Home team name for moneylines/spreads
+  awayTeam?: string; // Away team name for moneylines/spreads
+  homeOdds?: number; // Home team odds for moneylines
+  awayOdds?: number; // Away team odds for moneylines
+  favoriteTeam?: string; // Team with negative spread (favorite)
+  underdogTeam?: string; // Team with positive spread (underdog)
+  favoriteSpread?: number; // Spread value for favorite (negative)
+  underdogSpread?: number; // Spread value for underdog (positive)
+  favoriteOdds?: number; // Odds for favorite team spread
+  underdogOdds?: number; // Odds for underdog team spread
 }
 
 export default function TrackPlayerModal({
@@ -99,26 +132,180 @@ export default function TrackPlayerModal({
 
   // Fetch odds when modal opens or stat type changes
   useEffect(() => {
-    if (!isOpen || !playerName) return;
+    if (!isOpen || !statType) return;
+    // For game props, we need team. For player props, we need playerName
+    if (isGameProp && !team) return;
+    if (!isGameProp && !playerName) return;
 
     const fetchOdds = async () => {
       setOddsLoading(true);
       setOddsError('');
       setAvailableOdds([]);
       setSelectedOdds(null);
+      // Reset manual mode and manual line when switching stats/players
+      setIsManualMode(false);
+      setManualLine('');
+      setManualOdds('');
 
       try {
-        const response = await fetch(
-          `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${statType}`
-        );
-        const data = await response.json();
+        let data: any;
+        let props: BookmakerOdds[] = [];
 
-        if (!response.ok) throw new Error(data.error || 'Failed to fetch odds');
+        if (isGameProp) {
+          // Fetch game props odds (moneyline, spread, total, etc.)
+          if (!team.trim() || !statType.trim()) {
+            throw new Error('Team and stat type are required for game props');
+          }
 
-        setAvailableOdds(data.props || []);
-        // Auto-select first option if available
-        if (data.props && data.props.length > 0) {
-          setSelectedOdds(data.props[0]);
+          const response = await fetch(
+            `/api/odds?team=${encodeURIComponent(team.trim())}`
+          );
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: response.statusText }));
+            throw new Error(errorData.error || `Failed to fetch odds: HTTP ${response.status} ${response.statusText}`);
+          }
+          
+          data = await response.json();
+
+          // Get actual home and away teams from API response
+          const actualHomeTeam = data.homeTeam || team;
+          const actualAwayTeam = data.awayTeam || opponent;
+
+          // Map game stat types to API keys
+          const statToKey: Record<string, string> = {
+            'moneyline': 'H2H',
+            'spread': 'Spread',
+            'total_pts': 'Total',
+            'home_total': 'Total',
+            'away_total': 'Total',
+            'first_half_total': 'Total',
+            'second_half_total': 'Total',
+            'q1_total': 'Total',
+            'q2_total': 'Total',
+            'q3_total': 'Total',
+            'q4_total': 'Total',
+            'q1_moneyline': 'H2H',
+            'q2_moneyline': 'H2H',
+            'q3_moneyline': 'H2H',
+            'q4_moneyline': 'H2H',
+          };
+
+          const apiKey = statToKey[statType] || 'H2H';
+          
+          // Convert game odds to BookmakerOdds format
+          if (data.data && Array.isArray(data.data)) {
+            for (const bookmaker of data.data) {
+              const gameData = bookmaker[apiKey];
+              if (!gameData || gameData.line === 'N/A') continue;
+
+              if (statType === 'moneyline') {
+                // Moneyline: home and away are separate options
+                const homeLine = parseFloat(String(gameData.home || '0').replace(/[^+\-\d]/g, ''));
+                const awayLine = parseFloat(String(gameData.away || '0').replace(/[^+\-\d]/g, ''));
+                
+                if (!isNaN(homeLine) && homeLine !== 0) {
+                  // Use actual home and away teams from API response
+                  props.push({
+                    bookmaker: bookmaker.name,
+                    line: 0, // Moneylines don't have a line value
+                    overPrice: americanToDecimal(homeLine),
+                    underPrice: americanToDecimal(awayLine),
+                    homeTeam: actualHomeTeam,
+                    awayTeam: actualAwayTeam,
+                    homeOdds: americanToDecimal(homeLine),
+                    awayOdds: americanToDecimal(awayLine),
+                  });
+                }
+              } else if (statType === 'spread') {
+                // Spread: have line, over, under
+                // Line is from home team's perspective: negative = home favored, positive = away favored
+                const lineValue = parseFloat(String(gameData.line).replace(/[^0-9.+-]/g, ''));
+                if (isNaN(lineValue)) continue;
+
+                const overOdds = typeof gameData.over === 'string'
+                  ? parseFloat(gameData.over.replace(/[^+\-\d]/g, ''))
+                  : gameData.over;
+                const underOdds = typeof gameData.under === 'string'
+                  ? parseFloat(gameData.under.replace(/[^+\-\d]/g, ''))
+                  : gameData.under;
+
+                if (isNaN(overOdds) || isNaN(underOdds)) continue;
+
+                // Determine favorite and underdog based on line sign and actual home/away teams
+                // Negative line = home team is favorite, positive line = away team is favorite
+                const favoriteTeam = lineValue < 0 ? actualHomeTeam : actualAwayTeam;
+                const underdogTeam = lineValue < 0 ? actualAwayTeam : actualHomeTeam;
+                const favoriteSpread = lineValue < 0 ? lineValue : -Math.abs(lineValue);
+                const underdogSpread = lineValue < 0 ? Math.abs(lineValue) : lineValue;
+                const favoriteOdds = lineValue < 0 ? overOdds : underOdds;
+                const underdogOdds = lineValue < 0 ? underOdds : overOdds;
+
+                props.push({
+                  bookmaker: bookmaker.name,
+                  line: lineValue,
+                  overPrice: americanToDecimal(overOdds),
+                  underPrice: americanToDecimal(underOdds),
+                  homeTeam: actualHomeTeam,
+                  awayTeam: actualAwayTeam,
+                  favoriteTeam,
+                  underdogTeam,
+                  favoriteSpread,
+                  underdogSpread,
+                  favoriteOdds: americanToDecimal(favoriteOdds),
+                  underdogOdds: americanToDecimal(underdogOdds),
+                });
+              } else if (statType === 'total_pts') {
+                // Total: have line, over, under
+                const lineValue = parseFloat(String(gameData.line).replace(/[^0-9.+-]/g, ''));
+                if (isNaN(lineValue)) continue;
+
+                const overOdds = typeof gameData.over === 'string'
+                  ? parseFloat(gameData.over.replace(/[^+\-\d]/g, ''))
+                  : gameData.over;
+                const underOdds = typeof gameData.under === 'string'
+                  ? parseFloat(gameData.under.replace(/[^+\-\d]/g, ''))
+                  : gameData.under;
+
+                if (isNaN(overOdds) || isNaN(underOdds)) continue;
+
+                props.push({
+                  bookmaker: bookmaker.name,
+                  line: lineValue,
+                  overPrice: americanToDecimal(overOdds),
+                  underPrice: americanToDecimal(underOdds),
+                });
+              }
+            }
+          }
+        } else {
+          // Fetch player props odds (existing logic)
+          if (!playerName.trim() || !statType.trim()) {
+            throw new Error('Player name and stat type are required');
+          }
+
+          const response = await fetch(
+            `/api/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`
+          );
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: response.statusText }));
+            throw new Error(errorData.error || `Failed to fetch odds: HTTP ${response.status} ${response.statusText}`);
+          }
+          
+          data = await response.json();
+
+          props = data.props || [];
+        }
+
+        setAvailableOdds(props);
+        // Auto-select first option if available (always select primary line, not alt)
+        if (props && props.length > 0) {
+          // Find the first primary line (not an alt line)
+          const primaryLine = props.find((odds: BookmakerOdds) => 
+            !odds.variantLabel && !odds.isPickem
+          ) || props[0]; // Fallback to first if no primary found
+          setSelectedOdds(primaryLine);
         }
       } catch (err: any) {
         setOddsError(err.message || 'Failed to load odds');
@@ -128,7 +315,7 @@ export default function TrackPlayerModal({
     };
 
     fetchOdds();
-  }, [isOpen, playerName, statType]);
+  }, [isOpen, playerName, statType, isGameProp, team]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -308,48 +495,287 @@ export default function TrackPlayerModal({
                   </div>
                 ) : (
                   <div className="max-h-64 overflow-y-auto space-y-2">
-                    {availableOdds.map((odds, idx) => {
-                      const bookmaker = getBookmakerInfo(odds.bookmaker);
-                      const isSelected = !isManualMode && selectedOdds?.bookmaker === odds.bookmaker && selectedOdds?.line === odds.line;
+                    {(() => {
+                      // Group odds by bookmaker and separate primary from alt lines
+                      const oddsByBookmaker = new Map<string, { primary: BookmakerOdds[]; alt: BookmakerOdds[] }>();
                       
-                      return (
-                        <button
-                          key={`${odds.bookmaker}-${odds.line}-${idx}`}
-                          type="button"
-                          onClick={() => {
-                            setSelectedOdds(odds);
-                            setIsManualMode(false);
-                          }}
-                          className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                            isSelected
-                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">{bookmaker.logo}</span>
-                              <div>
-                                <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                                  {bookmaker.name}
+                      // First pass: group all odds by bookmaker
+                      for (const odds of availableOdds) {
+                        if (!oddsByBookmaker.has(odds.bookmaker)) {
+                          oddsByBookmaker.set(odds.bookmaker, { primary: [], alt: [] });
+                        }
+                        const group = oddsByBookmaker.get(odds.bookmaker)!;
+                        // Temporarily store all odds, we'll separate them next
+                        group.primary.push(odds);
+                      }
+                      
+                      // Second pass: for each bookmaker, identify primary vs alt lines
+                      oddsByBookmaker.forEach((group, bookmakerName) => {
+                        // Sort all lines by line value (descending)
+                        group.primary.sort((a, b) => b.line - a.line);
+                        
+                        // Separate primary from alt lines
+                        const primary: BookmakerOdds[] = [];
+                        const alt: BookmakerOdds[] = [];
+                        
+                        for (const odds of group.primary) {
+                          // Lines with variantLabel or isPickem are always alt lines
+                          const isExplicitAlt = odds.variantLabel || odds.isPickem;
+                          
+                          if (isExplicitAlt) {
+                            alt.push(odds);
+                          } else if (primary.length === 0) {
+                            // First line for this bookmaker is primary
+                            primary.push(odds);
+                          } else {
+                            // Additional lines from same bookmaker are alt lines
+                            alt.push(odds);
+                          }
+                        }
+                        
+                        // Update the group
+                        group.primary = primary;
+                        group.alt = alt;
+                        
+                        // Sort alt lines by line (descending)
+                        group.alt.sort((a, b) => b.line - a.line);
+                      });
+                      
+                      // Render odds grouped by bookmaker
+                      const renderedOdds: JSX.Element[] = [];
+                      oddsByBookmaker.forEach((group, bookmakerName) => {
+                        const bookmaker = getBookmakerInfo(bookmakerName);
+                        
+                        // Render primary lines
+                        group.primary.forEach((odds, idx) => {
+                          const isSelected = !isManualMode && selectedOdds?.bookmaker === odds.bookmaker && selectedOdds?.line === odds.line;
+                          renderedOdds.push(
+                            <button
+                              key={`${odds.bookmaker}-${odds.line}-primary-${idx}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedOdds(odds);
+                                setIsManualMode(false);
+                              }}
+                              className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                                isSelected
+                                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{bookmaker.logo}</span>
+                                  <div>
+                                    <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                                      {bookmaker.name}
+                                    </div>
+                                    {statType !== 'moneyline' && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        Line: {odds.line}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Line: {odds.line}
+                                <div className="flex gap-2">
+                                  {statType === 'moneyline' && odds.homeTeam && odds.awayTeam ? (
+                                    <>
+                                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                                        {getTeamNameOnly(odds.homeTeam)} {formatOdds(odds.homeOdds || odds.overPrice, oddsFormat)}
+                                      </span>
+                                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                                        {getTeamNameOnly(odds.awayTeam)} {formatOdds(odds.awayOdds || odds.underPrice, oddsFormat)}
+                                      </span>
+                                    </>
+                                  ) : statType === 'spread' && odds.favoriteTeam && odds.underdogTeam ? (
+                                    <>
+                                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-mono">
+                                        {getTeamNameOnly(odds.favoriteTeam)} {odds.favoriteSpread && odds.favoriteSpread < 0 ? odds.favoriteSpread : `-${Math.abs(odds.favoriteSpread || 0)}`} {formatOdds(odds.favoriteOdds || odds.overPrice, oddsFormat)}
+                                      </span>
+                                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-[10px] font-mono">
+                                        {getTeamNameOnly(odds.underdogTeam)} +{Math.abs(odds.underdogSpread || 0)} {formatOdds(odds.underdogOdds || odds.underPrice, oddsFormat)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                        O {formatOdds(odds.overPrice, oddsFormat)}
+                                      </span>
+                                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                        U {formatOdds(odds.underPrice, oddsFormat)}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                            </div>
-                          <div className="flex gap-2">
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                              O {formatOdds(odds.overPrice, oddsFormat)}
-                            </span>
-                            <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                              U {formatOdds(odds.underPrice, oddsFormat)}
-                            </span>
-                          </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                            </button>
+                          );
+                        });
+                        
+                        // Render alt lines with indicator
+                        group.alt.forEach((odds, idx) => {
+                          const isSelected = !isManualMode && selectedOdds?.bookmaker === odds.bookmaker && selectedOdds?.line === odds.line;
+                          renderedOdds.push(
+                            <button
+                              key={`${odds.bookmaker}-${odds.line}-alt-${idx}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedOdds(odds);
+                                setIsManualMode(false);
+                              }}
+                              className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                                isSelected
+                                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                  : 'border-blue-200 dark:border-blue-600 hover:border-blue-300 dark:hover:border-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {(() => {
+                                    const oddsIsPrizePicks = odds.bookmaker.toLowerCase().includes('prizepicks');
+                                    const showVariantLogo = oddsIsPrizePicks && odds.isPickem && odds.variantLabel;
+                                    
+                                    return (
+                                      <>
+                                        {/* PrizePicks logo */}
+                                        {bookmaker.logoUrl ? (
+                                          <div className="relative flex-shrink-0">
+                                            <img
+                                              src={bookmaker.logoUrl}
+                                              alt={bookmaker.name}
+                                              className="w-8 h-8 object-contain flex-shrink-0"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                if (fallback) fallback.style.display = 'block';
+                                              }}
+                                            />
+                                            <span className="text-2xl hidden">{bookmaker.logo}</span>
+                                            {/* Goblin/Demon logo overlay for PrizePicks pick'em */}
+                                            {showVariantLogo && (
+                                              <img
+                                                src={odds.variantLabel === 'Goblin' ? '/images/goblin.png' : '/images/demon.png'}
+                                                alt={odds.variantLabel}
+                                                className="absolute -bottom-1 -right-1 w-5 h-5 object-contain"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                              />
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-2xl">{bookmaker.logo}</span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                                        {bookmaker.name}
+                                      </span>
+                                      {odds.variantLabel && (
+                                        <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[10px] font-semibold uppercase">
+                                          {odds.variantLabel}
+                                        </span>
+                                      )}
+                                      {odds.isPickem && !odds.variantLabel && (
+                                        <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[10px] font-semibold">
+                                          Pick'em
+                                        </span>
+                                      )}
+                                    </div>
+                                    {statType !== 'moneyline' && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {(() => {
+                                          const oddsIsPrizePicks = odds.bookmaker.toLowerCase().includes('prizepicks');
+                                          if (oddsIsPrizePicks && odds.isPickem) {
+                                            // Calculate multiplier from counts: multiplier = 1 + (0.10 * count)
+                                            let multiplier = 1;
+                                            if (odds.goblinCount !== undefined) {
+                                              multiplier = 1 + (0.10 * odds.goblinCount);
+                                            } else if (odds.demonCount !== undefined) {
+                                              multiplier = 1 + (0.10 * odds.demonCount);
+                                            } else if (odds.multiplier !== undefined) {
+                                              multiplier = odds.multiplier;
+                                            } else {
+                                              // Fallback estimate
+                                              multiplier = odds.variantLabel === 'Demon' ? 1.20 : 1.10;
+                                            }
+                                            return `${odds.variantLabel || 'Pick\'em'} Line: ${odds.line} • ${multiplier.toFixed(2)}x multiplier`;
+                                          }
+                                          return `Alt Line: ${odds.line}`;
+                                        })()}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  {(() => {
+                                    const oddsIsPrizePicks = odds.bookmaker.toLowerCase().includes('prizepicks');
+                                    if (oddsIsPrizePicks && odds.isPickem) {
+                                      // Calculate multiplier from counts: multiplier = 1 + (0.10 * count)
+                                      let multiplier = 1;
+                                      if (odds.goblinCount !== undefined) {
+                                        multiplier = 1 + (0.10 * odds.goblinCount);
+                                      } else if (odds.demonCount !== undefined) {
+                                        multiplier = 1 + (0.10 * odds.demonCount);
+                                      } else if (odds.multiplier !== undefined) {
+                                        multiplier = odds.multiplier;
+                                      } else {
+                                        // Fallback estimate
+                                        multiplier = odds.variantLabel === 'Demon' ? 1.20 : 1.10;
+                                      }
+                                      return (
+                                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded text-xs font-semibold">
+                                          {multiplier.toFixed(2)}x
+                                        </span>
+                                      );
+                                    }
+                                    if (statType === 'moneyline' && odds.homeTeam && odds.awayTeam) {
+                                      return (
+                                        <>
+                                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                            {odds.homeTeam} {formatOdds(odds.homeOdds || odds.overPrice, oddsFormat)}
+                                          </span>
+                                          <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                            {odds.awayTeam} {formatOdds(odds.awayOdds || odds.underPrice, oddsFormat)}
+                                          </span>
+                                        </>
+                                      );
+                                    }
+                                    if (statType === 'spread' && odds.favoriteTeam && odds.underdogTeam) {
+                                      return (
+                                        <>
+                                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                            {odds.favoriteTeam} {odds.favoriteSpread && odds.favoriteSpread < 0 ? odds.favoriteSpread : `-${Math.abs(odds.favoriteSpread || 0)}`} {formatOdds(odds.favoriteOdds || odds.overPrice, oddsFormat)}
+                                          </span>
+                                          <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                            {odds.underdogTeam} +{Math.abs(odds.underdogSpread || 0)} {formatOdds(odds.underdogOdds || odds.underPrice, oddsFormat)}
+                                          </span>
+                                        </>
+                                      );
+                                    }
+                                    return (
+                                      <>
+                                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                          O {formatOdds(odds.overPrice, oddsFormat)}
+                                        </span>
+                                        <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                          U {formatOdds(odds.underPrice, oddsFormat)}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        });
+                      });
+                      
+                      return renderedOdds;
+                    })()}
                   </div>
                 )}
               </div>
@@ -395,36 +821,98 @@ export default function TrackPlayerModal({
             )}
           </div>
 
-          {/* Over/Under Toggle */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Direction
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setOverUnder('over')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                  overUnder === 'over'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Over
-              </button>
-              <button
-                type="button"
-                onClick={() => setOverUnder('under')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                  overUnder === 'under'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Under
-              </button>
+          {/* Over/Under Toggle or Team Selection for Moneylines/Spreads */}
+          {((statType === 'moneyline' && isGameProp && selectedOdds?.homeTeam && selectedOdds?.awayTeam) ||
+            (statType === 'spread' && isGameProp && selectedOdds?.favoriteTeam && selectedOdds?.underdogTeam)) ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {statType === 'moneyline' ? 'Select Team' : 'Select Team Spread'}
+              </label>
+              <div className="flex gap-2">
+                {statType === 'moneyline' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setOverUnder('over')} // Use 'over' for home team
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        overUnder === 'over'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {getTeamNameOnly(selectedOdds.homeTeam)} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice, oddsFormat)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOverUnder('under')} // Use 'under' for away team
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        overUnder === 'under'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {getTeamNameOnly(selectedOdds.awayTeam)} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice, oddsFormat)}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setOverUnder('over')} // Use 'over' for favorite team
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        overUnder === 'over'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {getTeamNameOnly(selectedOdds.favoriteTeam)} {selectedOdds.favoriteSpread && selectedOdds.favoriteSpread < 0 ? selectedOdds.favoriteSpread : `-${Math.abs(selectedOdds.favoriteSpread || 0)}`} {formatOdds(selectedOdds.favoriteOdds || selectedOdds.overPrice, oddsFormat)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOverUnder('under')} // Use 'under' for underdog team
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        overUnder === 'under'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {getTeamNameOnly(selectedOdds.underdogTeam)} +{Math.abs(selectedOdds.underdogSpread || 0)} {formatOdds(selectedOdds.underdogOdds || selectedOdds.underPrice, oddsFormat)}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Direction
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOverUnder('over')}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    overUnder === 'over'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Over
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOverUnder('under')}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    overUnder === 'under'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Under
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">

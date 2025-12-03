@@ -305,6 +305,7 @@ export interface OfficialOddsCardProps {
   } | null;
   selectedBookmakerName?: string | null;
   selectedBookmakerLine?: number | null;
+  propsMode?: 'player' | 'team';
 }
 
 /* ==== Types (BDL) ==== */
@@ -887,6 +888,9 @@ const StaticBarsChart = memo(function StaticBarsChart({
   }, [data.length, compactMobile]);
   const computedMaxBarSize = useMemo(() => (compactMobile ? 120 : CHART_CONFIG.performance.maxBarSize), [compactMobile]);
   
+  // Hide logos and labels for Last Season to reduce clutter (but keep spacing)
+  const hideLogosAndLabels = selectedTimeframe === 'lastseason';
+  
   const chartMargin = useMemo(() => {
     const margin = { ...CHART_CONFIG.margin };
     if (compactMobile || isMobileSB) {
@@ -894,11 +898,13 @@ const StaticBarsChart = memo(function StaticBarsChart({
       margin.left = 2;
       margin.right = 2;
     }
+    // Add extra bottom margin when logos are hidden to maintain Y-axis 0 position
+    // This prevents the chart from expanding into the logo space
+    if (hideLogosAndLabels && !compactMobile && !isMobileSB) {
+      margin.bottom = CHART_CONFIG.margin.bottom + CHART_CONFIG.xAxis.height;
+    }
     return margin;
-  }, [compactMobile, isMobileSB]);
-  
-  // Hide logos and labels for Last Season to reduce clutter
-  const hideLogosAndLabels = selectedTimeframe === 'lastseason';
+  }, [compactMobile, isMobileSB, hideLogosAndLabels]);
 
   return (
     <ResponsiveContainer 
@@ -922,7 +928,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
         <XAxis
           dataKey="xKey"
           tick={hideLogosAndLabels ? false : <CustomXAxisTick data={data} />}
-          axisLine={xAxisLineStyle}
+          axisLine={hideLogosAndLabels ? false : xAxisLineStyle}
           height={CHART_CONFIG.xAxis.height}
           interval={CHART_CONFIG.xAxis.interval}
           allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
@@ -1135,7 +1141,7 @@ const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark
         left: isMobile ? 8 : CHART_CONFIG.yAxis.width,
         right: isMobile ? 8 : (CHART_CONFIG.margin.right + 10),
         top: CHART_CONFIG.margin.top,
-        bottom: isMobile ? CHART_CONFIG.margin.bottom : CHART_CONFIG.margin.bottom + 30,
+        bottom: isMobile ? CHART_CONFIG.margin.bottom : CHART_CONFIG.margin.bottom + 40,
         zIndex: 5 // above bars but below tooltips
       }}
     >
@@ -1804,7 +1810,7 @@ const CHART_CONFIG = {
     referenceLine: '#8b5cf6'
   },
   xAxis: {
-    height: 30,
+    height: 40, // Increased from 30 to provide more space for logos/padding
     interval: 0,
     allowDuplicatedCategory: false
   },
@@ -2221,11 +2227,21 @@ const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, is
 }, (prev, next) => prev.isSelected === next.isSelected && prev.label === next.label && prev.value === next.value && prev.isDark === next.isDark);
 
 const TimeframeBtn = memo(function TimeframeBtn({ value, isSelected, onSelect }: { value: string; isSelected: boolean; onSelect: (v: string) => void }) {
-  const onClick = useCallback(() => onSelect(value), [onSelect, value]);
+  const onClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(value);
+  }, [onSelect, value]);
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
+      className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
@@ -2835,16 +2851,19 @@ const ChartControls = function ChartControls({
     if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
       // Only auto-set if:
       // 1. The line hasn't been auto-set for this stat yet, OR
-      // 2. The best line has changed from what we last auto-set
+      // 2. The best line has changed from what we last auto-set, OR
+      // 3. The current line is the default 0.5 (meaning no line was stored for this stat)
+      const currentBettingLine = bettingLine;
+      const isDefaultLine = Math.abs(currentBettingLine - 0.5) < 0.01;
+      
       const shouldAutoSet = 
         lastAutoSetStatRef.current !== selectedStat ||
         lastAutoSetLineRef.current === null ||
+        isDefaultLine ||
         Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
       
       if (shouldAutoSet) {
         // Only update if the current betting line is different from the best line
-        // Use a ref to check the current value to avoid dependency issues
-        const currentBettingLine = bettingLine;
         if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
           onChangeBettingLine(bestLineForStat);
           setDisplayLine(bestLineForStat);
@@ -2995,7 +3014,10 @@ const ChartControls = function ChartControls({
                 {timeframeOptions.map(option => (
                   <button
                     key={option.value}
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       onSelectTimeframe(option.value);
                       setIsTimeframeDropdownOpen(false);
                     }}
@@ -4797,6 +4819,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   calculatedImpliedOdds,
   selectedBookmakerName,
   selectedBookmakerLine,
+  propsMode = 'player',
 }: OfficialOddsCardProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -4887,15 +4910,21 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     ? `+${spreadLine}` 
     : spreadLine;
 
+  // Don't render anything for game props
+  if (propsMode === 'team') {
+    return null;
+  }
+
               return (
     <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
       <div className="p-3 sm:p-4 md:p-6">
-        {/* Market Predicted Outcomes - Full Width */}
-                        <div>
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 p-4 h-full flex flex-col gap-3">
-            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-              Market Predicted Outcomes
-                        </div>
+        {/* Market Predicted Outcomes - Full Width (only show for player props, not game props) */}
+        <div>
+          <div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 p-4 h-full flex flex-col gap-3">
+              <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                Market Predicted Outcomes
+              </div>
               
               {/* FanDuel Moneyline and Spread at top */}
               {fd && (
@@ -4998,8 +5027,9 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                   </div>
                 )}
               </div>
-                      </div>
-                      </div>
+            </div>
+        </div>
+      </div>
     </div>
   );
 }, (prev, next) => {
@@ -5034,8 +5064,24 @@ const DVP_METRICS = [
 
 // Global cache shared between all PositionDefenseCard instances (mobile + desktop)
 // Split into two caches: team DVP data (position-independent) and rank data (position-specific)
-const dvpTeamCache = new Map<string, { metrics: any, sample: number }>();
-const dvpRankCache = new Map<string, { metrics: any }>();
+const dvpTeamCache = new Map<string, { metrics: any, sample: number, timestamp: number }>();
+const dvpRankCache = new Map<string, { metrics: any, timestamp: number }>();
+
+// Auto-clear caches older than 2 minutes to ensure fresh data after ingest
+const DVP_CACHE_TTL = 2 * 60 * 1000; // 2 minutes instead of 5
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of dvpTeamCache.entries()) {
+    if (value.timestamp && (now - value.timestamp) > DVP_CACHE_TTL) {
+      dvpTeamCache.delete(key);
+    }
+  }
+  for (const [key, value] of dvpRankCache.entries()) {
+    if (value.timestamp && (now - value.timestamp) > DVP_CACHE_TTL) {
+      dvpRankCache.delete(key);
+    }
+  }
+}, 60000); // Check every minute
 
 // Defense vs Position (isolated, memoized)
 const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponentTeam, selectedPosition, currentTeam }: { isDark: boolean; opponentTeam: string; selectedPosition: 'PG'|'SG'|'SF'|'PF'|'C' | null; currentTeam: string }) {
@@ -5084,11 +5130,20 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       // Check if we have both team DVP and rank data cached
       const teamCacheKey = `${targetOpp}:82`;
       const rankCacheKey = `${targetPos}:82`;
+      
+      // Force refresh: clear caches and fetch fresh data
+      // This ensures latest ingested data is shown immediately
+      const shouldRefresh = new URLSearchParams(window.location.search).get('refreshDvP') === '1';
+      if (shouldRefresh) {
+        dvpTeamCache.delete(teamCacheKey);
+        dvpRankCache.delete(rankCacheKey);
+      }
+      
       const teamCached = dvpTeamCache.get(teamCacheKey);
       const rankCached = dvpRankCache.get(rankCacheKey);
       
       // Show team stats immediately if available, ranks can load in background
-      if (teamCached) {
+      if (teamCached && !shouldRefresh) {
         const map: Record<string, number | null> = {};
         for (const m of DVP_METRICS) {
           const perGame = teamCached.metrics?.[m.key];
@@ -5123,25 +5178,25 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       try {
         const metricsStr = DVP_METRICS.map(m => m.key).join(',');
         
-        // Fetch only what we don't have cached
+        // Fetch only what we don't have cached (or if refreshing)
         const promises: Promise<any>[] = [];
         
-        if (!teamCached) {
+        if (!teamCached || shouldRefresh) {
           promises.push(
-            cachedFetch<any>(
-              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
+              cachedFetch<any>(
+              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82${shouldRefresh ? '&refresh=1' : ''}`,
               undefined,
-              300000 // 5 minute cache - team DVP doesn't change often
+              shouldRefresh ? 0 : DVP_CACHE_TTL // Use shorter cache time
             ).then(data => ({ type: 'team', data }))
           );
         }
         
-        if (!rankCached) {
+        if (!rankCached || shouldRefresh) {
           promises.push(
-            cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
+              cachedFetch<any>(
+              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82${shouldRefresh ? '&refresh=1' : ''}`,
               undefined,
-              300000 // 5 minute cache
+              shouldRefresh ? 0 : DVP_CACHE_TTL // Use shorter cache time
             ).then(data => ({ type: 'rank', data }))
           );
         }
@@ -5154,10 +5209,10 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           
           results.forEach(result => {
             if (result.type === 'team') {
-              dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0 };
+              dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() };
               dvpTeamCache.set(teamCacheKey, dvpData);
             } else if (result.type === 'rank') {
-              rankData = { metrics: result.data?.metrics };
+              rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
               dvpRankCache.set(rankCacheKey, rankData);
             }
           });
@@ -5198,30 +5253,37 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       const teamCacheKey = `${targetOpp}:82`;
       const rankCacheKey = `${p}:82`;
       
-      // Skip if already cached
-      if (!targetOpp || (dvpTeamCache.has(teamCacheKey) && dvpRankCache.has(rankCacheKey))) return;
+      // Skip if already cached and not stale
+      if (!targetOpp) return;
+      const teamCached = dvpTeamCache.get(teamCacheKey);
+      const rankCached = dvpRankCache.get(rankCacheKey);
+      const now = Date.now();
+      if (teamCached && rankCached && 
+          teamCached.timestamp && rankCached.timestamp &&
+          (now - teamCached.timestamp) < DVP_CACHE_TTL &&
+          (now - rankCached.timestamp) < DVP_CACHE_TTL) return;
       
       try {
         const metricsStr = DVP_METRICS.map(m => m.key).join(',');
         const promises: Promise<any>[] = [];
         
-        // Only fetch what's not cached
-        if (!dvpTeamCache.has(teamCacheKey)) {
+        // Only fetch what's not cached or is stale
+        if (!teamCached || (teamCached.timestamp && (now - teamCached.timestamp) >= DVP_CACHE_TTL)) {
           promises.push(
             cachedFetch<any>(
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
-              300000
+              DVP_CACHE_TTL
             ).then(data => ({ type: 'team', data }))
           );
         }
         
-        if (!dvpRankCache.has(rankCacheKey)) {
+        if (!rankCached || (rankCached.timestamp && (now - rankCached.timestamp) >= DVP_CACHE_TTL)) {
           promises.push(
             cachedFetch<any>(
               `/api/dvp/rank/batch?pos=${p}&metrics=${metricsStr}&games=10`,
               undefined,
-              300000
+              DVP_CACHE_TTL
             ).then(data => ({ type: 'rank', data }))
           );
         }
@@ -5230,9 +5292,9 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           const results = await Promise.all(promises);
           results.forEach(result => {
             if (result.type === 'team') {
-              dvpTeamCache.set(teamCacheKey, { metrics: result.data?.metrics, sample: result.data?.sample_games || 0 });
+              dvpTeamCache.set(teamCacheKey, { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() });
             } else if (result.type === 'rank') {
-              dvpRankCache.set(rankCacheKey, { metrics: result.data?.metrics });
+              dvpRankCache.set(rankCacheKey, { metrics: result.data?.metrics, timestamp: Date.now() });
             }
           });
         }
@@ -5397,13 +5459,21 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
   const [teamStats, setTeamStats] = useState<any>(null);
   const [teamRanks, setTeamRanks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!opponentTeam) return;
+    // Don't fetch if opponent team is not set or is invalid
+    if (!opponentTeam || opponentTeam === 'N/A' || opponentTeam === '' || opponentTeam === 'ALL') {
+      setTeamStats(null);
+      setTeamRanks({});
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     let abort = false;
     const LOCAL_CACHE_KEY = 'opponentAnalysisCacheV1';
@@ -5411,144 +5481,75 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
 
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
 
-      // For the high-level opponent card, show defense vs guards by default (PG),
-      // which matches how ranks are currently computed elsewhere.
       const targetOpp = opponentTeam;
-      const targetPos: 'PG' = 'PG';
-      const metricsStr = DVP_METRICS.map(m => m.key).join(',');
-
-      const teamCacheKey = `${targetOpp}:82`;
-      const rankCacheKey = `${targetPos}:82`;
-      const cachedTeam = dvpTeamCache.get(teamCacheKey);
-      const cachedRank = dvpRankCache.get(rankCacheKey);
-      const localKey = `${targetOpp}:${rankCacheKey}`;
-
-      const readLocalCache = (): { teamData: { metrics: any; sample: number }; rankData: { metrics: any } } | null => {
-        if (typeof window === 'undefined') return null;
-        try {
-          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
-          if (!raw) return null;
-          const parsed = JSON.parse(raw);
-          const entry = parsed?.[localKey];
-          if (!entry) return null;
-          if (Date.now() - entry.timestamp > LOCAL_CACHE_TTL) return null;
-          return { teamData: entry.teamData, rankData: entry.rankData };
-        } catch {
-          return null;
-        }
-      };
-
-      const writeLocalCache = (teamData: { metrics: any; sample: number }, rankData: { metrics: any }) => {
-        if (typeof window === 'undefined') return;
-        try {
-          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
-          const parsed = raw ? JSON.parse(raw) : {};
-          parsed[localKey] = {
-            timestamp: Date.now(),
-            teamData,
-            rankData,
-          };
-          window.localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(parsed));
-        } catch {
-          // ignore storage errors
-        }
-      };
-
-      const applyData = (teamData: { metrics: any; sample: number } | undefined | null, rankData: { metrics: any } | undefined | null) => {
-        if (!teamData || !rankData || abort) return;
-
-        const stats: any = {};
-        const ranks: Record<string, number> = {};
-
-        // Approximate team-level defense by aggregating across all five positions.
-        const POSITIONS: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
-
-        for (const m of DVP_METRICS) {
-          const perGame = teamData.metrics?.[m.key] || {};
-          const values = POSITIONS
-            .map(pos => perGame?.[pos])
-            .filter((v: any) => typeof v === 'number' && Number.isFinite(v as number)) as number[];
-
-          let value = 0;
-          if (values.length > 0) {
-            if (m.isPercentage) {
-              // For percentages, use the average across positions
-              const sum = values.reduce((a, b) => a + b, 0);
-              value = sum / values.length;
-            } else {
-              // For counting stats (pts/reb/ast/etc), sum across positions to approximate team totals
-              value = values.reduce((a, b) => a + b, 0);
-            }
-          }
-          stats[m.key] = value;
-
-          const metricRanks = rankData.metrics?.[m.key] || {};
-          const rank = metricRanks?.[targetOpp] as number | undefined;
-          ranks[m.key] = Number.isFinite(rank as any) ? (rank as number) : 0;
-        }
-
-        setTeamStats(stats);
-        setTeamRanks(ranks);
-      };
-
-      // If everything is cached, use it immediately
-      const localCache = readLocalCache();
-      if (localCache) {
-        applyData(localCache.teamData, localCache.rankData);
-        setLoading(false);
-        return;
-      }
-
-      if (cachedTeam && cachedRank) {
-        applyData(cachedTeam, cachedRank);
-        if (cachedTeam && cachedRank) writeLocalCache(cachedTeam, cachedRank);
-        setLoading(false);
-        return;
-      }
 
       try {
-        const promises: Promise<any>[] = [];
-
-        if (!cachedTeam) {
-          promises.push(
-            cachedFetch<any>(
-              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
-              undefined,
-              300000
-            ).then(data => ({ type: 'team', data }))
+        // Fetch team defensive stats directly from BDL API (not from DvP store)
+        let defensiveStatsResponse: any;
+        try {
+          defensiveStatsResponse = await cachedFetch<any>(
+            `/api/team-defensive-stats?team=${targetOpp}&games=82`,
+            undefined,
+            DVP_CACHE_TTL // 2 minute cache for fresh data
           );
+        } catch (fetchError: any) {
+          // Handle HTTP errors (like 500, 400, etc.)
+          console.error('HTTP error fetching defensive stats:', fetchError);
+          if (!abort) {
+            setError(fetchError?.message || 'Failed to fetch defensive stats');
+          }
+          return;
         }
 
-        if (!cachedRank) {
-          promises.push(
-            cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
-              undefined,
-              300000
-            ).then(data => ({ type: 'rank', data }))
-          );
-        }
+        if (defensiveStatsResponse && defensiveStatsResponse.success) {
+          const perGame = defensiveStatsResponse.perGame || {};
+          
+          // Map BDL stats to our format
+          const stats: any = {
+            pts: perGame.pts || 0,
+            reb: perGame.reb || 0,
+            ast: perGame.ast || 0,
+            fg_pct: perGame.fg_pct || 0,
+            fg3_pct: perGame.fg3_pct || 0,
+            stl: perGame.stl || 0,
+            blk: perGame.blk || 0,
+          };
 
-        const results = promises.length > 0 ? await Promise.all(promises) : [];
+          // For now, set ranks to 0 (we can add ranking later if needed)
+          // Ranking would require fetching all teams' defensive stats
+          const ranks: Record<string, number> = {
+            pts: 0,
+            reb: 0,
+            ast: 0,
+            fg_pct: 0,
+            fg3_pct: 0,
+            stl: 0,
+            blk: 0,
+          };
 
-        let teamData = cachedTeam || null;
-        let rankData = cachedRank || null;
-
-        for (const r of results) {
-          if (r.type === 'team') {
-            teamData = { metrics: r.data?.metrics, sample: r.data?.sample_games || 0 };
-            dvpTeamCache.set(teamCacheKey, teamData);
-          } else if (r.type === 'rank') {
-            rankData = { metrics: r.data?.metrics };
-            dvpRankCache.set(rankCacheKey, rankData);
+          if (!abort) {
+            setTeamStats(stats);
+            setTeamRanks(ranks);
+            setError(null);
+          }
+        } else {
+          const errorMsg = defensiveStatsResponse?.error || 'Failed to fetch defensive stats';
+          console.error('Failed to fetch defensive stats:', defensiveStatsResponse);
+          if (!abort) {
+            setTeamStats(null);
+            setTeamRanks({});
+            setError(errorMsg);
           }
         }
-
-        applyData(teamData, rankData);
-        if (teamData && rankData) writeLocalCache(teamData, rankData);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch opponent analysis data:', error);
+        if (!abort) {
+          setTeamStats(null);
+          setTeamRanks({});
+          setError(error?.message || 'Failed to load defensive stats');
+        }
       } finally {
         if (!abort) setLoading(false);
       }
@@ -5597,8 +5598,14 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
                 <span className={`${mounted && isDark ? "text-slate-400" : "text-slate-500"}`}> DEFENSIVE RANKS</span>
               </div>
               <div className="space-y-3">
-                {loading || !teamStats ? (
+                {!opponentTeam || opponentTeam === 'N/A' || opponentTeam === '' || opponentTeam === 'ALL' ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Select an opponent to view defensive ranks</div>
+                ) : loading ? (
                   <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+                ) : error ? (
+                  <div className="text-sm text-red-500 dark:text-red-400">{error}</div>
+                ) : !teamStats ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">No data available</div>
                 ) : (
                   <>
                     <div className="flex items-center justify-between">
@@ -6712,9 +6719,6 @@ function NBADashboardContent() {
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
   
-  // Get current betting line for selected stat (fallback to 0.5)
-  const bettingLine = bettingLines[selectedStat] ?? 0.5;
-  
   // Update betting line for current stat
   const setBettingLine = (value: number) => {
     setBettingLines(prev => ({
@@ -6722,6 +6726,19 @@ function NBADashboardContent() {
       [selectedStat]: value
     }));
   };
+  
+  // Get current betting line for selected stat (defined early so it can be used in hitRateStats)
+  // Use stored line if available, otherwise default to 0.5
+  // Note: bestLineForStat will update bettingLines state via useEffect when it becomes available
+  const bettingLine = useMemo(() => {
+    // First check if we have a stored line for this stat
+    if (selectedStat in bettingLines) {
+      return bettingLines[selectedStat];
+    }
+    // Otherwise default to 0.5 (will be updated by useEffect when bestLineForStat is available)
+    return 0.5;
+  }, [bettingLines, selectedStat]);
+  
   // Independent bookmaker lines (not linked to the chart betting line)
   const [bookOpeningLine, setBookOpeningLine] = useState<number | null>(null);
   const [bookCurrentLine, setBookCurrentLine] = useState<number | null>(null);
@@ -8043,8 +8060,10 @@ const lineMovementInFlightRef = useRef(false);
   }, []); // Only run once on mount
 
   // Restore timeframe from session storage when playerStats loads (fixes race condition)
+  // Only run once when playerStats first loads, not on every timeframe change
+  const hasRestoredTimeframeRef = useRef(false);
   useEffect(() => {
-    if (playerStats.length > 0 && selectedTimeframe === 'last10') {
+    if (playerStats.length > 0 && !hasRestoredTimeframeRef.current && selectedTimeframe === 'last10') {
       // Only restore if we're still on default timeframe (last10)
       // This means we haven't manually selected a timeframe yet
       try {
@@ -8056,8 +8075,9 @@ const lineMovementInFlightRef = useRef(false);
           }
         }
       } catch {}
+      hasRestoredTimeframeRef.current = true;
     }
-  }, [playerStats.length, selectedTimeframe]);
+  }, [playerStats.length]); // Removed selectedTimeframe from dependencies to prevent re-running on every change
 
   /* --------- Live search (debounced) using /api/bdl/players ---------- */
   useEffect(() => {
@@ -9675,6 +9695,120 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
   
+  // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
+  const getBookRowKey = useCallback((stat: string): string | null => {
+    const statToBookKey: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'fg3m': 'THREES',
+      'pra': 'PRA',
+      'pr': 'PR',
+      'pa': 'PA',
+      'ra': 'RA',
+      'spread': 'Spread',
+      'total_pts': 'Total',
+      'moneyline': 'H2H',
+    };
+    return statToBookKey[stat] || null;
+  }, []);
+  
+  // Calculate best line for stat (lowest over line) - exclude alternate lines
+  // This is used to initialize bettingLine when switching stats
+  // Note: realOddsData is defined below, so we access it via closure
+  const bestLineForStat = useMemo(() => {
+    // Access realOddsData from the component scope (it's defined later but accessible via closure)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const oddsData = realOddsData;
+    if (!oddsData || oddsData.length === 0) return null;
+
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return null;
+    
+    // Collect all lines per bookmaker
+    const allLinesByBookmaker = new Map<string, number[]>();
+    for (const book of realOddsData) {
+      const meta = (book as any)?.meta;
+      const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+      const statKey: string = meta?.stat || bookRowKey;
+      
+      if (statKey !== bookRowKey) continue;
+      
+      const statData = (book as any)[bookRowKey];
+      if (!statData || statData.line === 'N/A') continue;
+      const lineValue = parseFloat(statData.line);
+      if (isNaN(lineValue)) continue;
+      
+      if (!allLinesByBookmaker.has(baseName)) {
+        allLinesByBookmaker.set(baseName, []);
+      }
+      allLinesByBookmaker.get(baseName)!.push(lineValue);
+    }
+    
+    // Calculate consensus line (most common line value across ALL bookmakers)
+    const lineCounts = new Map<number, number>();
+    for (const [bookmaker, lines] of allLinesByBookmaker.entries()) {
+      for (const line of lines) {
+        lineCounts.set(line, (lineCounts.get(line) || 0) + 1);
+      }
+    }
+    let consensusLine: number | null = null;
+    let maxCount = 0;
+    for (const [line, count] of lineCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        consensusLine = line;
+      }
+    }
+    
+    // Find primary lines (closest to consensus) and get the lowest
+    let bestLine = Infinity;
+    for (const [baseName, lines] of allLinesByBookmaker.entries()) {
+      if (lines.length === 0) continue;
+      
+      let primaryLine = lines[0];
+      if (consensusLine !== null && lines.length > 1) {
+        let closestLine = lines[0];
+        let minDiff = Math.abs(lines[0] - consensusLine);
+        for (const line of lines) {
+          const diff = Math.abs(line - consensusLine);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestLine = line;
+          }
+        }
+        // Always use closest to consensus (no threshold)
+        primaryLine = closestLine;
+      }
+      
+      if (primaryLine < bestLine) {
+        bestLine = primaryLine;
+      }
+    }
+    
+    return bestLine !== Infinity ? bestLine : null;
+  }, [realOddsData, selectedStat, getBookRowKey]);
+  
+  // Update bettingLines state when bestLineForStat becomes available
+  // This ensures bettingLine (defined earlier) gets updated when odds data loads
+  useEffect(() => {
+    // Only update if:
+    // 1. bestLineForStat is available
+    // 2. We don't already have a stored line for this stat
+    // 3. The current bettingLine is the default 0.5
+    if (bestLineForStat !== null && !(selectedStat in bettingLines)) {
+      const currentLine = bettingLine;
+      if (Math.abs(currentLine - 0.5) < 0.01) {
+        // Only update if it's still at the default
+        setBettingLines(prev => ({
+          ...prev,
+          [selectedStat]: bestLineForStat
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bestLineForStat, selectedStat]);
+  
   // Merge line movement data with live odds to get accurate current line
   const mergedLineMovementData = useMemo(() => {
     if (!LINE_MOVEMENT_ENABLED || !lineMovementData) return null;
@@ -9730,23 +9864,6 @@ const lineMovementInFlightRef = useRef(false);
     return deriveOpeningCurrentMovement(filtered);
   }, [mergedLineMovementData, oddsSnapshots, marketKey]);
 
-  // Helper function to map selected stat to bookmaker row key
-  const getBookRowKey = useCallback((stat: string): string | null => {
-    const statToBookKey: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'fg3m': 'THREES',
-      'pra': 'PRA',
-      'pr': 'PR',
-      'pa': 'PA',
-      'ra': 'RA',
-      'spread': 'Spread',
-      'total_pts': 'Total',
-      'moneyline': 'H2H',
-    };
-    return statToBookKey[stat] || null;
-  }, []);
 
   // Prediction state
   const [predictedOutcome, setPredictedOutcome] = useState<PredictedOutcomeResult | null>(null);
@@ -12131,6 +12248,7 @@ const lineMovementInFlightRef = useRef(false);
                   calculatedImpliedOdds={calculatedImpliedOdds}
                   selectedBookmakerName={selectedBookmakerName}
                   selectedBookmakerLine={selectedBookmakerLine}
+                  propsMode={propsMode}
                 />
               </div>
             ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
@@ -12273,43 +12391,46 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
             {useMemo(() => (
-<div className="hidden lg:block">
-                <OfficialOddsCard
-                isDark={isDark}
-                derivedOdds={derivedOdds}
-                intradayMovements={intradayMovementsFinal}
-                selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-                opponentTeam={opponentTeam}
-                selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
-                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-                matchupInfo={matchupInfo}
-                oddsFormat={oddsFormat}
-                books={realOddsData}
-                fmtOdds={fmtOdds}
-                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-                lineMovementData={mergedLineMovementData}
-                selectedStat={selectedStat}
-                  predictedOutcome={predictedOutcome}
-                  calculatedImpliedOdds={calculatedImpliedOdds}
-                  selectedBookmakerName={selectedBookmakerName}
-                  selectedBookmakerLine={selectedBookmakerLine}
-              />
-              </div>
+              propsMode !== 'team' ? (
+                <div className="hidden lg:block">
+                  <OfficialOddsCard
+                    isDark={isDark}
+                    derivedOdds={derivedOdds}
+                    intradayMovements={intradayMovementsFinal}
+                    selectedTeam={selectedTeam}
+                    opponentTeam={opponentTeam}
+                    selectedTeamLogoUrl={selectedTeam && selectedTeam !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)) : ''}
+                    opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                    matchupInfo={matchupInfo}
+                    oddsFormat={oddsFormat}
+                    books={realOddsData}
+                    fmtOdds={fmtOdds}
+                    lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                    lineMovementData={mergedLineMovementData}
+                    selectedStat={selectedStat}
+                    predictedOutcome={predictedOutcome}
+                    calculatedImpliedOdds={calculatedImpliedOdds}
+                    selectedBookmakerName={selectedBookmakerName}
+                    selectedBookmakerLine={selectedBookmakerLine}
+                    propsMode={propsMode}
+                  />
+                </div>
+              ) : null
             ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
-              isDark={isDark}
-              oddsLoading={oddsLoading}
-              oddsError={oddsError}
-              realOddsData={realOddsData}
-              selectedTeam={selectedTeam}
-              gamePropsTeam={gamePropsTeam}
-              propsMode={propsMode}
-              opponentTeam={opponentTeam}
-              oddsFormat={oddsFormat}
-              fmtOdds={fmtOdds}
-            />
+                isDark={isDark}
+                oddsLoading={oddsLoading}
+                oddsError={oddsError}
+                realOddsData={realOddsData}
+                selectedTeam={selectedTeam}
+                gamePropsTeam={gamePropsTeam}
+                propsMode={propsMode}
+                opponentTeam={opponentTeam}
+                oddsFormat={oddsFormat}
+                fmtOdds={fmtOdds}
+              />
 
             {/* Unified Depth Chart (Desktop) - optimized for both modes */}
             {useMemo(() => {
@@ -13404,7 +13525,8 @@ const lineMovementInFlightRef = useRef(false);
           </div>
         )}
         
-        <div className="grid grid-cols-4 h-16">
+        {/* Mobile: Original grid layout */}
+        <div className="grid grid-cols-4 h-16 lg:hidden">
           {/* Dashboard */}
           <button
             className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
@@ -13427,10 +13549,106 @@ const lineMovementInFlightRef = useRef(false);
               }
               setShowJournalDropdown(!showJournalDropdown);
             }}
-            className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
+            className={`flex flex-col items-center justify-center gap-1 transition-colors ${
               !hasPremium
                 ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+            }`}
+          >
+            {!hasPremium ? (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            )}
+            <span className="text-xs font-medium">Journal</span>
+          </button>
+          
+          {/* Profile */}
+          <button
+            data-profile-button
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            {(() => {
+              const displayName = username || userEmail || 'Profile';
+              const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
+              const getAvatarColor = (name: string): string => {
+                let hash = 0;
+                for (let i = 0; i < name.length; i++) {
+                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const hue = Math.abs(hash) % 360;
+                const saturation = 65 + (Math.abs(hash) % 20);
+                const lightness = 45 + (Math.abs(hash) % 15);
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+              };
+              const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
+              return (
+                <div 
+                  className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs font-semibold text-white"
+                  style={avatarColor ? { backgroundColor: avatarColor } : { backgroundColor: 'rgb(243, 244, 246)' }}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl ?? undefined} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="flex items-center justify-center w-full h-full">{fallbackInitial}</span>
+                  )}
+                </div>
+              );
+            })()}
+            <span className="text-xs font-medium">Profile</span>
+          </button>
+          
+          {/* Settings */}
+          <button
+            data-settings-button
+            onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-xs font-medium">Settings</span>
+          </button>
+        </div>
+        
+        {/* Desktop: Centered Journal button layout */}
+        <div className="hidden lg:flex items-center justify-between h-16 px-4 relative">
+          {/* Dashboard */}
+          <button
+            className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <circle cx="12" cy="12" r="6" strokeWidth={2} />
+              <circle cx="12" cy="12" r="2" strokeWidth={2} />
+            </svg>
+            <span className="text-xs font-medium">Dashboard</span>
+          </button>
+          
+          {/* Journal - Centered by default, moves to side when parlay is active */}
+          <button
+            data-journal-button
+            onClick={() => {
+              if (!hasPremium) {
+                router.push('/subscription');
+                return;
+              }
+              setShowJournalDropdown(!showJournalDropdown);
+            }}
+            className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 ${
+              !hasPremium
+                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+            } ${
+              typeof document !== 'undefined' && document.body.hasAttribute('data-parlay-active')
+                ? 'absolute left-4' // Move to left side when parlay is active
+                : 'absolute left-1/2 -translate-x-1/2' // Centered by default
             }`}
           >
             {!hasPremium ? (

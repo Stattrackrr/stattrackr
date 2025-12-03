@@ -5742,7 +5742,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "PG"
       },
       {
         "playerId": 0,
@@ -5758,7 +5759,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "SF"
       },
       {
         "playerId": 0,
@@ -5774,7 +5776,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "PF"
       },
       {
         "playerId": 0,
@@ -5790,7 +5793,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "C"
       },
       {
         "playerId": 0,
@@ -5838,7 +5842,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "SG"
       },
       {
         "playerId": 0,
@@ -5918,7 +5923,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "PF"
       },
       {
         "playerId": 0,
@@ -5934,7 +5940,8 @@
         "fga": 0,
         "stl": 0,
         "blk": 0,
-        "min": "0:00"
+        "min": "0:00",
+        "bmPosition": "PF"
       },
       {
         "playerId": 0,

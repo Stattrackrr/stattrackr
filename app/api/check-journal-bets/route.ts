@@ -28,6 +28,92 @@ const logDebug = (...args: Parameters<typeof console.log>) => {
   }
 };
 
+// Game prop stat types that don't require a player_id
+const GAME_PROP_STAT_TYPES = ['total_pts', 'home_total', 'away_total', 'first_half_total', 'second_half_total', 
+                               'q1_total', 'q2_total', 'q3_total', 'q4_total', 
+                               'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline',
+                               'moneyline', 'spread'];
+
+/**
+ * Evaluate a game prop based on game data
+ * Returns the actual value for the game prop stat type
+ */
+function evaluateGameProp(game: any, statType: string, teamAbbr: string): number {
+  if (!game) return 0;
+  
+  const homeScore = game.home_team_score || 0;
+  const visitorScore = game.visitor_team_score || 0;
+  const homeTeam = game.home_team?.abbreviation;
+  const visitorTeam = game.visitor_team?.abbreviation;
+  
+  // Normalize team abbreviation for comparison
+  const normalizeAbbr = (abbr: string) => abbr?.toUpperCase().trim() || '';
+  const normalizedTeam = normalizeAbbr(teamAbbr);
+  const isHome = normalizeAbbr(homeTeam || '') === normalizedTeam;
+  
+  switch (statType) {
+    case 'total_pts':
+      return homeScore + visitorScore;
+    
+    case 'spread':
+      // Positive = team lost (failed to cover), negative = team won (covered spread)
+      return isHome ? visitorScore - homeScore : homeScore - visitorScore;
+    
+    case 'moneyline':
+      // 1 = win, 0 = loss
+      return isHome ? (homeScore > visitorScore ? 1 : 0) : (visitorScore > homeScore ? 1 : 0);
+    
+    case 'home_total':
+      return homeScore;
+    
+    case 'away_total':
+      return visitorScore;
+    
+    case 'first_half_total':
+      return (game.home_q1 || 0) + (game.home_q2 || 0) + (game.visitor_q1 || 0) + (game.visitor_q2 || 0);
+    
+    case 'second_half_total':
+      return (game.home_q3 || 0) + (game.home_q4 || 0) + (game.visitor_q3 || 0) + (game.visitor_q4 || 0);
+    
+    case 'q1_total':
+      return (game.home_q1 || 0) + (game.visitor_q1 || 0);
+    
+    case 'q2_total':
+      return (game.home_q2 || 0) + (game.visitor_q2 || 0);
+    
+    case 'q3_total':
+      return (game.home_q3 || 0) + (game.visitor_q3 || 0);
+    
+    case 'q4_total':
+      return (game.home_q4 || 0) + (game.visitor_q4 || 0);
+    
+    case 'q1_moneyline':
+      // 1 = won quarter, 0 = lost quarter
+      const homeQ1 = game.home_q1 || 0;
+      const visitorQ1 = game.visitor_q1 || 0;
+      return isHome ? (homeQ1 > visitorQ1 ? 1 : 0) : (visitorQ1 > homeQ1 ? 1 : 0);
+    
+    case 'q2_moneyline':
+      const homeQ2 = game.home_q2 || 0;
+      const visitorQ2 = game.visitor_q2 || 0;
+      return isHome ? (homeQ2 > visitorQ2 ? 1 : 0) : (visitorQ2 > homeQ2 ? 1 : 0);
+    
+    case 'q3_moneyline':
+      const homeQ3 = game.home_q3 || 0;
+      const visitorQ3 = game.visitor_q3 || 0;
+      return isHome ? (homeQ3 > visitorQ3 ? 1 : 0) : (visitorQ3 > homeQ3 ? 1 : 0);
+    
+    case 'q4_moneyline':
+      const homeQ4 = game.home_q4 || 0;
+      const visitorQ4 = game.visitor_q4 || 0;
+      return isHome ? (homeQ4 > visitorQ4 ? 1 : 0) : (visitorQ4 > homeQ4 ? 1 : 0);
+    
+    default:
+      console.error(`[check-journal-bets] Unknown game prop stat type: ${statType}`);
+      return 0;
+  }
+}
+
 /**
  * Parse parlay selection text to extract individual legs
  * Format: "Parlay: Player1 over 25 Points + Player2 under 10 Rebounds + ..."
@@ -116,6 +202,7 @@ async function resolveParlayBet(
       overUnder: 'over' | 'under';
       line: number;
       statType: string;
+      isGameProp?: boolean; // Flag to indicate if this is a game prop
     }> = [];
     
     if (bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs.length > 0) {
@@ -130,6 +217,7 @@ async function resolveParlayBet(
         overUnder: leg.overUnder,
         line: leg.line,
         statType: leg.statType,
+        isGameProp: leg.isGameProp || false, // Include game prop flag
       }));
     } else {
       // Fallback: Parse text for legacy parlays
@@ -257,6 +345,36 @@ async function resolveParlayBet(
           }
         }
         
+        // Handle game props differently from player props
+        if (leg.isGameProp) {
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Evaluating game prop ${leg.statType} for game ${targetGame.id}`);
+          
+          // Evaluate game prop using game data
+          const actualValue = evaluateGameProp(targetGame, leg.statType, leg.team || '');
+          
+          // Determine if leg won
+          const legLine = Number(leg.line);
+          const isWholeNumber = legLine % 1 === 0;
+          let legWon: boolean;
+          
+          // Special handling for spreads: evaluateGameProp returns negative if team covered, positive if didn't cover
+          if (leg.statType === 'spread') {
+            // For spreads: actualValue < 0 means team covered, actualValue > 0 means didn't cover
+            // The line is just for reference - the key is whether actualValue is negative
+            legWon = actualValue < 0;
+          } else {
+            // For other props (totals, etc.), use standard over/under logic
+            legWon = leg.overUnder === 'over' 
+              ? (isWholeNumber ? actualValue >= legLine : actualValue > legLine)
+              : (isWholeNumber ? actualValue <= legLine : actualValue < legLine);
+          }
+          
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": ${legWon ? 'WIN' : 'LOSS'} - Actual: ${actualValue}, Line: ${legLine} ${leg.overUnder} (comparison: ${actualValue} ${leg.overUnder === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${legLine})`);
+          legResults.push({ won: legWon, void: false, leg });
+          legResolved = true;
+          continue; // Move to next leg
+        }
+        
         // DIRECT LOOKUP: Fetch stats for this specific game and find player by playerId
         console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Fetching stats for game ${targetGame.id} (direct lookup)`);
         const statsResponse = await fetch(
@@ -324,12 +442,14 @@ async function resolveParlayBet(
           case 'fg3m': actualValue = stats.fg3m; break;
         }
         
-        const isWholeNumber = leg.line % 1 === 0;
+        // Ensure line is a number (handle string/decimal types)
+        const legLine = Number(leg.line);
+        const isWholeNumber = legLine % 1 === 0;
         const legWon = leg.overUnder === 'over' 
-          ? (isWholeNumber ? actualValue >= leg.line : actualValue > leg.line)
-          : (isWholeNumber ? actualValue <= leg.line : actualValue < leg.line);
+          ? (isWholeNumber ? actualValue >= legLine : actualValue > legLine)
+          : (isWholeNumber ? actualValue <= legLine : actualValue < legLine);
         
-        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": ${legWon ? 'WIN' : 'LOSS'} - Actual: ${actualValue}, Line: ${leg.line} ${leg.overUnder}`);
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": ${legWon ? 'WIN' : 'LOSS'} - Actual: ${actualValue}, Line: ${legLine} ${leg.overUnder} (comparison: ${actualValue} ${leg.overUnder === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${legLine})`);
         legResults.push({ won: legWon, void: false, leg });
         legResolved = true;
         continue; // Move to next leg
@@ -674,11 +794,14 @@ async function resolveParlayBet(
         // Determine if leg won
         // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
         // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
-        const isWholeNumber = leg.line % 1 === 0;
+        // Ensure line is a number (handle string/decimal types)
+        const legLine = Number(leg.line);
+        const isWholeNumber = legLine % 1 === 0;
         const legWon = leg.overUnder === 'over' 
-          ? (isWholeNumber ? actualValue >= leg.line : actualValue > leg.line)
-          : (isWholeNumber ? actualValue <= leg.line : actualValue < leg.line);
+          ? (isWholeNumber ? actualValue >= legLine : actualValue > legLine)
+          : (isWholeNumber ? actualValue <= legLine : actualValue < legLine);
         
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": ${legWon ? 'WIN' : 'LOSS'} - Actual: ${actualValue}, Line: ${legLine} ${leg.overUnder} (comparison: ${actualValue} ${leg.overUnder === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${legLine})`);
         legResults.push({ won: legWon, void: false, leg });
         legResolved = true;
         break;
@@ -799,23 +922,72 @@ export async function GET(request: Request) {
     console.log('[check-journal-bets] Starting journal bet check...');
     console.log('[check-journal-bets] ========================================');
     
-    // Fetch all pending journal bets with NBA player props (including parlays)
-    // First get single player prop bets
-    const { data: singleBets, error: singleError } = await supabaseAdmin
+    // Check if we should also re-check completed bets (for recalculation)
+    const url = new URL(request.url);
+    const recalculate = url.searchParams.get('recalculate') === 'true';
+    
+    // Fetch all pending journal bets with NBA player props OR game props (including parlays)
+    // If recalculate=true, also fetch completed bets that have actual_value set
+    // Game props: have game_date and stat_type but no player_id
+    // Player props: have game_date, stat_type, and player_id
+    
+    // Fetch player props (have player_id) OR game props (have game prop stat type)
+    // We'll fetch both and filter in memory to avoid complex OR queries
+    let playerPropsQuery = supabaseAdmin
       .from('bets')
       .select('*')
       .eq('sport', 'NBA')
-      .eq('result', 'pending')
       .not('player_id', 'is', null)
       .not('game_date', 'is', null);
     
-    // Then get parlay bets (market contains "Parlay")
-    const { data: parlayBets, error: parlayError } = await supabaseAdmin
+    let gamePropsQuery = supabaseAdmin
       .from('bets')
       .select('*')
       .eq('sport', 'NBA')
-      .eq('result', 'pending')
+      .is('player_id', null)
+      .not('game_date', 'is', null)
+      .in('stat_type', GAME_PROP_STAT_TYPES);
+    
+    if (recalculate) {
+      playerPropsQuery = playerPropsQuery.in('result', ['pending', 'win', 'loss']);
+      gamePropsQuery = gamePropsQuery.in('result', ['pending', 'win', 'loss']);
+      console.log('[check-journal-bets] Recalculation mode: will re-check completed bets');
+    } else {
+      playerPropsQuery = playerPropsQuery.eq('result', 'pending');
+      gamePropsQuery = gamePropsQuery.eq('result', 'pending');
+    }
+    
+    const [{ data: playerProps, error: playerPropsError }, { data: gameProps, error: gamePropsError }] = await Promise.all([
+      playerPropsQuery,
+      gamePropsQuery,
+    ]);
+    
+    if (playerPropsError) {
+      console.error('Error fetching player props:', playerPropsError);
+      throw playerPropsError;
+    }
+    
+    if (gamePropsError) {
+      console.error('Error fetching game props:', gamePropsError);
+      throw gamePropsError;
+    }
+    
+    const singleBets = [...(playerProps || []), ...(gameProps || [])];
+    
+    // Then get parlay bets (market contains "Parlay")
+    let parlayBetsQuery = supabaseAdmin
+      .from('bets')
+      .select('*')
+      .eq('sport', 'NBA')
       .like('market', 'Parlay%');
+    
+    if (recalculate) {
+      parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
+    } else {
+      parlayBetsQuery = parlayBetsQuery.eq('result', 'pending');
+    }
+    
+    const { data: parlayBets, error: parlayError } = await parlayBetsQuery;
     
     if (singleError) {
       console.error('Error fetching single bets:', singleError);
@@ -915,8 +1087,16 @@ export async function GET(request: Request) {
           continue;
         }
         
-        // Skip if bet doesn't have required fields for single bet processing
-        if (!bet.player_id || !bet.game_date) {
+        // Skip if bet doesn't have required fields
+        if (!bet.game_date) {
+          continue;
+        }
+        
+        // Check if this is a game prop (no player_id but has game prop stat type)
+        const isGameProp = !bet.player_id && bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
+        
+        // For player props, require player_id
+        if (!isGameProp && !bet.player_id) {
           continue;
         }
         
@@ -931,7 +1111,8 @@ export async function GET(request: Request) {
         });
 
         if (!game) {
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
+          const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
           continue;
         }
 
@@ -1014,9 +1195,65 @@ export async function GET(request: Request) {
           const tenMinutesAgo = new Date(now - (10 * 60 * 1000));
           if (completedAt > tenMinutesAgo) {
             const minutesAgo = Math.round((now - completedAt.getTime()) / 60000);
-            console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} completed ${minutesAgo} minutes ago, waiting for 10-minute buffer`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
+            console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} completed ${minutesAgo} minutes ago, waiting for 10-minute buffer`);
             continue;
           }
+        }
+
+        // Handle game props differently from player props
+        if (isGameProp) {
+          console.log(`[check-journal-bets] Evaluating game prop bet ${bet.id}: ${bet.stat_type} for game ${game.id}`);
+          
+          // Evaluate game prop using game data
+          const actualValue = evaluateGameProp(game, bet.stat_type, bet.team || '');
+          
+          // Determine result
+          const line = Number(bet.line);
+          const isWholeNumber = line % 1 === 0;
+          let result: 'win' | 'loss';
+          
+          // Special handling for spreads: evaluateGameProp returns negative if team covered, positive if didn't cover
+          // The line is stored from the team's perspective (negative for favorites, positive for underdogs)
+          // Team covers if actualValue < 0 (negative), regardless of line value
+          if (bet.stat_type === 'spread') {
+            // For spreads: actualValue < 0 means team covered, actualValue > 0 means didn't cover
+            // The line is just for reference - the key is whether actualValue is negative
+            result = actualValue < 0 ? 'win' : 'loss';
+          } else {
+            // For other props (totals, etc.), use standard over/under logic
+            if (bet.over_under === 'over') {
+              result = (isWholeNumber ? actualValue >= line : actualValue > line) ? 'win' : 'loss';
+            } else if (bet.over_under === 'under') {
+              result = (isWholeNumber ? actualValue <= line : actualValue < line) ? 'win' : 'loss';
+            } else {
+              console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
+              continue;
+            }
+          }
+
+          // Log the evaluation for debugging
+          console.log(`[check-journal-bets] Evaluating bet ${bet.id}: Game prop ${bet.over_under} ${line} ${bet.stat_type}`);
+          console.log(`[check-journal-bets]   Actual value: ${actualValue}, Line: ${line}, Is whole number: ${isWholeNumber}`);
+          console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);
+
+          // Update the journal bet with result
+          const { error: updateError } = await supabaseAdmin
+            .from('bets')
+            .update({
+              status: 'completed',
+              result,
+              actual_value: actualValue,
+            })
+            .eq('id', bet.id);
+
+          if (updateError) {
+            console.error(`Failed to update bet ${bet.id}:`, updateError);
+          } else {
+            console.log(`[check-journal-bets] ✅ Updated game prop bet ${bet.id}: ${bet.stat_type} ${bet.over_under} ${line}: ${result} (actual: ${actualValue})`);
+            updatedCountRef.value++;
+          }
+          continue; // Skip player stats fetching for game props
         }
 
         // Fetch player stats for this game
@@ -1130,13 +1367,24 @@ export async function GET(request: Request) {
         // Determine result
         // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
         // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
-        const isWholeNumber = bet.line % 1 === 0;
+        // Ensure line is a number (handle string/decimal types from database)
+        const line = Number(bet.line);
+        const isWholeNumber = line % 1 === 0;
         let result: 'win' | 'loss';
+        
         if (bet.over_under === 'over') {
-          result = (isWholeNumber ? actualValue >= bet.line : actualValue > bet.line) ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue >= line : actualValue > line) ? 'win' : 'loss';
+        } else if (bet.over_under === 'under') {
+          result = (isWholeNumber ? actualValue <= line : actualValue < line) ? 'win' : 'loss';
         } else {
-          result = (isWholeNumber ? actualValue <= bet.line : actualValue < bet.line) ? 'win' : 'loss';
+          console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
+          continue;
         }
+
+        // Log the evaluation for debugging
+        console.log(`[check-journal-bets] Evaluating bet ${bet.id}: ${bet.player_name} ${bet.over_under} ${line} ${bet.stat_type}`);
+        console.log(`[check-journal-bets]   Actual value: ${actualValue}, Line: ${line}, Is whole number: ${isWholeNumber}`);
+        console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);
 
         // Update the journal bet with result
         const { error: updateError } = await supabaseAdmin
@@ -1151,7 +1399,7 @@ export async function GET(request: Request) {
         if (updateError) {
           console.error(`Failed to update bet ${bet.id}:`, updateError);
         } else {
-          logDebug(`Updated ${bet.player_name} ${bet.stat_type} ${bet.over_under} ${bet.line}: ${result} (actual: ${actualValue})`);
+          console.log(`[check-journal-bets] ✅ Updated ${bet.player_name} ${bet.stat_type} ${bet.over_under} ${line}: ${result} (actual: ${actualValue})`);
           updatedCountRef.value++;
         }
       }

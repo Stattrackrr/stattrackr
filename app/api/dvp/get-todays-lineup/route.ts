@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       try {
         // Use the request URL to get the origin
         const origin = req.nextUrl.origin || (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-        const fetchUrl = `${origin}/api/dvp/fetch-basketballmonsters-lineups?team=${teamAbbr}&season=2025-26&bypassCache=false`;
+        const fetchUrl = `${origin}/api/dvp/fetch-basketballmonsters-lineups?team=${teamAbbr}&season=2025&bypassCache=false`;
         
         // Fire and forget - don't wait for response
         fetch(fetchUrl).catch(err => {
