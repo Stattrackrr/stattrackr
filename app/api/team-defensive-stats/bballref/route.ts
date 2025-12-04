@@ -3,10 +3,13 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { NBA_TEAMS, normalizeAbbr } from '@/lib/nbaAbbr';
+import { currentNbaSeason } from '@/lib/nbaConstants';
 
 export const runtime = 'nodejs';
 
-const BBALLREF_URL = 'https://www.basketball-reference.com/leagues/NBA_2025.html';
+// Basketball Reference URL - use current season
+// Note: Season format is YYYY where YYYY is the year the season starts (e.g., 2024 for 2024-25 season)
+const BBALLREF_URL = `https://www.basketball-reference.com/leagues/NBA_${currentNbaSeason()}.html`;
 
 // Map our team abbreviations to Basketball Reference team names/abbreviations
 const TEAM_NAME_MAP: Record<string, string> = {
@@ -94,39 +97,79 @@ export async function GET(req: NextRequest) {
 
     const html = await response.text();
     
+    // Debug: Check if HTML was fetched successfully
+    console.log(`[bballref] Fetched HTML, length: ${html.length}`);
+    console.log(`[bballref] URL used: ${BBALLREF_URL}`);
+    console.log(`[bballref] HTML contains "opponent": ${html.includes('opponent')}`);
+    console.log(`[bballref] HTML contains "/teams/": ${html.includes('/teams/')}`);
+    console.log(`[bballref] HTML contains "San Antonio": ${html.includes('San Antonio')}`);
+    console.log(`[bballref] HTML contains "Spurs": ${html.includes('Spurs')}`);
+    
     // Parse the defensive stats table
     // Basketball Reference uses id="team-stats-per_game-opponent" for opponent stats
-    // Or we can look for the table with opponent stats
-    let tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+    // Try multiple strategies to find the table
     
-    // Fallback: look for any table with "opponent" in class or nearby text
-    if (!tableMatch) {
-      tableMatch = html.match(/<table[^>]*class="[^"]*"[^>]*>([\s\S]*?opponent[\s\S]*?)<\/table>/i);
+    let tableHtml: string | null = null;
+    
+    // Strategy 1: Look for table with id containing "opponent"
+    let tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+    if (tableMatch && tableMatch[1]) {
+      tableHtml = tableMatch[1];
+      console.log('[bballref] Found table by id="*opponent*"');
     }
     
-    // Another fallback: look for table with "per_game" and "opponent" context
-    if (!tableMatch) {
-      // Try to find the opponent per game table by looking for the table structure
-      const perGameMatch = html.match(/<table[^>]*>([\s\S]*?per_game[\s\S]*?opponent[\s\S]*?)<\/table>/i);
-      if (perGameMatch) {
-        tableMatch = perGameMatch;
+    // Strategy 2: Look for table with "opponent" in class or nearby
+    if (!tableHtml) {
+      tableMatch = html.match(/<table[^>]*class="[^"]*"[^>]*>([\s\S]*?opponent[\s\S]*?)<\/table>/i);
+      if (tableMatch && tableMatch[1]) {
+        tableHtml = tableMatch[1];
+        console.log('[bballref] Found table by class with "opponent"');
       }
     }
     
-    // Another fallback: look for the stats table structure by finding tbody with team links
-    let tableHtml: string | null = null;
-    if (tableMatch && tableMatch[1]) {
-      tableHtml = tableMatch[1];
-    } else {
-      // Try to find table by looking for team rows with stats - search for tbody with /teams/ links
+    // Strategy 3: Look for "Opponent Per Game" table (common structure)
+    if (!tableHtml) {
+      // Find the section with "Opponent Per Game" heading and get the table after it
+      const opponentSection = html.match(/Opponent Per Game[\s\S]{0,5000}(<table[^>]*>[\s\S]*?<\/table>)/i);
+      if (opponentSection && opponentSection[1]) {
+        const tableContent = opponentSection[1].match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+        if (tableContent && tableContent[1]) {
+          tableHtml = tableContent[1];
+          console.log('[bballref] Found table near "Opponent Per Game" heading');
+        }
+      }
+    }
+    
+    // Strategy 4: Find all tables and look for one with team links and stats
+    if (!tableHtml) {
+      const allTables = html.match(/<table[^>]*>([\s\S]{0,100000})<\/table>/gi);
+      if (allTables) {
+        for (const table of allTables) {
+          const tableContent = table.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+          if (tableContent && tableContent[1]) {
+            const content = tableContent[1];
+            // Check if this table has team links and stat data
+            if (content.includes('/teams/') && (content.includes('data-stat') || content.includes('opp_pts') || content.includes('opp_trb'))) {
+              tableHtml = content;
+              console.log('[bballref] Found table with team links and stat attributes');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Strategy 5: Extract tbody with team links
+    if (!tableHtml) {
       const tbodyMatches = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/gi);
       if (tbodyMatches) {
-        // Find the tbody that contains team links
         for (const tbodyMatch of tbodyMatches) {
-          if (tbodyMatch.includes('/teams/') && tbodyMatch.includes('data-stat')) {
-            const tbodyContent = tbodyMatch.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-            if (tbodyContent && tbodyContent[1]) {
-              tableHtml = tbodyContent[1];
+          const tbodyContent = tbodyMatch.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+          if (tbodyContent && tbodyContent[1]) {
+            const content = tbodyContent[1];
+            if (content.includes('/teams/') && (content.includes('data-stat') || content.includes('opp_') || content.match(/<tr[^>]*>[\s\S]{100,}[\d.]+[\s\S]{100,}<\/tr>/i))) {
+              tableHtml = content;
+              console.log('[bballref] Found tbody with team links and stats');
               break;
             }
           }
@@ -136,16 +179,12 @@ export async function GET(req: NextRequest) {
     
     if (!tableHtml) {
       // Log a sample of the HTML to help debug
-      const htmlSample = html.substring(0, 5000);
-      console.error('[bballref] Could not find defensive stats table. HTML sample:', htmlSample);
-      // Try one more fallback: look for any table with team links
-      const anyTableMatch = html.match(/<table[^>]*>([\s\S]{0,50000})<\/table>/i);
-      if (anyTableMatch && anyTableMatch[1] && anyTableMatch[1].includes('/teams/')) {
-        console.log('[bballref] Found table with team links as fallback');
-        tableHtml = anyTableMatch[1];
-      } else {
-        throw new Error('Could not find defensive stats table in Basketball Reference HTML');
-      }
+      const htmlSample = html.substring(0, 10000);
+      console.error('[bballref] Could not find defensive stats table. HTML length:', html.length);
+      console.error('[bballref] HTML sample (first 10000 chars):', htmlSample);
+      console.error('[bballref] Searching for "opponent" in HTML:', html.includes('opponent'));
+      console.error('[bballref] Searching for "/teams/" in HTML:', html.includes('/teams/'));
+      throw new Error('Could not find defensive stats table in Basketball Reference HTML');
     }
     
     console.log(`[bballref] Found table HTML, length: ${tableHtml.length}`);
@@ -159,29 +198,51 @@ export async function GET(req: NextRequest) {
       console.log('[bballref] Using tbody content for row parsing');
     }
     
-    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    // Try multiple regex patterns to find rows
+    const rowPatterns = [
+      /<tr[^>]*>([\s\S]*?)<\/tr>/gi,  // Standard <tr>...</tr>
+      /<tr[^>]*data-stat[^>]*>([\s\S]*?)<\/tr>/gi,  // Rows with data-stat
+    ];
+    
     const teamRows: string[] = [];
-    let rowMatch;
     let totalRows = 0;
-    while ((rowMatch = rowRegex.exec(rowsToParse)) !== null) {
-      totalRows++;
-      const rowHtml = rowMatch[1];
-      // Skip header rows (they have <th> tags or "data-stat="ranker"" or "Rk" text)
-      if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</') || rowHtml.includes('>Rank</') || rowHtml.trim() === '') {
-        continue;
+    
+    for (const rowRegex of rowPatterns) {
+      rowRegex.lastIndex = 0; // Reset regex
+      let rowMatch;
+      while ((rowMatch = rowRegex.exec(rowsToParse)) !== null) {
+        totalRows++;
+        const rowHtml = rowMatch[1];
+        
+        // Skip header rows (they have <th> tags or "data-stat="ranker"" or "Rk" text)
+        if (rowHtml.includes('<th') || 
+            rowHtml.includes('data-stat="ranker"') || 
+            rowHtml.includes("data-stat='ranker'") ||
+            rowHtml.includes('>Rk</') || 
+            rowHtml.includes('>Rank</') || 
+            rowHtml.trim() === '' ||
+            rowHtml.length < 50) {  // Skip very short rows (likely headers)
+          continue;
+        }
+        
+        // Check if this row has team data - be very flexible
+        // Look for team indicators: /teams/ link, team name, or data-stat="team"
+        const hasTeamLink = rowHtml.includes('/teams/');
+        const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+        const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+        
+        // Accept if it has any team indicator
+        if (hasTeamLink || hasTeamDataStat || hasTeamName) {
+          // Avoid duplicates
+          if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+            teamRows.push(rowHtml);
+          }
+        }
       }
-      // Check if this row has team data - be more flexible with matching
-      // Look for either data-stat="team" OR a /teams/ link
-      // Also accept rows that have /teams/ links even without explicit data-stat="team"
-      const hasTeamLink = rowHtml.includes('/teams/');
-      const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
       
-      // Accept if it has a team link (more flexible)
-      if (hasTeamLink) {
-        teamRows.push(rowHtml);
-      } else if (hasTeamDataStat) {
-        // Also accept if it has the data-stat but no link (in case link format is different)
-        teamRows.push(rowHtml);
+      // If we found rows with this pattern, break
+      if (teamRows.length > 0) {
+        break;
       }
     }
     
@@ -192,11 +253,36 @@ export async function GET(req: NextRequest) {
       let fullRowMatch;
       while ((fullRowMatch = fullRowRegex.exec(tableHtml)) !== null) {
         const rowHtml = fullRowMatch[1];
-        if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</') || rowHtml.includes('>Rank</') || rowHtml.trim() === '') {
+        if (rowHtml.includes('<th') || 
+            rowHtml.includes('data-stat="ranker"') || 
+            rowHtml.includes('>Rk</') || 
+            rowHtml.includes('>Rank</') || 
+            rowHtml.trim() === '' ||
+            rowHtml.length < 50) {
           continue;
         }
-        if (rowHtml.includes('/teams/') || rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'")) {
+        const hasTeamLink = rowHtml.includes('/teams/');
+        const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+        const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+        if (hasTeamLink || hasTeamDataStat || hasTeamName) {
+          if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+            teamRows.push(rowHtml);
+          }
+        }
+      }
+    }
+    
+    // Last resort: if still no rows, try to find any row with numbers (stats) and team-like content
+    if (teamRows.length === 0) {
+      console.log('[bballref] Last resort: looking for any rows with stats and team indicators');
+      const anyRowRegex = /<tr[^>]*>([\s\S]{200,2000})<\/tr>/gi;
+      let anyRowMatch;
+      while ((anyRowMatch = anyRowRegex.exec(tableHtml)) !== null) {
+        const rowHtml = anyRowMatch[1];
+        // Look for rows that have numbers (stats) and some team-like content
+        if (/\d+\.\d+/.test(rowHtml) && (rowHtml.includes('/teams/') || /[A-Z]{2,3}/.test(rowHtml))) {
           teamRows.push(rowHtml);
+          if (teamRows.length >= 5) break; // Get a few samples
         }
       }
     }

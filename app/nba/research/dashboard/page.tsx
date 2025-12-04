@@ -26,6 +26,7 @@ import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
+import NotificationSystem from '@/components/NotificationSystem';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -10878,10 +10879,11 @@ const lineMovementInFlightRef = useRef(false);
               scrollbarGutter: 'stable'
             }}
           >
-            {/* 1. Filter By Container (Mobile First) */}
+            {/* 1. Filter By Container (Mobile Only) */}
             <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-              <div className="flex items-center justify-start mb-3">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                <NotificationSystem isDark={isDark} />
               </div>
               <div className="flex gap-3 md:gap-4 flex-wrap mb-3">
                 <button
@@ -12635,8 +12637,9 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Filter By Container (Desktop - in right panel) */}
             <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-              <div className="flex items-center justify-start mb-3">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                <NotificationSystem isDark={isDark} />
               </div>
               <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
                 <button
