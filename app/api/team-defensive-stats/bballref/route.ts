@@ -291,13 +291,26 @@ export async function GET(req: NextRequest) {
     }
 
     const team = normalizeAbbr(teamParam);
-    const teamStats = allTeamStats[team];
+    let teamStats = allTeamStats[team];
+    
+    // If team not found, check if it's in the available teams (case-insensitive)
+    if (!teamStats) {
+      const availableTeams = Object.keys(allTeamStats);
+      const foundTeam = availableTeams.find(t => t.toUpperCase() === team.toUpperCase());
+      if (foundTeam) {
+        teamStats = allTeamStats[foundTeam];
+      }
+    }
 
     if (!teamStats) {
+      // Return available teams for debugging
+      const availableTeams = Object.keys(allTeamStats).sort();
+      console.log(`[bballref] Team ${team} not found. Available teams:`, availableTeams);
       return NextResponse.json({
         success: false,
-        error: `Team ${team} not found`,
+        error: `Team ${team} not found. Available teams: ${availableTeams.join(', ')}`,
         team,
+        availableTeams,
       }, { status: 404 });
     }
 
