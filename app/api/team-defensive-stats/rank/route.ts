@@ -55,7 +55,7 @@ function currentNbaSeason(): number {
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const games = Math.min(parseInt(searchParams.get('games') || '20', 10) || 20, 82);
+  const games = Math.min(parseInt(searchParams.get('games') || '10', 10) || 10, 20); // Default to 10, max 20 for speed
   const seasonParam = searchParams.get('season');
   const seasonYear = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
 
@@ -63,11 +63,12 @@ export async function GET(req: NextRequest) {
     const cacheKey = `team_defensive_stats_rankings:${seasonYear}:${games}`;
     const hit = cache.get<any>(cacheKey);
     if (hit) {
+      console.log(`[team-defensive-stats-rank] Cache hit for season ${seasonYear}, ${games} games`);
       return NextResponse.json(hit);
     }
 
     console.log(`[team-defensive-stats-rank] Fetching rankings for all teams, season ${seasonYear}, ${games} games`);
-
+    
     // Fetch defensive stats for all teams in parallel (with rate limiting)
     const teams = Object.keys(NBA_TEAMS);
     const teamStatsMap: Record<string, {
@@ -81,8 +82,8 @@ export async function GET(req: NextRequest) {
       sample_games: number;
     }> = {};
 
-    // Fetch in batches to avoid overwhelming the API
-    const batchSize = 5;
+    // Fetch in smaller batches with shorter delays to speed things up
+    const batchSize = 10; // Increased batch size for faster processing
     for (let i = 0; i < teams.length; i += batchSize) {
       const batch = teams.slice(i, i + batchSize);
       const batchPromises = batch.map(async (team) => {
@@ -124,8 +125,10 @@ export async function GET(req: NextRequest) {
 
           if (completedGames.length === 0) return null;
 
-          // Fetch stats for completed games (simplified - just get first page per batch)
-          const gameIds = completedGames.slice(0, 20).map((g: any) => String(g.id)).filter(Boolean); // Limit to 20 games for ranking
+          // Fetch stats for completed games (limit to 10 games for faster ranking)
+          const gameIds = completedGames.slice(0, 10).map((g: any) => String(g.id)).filter(Boolean);
+          if (gameIds.length === 0) return null;
+          
           const statsUrl = new URL(`${BDL_BASE}/stats`);
           gameIds.forEach(id => statsUrl.searchParams.append('game_ids[]', id));
           statsUrl.searchParams.set('per_page', '100');
@@ -220,9 +223,9 @@ export async function GET(req: NextRequest) {
         }
       });
 
-      // Small delay between batches to avoid rate limiting
+      // Smaller delay between batches to speed up (still avoid rate limiting)
       if (i + batchSize < teams.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
@@ -253,8 +256,8 @@ export async function GET(req: NextRequest) {
       teamStats: teamStatsMap,
     };
 
-    // Cache for 1 hour
-    cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
+    // Cache for 2 hours (rankings don't change often)
+    cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS * 2);
 
     return NextResponse.json(payload);
   } catch (e: any) {

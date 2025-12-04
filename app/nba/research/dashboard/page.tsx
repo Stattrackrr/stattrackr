@@ -5598,8 +5598,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             blk: perGame.blk || 0,
           };
 
-          // Fetch rankings for all teams
-          let ranks: Record<string, number> = {
+          // Initialize ranks to 0 - will be fetched separately to avoid blocking
+          const ranks: Record<string, number> = {
             pts: 0,
             reb: 0,
             ast: 0,
@@ -5609,24 +5609,28 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             blk: 0,
           };
 
-          try {
-            const rankingsResponse = await cachedFetch<any>(
-              `/api/team-defensive-stats/rank?games=20`,
-              undefined,
-              DVP_CACHE_TTL * 10 // Cache rankings longer (20 minutes)
-            );
+          // Fetch rankings asynchronously (don't block the main stats display)
+          // This prevents timeout issues
+          (async () => {
+            try {
+              const rankingsResponse = await cachedFetch<any>(
+                `/api/team-defensive-stats/rank?games=10`, // Reduced to 10 games for faster ranking
+                undefined,
+                DVP_CACHE_TTL * 30 // Cache rankings for 1 hour
+              );
 
-            if (rankingsResponse?.success && rankingsResponse.rankings) {
-              const normalizedOpp = normalizeAbbr(targetOpp);
-              const teamRankings = rankingsResponse.rankings[normalizedOpp];
-              if (teamRankings) {
-                ranks = teamRankings;
+              if (rankingsResponse?.success && rankingsResponse.rankings && !abort) {
+                const normalizedOpp = normalizeAbbr(targetOpp);
+                const teamRankings = rankingsResponse.rankings[normalizedOpp];
+                if (teamRankings) {
+                  setTeamRanks(teamRankings);
+                }
               }
+            } catch (rankError: any) {
+              console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
+              // Continue without ranks if ranking fetch fails
             }
-          } catch (rankError: any) {
-            console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
-            // Continue without ranks if ranking fetch fails
-          }
+          })();
 
           if (!abort) {
             setTeamStats(stats);
