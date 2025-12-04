@@ -79,10 +79,18 @@ export async function GET(req: NextRequest) {
 
     const cacheKey = `team_defensive_stats_bdl:${team}:${seasonYear}:${games}`;
     const hit = cache.get<any>(cacheKey);
-    // Only return cached response if it's successful
-    if (hit && hit.success !== false) {
-      console.log(`[team-defensive-stats] Cache hit for ${team} ${seasonYear}`);
-      return NextResponse.json(hit);
+    // Only return cached response if it's successful and has valid per-game data
+    // Check that perGame values are reasonable (not totals - should be < 200 for points)
+    if (hit && hit.success !== false && hit.perGame) {
+      const ptsPerGame = hit.perGame.pts || 0;
+      // If points per game is > 200, it's likely totals, not per-game - invalidate cache
+      if (ptsPerGame > 0 && ptsPerGame < 200) {
+        console.log(`[team-defensive-stats] Cache hit for ${team} ${seasonYear} (pts/game: ${ptsPerGame.toFixed(1)})`);
+        return NextResponse.json(hit);
+      } else {
+        console.log(`[team-defensive-stats] Invalidating cache for ${team} - values look like totals (${ptsPerGame.toFixed(1)})`);
+        cache.delete(cacheKey);
+      }
     }
 
     console.log(`[team-defensive-stats] Fetching stats for ${team} (ID: ${teamId}) season ${seasonYear}, max ${games} games`);
@@ -259,19 +267,37 @@ export async function GET(req: NextRequest) {
     const gameCount = gameOpponentStatsMap.size;
 
     console.log(`[team-defensive-stats] Calculated totals: pts=${totalPts}, reb=${totalReb}, ast=${totalAst}, games=${gameCount}`);
+    console.log(`[team-defensive-stats] Completed games: ${completedGames.length}, Games with opponent stats: ${gameCount}`);
+
+    // Ensure we have valid game count
+    if (gameCount === 0) {
+      console.warn(`[team-defensive-stats] No games with opponent stats found for ${team}`);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'No opponent stats found for this team',
+        team,
+        season: seasonYear,
+        sample_games: 0,
+        perGame: {
+          pts: 0, reb: 0, ast: 0, fg_pct: 0, fg3_pct: 0, stl: 0, blk: 0
+        }
+      });
+    }
 
     // Calculate per-game averages (what opponents score against this team)
+    // IMPORTANT: Divide totals by gameCount to get per-game values
     const perGame = {
-      pts: gameCount > 0 ? totalPts / gameCount : 0,
-      reb: gameCount > 0 ? totalReb / gameCount : 0,
-      ast: gameCount > 0 ? totalAst / gameCount : 0,
+      pts: totalPts / gameCount,
+      reb: totalReb / gameCount,
+      ast: totalAst / gameCount,
       fg_pct: totalFga > 0 ? (totalFgm / totalFga) * 100 : 0,
       fg3_pct: totalFg3a > 0 ? (totalFg3m / totalFg3a) * 100 : 0,
-      stl: gameCount > 0 ? totalStl / gameCount : 0,
-      blk: gameCount > 0 ? totalBlk / gameCount : 0,
+      stl: totalStl / gameCount,
+      blk: totalBlk / gameCount,
     };
 
     console.log(`[team-defensive-stats] Per-game averages: pts=${perGame.pts.toFixed(1)}, reb=${perGame.reb.toFixed(1)}, ast=${perGame.ast.toFixed(1)}`);
+    console.log(`[team-defensive-stats] Verification: ${totalPts} / ${gameCount} = ${perGame.pts.toFixed(1)}`);
 
     const payload = {
       success: true,
