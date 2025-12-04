@@ -122,22 +122,61 @@ export async function GET(req: NextRequest) {
 
     for (const rowHtml of teamRows) {
       
-      // Extract team name/abbreviation
-      const teamLinkMatch = rowHtml.match(/<a[^>]*>([^<]+)<\/a>/);
-      if (!teamLinkMatch) continue;
-      
-      const teamName = teamLinkMatch[1].trim();
-      
-      // Find matching team abbreviation
+      // Extract team abbreviation from URL - Basketball Reference URLs are like /teams/TOR/2025.html
       let teamAbbr: string | null = null;
-      for (const [abbr, name] of Object.entries(TEAM_NAME_MAP)) {
-        if (name === teamName || teamName.includes(name.split(' ').pop() || '')) {
-          teamAbbr = abbr;
-          break;
+      const urlMatch = rowHtml.match(/href="[^"]*\/teams\/([A-Z]{3})\/[^"]*"/i);
+      if (urlMatch) {
+        const urlAbbr = urlMatch[1].toUpperCase();
+        // Map Basketball Reference abbreviations to ours (most are the same)
+        const bbrefToOurs: Record<string, string> = {
+          'TOR': 'TOR', 'LAL': 'LAL', 'BOS': 'BOS', 'GSW': 'GSW',
+          'MIA': 'MIA', 'MIL': 'MIL', 'PHI': 'PHI', 'DEN': 'DEN',
+          'DAL': 'DAL', 'PHO': 'PHX', 'PHX': 'PHX', 'NOP': 'NOP',
+          'NOH': 'NOP', 'NOR': 'NOP', 'UTA': 'UTA', 'UTH': 'UTA',
+          'ATL': 'ATL', 'BKN': 'BKN', 'BRK': 'BKN', 'CHA': 'CHA',
+          'CHO': 'CHA', 'CHI': 'CHI', 'CLE': 'CLE', 'DET': 'DET',
+          'HOU': 'HOU', 'IND': 'IND', 'LAC': 'LAC', 'MEM': 'MEM',
+          'MIN': 'MIN', 'NYK': 'NYK', 'OKC': 'OKC', 'ORL': 'ORL',
+          'POR': 'POR', 'SAC': 'SAC', 'SAS': 'SAS', 'WAS': 'WAS',
+        };
+        
+        teamAbbr = bbrefToOurs[urlAbbr] || urlAbbr;
+      }
+      
+      // Fallback: try to extract from team name if URL didn't work
+      if (!teamAbbr) {
+        const teamLinkMatch = rowHtml.match(/<a[^>]*>([^<]+)<\/a>/);
+        if (teamLinkMatch) {
+          const teamName = teamLinkMatch[1].trim();
+          
+          // Try exact match first
+          for (const [abbr, name] of Object.entries(TEAM_NAME_MAP)) {
+            if (name === teamName) {
+              teamAbbr = abbr;
+              break;
+            }
+          }
+          
+          // Try partial match (e.g., "Raptors" matches "Toronto Raptors")
+          if (!teamAbbr) {
+            for (const [abbr, name] of Object.entries(TEAM_NAME_MAP)) {
+              const lastName = name.split(' ').pop() || '';
+              if (teamName.includes(lastName) || lastName.includes(teamName)) {
+                teamAbbr = abbr;
+                break;
+              }
+            }
+          }
         }
       }
       
-      if (!teamAbbr) continue;
+      if (!teamAbbr) {
+        // Debug: log what we found for first few teams
+        if (Object.keys(allTeamStats).length < 5) {
+          console.log(`[bballref] Could not match team. Row sample: ${rowHtml.substring(0, 200)}`);
+        }
+        continue;
+      }
 
       // Extract stats from the row using data-stat attributes
       // Basketball Reference uses <td data-stat="stat_name">value</td>
