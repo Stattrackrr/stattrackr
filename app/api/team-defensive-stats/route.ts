@@ -258,6 +258,8 @@ export async function GET(req: NextRequest) {
 
     const gameCount = gameOpponentStatsMap.size;
 
+    console.log(`[team-defensive-stats] Calculated totals: pts=${totalPts}, reb=${totalReb}, ast=${totalAst}, games=${gameCount}`);
+
     // Calculate per-game averages (what opponents score against this team)
     const perGame = {
       pts: gameCount > 0 ? totalPts / gameCount : 0,
@@ -268,6 +270,8 @@ export async function GET(req: NextRequest) {
       stl: gameCount > 0 ? totalStl / gameCount : 0,
       blk: gameCount > 0 ? totalBlk / gameCount : 0,
     };
+
+    console.log(`[team-defensive-stats] Per-game averages: pts=${perGame.pts.toFixed(1)}, reb=${perGame.reb.toFixed(1)}, ast=${perGame.ast.toFixed(1)}`);
 
     const payload = {
       success: true,

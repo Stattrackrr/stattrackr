@@ -5587,7 +5587,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
         if (defensiveStatsResponse.success === true) {
           const perGame = defensiveStatsResponse.perGame || {};
           
-          // Map BDL stats to our format
+          // Map BDL stats to our format (already per-game from API)
           const stats: any = {
             pts: perGame.pts || 0,
             reb: perGame.reb || 0,
@@ -5598,9 +5598,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             blk: perGame.blk || 0,
           };
 
-          // For now, set ranks to 0 (we can add ranking later if needed)
-          // Ranking would require fetching all teams' defensive stats
-          const ranks: Record<string, number> = {
+          // Fetch rankings for all teams
+          let ranks: Record<string, number> = {
             pts: 0,
             reb: 0,
             ast: 0,
@@ -5609,6 +5608,25 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             stl: 0,
             blk: 0,
           };
+
+          try {
+            const rankingsResponse = await cachedFetch<any>(
+              `/api/team-defensive-stats/rank?games=20`,
+              undefined,
+              DVP_CACHE_TTL * 10 // Cache rankings longer (20 minutes)
+            );
+
+            if (rankingsResponse?.success && rankingsResponse.rankings) {
+              const normalizedOpp = normalizeAbbr(targetOpp);
+              const teamRankings = rankingsResponse.rankings[normalizedOpp];
+              if (teamRankings) {
+                ranks = teamRankings;
+              }
+            }
+          } catch (rankError: any) {
+            console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
+            // Continue without ranks if ranking fetch fails
+          }
 
           if (!abort) {
             setTeamStats(stats);
