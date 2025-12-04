@@ -136,8 +136,9 @@ export async function GET(req: NextRequest) {
         const bbrefToOurs: Record<string, string> = {
           'TOR': 'TOR', 'LAL': 'LAL', 'BOS': 'BOS', 'GSW': 'GSW',
           'MIA': 'MIA', 'MIL': 'MIL', 'PHI': 'PHI', 'DEN': 'DEN',
-          'DAL': 'DAL', 'PHO': 'PHX', 'PHX': 'PHX', 'NOP': 'NOP',
-          'NOH': 'NOP', 'NOR': 'NOP', 'UTA': 'UTA', 'UTH': 'UTA',
+          'DAL': 'DAL', 'PHO': 'PHX', 'PHX': 'PHX', 
+          'NOH': 'NOP', 'NOR': 'NOP', // Basketball Reference uses NOR for New Orleans
+          'UTA': 'UTA', 'UTH': 'UTA',
           'ATL': 'ATL', 'BKN': 'BKN', 'BRK': 'BKN', 'CHA': 'CHA',
           'CHO': 'CHA', 'CHI': 'CHI', 'CLE': 'CLE', 'DET': 'DET',
           'HOU': 'HOU', 'IND': 'IND', 'LAC': 'LAC', 'MEM': 'MEM',
