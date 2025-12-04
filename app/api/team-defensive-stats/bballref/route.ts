@@ -316,10 +316,12 @@ export async function GET(req: NextRequest) {
         rankings,
       };
 
-      cache.set(cacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
+      // Always cache the "all" data for reuse
+      cache.set(allCacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
       return NextResponse.json(payload);
     }
 
+    // Single team request - extract from parsed allTeamStats
     if (!teamParam) {
       return NextResponse.json({ error: 'Missing team parameter' }, { status: 400 });
     }
@@ -340,13 +342,24 @@ export async function GET(req: NextRequest) {
       // Return available teams for debugging
       const availableTeams = Object.keys(allTeamStats).sort();
       console.log(`[bballref] Team ${team} not found. Available teams:`, availableTeams);
+      console.log(`[bballref] Total teams parsed: ${Object.keys(allTeamStats).length}`);
       return NextResponse.json({
         success: false,
         error: `Team ${team} not found. Available teams: ${availableTeams.join(', ')}`,
         team,
         availableTeams,
+        totalParsed: Object.keys(allTeamStats).length,
       }, { status: 404 });
     }
+
+    // Cache the "all" data for future requests (even for single team requests)
+    const allPayload = {
+      success: true,
+      source: 'basketball-reference',
+      teamStats: allTeamStats,
+      rankings: {}, // Rankings not calculated for single team requests, but structure is there
+    };
+    cache.set(allCacheKey, allPayload, 24 * 60);
 
     const payload = {
       success: true,
@@ -355,7 +368,6 @@ export async function GET(req: NextRequest) {
       perGame: teamStats,
     };
 
-    cache.set(cacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
     return NextResponse.json(payload);
   } catch (e: any) {
     console.error('[bballref-defensive-stats] Error:', e);
