@@ -53,6 +53,9 @@
     },
     "app/api/tracking-stats/team/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/check-journal-bets/route.ts": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

@@ -269,45 +269,76 @@ async function resolveParlayBet(
           return (homeMatch || visitorMatch) && (!leg.opponent || opponentMatch);
         });
         
+        // Store stats if we fetch them in the fallback (to avoid duplicate API calls)
+        let cachedPlayerStats: any = null;
+        
         if (!targetGame) {
           // FALLBACK: If team matching failed, try to find game by searching for player in all games from that date
           console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found by team matching, trying fallback: search by player ${leg.playerId}`);
           
           if (!leg.isGameProp && leg.playerId) {
             // For player props, search all games from that date and check if player played
+            const gamesOnDate = games.filter(g => {
+              const gameDate = g.date ? g.date.split('T')[0] : null;
+              return gameDate === legGameDate;
+            });
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Searching ${gamesOnDate.length} games on ${legGameDate} for player ${leg.playerId}`);
+            
             let foundGame = null;
-            for (const game of games) {
-              const gameDate = game.date ? game.date.split('T')[0] : null;
-              if (gameDate !== legGameDate) continue;
+            // OPTIMIZATION: Add timeout to prevent hanging on slow API calls
+            const FALLBACK_TIMEOUT_MS = 5000; // 5 seconds per game search
+            const startTime = Date.now();
+            
+            for (const game of gamesOnDate) {
+              // Check if we've exceeded timeout (prevent hanging on too many games)
+              if (Date.now() - startTime > FALLBACK_TIMEOUT_MS * gamesOnDate.length) {
+                console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Fallback search timeout after ${gamesOnDate.length} games`);
+                break;
+              }
               
               // Check if player played in this game by fetching stats
               try {
+                // Add timeout to individual fetch request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per request
+                
                 const statsResponse = await fetch(
                   `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${leg.playerId}`,
                   {
                     headers: {
                       'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
                     },
+                    signal: controller.signal,
                   }
                 );
+                
+                clearTimeout(timeoutId);
                 
                 if (statsResponse.ok) {
                   const statsData = await statsResponse.json();
                   if (statsData.data && statsData.data.length > 0) {
                     foundGame = game;
+                    cachedPlayerStats = statsData.data[0]; // Cache the stats we just fetched
                     console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found game ${game.id} by player search (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
                     // Set targetGame to the found game so the rest of the logic can use it
                     targetGame = foundGame;
                     break;
                   }
+                } else {
+                  console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Stats API returned ${statsResponse.status} for game ${game.id}`);
                 }
-              } catch (e) {
+              } catch (e: any) {
+                if (e.name === 'AbortError') {
+                  console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Request timeout for game ${game.id}, continuing search...`);
+                } else {
+                  console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Error fetching stats for game ${game.id}: ${e.message}`);
+                }
                 // Continue searching
               }
             }
             
             if (!targetGame) {
-              console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found even with player search fallback`);
+              console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found even with player search fallback (searched ${games.filter(g => (g.date ? g.date.split('T')[0] : null) === legGameDate).length} games on ${legGameDate})`);
               allLegsResolved = false;
               continue;
             }
@@ -423,30 +454,40 @@ async function resolveParlayBet(
         }
         
         // DIRECT LOOKUP: Fetch stats for this specific game and find player by playerId
-        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Fetching stats for game ${targetGame.id} (direct lookup)`);
-        const statsResponse = await fetch(
-          `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGame.id}&player_ids[]=${leg.playerId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-            },
+        // Use cached stats if we already fetched them in the fallback
+        let playerStat: any = null;
+        
+        if (cachedPlayerStats) {
+          // Use the stats we already fetched in the fallback
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Using cached stats from fallback lookup`);
+          playerStat = cachedPlayerStats;
+        } else {
+          // Fetch stats if we didn't get them from the fallback
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Fetching stats for game ${targetGame.id} (direct lookup)`);
+          const statsResponse = await fetch(
+            `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGame.id}&player_ids[]=${leg.playerId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+              },
+            }
+          );
+          
+          if (!statsResponse.ok) {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Failed to fetch stats for game ${targetGame.id} (status: ${statsResponse.status})`);
+            allLegsResolved = false;
+            continue;
           }
-        );
-        
-        if (!statsResponse.ok) {
-          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Failed to fetch stats for game ${targetGame.id}`);
-          allLegsResolved = false;
-          continue;
+          
+          const statsData = await statsResponse.json();
+          if (!statsData.data || statsData.data.length === 0) {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No stats found for player ${leg.playerId} in game ${targetGame.id}`);
+            allLegsResolved = false;
+            continue;
+          }
+          
+          playerStat = statsData.data[0]; // Should only be one result since we filtered by playerId
         }
-        
-        const statsData = await statsResponse.json();
-        if (!statsData.data || statsData.data.length === 0) {
-          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": No stats found for player ${leg.playerId} in game ${targetGame.id}`);
-          allLegsResolved = false;
-          continue;
-        }
-        
-        const playerStat = statsData.data[0]; // Should only be one result since we filtered by playerId
         
         // Check if player played (void if < 0.01 minutes)
         const minutesPlayed = String(playerStat.min || '0:00').trim();
