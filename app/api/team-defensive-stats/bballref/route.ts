@@ -488,7 +488,7 @@ export async function GET(req: NextRequest) {
           (!bestTable.isPerGame && bestTable.linkCount > teamRows.length * 3 && teamRows.length < 10) // Only switch to Total Stats if we have very few teams
         );
         
-        if (shouldSwitch) {
+        if (shouldSwitch && bestTable) {
           console.log(`[bballref] Found better table with ${bestTable.linkCount} team links (Per Game: ${bestTable.isPerGame}), switching to it`);
           const newTableHtml = bestTable.content;
           
