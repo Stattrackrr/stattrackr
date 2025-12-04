@@ -10,7 +10,20 @@ const BDL_BASE = 'https://api.balldontlie.io/v1';
 const BDL_HEADERS: Record<string, string> = {
   Accept: 'application/json',
   'User-Agent': 'StatTrackr/1.0',
-  Authorization: `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
+};
+
+// Get API key with fallback
+const getBdlApiKey = () => {
+  return process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd';
+};
+
+// Set authorization header dynamically
+const getBdlHeaders = (): Record<string, string> => {
+  const apiKey = getBdlApiKey();
+  return {
+    ...BDL_HEADERS,
+    Authorization: apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`,
+  };
 };
 
 const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
@@ -20,7 +33,8 @@ const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
 };
 
 async function bdlFetch(url: string) {
-  const res = await fetch(url, { headers: BDL_HEADERS, cache: 'no-store' });
+  const headers = getBdlHeaders();
+  const res = await fetch(url, { headers, cache: 'no-store' });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw new Error(`BDL ${res.status}: ${t || url}`);
@@ -65,7 +79,8 @@ export async function GET(req: NextRequest) {
 
     const cacheKey = `team_defensive_stats_bdl:${team}:${seasonYear}:${games}`;
     const hit = cache.get<any>(cacheKey);
-    if (hit) {
+    // Only return cached response if it's successful
+    if (hit && hit.success !== false) {
       return NextResponse.json(hit);
     }
 
@@ -232,13 +247,23 @@ export async function GET(req: NextRequest) {
       perGame,
     };
 
-    // Cache for 1 hour (defensive stats update after games)
-    cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
+    // Only cache successful responses (defensive stats update after games)
+    if (gameCount > 0) {
+      cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
+    }
     
     return NextResponse.json(payload);
   } catch (e: any) {
-    console.error('Error fetching team defensive stats from BallDontLie API:', e);
+    console.error(`[team-defensive-stats] Error fetching stats for ${rawTeam}:`, e);
+    console.error(`[team-defensive-stats] Error details:`, {
+      message: e?.message,
+      stack: e?.stack,
+      team: rawTeam,
+      normalizedTeam: normalizeAbbr(rawTeam || ''),
+      season: seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason(),
+    });
     // Return 200 with success: false so the component can read the error message
+    // Don't cache error responses
     return NextResponse.json({ 
       success: false, 
       error: e?.message || 'Failed to get team defensive stats',

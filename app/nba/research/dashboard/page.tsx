@@ -5549,11 +5549,31 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
           console.error('HTTP error fetching defensive stats:', fetchError);
           if (!abort) {
             setError(fetchError?.message || 'Failed to fetch defensive stats');
+            setTeamStats(null);
+            setTeamRanks({});
           }
           return;
         }
 
-        if (defensiveStatsResponse && defensiveStatsResponse.success) {
+        // Check if response is valid
+        if (!defensiveStatsResponse) {
+          console.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
+          if (!abort) {
+            setError('No response from server');
+            setTeamStats(null);
+            setTeamRanks({});
+          }
+          return;
+        }
+
+        console.log('[OpponentAnalysisCard] Response for', targetOpp, ':', {
+          success: defensiveStatsResponse.success,
+          hasPerGame: !!defensiveStatsResponse.perGame,
+          sampleGames: defensiveStatsResponse.sample_games,
+          error: defensiveStatsResponse.error,
+        });
+
+        if (defensiveStatsResponse.success) {
           const perGame = defensiveStatsResponse.perGame || {};
           
           // Map BDL stats to our format
@@ -5585,7 +5605,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             setError(null);
           }
         } else {
-          const errorMsg = defensiveStatsResponse?.error || 'Failed to fetch defensive stats';
+          const errorMsg = defensiveStatsResponse?.error || defensiveStatsResponse?.message || 'Failed to fetch defensive stats';
           console.error('Failed to fetch defensive stats:', defensiveStatsResponse);
           if (!abort) {
             setTeamStats(null);
