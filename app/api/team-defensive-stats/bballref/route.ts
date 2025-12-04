@@ -281,7 +281,7 @@ export async function GET(req: NextRequest) {
         rankings,
       };
 
-      cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS * 2); // Cache for 2 hours
+      cache.set(cacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
       return NextResponse.json(payload);
     }
 
@@ -307,7 +307,7 @@ export async function GET(req: NextRequest) {
       perGame: teamStats,
     };
 
-    cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
+    cache.set(cacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
     return NextResponse.json(payload);
   } catch (e: any) {
     console.error('[bballref-defensive-stats] Error:', e);

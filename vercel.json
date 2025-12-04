@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/refresh-dvp-cache",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-defensive-stats",
+      "schedule": "0 7 * * *"
     }
   ],
   "functions": {
@@ -63,6 +67,9 @@
     },
     "app/api/cron/refresh-dvp-cache/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/cron/refresh-defensive-stats/route.ts": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
