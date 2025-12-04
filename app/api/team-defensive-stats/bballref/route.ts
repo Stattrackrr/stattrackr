@@ -54,9 +54,10 @@ export async function GET(req: NextRequest) {
   try {
     const cacheKey = `bballref_defensive_stats${getAll ? '_all' : `_${teamParam}`}`;
     const hit = cache.get<any>(cacheKey);
-    if (hit) {
-      return NextResponse.json(hit);
-    }
+    // Temporarily disable cache to debug
+    // if (hit) {
+    //   return NextResponse.json(hit);
+    // }
 
     // Fetch the HTML page
     const response = await fetch(BBALLREF_URL, {
