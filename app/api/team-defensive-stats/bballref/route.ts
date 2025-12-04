@@ -327,6 +327,10 @@ export async function GET(req: NextRequest) {
     console.log(`[bballref] First few team rows (first 200 chars each):`, teamRows.slice(0, 3).map(r => r.substring(0, 200)));
     
     // If we found very few teams (< 10), we might be parsing the wrong table
+    // Store original rows and tableHtml in case we need to revert
+    const originalTeamRows = [...teamRows];
+    const originalTableHtml = tableHtml;
+    
     if (teamRows.length > 0 && teamRows.length < 10) {
       console.warn(`[bballref] ⚠️ Only found ${teamRows.length} teams - might be parsing wrong table. Expected ~30 teams.`);
       console.warn(`[bballref] Table HTML length: ${tableHtml.length}, First 500 chars:`, tableHtml.substring(0, 500));
@@ -398,100 +402,122 @@ export async function GET(req: NextRequest) {
         
         if (shouldSwitch) {
           console.log(`[bballref] Found better table with ${bestTable.linkCount} team links (Per Game: ${bestTable.isPerGame}), switching to it`);
-          tableHtml = bestTable.content;
+          const newTableHtml = bestTable.content;
           
-          // Re-parse rows from this table - use the same logic as before
-          const newTbodyMatch = tableHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-          const newRowsToParse = newTbodyMatch && newTbodyMatch[1] ? newTbodyMatch[1] : tableHtml;
+          // Re-parse rows from this table - use the SAME simple logic that worked initially
+          const newTbodyMatch = newTableHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+          const newRowsToParse = newTbodyMatch && newTbodyMatch[1] ? newTbodyMatch[1] : newTableHtml;
           
-          teamRows.length = 0; // Clear existing rows
-          totalRows = 0;
+          const newTeamRows: string[] = [];
+          let newTotalRows = 0;
           
-          // Use the same flexible row parsing logic
-          const newRowPatterns = [
-            /<tr[^>]*>([\s\S]*?)<\/tr>/gi,  // Standard <tr>...</tr>
-            /<tr[^>]*data-stat[^>]*>([\s\S]*?)<\/tr>/gi,  // Rows with data-stat
-          ];
-          
-          for (const newRowRegex of newRowPatterns) {
-            newRowRegex.lastIndex = 0; // Reset regex
-            let newRowMatch;
-            while ((newRowMatch = newRowRegex.exec(newRowsToParse)) !== null) {
-              totalRows++;
-              const rowHtml = newRowMatch[1];
-              
-              // Skip header rows - but be more lenient
-              // Check if it's a header by looking for ranker WITHOUT a team link
-              const isHeaderRow = rowHtml.includes('<th') || 
-                  (rowHtml.includes('data-stat="ranker"') && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat="team"/)) ||
-                  (rowHtml.includes("data-stat='ranker'") && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat='team'/)) ||
-                  (rowHtml.includes('>Rk</') && !rowHtml.includes('/teams/')) || 
-                  (rowHtml.includes('>Rank</') && !rowHtml.includes('/teams/')) ||
-                  (rowHtml.trim() === '' && rowHtml.length < 20) ||
-                  (rowHtml.length < 50 && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat="team"/));
-              
-              if (isHeaderRow) {
-                continue;
+          // Use the SAME simple logic that worked for the initial parsing (lines 240-277)
+          const newRowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+          let newRowMatch;
+          while ((newRowMatch = newRowPattern.exec(newRowsToParse)) !== null) {
+            newTotalRows++;
+            const rowHtml = newRowMatch[1];
+            
+            // Skip header rows (same logic as initial parsing)
+            if (rowHtml.includes('<th') || 
+                rowHtml.includes('data-stat="ranker"') || 
+                rowHtml.includes("data-stat='ranker'") ||
+                rowHtml.includes('>Rk</') || 
+                rowHtml.includes('>Rank</') || 
+                rowHtml.trim() === '' ||
+                rowHtml.length < 50) {
+              continue;
+            }
+            
+            // Check if this row has team data - be very flexible (same as initial parsing)
+            const hasTeamLink = rowHtml.includes('/teams/');
+            const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+            const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+            
+            // Accept if it has any team indicator (same as initial parsing - no stats requirement)
+            if (hasTeamLink || hasTeamDataStat || hasTeamName) {
+              // Avoid duplicates
+              if (!newTeamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                newTeamRows.push(rowHtml);
               }
-              
-              // Check for team indicators - be very flexible
-              const hasTeamLink = rowHtml.includes('/teams/');
-              const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
-              const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
-              
-              // Check if row has stats - handle both Per Game (decimals) and Total Stats (commas)
-              // Per Game: "12.34", Total Stats: "1,234" or "1234"
-              const hasDecimalStats = /\d+\.\d+/.test(rowHtml); // Per Game stats
-              const hasCommaStats = /\d{1,3}(,\d{3})+/.test(rowHtml); // Total Stats with commas
-              const hasLargeNumbers = /\d{4,}/.test(rowHtml); // Total Stats without commas (large numbers)
-              const hasStats = hasDecimalStats || hasCommaStats || hasLargeNumbers;
-              
-              // Accept if it has team indicator
-              // For Per Game tables, prefer rows with decimal stats
-              // For Total Stats tables, accept rows with any numbers or reasonable length
-              if (hasTeamLink || hasTeamDataStat || hasTeamName) {
-                const isPerGameTable = bestTable?.isPerGame ?? false;
-                // For Total Stats tables, be more lenient - accept if it has team link and reasonable length
-                const shouldAccept = isPerGameTable
-                  ? (hasDecimalStats || rowHtml.length > 100) // Per Game: prefer decimals
-                  : (hasStats || rowHtml.length > 80); // Total Stats: accept any numbers
-                
-                if (shouldAccept) {
+            }
+          }
+          
+          // Only switch if we found rows
+          if (newTeamRows.length > 0) {
+            console.log(`[bballref] Successfully parsed ${newTeamRows.length} rows from new table`);
+            tableHtml = newTableHtml;
+            teamRows.length = 0;
+            teamRows.push(...newTeamRows);
+            totalRows = newTotalRows;
+          } else {
+            console.warn(`[bballref] ⚠️ Failed to parse rows from new table. Keeping original table with ${originalTeamRows.length} teams.`);
+            // Keep original table and rows - don't switch
+          }
+          
+          console.log(`[bballref] After switching attempt, found ${teamRows.length} team rows out of ${totalRows} total rows`);
+          
+          // If still no rows, try a more aggressive approach - look for ANY row with team links
+          if (teamRows.length === 0) {
+            console.log('[bballref] No rows found with standard patterns, trying aggressive parsing...');
+            console.log(`[bballref] newRowsToParse length: ${newRowsToParse.length}, contains /teams/: ${newRowsToParse.includes('/teams/')}`);
+            
+            // Try multiple patterns to find team rows
+            const aggressivePatterns = [
+              /<tr[^>]*>([\s\S]*?\/teams\/[A-Z]{3}\/[\s\S]*?)<\/tr>/gi,  // Standard pattern
+              /<tr[^>]*>([\s\S]*?href=['"]\/teams\/[A-Z]{3}\/[\s\S]*?)<\/tr>/gi,  // With href attribute
+              /<tr[^>]*>([\s\S]*?href=['']\/teams\/[A-Z]{3}\/[\s\S]*?)<\/tr>/gi,  // With single quotes
+            ];
+            
+            for (const aggressivePattern of aggressivePatterns) {
+              aggressivePattern.lastIndex = 0; // Reset regex
+              let aggressiveMatch;
+              while ((aggressiveMatch = aggressivePattern.exec(newRowsToParse)) !== null && teamRows.length < 30) {
+                const rowHtml = aggressiveMatch[1];
+                // Skip if it's clearly a header (has <th> or ranker without team)
+                if (rowHtml.includes('<th') || (rowHtml.includes('data-stat="ranker"') && !rowHtml.includes('data-stat="team"'))) {
+                  continue;
+                }
+                // Accept any row with a team link
+                if (rowHtml.includes('/teams/')) {
                   // Avoid duplicates
                   if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
                     teamRows.push(rowHtml);
                   }
                 }
               }
+              if (teamRows.length > 0) {
+                console.log(`[bballref] Found ${teamRows.length} rows with pattern ${aggressivePatterns.indexOf(aggressivePattern) + 1}`);
+                break;
+              }
             }
             
-            // If we found rows with this pattern, break
-            if (teamRows.length > 0) {
-              break;
-            }
-          }
-          
-          console.log(`[bballref] After switching tables, found ${teamRows.length} team rows out of ${totalRows} total rows`);
-          
-          // If still no rows, try a more aggressive approach - look for ANY row with team links
-          if (teamRows.length === 0) {
-            console.log('[bballref] No rows found with standard patterns, trying aggressive parsing...');
-            const aggressivePattern = /<tr[^>]*>([\s\S]*?\/teams\/[A-Z]{3}\/[\s\S]*?)<\/tr>/gi;
-            let aggressiveMatch;
-            while ((aggressiveMatch = aggressivePattern.exec(newRowsToParse)) !== null && teamRows.length < 30) {
-              const rowHtml = aggressiveMatch[1];
-              // Skip if it's clearly a header (has <th> or ranker without team)
-              if (rowHtml.includes('<th') || (rowHtml.includes('data-stat="ranker"') && !rowHtml.includes('data-stat="team"'))) {
-                continue;
-              }
-              // Accept any row with a team link
-              if (rowHtml.includes('/teams/')) {
-                // Avoid duplicates
-                if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
-                  teamRows.push(rowHtml);
+            // Last resort: find any occurrence of /teams/ and extract surrounding context
+            if (teamRows.length === 0) {
+              console.log('[bballref] Trying last resort: extracting rows around team links...');
+              const teamLinkMatches = newRowsToParse.matchAll(/\/teams\/([A-Z]{3})\//gi);
+              for (const match of teamLinkMatches) {
+                const matchIndex = match.index || 0;
+                // Find the <tr> tag before this match
+                const beforeMatch = newRowsToParse.substring(Math.max(0, matchIndex - 500), matchIndex);
+                const trStart = beforeMatch.lastIndexOf('<tr');
+                if (trStart !== -1) {
+                  const startIndex = Math.max(0, matchIndex - 500) + trStart;
+                  // Find the </tr> tag after this match
+                  const afterMatch = newRowsToParse.substring(matchIndex, matchIndex + 2000);
+                  const trEnd = afterMatch.indexOf('</tr>');
+                  if (trEnd !== -1) {
+                    const endIndex = matchIndex + trEnd + 5;
+                    const rowHtml = newRowsToParse.substring(startIndex, endIndex);
+                    if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                      teamRows.push(rowHtml);
+                      if (teamRows.length >= 30) break;
+                    }
+                  }
                 }
               }
             }
+            
             console.log(`[bballref] After aggressive parsing, found ${teamRows.length} team rows`);
           }
           
