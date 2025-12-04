@@ -5539,18 +5539,27 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
         // Fetch team defensive stats directly from BDL API (not from DvP store)
         let defensiveStatsResponse: any;
         try {
-          defensiveStatsResponse = await cachedFetch<any>(
-            `/api/team-defensive-stats?team=${targetOpp}&games=82`,
-            undefined,
-            DVP_CACHE_TTL // 2 minute cache for fresh data
+          // Add timeout to prevent infinite loading
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
           );
+          
+          defensiveStatsResponse = await Promise.race([
+            cachedFetch<any>(
+              `/api/team-defensive-stats?team=${targetOpp}&games=82`,
+              undefined,
+              DVP_CACHE_TTL // 2 minute cache for fresh data
+            ),
+            timeoutPromise
+          ]) as any;
         } catch (fetchError: any) {
-          // Handle HTTP errors (like 500, 400, etc.)
-          console.error('HTTP error fetching defensive stats:', fetchError);
+          // Handle HTTP errors (like 500, 400, etc.) and timeouts
+          console.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
           if (!abort) {
             setError(fetchError?.message || 'Failed to fetch defensive stats');
             setTeamStats(null);
             setTeamRanks({});
+            setLoading(false);
           }
           return;
         }
@@ -5562,6 +5571,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             setError('No response from server');
             setTeamStats(null);
             setTeamRanks({});
+            setLoading(false);
           }
           return;
         }
@@ -5571,9 +5581,10 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
           hasPerGame: !!defensiveStatsResponse.perGame,
           sampleGames: defensiveStatsResponse.sample_games,
           error: defensiveStatsResponse.error,
+          fullResponse: defensiveStatsResponse,
         });
 
-        if (defensiveStatsResponse.success) {
+        if (defensiveStatsResponse.success === true) {
           const perGame = defensiveStatsResponse.perGame || {};
           
           // Map BDL stats to our format
