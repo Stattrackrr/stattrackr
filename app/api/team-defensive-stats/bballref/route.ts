@@ -54,10 +54,9 @@ export async function GET(req: NextRequest) {
   try {
     const cacheKey = `bballref_defensive_stats${getAll ? '_all' : `_${teamParam}`}`;
     const hit = cache.get<any>(cacheKey);
-    // Temporarily disable cache to debug
-    // if (hit) {
-    //   return NextResponse.json(hit);
-    // }
+    if (hit) {
+      return NextResponse.json(hit);
+    }
 
     // Fetch the HTML page
     const response = await fetch(BBALLREF_URL, {
@@ -105,9 +104,14 @@ export async function GET(req: NextRequest) {
     const teamRows: string[] = [];
     let rowMatch;
     while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
-      // Check if this row has team data
-      if (rowMatch[1].includes('data-stat="team"') || rowMatch[1].includes('team_name')) {
-        teamRows.push(rowMatch[1]);
+      const rowHtml = rowMatch[1];
+      // Skip header rows (they have <th> tags or "data-stat="ranker"" or "Rk" text)
+      if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</')) {
+        continue;
+      }
+      // Check if this row has team data (has a team link)
+      if (rowHtml.includes('data-stat="team"') && rowHtml.includes('/teams/')) {
+        teamRows.push(rowHtml);
       }
     }
     
