@@ -81,30 +81,44 @@ export async function GET(req: NextRequest) {
     const hit = cache.get<any>(cacheKey);
     // Only return cached response if it's successful
     if (hit && hit.success !== false) {
+      console.log(`[team-defensive-stats] Cache hit for ${team} ${seasonYear}`);
       return NextResponse.json(hit);
     }
 
+    console.log(`[team-defensive-stats] Fetching stats for ${team} (ID: ${teamId}) season ${seasonYear}, max ${games} games`);
+    
     // Fetch games for this team in the season (handle pagination)
     const allGames: any[] = [];
     let gamesPage = 1;
     let hasMoreGames = true;
+    const MAX_GAMES_PAGES = 10; // Safety limit to prevent infinite loops
     
-    while (hasMoreGames && allGames.length < games * 2) { // Fetch more than needed to ensure we have enough
+    while (hasMoreGames && allGames.length < games * 2 && gamesPage <= MAX_GAMES_PAGES) {
       const gamesUrl = new URL(`${BDL_BASE}/games`);
       gamesUrl.searchParams.set('per_page', '100');
       gamesUrl.searchParams.set('page', String(gamesPage));
       gamesUrl.searchParams.append('seasons[]', String(seasonYear));
       gamesUrl.searchParams.append('team_ids[]', String(teamId));
 
+      console.log(`[team-defensive-stats] Fetching games page ${gamesPage}...`);
       const gamesJson = await bdlFetch(gamesUrl.toString());
       const games: any[] = Array.isArray(gamesJson?.data) ? gamesJson.data : [];
       allGames.push(...games);
       
+      console.log(`[team-defensive-stats] Got ${games.length} games (total: ${allGames.length})`);
+      
       // Check if there are more pages
       const meta = gamesJson?.meta;
-      hasMoreGames = meta?.next_page !== null && games.length === 100;
+      hasMoreGames = meta?.next_page !== null && games.length === 100 && games.length > 0;
       gamesPage++;
+      
+      // Safety check: if we got no games, stop
+      if (games.length === 0) {
+        hasMoreGames = false;
+      }
     }
+    
+    console.log(`[team-defensive-stats] Total games fetched: ${allGames.length}`);
     
     // Filter to completed games and sort by date descending
     const completedGames = allGames
@@ -115,6 +129,8 @@ export async function GET(req: NextRequest) {
         return dateB - dateA;
       })
       .slice(0, games);
+
+    console.log(`[team-defensive-stats] Completed games: ${completedGames.length}`);
 
     if (completedGames.length === 0) {
       return NextResponse.json({ 
@@ -134,14 +150,19 @@ export async function GET(req: NextRequest) {
     
     // Fetch stats in batches (BDL API limit is 100 per page)
     const allStats: any[] = [];
+    const MAX_STATS_PAGES = 20; // Safety limit per batch to prevent infinite loops
+    
+    console.log(`[team-defensive-stats] Fetching stats for ${gameIds.length} games in batches...`);
+    
     for (let i = 0; i < gameIds.length; i += 100) {
       const batch = gameIds.slice(i, i + 100);
+      console.log(`[team-defensive-stats] Processing batch ${Math.floor(i / 100) + 1} (${batch.length} games)...`);
       
       // Handle pagination for stats
       let statsPage = 1;
       let hasMoreStats = true;
       
-      while (hasMoreStats) {
+      while (hasMoreStats && statsPage <= MAX_STATS_PAGES) {
         const statsUrl = new URL(`${BDL_BASE}/stats`);
         batch.forEach(id => statsUrl.searchParams.append('game_ids[]', id));
         statsUrl.searchParams.set('per_page', '100');
@@ -151,12 +172,21 @@ export async function GET(req: NextRequest) {
         const stats: any[] = Array.isArray(statsJson?.data) ? statsJson.data : [];
         allStats.push(...stats);
         
+        console.log(`[team-defensive-stats] Batch ${Math.floor(i / 100) + 1}, page ${statsPage}: ${stats.length} stats (total: ${allStats.length})`);
+        
         // Check if there are more pages
         const meta = statsJson?.meta;
-        hasMoreStats = meta?.next_page !== null && stats.length === 100;
+        hasMoreStats = meta?.next_page !== null && stats.length === 100 && stats.length > 0;
         statsPage++;
+        
+        // Safety check: if we got no stats, stop
+        if (stats.length === 0) {
+          hasMoreStats = false;
+        }
       }
     }
+    
+    console.log(`[team-defensive-stats] Total stats fetched: ${allStats.length}`);
 
     // For each game, identify the opponent and aggregate their stats
     // This gives us what opponents score against this team
