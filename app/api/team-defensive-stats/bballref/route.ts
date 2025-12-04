@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
           const match = rowHtml.match(pattern);
           if (match && match[1]) {
             const value = match[1].trim();
-            if (value && value !== '') {
+            if (value && value !== '' && value !== '—') {
               return value;
             }
           }
@@ -166,20 +166,21 @@ export async function GET(req: NextRequest) {
         return null;
       };
 
-      // Points allowed (opp_pts_per_g)
-      const ptsValue = extractStat('opp_pts_per_g');
-      // Rebounds allowed (opp_trb_per_g)
-      const rebValue = extractStat('opp_trb_per_g');
-      // Assists allowed (opp_ast_per_g)
-      const astValue = extractStat('opp_ast_per_g');
-      // FG% allowed (opp_fg_pct)
-      const fgPctValue = extractStat('opp_fg_pct');
-      // 3P% allowed (opp_fg3_pct)
-      const fg3PctValue = extractStat('opp_fg3_pct');
-      // Steals (opp_stl_per_g)
-      const stlValue = extractStat('opp_stl_per_g');
-      // Blocks (opp_blk_per_g)
-      const blkValue = extractStat('opp_blk_per_g');
+      // Try multiple possible attribute names for each stat
+      // Points allowed - try different variations
+      const ptsValue = extractStat('opp_pts_per_g') || extractStat('opp_pts') || extractStat('pts_per_g_opp');
+      // Rebounds allowed
+      const rebValue = extractStat('opp_trb_per_g') || extractStat('opp_trb') || extractStat('trb_per_g_opp');
+      // Assists allowed
+      const astValue = extractStat('opp_ast_per_g') || extractStat('opp_ast') || extractStat('ast_per_g_opp');
+      // FG% allowed
+      const fgPctValue = extractStat('opp_fg_pct') || extractStat('opp_fg%');
+      // 3P% allowed
+      const fg3PctValue = extractStat('opp_fg3_pct') || extractStat('opp_fg3%');
+      // Steals - note: this might be "stl_per_g" not "opp_stl_per_g" (steals by the team, not against)
+      const stlValue = extractStat('opp_stl_per_g') || extractStat('stl_per_g') || extractStat('opp_stl');
+      // Blocks - same note
+      const blkValue = extractStat('opp_blk_per_g') || extractStat('blk_per_g') || extractStat('opp_blk');
 
       const parseNumber = (str: string | null) => {
         if (!str) return 0;
@@ -198,13 +199,14 @@ export async function GET(req: NextRequest) {
         blk: parseNumber(blkValue),
       };
       
-      // Debug logging for first team
+      // Debug logging for first team to see what we're extracting
       if (Object.keys(allTeamStats).length === 1) {
         console.log(`[bballref] Parsed ${teamAbbr}:`, {
           pts: allTeamStats[teamAbbr].pts,
           reb: allTeamStats[teamAbbr].reb,
           ast: allTeamStats[teamAbbr].ast,
-          raw: { ptsValue, rebValue, astValue, fgPctValue, fg3PctValue, stlValue, blkValue }
+          raw: { ptsValue, rebValue, astValue, fgPctValue, fg3PctValue, stlValue, blkValue },
+          sampleRow: rowHtml.substring(0, 500) // First 500 chars of row HTML for debugging
         });
       }
     }
