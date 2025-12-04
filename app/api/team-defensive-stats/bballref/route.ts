@@ -111,32 +111,41 @@ export async function GET(req: NextRequest) {
     
     let tableHtml: string | null = null;
     
-    // Strategy 1: Look for table with id containing "opponent"
-    let tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+    // Strategy 1: Look for table with id="team-stats-per_game-opponent" (exact match)
+    let tableMatch = html.match(/<table[^>]*id="team-stats-per_game-opponent"[^>]*>([\s\S]*?)<\/table>/i);
     if (tableMatch && tableMatch[1]) {
       tableHtml = tableMatch[1];
-      console.log('[bballref] Found table by id="*opponent*"');
+      console.log('[bballref] Found table by id="team-stats-per_game-opponent"');
     }
     
-    // Strategy 2: Look for table with "opponent" in class or nearby
+    // Strategy 2: Look for table with id containing "opponent"
+    if (!tableHtml) {
+      tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+      if (tableMatch && tableMatch[1]) {
+        tableHtml = tableMatch[1];
+        console.log('[bballref] Found table by id="*opponent*"');
+      }
+    }
+    
+    // Strategy 3: Look for "Opponent Per Game" heading and find the table immediately after it
+    if (!tableHtml) {
+      // Find the h2 or div with "Opponent Per Game" and get the next table
+      const opponentHeading = html.match(/(?:<h2[^>]*>|<div[^>]*>)[^<]*Opponent Per Game[^<]*(?:<\/h2>|<\/div>)[\s\S]{0,2000}(<table[^>]*>[\s\S]*?<\/table>)/i);
+      if (opponentHeading && opponentHeading[1]) {
+        const tableContent = opponentHeading[1].match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+        if (tableContent && tableContent[1]) {
+          tableHtml = tableContent[1];
+          console.log('[bballref] Found table after "Opponent Per Game" heading');
+        }
+      }
+    }
+    
+    // Strategy 4: Look for table with "opponent" in class or nearby
     if (!tableHtml) {
       tableMatch = html.match(/<table[^>]*class="[^"]*"[^>]*>([\s\S]*?opponent[\s\S]*?)<\/table>/i);
       if (tableMatch && tableMatch[1]) {
         tableHtml = tableMatch[1];
         console.log('[bballref] Found table by class with "opponent"');
-      }
-    }
-    
-    // Strategy 3: Look for "Opponent Per Game" table (common structure)
-    if (!tableHtml) {
-      // Find the section with "Opponent Per Game" heading and get the table after it
-      const opponentSection = html.match(/Opponent Per Game[\s\S]{0,5000}(<table[^>]*>[\s\S]*?<\/table>)/i);
-      if (opponentSection && opponentSection[1]) {
-        const tableContent = opponentSection[1].match(/<table[^>]*>([\s\S]*?)<\/table>/i);
-        if (tableContent && tableContent[1]) {
-          tableHtml = tableContent[1];
-          console.log('[bballref] Found table near "Opponent Per Game" heading');
-        }
       }
     }
     
@@ -288,6 +297,68 @@ export async function GET(req: NextRequest) {
     }
     
     console.log(`[bballref] Found ${teamRows.length} team rows out of ${totalRows} total rows`);
+    console.log(`[bballref] First few team rows (first 200 chars each):`, teamRows.slice(0, 3).map(r => r.substring(0, 200)));
+    
+    // If we found very few teams (< 10), we might be parsing the wrong table
+    if (teamRows.length > 0 && teamRows.length < 10) {
+      console.warn(`[bballref] ⚠️ Only found ${teamRows.length} teams - might be parsing wrong table. Expected ~30 teams.`);
+      console.warn(`[bballref] Table HTML length: ${tableHtml.length}, First 500 chars:`, tableHtml.substring(0, 500));
+      console.warn(`[bballref] Searching for larger table with more teams...`);
+      
+      // Try to find a table with more rows - look for tables with 20+ team links
+      const allTables = html.match(/<table[^>]*>([\s\S]{0,200000})<\/table>/gi);
+      if (allTables) {
+        for (const table of allTables) {
+          const tableContent = table.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+          if (tableContent && tableContent[1]) {
+            const content = tableContent[1];
+            // Count how many team links are in this table
+            const teamLinkCount = (content.match(/\/teams\/[A-Z]{3}\//gi) || []).length;
+            console.log(`[bballref] Table has ${teamLinkCount} team links`);
+            
+            // If this table has significantly more team links, use it instead
+            if (teamLinkCount > teamRows.length * 2 && teamLinkCount >= 20) {
+              console.log(`[bballref] Found better table with ${teamLinkCount} team links, switching to it`);
+              tableHtml = content;
+              
+              // Re-parse rows from this table
+              const newTbodyMatch = tableHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+              const newRowsToParse = newTbodyMatch && newTbodyMatch[1] ? newTbodyMatch[1] : tableHtml;
+              
+              teamRows.length = 0; // Clear existing rows
+              totalRows = 0;
+              
+              const newRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+              let newRowMatch;
+              while ((newRowMatch = newRowRegex.exec(newRowsToParse)) !== null) {
+                totalRows++;
+                const rowHtml = newRowMatch[1];
+                if (rowHtml.includes('<th') || 
+                    rowHtml.includes('data-stat="ranker"') || 
+                    rowHtml.includes('>Rk</') || 
+                    rowHtml.includes('>Rank</') || 
+                    rowHtml.trim() === '' ||
+                    rowHtml.length < 50) {
+                  continue;
+                }
+                const hasTeamLink = rowHtml.includes('/teams/');
+                const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+                const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+                
+                if (hasTeamLink || hasTeamDataStat || hasTeamName) {
+                  if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                    teamRows.push(rowHtml);
+                  }
+                }
+              }
+              
+              console.log(`[bballref] After switching tables, found ${teamRows.length} team rows`);
+              break;
+            }
+          }
+        }
+      }
+    }
     
     if (teamRows.length === 0) {
       // Log a sample to help debug
@@ -296,6 +367,7 @@ export async function GET(req: NextRequest) {
       console.error('[bballref] Sample rows (first 3):', sampleRows?.slice(0, 3));
       console.error('[bballref] Table HTML length:', tableHtml.length);
       console.error('[bballref] Table HTML sample (first 1000 chars):', tableHtml.substring(0, 1000));
+      throw new Error('Could not find any team rows in the defensive stats table');
     }
     
     const allTeamStats: Record<string, {
