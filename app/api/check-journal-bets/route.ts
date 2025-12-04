@@ -186,7 +186,8 @@ function parseParlayLegs(selectionText: string): Array<{
 async function resolveParlayBet(
   bet: any,
   games: any[],
-  updatedCountRef: { value: number }
+  updatedCountRef: { value: number },
+  request?: Request
 ): Promise<void> {
   try {
     console.log(`[check-journal-bets] 🔍 Processing parlay bet ${bet.id}: "${bet.market || bet.selection}"`);
@@ -827,6 +828,17 @@ async function resolveParlayBet(
     const parlayWon = nonVoidLegs.length > 0 && nonVoidLegs.every(r => r.won);
     const result: 'win' | 'loss' = parlayWon ? 'win' : 'loss';
     
+    // SAFEGUARD: Only update if bet is still pending, or if recalculate mode is enabled
+    // This prevents already-resolved bets from being incorrectly re-resolved
+    const url = new URL(request.url);
+    const recalculate = url.searchParams.get('recalculate') === 'true';
+    
+    // If bet is already resolved and we're not in recalculate mode, skip update
+    if (!recalculate && bet.result && bet.result !== 'pending') {
+      console.log(`[check-journal-bets] Parlay ${bet.id}: Already resolved as ${bet.result}, skipping update (use ?recalculate=true to force re-evaluation)`);
+      return;
+    }
+    
     // Update parlay bet
     const { error: updateError } = await supabaseAdmin
       .from('bets')
@@ -1078,7 +1090,7 @@ export async function GET(request: Request) {
         
         if (isParlay) {
           // Handle parlay resolution
-          await resolveParlayBet(bet, games, updatedCountRef);
+          await resolveParlayBet(bet, games, updatedCountRef, request);
           continue;
         }
         
@@ -1492,7 +1504,7 @@ export async function GET(request: Request) {
       console.log(`[check-journal-bets] Processing ${parlaysList.length} parlays for date ${date}`);
       for (const parlayBet of parlaysList) {
         console.log(`[check-journal-bets] About to process parlay bet ${parlayBet.id} with ${allGames.length} games available`);
-        await resolveParlayBet(parlayBet, allGames, updatedCountRef);
+        await resolveParlayBet(parlayBet, allGames, updatedCountRef, request);
       }
     }
 
