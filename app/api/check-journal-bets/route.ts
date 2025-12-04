@@ -270,9 +270,52 @@ async function resolveParlayBet(
         });
         
         if (!targetGame) {
-          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found for team ${leg.team} on ${legGameDate}`);
-          allLegsResolved = false;
-          continue;
+          // FALLBACK: If team matching failed, try to find game by searching for player in all games from that date
+          console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found by team matching, trying fallback: search by player ${leg.playerId}`);
+          
+          if (!leg.isGameProp && leg.playerId) {
+            // For player props, search all games from that date and check if player played
+            let foundGame = null;
+            for (const game of games) {
+              const gameDate = game.date ? game.date.split('T')[0] : null;
+              if (gameDate !== legGameDate) continue;
+              
+              // Check if player played in this game by fetching stats
+              try {
+                const statsResponse = await fetch(
+                  `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${leg.playerId}`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+                    },
+                  }
+                );
+                
+                if (statsResponse.ok) {
+                  const statsData = await statsResponse.json();
+                  if (statsData.data && statsData.data.length > 0) {
+                    foundGame = game;
+                    console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Found game ${game.id} by player search (${game.home_team?.abbreviation} vs ${game.visitor_team?.abbreviation})`);
+                    // Set targetGame to the found game so the rest of the logic can use it
+                    targetGame = foundGame;
+                    break;
+                  }
+                }
+              } catch (e) {
+                // Continue searching
+              }
+            }
+            
+            if (!targetGame) {
+              console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found even with player search fallback`);
+              allLegsResolved = false;
+              continue;
+            }
+          } else {
+            console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Game not found for team ${leg.team} on ${legGameDate}`);
+            allLegsResolved = false;
+            continue;
+          }
         }
         
         // Check if game is completed (same logic as before)
