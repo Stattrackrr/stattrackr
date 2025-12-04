@@ -830,12 +830,12 @@ export async function GET(req: NextRequest) {
         
         for (const metric of metrics) {
           const teamsWithStats = Object.entries(allTeamStats)
-            .filter(([_, stats]) => stats && typeof stats[metric] === 'number')
-            .sort(([_, a], [__, b]) => (b[metric] || 0) - (a[metric] || 0))
+            .filter(([_, stats]) => stats && typeof (stats as any)[metric] === 'number')
+            .sort(([_, a], [__, b]) => ((b as any)[metric] || 0) - ((a as any)[metric] || 0))
             .map(([team, stats], index) => ({
               team,
               rank: 30 - index,
-              value: stats[metric] || 0,
+              value: (stats as any)[metric] || 0,
             }));
           
           formattedRankings[metric] = teamsWithStats;
@@ -900,10 +900,10 @@ export async function GET(req: NextRequest) {
 
     for (const metric of metrics) {
       const teamsWithStats = Object.entries(allTeamStats)
-        .filter(([_, stats]) => stats && typeof stats[metric] === 'number') // Only include teams with valid stats
+        .filter(([_, stats]) => stats && typeof (stats as any)[metric] === 'number') // Only include teams with valid stats
         .sort(([_, a], [__, b]) => {
           // Sort descending (highest first) - rank 30 is best
-          return (b[metric] || 0) - (a[metric] || 0);
+          return ((b as any)[metric] || 0) - ((a as any)[metric] || 0);
         });
 
       console.log(`[bballref] ${metric}: Found ${teamsWithStats.length} teams with stats`);
@@ -916,8 +916,8 @@ export async function GET(req: NextRequest) {
       
       // Log first 5 and last 5 teams for verification
       if (teamsWithStats.length > 0) {
-        const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
-        const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+        const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${((stats as any)[metric] || 0).toFixed(1)}`);
+        const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${((stats as any)[metric] || 0).toFixed(1)}`);
         console.log(`[bballref] ${metric} rankings - Top 5 (rank 30-26): ${top5.join(', ')}`);
         console.log(`[bballref] ${metric} rankings - Bottom 5 (rank 5-1): ${bottom5.join(', ')}`);
       }
