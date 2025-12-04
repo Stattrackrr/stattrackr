@@ -788,6 +788,41 @@ export async function GET(req: NextRequest) {
 
       // Always cache the "all" data for reuse
       cache.set(allCacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
+      
+      // If showRankings is requested, add a formatted rankings list
+      if (showRankings) {
+        const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
+        const formattedRankings: Record<string, Array<{ team: string; rank: number; value: number }>> = {};
+        
+        for (const metric of metrics) {
+          const teamsWithStats = Object.entries(allTeamStats)
+            .filter(([_, stats]) => stats && typeof stats[metric] === 'number')
+            .sort(([_, a], [__, b]) => (b[metric] || 0) - (a[metric] || 0))
+            .map(([team, stats], index) => ({
+              team,
+              rank: 30 - index,
+              value: stats[metric] || 0,
+            }));
+          
+          formattedRankings[metric] = teamsWithStats;
+        }
+        
+        return NextResponse.json({
+          ...payload,
+          formattedRankings,
+          summary: {
+            totalTeams: Object.keys(allTeamStats).length,
+            teamsWithRankings: Object.keys(rankings).length,
+            metrics: metrics.map(m => ({
+              metric: m,
+              teamsRanked: formattedRankings[m]?.length || 0,
+              rank1: formattedRankings[m]?.[formattedRankings[m].length - 1]?.team, // Worst (rank 1)
+              rank30: formattedRankings[m]?.[0]?.team, // Best (rank 30)
+            })),
+          },
+        });
+      }
+      
       return NextResponse.json(payload);
     }
 
