@@ -84,19 +84,20 @@ export async function GET(req: NextRequest) {
     }
     
     // Another fallback: look for the stats table structure
-    if (!tableMatch) {
+    let tableHtml: string | null = null;
+    if (tableMatch && tableMatch[1]) {
+      tableHtml = tableMatch[1];
+    } else {
       // Try to find table by looking for team rows with stats
       const tbodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-      if (tbodyMatch) {
-        tableMatch = [null, tbodyMatch[1]];
+      if (tbodyMatch && tbodyMatch[1]) {
+        tableHtml = tbodyMatch[1];
       }
     }
     
-    if (!tableMatch) {
+    if (!tableHtml) {
       throw new Error('Could not find defensive stats table in Basketball Reference HTML');
     }
-
-    const tableHtml = tableMatch[1];
     
     // Extract team rows - Basketball Reference uses <tr> with data-stat attributes
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
