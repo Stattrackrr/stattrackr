@@ -254,7 +254,7 @@ async function resolveParlayBet(
         
         // Find the specific game for this leg
         const legGameDate = leg.gameDate.split('T')[0];
-        const targetGame = games.find((g: any) => {
+        let targetGame = games.find((g: any) => {
           const gameDate = g.date ? g.date.split('T')[0] : null;
           if (gameDate !== legGameDate) return false;
           
