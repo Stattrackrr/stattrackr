@@ -333,6 +333,7 @@ export async function GET(req: NextRequest) {
           }
         }
         
+        // After finding the best table, switch to it and re-parse
         if (bestTable && bestTable.linkCount > teamRows.length * 2) {
           console.log(`[bballref] Found better table with ${bestTable.linkCount} team links (Per Game: ${bestTable.isPerGame}), switching to it`);
           tableHtml = bestTable.content;
@@ -419,10 +420,6 @@ export async function GET(req: NextRequest) {
                   }
                 }
                 console.log(`[bballref] After parsing full tableHtml, found ${teamRows.length} team rows`);
-              }
-              
-              if (teamRows.length > 0) {
-                break; // Successfully found rows, exit table search
               }
             }
           }
