@@ -118,38 +118,62 @@ export async function GET(req: NextRequest) {
       console.log('[bballref] Found table by id="team-stats-per_game-opponent"');
     }
     
-    // Strategy 2: Look for table with id containing "opponent"
+    // Strategy 2: Look for table with id containing "opponent" AND "per_game" or "per-game"
     if (!tableHtml) {
-      tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+      tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*per[^"]*game[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
       if (tableMatch && tableMatch[1]) {
         tableHtml = tableMatch[1];
-        console.log('[bballref] Found table by id="*opponent*"');
+        console.log('[bballref] Found table by id="*opponent*per*game*"');
       }
     }
     
-    // Strategy 3: Look for "Opponent Per Game" heading and find the table immediately after it
+    // Strategy 3: Look for table with id containing "opponent" (but verify it's defensive stats, not standings)
+    if (!tableHtml) {
+      tableMatch = html.match(/<table[^>]*id="[^"]*opponent[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+      if (tableMatch && tableMatch[1]) {
+        const content = tableMatch[1];
+        // Verify it's a defensive stats table, not a standings table
+        // Standings tables have "wins", "losses", "team_name" - defensive stats have "opp_pts", "opp_fg", etc.
+        if (content.includes('opp_pts') || content.includes('opp_fg') || content.includes('data-stat="opp_')) {
+          tableHtml = content;
+          console.log('[bballref] Found table by id="*opponent*" (verified as defensive stats)');
+        } else {
+          console.log('[bballref] Found table with "opponent" id but it appears to be standings, skipping');
+        }
+      }
+    }
+    
+    // Strategy 4: Look for "Opponent Per Game" heading and find the table immediately after it
     if (!tableHtml) {
       // Find the h2 or div with "Opponent Per Game" and get the next table
       const opponentHeading = html.match(/(?:<h2[^>]*>|<div[^>]*>)[^<]*Opponent Per Game[^<]*(?:<\/h2>|<\/div>)[\s\S]{0,2000}(<table[^>]*>[\s\S]*?<\/table>)/i);
       if (opponentHeading && opponentHeading[1]) {
         const tableContent = opponentHeading[1].match(/<table[^>]*>([\s\S]*?)<\/table>/i);
         if (tableContent && tableContent[1]) {
-          tableHtml = tableContent[1];
-          console.log('[bballref] Found table after "Opponent Per Game" heading');
+          const content = tableContent[1];
+          // Verify it's defensive stats
+          if (content.includes('opp_pts') || content.includes('opp_fg') || content.includes('data-stat="opp_')) {
+            tableHtml = content;
+            console.log('[bballref] Found table after "Opponent Per Game" heading (verified as defensive stats)');
+          }
         }
       }
     }
     
-    // Strategy 4: Look for table with "opponent" in class or nearby
+    // Strategy 5: Look for table with "opponent" in class or nearby, but verify it's defensive stats
     if (!tableHtml) {
       tableMatch = html.match(/<table[^>]*class="[^"]*"[^>]*>([\s\S]*?opponent[\s\S]*?)<\/table>/i);
       if (tableMatch && tableMatch[1]) {
-        tableHtml = tableMatch[1];
-        console.log('[bballref] Found table by class with "opponent"');
+        const content = tableMatch[1];
+        // Verify it's defensive stats
+        if (content.includes('opp_pts') || content.includes('opp_fg') || content.includes('data-stat="opp_')) {
+          tableHtml = content;
+          console.log('[bballref] Found table by class with "opponent" (verified as defensive stats)');
+        }
       }
     }
     
-    // Strategy 4: Find all tables and look for one with team links and stats
+    // Strategy 4: Find all tables and look for one with team links and defensive stats
     if (!tableHtml) {
       const allTables = html.match(/<table[^>]*>([\s\S]{0,100000})<\/table>/gi);
       if (allTables) {
@@ -157,10 +181,13 @@ export async function GET(req: NextRequest) {
           const tableContent = table.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
           if (tableContent && tableContent[1]) {
             const content = tableContent[1];
-            // Check if this table has team links and stat data
-            if (content.includes('/teams/') && (content.includes('data-stat') || content.includes('opp_pts') || content.includes('opp_trb'))) {
+            // Check if this table has team links and defensive stat data
+            // Must have defensive stats (opp_pts, opp_fg, etc.) and NOT be standings (wins, losses)
+            const hasDefensiveStats = content.includes('opp_pts') || content.includes('opp_fg') || content.includes('data-stat="opp_');
+            const isStandings = content.includes('data-stat="wins"') || content.includes('data-stat="losses"') || content.includes('data-stat="team_name"');
+            if (content.includes('/teams/') && hasDefensiveStats && !isStandings) {
               tableHtml = content;
-              console.log('[bballref] Found table with team links and stat attributes');
+              console.log('[bballref] Found table with team links and defensive stat attributes');
               break;
             }
           }
@@ -316,20 +343,40 @@ export async function GET(req: NextRequest) {
             const content = tableContent[1];
             // Count how many team links are in this table
             const teamLinkCount = (content.match(/\/teams\/[A-Z]{3}\//gi) || []).length;
-            // Check if this is a "Per Game" table (preferred)
-            const isPerGame = content.includes('Per Game') || content.includes('per_game') || 
-                             (table.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i)?.[1] || '').includes('Per Game');
+            // Check if this is a "Per Game" defensive stats table (preferred)
+            // Must have "Per Game" AND defensive stats indicators (opp_pts, opp_fg, etc.)
+            // NOT standings (wins, losses, team_name)
+            const caption = table.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i)?.[1] || '';
+            const hasPerGame = content.includes('Per Game') || content.includes('per_game') || caption.includes('Per Game');
+            const hasDefensiveStats = content.includes('opp_pts') || content.includes('opp_fg') || content.includes('data-stat="opp_') || 
+                                     content.includes('opp_trb') || content.includes('opp_ast');
+            const isStandings = content.includes('data-stat="wins"') || content.includes('data-stat="losses"') || 
+                               content.includes('data-stat="team_name"') || caption.includes('Standings');
+            const isPerGame = hasPerGame && hasDefensiveStats && !isStandings;
             
-            console.log(`[bballref] Table has ${teamLinkCount} team links, isPerGame: ${isPerGame}`);
+            console.log(`[bballref] Table has ${teamLinkCount} team links, isPerGame: ${isPerGame}, hasDefensiveStats: ${hasDefensiveStats}, isStandings: ${isStandings}`);
             
-            // Prefer tables with team links, STRONGLY prioritizing "Per Game" tables
-            // If it's a Per Game table, prefer it even if it has fewer links
+            // Prefer tables with team links, STRONGLY prioritizing "Per Game" defensive stats tables
+            // Exclude standings tables - they have team links but aren't defensive stats
             if (teamLinkCount >= 15) {
+              // Skip standings tables completely
+              if (isStandings) {
+                console.log(`[bballref] Skipping standings table with ${teamLinkCount} links`);
+                continue;
+              }
+              
+              // Only consider tables with defensive stats
+              if (!hasDefensiveStats) {
+                console.log(`[bballref] Skipping table with ${teamLinkCount} links (no defensive stats)`);
+                continue;
+              }
+              
               if (!bestTable) {
                 bestTable = { content, linkCount: teamLinkCount, isPerGame };
               } else if (isPerGame && !bestTable.isPerGame) {
                 // Always prefer Per Game over Total Stats
                 bestTable = { content, linkCount: teamLinkCount, isPerGame };
+                console.log(`[bballref] Preferring Per Game table (${teamLinkCount} links) over Total Stats table`);
               } else if (isPerGame === bestTable.isPerGame) {
                 // If both are same type, prefer the one with more links
                 if (teamLinkCount > bestTable.linkCount) {
