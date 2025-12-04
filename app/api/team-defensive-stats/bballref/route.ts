@@ -68,19 +68,41 @@ export async function GET(req: NextRequest) {
         console.log('[bballref] Rankings missing from cache, recalculating...');
         const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
         const rankings: Record<string, Record<string, number>> = {};
+        const teamCount = Object.keys(allData.teamStats).length;
+        console.log(`[bballref] Recalculating rankings for ${teamCount} teams`);
 
         for (const metric of metrics) {
           const teamsWithStats = Object.entries(allData.teamStats)
+            .filter(([_, stats]) => stats && typeof stats[metric] === 'number') // Only include teams with valid stats
             .sort(([_, a], [__, b]) => {
               // Sort descending (highest first) - rank 30 is best
               return (b[metric] || 0) - (a[metric] || 0);
             });
 
+          console.log(`[bballref] ${metric}: Found ${teamsWithStats.length} teams with stats`);
+          
           teamsWithStats.forEach(([team], index) => {
             if (!rankings[team]) rankings[team] = {};
             // Rank 30 = best (index 0), Rank 1 = worst (index 29)
             rankings[team][metric] = 30 - index;
           });
+          
+          // Log first 5 and last 5 teams for verification
+          if (teamsWithStats.length > 0) {
+            const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+            const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+            console.log(`[bballref] ${metric} rankings - Top 5 (rank 30-26): ${top5.join(', ')}`);
+            console.log(`[bballref] ${metric} rankings - Bottom 5 (rank 5-1): ${bottom5.join(', ')}`);
+          }
+        }
+        
+        // Verify all teams have rankings
+        const teamsWithRankings = Object.keys(rankings);
+        const teamsInStats = Object.keys(allData.teamStats);
+        console.log(`[bballref] Rankings calculated: ${teamsWithRankings.length} teams have rankings, ${teamsInStats.length} teams in stats`);
+        if (teamsWithRankings.length !== teamsInStats.length) {
+          const missing = teamsInStats.filter(t => !rankings[t]);
+          console.warn(`[bballref] ⚠️ Some teams missing rankings: ${missing.join(', ')}`);
         }
         
         // Update the cached data with rankings
@@ -803,19 +825,41 @@ export async function GET(req: NextRequest) {
     // Always calculate rankings so they're available when ?all=1 is requested
     const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
     const rankings: Record<string, Record<string, number>> = {};
+    const teamCount = Object.keys(allTeamStats).length;
+    console.log(`[bballref] Calculating rankings for ${teamCount} teams (single team request)`);
 
     for (const metric of metrics) {
       const teamsWithStats = Object.entries(allTeamStats)
+        .filter(([_, stats]) => stats && typeof stats[metric] === 'number') // Only include teams with valid stats
         .sort(([_, a], [__, b]) => {
           // Sort descending (highest first) - rank 30 is best
           return (b[metric] || 0) - (a[metric] || 0);
         });
 
+      console.log(`[bballref] ${metric}: Found ${teamsWithStats.length} teams with stats`);
+      
       teamsWithStats.forEach(([team], index) => {
         if (!rankings[team]) rankings[team] = {};
         // Rank 30 = best (index 0), Rank 1 = worst (index 29)
         rankings[team][metric] = 30 - index;
       });
+      
+      // Log first 5 and last 5 teams for verification
+      if (teamsWithStats.length > 0) {
+        const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+        const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+        console.log(`[bballref] ${metric} rankings - Top 5 (rank 30-26): ${top5.join(', ')}`);
+        console.log(`[bballref] ${metric} rankings - Bottom 5 (rank 5-1): ${bottom5.join(', ')}`);
+      }
+    }
+    
+    // Verify all teams have rankings
+    const teamsWithRankings = Object.keys(rankings);
+    const teamsInStats = Object.keys(allTeamStats);
+    console.log(`[bballref] Rankings calculated: ${teamsWithRankings.length} teams have rankings, ${teamsInStats.length} teams in stats`);
+    if (teamsWithRankings.length !== teamsInStats.length) {
+      const missing = teamsInStats.filter(t => !rankings[t]);
+      console.warn(`[bballref] ⚠️ Some teams missing rankings: ${missing.join(', ')}`);
     }
 
     const allPayload = {
