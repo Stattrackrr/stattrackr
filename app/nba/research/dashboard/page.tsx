@@ -5482,9 +5482,9 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
                               rank,
                               rankType: typeof rank,
                               condition1: typeof rank === 'number',
-                              condition2: rank > 0,
-                              willDisplay: typeof rank === 'number' && rank > 0,
-                              displayValue: typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : ''
+                              condition2: rank !== null && rank > 0,
+                              willDisplay: typeof rank === 'number' && rank !== null && rank > 0,
+                              displayValue: typeof rank === 'number' && rank !== null && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : ''
                             });
                           }
                           return typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : '';
