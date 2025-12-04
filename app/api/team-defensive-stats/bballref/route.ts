@@ -772,11 +772,29 @@ export async function GET(req: NextRequest) {
     }
 
     // Cache the "all" data for future requests (even for single team requests)
+    // Always calculate rankings so they're available when ?all=1 is requested
+    const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
+    const rankings: Record<string, Record<string, number>> = {};
+
+    for (const metric of metrics) {
+      const teamsWithStats = Object.entries(allTeamStats)
+        .sort(([_, a], [__, b]) => {
+          // Sort descending (highest first) - rank 30 is best
+          return (b[metric] || 0) - (a[metric] || 0);
+        });
+
+      teamsWithStats.forEach(([team], index) => {
+        if (!rankings[team]) rankings[team] = {};
+        // Rank 30 = best (index 0), Rank 1 = worst (index 29)
+        rankings[team][metric] = 30 - index;
+      });
+    }
+
     const allPayload = {
       success: true,
       source: 'basketball-reference',
       teamStats: allTeamStats,
-      rankings: {}, // Rankings not calculated for single team requests, but structure is there
+      rankings,
     };
     cache.set(allCacheKey, allPayload, 24 * 60);
 
