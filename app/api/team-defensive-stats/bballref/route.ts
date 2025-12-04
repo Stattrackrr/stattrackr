@@ -59,8 +59,36 @@ export async function GET(req: NextRequest) {
     const allCacheKey = 'bballref_defensive_stats_all';
     let allData = cache.get<any>(allCacheKey);
     
-    // If we have cached "all" data, use it
+    // If we have cached "all" data, check if rankings are missing/empty and recalculate if needed
     if (allData && allData.success && allData.teamStats) {
+      // Check if rankings are missing or empty
+      const hasRankings = allData.rankings && Object.keys(allData.rankings).length > 0;
+      if (!hasRankings && Object.keys(allData.teamStats).length > 0) {
+        // Recalculate rankings if they're missing
+        console.log('[bballref] Rankings missing from cache, recalculating...');
+        const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
+        const rankings: Record<string, Record<string, number>> = {};
+
+        for (const metric of metrics) {
+          const teamsWithStats = Object.entries(allData.teamStats)
+            .sort(([_, a], [__, b]) => {
+              // Sort descending (highest first) - rank 30 is best
+              return (b[metric] || 0) - (a[metric] || 0);
+            });
+
+          teamsWithStats.forEach(([team], index) => {
+            if (!rankings[team]) rankings[team] = {};
+            // Rank 30 = best (index 0), Rank 1 = worst (index 29)
+            rankings[team][metric] = 30 - index;
+          });
+        }
+        
+        // Update the cached data with rankings
+        allData.rankings = rankings;
+        cache.set(allCacheKey, allData, 24 * 60); // Re-cache with rankings
+      }
+      
+      // If we have cached "all" data, use it
       if (getAll) {
         return NextResponse.json(allData);
       }
