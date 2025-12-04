@@ -5133,7 +5133,8 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       
       // Force refresh: clear caches and fetch fresh data
       // This ensures latest ingested data is shown immediately
-      const shouldRefresh = new URLSearchParams(window.location.search).get('refreshDvP') === '1';
+      // TEMPORARY: Always refresh to apply the 0-minute player filter fix
+      const shouldRefresh = true; // Force refresh to apply fix
       if (shouldRefresh) {
         dvpTeamCache.delete(teamCacheKey);
         dvpRankCache.delete(rankCacheKey);
@@ -5181,25 +5182,22 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         // Fetch only what we don't have cached (or if refreshing)
         const promises: Promise<any>[] = [];
         
-        if (!teamCached || shouldRefresh) {
-          promises.push(
-              cachedFetch<any>(
-              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82${shouldRefresh ? '&refresh=1' : ''}`,
-              undefined,
-              shouldRefresh ? 0 : DVP_CACHE_TTL // Use shorter cache time
-            ).then(data => ({ type: 'team', data }))
-          );
-        }
+        // Always fetch fresh to apply the 0-minute player filter fix
+        promises.push(
+            cachedFetch<any>(
+            `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82&refresh=1`,
+            undefined,
+            0 // No cache - always fetch fresh
+          ).then(data => ({ type: 'team', data }))
+        );
         
-        if (!rankCached || shouldRefresh) {
-          promises.push(
-              cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82${shouldRefresh ? '&refresh=1' : ''}`,
-              undefined,
-              shouldRefresh ? 0 : DVP_CACHE_TTL // Use shorter cache time
-            ).then(data => ({ type: 'rank', data }))
-          );
-        }
+        promises.push(
+            cachedFetch<any>(
+            `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82&refresh=1`,
+            undefined,
+            0 // No cache - always fetch fresh
+          ).then(data => ({ type: 'rank', data }))
+        );
         
         if (promises.length > 0) {
           const results = await Promise.all(promises);

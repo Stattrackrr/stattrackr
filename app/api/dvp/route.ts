@@ -250,6 +250,16 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
             default: return Number(p?.pts||0);
           }
         };
+        // Fetch depth chart for the opponent team (for fallback position assignment)
+        const opponentAbbr = sorted[0]?.opponent || '';
+        const host = req.headers.get('host') || undefined;
+        let depthChartMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {};
+        if (opponentAbbr) {
+          try {
+            depthChartMap = await fetchDepthChartBuckets(opponentAbbr, host).catch(() => ({}));
+          } catch {}
+        }
+        
         for (const g of sorted){
           const players = Array.isArray(g?.players) ? g.players : [];
           const gameAll = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
@@ -258,6 +268,9 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
           const gameAttAll = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
           const gameAttStarters = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
           const gameAttBench = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
+          
+          let playersWithoutBucket = 0;
+          let totalPlayers = players.length;
           
           for (const p of players){
             // Use stored bucket from game data (respects historical positions per game)
@@ -278,11 +291,32 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
                   b = CUSTOM_POSITIONS[canonicalName];
                 } else if (CUSTOM_POSITIONS[nameKey] && ['PG','SG','SF','PF','C'].includes(CUSTOM_POSITIONS[nameKey])) {
                   b = CUSTOM_POSITIONS[nameKey];
+                } else if (depthChartMap[nameKey] || depthChartMap[canonicalName] || depthChartMap[lookupKey]) {
+                  // Final fallback: use depth chart position
+                  b = depthChartMap[nameKey] || depthChartMap[canonicalName] || depthChartMap[lookupKey];
                 }
               }
             }
             
-            if (!b) continue;
+            if (!b) {
+              playersWithoutBucket++;
+              continue;
+            }
+            
+            // Skip players who didn't play (0 minutes) - they shouldn't count in DVP
+            const minutesPlayed = String(p?.min || '0:00').trim();
+            let totalMinutes = 0;
+            if (minutesPlayed.includes(':')) {
+              const parts = minutesPlayed.split(':');
+              totalMinutes = (Number(parts[0]) || 0) + ((Number(parts[1]) || 0) / 60);
+            } else {
+              totalMinutes = Number(minutesPlayed) || 0;
+            }
+            
+            if (totalMinutes < 0.01) {
+              // Player didn't play - skip them
+              continue;
+            }
             
             if (isPercentageMetric) {
               // For percentages, track makes and attempts
@@ -316,9 +350,23 @@ async function loadCustomPositions(): Promise<{ positions: Record<string, 'PG'|'
             }
           });
           processedGames++;
+          
+          // Log warning if too many players are missing buckets (indicates data quality issue)
+          if (playersWithoutBucket > totalPlayers * 0.2 && wantDebug) {
+            debug?.push(`Game ${g.gameId || g.date} (vs ${g.opponent}): ${playersWithoutBucket}/${totalPlayers} players (${Math.round(playersWithoutBucket/totalPlayers*100)}%) missing position buckets`);
+          }
+          
           if (traceOn) {
             const playersSorted = [...players].sort((a: any, b: any) => Number(b?.pts||0) - Number(a?.pts||0));
-            trace.push({ gameId: g.gameId, date: g.date, opponent: g.opponent, buckets: wantSplit? { all: gameAll, starters: gameStarters, bench: gameBench } : gameAll, players: playersSorted });
+            trace.push({ gameId: g.gameId, date: g.date, opponent: g.opponent, buckets: wantSplit? { all: gameAll, starters: gameStarters, bench: gameBench } : gameAll, players: playersSorted, playersWithoutBucket, totalPlayers });
+          }
+        }
+        
+        // Log summary warning if many games have missing buckets
+        if (wantDebug && processedGames > 0) {
+          const avgMissing = (playersWithoutBucket / totalPlayers) * 100;
+          if (avgMissing > 20) {
+            debug?.push(`WARNING: ${Math.round(avgMissing)}% of players missing position buckets across ${processedGames} games. DVP numbers may be inaccurate. Consider re-ingesting data.`);
           }
         }
         const perGameAll = { PG:0, SG:0, SF:0, PF:0, C:0 } as Record<'PG'|'SG'|'SF'|'PF'|'C', number>;
@@ -517,3 +565,4 @@ function safeMetric(r: any, metric: string): number {
     default: return Number(r?.pts) || 0;
   }
 }
+
