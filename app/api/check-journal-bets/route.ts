@@ -830,8 +830,15 @@ async function resolveParlayBet(
     
     // SAFEGUARD: Only update if bet is still pending, or if recalculate mode is enabled
     // This prevents already-resolved bets from being incorrectly re-resolved
-    const url = new URL(request.url);
-    const recalculate = url.searchParams.get('recalculate') === 'true';
+    let recalculate = false;
+    if (request) {
+      try {
+        const url = new URL(request.url);
+        recalculate = url.searchParams.get('recalculate') === 'true';
+      } catch (e) {
+        // If URL parsing fails, assume not in recalculate mode
+      }
+    }
     
     // If bet is already resolved and we're not in recalculate mode, skip update
     if (!recalculate && bet.result && bet.result !== 'pending') {
