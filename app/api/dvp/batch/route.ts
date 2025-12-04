@@ -6,65 +6,6 @@ import { normalizeAbbr } from "@/lib/nbaAbbr";
 import { currentNbaSeason } from "@/lib/nbaConstants";
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from "@/lib/bettingpros-dvp";
 
-// Map BettingPros team abbreviations to our format
-const OUR_TO_BP_ABBR: Record<string, string> = {
-  'NOP': 'NOR',
-  'PHX': 'PHO',
-  'UTA': 'UTH',
-};
-
-// Map BettingPros metric names to our format
-const METRIC_MAP: Record<string, string> = {
-  'points': 'pts',
-  'rebounds': 'reb',
-  'assists': 'ast',
-  'three_points_made': 'fg3m',
-  'steals': 'stl',
-  'blocks': 'blk',
-  'turnovers': 'to',
-  'field_goals_perc': 'fg_pct',
-  'free_throw_perc': 'ft_pct',
-};
-
-// Reverse map: our metric -> BettingPros metric
-const OUR_TO_BP_METRIC: Record<string, string> = Object.fromEntries(
-  Object.entries(METRIC_MAP).map(([bp, ours]) => [ours, bp])
-);
-
-/**
- * Extract JSON data from HTML by finding the bpDefenseVsPositionStats variable
- */
-function extractStatsFromHTML(html: string): any {
-  const startMarker = 'const bpDefenseVsPositionStats = {';
-  const startIdx = html.indexOf(startMarker);
-
-  if (startIdx < 0) {
-    throw new Error('Could not find bpDefenseVsPositionStats variable in HTML');
-  }
-
-  let braceCount = 0;
-  let jsonStart = startIdx + startMarker.length - 1;
-  let jsonEnd = jsonStart;
-
-  for (let i = jsonStart; i < html.length; i++) {
-    if (html[i] === '{') braceCount++;
-    if (html[i] === '}') {
-      braceCount--;
-      if (braceCount === 0) {
-        jsonEnd = i + 1;
-        break;
-      }
-    }
-  }
-
-  const jsonStr = html.substring(jsonStart, jsonEnd);
-  try {
-    return eval('(' + jsonStr + ')');
-  } catch (e: any) {
-    throw new Error(`Failed to parse JSON: ${e.message}`);
-  }
-}
-
 /**
  * Batched DVP API endpoint
  * Fetches multiple metrics for a team in a single request
