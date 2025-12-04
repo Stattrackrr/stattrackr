@@ -305,55 +305,125 @@ export async function GET(req: NextRequest) {
       console.warn(`[bballref] Table HTML length: ${tableHtml.length}, First 500 chars:`, tableHtml.substring(0, 500));
       console.warn(`[bballref] Searching for larger table with more teams...`);
       
-      // Try to find a table with more rows - look for tables with 20+ team links
+      // Try to find a table with more rows - prioritize "Per Game" table
       const allTables = html.match(/<table[^>]*>([\s\S]{0,200000})<\/table>/gi);
       if (allTables) {
+        let bestTable: { content: string; linkCount: number; isPerGame: boolean } | null = null;
+        
         for (const table of allTables) {
           const tableContent = table.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
           if (tableContent && tableContent[1]) {
             const content = tableContent[1];
             // Count how many team links are in this table
             const teamLinkCount = (content.match(/\/teams\/[A-Z]{3}\//gi) || []).length;
-            console.log(`[bballref] Table has ${teamLinkCount} team links`);
+            // Check if this is a "Per Game" table (preferred)
+            const isPerGame = content.includes('Per Game') || content.includes('per_game') || 
+                             (table.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i)?.[1] || '').includes('Per Game');
             
-            // If this table has significantly more team links, use it instead
-            if (teamLinkCount > teamRows.length * 2 && teamLinkCount >= 20) {
-              console.log(`[bballref] Found better table with ${teamLinkCount} team links, switching to it`);
-              tableHtml = content;
+            console.log(`[bballref] Table has ${teamLinkCount} team links, isPerGame: ${isPerGame}`);
+            
+            // Prefer tables with 20+ team links, prioritizing "Per Game" tables
+            if (teamLinkCount >= 20) {
+              if (!bestTable || 
+                  (isPerGame && !bestTable.isPerGame) || 
+                  (isPerGame === bestTable.isPerGame && teamLinkCount > bestTable.linkCount)) {
+                bestTable = { content, linkCount: teamLinkCount, isPerGame };
+              }
+            }
+          }
+        }
+        
+        if (bestTable && bestTable.linkCount > teamRows.length * 2) {
+          console.log(`[bballref] Found better table with ${bestTable.linkCount} team links (Per Game: ${bestTable.isPerGame}), switching to it`);
+          tableHtml = bestTable.content;
               
-              // Re-parse rows from this table
+              // Re-parse rows from this table - use the same logic as before
               const newTbodyMatch = tableHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
               const newRowsToParse = newTbodyMatch && newTbodyMatch[1] ? newTbodyMatch[1] : tableHtml;
               
               teamRows.length = 0; // Clear existing rows
               totalRows = 0;
               
-              const newRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-              let newRowMatch;
-              while ((newRowMatch = newRowRegex.exec(newRowsToParse)) !== null) {
-                totalRows++;
-                const rowHtml = newRowMatch[1];
-                if (rowHtml.includes('<th') || 
-                    rowHtml.includes('data-stat="ranker"') || 
-                    rowHtml.includes('>Rk</') || 
-                    rowHtml.includes('>Rank</') || 
-                    rowHtml.trim() === '' ||
-                    rowHtml.length < 50) {
-                  continue;
-                }
-                const hasTeamLink = rowHtml.includes('/teams/');
-                const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
-                const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
-                
-                if (hasTeamLink || hasTeamDataStat || hasTeamName) {
-                  if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
-                    teamRows.push(rowHtml);
+              // Use the same flexible row parsing logic
+              const newRowPatterns = [
+                /<tr[^>]*>([\s\S]*?)<\/tr>/gi,  // Standard <tr>...</tr>
+                /<tr[^>]*data-stat[^>]*>([\s\S]*?)<\/tr>/gi,  // Rows with data-stat
+              ];
+              
+              for (const newRowRegex of newRowPatterns) {
+                newRowRegex.lastIndex = 0; // Reset regex
+                let newRowMatch;
+                while ((newRowMatch = newRowRegex.exec(newRowsToParse)) !== null) {
+                  totalRows++;
+                  const rowHtml = newRowMatch[1];
+                  
+                  // Skip header rows
+                  if (rowHtml.includes('<th') || 
+                      rowHtml.includes('data-stat="ranker"') || 
+                      rowHtml.includes("data-stat='ranker'") ||
+                      rowHtml.includes('>Rk</') || 
+                      rowHtml.includes('>Rank</') || 
+                      rowHtml.trim() === '' ||
+                      rowHtml.length < 50) {
+                    continue;
                   }
+                  
+                  // Check for team indicators - be very flexible
+                  const hasTeamLink = rowHtml.includes('/teams/');
+                  const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+                  const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+                  
+                  // Also check if row has stats (numbers) - this helps identify data rows
+                  const hasStats = /\d+\.\d+/.test(rowHtml) || /\d+,\d+/.test(rowHtml);
+                  
+                  // Accept if it has team indicator AND (stats OR is a reasonable length)
+                  if ((hasTeamLink || hasTeamDataStat || hasTeamName) && (hasStats || rowHtml.length > 100)) {
+                    // Avoid duplicates
+                    if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                      teamRows.push(rowHtml);
+                    }
+                  }
+                }
+                
+                // If we found rows with this pattern, break
+                if (teamRows.length > 0) {
+                  break;
                 }
               }
               
-              console.log(`[bballref] After switching tables, found ${teamRows.length} team rows`);
-              break;
+              console.log(`[bballref] After switching tables, found ${teamRows.length} team rows out of ${totalRows} total rows`);
+              
+              // If still no rows, try parsing the full tableHtml
+              if (teamRows.length === 0 && newRowsToParse !== tableHtml) {
+                console.log('[bballref] No rows found in tbody of new table, trying full tableHtml');
+                const fullRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+                let fullRowMatch;
+                while ((fullRowMatch = fullRowRegex.exec(tableHtml)) !== null) {
+                  const rowHtml = fullRowMatch[1];
+                  if (rowHtml.includes('<th') || 
+                      rowHtml.includes('data-stat="ranker"') || 
+                      rowHtml.includes('>Rk</') || 
+                      rowHtml.includes('>Rank</') || 
+                      rowHtml.trim() === '' ||
+                      rowHtml.length < 50) {
+                    continue;
+                  }
+                  const hasTeamLink = rowHtml.includes('/teams/');
+                  const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+                  const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
+                  const hasStats = /\d+\.\d+/.test(rowHtml) || /\d+,\d+/.test(rowHtml);
+                  if ((hasTeamLink || hasTeamDataStat || hasTeamName) && (hasStats || rowHtml.length > 100)) {
+                    if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                      teamRows.push(rowHtml);
+                    }
+                  }
+                }
+                console.log(`[bballref] After parsing full tableHtml, found ${teamRows.length} team rows`);
+              }
+              
+              if (teamRows.length > 0) {
+                break; // Successfully found rows, exit table search
+              }
             }
           }
         }
