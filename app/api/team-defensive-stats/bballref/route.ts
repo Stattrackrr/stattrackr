@@ -113,6 +113,40 @@ export async function GET(req: NextRequest) {
       
       // If we have cached "all" data, use it
       if (getAll) {
+        // If showRankings is requested, format the rankings
+        if (showRankings && allData.rankings) {
+          const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
+          const formattedRankings: Record<string, Array<{ team: string; rank: number; value: number }>> = {};
+          
+          for (const metric of metrics) {
+            const teamsWithStats = Object.entries(allData.teamStats)
+              .filter(([_, stats]) => stats && typeof stats[metric] === 'number')
+              .sort(([_, a], [__, b]) => (b[metric] || 0) - (a[metric] || 0))
+              .map(([team, stats], index) => ({
+                team,
+                rank: 30 - index,
+                value: stats[metric] || 0,
+              }));
+            
+            formattedRankings[metric] = teamsWithStats;
+          }
+          
+          return NextResponse.json({
+            ...allData,
+            formattedRankings,
+            summary: {
+              totalTeams: Object.keys(allData.teamStats).length,
+              teamsWithRankings: Object.keys(allData.rankings).length,
+              metrics: metrics.map(m => ({
+                metric: m,
+                teamsRanked: formattedRankings[m]?.length || 0,
+                rank1: formattedRankings[m]?.[formattedRankings[m].length - 1]?.team, // Worst (rank 1)
+                rank30: formattedRankings[m]?.[0]?.team, // Best (rank 30)
+              })),
+            },
+          });
+        }
+        
         return NextResponse.json(allData);
       }
       // For single team, extract from the cached all data
