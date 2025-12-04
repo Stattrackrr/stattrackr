@@ -451,6 +451,7 @@ export async function GET(req: NextRequest) {
               // For Total Stats tables, accept rows with any numbers or reasonable length
               if (hasTeamLink || hasTeamDataStat || hasTeamName) {
                 const isPerGameTable = bestTable?.isPerGame ?? false;
+                // For Total Stats tables, be more lenient - accept if it has team link and reasonable length
                 const shouldAccept = isPerGameTable
                   ? (hasDecimalStats || rowHtml.length > 100) // Per Game: prefer decimals
                   : (hasStats || rowHtml.length > 80); // Total Stats: accept any numbers
@@ -471,6 +472,28 @@ export async function GET(req: NextRequest) {
           }
           
           console.log(`[bballref] After switching tables, found ${teamRows.length} team rows out of ${totalRows} total rows`);
+          
+          // If still no rows, try a more aggressive approach - look for ANY row with team links
+          if (teamRows.length === 0) {
+            console.log('[bballref] No rows found with standard patterns, trying aggressive parsing...');
+            const aggressivePattern = /<tr[^>]*>([\s\S]*?\/teams\/[A-Z]{3}\/[\s\S]*?)<\/tr>/gi;
+            let aggressiveMatch;
+            while ((aggressiveMatch = aggressivePattern.exec(newRowsToParse)) !== null && teamRows.length < 30) {
+              const rowHtml = aggressiveMatch[1];
+              // Skip if it's clearly a header (has <th> or ranker without team)
+              if (rowHtml.includes('<th') || (rowHtml.includes('data-stat="ranker"') && !rowHtml.includes('data-stat="team"'))) {
+                continue;
+              }
+              // Accept any row with a team link
+              if (rowHtml.includes('/teams/')) {
+                // Avoid duplicates
+                if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                  teamRows.push(rowHtml);
+                }
+              }
+            }
+            console.log(`[bballref] After aggressive parsing, found ${teamRows.length} team rows`);
+          }
           
           // If still no rows, try parsing the full tableHtml
           if (teamRows.length === 0 && newRowsToParse !== tableHtml) {
