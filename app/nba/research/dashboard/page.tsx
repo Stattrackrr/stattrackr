@@ -5536,22 +5536,14 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
       const targetOpp = opponentTeam;
 
       try {
-        // Fetch team defensive stats directly from BDL API (not from DvP store)
+        // Fetch team defensive stats from Basketball Reference (faster and more reliable)
         let defensiveStatsResponse: any;
         try {
-          // Add timeout to prevent infinite loading
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+          defensiveStatsResponse = await cachedFetch<any>(
+            `/api/team-defensive-stats/bballref?team=${targetOpp}`,
+            undefined,
+            DVP_CACHE_TTL * 10 // Cache for 20 minutes (Basketball Reference updates daily)
           );
-          
-          defensiveStatsResponse = await Promise.race([
-            cachedFetch<any>(
-              `/api/team-defensive-stats?team=${targetOpp}&games=20`, // Reduced from 82 to 20 for faster response
-              undefined,
-              DVP_CACHE_TTL // 2 minute cache for fresh data
-            ),
-            timeoutPromise
-          ]) as any;
         } catch (fetchError: any) {
           // Handle HTTP errors (like 500, 400, etc.) and timeouts
           console.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
@@ -5609,12 +5601,11 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             blk: 0,
           };
 
-          // Fetch rankings asynchronously (don't block the main stats display)
-          // This prevents timeout issues
+          // Fetch rankings asynchronously from Basketball Reference (much faster)
           (async () => {
             try {
               const rankingsResponse = await cachedFetch<any>(
-                `/api/team-defensive-stats/rank?games=10`, // Reduced to 10 games for faster ranking
+                `/api/team-defensive-stats/bballref?all=1`, // Get all teams with rankings
                 undefined,
                 DVP_CACHE_TTL * 30 // Cache rankings for 1 hour
               );
