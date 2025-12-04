@@ -138,21 +138,47 @@ export async function GET(req: NextRequest) {
       
       if (!teamAbbr) continue;
 
-      // Extract stats from the row
+      // Extract stats from the row using data-stat attributes
+      // Basketball Reference uses <td data-stat="stat_name">value</td>
+      const extractStat = (statName: string): string | null => {
+        // Try multiple patterns to handle different HTML structures
+        const patterns = [
+          // Standard: <td data-stat="opp_pts_per_g">123.4</td>
+          new RegExp(`<td[^>]*data-stat="${statName}"[^>]*>([^<]+)</td>`, 'i'),
+          // With attributes after data-stat
+          new RegExp(`data-stat="${statName}"[^>]*>([^<]+)<`, 'i'),
+          // With single quotes
+          new RegExp(`data-stat='${statName}'[^>]*>([^<]+)<`, 'i'),
+          // More flexible pattern
+          new RegExp(`data-stat=["']${statName}["'][^>]*>\\s*([\\d.]+)`, 'i'),
+        ];
+        
+        for (const pattern of patterns) {
+          const match = rowHtml.match(pattern);
+          if (match && match[1]) {
+            const value = match[1].trim();
+            if (value && value !== '') {
+              return value;
+            }
+          }
+        }
+        return null;
+      };
+
       // Points allowed (opp_pts_per_g)
-      const ptsMatch = rowHtml.match(/data-stat="opp_pts_per_g"[^>]*>([^<]+)</);
+      const ptsValue = extractStat('opp_pts_per_g');
       // Rebounds allowed (opp_trb_per_g)
-      const rebMatch = rowHtml.match(/data-stat="opp_trb_per_g"[^>]*>([^<]+)</);
+      const rebValue = extractStat('opp_trb_per_g');
       // Assists allowed (opp_ast_per_g)
-      const astMatch = rowHtml.match(/data-stat="opp_ast_per_g"[^>]*>([^<]+)</);
+      const astValue = extractStat('opp_ast_per_g');
       // FG% allowed (opp_fg_pct)
-      const fgPctMatch = rowHtml.match(/data-stat="opp_fg_pct"[^>]*>([^<]+)</);
+      const fgPctValue = extractStat('opp_fg_pct');
       // 3P% allowed (opp_fg3_pct)
-      const fg3PctMatch = rowHtml.match(/data-stat="opp_fg3_pct"[^>]*>([^<]+)</);
+      const fg3PctValue = extractStat('opp_fg3_pct');
       // Steals (opp_stl_per_g)
-      const stlMatch = rowHtml.match(/data-stat="opp_stl_per_g"[^>]*>([^<]+)</);
+      const stlValue = extractStat('opp_stl_per_g');
       // Blocks (opp_blk_per_g)
-      const blkMatch = rowHtml.match(/data-stat="opp_blk_per_g"[^>]*>([^<]+)</);
+      const blkValue = extractStat('opp_blk_per_g');
 
       const parseNumber = (str: string | null) => {
         if (!str) return 0;
@@ -162,14 +188,24 @@ export async function GET(req: NextRequest) {
       };
 
       allTeamStats[teamAbbr] = {
-        pts: parseNumber(ptsMatch?.[1]),
-        reb: parseNumber(rebMatch?.[1]),
-        ast: parseNumber(astMatch?.[1]),
-        fg_pct: parseNumber(fgPctMatch?.[1]) * 100, // Convert to percentage
-        fg3_pct: parseNumber(fg3PctMatch?.[1]) * 100, // Convert to percentage
-        stl: parseNumber(stlMatch?.[1]),
-        blk: parseNumber(blkMatch?.[1]),
+        pts: parseNumber(ptsValue),
+        reb: parseNumber(rebValue),
+        ast: parseNumber(astValue),
+        fg_pct: parseNumber(fgPctValue) * 100, // Already a decimal, convert to percentage
+        fg3_pct: parseNumber(fg3PctValue) * 100, // Already a decimal, convert to percentage
+        stl: parseNumber(stlValue),
+        blk: parseNumber(blkValue),
       };
+      
+      // Debug logging for first team
+      if (Object.keys(allTeamStats).length === 1) {
+        console.log(`[bballref] Parsed ${teamAbbr}:`, {
+          pts: allTeamStats[teamAbbr].pts,
+          reb: allTeamStats[teamAbbr].reb,
+          ast: allTeamStats[teamAbbr].ast,
+          raw: { ptsValue, rebValue, astValue, fgPctValue, fg3PctValue, stlValue, blkValue }
+        });
+      }
     }
 
     if (getAll) {
