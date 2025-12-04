@@ -45,16 +45,17 @@ function currentNbaSeason(): number {
  * - season: Season year (optional, defaults to current)
  */
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const rawTeam = searchParams.get('team');
+  const seasonParam = searchParams.get('season');
+  
   try {
-    const { searchParams } = new URL(req.url);
-    const rawTeam = searchParams.get('team');
     if (!rawTeam) {
       return NextResponse.json({ error: 'Missing team parameter' }, { status: 400 });
     }
     
     const team = normalizeAbbr(rawTeam);
     const games = Math.min(parseInt(searchParams.get('games') || '82', 10) || 82, 82);
-    const seasonParam = searchParams.get('season');
     const seasonYear = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
 
     const teamId = ABBR_TO_TEAM_ID_BDL[team];
@@ -236,14 +237,12 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json(payload);
   } catch (e: any) {
-    const { searchParams } = new URL(req.url);
-    const rawTeam = searchParams.get('team') || '';
     console.error('Error fetching team defensive stats from BallDontLie API:', e);
     // Return 200 with success: false so the component can read the error message
     return NextResponse.json({ 
       success: false, 
       error: e?.message || 'Failed to get team defensive stats',
-      team: rawTeam,
+      team: rawTeam || '',
       season: seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason(),
       sample_games: 0,
       perGame: {
