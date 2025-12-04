@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const teamParam = searchParams.get('team');
   const getAll = searchParams.get('all') === '1';
+  const showRankings = searchParams.get('showRankings') === '1';
 
   try {
     // Always check the "all" cache first - it contains all teams
