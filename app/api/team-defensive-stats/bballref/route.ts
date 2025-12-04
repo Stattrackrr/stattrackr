@@ -154,20 +154,21 @@ export async function GET(req: NextRequest) {
       // Blocks (opp_blk_per_g)
       const blkMatch = rowHtml.match(/data-stat="opp_blk_per_g"[^>]*>([^<]+)</);
 
-      const parseFloat = (str: string | null) => {
+      const parseNumber = (str: string | null) => {
         if (!str) return 0;
-        const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+        const cleaned = str.replace(/[^\d.-]/g, '');
+        const num = Number.parseFloat(cleaned);
         return isNaN(num) ? 0 : num;
       };
 
       allTeamStats[teamAbbr] = {
-        pts: parseFloat(ptsMatch?.[1]),
-        reb: parseFloat(rebMatch?.[1]),
-        ast: parseFloat(astMatch?.[1]),
-        fg_pct: parseFloat(fgPctMatch?.[1]) * 100, // Convert to percentage
-        fg3_pct: parseFloat(fg3PctMatch?.[1]) * 100, // Convert to percentage
-        stl: parseFloat(stlMatch?.[1]),
-        blk: parseFloat(blkMatch?.[1]),
+        pts: parseNumber(ptsMatch?.[1]),
+        reb: parseNumber(rebMatch?.[1]),
+        ast: parseNumber(astMatch?.[1]),
+        fg_pct: parseNumber(fgPctMatch?.[1]) * 100, // Convert to percentage
+        fg3_pct: parseNumber(fg3PctMatch?.[1]) * 100, // Convert to percentage
+        stl: parseNumber(stlMatch?.[1]),
+        blk: parseNumber(blkMatch?.[1]),
       };
     }
 
