@@ -34,19 +34,129 @@ export const NBA_TEAMS = {
 
 // Common alias mapping (historical or alt sources)
 const ALIASES: Record<string, keyof typeof NBA_TEAMS> = {
+  // Atlanta Hawks
+  'HAWKS': 'ATL',
+  
+  // Boston Celtics
+  'CELTICS': 'BOS',
+  
+  // Brooklyn Nets
+  'BRO': 'BKN',
+  'BRK': 'BKN',
+  'NETS': 'BKN',
+  'NJ': 'BKN',      // Old Nets (New Jersey)
+  'NJN': 'BKN',
+  
+  // Charlotte Hornets
+  'CHO': 'CHA',
+  'HORNETS': 'CHA',
+  'CHH': 'CHA',     // Old Hornets
+  
+  // Chicago Bulls
+  'BULLS': 'CHI',
+  
+  // Cleveland Cavaliers
+  'CAVS': 'CLE',
+  'CAVALIERS': 'CLE',
+  
+  // Dallas Mavericks
+  'MAVS': 'DAL',
+  'MAVERICKS': 'DAL',
+  
+  // Denver Nuggets
+  'NUGGETS': 'DEN',
+  
+  // Detroit Pistons
+  'PISTONS': 'DET',
+  
+  // Golden State Warriors
+  'GS': 'GSW',
+  'GOLDEN STATE': 'GSW',
+  'WARRIORS': 'GSW',
+  
+  // Houston Rockets
+  'ROCKETS': 'HOU',
+  
+  // Indiana Pacers
+  'PACERS': 'IND',
+  
+  // LA Clippers
+  'CLIPPERS': 'LAC',
+  'LACLIPPERS': 'LAC',
+  
+  // Los Angeles Lakers
+  'LAKERS': 'LAL',
+  'LALAKERS': 'LAL',
+  
+  // Memphis Grizzlies
+  'GRIZZLIES': 'MEM',
+  'GRIZZ': 'MEM',
+  
+  // Miami Heat
+  'HEAT': 'MIA',
+  
+  // Milwaukee Bucks
+  'BUCKS': 'MIL',
+  
+  // Minnesota Timberwolves
+  'WOLVES': 'MIN',
+  'TIMBERWOLVES': 'MIN',
+  'TWOLVES': 'MIN',
+  
+  // New Orleans Pelicans
   'NO': 'NOP',      // ESPN/others sometimes use NO for New Orleans
   'NOH': 'NOP',     // Old Hornets era
   'NOK': 'NOP',     // Temporary New Orleans/Oklahoma City era
   'NOR': 'NOP',     // New Orleans short form
   'NOLA': 'NOP',
+  'PELICANS': 'NOP',
+  'PELS': 'NOP',
+  
+  // New York Knicks
+  'NY': 'NYK',
+  'KNICKS': 'NYK',
+  
+  // Oklahoma City Thunder
+  'THUNDER': 'OKC',
+  'SEA': 'OKC',     // Historical (Sonics -> Thunder)
+  'SONICS': 'OKC',
+  
+  // Orlando Magic
+  'MAGIC': 'ORL',
+  
+  // Philadelphia 76ers
+  '76ERS': 'PHI',
+  'SIXERS': 'PHI',
+  'PHILA': 'PHI',
+  
+  // Phoenix Suns
+  'PHO': 'PHX',
+  'SUNS': 'PHX',
+  
+  // Portland Trail Blazers
+  'BLAZERS': 'POR',
+  'TRAILBLAZERS': 'POR',
+  
+  // Sacramento Kings
+  'KINGS': 'SAC',
+  
+  // San Antonio Spurs
+  'SA': 'SAS',
+  'SPURS': 'SAS',
+  'SAN ANTONIO': 'SAS',
+  
+  // Toronto Raptors
+  'RAPTORS': 'TOR',
+  'RAPS': 'TOR',
+  
+  // Utah Jazz
   'UTH': 'UTA',     // Common typo
   'UTA.': 'UTA',    // Trailing punctuation
-  'PHO': 'PHX',
-  'NY': 'NYK',
-  'SA': 'SAS',
-  'GS': 'GSW',
-  'NJ': 'BKN',      // Old Nets
-  'SEA': 'OKC',     // Historical (Sonics -> Thunder)
+  'JAZZ': 'UTA',
+  
+  // Washington Wizards
+  'WIZ': 'WAS',
+  'WIZARDS': 'WAS',
 };
 
 // Full name and nickname aliases

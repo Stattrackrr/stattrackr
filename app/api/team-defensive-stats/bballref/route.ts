@@ -104,49 +104,112 @@ export async function GET(req: NextRequest) {
       tableMatch = html.match(/<table[^>]*class="[^"]*"[^>]*>([\s\S]*?opponent[\s\S]*?)<\/table>/i);
     }
     
-    // Another fallback: look for the stats table structure
+    // Another fallback: look for table with "per_game" and "opponent" context
+    if (!tableMatch) {
+      // Try to find the opponent per game table by looking for the table structure
+      const perGameMatch = html.match(/<table[^>]*>([\s\S]*?per_game[\s\S]*?opponent[\s\S]*?)<\/table>/i);
+      if (perGameMatch) {
+        tableMatch = perGameMatch;
+      }
+    }
+    
+    // Another fallback: look for the stats table structure by finding tbody with team links
     let tableHtml: string | null = null;
     if (tableMatch && tableMatch[1]) {
       tableHtml = tableMatch[1];
     } else {
-      // Try to find table by looking for team rows with stats
-      const tbodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-      if (tbodyMatch && tbodyMatch[1]) {
-        tableHtml = tbodyMatch[1];
+      // Try to find table by looking for team rows with stats - search for tbody with /teams/ links
+      const tbodyMatches = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/gi);
+      if (tbodyMatches) {
+        // Find the tbody that contains team links
+        for (const tbodyMatch of tbodyMatches) {
+          if (tbodyMatch.includes('/teams/') && tbodyMatch.includes('data-stat')) {
+            const tbodyContent = tbodyMatch.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+            if (tbodyContent && tbodyContent[1]) {
+              tableHtml = tbodyContent[1];
+              break;
+            }
+          }
+        }
       }
     }
     
     if (!tableHtml) {
       // Log a sample of the HTML to help debug
-      const htmlSample = html.substring(0, 2000);
+      const htmlSample = html.substring(0, 5000);
       console.error('[bballref] Could not find defensive stats table. HTML sample:', htmlSample);
-      throw new Error('Could not find defensive stats table in Basketball Reference HTML');
+      // Try one more fallback: look for any table with team links
+      const anyTableMatch = html.match(/<table[^>]*>([\s\S]{0,50000})<\/table>/i);
+      if (anyTableMatch && anyTableMatch[1] && anyTableMatch[1].includes('/teams/')) {
+        console.log('[bballref] Found table with team links as fallback');
+        tableHtml = anyTableMatch[1];
+      } else {
+        throw new Error('Could not find defensive stats table in Basketball Reference HTML');
+      }
     }
     
     console.log(`[bballref] Found table HTML, length: ${tableHtml.length}`);
     
     // Extract team rows - Basketball Reference uses <tr> with data-stat attributes
+    // First, try to extract from tbody if it exists within tableHtml
+    let rowsToParse = tableHtml;
+    const tbodyMatch = tableHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+    if (tbodyMatch && tbodyMatch[1]) {
+      rowsToParse = tbodyMatch[1];
+      console.log('[bballref] Using tbody content for row parsing');
+    }
+    
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
     const teamRows: string[] = [];
     let rowMatch;
-    while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
+    let totalRows = 0;
+    while ((rowMatch = rowRegex.exec(rowsToParse)) !== null) {
+      totalRows++;
       const rowHtml = rowMatch[1];
       // Skip header rows (they have <th> tags or "data-stat="ranker"" or "Rk" text)
-      if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</')) {
+      if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</') || rowHtml.includes('>Rank</') || rowHtml.trim() === '') {
         continue;
       }
-      // Check if this row has team data (has a team link)
-      if (rowHtml.includes('data-stat="team"') && rowHtml.includes('/teams/')) {
+      // Check if this row has team data - be more flexible with matching
+      // Look for either data-stat="team" OR a /teams/ link
+      // Also accept rows that have /teams/ links even without explicit data-stat="team"
+      const hasTeamLink = rowHtml.includes('/teams/');
+      const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
+      
+      // Accept if it has a team link (more flexible)
+      if (hasTeamLink) {
+        teamRows.push(rowHtml);
+      } else if (hasTeamDataStat) {
+        // Also accept if it has the data-stat but no link (in case link format is different)
         teamRows.push(rowHtml);
       }
     }
     
-    console.log(`[bballref] Found ${teamRows.length} team rows`);
+    // If still no rows found, try parsing the entire tableHtml again (maybe rows are at top level)
+    if (teamRows.length === 0 && rowsToParse !== tableHtml) {
+      console.log('[bballref] No rows found in tbody, trying full tableHtml');
+      const fullRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      let fullRowMatch;
+      while ((fullRowMatch = fullRowRegex.exec(tableHtml)) !== null) {
+        const rowHtml = fullRowMatch[1];
+        if (rowHtml.includes('<th') || rowHtml.includes('data-stat="ranker"') || rowHtml.includes('>Rk</') || rowHtml.includes('>Rank</') || rowHtml.trim() === '') {
+          continue;
+        }
+        if (rowHtml.includes('/teams/') || rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'")) {
+          teamRows.push(rowHtml);
+        }
+      }
+    }
+    
+    console.log(`[bballref] Found ${teamRows.length} team rows out of ${totalRows} total rows`);
     
     if (teamRows.length === 0) {
       // Log a sample to help debug
       const sampleRows = tableHtml.match(/<tr[^>]*>([\s\S]{0,500})<\/tr>/gi);
-      console.error('[bballref] No team rows found. Sample rows:', sampleRows?.slice(0, 3));
+      console.error('[bballref] No team rows found. Total rows parsed:', totalRows);
+      console.error('[bballref] Sample rows (first 3):', sampleRows?.slice(0, 3));
+      console.error('[bballref] Table HTML length:', tableHtml.length);
+      console.error('[bballref] Table HTML sample (first 1000 chars):', tableHtml.substring(0, 1000));
     }
     
     const allTeamStats: Record<string, {
