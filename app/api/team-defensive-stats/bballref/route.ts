@@ -96,8 +96,13 @@ export async function GET(req: NextRequest) {
     }
     
     if (!tableHtml) {
+      // Log a sample of the HTML to help debug
+      const htmlSample = html.substring(0, 2000);
+      console.error('[bballref] Could not find defensive stats table. HTML sample:', htmlSample);
       throw new Error('Could not find defensive stats table in Basketball Reference HTML');
     }
+    
+    console.log(`[bballref] Found table HTML, length: ${tableHtml.length}`);
     
     // Extract team rows - Basketball Reference uses <tr> with data-stat attributes
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -113,6 +118,14 @@ export async function GET(req: NextRequest) {
       if (rowHtml.includes('data-stat="team"') && rowHtml.includes('/teams/')) {
         teamRows.push(rowHtml);
       }
+    }
+    
+    console.log(`[bballref] Found ${teamRows.length} team rows`);
+    
+    if (teamRows.length === 0) {
+      // Log a sample to help debug
+      const sampleRows = tableHtml.match(/<tr[^>]*>([\s\S]{0,500})<\/tr>/gi);
+      console.error('[bballref] No team rows found. Sample rows:', sampleRows?.slice(0, 3));
     }
     
     const allTeamStats: Record<string, {
