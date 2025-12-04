@@ -73,11 +73,11 @@ export async function GET(req: NextRequest) {
         console.log(`[bballref] Recalculating rankings for ${teamCount} teams`);
 
         for (const metric of metrics) {
-          const teamsWithStats = Object.entries(allData.teamStats)
-            .filter(([_, stats]) => stats && typeof stats[metric] === 'number') // Only include teams with valid stats
+          const teamsWithStats = Object.entries(allData.teamStats as Record<string, any>)
+            .filter(([_, stats]) => stats && typeof (stats as any)[metric] === 'number') // Only include teams with valid stats
             .sort(([_, a], [__, b]) => {
               // Sort descending (highest first) - rank 30 is best
-              return (b[metric] || 0) - (a[metric] || 0);
+              return ((b as any)[metric] || 0) - ((a as any)[metric] || 0);
             });
 
           console.log(`[bballref] ${metric}: Found ${teamsWithStats.length} teams with stats`);
