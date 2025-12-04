@@ -5546,7 +5546,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
           
           defensiveStatsResponse = await Promise.race([
             cachedFetch<any>(
-              `/api/team-defensive-stats?team=${targetOpp}&games=82`,
+              `/api/team-defensive-stats?team=${targetOpp}&games=20`, // Reduced from 82 to 20 for faster response
               undefined,
               DVP_CACHE_TTL // 2 minute cache for fresh data
             ),
