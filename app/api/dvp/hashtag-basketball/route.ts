@@ -152,8 +152,9 @@ async function fetchHashtagDVP(metric: string = 'pts', timeframe: string = 'seas
                     // Try to extract position values
                     const positionValues: Record<string, number> = {};
                     for (const pos of POSITIONS) {
-                      if (value[pos] !== undefined) {
-                        positionValues[pos] = Number(value[pos]) || 0;
+                      const posValue = (value as any)[pos];
+                      if (posValue !== undefined) {
+                        positionValues[pos] = Number(posValue) || 0;
                       }
                     }
                     if (Object.keys(positionValues).length > 0) {
