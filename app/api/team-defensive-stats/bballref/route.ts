@@ -52,11 +52,32 @@ export async function GET(req: NextRequest) {
   const getAll = searchParams.get('all') === '1';
 
   try {
-    const cacheKey = `bballref_defensive_stats${getAll ? '_all' : `_${teamParam}`}`;
-    const hit = cache.get<any>(cacheKey);
-    if (hit) {
-      return NextResponse.json(hit);
+    // Always check the "all" cache first - it contains all teams
+    const allCacheKey = 'bballref_defensive_stats_all';
+    let allData = cache.get<any>(allCacheKey);
+    
+    // If we have cached "all" data, use it
+    if (allData && allData.success && allData.teamStats) {
+      if (getAll) {
+        return NextResponse.json(allData);
+      }
+      // For single team, extract from the cached all data
+      if (teamParam) {
+        const team = normalizeAbbr(teamParam);
+        const teamStats = allData.teamStats[team];
+        if (teamStats) {
+          return NextResponse.json({
+            success: true,
+            source: 'basketball-reference',
+            team,
+            perGame: teamStats,
+          });
+        }
+      }
     }
+    
+    // If no cache or team not found, we need to fetch and parse
+    const cacheKey = getAll ? allCacheKey : `bballref_defensive_stats_${teamParam || 'single'}`;
 
     // Fetch the HTML page
     const response = await fetch(BBALLREF_URL, {
