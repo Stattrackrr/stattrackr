@@ -421,23 +421,26 @@ export async function GET(req: NextRequest) {
             newTotalRows++;
             const rowHtml = newRowMatch[1];
             
-            // Skip header rows (same logic as initial parsing)
-            if (rowHtml.includes('<th') || 
-                rowHtml.includes('data-stat="ranker"') || 
-                rowHtml.includes("data-stat='ranker'") ||
-                rowHtml.includes('>Rk</') || 
-                rowHtml.includes('>Rank</') || 
-                rowHtml.trim() === '' ||
-                rowHtml.length < 50) {
-              continue;
-            }
-            
-            // Check if this row has team data - be very flexible (same as initial parsing)
+            // Check if this row has team data FIRST (same logic as initial parsing)
             const hasTeamLink = rowHtml.includes('/teams/');
             const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
             const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
             
-            // Accept if it has any team indicator (same as initial parsing - no stats requirement)
+            // Skip header rows - but be careful: data rows can have <th> tags for ranker column
+            // Only skip if it's clearly a header (has <th> but NO team data, or has "Rk"/"Rank" text without team)
+            const isHeaderRow = (
+              (rowHtml.includes('<th') && !hasTeamLink && !hasTeamDataStat && !hasTeamName) ||  // <th> without team data
+              (rowHtml.includes('>Rk</') && !hasTeamLink) ||  // "Rk" text without team link
+              (rowHtml.includes('>Rank</') && !hasTeamLink) ||  // "Rank" text without team link
+              (rowHtml.trim() === '') ||  // Empty row
+              (rowHtml.length < 50 && !hasTeamLink && !hasTeamDataStat)  // Very short row without team data
+            );
+            
+            if (isHeaderRow) {
+              continue;
+            }
+            
+            // Accept if it has any team indicator (data rows with <th> for ranker are OK)
             if (hasTeamLink || hasTeamDataStat || hasTeamName) {
               // Avoid duplicates
               if (!newTeamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
