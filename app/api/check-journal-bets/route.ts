@@ -1208,10 +1208,11 @@ export async function GET(request: Request) {
           const isWholeNumber = line % 1 === 0;
           let result: 'win' | 'loss';
           
-          // Special handling for spreads: evaluateGameProp returns negative if team covered, positive if didn't cover
-          // The line is stored from the team's perspective (negative for favorites, positive for underdogs)
-          // Team covers if actualValue < 0 (negative), regardless of line value
-          if (bet.stat_type === 'spread') {
+          // Special handling for different bet types
+          if (bet.stat_type === 'moneyline') {
+            // For moneyline: evaluateGameProp returns 1 if team won, 0 if lost
+            result = actualValue === 1 ? 'win' : 'loss';
+          } else if (bet.stat_type === 'spread') {
             // For spreads: actualValue < 0 means team covered, actualValue > 0 means didn't cover
             // The line is just for reference - the key is whether actualValue is negative
             result = actualValue < 0 ? 'win' : 'loss';
