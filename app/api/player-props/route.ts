@@ -275,7 +275,7 @@ export async function GET(req: NextRequest) {
 
     // Debug: Find players with multiple lines from same bookmaker
     if (process.env.NODE_ENV !== 'production') {
-      const byBookmaker = new Map<string, BookmakerOdds[]>();
+      const byBookmaker = new Map<string, PlayerPropOdds[]>();
       playerProps.forEach(prop => {
         if (!byBookmaker.has(prop.bookmaker)) {
           byBookmaker.set(prop.bookmaker, []);
