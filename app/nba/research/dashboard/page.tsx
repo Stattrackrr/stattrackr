@@ -5056,10 +5056,11 @@ const DVP_METRICS = [
   { key: 'pts' as const, label: 'Points vs ', isPercentage: false },
   { key: 'reb' as const, label: 'Rebounds vs ', isPercentage: false },
   { key: 'ast' as const, label: 'Assists vs ', isPercentage: false },
+  { key: 'fg3m' as const, label: 'Three Points Made vs ', isPercentage: false },
   { key: 'fg_pct' as const, label: 'Field Goal % vs ', isPercentage: true },
-  { key: 'fg3_pct' as const, label: 'Three Point % vs ', isPercentage: true },
   { key: 'stl' as const, label: 'Steals vs ', isPercentage: false },
   { key: 'blk' as const, label: 'Blocks vs ', isPercentage: false },
+  { key: 'to' as const, label: 'Turnovers vs ', isPercentage: false },
 ] as const;
 
 // Global cache shared between all PositionDefenseCard instances (mobile + desktop)
@@ -5157,9 +5158,10 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         // If we have ranks too, show them
         if (rankCached) {
           const rmap: Record<string, number | null> = {};
+          const normalizedOpp = normalizeAbbr(targetOpp);
           for (const m of DVP_METRICS) {
             const ranks = rankCached.metrics?.[m.key] || {};
-            const rank = ranks?.[targetOpp] as number | undefined;
+            const rank = ranks?.[normalizedOpp] as number | undefined;
             rmap[m.key] = Number.isFinite(rank as any) ? (rank as number) : null;
           }
           setPerRank(rmap);
@@ -5218,6 +5220,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           if (!abort && dvpData && rankData) {
             const map: Record<string, number | null> = {};
             const rmap: Record<string, number | null> = {};
+            const normalizedOpp = normalizeAbbr(targetOpp);
             
             for (const m of DVP_METRICS) {
               const perGame = dvpData.metrics?.[m.key];
@@ -5225,9 +5228,34 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
               map[m.key] = typeof value === 'number' ? value : null;
               
               const ranks = rankData.metrics?.[m.key] || {};
-              const rank = ranks?.[targetOpp] as number | undefined;
-              rmap[m.key] = Number.isFinite(rank as any) ? (rank as number) : null;
+              const rank = ranks?.[normalizedOpp] as number | undefined;
+              
+              // Debug logging for first metric only
+              if (m.key === 'pts') {
+                console.log(`[DVP Frontend] Rank lookup for ${m.key}:`, {
+                  normalizedOpp,
+                  rank,
+                  availableTeamKeys: Object.keys(ranks).slice(0, 10),
+                  rankDataStructure: {
+                    hasMetrics: !!rankData.metrics,
+                    metricKeys: Object.keys(rankData.metrics || {}),
+                    ranksType: typeof ranks,
+                    ranksIsObject: ranks && typeof ranks === 'object',
+                    ranksKeysCount: Object.keys(ranks).length
+                  }
+                });
+              }
+              
+              // Accept 0 as a valid rank (means team has null value)
+              rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }
+            
+            // Debug: log what we're setting
+            console.log(`[DVP Frontend] Setting ranks:`, {
+              rmap,
+              sampleRanks: Object.entries(rmap).slice(0, 3),
+              allKeys: Object.keys(rmap)
+            });
             
             setPerStat(map);
             setPerRank(rmap);
@@ -5399,6 +5427,17 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
 <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-48 sm:max-h-56 md:max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
             {DVP_METRICS.map((m) => {
               const rank = perRank[m.key];
+              
+              // Debug: log rank value for first metric
+              if (m.key === 'pts') {
+                console.log(`[DVP Display] Rendering rank for ${m.key}:`, {
+                  rank,
+                  rankType: typeof rank,
+                  perRankKeys: Object.keys(perRank),
+                  perRankValue: perRank[m.key]
+                });
+              }
+              
               let borderColor: string;
               let badgeColor: string;
               
@@ -5436,7 +5475,20 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
                         {fmt(perStat[m.key], m.isPercentage)}
                       </span>
                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}`} title="Rank (30 better for overs, 1 for unders)">
-                        {rank && rank > 0 ? `#${rank}` : ''}
+                        {(() => {
+                          // Debug: log what we're trying to display
+                          if (m.key === 'pts') {
+                            console.log(`[DVP Display] Rendering badge for ${m.key}:`, {
+                              rank,
+                              rankType: typeof rank,
+                              condition1: typeof rank === 'number',
+                              condition2: rank > 0,
+                              willDisplay: typeof rank === 'number' && rank > 0,
+                              displayValue: typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : ''
+                            });
+                          }
+                          return typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : '';
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -7191,6 +7243,7 @@ const lineMovementInFlightRef = useRef(false);
       const seasonResults = await Promise.all(
         targetSeasons.map(async (s) => {
           try {
+            // Fetch all games for this season (API handles pagination internally)
             const url = `/api/bdl/games?seasons[]=${s}&team_ids[]=${teamId}&per_page=100`;
             const res = await fetch(url);
             const js = await res.json();

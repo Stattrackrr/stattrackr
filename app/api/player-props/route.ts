@@ -28,6 +28,11 @@ interface PlayerPropOdds {
   line: number;
   overPrice: number;
   underPrice: number;
+  isPickem?: boolean;
+  variantLabel?: string | null; // 'Goblin' or 'Demon' - indicates the type of line
+  multiplier?: number; // For PrizePicks pick'em, the actual multiplier calculated from counts
+  goblinCount?: number; // Number of goblin boosts on this line
+  demonCount?: number; // Number of demon discounts on this line
 }
 
 // Convert American odds to decimal
@@ -202,7 +207,42 @@ export async function GET(req: NextRequest) {
           const entryAny = entry as any;
           
           if (entryAny?.line && entryAny?.over && entryAny?.under) {
-            // Parse odds (handle string or number)
+            const isPickem = entryAny?.isPickem ?? false;
+            const isPrizePicks = bookmakerName.toLowerCase().includes('prizepicks');
+            
+            // Handle PrizePicks pick'em lines (over/under are 'Pick'em' strings, not numeric odds)
+            if (isPickem && isPrizePicks) {
+              const lineValue = parseFloat(entryAny.line);
+              if (!isNaN(lineValue)) {
+                const multiplier = entryAny?.multiplier ?? (entryAny?.variantLabel === 'Demon' ? 3.0 : 2.0);
+                
+              // Calculate multiplier from counts if available, otherwise use stored multiplier
+              let finalMultiplier = multiplier;
+              if (entryAny?.goblinCount !== undefined) {
+                finalMultiplier = 1 + (0.10 * entryAny.goblinCount);
+              } else if (entryAny?.demonCount !== undefined) {
+                finalMultiplier = 1 + (0.10 * entryAny.demonCount);
+              } else if (multiplier === undefined) {
+                // Fallback: estimate from variant
+                finalMultiplier = entryAny?.variantLabel === 'Demon' ? 1.20 : 1.10;
+              }
+              
+              playerProps.push({
+                bookmaker: bookmakerName,
+                line: lineValue,
+                overPrice: finalMultiplier, // Use multiplier as "odds" for pick'em
+                underPrice: finalMultiplier,
+                isPickem: true,
+                variantLabel: entryAny?.variantLabel ?? null,
+                multiplier: finalMultiplier,
+                goblinCount: entryAny?.goblinCount,
+                demonCount: entryAny?.demonCount,
+              });
+              }
+              continue; // Skip normal odds parsing for pick'em
+            }
+            
+            // Parse odds for regular lines (handle string or number)
             const overOdds = typeof entryAny.over === 'string' 
               ? parseFloat(entryAny.over.replace(/[^+\-\d]/g, ''))
               : entryAny.over;
@@ -220,6 +260,9 @@ export async function GET(req: NextRequest) {
                 line: parseFloat(entryAny.line),
                 overPrice: overDecimal,
                 underPrice: underDecimal,
+                isPickem: false,
+                variantLabel: entryAny?.variantLabel ?? null,
+                multiplier: undefined,
               });
             }
           }
@@ -229,6 +272,24 @@ export async function GET(req: NextRequest) {
 
     // Sort by line (descending)
     playerProps.sort((a, b) => b.line - a.line);
+
+    // Debug: Find players with multiple lines from same bookmaker
+    if (process.env.NODE_ENV !== 'production') {
+      const byBookmaker = new Map<string, BookmakerOdds[]>();
+      playerProps.forEach(prop => {
+        if (!byBookmaker.has(prop.bookmaker)) {
+          byBookmaker.set(prop.bookmaker, []);
+        }
+        byBookmaker.get(prop.bookmaker)!.push(prop);
+      });
+      
+      byBookmaker.forEach((lines, bookmaker) => {
+        if (lines.length > 1) {
+          console.log(`[Alt Lines Found] ${bookmaker} has ${lines.length} lines for ${playerName} ${statType}:`, 
+            lines.map(l => l.line).join(', '));
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

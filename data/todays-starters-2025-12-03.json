@@ -1,0 +1,95 @@
+{
+  "date": "2025-12-03",
+  "games": [
+    {
+      "game_id": 18447133,
+      "date": "2025-12-03",
+      "home_team": "CLE",
+      "visitor_team": "POR",
+      "status": "2025-12-04T00:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447134,
+      "date": "2025-12-03",
+      "home_team": "IND",
+      "visitor_team": "DEN",
+      "status": "2025-12-04T00:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447135,
+      "date": "2025-12-03",
+      "home_team": "ORL",
+      "visitor_team": "SAS",
+      "status": "2025-12-04T00:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447136,
+      "date": "2025-12-03",
+      "home_team": "ATL",
+      "visitor_team": "LAC",
+      "status": "2025-12-04T00:30:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447137,
+      "date": "2025-12-03",
+      "home_team": "NYK",
+      "visitor_team": "CHA",
+      "status": "2025-12-04T00:30:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447138,
+      "date": "2025-12-03",
+      "home_team": "CHI",
+      "visitor_team": "BKN",
+      "status": "2025-12-04T01:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447139,
+      "date": "2025-12-03",
+      "home_team": "HOU",
+      "visitor_team": "SAC",
+      "status": "2025-12-04T01:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447140,
+      "date": "2025-12-03",
+      "home_team": "MIL",
+      "visitor_team": "DET",
+      "status": "2025-12-04T01:00:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    },
+    {
+      "game_id": 18447141,
+      "date": "2025-12-03",
+      "home_team": "DAL",
+      "visitor_team": "MIA",
+      "status": "2025-12-04T01:30:00Z",
+      "home_starters": null,
+      "visitor_starters": null,
+      "note": "Game not started - balldontlie.io only provides starters after games begin"
+    }
+  ]
+}

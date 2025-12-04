@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const metrics = metricsParam.split(',').map(m => m.trim());
+    const forceRefresh = searchParams.get('refresh') === '1';
 
     // Fetch all metric rankings in parallel
     const results = await Promise.all(
@@ -45,6 +46,9 @@ export async function GET(request: NextRequest) {
           rankUrl.searchParams.set('metric', metric);
           rankUrl.searchParams.set('pos', pos);
           rankUrl.searchParams.set('games', games);
+          if (forceRefresh) {
+            rankUrl.searchParams.set('refresh', '1');
+          }
 
           // Use absolute URL for internal API calls
           const fullUrl = new URL(rankUrl.pathname + rankUrl.search, request.nextUrl.origin);
@@ -63,6 +67,17 @@ export async function GET(request: NextRequest) {
           }
 
           const data = await response.json();
+          
+          // Debug logging
+          if (!data.ranks || Object.keys(data.ranks || {}).length === 0) {
+            console.error(`[DVP Rank Batch] No ranks returned for ${metric} (${pos}):`, {
+              success: data.success,
+              hasRanks: !!data.ranks,
+              rankCount: data.ranks ? Object.keys(data.ranks).length : 0,
+              sampleKeys: data.ranks ? Object.keys(data.ranks).slice(0, 5) : []
+            });
+          }
+          
           return {
             metric,
             ranks: data.ranks || {},

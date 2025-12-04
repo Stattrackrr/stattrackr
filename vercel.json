@@ -39,6 +39,10 @@
     {
       "path": "/api/check-journal-bets",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-dvp-cache",
+      "schedule": "0 8 * * *"
     }
   ],
   "functions": {
@@ -56,6 +60,9 @@
     },
     "app/api/check-journal-bets/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/refresh-dvp-cache/route.ts": {
+      "maxDuration": 300
     }
   },
   "rewrites": [

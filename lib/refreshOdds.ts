@@ -756,7 +756,16 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
           bookName: string,
           playerNameKey: string,
           statKeyName: string,
-          entry: { line: string; over: string; under: string; isPickem?: boolean; variantLabel?: string | null }
+          entry: { 
+            line: string; 
+            over: string; 
+            under: string; 
+            isPickem?: boolean; 
+            variantLabel?: string | null;
+            multiplier?: number;
+            goblinCount?: number;
+            demonCount?: number;
+          }
         ) => {
           const playerBucket = ensurePlayerBucket(bookName, playerNameKey);
           const current = playerBucket[statKeyName];
@@ -829,10 +838,125 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
             // Special handling for PrizePicks alternate markets (pick'em style - only Over outcomes)
             if (isPickemBook && isAlternateMarket && allOvers.length > 0 && allUnders.length === 0) {
               // PrizePicks alternate markets only have Over outcomes - treat each as a pick'em line
+              
+              // Calculate market baseline line from other bookmakers (excluding PrizePicks)
+              // This is used to determine if PrizePicks line is a Demon (upward) or Goblin (downward)
+              let marketBaseline: number | null = null;
+              const allBookmakers = game.bookmakers || [];
+              const nonPrizePicksLines: number[] = [];
+              
+              for (const book of allBookmakers) {
+                const bookName = (book as any)?.name || '';
+                if (bookName.toLowerCase().includes('prizepicks')) continue;
+                
+                const statData = (book as any)?.[statKey];
+                if (statData && statData.line && statData.line !== 'N/A') {
+                  const lineValue = parseFloat(String(statData.line));
+                  if (!isNaN(lineValue)) {
+                    nonPrizePicksLines.push(lineValue);
+                  }
+                }
+              }
+              
+              // Calculate average of non-PrizePicks lines as market baseline
+              if (nonPrizePicksLines.length > 0) {
+                marketBaseline = nonPrizePicksLines.reduce((sum, line) => sum + line, 0) / nonPrizePicksLines.length;
+              }
+              
               for (const over of allOvers) {
-                // Determine variant based on price: +100 (100) = Demon, others = Goblin
-                const priceValue = over.price;
-                const variantLabel: 'Goblin' | 'Demon' = (priceValue === 100 || priceValue === -100) ? 'Demon' : 'Goblin';
+                const prizepicksLine = parseFloat(String(over.point));
+                if (isNaN(prizepicksLine)) continue;
+                
+                // Check if API provides goblin_count and demon_count
+                // Log the outcome object to see what fields are available
+                if (process.env.NODE_ENV !== 'production') {
+                  console.log('[PrizePicks Debug] Outcome object keys:', Object.keys(over));
+                  console.log('[PrizePicks Debug] Outcome object:', JSON.stringify(over, null, 2));
+                  if ((over as any).goblin_count !== undefined || (over as any).goblinCount !== undefined) {
+                    console.log('[PrizePicks Debug] Found goblin_count in API response!');
+                  }
+                  if ((over as any).demon_count !== undefined || (over as any).demonCount !== undefined) {
+                    console.log('[PrizePicks Debug] Found demon_count in API response!');
+                  }
+                }
+                
+                // Check for goblin_count and demon_count in various possible field names
+                const goblinCountFromAPI = (over as any).goblin_count ?? (over as any).goblinCount ?? (over as any).goblin_count ?? undefined;
+                const demonCountFromAPI = (over as any).demon_count ?? (over as any).demonCount ?? (over as any).demon_count ?? undefined;
+                
+                // Determine variant based on line comparison to market baseline
+                // Demon = upward adjustment (PrizePicks line > market line)
+                // Goblin = downward adjustment (PrizePicks line < market line)
+                let variantLabel: 'Goblin' | 'Demon';
+                if (marketBaseline !== null) {
+                  // Compare to market baseline
+                  variantLabel = prizepicksLine > marketBaseline ? 'Demon' : 'Goblin';
+                } else {
+                  // Fallback: use price-based determination if no baseline available
+                  const priceValue = over.price;
+                  variantLabel = (priceValue === 100 || priceValue === -100) ? 'Demon' : 'Goblin';
+                }
+                
+                // PrizePicks multiplier calculation based on goblin/demon counts
+                // Formula: multiplier = 1 + (0.10 * count)
+                // Use API-provided counts if available, otherwise estimate from price
+                let goblinCount: number | undefined = goblinCountFromAPI;
+                let demonCount: number | undefined = demonCountFromAPI;
+                let multiplier: number | undefined = undefined;
+                
+                // If API provided counts, use them directly
+                if (goblinCount !== undefined) {
+                  multiplier = 1 + (0.10 * goblinCount);
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.log(`[PrizePicks] Using API goblin_count: ${goblinCount}, multiplier: ${multiplier}`);
+                  }
+                } else if (demonCount !== undefined) {
+                  multiplier = 1 + (0.10 * demonCount);
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.log(`[PrizePicks] Using API demon_count: ${demonCount}, multiplier: ${multiplier}`);
+                  }
+                } else {
+                  // API didn't provide counts - estimate from price
+                  const priceValue = over.price;
+                  if (priceValue !== null && priceValue !== undefined) {
+                    const priceNum = typeof priceValue === 'number' ? priceValue : parseFloat(String(priceValue));
+                    if (!isNaN(priceNum)) {
+                      // Estimate counts from price
+                      if (variantLabel === 'Goblin') {
+                        // Estimate goblin count: multiplier = 1 + (0.10 * goblin_count)
+                        if (Math.abs(priceNum) >= 100) {
+                          const estimatedMultiplier = (Math.abs(priceNum) / 100) + 1;
+                          goblinCount = Math.round((estimatedMultiplier - 1) / 0.10);
+                          multiplier = 1 + (0.10 * goblinCount);
+                        } else if (priceNum > 1 && priceNum <= 10) {
+                          goblinCount = Math.round((priceNum - 1) / 0.10);
+                          multiplier = 1 + (0.10 * goblinCount);
+                        }
+                      } else if (variantLabel === 'Demon') {
+                        // Estimate demon count: multiplier = 1 + (0.10 * demon_count)
+                        if (Math.abs(priceNum) >= 100) {
+                          const estimatedMultiplier = (Math.abs(priceNum) / 100) + 1;
+                          demonCount = Math.round((estimatedMultiplier - 1) / 0.10);
+                          multiplier = 1 + (0.10 * demonCount);
+                        } else if (priceNum > 1 && priceNum <= 10) {
+                          demonCount = Math.round((priceNum - 1) / 0.10);
+                          multiplier = 1 + (0.10 * demonCount);
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Fallback: if we couldn't calculate, use default estimates
+                  if (multiplier === undefined) {
+                    if (variantLabel === 'Goblin') {
+                      goblinCount = 1; // Default: 1 goblin = 1.10x
+                      multiplier = 1.10;
+                    } else {
+                      demonCount = 1; // Default: 1 demon = 1.10x
+                      multiplier = 1.10;
+                    }
+                  }
+                }
 
                 pushStatEntry(baseBookmakerName, playerName, statKey, {
                   line: String(over.point),
@@ -840,9 +964,12 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
                   under: 'Pick\'em',
                   isPickem: true,
                   variantLabel,
+                  multiplier,
+                  goblinCount,
+                  demonCount,
                 });
 
-                registerPickemVariant(variantLabel, parseFloat(String(over.point)), playerName, statKey);
+                registerPickemVariant(variantLabel, prizepicksLine, playerName, statKey);
               }
               continue; // Skip the normal Over/Under matching logic
             }

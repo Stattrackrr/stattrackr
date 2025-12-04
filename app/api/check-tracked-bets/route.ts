@@ -293,13 +293,23 @@ export async function GET(request: Request) {
         // Determine result
         // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
         // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
-        const isWholeNumber = prop.line % 1 === 0;
+        // Ensure line is a number (handle string/decimal types from database)
+        const line = Number(prop.line);
+        const isWholeNumber = line % 1 === 0;
         let result: 'win' | 'loss';
         if (prop.over_under === 'over') {
-          result = (isWholeNumber ? actualValue >= prop.line : actualValue > prop.line) ? 'win' : 'loss';
+          result = (isWholeNumber ? actualValue >= line : actualValue > line) ? 'win' : 'loss';
+        } else if (prop.over_under === 'under') {
+          result = (isWholeNumber ? actualValue <= line : actualValue < line) ? 'win' : 'loss';
         } else {
-          result = (isWholeNumber ? actualValue <= prop.line : actualValue < prop.line) ? 'win' : 'loss';
+          console.error(`[check-tracked-bets] Invalid over_under value for prop ${prop.id}: "${prop.over_under}"`);
+          continue;
         }
+
+        // Log the evaluation for debugging
+        console.log(`[check-tracked-bets] Evaluating prop ${prop.id}: ${prop.player_name} ${prop.over_under} ${line} ${prop.stat_type}`);
+        console.log(`[check-tracked-bets]   Actual value: ${actualValue}, Line: ${line}, Is whole number: ${isWholeNumber}`);
+        console.log(`[check-tracked-bets]   Comparison: ${actualValue} ${prop.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);
 
         // Update the tracked prop with individual stat breakdown
         const { error: updateError } = await supabaseAdmin

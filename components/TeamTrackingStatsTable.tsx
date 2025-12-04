@@ -225,53 +225,53 @@ export function TeamTrackingStatsTable({
 
       {/* Table */}
       {!loading && !error && sortedPlayers.length > 0 && (
-        <div className="overflow-x-auto -mx-4 md:mx-0">
+        <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
           <div className="max-h-[380px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg scroll-smooth">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <table className="min-w-[600px] md:min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 shadow-md border-b-2 border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="px-3 md:px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 sm:px-3 md:px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 sm:w-auto">
                   Rank
                 </th>
-                <th className="px-3 md:px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 sm:px-3 md:px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[120px]">
                   Player
                 </th>
                 {category === 'passing' ? (
                   <>
-                    <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       AST
                     </th>
-                    <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider whitespace-nowrap">
                       Pot AST
                     </th>
-                    <th className="hidden sm:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       AST%
                     </th>
-                    <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       Passes
                     </th>
-                    <th className="hidden lg:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       AST PTS
                     </th>
                   </>
                 ) : (
                   <>
-                    <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       REB
                     </th>
-                    <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider whitespace-nowrap">
                       REB CHN
                     </th>
-                    <th className="hidden sm:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       REB CHN%
                     </th>
-                    <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       AVG DIST
                     </th>
-                    <th className="hidden lg:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       DREB CHN
                     </th>
-                    <th className="hidden xl:table-cell px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 md:px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       DREB CHN%
                     </th>
                   </>
@@ -301,7 +301,7 @@ export function TeamTrackingStatsTable({
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }`}
                   >
-                    <td className="px-3 md:px-4 py-3 whitespace-nowrap">
+                    <td className="px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-12 sm:w-auto">
                       <span className={`text-sm font-bold ${
                         index === 0 ? 'text-yellow-600' :
                         index === 1 ? 'text-gray-400' :
@@ -311,12 +311,12 @@ export function TeamTrackingStatsTable({
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`}
                       </span>
                     </td>
-                    <td className="px-3 md:px-4 py-3 whitespace-nowrap">
+                    <td className="px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap min-w-[120px]">
                       <div className="flex items-center gap-2">
                         {isSelected && (
-                          <span className="text-blue-600 dark:text-blue-400">👤</span>
+                          <span className="text-blue-600 dark:text-blue-400 flex-shrink-0">👤</span>
                         )}
-                        <span className={`text-sm font-medium ${
+                        <span className={`text-sm font-medium truncate ${
                           isSelected 
                             ? 'text-blue-700 dark:text-blue-300 font-bold' 
                             : 'text-gray-900 dark:text-gray-100'
@@ -327,44 +327,44 @@ export function TeamTrackingStatsTable({
                     </td>
                     {category === 'passing' ? (
                       <>
-                        <td className="px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {player.ast?.toFixed(1) || 'N/A'}
                         </td>
-                        <td className="px-3 md:px-4 py-3 text-center whitespace-nowrap">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap">
                           <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                             {player.potentialAst?.toFixed(1) || 'N/A'}
                           </span>
                         </td>
-                        <td className="hidden sm:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.astToPct ? `${(player.astToPct * 100).toFixed(1)}%` : 'N/A'}
                         </td>
-                        <td className="hidden md:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.passesMade?.toFixed(1) || 'N/A'}
                         </td>
-                        <td className="hidden lg:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.astPtsCreated?.toFixed(1) || 'N/A'}
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {player.reb?.toFixed(1) || 'N/A'}
                         </td>
-                        <td className="px-3 md:px-4 py-3 text-center whitespace-nowrap">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap">
                           <span className="text-sm font-bold text-green-600 dark:text-green-400">
                             {player.rebChances?.toFixed(1) || 'N/A'}
                           </span>
                         </td>
-                        <td className="hidden sm:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.rebChancePct ? `${(player.rebChancePct * 100).toFixed(1)}%` : 'N/A'}
                         </td>
-                        <td className="hidden md:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.avgRebDist?.toFixed(1) || 'N/A'}
                         </td>
-                        <td className="hidden lg:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.drebChances?.toFixed(1) || 'N/A'}
                         </td>
-                        <td className="hidden xl:table-cell px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                           {player.drebChancePct ? `${(player.drebChancePct * 100).toFixed(1)}%` : 'N/A'}
                         </td>
                       </>

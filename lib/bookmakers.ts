@@ -147,7 +147,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'prizepicks': {
     name: 'PrizePicks',
     logo: 'PP',
-    logoUrl: 'https://logo.clearbit.com/prizepicks.com',
+    logoUrl: '/images/prizepicks.avif',
     color: '#00C2FF',
   },
   'underdog': {

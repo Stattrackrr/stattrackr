@@ -123,7 +123,9 @@ class RequestCache {
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Include URL in error message for debugging
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url} - ${errorText}`);
     }
 
     return response.json();

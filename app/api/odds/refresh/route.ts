@@ -15,7 +15,10 @@ export interface PlayerPropLineEntry {
   over: string;
   under: string;
   isPickem?: boolean;
-  variantLabel?: string | null;
+  variantLabel?: string | null; // 'Goblin' or 'Demon' - indicates the type of line
+  multiplier?: number; // For PrizePicks pick'em, the actual multiplier calculated from counts
+  goblinCount?: number; // Number of goblin boosts on this line
+  demonCount?: number; // Number of demon discounts on this line
 }
 
 export interface BookRow {

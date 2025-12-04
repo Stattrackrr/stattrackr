@@ -1,4 +1,4 @@
-# How to View User Bets in Supabase
+perfect# How to View User Bets in Supabase
 
 ## Accessing Supabase Dashboard
 

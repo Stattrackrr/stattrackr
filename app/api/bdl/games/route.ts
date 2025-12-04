@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
   const includesCurrentSeason = seasonYears.includes(currSeasonYear);
   const LONG_TTL_SEC = 180 * 24 * 60 * 60; // 180 days for immutable seasons
   const DEFAULT_TTL_SEC = parseInt(process.env.SHARED_GAMES_TTL_SEC || String(CACHE_TTL.GAMES * 60), 10);
-  const ttlForStable = includesCurrentSeason ? DEFAULT_TTL_SEC : LONG_TTL_SEC;
+  // Cache completed games for 24 hours (they never change once final)
+  const COMPLETED_GAMES_TTL_SEC = 24 * 60 * 60; // 24 hours
+  const ttlForStable = includesCurrentSeason ? COMPLETED_GAMES_TTL_SEC : LONG_TTL_SEC;
 
   if (stableKey) {
     const sharedHit = await sharedCache.getJSON<any>(stableKey);
@@ -86,36 +88,70 @@ export async function GET(request: NextRequest) {
     let finalData: any;
 
     if (stableKey) {
-      // Aggregated, stable (team-scoped) path: single page is enough with per_page=100
-      const p = new URLSearchParams();
-      seasonsParams.forEach((v) => p.append('seasons[]', v));
-      teamParams.forEach((v) => p.append('team_ids[]', v));
-      p.set('per_page', perPage);
-      const url = `${base.toString()}?${p.toString()}`;
+      // Aggregated, stable (team-scoped) path: fetch all pages to ensure we get all games
       const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
       const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
       
-      console.log('🏀 Fetching (aggregated, team) from BDL:', url);
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'StatTrackr/1.0',
-          'Authorization': authHeader,
-        },
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🏀 Games API Error:', errorText);
-        return NextResponse.json({ error: 'BDL error', message: errorText }, { status: response.status });
+      let allGames: any[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const maxPerPage = 100; // BDL max per page
+      
+      console.log('🏀 Fetching (aggregated, team) from BDL with pagination...');
+      
+      // Fetch all pages
+      while (hasMorePages) {
+        const p = new URLSearchParams();
+        seasonsParams.forEach((v) => p.append('seasons[]', v));
+        teamParams.forEach((v) => p.append('team_ids[]', v));
+        p.set('per_page', String(maxPerPage));
+        p.set('page', String(currentPage));
+        
+        const url = `${base.toString()}?${p.toString()}`;
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'StatTrackr/1.0',
+            'Authorization': authHeader,
+          },
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`🏀 Games API Error (page ${currentPage}):`, errorText);
+          // If first page fails, return error. Otherwise, return what we have.
+          if (currentPage === 1) {
+            return NextResponse.json({ error: 'BDL error', message: errorText }, { status: response.status });
+          }
+          break;
+        }
+        
+        const json = await response.json();
+        const pageGames = Array.isArray(json?.data) ? json.data : [];
+        allGames = allGames.concat(pageGames);
+        
+        // Check if there are more pages
+        const meta = json?.meta || {};
+        const totalPages = meta.total_pages || 1;
+        const currentPageNum = meta.current_page || currentPage;
+        hasMorePages = currentPageNum < totalPages && pageGames.length === maxPerPage;
+        
+        console.log(`🏀 Fetched page ${currentPage}/${totalPages}: ${pageGames.length} games (total so far: ${allGames.length})`);
+        
+        if (hasMorePages) {
+          currentPage++;
+        }
       }
-      const json = await response.json();
-      const trimmed = Array.isArray(json?.data) ? json.data.map(trimGame) : [];
+      
+      const trimmed = allGames.map(trimGame);
       finalData = { data: trimmed, meta: { per_page: Number(perPage), total_count: trimmed.length } };
 
       // Cache under stable key
-      cache.set(stableKey, finalData, CACHE_TTL.GAMES);
+      // Cache completed games for 24 hours (they never change)
+      const memoryTTL = includesCurrentSeason ? 24 * 60 : CACHE_TTL.GAMES; // 24 hours for current season, default for past seasons
+      cache.set(stableKey, finalData, memoryTTL);
       await sharedCache.setJSON(stableKey, finalData, ttlForStable);
-      console.log(`✅ Games cached (stable key) memory:${CACHE_TTL.GAMES}m shared:${Math.round(ttlForStable/60)}m`);
+      console.log(`✅ Games cached (stable key) - ${trimmed.length} games - memory:${memoryTTL}m shared:${Math.round(ttlForStable/60)}m`);
       return NextResponse.json(finalData);
     }
 
