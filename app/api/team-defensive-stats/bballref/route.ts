@@ -90,8 +90,8 @@ export async function GET(req: NextRequest) {
           
           // Log first 5 and last 5 teams for verification
           if (teamsWithStats.length > 0) {
-            const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
-            const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${stats[metric]?.toFixed(1)}`);
+            const top5 = teamsWithStats.slice(0, 5).map(([team, stats]) => `${team}:${((stats as any)[metric] || 0).toFixed(1)}`);
+            const bottom5 = teamsWithStats.slice(-5).map(([team, stats]) => `${team}:${((stats as any)[metric] || 0).toFixed(1)}`);
             console.log(`[bballref] ${metric} rankings - Top 5 (rank 30-26): ${top5.join(', ')}`);
             console.log(`[bballref] ${metric} rankings - Bottom 5 (rank 5-1): ${bottom5.join(', ')}`);
           }
@@ -119,13 +119,13 @@ export async function GET(req: NextRequest) {
           const formattedRankings: Record<string, Array<{ team: string; rank: number; value: number }>> = {};
           
           for (const metric of metrics) {
-            const teamsWithStats = Object.entries(allData.teamStats)
-              .filter(([_, stats]) => stats && typeof stats[metric] === 'number')
-              .sort(([_, a], [__, b]) => (b[metric] || 0) - (a[metric] || 0))
+            const teamsWithStats = Object.entries(allData.teamStats as Record<string, any>)
+              .filter(([_, stats]) => stats && typeof (stats as any)[metric] === 'number')
+              .sort(([_, a], [__, b]) => ((b as any)[metric] || 0) - ((a as any)[metric] || 0))
               .map(([team, stats], index) => ({
                 team,
                 rank: 30 - index,
-                value: stats[metric] || 0,
+                value: (stats as any)[metric] || 0,
               }));
             
             formattedRankings[metric] = teamsWithStats;
