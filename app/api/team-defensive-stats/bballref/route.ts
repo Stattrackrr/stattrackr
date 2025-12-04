@@ -322,19 +322,34 @@ export async function GET(req: NextRequest) {
             
             console.log(`[bballref] Table has ${teamLinkCount} team links, isPerGame: ${isPerGame}`);
             
-            // Prefer tables with 20+ team links, prioritizing "Per Game" tables
-            if (teamLinkCount >= 20) {
-              if (!bestTable || 
-                  (isPerGame && !bestTable.isPerGame) || 
-                  (isPerGame === bestTable.isPerGame && teamLinkCount > bestTable.linkCount)) {
+            // Prefer tables with team links, STRONGLY prioritizing "Per Game" tables
+            // If it's a Per Game table, prefer it even if it has fewer links
+            if (teamLinkCount >= 15) {
+              if (!bestTable) {
                 bestTable = { content, linkCount: teamLinkCount, isPerGame };
+              } else if (isPerGame && !bestTable.isPerGame) {
+                // Always prefer Per Game over Total Stats
+                bestTable = { content, linkCount: teamLinkCount, isPerGame };
+              } else if (isPerGame === bestTable.isPerGame) {
+                // If both are same type, prefer the one with more links
+                if (teamLinkCount > bestTable.linkCount) {
+                  bestTable = { content, linkCount: teamLinkCount, isPerGame };
+                }
               }
+              // If bestTable is Per Game and this is not, don't replace it
             }
           }
         }
         
         // After finding the best table, switch to it and re-parse
-        if (bestTable && bestTable.linkCount > teamRows.length * 2) {
+        // Always switch to Per Game table if we found one, even if current has more teams
+        // Only switch to Total Stats if it has significantly more links AND we have very few teams
+        const shouldSwitch = bestTable && (
+          (bestTable.isPerGame && teamRows.length < 25) || // Always switch to Per Game if we have < 25 teams
+          (!bestTable.isPerGame && bestTable.linkCount > teamRows.length * 3 && teamRows.length < 10) // Only switch to Total Stats if we have very few teams
+        );
+        
+        if (shouldSwitch) {
           console.log(`[bballref] Found better table with ${bestTable.linkCount} team links (Per Game: ${bestTable.isPerGame}), switching to it`);
           tableHtml = bestTable.content;
           
@@ -358,14 +373,17 @@ export async function GET(req: NextRequest) {
               totalRows++;
               const rowHtml = newRowMatch[1];
               
-              // Skip header rows
-              if (rowHtml.includes('<th') || 
-                  rowHtml.includes('data-stat="ranker"') || 
-                  rowHtml.includes("data-stat='ranker'") ||
-                  rowHtml.includes('>Rk</') || 
-                  rowHtml.includes('>Rank</') || 
-                  rowHtml.trim() === '' ||
-                  rowHtml.length < 50) {
+              // Skip header rows - but be more lenient
+              // Check if it's a header by looking for ranker WITHOUT a team link
+              const isHeaderRow = rowHtml.includes('<th') || 
+                  (rowHtml.includes('data-stat="ranker"') && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat="team"/)) ||
+                  (rowHtml.includes("data-stat='ranker'") && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat='team'/)) ||
+                  (rowHtml.includes('>Rk</') && !rowHtml.includes('/teams/')) || 
+                  (rowHtml.includes('>Rank</') && !rowHtml.includes('/teams/')) ||
+                  (rowHtml.trim() === '' && rowHtml.length < 20) ||
+                  (rowHtml.length < 50 && !rowHtml.includes('/teams/') && !rowHtml.match(/data-stat="team"/));
+              
+              if (isHeaderRow) {
                 continue;
               }
               
@@ -374,14 +392,27 @@ export async function GET(req: NextRequest) {
               const hasTeamDataStat = rowHtml.includes('data-stat="team"') || rowHtml.includes("data-stat='team'");
               const hasTeamName = /(Spurs|Lakers|Celtics|Warriors|Heat|Bucks|Nuggets|Mavericks|Suns|76ers|Knicks|Nets|Hawks|Bulls|Cavaliers|Pistons|Rockets|Pacers|Clippers|Grizzlies|Timberwolves|Pelicans|Thunder|Magic|Trail Blazers|Kings|Raptors|Jazz|Wizards|Hornets)/i.test(rowHtml);
               
-              // Also check if row has stats (numbers) - this helps identify data rows
-              const hasStats = /\d+\.\d+/.test(rowHtml) || /\d+,\d+/.test(rowHtml);
+              // Check if row has stats - handle both Per Game (decimals) and Total Stats (commas)
+              // Per Game: "12.34", Total Stats: "1,234" or "1234"
+              const hasDecimalStats = /\d+\.\d+/.test(rowHtml); // Per Game stats
+              const hasCommaStats = /\d{1,3}(,\d{3})+/.test(rowHtml); // Total Stats with commas
+              const hasLargeNumbers = /\d{4,}/.test(rowHtml); // Total Stats without commas (large numbers)
+              const hasStats = hasDecimalStats || hasCommaStats || hasLargeNumbers;
               
-              // Accept if it has team indicator AND (stats OR is a reasonable length)
-              if ((hasTeamLink || hasTeamDataStat || hasTeamName) && (hasStats || rowHtml.length > 100)) {
-                // Avoid duplicates
-                if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
-                  teamRows.push(rowHtml);
+              // Accept if it has team indicator
+              // For Per Game tables, prefer rows with decimal stats
+              // For Total Stats tables, accept rows with any numbers or reasonable length
+              if (hasTeamLink || hasTeamDataStat || hasTeamName) {
+                const isPerGameTable = bestTable?.isPerGame ?? false;
+                const shouldAccept = isPerGameTable
+                  ? (hasDecimalStats || rowHtml.length > 100) // Per Game: prefer decimals
+                  : (hasStats || rowHtml.length > 80); // Total Stats: accept any numbers
+                
+                if (shouldAccept) {
+                  // Avoid duplicates
+                  if (!teamRows.some(existing => existing.substring(0, 100) === rowHtml.substring(0, 100))) {
+                    teamRows.push(rowHtml);
+                  }
                 }
               }
             }
