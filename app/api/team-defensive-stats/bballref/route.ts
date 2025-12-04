@@ -803,7 +803,7 @@ export async function GET(req: NextRequest) {
         const teamsWithStats = Object.entries(allTeamStats)
           .sort(([_, a], [__, b]) => {
             // Sort descending (highest first) - rank 30 is best
-            return (b[metric] || 0) - (a[metric] || 0);
+            return ((b as any)[metric] || 0) - ((a as any)[metric] || 0);
           });
 
         teamsWithStats.forEach(([team], index) => {
