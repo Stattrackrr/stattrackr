@@ -46,11 +46,16 @@ export async function POST(request: NextRequest) {
     const stripe = getStripe();
     
     // Check if user already has a Stripe customer ID and trial status
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('stripe_customer_id, has_used_trial')
       .eq('id', user.id)
       .single();
+    
+    if (profileError && profileError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is OK, but log other errors
+      console.error('[Checkout] Error fetching profile:', profileError);
+    }
 
     if (profile?.stripe_customer_id) {
       customerId = profile.stripe_customer_id;
@@ -73,37 +78,82 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has already used their free trial
-    let hasUsedTrial = profile?.has_used_trial || false;
+    // IMPORTANT: Check database FIRST - this is the source of truth
+    // If database says trial was used, don't allow another one regardless of Stripe customer ID
+    let hasUsedTrial = profile?.has_used_trial === true;
     
-    // Also check Stripe customer's subscription history as a backup
-    // This catches cases where the database might be out of sync
-    if (!hasUsedTrial && customerId) {
-      try {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customerId,
-          status: 'all',
-          limit: 100, // Check all subscriptions
-        });
-        
-        // Check if any previous subscription had a trial period
-        const hasPreviousTrial = subscriptions.data.some(sub => {
-          return sub.trial_start !== null && sub.trial_end !== null;
-        });
-        
-        if (hasPreviousTrial) {
-          hasUsedTrial = true;
-          // Update database to reflect this
-          await supabase
-            .from('profiles')
-            .update({ 
-              has_used_trial: true,
-              trial_used_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
+    // If database says trial was used, skip Stripe check entirely
+    if (hasUsedTrial) {
+      console.log(`[Checkout] User ${user.id} (${user.email}) has already used trial per database - blocking another trial`);
+    } else {
+      // Also check Stripe customer's subscription history as a backup
+      // This catches cases where the database might be out of sync
+      // But also check ALL customers with this email to catch cases where user has multiple customer IDs
+      if (customerId) {
+        try {
+          // First check the current customer's subscription history
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 100,
+          });
+          
+          // Check if any previous subscription had a trial period
+          let hasPreviousTrial = subscriptions.data.some(sub => {
+            return sub.trial_start !== null && sub.trial_end !== null;
+          });
+          
+          // Also check if there are other customers with the same email that have trial history
+          // This catches cases where user created a new customer ID
+          if (!hasPreviousTrial && user.email) {
+            try {
+              const customers = await stripe.customers.list({
+                email: user.email,
+                limit: 100,
+              });
+              
+              // Check subscription history for all customers with this email
+              for (const customer of customers.data) {
+                if (customer.id === customerId) continue; // Already checked
+                
+                const otherSubscriptions = await stripe.subscriptions.list({
+                  customer: customer.id,
+                  status: 'all',
+                  limit: 100,
+                });
+                
+                const otherHasTrial = otherSubscriptions.data.some(sub => {
+                  return sub.trial_start !== null && sub.trial_end !== null;
+                });
+                
+                if (otherHasTrial) {
+                  hasPreviousTrial = true;
+                  console.log(`[Checkout] Found trial in another customer (${customer.id}) for email ${user.email}`);
+                  break;
+                }
+              }
+            } catch (error) {
+              console.error('Error checking other customers:', error);
+              // Continue if this fails
+            }
+          }
+          
+          if (hasPreviousTrial) {
+            hasUsedTrial = true;
+            // Update database to reflect this
+            await supabase
+              .from('profiles')
+              .update({ 
+                has_used_trial: true,
+                trial_used_at: new Date().toISOString()
+              })
+              .eq('id', user.id);
+            console.log(`[Checkout] User ${user.id} (${user.email}) has trial in Stripe history - blocking trial and updating database`);
+          }
+        } catch (error) {
+          console.error('Error checking Stripe subscription history:', error);
+          // Continue with database check if Stripe check fails
         }
-      } catch (error) {
-        console.error('Error checking Stripe subscription history:', error);
-        // Continue with database check if Stripe check fails
       }
     }
 
