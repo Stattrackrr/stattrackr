@@ -134,9 +134,10 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.user_id;
   const billingCycle = session.metadata?.billing_cycle;
+  const hasTrial = session.metadata?.has_trial === 'true';
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
-  console.log('💳 Processing checkout:', { userId, billingCycle, customerId, subscriptionId: session.subscription });
+  console.log('💳 Processing checkout:', { userId, billingCycle, customerId, subscriptionId: session.subscription, hasTrial });
 
   if (!userId) {
     console.error('❌ No user_id in session metadata');
@@ -153,18 +154,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   
   console.log('📋 Subscription ID:', subscriptionId);
 
+  // If this subscription has a trial, mark trial as used
+  const updateData: any = {
+    subscription_status: 'active', // Will be updated by subscription.created webhook
+    subscription_tier: 'pro',
+    subscription_billing_cycle: billingCycle,
+    stripe_subscription_id: subscriptionId,
+    stripe_customer_id: customerId,
+    subscription_current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now (trial period)
+  };
+
+  if (hasTrial) {
+    updateData.has_used_trial = true;
+    updateData.trial_used_at = new Date().toISOString();
+  }
+
   // Update user profile with subscription info
   // Note: subscription.created webhook will handle setting the exact status
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({
-      subscription_status: 'active', // Will be updated by subscription.created webhook
-      subscription_tier: 'pro',
-      subscription_billing_cycle: billingCycle,
-      stripe_subscription_id: subscriptionId,
-      stripe_customer_id: customerId,
-      subscription_current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now (trial period)
-    })
+    .update(updateData)
     .eq('id', userId);
 
   if (error) {
@@ -181,7 +190,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Find user by customer ID
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id')
+    .select('id, has_used_trial')
     .eq('stripe_customer_id', customerId)
     .single();
 
@@ -193,17 +202,28 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Determine subscription tier based on status
   const tier = ['active', 'trialing'].includes(subscription.status) ? 'pro' : 'free';
 
+  // Check if this subscription has a trial period and mark it as used
+  const hasTrial = subscription.trial_start !== null && subscription.trial_end !== null;
+  const updateData: any = {
+    subscription_status: subscription.status,
+    subscription_tier: tier,
+    subscription_current_period_end: subData.current_period_end 
+      ? new Date(subData.current_period_end * 1000).toISOString()
+      : null,
+    stripe_subscription_id: subscription.id,
+  };
+
+  // Mark trial as used if subscription has a trial and hasn't been marked yet
+  if (hasTrial && !profile.has_used_trial) {
+    updateData.has_used_trial = true;
+    updateData.trial_used_at = new Date().toISOString();
+    console.log(`🎁 Marking trial as used for user ${profile.id}`);
+  }
+
   // Update subscription details
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({
-      subscription_status: subscription.status,
-      subscription_tier: tier,
-      subscription_current_period_end: subData.current_period_end 
-        ? new Date(subData.current_period_end * 1000).toISOString()
-        : null,
-      stripe_subscription_id: subscription.id,
-    })
+    .update(updateData)
     .eq('id', profile.id);
 
   if (error) {

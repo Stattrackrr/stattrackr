@@ -43,11 +43,12 @@ export async function POST(request: NextRequest) {
 
     // Get or create Stripe customer
     let customerId: string;
+    const stripe = getStripe();
     
-    // Check if user already has a Stripe customer ID
+    // Check if user already has a Stripe customer ID and trial status
     const { data: profile } = await supabase
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, has_used_trial')
       .eq('id', user.id)
       .single();
 
@@ -55,7 +56,6 @@ export async function POST(request: NextRequest) {
       customerId = profile.stripe_customer_id;
     } else {
       // Create new Stripe customer
-      const stripe = getStripe();
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: {
@@ -72,8 +72,53 @@ export async function POST(request: NextRequest) {
         .eq('id', user.id);
     }
 
-    // Create checkout session with 7-day free trial
-    const stripe = getStripe();
+    // Check if user has already used their free trial
+    let hasUsedTrial = profile?.has_used_trial || false;
+    
+    // Also check Stripe customer's subscription history as a backup
+    // This catches cases where the database might be out of sync
+    if (!hasUsedTrial && customerId) {
+      try {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: 'all',
+          limit: 100, // Check all subscriptions
+        });
+        
+        // Check if any previous subscription had a trial period
+        const hasPreviousTrial = subscriptions.data.some(sub => {
+          return sub.trial_start !== null && sub.trial_end !== null;
+        });
+        
+        if (hasPreviousTrial) {
+          hasUsedTrial = true;
+          // Update database to reflect this
+          await supabase
+            .from('profiles')
+            .update({ 
+              has_used_trial: true,
+              trial_used_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        }
+      } catch (error) {
+        console.error('Error checking Stripe subscription history:', error);
+        // Continue with database check if Stripe check fails
+      }
+    }
+
+    // Build subscription data - only include trial if user hasn't used it
+    const subscriptionData: any = {};
+    if (!hasUsedTrial) {
+      subscriptionData.trial_period_days = 7;
+      subscriptionData.trial_settings = {
+        end_behavior: {
+          missing_payment_method: 'cancel',
+        },
+      };
+    }
+
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -84,19 +129,13 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      subscription_data: {
-        trial_period_days: 7,
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
-        },
-      },
+      subscription_data: subscriptionData,
       success_url: `${request.headers.get('origin')}/nba/research/dashboard?success=true`,
       cancel_url: `${request.headers.get('origin')}/home`,
       metadata: {
         user_id: user.id,
         billing_cycle: billingCycle,
+        has_trial: (!hasUsedTrial).toString(),
       },
       // Allow customers to go back and change their selection
       allow_promotion_codes: true,
