@@ -782,6 +782,9 @@ export async function GET(request: NextRequest) {
         } else if (mappedPositions.length > 1) {
           // Generic position (G, F, G-F, F-C) - store all mapped positions for matching
           positionSource = 'bdl_generic';
+        } else {
+          // No position mapped - log for debugging
+          console.log(`[Similar Players] ⚠️ Player ${playerName} (${playerTeamAbbr}) has unmapped BDL position: ${player.position || 'undefined'}`);
         }
       } else {
         // We have a depth chart position, so mappedPositions is just that one position
@@ -790,6 +793,14 @@ export async function GET(request: NextRequest) {
       
       return { player, position: playerPos, positionSource, mappedPositions };
     });
+    
+    // Debug: Log position distribution
+    const positionCounts = new Map<string, number>();
+    playersWithPositions.forEach(({ position, positionSource, mappedPositions }) => {
+      const key = position ? `${position} (${positionSource})` : `no position (${mappedPositions.length} mapped)`;
+      positionCounts.set(key, (positionCounts.get(key) || 0) + 1);
+    });
+    console.log(`[Similar Players] Position distribution:`, Object.fromEntries(positionCounts));
     
     // Filter by position match - STRICT matching:
     // - If target has a specific depth chart position, ONLY match candidates with that exact position
@@ -816,6 +827,16 @@ export async function GET(request: NextRequest) {
             }
           }
           return true;
+        }
+        
+        // Candidate doesn't have a specific position, but might have it in mappedPositions (generic BDL)
+        // Check if any of the mapped positions match the target
+        if (!position && mappedPositions.length > 0) {
+          if (mappedPositions.includes(targetPos)) {
+            // Generic BDL position includes target - allow it
+            // This handles cases where candidate has "G" (maps to ['PG', 'SG']) and target is "PG"
+            return true;
+          }
         }
         
         // Position doesn't match - reject
