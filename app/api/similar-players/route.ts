@@ -302,7 +302,7 @@ async function getPlayerMinutes(playerId: string | number): Promise<number | nul
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 
 export async function GET(request: NextRequest) {
-  // Store request for use in helper functions
+  // Get base URL for internal API calls (works in both local and Vercel)
   const baseUrl = getBaseUrl(request);
   try {
     const { searchParams } = new URL(request.url);
@@ -1052,7 +1052,7 @@ export async function GET(request: NextRequest) {
             
             try {
               // Use our internal games API which has better team info
-              const gamesApiUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/bdl/games?start_date=${startDate}&end_date=${endDate}&per_page=100`;
+              const gamesApiUrl = `${baseUrl}/api/bdl/games?start_date=${startDate}&end_date=${endDate}&per_page=100`;
               const gamesApiResponse = await fetch(gamesApiUrl, { cache: 'no-store' });
               
               if (gamesApiResponse.ok) {
