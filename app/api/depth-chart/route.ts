@@ -73,10 +73,16 @@ const ALT: Record<'PG'|'SG'|'SF'|'PF'|'C', Array<'PG'|'SG'|'SF'|'PF'|'C'>> = {
 };
 
 export async function GET(req: NextRequest) {
-  // Check rate limit
-  const rateLimitResult = checkRateLimit(req);
-  if (!rateLimitResult.allowed) {
-    return rateLimitResult.response!;
+  // Skip rate limiting for internal API calls (from similar-players)
+  // Check if this is an internal request by looking for a special header
+  const isInternalRequest = req.headers.get('user-agent')?.includes('StatTrackr-Internal');
+  
+  // Only check rate limit for external requests
+  if (!isInternalRequest) {
+    const rateLimitResult = checkRateLimit(req);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResult.response!;
+    }
   }
   
   try {
