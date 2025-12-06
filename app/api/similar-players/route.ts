@@ -4,6 +4,32 @@ import { currentNbaSeason } from '@/lib/nbaUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { TEAM_ID_TO_ABBR } from '@/lib/nbaConstants';
 
+// Helper function to get the base URL for API calls (works in both local and Vercel)
+function getBaseUrl(request?: NextRequest): string {
+  // In Vercel, use VERCEL_URL environment variable
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Try to get from request headers (works in serverless functions)
+  if (request) {
+    const xfProto = request.headers.get('x-forwarded-proto');
+    const xfHost = request.headers.get('x-forwarded-host');
+    if (xfProto && xfHost) {
+      return `${xfProto}://${xfHost}`;
+    }
+    
+    const host = request.headers.get('host');
+    if (host) {
+      const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      return `${proto}://${host}`;
+    }
+  }
+  
+  // Fallback to environment variable or localhost
+  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+}
+
 // Lazy initialization to avoid blocking deployment
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
@@ -57,10 +83,11 @@ function normalizeName(s: string): string {
 
 // Get player's position from depth chart (PG, SG, SF, PF, C)
 // Uses EXACT same logic as dashboard: starters first (depth 0), then by depth rows, tie-break by PG > SG > SF > PF > C
-async function getPlayerPositionFromDepthChart(playerName: string, teamAbbr: string): Promise<'PG'|'SG'|'SF'|'PF'|'C' | null> {
+async function getPlayerPositionFromDepthChart(playerName: string, teamAbbr: string, request?: NextRequest): Promise<'PG'|'SG'|'SF'|'PF'|'C' | null> {
   try {
+    const baseUrl = getBaseUrl(request);
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`,
+      `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`,
       { cache: 'no-store' }
     );
     
@@ -275,6 +302,8 @@ async function getPlayerMinutes(playerId: string | number): Promise<number | nul
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 
 export async function GET(request: NextRequest) {
+  // Store request for use in helper functions
+  const baseUrl = getBaseUrl(request);
   try {
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
@@ -457,7 +486,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (teamAbbr) {
-      depthChartPosition = await getPlayerPositionFromDepthChart(playerName, teamAbbr);
+      depthChartPosition = await getPlayerPositionFromDepthChart(playerName, teamAbbr, request);
       if (depthChartPosition) {
         console.log(`[Similar Players] Got position from depth chart: ${depthChartPosition}`);
         targetPosition = depthChartPosition;
@@ -630,7 +659,7 @@ export async function GET(request: NextRequest) {
     const depthChartPromises = teamAbbrs.map(async (teamAbbr) => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`,
+          `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`,
           { cache: 'no-store' }
         );
         
