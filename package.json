@@ -9,9 +9,9 @@
     "lint": "eslint",
     "warm:games": "node scripts/warm-games.js",
     "warm:rosters": "node scripts/warm-rosters.js",
-    "logs": "vercel logs --prod",
-    "logs:follow": "vercel logs --prod --follow",
-    "logs:similar": "vercel logs --prod --function=similar-players"
+    "logs": "node scripts/view-logs.js",
+    "logs:json": "node scripts/view-logs.js --json",
+    "logs:deployments": "vercel ls --prod"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.2.0",

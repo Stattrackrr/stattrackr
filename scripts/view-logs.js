@@ -4,33 +4,57 @@
  * View Vercel production logs
  * 
  * Usage:
- *   node scripts/view-logs.js                    # View recent logs
- *   node scripts/view-logs.js --follow           # Follow logs in real-time
- *   node scripts/view-logs.js --function similar-players  # Filter by function name
+ *   node scripts/view-logs.js                    # View recent logs from latest production deployment
+ *   node scripts/view-logs.js --json              # View logs as JSON
+ *   node scripts/view-logs.js <deployment-url>    # View logs for specific deployment
  */
 
 const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
-const follow = args.includes('--follow') || args.includes('-f');
-const functionFilter = args.find(arg => arg.startsWith('--function='))?.split('=')[1] || 
-                       args.find(arg => arg.startsWith('-f='))?.split('=')[1];
+const json = args.includes('--json') || args.includes('-j');
+const deploymentUrl = args.find(arg => !arg.startsWith('--') && !arg.startsWith('-'));
 
-let command = 'vercel logs';
+let command;
 
-if (follow) {
-  command += ' --follow';
+if (deploymentUrl) {
+  // Use provided deployment URL
+  command = `vercel logs ${deploymentUrl}`;
+  if (json) {
+    command += ' --json';
+  }
+} else {
+  // Get latest production deployment
+  console.log('📊 Fetching latest production deployment...');
+  try {
+    const deploymentsOutput = execSync('vercel ls --prod -n 1 -j', { 
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    const deployments = JSON.parse(deploymentsOutput.trim());
+    if (!deployments || deployments.length === 0) {
+      console.error('❌ No production deployments found');
+      process.exit(1);
+    }
+    
+    const latestDeployment = deployments[0];
+    const deploymentUrl = latestDeployment.url || latestDeployment.id;
+    
+    console.log(`✅ Found deployment: ${deploymentUrl}`);
+    console.log(`📊 Fetching logs...\n`);
+    
+    command = `vercel logs ${deploymentUrl}`;
+    if (json) {
+      command += ' --json';
+    }
+  } catch (error) {
+    console.error('❌ Error fetching deployments:', error.message);
+    console.log('\n💡 Tip: You can also provide a deployment URL directly:');
+    console.log('   node scripts/view-logs.js <deployment-url>');
+    process.exit(1);
+  }
 }
-
-if (functionFilter) {
-  command += ` --function=${functionFilter}`;
-}
-
-// Add production environment
-command += ' --prod';
-
-console.log('📊 Fetching Vercel production logs...');
-console.log(`Command: ${command}\n`);
 
 try {
   execSync(command, { 
@@ -46,4 +70,3 @@ try {
     process.exit(1);
   }
 }
-
