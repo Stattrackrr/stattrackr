@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "warm:games": "node scripts/warm-games.js",
-    "warm:rosters": "node scripts/warm-rosters.js"
+    "warm:rosters": "node scripts/warm-rosters.js",
+    "logs": "vercel logs --prod",
+    "logs:follow": "vercel logs --prod --follow",
+    "logs:similar": "vercel logs --prod --function=similar-players"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.2.0",
