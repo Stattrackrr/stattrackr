@@ -392,22 +392,39 @@ export async function GET(request: NextRequest) {
     
     let targetPlayer = await playerResponse.json();
     
-    // If position or height is missing, try to get it from Supabase cache first (fastest)
+    // If position, height, or name is missing, try to get it from Supabase cache first (fastest)
     let targetPosition = targetPlayer.position;
     let targetHeightInches = heightToInches(targetPlayer.height);
     
-    if (!targetPosition || !targetHeightInches) {
-      console.log(`[Similar Players] Player ${playerIdNum} missing position/height, checking Supabase cache...`);
+    // Always check Supabase cache to ensure we have complete data (name, position, height)
+    if ((!targetPlayer.first_name || !targetPlayer.last_name) || !targetPosition || !targetHeightInches) {
+      console.log(`[Similar Players] Player ${playerIdNum} missing data, checking Supabase cache...`);
       try {
         const { data: cachedPlayer, error: cacheError } = await getSupabaseAdmin()
           .from('players')
-          .select('position, height, height_inches')
+          .select('first_name, last_name, position, height, height_inches')
           .eq('id', playerIdNum)
           .single();
         
         if (!cacheError && cachedPlayer) {
           console.log(`[Similar Players] Found player in Supabase cache with complete data`);
-          const player = cachedPlayer as { position?: string; height?: string; height_inches?: number | null };
+          const player = cachedPlayer as { 
+            first_name?: string; 
+            last_name?: string; 
+            position?: string; 
+            height?: string; 
+            height_inches?: number | null 
+          };
+          
+          // Fill in missing name fields
+          if (!targetPlayer.first_name && player.first_name) {
+            targetPlayer.first_name = player.first_name;
+          }
+          if (!targetPlayer.last_name && player.last_name) {
+            targetPlayer.last_name = player.last_name;
+          }
+          
+          // Fill in missing position/height
           if (!targetPosition && player.position) {
             targetPosition = player.position;
           }
