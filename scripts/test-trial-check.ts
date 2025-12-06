@@ -27,7 +27,7 @@ if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-12-18.acacia' });
+const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-10-29.clover' });
 
 async function testTrialCheck() {
   console.log('🧪 Testing Free Trial Prevention Logic\n');
