@@ -675,13 +675,20 @@ export async function GET(request: NextRequest) {
     
     const depthChartPromises = teamAbbrs.map(async (teamAbbr) => {
       try {
+        // For internal API calls, include headers to identify as internal request
         const response = await fetch(
           `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`,
-          { cache: 'no-store' }
+          { 
+            cache: 'no-store',
+            headers: {
+              'User-Agent': 'StatTrackr-Internal/1.0',
+            }
+          }
         );
         
         if (!response.ok) {
-          console.warn(`[Similar Players] Depth chart API failed for ${teamAbbr}: ${response.status}`);
+          const errorText = await response.text().catch(() => '');
+          console.warn(`[Similar Players] Depth chart API failed for ${teamAbbr}: ${response.status} - ${errorText.substring(0, 100)}`);
           depthChartCache.set(teamAbbr, null);
           return;
         }
