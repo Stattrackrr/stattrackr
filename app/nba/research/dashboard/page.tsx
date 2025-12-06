@@ -10575,6 +10575,20 @@ const lineMovementInFlightRef = useRef(false);
           setOddsError(null);
           return;
         }
+        // Handle rate limit errors gracefully - keep existing data if available
+        if (data.error && (/rate limit/i.test(data.error) || /429/i.test(data.error))) {
+          // If we have cached data, keep showing it instead of error
+          if (realOddsData.length > 0) {
+            console.warn('[fetchOddsData] Rate limit hit, but keeping existing cached data');
+            setOddsError('Rate limit exceeded - showing cached data');
+            setOddsLoading(false);
+            return;
+          }
+          // No cached data - show error but don't clear existing data
+          setOddsError(data.error || 'Rate limit exceeded. Please wait a moment.');
+          setOddsLoading(false);
+          return;
+        }
         setOddsError(data.error || 'Failed to fetch odds');
         setRealOddsData([]);
         return;
@@ -10656,13 +10670,19 @@ const lineMovementInFlightRef = useRef(false);
     }
   };
   
-  // Fetch odds when player/team or mode changes
+  // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
     // For team mode, add a small delay to ensure gamePropsTeam is set
     if (propsMode === 'team' && !gamePropsTeam) {
       return;
     }
-    fetchOddsData();
+    
+    // Debounce: wait 300ms before fetching to avoid rapid successive calls
+    const timeoutId = setTimeout(() => {
+      fetchOddsData();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
   const americanToDecimal = (odds: string): string => {

@@ -34,9 +34,50 @@ export interface BookRow {
 const ODDS_CACHE_KEY = 'all_nba_odds';
 
 export async function GET(request: NextRequest) {
-  // Check rate limit
+  // Check rate limit - but don't block if we have cached data
   const rateLimitResult = checkRateLimit(request);
   if (!rateLimitResult.allowed) {
+    // If rate limited, try to return cached data instead of error
+    const oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
+      restTimeoutMs: 5000,
+      jsTimeoutMs: 5000,
+    }).catch(() => null);
+    
+    if (oddsCache) {
+      // We have cached data - return it even though rate limited
+      const { searchParams } = new URL(request.url);
+      const player = searchParams.get('player');
+      const team = searchParams.get('team');
+      
+      // Return appropriate cached data based on query
+      if (team) {
+        const game = oddsCache.games.find((g: any) => 
+          gameInvolvesTeam(g.homeTeam, g.awayTeam, team)
+        );
+        if (game) {
+          return NextResponse.json({
+            success: true,
+            data: game.bookmakers || [],
+            homeTeam: game.homeTeam || null,
+            awayTeam: game.awayTeam || null,
+            lastUpdated: oddsCache.lastUpdated,
+            nextUpdate: oddsCache.nextUpdate,
+            rateLimited: true,
+            message: 'Rate limit exceeded - showing cached data'
+          });
+        }
+      }
+      
+      // For player queries or if no match, return empty but with success
+      return NextResponse.json({
+        success: true,
+        data: [],
+        rateLimited: true,
+        message: 'Rate limit exceeded - please wait a moment'
+      });
+    }
+    
+    // No cached data available - return rate limit error
     return rateLimitResult.response!;
   }
 
