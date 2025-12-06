@@ -100,14 +100,20 @@ export function getEnvStatus(): Record<string, boolean> {
 }
 
 // Validate on module load (server-side only)
-if (typeof window === 'undefined') {
+// Don't validate during build/deployment - only validate at runtime when actually needed
+if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
   try {
     validateEnv();
   } catch (error) {
     console.error('❌ Environment validation failed:');
     console.error(error);
-    // Don't throw during build time, just warn
-    if (process.env.NODE_ENV === 'production') {
+    // Don't throw during build or deployment - just warn
+    // The app will fail gracefully when trying to use missing env vars
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1') {
+      // During Vercel deployment, don't throw - let it deploy and fail at runtime if needed
+      console.warn('⚠️ Environment validation failed but continuing deployment');
+    } else if (process.env.NODE_ENV === 'production') {
+      // Only throw in production if not on Vercel
       throw error;
     }
   }

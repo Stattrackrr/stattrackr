@@ -7,12 +7,22 @@
 export async function register() {
   // Only run on server side and in production
   if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.VERCEL_ENV === 'production') {
-    // Import and start the odds scheduler
-    const { startOddsScheduler } = await import('./lib/oddsScheduler');
-    startOddsScheduler();
+    try {
+      // Import and start the odds scheduler
+      const { startOddsScheduler } = await import('./lib/oddsScheduler');
+      startOddsScheduler();
+    } catch (error) {
+      console.error('❌ Failed to start odds scheduler:', error);
+      // Don't throw - let the app continue without the scheduler
+    }
     
-    // Import and start the tracking stats scheduler
-    const { startTrackingStatsScheduler } = await import('./lib/trackingStatsScheduler');
-    startTrackingStatsScheduler();
+    try {
+      // Import and start the tracking stats scheduler
+      const { startTrackingStatsScheduler } = await import('./lib/trackingStatsScheduler');
+      startTrackingStatsScheduler();
+    } catch (error) {
+      console.error('❌ Failed to start tracking stats scheduler:', error);
+      // Don't throw - let the app continue without the scheduler
+    }
   }
 }
