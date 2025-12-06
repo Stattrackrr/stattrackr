@@ -2,19 +2,22 @@
  * Next.js instrumentation file
  * Runs once on server startup to initialize background jobs
  * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
+ * 
+ * DISABLED on Vercel - serverless functions don't support long-running processes
+ * Use Vercel Cron Jobs instead (configured in vercel.json)
  */
 
 export async function register() {
-  // Skip schedulers in serverless environments (Vercel)
-  // Serverless functions are stateless and don't support long-running intervals
-  // Use Vercel Cron Jobs instead (configured in vercel.json)
-  if (process.env.VERCEL) {
-    console.log('⏭️ Skipping schedulers in serverless environment - using Vercel Cron Jobs instead');
+  // Completely skip instrumentation on Vercel
+  // Vercel serverless functions are stateless and don't support setInterval
+  // All scheduled tasks are handled by Vercel Cron Jobs (see vercel.json)
+  if (process.env.VERCEL || process.env.VERCEL_ENV) {
+    // Silently skip - no need to log in production
     return;
   }
   
-  // Only run on server side and in production (non-serverless environments)
-  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.VERCEL_ENV === 'production') {
+  // Only run in non-serverless production environments
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'production') {
     try {
       // Import and start the odds scheduler
       const { startOddsScheduler } = await import('./lib/oddsScheduler');

@@ -68,10 +68,11 @@ export function stopOddsScheduler() {
   }
 }
 
-// Auto-start in server environment (not in browser or during build)
-if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
-  // Only start in production deployment, not during dev or build
-  if (process.env.VERCEL_ENV === 'production') {
-    startOddsScheduler();
-  }
-}
+// Auto-start disabled - use instrumentation.ts or Vercel Cron Jobs instead
+// This prevents issues in serverless environments where setInterval doesn't work
+// if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
+//   // Only start in production deployment, not during dev or build
+//   if (process.env.VERCEL_ENV === 'production') {
+//     startOddsScheduler();
+//   }
+// }
