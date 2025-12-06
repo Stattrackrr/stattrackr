@@ -27,19 +27,31 @@ if (deploymentUrl) {
   // Get latest production deployment
   console.log('📊 Fetching latest production deployment...');
   try {
-    const deploymentsOutput = execSync('vercel ls --prod -n 1 -j', { 
+    // Vercel CLI v48 doesn't support -n flag, so we get all and take first
+    const deploymentsOutput = execSync('vercel ls --json', { 
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe']
     });
     
     const deployments = JSON.parse(deploymentsOutput.trim());
     if (!deployments || deployments.length === 0) {
-      console.error('❌ No production deployments found');
+      console.error('❌ No deployments found');
       process.exit(1);
     }
     
-    const latestDeployment = deployments[0];
+    // Filter for production deployments and get the latest one
+    const prodDeployments = deployments.filter((d: any) => 
+      d.target === 'production' || d.url?.includes('vercel.app')
+    );
+    
+    const latestDeployment = prodDeployments.length > 0 ? prodDeployments[0] : deployments[0];
     const deploymentUrl = latestDeployment.url || latestDeployment.id;
+    
+    if (!deploymentUrl) {
+      console.error('❌ Could not determine deployment URL');
+      console.log('Available deployment data:', JSON.stringify(latestDeployment, null, 2));
+      process.exit(1);
+    }
     
     console.log(`✅ Found deployment: ${deploymentUrl}`);
     console.log(`📊 Fetching logs...\n`);
@@ -48,10 +60,12 @@ if (deploymentUrl) {
     if (json) {
       command += ' --json';
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error fetching deployments:', error.message);
     console.log('\n💡 Tip: You can also provide a deployment URL directly:');
     console.log('   node scripts/view-logs.js <deployment-url>');
+    console.log('\nOr list deployments manually:');
+    console.log('   vercel ls');
     process.exit(1);
   }
 }
