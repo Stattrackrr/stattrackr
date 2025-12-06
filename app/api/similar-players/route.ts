@@ -378,11 +378,12 @@ export async function GET(request: NextRequest) {
         
         if (!cacheError && cachedPlayer) {
           console.log(`[Similar Players] Found player in Supabase cache with complete data`);
-          if (!targetPosition && cachedPlayer.position) {
-            targetPosition = cachedPlayer.position;
+          const player = cachedPlayer as { position?: string; height?: string; height_inches?: number | null };
+          if (!targetPosition && player.position) {
+            targetPosition = player.position;
           }
           if (!targetHeightInches) {
-            targetHeightInches = cachedPlayer.height_inches || heightToInches(cachedPlayer.height);
+            targetHeightInches = player.height_inches || heightToInches(player.height);
           }
         }
       } catch (err) {
