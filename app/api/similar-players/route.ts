@@ -7,7 +7,7 @@ import { TEAM_ID_TO_ABBR } from '@/lib/nbaConstants';
 // Lazy initialization to avoid blocking deployment
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): ReturnType<typeof createClient> {
   if (!supabaseAdmin) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -442,10 +442,13 @@ export async function GET(request: NextRequest) {
           .eq('id', playerIdNum)
           .single();
         
-        if (!cacheError && cachedPlayer?.position) {
-          console.log(`[Similar Players] Got position from Supabase cache: ${cachedPlayer.position}`);
-          targetPosition = cachedPlayer.position;
-          targetPlayer.position = cachedPlayer.position; // Update targetPlayer for consistency
+        if (!cacheError && cachedPlayer) {
+          const player = cachedPlayer as { position?: string };
+          if (player.position) {
+            console.log(`[Similar Players] Got position from Supabase cache: ${player.position}`);
+            targetPosition = player.position;
+            targetPlayer.position = player.position; // Update targetPlayer for consistency
+          }
         }
       } catch (err) {
         console.warn(`[Similar Players] Error checking Supabase for position:`, err);
@@ -1266,7 +1269,7 @@ export async function GET(request: NextRequest) {
     const season = currentNbaSeason();
     
     try {
-      const { data: cachedAverages, error: avgError } = await supabaseAdmin
+      const { data: cachedAverages, error: avgError } = await getSupabaseAdmin()
         .from('player_season_averages')
         .select('*')
         .in('player_id', uniquePlayerIds)
@@ -1279,7 +1282,7 @@ export async function GET(request: NextRequest) {
           console.error(`[Similar Players] Error fetching season averages from cache:`, avgError);
         }
       } else if (cachedAverages) {
-        for (const avg of cachedAverages) {
+        for (const avg of cachedAverages as Array<{ player_id: number; [key: string]: any }>) {
           seasonAveragesMap.set(avg.player_id, avg);
         }
         console.log(`[Similar Players] ✅ Loaded ${cachedAverages.length} season averages from cache (instant!)`);
