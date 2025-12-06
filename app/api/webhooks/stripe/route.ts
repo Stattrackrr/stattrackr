@@ -323,7 +323,7 @@ async function sendTrialStartEmail(userEmail: string | null, subscription: Strip
     
     // Get customer details to ensure we have the email
     const customer = await stripe.customers.retrieve(subscription.customer as string);
-    const customerEmail = typeof customer !== 'deleted' && customer.email ? customer.email : userEmail;
+    const customerEmail = (customer && !('deleted' in customer) && customer.email) ? customer.email : userEmail;
     
     // Calculate trial end date
     const trialEndDate = subscription.trial_end 
