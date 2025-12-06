@@ -5,7 +5,15 @@
  */
 
 export async function register() {
-  // Only run on server side and in production
+  // Skip schedulers in serverless environments (Vercel)
+  // Serverless functions are stateless and don't support long-running intervals
+  // Use Vercel Cron Jobs instead (configured in vercel.json)
+  if (process.env.VERCEL) {
+    console.log('⏭️ Skipping schedulers in serverless environment - using Vercel Cron Jobs instead');
+    return;
+  }
+  
+  // Only run on server side and in production (non-serverless environments)
   if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.VERCEL_ENV === 'production') {
     try {
       // Import and start the odds scheduler
