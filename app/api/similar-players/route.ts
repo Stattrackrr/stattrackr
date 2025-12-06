@@ -1452,6 +1452,24 @@ export async function GET(request: NextRequest) {
     
     console.log(`[Similar Players] Returning ${results.length} results`);
     
+    // Add debug info if no results
+    if (results.length === 0) {
+      console.log(`[Similar Players] DEBUG: No results found. Summary:`, {
+        similarPlayersFound: similarPlayers.length,
+        opponentGamesFound: allOpponentGames.length,
+        targetPlayer: {
+          id: targetPlayer.id,
+          name: `${targetPlayer.first_name} ${targetPlayer.last_name}`,
+          position: targetPosition,
+          height: targetHeightInches,
+          playTypes: targetPlayTypes,
+          minutes: targetMinutes,
+        },
+        opponent: normalizedOpponent,
+        statType,
+      });
+    }
+    
     return NextResponse.json({
       success: true,
       data: results,
@@ -1463,6 +1481,10 @@ export async function GET(request: NextRequest) {
         playTypes: targetPlayTypes,
         minutes: targetMinutes,
       },
+      debug: results.length === 0 ? {
+        similarPlayersFound: similarPlayers.length,
+        opponentGamesFound: allOpponentGames.length,
+      } : undefined,
     });
   } catch (error: any) {
     console.error('[Similar Players] Error finding similar players:', error);
