@@ -746,6 +746,12 @@ export async function GET(request: NextRequest) {
       return null;
     };
     
+    // Check if depth charts are available (if all failed, we'll use BDL positions as fallback)
+    const depthChartsAvailable = Array.from(depthChartCache.values()).some(roster => roster !== null);
+    if (!depthChartsAvailable) {
+      console.log(`[Similar Players] ⚠️ All depth chart API calls failed - falling back to BDL positions for all players`);
+    }
+    
     // Now match all players to their positions using cached depth charts
     const playersWithPositions = candidatesToCheck.map((player) => {
       const playerName = `${player.first_name} ${player.last_name}`;
@@ -754,7 +760,8 @@ export async function GET(request: NextRequest) {
       let positionSource: 'depth_chart' | 'bdl_specific' | 'bdl_generic' | null = null;
       let mappedPositions: Array<'PG'|'SG'|'SF'|'PF'|'C'> = [];
       
-      if (playerTeamAbbr) {
+      // Only try depth chart if available (if all failed, skip this)
+      if (depthChartsAvailable && playerTeamAbbr) {
         const roster = depthChartCache.get(playerTeamAbbr);
         if (roster) {
           playerPos = findPlayerInDepthChart(playerName, roster);
