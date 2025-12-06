@@ -115,7 +115,7 @@ async function getGamesMap(): Promise<Map<string, { date: string; homeTeam: stri
     
     while (hasMore && page <= 50) { // Safety limit
       const url = new URL(`${BDL_BASE}/games`);
-      url.searchParams.set('seasons[]', season);
+      url.searchParams.set('seasons[]', String(season));
       url.searchParams.set('start_date', startDate);
       url.searchParams.set('end_date', endDate);
       url.searchParams.set('per_page', String(perPage));
