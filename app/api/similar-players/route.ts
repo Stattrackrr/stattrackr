@@ -801,7 +801,7 @@ export async function GET(request: NextRequest) {
         .eq('season', currentNbaSeason());
       
       if (cachedAverages) {
-        for (const avg of cachedAverages) {
+        for (const avg of cachedAverages as Array<{ player_id: number; min?: number | null }>) {
           minutesFromCache.set(avg.player_id, avg.min || null);
         }
         console.log(`[Similar Players] ✅ Loaded ${minutesFromCache.size} minutes from season averages cache (instant!)`);
