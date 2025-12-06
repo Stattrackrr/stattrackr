@@ -4,14 +4,22 @@ import { currentNbaSeason } from '@/lib/nbaUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { TEAM_ID_TO_ABBR } from '@/lib/nbaConstants';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Lazy initialization to avoid blocking deployment
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+    
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseAdmin;
 }
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // Convert height string to inches (handles "6'10", "6-10", or total inches)
 function heightToInches(height: string | null | undefined): number | null {
@@ -362,7 +370,7 @@ export async function GET(request: NextRequest) {
     if (!targetPosition || !targetHeightInches) {
       console.log(`[Similar Players] Player ${playerIdNum} missing position/height, checking Supabase cache...`);
       try {
-        const { data: cachedPlayer, error: cacheError } = await supabaseAdmin
+        const { data: cachedPlayer, error: cacheError } = await getSupabaseAdmin()
           .from('players')
           .select('position, height, height_inches')
           .eq('id', playerIdNum)
@@ -428,7 +436,7 @@ export async function GET(request: NextRequest) {
     // If position is still missing, try to get it from Supabase cache
     if (!targetPosition) {
       try {
-        const { data: cachedPlayer, error: cacheError } = await supabaseAdmin
+        const { data: cachedPlayer, error: cacheError } = await getSupabaseAdmin()
           .from('players')
           .select('position')
           .eq('id', playerIdNum)
@@ -510,7 +518,7 @@ export async function GET(request: NextRequest) {
     
     let allPlayers: any[] = [];
     try {
-      const { data: cachedPlayers, error } = await supabaseAdmin
+      const { data: cachedPlayers, error } = await getSupabaseAdmin()
         .from('players')
         .select('*')
         .order('id', { ascending: true });
@@ -783,7 +791,7 @@ export async function GET(request: NextRequest) {
     // OPTIMIZATION: Try to get minutes from season averages cache first (much faster!)
     const minutesFromCache = new Map<number, number | null>();
     try {
-      const { data: cachedAverages } = await supabaseAdmin
+      const { data: cachedAverages } = await getSupabaseAdmin()
         .from('player_season_averages')
         .select('player_id, min')
         .in('player_id', minutesCandidates.map(c => c.player.id))
@@ -862,7 +870,7 @@ export async function GET(request: NextRequest) {
     
     let cachedStats: any[] = [];
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await getSupabaseAdmin()
         .from('player_team_stats')
         .select('*')
         .in('player_id', playerIds)
