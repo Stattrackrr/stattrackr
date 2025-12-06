@@ -27,6 +27,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
 import NotificationSystem from '@/components/NotificationSystem';
+import { SimilarPlayers } from './components/SimilarPlayers';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -461,7 +462,7 @@ function getGameStatValue(game: any, key: string, teamAbbr: string): number {
   }
 }
 
-type BdlSearchResult = { id: number; full: string; team?: string; pos?: string };
+type BdlSearchResult = { id: number; full: string; team?: string; pos?: string; headshotUrl?: string | null };
  type EspnPlayerData = { name: string; jersey?: string; height?: string; weight?: number; team?: string; position?: string };
  
  // Persist session across refresh within the same tab (clears on tab close)
@@ -5505,8 +5506,23 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
 // Opponent Analysis (isolated, memoized)
 // NOTE: This reuses the same batched DvP + rank data and caches as PositionDefenseCard
 // to avoid redundant API calls and to ensure we always display real values instead of 0s.
-const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, opponentTeam, selectedTimeFilter }: { isDark: boolean; opponentTeam: string; selectedTimeFilter: string }) {
+const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ 
+  isDark, 
+  opponentTeam, 
+  selectedTimeFilter,
+  propsMode,
+  playerId,
+  selectedStat
+}: { 
+  isDark: boolean; 
+  opponentTeam: string; 
+  selectedTimeFilter: string;
+  propsMode?: 'player' | 'team';
+  playerId?: string | number | null;
+  selectedStat?: string;
+}) {
   const [mounted, setMounted] = useState(false);
+  const [activeView, setActiveView] = useState<'breakdown' | 'similar'>('breakdown');
   const [teamStats, setTeamStats] = useState<any>(null);
   const [teamRanks, setTeamRanks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -5677,14 +5693,51 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Opponent Analysis</h3>
         <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
       </div>
+      
+      {/* Toggle buttons for Opponent Breakdown / Similar Players */}
+      <div className="flex items-center gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveView('breakdown')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeView === 'breakdown'
+              ? mounted && isDark
+                ? 'text-white border-b-2 border-cyan-400'
+                : 'text-gray-900 border-b-2 border-cyan-500'
+              : mounted && isDark
+              ? 'text-gray-400 hover:text-gray-300'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Opponent Breakdown
+        </button>
+        {propsMode === 'player' && playerId && (
+          <button
+            onClick={() => setActiveView('similar')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeView === 'similar'
+                ? mounted && isDark
+                  ? 'text-white border-b-2 border-purple-500'
+                  : 'text-gray-900 border-b-2 border-purple-500'
+                : mounted && isDark
+                ? 'text-gray-400 hover:text-gray-300'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Similar Players
+          </button>
+        )}
+      </div>
+
       <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${mounted && isDark ? "bg-cyan-400" : "bg-cyan-500"} animate-pulse`} />
-            <h4 className={`text-sm font-semibold font-mono tracking-wider ${mounted && isDark ? "text-white" : "text-slate-900"}`}>
-              OPPONENT BREAKDOWN
-            </h4>
-          </div>
+
+        {activeView === 'breakdown' ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${mounted && isDark ? "bg-cyan-400" : "bg-cyan-500"} animate-pulse`} />
+              <h4 className={`text-sm font-semibold font-mono tracking-wider ${mounted && isDark ? "text-white" : "text-slate-900"}`}>
+                OPPONENT BREAKDOWN
+              </h4>
+            </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
             <div className="space-y-2">
@@ -5786,13 +5839,32 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({ isDark, oppone
             </div>
           </div>
         </div>
+        ) : (
+          <div>
+            {propsMode === 'player' && playerId ? (
+              <SimilarPlayers 
+                playerId={playerId} 
+                opponent={opponentTeam} 
+                statType={selectedStat || 'PTS'} 
+                isDark={isDark} 
+              />
+            ) : (
+              <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} p-4 text-center`}>
+                Similar players only available in player mode
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }, (prev, next) => (
   prev.isDark === next.isDark &&
   prev.opponentTeam === next.opponentTeam &&
-  prev.selectedTimeFilter === next.selectedTimeFilter
+  prev.selectedTimeFilter === next.selectedTimeFilter &&
+  prev.propsMode === next.propsMode &&
+  prev.playerId === next.playerId &&
+  prev.selectedStat === next.selectedStat
 ));
 
 // Best Odds Table Component with mounted state to avoid hydration mismatch
@@ -5806,7 +5878,9 @@ const BestOddsTable = memo(function BestOddsTable({
   propsMode,
   opponentTeam,
   oddsFormat,
-  fmtOdds
+  fmtOdds,
+  playerId,
+  selectedStat
 }: {
   isDark: boolean;
   oddsLoading: boolean;
@@ -5818,12 +5892,27 @@ const BestOddsTable = memo(function BestOddsTable({
   opponentTeam: string;
   oddsFormat: string;
   fmtOdds: (odds: string) => string;
+  playerId?: string | number | null;
+  selectedStat?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  // Map selectedStat to API format
+  const statTypeMap: Record<string, string> = {
+    'pts': 'PTS',
+    'reb': 'REB',
+    'ast': 'AST',
+    'fg3m': 'THREES',
+    'pra': 'PRA',
+    'pr': 'PR',
+    'pa': 'PA',
+    'ra': 'RA',
+  };
+  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || 'PTS') : 'PTS';
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
@@ -6050,7 +6139,10 @@ const BestOddsTable = memo(function BestOddsTable({
 
   return (
     <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
-      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-2">BEST ODDS</div>
+      {/* Header */}
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
+      </div>
       
       {oddsLoading && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
@@ -6174,7 +6266,9 @@ const BestOddsTable = memo(function BestOddsTable({
   prev.gamePropsTeam === next.gamePropsTeam &&
   prev.propsMode === next.propsMode &&
   prev.opponentTeam === next.opponentTeam &&
-  prev.oddsFormat === next.oddsFormat
+  prev.oddsFormat === next.oddsFormat &&
+  prev.playerId === next.playerId &&
+  prev.selectedStat === next.selectedStat
 ));
 
 const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
@@ -6187,7 +6281,9 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
   propsMode,
   opponentTeam,
   oddsFormat,
-  fmtOdds
+  fmtOdds,
+  playerId,
+  selectedStat
 }: {
   isDark: boolean;
   oddsLoading: boolean;
@@ -6199,12 +6295,27 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
   opponentTeam: string;
   oddsFormat: string;
   fmtOdds: (odds: string) => string;
+  playerId?: string | number | null;
+  selectedStat?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  // Map selectedStat to API format
+  const statTypeMap: Record<string, string> = {
+    'pts': 'PTS',
+    'reb': 'REB',
+    'ast': 'AST',
+    'fg3m': 'THREES',
+    'pra': 'PRA',
+    'pr': 'PR',
+    'pa': 'PA',
+    'ra': 'RA',
+  };
+  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || 'PTS') : 'PTS';
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
@@ -6431,7 +6542,10 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
 
   return (
     <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-2">BEST ODDS</div>
+      {/* Header */}
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
+      </div>
       
       {oddsLoading && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
@@ -6555,7 +6669,9 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
   prev.gamePropsTeam === next.gamePropsTeam &&
   prev.propsMode === next.propsMode &&
   prev.opponentTeam === next.opponentTeam &&
-  prev.oddsFormat === next.oddsFormat
+  prev.oddsFormat === next.oddsFormat &&
+  prev.playerId === next.playerId &&
+  prev.selectedStat === next.selectedStat
 ));
 
 function NBADashboardContent() {
@@ -7215,7 +7331,48 @@ const lineMovementInFlightRef = useRef(false);
   // Next game info for tracking (separate from chart filter)
   const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
   const [nextGameDate, setNextGameDate] = useState<string>('');
+  const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
+  
+  // Countdown timer state
+  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  
+  // Update countdown every second
+  useEffect(() => {
+    if (!nextGameTipoff || isGameInProgress) {
+      setCountdown(null);
+      if (!nextGameTipoff) {
+        console.log('[Countdown] No tipoff time available');
+      }
+      if (isGameInProgress) {
+        console.log('[Countdown] Game in progress, hiding countdown');
+      }
+      return;
+    }
+    
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const tipoff = nextGameTipoff.getTime();
+      const diff = tipoff - now;
+      
+      if (diff <= 0) {
+        setCountdown(null);
+        console.log('[Countdown] Game time has passed');
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setCountdown({ hours, minutes, seconds });
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, [nextGameTipoff, isGameInProgress]);
 
 
   // Team game data cache for instant loading
@@ -7672,9 +7829,160 @@ const lineMovementInFlightRef = useRef(false);
       setNextGameOpponent(opponent || '');
       setNextGameDate(gameDate);
       setIsGameInProgress(inProgress);
+      
+      // Store tipoff time for countdown
+      console.log('[Countdown DEBUG] Raw game data:', {
+        game: nextGame.g,
+        gameDate: nextGame.g?.date,
+        gameStatus: nextGame.g?.status,
+        gameDateTime: nextGame.g?.datetime,
+        rawStatus: nextGame.rawStatus,
+        gameTime: new Date(nextGame.t).toISOString(),
+        now: new Date(now).toISOString(),
+        gameTimeMs: nextGame.t,
+        nowMs: now,
+        gameTimeDiff: nextGame.t - now,
+        gameTimeDiffHours: (nextGame.t - now) / (1000 * 60 * 60)
+      });
+      
+      let tipoffDate: Date | null = null;
+      
+      // First, try to use the datetime field from the game object (most reliable)
+      if (nextGame.g?.datetime) {
+        const gameDateTime = new Date(nextGame.g.datetime);
+        if (!Number.isNaN(gameDateTime.getTime()) && gameDateTime.getTime() > now) {
+          tipoffDate = gameDateTime;
+          console.log('[Countdown DEBUG] Using game.datetime field:', tipoffDate.toISOString());
+        }
+      }
+      
+      // If that didn't work, check if rawStatus is a valid ISO timestamp (like "2025-12-07T00:00:00Z")
+      if (!tipoffDate) {
+        const statusTime = Date.parse(rawStatus);
+        if (!Number.isNaN(statusTime)) {
+          const parsedStatus = new Date(statusTime);
+          // Check if it's at midnight (00:00:00) - if so, it's just a date placeholder, not the actual game time
+          const isMidnight = parsedStatus.getUTCHours() === 0 && parsedStatus.getUTCMinutes() === 0 && parsedStatus.getUTCSeconds() === 0;
+          console.log('[Countdown DEBUG] Date.parse(rawStatus):', parsedStatus.toISOString(), isMidnight ? '(MIDNIGHT - date placeholder, not actual game time)' : '(has time)');
+          
+          // Only use if it's in the future and NOT midnight (midnight means it's just a date, not actual game time)
+          if (parsedStatus.getTime() > now && !isMidnight && parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)) {
+            tipoffDate = parsedStatus;
+            console.log('[Countdown DEBUG] Using rawStatus as ISO timestamp:', tipoffDate.toISOString());
+          } else if (isMidnight) {
+            // If it's midnight, it's just a date - we'll need to get the actual game time from elsewhere
+            console.log('[Countdown DEBUG] rawStatus is midnight (date only), will try other methods');
+          }
+        }
+      }
+      
+      // Try to parse tipoff from status (this extracts time from status like "7:00 PM")
+      if (!tipoffDate) {
+        tipoffDate = parseBallDontLieTipoff(nextGame.g);
+        console.log('[Countdown DEBUG] parseBallDontLieTipoff result:', tipoffDate?.toISOString() || 'null');
+      }
+      
+      // If still no valid tipoff, use the game date/time from nextGame.t
+      // But check if it's actually in the future
+      if (!tipoffDate || tipoffDate.getTime() <= now) {
+        const gameTime = new Date(nextGame.t);
+        console.log('[Countdown DEBUG] Game time check:', {
+          gameTime: gameTime.toISOString(),
+          gameTimeMs: gameTime.getTime(),
+          nowMs: now,
+          isFuture: gameTime.getTime() > now,
+          diff: gameTime.getTime() - now,
+          diffHours: (gameTime.getTime() - now) / (1000 * 60 * 60)
+        });
+        
+        // Only use gameTime if it's in the future
+        if (gameTime.getTime() > now) {
+          tipoffDate = gameTime;
+          console.log('[Countdown DEBUG] Using gameTime (future):', tipoffDate.toISOString());
+        } else {
+          // If gameTime is in the past, the game might be scheduled for later today
+          // Try to extract time from status string
+          const timeMatch = rawStatus.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+          console.log('[Countdown DEBUG] Time match from status:', timeMatch);
+          
+          if (timeMatch) {
+            const gameDateStr = nextGame.g?.date || new Date().toISOString().split('T')[0];
+            let hour = parseInt(timeMatch[1], 10);
+            const minute = parseInt(timeMatch[2], 10);
+            const meridiem = timeMatch[3].toUpperCase();
+            if (meridiem === 'PM' && hour !== 12) hour += 12;
+            else if (meridiem === 'AM' && hour === 12) hour = 0;
+            
+            // Create date with today's date and the parsed time
+            const today = new Date();
+            const tipoff = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute, 0);
+            
+            // If this time has already passed today, assume it's for tomorrow
+            if (tipoff.getTime() <= now) {
+              tipoff.setDate(tipoff.getDate() + 1);
+            }
+            
+            tipoffDate = tipoff;
+            console.log('[Countdown DEBUG] Created tipoff from status time:', tipoffDate.toISOString());
+          } else {
+            // Last resort: The rawStatus might be a date timestamp (midnight)
+            // If so, extract the date and assume a reasonable game time (7:30 PM local)
+            const hoursSinceGameTime = (now - gameTime.getTime()) / (1000 * 60 * 60);
+            console.log('[Countdown DEBUG] Hours since game time:', hoursSinceGameTime);
+            
+            // Check if rawStatus is a date timestamp (midnight UTC)
+            const statusTime = Date.parse(rawStatus);
+            if (!Number.isNaN(statusTime)) {
+              const statusDate = new Date(statusTime);
+              const isMidnight = statusDate.getUTCHours() === 0 && statusDate.getUTCMinutes() === 0;
+              
+              if (isMidnight && statusDate.getTime() > now) {
+                // It's a date timestamp - extract the date and assume game is at 7:30 PM local time
+                const localDate = new Date(statusDate);
+                // Convert to local time and set to 7:30 PM
+                localDate.setHours(19, 30, 0, 0); // 7:30 PM local
+                tipoffDate = localDate;
+                console.log('[Countdown DEBUG] Using date from rawStatus with 7:30 PM local time:', tipoffDate.toISOString());
+              } else if (hoursSinceGameTime < 24 && hoursSinceGameTime > -12) {
+                // Game might be today, but we don't know the time - use a reasonable estimate
+                // Most NBA games are between 7 PM and 10 PM local time
+                const today = new Date();
+                today.setHours(19, 30, 0, 0); // 7:30 PM today
+                if (today.getTime() <= now) {
+                  // If 7:30 PM has passed, assume it's tomorrow
+                  today.setDate(today.getDate() + 1);
+                }
+                tipoffDate = today;
+                console.log('[Countdown DEBUG] Using estimated time (7:30 PM today/tomorrow):', tipoffDate.toISOString());
+              } else {
+                tipoffDate = gameTime;
+                console.log('[Countdown DEBUG] Using gameTime (last resort):', tipoffDate.toISOString());
+              }
+            } else {
+              tipoffDate = gameTime;
+              console.log('[Countdown DEBUG] Using gameTime (last resort):', tipoffDate.toISOString());
+            }
+          }
+        }
+      }
+      
+      const finalDiff = tipoffDate.getTime() - now;
+      setNextGameTipoff(tipoffDate);
+      console.log('[Countdown] Final tipoff calculation:', { 
+        tipoffDate: tipoffDate?.toISOString(), 
+        gameDate: nextGame.g?.date,
+        rawStatus: nextGame.rawStatus,
+        gameTime: new Date(nextGame.t).toISOString(),
+        now: new Date(now).toISOString(),
+        diff: finalDiff,
+        diffHours: finalDiff / (1000 * 60 * 60),
+        diffMinutes: finalDiff / (1000 * 60),
+        willShowCountdown: finalDiff > 0 && !inProgress
+      });
     } else {
       setNextGameOpponent('');
       setNextGameDate('');
+      setNextGameTipoff(null);
       setIsGameInProgress(false);
     }
 
@@ -8194,7 +8502,7 @@ const lineMovementInFlightRef = useRef(false);
         setSearchError(err);
         
         let arr: BdlSearchResult[] = Array.isArray(json?.results)
-          ? json.results.map((r: any) => ({ id: r.id, full: r.full, team: r.team, pos: r.pos }))
+          ? json.results.map((r: any) => ({ id: r.id, full: r.full, team: r.team, pos: r.pos, headshotUrl: r.headshotUrl || null }))
           : [];
         
         // Client-side fuzzy filtering for full name searches
@@ -11044,7 +11352,7 @@ const lineMovementInFlightRef = useRef(false);
                 </div>
 
                 {/* Dynamic Search - Player or Team based on props mode */}
-                <div className="flex-1 mx-2 sm:mx-6 md:mx-8">
+                <div className="flex-1 mx-2 sm:mx-6 md:mx-8 min-w-0">
                   <div className="relative z-[70]" ref={searchRef}>
                     {/* Desktop/Tablet input */}
                     <div className="hidden sm:block">
@@ -11256,9 +11564,23 @@ const lineMovementInFlightRef = useRef(false);
                                   }}
                                   className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                  <div className="flex items-center gap-3">
+                                    {r.headshotUrl && (
+                                      <img 
+                                        src={r.headshotUrl} 
+                                        alt={r.full}
+                                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                      />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                      </div>
+                                    </div>
                                   </div>
                                 </button>
                               ))}
@@ -11299,10 +11621,22 @@ const lineMovementInFlightRef = useRef(false);
                             className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                           >
                             <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                {r.headshotUrl && (
+                                  <img 
+                                    src={r.headshotUrl} 
+                                    alt={r.full}
+                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                  </div>
                                 </div>
                               </div>
                               {/* ID hidden intentionally */}
@@ -11380,56 +11714,69 @@ const lineMovementInFlightRef = useRef(false);
                 </div>
 
                 {/* Team vs Team Display - Desktop only - Aligned with name */}
-                <div className="hidden lg:flex flex-shrink-0">
+                <div className="hidden lg:flex flex-shrink-0 items-end">
                   {propsMode === 'player' ? (
                     // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
                     selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
-                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
                         {/* Player Team */}
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
                           <img 
                             src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
                             alt={selectedTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            className="w-8 h-8 object-contain flex-shrink-0"
                             onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
                               const candidates = getEspnLogoCandidates(selectedTeam);
                               const next = selectedTeamLogoAttempt + 1;
                               if (next < candidates.length) {
                                 setSelectedTeamLogoAttempt(next);
                                 setSelectedTeamLogoUrl(candidates[next]);
                               } else {
-                                // No more candidates; stop retrying
                                 e.currentTarget.onerror = null;
                               }
                             }}
                           />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{selectedTeam}</span>
+                          <span className="font-bold text-gray-900 dark:text-white text-sm">{selectedTeam}</span>
                         </div>
                         
-                        {/* VS */}
-                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        {/* Countdown to Tipoff - Centered between teams */}
+                        {countdown && !isGameInProgress ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Tipoff in</div>
+                            <div className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
+                              {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                            </div>
+                          </div>
+                        ) : isGameInProgress ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                          </div>
+                        ) : nextGameTipoff ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
+                        )}
                         
                         {/* Next Game Opponent */}
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
                           <img 
                             src={getEspnLogoUrl(nextGameOpponent)}
                             alt={nextGameOpponent}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            className="w-8 h-8 object-contain flex-shrink-0"
                             onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
                               const candidates = getEspnLogoCandidates(nextGameOpponent);
                               const next = opponentTeamLogoAttempt + 1;
                               if (next < candidates.length) {
                                 setOpponentTeamLogoAttempt(next);
                                 e.currentTarget.src = candidates[next];
                               } else {
-                                // No more candidates; stop retrying
                                 e.currentTarget.onerror = null;
                               }
                             }}
                           />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{nextGameOpponent}</span>
+                          <span className="font-bold text-gray-900 dark:text-white text-sm">{nextGameOpponent}</span>
                         </div>
                       </div>
                     ) : (
@@ -11440,47 +11787,60 @@ const lineMovementInFlightRef = useRef(false);
                   ) : (
                     // Game Props Mode - Show selected team vs opponent or prompt
                     gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
-                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
                         {/* Selected Team */}
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
                           <img 
                             src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
                             alt={gamePropsTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            className="w-8 h-8 object-contain flex-shrink-0"
                             onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
                               const candidates = getEspnLogoCandidates(gamePropsTeam);
                               const next = selectedTeamLogoAttempt + 1;
                               if (next < candidates.length) {
                                 setSelectedTeamLogoAttempt(next);
                                 setSelectedTeamLogoUrl(candidates[next]);
                               } else {
-                                // No more candidates; stop retrying
                                 e.currentTarget.onerror = null;
                               }
                             }}
                           />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[60px] sm:max-w-none">{gamePropsTeam}</span>
+                          <span className="font-bold text-gray-900 dark:text-white text-sm">{gamePropsTeam}</span>
                         </div>
                         
-                        {/* VS */}
-                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                        {/* Countdown to Tipoff - Centered between teams */}
+                        {countdown && !isGameInProgress ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Tipoff in</div>
+                            <div className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
+                              {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                            </div>
+                          </div>
+                        ) : isGameInProgress ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                          </div>
+                        ) : nextGameTipoff ? (
+                          <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
+                        )}
                         
                         {/* Opponent Team */}
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
                           <img 
                             src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
                             alt={opponentTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            className="w-8 h-8 object-contain flex-shrink-0"
                             onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
                               const candidates = getEspnLogoCandidates(opponentTeam);
                               const next = opponentTeamLogoAttempt + 1;
                               if (next < candidates.length) {
                                 setOpponentTeamLogoAttempt(next);
                                 setOpponentTeamLogoUrl(candidates[next]);
                               } else {
-                                // No more candidates; stop retrying
                                 e.currentTarget.onerror = null;
                               }
                             }}
@@ -11689,9 +12049,23 @@ const lineMovementInFlightRef = useRef(false);
                                   }}
                                   className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors"
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                  <div className="flex items-center gap-3">
+                                    {r.headshotUrl && (
+                                      <img 
+                                        src={r.headshotUrl} 
+                                        alt={r.full}
+                                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                      />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                      </div>
+                                    </div>
                                   </div>
                                 </button>
                               ))}
@@ -11747,53 +12121,70 @@ const lineMovementInFlightRef = useRef(false);
                   {propsMode === 'player' ? (
                     // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
                     selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
-                      <div className="flex items-center gap-1.5 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
-                        {/* Player Team */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink">
-                          <img 
-                            src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
-                            alt={selectedTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
-                            onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
-                              const candidates = getEspnLogoCandidates(selectedTeam);
-                              const next = selectedTeamLogoAttempt + 1;
-                              if (next < candidates.length) {
-                                setSelectedTeamLogoAttempt(next);
-                                setSelectedTeamLogoUrl(candidates[next]);
-                              } else {
-                                // No more candidates; stop retrying
-                                e.currentTarget.onerror = null;
-                              }
-                            }}
-                          />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{selectedTeam}</span>
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                        {/* Team Logos */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          {/* Player Team */}
+                          <div className="flex items-center gap-1 min-w-0">
+                            <img 
+                              src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
+                              alt={selectedTeam}
+                              className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                              onError={(e) => {
+                                const candidates = getEspnLogoCandidates(selectedTeam);
+                                const next = selectedTeamLogoAttempt + 1;
+                                if (next < candidates.length) {
+                                  setSelectedTeamLogoAttempt(next);
+                                  setSelectedTeamLogoUrl(candidates[next]);
+                                } else {
+                                  e.currentTarget.onerror = null;
+                                }
+                              }}
+                            />
+                            <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{selectedTeam}</span>
+                          </div>
+                          
+                          {/* VS */}
+                          <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                          
+                          {/* Next Game Opponent */}
+                          <div className="flex items-center gap-1 min-w-0">
+                            <img 
+                              src={getEspnLogoUrl(nextGameOpponent)}
+                              alt={nextGameOpponent}
+                              className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                              onError={(e) => {
+                                const candidates = getEspnLogoCandidates(nextGameOpponent);
+                                const next = opponentTeamLogoAttempt + 1;
+                                if (next < candidates.length) {
+                                  setOpponentTeamLogoAttempt(next);
+                                  e.currentTarget.src = candidates[next];
+                                } else {
+                                  e.currentTarget.onerror = null;
+                                }
+                              }}
+                            />
+                            <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{nextGameOpponent}</span>
+                          </div>
                         </div>
                         
-                        {/* VS */}
-                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
-                        
-                        {/* Next Game Opponent */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                          <img 
-                            src={getEspnLogoUrl(nextGameOpponent)}
-                            alt={nextGameOpponent}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
-                            onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
-                              const candidates = getEspnLogoCandidates(nextGameOpponent);
-                              const next = opponentTeamLogoAttempt + 1;
-                              if (next < candidates.length) {
-                                setOpponentTeamLogoAttempt(next);
-                                e.currentTarget.src = candidates[next];
-                              } else {
-                                // No more candidates; stop retrying
-                                e.currentTarget.onerror = null;
-                              }
-                            }}
-                          />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{nextGameOpponent}</span>
-                        </div>
+                        {/* Countdown to Tipoff - On the side */}
+                        {countdown && !isGameInProgress ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Tipoff in</div>
+                            <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                              {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                            </div>
+                          </div>
+                        ) : isGameInProgress ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                          </div>
+                        ) : nextGameTipoff ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
@@ -11803,53 +12194,70 @@ const lineMovementInFlightRef = useRef(false);
                   ) : (
                     // Game Props Mode - Show selected team vs opponent or prompt
                     gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
-                      <div className="flex items-center gap-1.5 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
-                        {/* Selected Team */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink">
-                          <img 
-                            src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
-                            alt={gamePropsTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
-                            onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
-                              const candidates = getEspnLogoCandidates(gamePropsTeam);
-                              const next = selectedTeamLogoAttempt + 1;
-                              if (next < candidates.length) {
-                                setSelectedTeamLogoAttempt(next);
-                                setSelectedTeamLogoUrl(candidates[next]);
-                              } else {
-                                // No more candidates; stop retrying
-                                e.currentTarget.onerror = null;
-                              }
-                            }}
-                          />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{gamePropsTeam}</span>
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
+                        {/* Team Logos */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          {/* Selected Team */}
+                          <div className="flex items-center gap-1 min-w-0">
+                            <img 
+                              src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
+                              alt={gamePropsTeam}
+                              className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                              onError={(e) => {
+                                const candidates = getEspnLogoCandidates(gamePropsTeam);
+                                const next = selectedTeamLogoAttempt + 1;
+                                if (next < candidates.length) {
+                                  setSelectedTeamLogoAttempt(next);
+                                  setSelectedTeamLogoUrl(candidates[next]);
+                                } else {
+                                  e.currentTarget.onerror = null;
+                                }
+                              }}
+                            />
+                            <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{gamePropsTeam}</span>
+                          </div>
+                          
+                          {/* VS */}
+                          <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                          
+                          {/* Opponent Team */}
+                          <div className="flex items-center gap-1 min-w-0">
+                            <img 
+                              src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
+                              alt={opponentTeam}
+                              className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                              onError={(e) => {
+                                const candidates = getEspnLogoCandidates(opponentTeam);
+                                const next = opponentTeamLogoAttempt + 1;
+                                if (next < candidates.length) {
+                                  setOpponentTeamLogoAttempt(next);
+                                  setOpponentTeamLogoUrl(candidates[next]);
+                                } else {
+                                  e.currentTarget.onerror = null;
+                                }
+                              }}
+                            />
+                            <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentTeam}</span>
+                          </div>
                         </div>
                         
-                        {/* VS */}
-                        <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
-                        
-                        {/* Opponent Team */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                          <img 
-                            src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
-                            alt={opponentTeam}
-                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
-                            onError={(e) => {
-                              // Advance through ESPN candidates exactly once per team to avoid flicker
-                              const candidates = getEspnLogoCandidates(opponentTeam);
-                              const next = opponentTeamLogoAttempt + 1;
-                              if (next < candidates.length) {
-                                setOpponentTeamLogoAttempt(next);
-                                setOpponentTeamLogoUrl(candidates[next]);
-                              } else {
-                                // No more candidates; stop retrying
-                                e.currentTarget.onerror = null;
-                              }
-                            }}
-                          />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate min-w-0">{opponentTeam}</span>
-                        </div>
+                        {/* Countdown to Tipoff - On the side */}
+                        {countdown && !isGameInProgress ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Tipoff in</div>
+                            <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                              {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                            </div>
+                          </div>
+                        ) : isGameInProgress ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                          </div>
+                        ) : nextGameTipoff ? (
+                          <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                          </div>
+                        ) : null}
                       </div>
                     ) : gamePropsTeam && gamePropsTeam !== 'N/A' ? (
                       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
@@ -11984,7 +12392,10 @@ const lineMovementInFlightRef = useRef(false);
               <OpponentAnalysisCard 
                 isDark={isDark} 
                 opponentTeam={opponentTeam} 
-                selectedTimeFilter={selectedTimeFilter} 
+                selectedTimeFilter={selectedTimeFilter}
+                propsMode={propsMode}
+                playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                selectedStat={selectedStat}
               />
 
               {/* Section 2: Team Matchup with Pie Chart */}
@@ -12362,6 +12773,8 @@ const lineMovementInFlightRef = useRef(false);
               opponentTeam={opponentTeam}
               oddsFormat={oddsFormat}
               fmtOdds={fmtOdds}
+              playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+              selectedStat={selectedStat}
 />
 
             {/* 8. Depth Chart Container (Mobile) */}
@@ -12527,6 +12940,8 @@ const lineMovementInFlightRef = useRef(false);
                 opponentTeam={opponentTeam}
                 oddsFormat={oddsFormat}
                 fmtOdds={fmtOdds}
+                playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                selectedStat={selectedStat}
               />
 
             {/* Unified Depth Chart (Desktop) - optimized for both modes */}
@@ -12751,7 +13166,10 @@ const lineMovementInFlightRef = useRef(false);
                 <OpponentAnalysisCard 
                   isDark={isDark} 
                   opponentTeam={opponentTeam} 
-                  selectedTimeFilter={selectedTimeFilter} 
+                  selectedTimeFilter={selectedTimeFilter}
+                  propsMode={propsMode}
+                  playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                  selectedStat={selectedStat}
                 />
 
                 {/* Section 2: Team Matchup with Pie Chart */}

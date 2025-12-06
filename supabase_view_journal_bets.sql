@@ -305,3 +305,4 @@ WHERE b.parlay_legs IS NOT NULL
 ORDER BY b.created_at DESC, leg->>'playerName';
 
 
+

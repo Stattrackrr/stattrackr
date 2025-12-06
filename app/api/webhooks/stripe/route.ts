@@ -167,6 +167,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (hasTrial) {
     updateData.has_used_trial = true;
     updateData.trial_used_at = new Date().toISOString();
+    
+    // Get user email and send trial start email
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+    
+    if (profile?.email) {
+      // Get subscription details to send trial email
+      const stripe = getStripe();
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        if (subscription.status === 'trialing') {
+          await sendTrialStartEmail(profile.email, subscription);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription for trial email:', error);
+      }
+    }
   }
 
   // Update user profile with subscription info
@@ -190,7 +210,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Find user by customer ID
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, has_used_trial')
+    .select('id, email, has_used_trial')
     .eq('stripe_customer_id', customerId)
     .single();
 
@@ -204,6 +224,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   // Check if this subscription has a trial period and mark it as used
   const hasTrial = subscription.trial_start !== null && subscription.trial_end !== null;
+  const isNewTrial = hasTrial && !profile.has_used_trial && subscription.status === 'trialing';
+  
   const updateData: any = {
     subscription_status: subscription.status,
     subscription_tier: tier,
@@ -218,6 +240,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     updateData.has_used_trial = true;
     updateData.trial_used_at = new Date().toISOString();
     console.log(`🎁 Marking trial as used for user ${profile.id}`);
+    
+    // Send trial start email if this is a new trial
+    if (isNewTrial) {
+      await sendTrialStartEmail(profile.email, subscription);
+    }
   }
 
   // Update subscription details
@@ -279,5 +306,83 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (profile) {
     // Optional: Send payment failed notification
     console.log('Payment failed for user:', profile.id);
+  }
+}
+
+/**
+ * Send email when free trial starts
+ */
+async function sendTrialStartEmail(userEmail: string | null, subscription: Stripe.Subscription) {
+  if (!userEmail) {
+    console.warn('No email address for trial start notification');
+    return;
+  }
+
+  try {
+    const stripe = getStripe();
+    
+    // Get customer details to ensure we have the email
+    const customer = await stripe.customers.retrieve(subscription.customer as string);
+    const customerEmail = typeof customer !== 'deleted' && customer.email ? customer.email : userEmail;
+    
+    // Calculate trial end date
+    const trialEndDate = subscription.trial_end 
+      ? new Date(subscription.trial_end * 1000).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : '7 days from now';
+
+    // TODO: Replace with your email service (Resend, SendGrid, etc.)
+    // For now, we'll use Stripe's built-in email or log it
+    
+    // Option 1: Use Stripe to send email (requires Stripe email template setup)
+    // You can configure this in Stripe Dashboard → Settings → Email delivery
+    
+    // Option 2: Use your own email service (Resend, SendGrid, etc.)
+    // Example with Resend:
+    /*
+    const RESEND_API_KEY = process.env.RESEND_API_KEY;
+    if (RESEND_API_KEY) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'StatTrackr <noreply@stattrackr.com>',
+          to: [customerEmail],
+          subject: '🎉 Your 7-Day Free Trial Has Started!',
+          html: `
+            <h1>Welcome to StatTrackr Pro!</h1>
+            <p>Your 7-day free trial has started. Enjoy full access to all Pro features.</p>
+            <p><strong>Trial ends:</strong> ${trialEndDate}</p>
+            <p>No credit card will be charged until your trial ends.</p>
+            <p>Get started: <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stattrackr.com'}/nba/research/dashboard">Go to Dashboard</a></p>
+          `,
+        }),
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Trial start email sent to ${customerEmail}`);
+      } else {
+        console.error('Failed to send trial start email:', await response.text());
+      }
+    }
+    */
+    
+    // For now, just log it (you can add email service later)
+    console.log(`📧 Trial start email should be sent to: ${customerEmail}`);
+    console.log(`   Trial ends: ${trialEndDate}`);
+    console.log(`   Subscription ID: ${subscription.id}`);
+    
+    // Note: Stripe automatically sends some trial-related emails if configured
+    // Check: https://dashboard.stripe.com/settings/billing/automatic
+    
+  } catch (error: any) {
+    console.error('Error sending trial start email:', error);
+    // Don't throw - email failure shouldn't break the webhook
   }
 }
