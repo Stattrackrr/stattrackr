@@ -99,18 +99,17 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         }
       }, 30000);
       
-      try {
-        const response = await fetch(
-          `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
-          { signal: abortController.signal }
-        );
-        
-        clearTimeout(timeoutId);
+      const response = await fetch(
+        `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
+        { signal: abortController.signal }
+      );
+      
+      clearTimeout(timeoutId);
 
-        // Check if request was aborted
-        if (abortController.signal.aborted) {
-          return;
-        }
+      // Check if request was aborted
+      if (abortController.signal.aborted) {
+        return;
+      }
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
