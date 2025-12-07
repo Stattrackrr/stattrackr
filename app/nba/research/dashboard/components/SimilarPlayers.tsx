@@ -45,7 +45,103 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
   const [data, setData] = useState<SimilarPlayerData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const prefetchRef = useRef<Promise<void> | null>(null);
 
+  // Pre-fetch function that can be called immediately
+  const fetchSimilarPlayers = useCallback(async (playerIdNum: number, opponent: string, statType: string, isPrefetch = false) => {
+    // Check cache first
+    const cacheKey = getCacheKey(playerIdNum, opponent, statType);
+    const cached = similarPlayersCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      // Use cached data - no loading state needed
+      if (!isPrefetch) {
+        console.log(`[SimilarPlayers] Using cached data for ${cacheKey}`);
+        setData(cached.data);
+        setError(null);
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Abort any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    if (!isPrefetch) {
+      setLoading(true);
+      setError(null);
+    }
+
+    try {
+      if (!isPrefetch) {
+        console.log(`[SimilarPlayers] Fetching similar players for playerId=${playerIdNum}, opponent=${opponent}, statType=${statType}`);
+      }
+      
+      const response = await fetch(
+        `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${statType}`,
+        { signal: abortController.signal }
+      );
+
+      // Check if request was aborted
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        let errorMessage = `Failed to fetch similar players (${response.status})`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          if (errorText) {
+            errorMessage = `${errorMessage}: ${errorText.substring(0, 100)}`;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch similar players');
+      }
+      
+      const resultData = result.data || [];
+      
+      // Cache the result
+      similarPlayersCache.set(cacheKey, {
+        data: resultData,
+        timestamp: now
+      });
+      
+      // Check again if request was aborted before setting state
+      if (!abortController.signal.aborted && !isPrefetch) {
+        setData(resultData);
+      }
+    } catch (err: any) {
+      // Don't set error if request was aborted or if it's a prefetch
+      if (err.name === 'AbortError' || abortController.signal.aborted || isPrefetch) {
+        return;
+      }
+      console.error('Error fetching similar players:', err);
+      if (!abortController.signal.aborted) {
+        setError(err.message || 'Failed to load similar players');
+      }
+    } finally {
+      if (!abortController.signal.aborted && !isPrefetch) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  // Pre-fetch when props change (even if component isn't visible)
   useEffect(() => {
     // Validate playerId - must be a valid number
     const playerIdNum = playerId ? (typeof playerId === 'string' ? parseInt(playerId, 10) : Number(playerId)) : null;
@@ -62,13 +158,13 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
-    // Check cache first
+    // Check cache first - if we have it, set it immediately
     const cacheKey = getCacheKey(playerIdNum, opponent, statType);
     const cached = similarPlayersCache.get(cacheKey);
     const now = Date.now();
     
     if (cached && (now - cached.timestamp) < CACHE_TTL) {
-      // Use cached data - no loading state needed
+      // Use cached data immediately
       console.log(`[SimilarPlayers] Using cached data for ${cacheKey}`);
       setData(cached.data);
       setError(null);
@@ -76,88 +172,21 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
-    // Abort any previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    // Start fetching immediately (pre-fetch) - don't wait for component to be visible
+    // This makes the data ready when the user clicks the tab
+    const prefetchPromise = fetchSimilarPlayers(playerIdNum, opponent, statType, true);
+    prefetchRef.current = prefetchPromise;
 
-    const fetchSimilarPlayers = async () => {
-      // Create new abort controller for this request
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        console.log(`[SimilarPlayers] Fetching similar players for playerId=${playerIdNum}, opponent=${opponent}, statType=${statType}`);
-        
-        const response = await fetch(
-          `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${statType}`,
-          { signal: abortController.signal }
-        );
-
-        // Check if request was aborted
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          let errorMessage = `Failed to fetch similar players (${response.status})`;
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch {
-            if (errorText) {
-              errorMessage = `${errorMessage}: ${errorText.substring(0, 100)}`;
-            }
-          }
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to fetch similar players');
-        }
-        
-        const resultData = result.data || [];
-        
-        // Cache the result
-        similarPlayersCache.set(cacheKey, {
-          data: resultData,
-          timestamp: now
-        });
-        
-        // Check again if request was aborted before setting state
-        if (!abortController.signal.aborted) {
-          setData(resultData);
-        }
-      } catch (err: any) {
-        // Don't set error if request was aborted
-        if (err.name === 'AbortError' || abortController.signal.aborted) {
-          return;
-        }
-        console.error('Error fetching similar players:', err);
-        if (!abortController.signal.aborted) {
-          setError(err.message || 'Failed to load similar players');
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchSimilarPlayers();
-
+    // Also set up the normal fetch for when component is visible
+    const normalFetchPromise = fetchSimilarPlayers(playerIdNum, opponent, statType, false);
+    
     // Cleanup: abort request on unmount or dependency change
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [playerId, opponent, statType]);
+  }, [playerId, opponent, statType, fetchSimilarPlayers]);
 
   // Validate playerId before rendering
   const playerIdNum = playerId ? (typeof playerId === 'string' ? parseInt(playerId, 10) : Number(playerId)) : null;
