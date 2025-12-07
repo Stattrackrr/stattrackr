@@ -98,3 +98,4 @@ If emails aren't being sent, check:
 3. Email isn't in spam folder
 4. Stripe account email delivery isn't disabled
 
+

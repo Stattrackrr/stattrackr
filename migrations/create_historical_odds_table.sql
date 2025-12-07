@@ -28,3 +28,4 @@ CREATE INDEX IF NOT EXISTS idx_historical_odds_game_date ON historical_odds(game
 -- Add comment
 COMMENT ON TABLE historical_odds IS 'Stores historical betting odds for players to avoid repeated API calls';
 
+

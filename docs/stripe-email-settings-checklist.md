@@ -98,3 +98,4 @@ To test if emails are working:
 
 The most important setting is: **"Send finalised invoices and credit notes to customers"** - this ensures invoices are emailed automatically.
 
+

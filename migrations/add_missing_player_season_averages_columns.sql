@@ -33,3 +33,4 @@ COMMENT ON COLUMN player_season_averages.fta IS 'Free throw attempts per game av
 COMMENT ON COLUMN player_season_averages.turnover IS 'Turnovers per game average (synonym for turnovers)';
 COMMENT ON COLUMN player_season_averages.pf IS 'Personal fouls per game average';
 
+

@@ -119,3 +119,4 @@ async function checkUserTrialStatus() {
 
 checkUserTrialStatus().catch(console.error);
 
+

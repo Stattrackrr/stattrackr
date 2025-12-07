@@ -188,3 +188,4 @@ No credit card will be charged until your trial ends.
   - Updated `handleSubscriptionUpdated()` to call email function
   - Updated `handleCheckoutCompleted()` to send email on trial start
 
+

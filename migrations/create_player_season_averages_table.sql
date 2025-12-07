@@ -70,3 +70,4 @@ CREATE POLICY "Allow service role full access to player season averages"
 
 COMMENT ON TABLE player_season_averages IS 'Caches player season averages for all stats to enable instant lookups without API calls';
 
+

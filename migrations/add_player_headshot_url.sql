@@ -6,3 +6,4 @@ CREATE INDEX IF NOT EXISTS idx_players_headshot_url ON players(headshot_url) WHE
 
 COMMENT ON COLUMN players.headshot_url IS 'ESPN player headshot URL, fetched from roster API and matched by name';
 
+
