@@ -5725,6 +5725,17 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
       </div>
 
       <div className="space-y-4">
+        {/* Always render SimilarPlayers (hidden when breakdown is active) so it starts fetching immediately when player is selected */}
+        {propsMode === 'player' && playerId && (
+          <div className={activeView === 'breakdown' ? 'hidden' : ''}>
+            <SimilarPlayers 
+              playerId={playerId} 
+              opponent={opponentTeam} 
+              statType={selectedStat || 'PTS'} 
+              isDark={isDark} 
+            />
+          </div>
+        )}
 
         {activeView === 'breakdown' ? (
           <div className="space-y-2">
@@ -5835,22 +5846,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
             </div>
           </div>
         </div>
-        ) : (
-          <div>
-            {propsMode === 'player' && playerId ? (
-              <SimilarPlayers 
-                playerId={playerId} 
-                opponent={opponentTeam} 
-                statType={selectedStat || 'PTS'} 
-                isDark={isDark} 
-              />
-            ) : (
-              <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} p-4 text-center`}>
-                Similar players only available in player mode
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
