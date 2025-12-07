@@ -178,13 +178,28 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
-    // No cache for current stat - check if we should show loading or pre-fetch silently
-    // Only show loading if this is the active view (user is looking at similar players)
-    // Otherwise, pre-fetch silently in background
+    // No cache for current stat - start fetching
+    // Show loading only if we don't have cache
+    setLoading(true);
     
-    // Start fetching - use prefetch mode to avoid showing loading if not visible
+    // Start fetching
     const fetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, false);
     prefetchRef.current = fetchPromise;
+    
+    // Pre-fetch other common stat types in background (so switching is instant)
+    const commonStats = ['PTS', 'REB', 'AST', 'FGM', 'FGA', 'FTM', 'FTA', 'STL', 'BLK', 'TO', 'PF', 'OREB', 'DREB'];
+    commonStats.forEach(otherStat => {
+      if (otherStat !== normalizedStatType) {
+        const otherCacheKey = getCacheKey(playerIdNum, opponent, otherStat);
+        const otherCached = similarPlayersCache.get(otherCacheKey);
+        if (!otherCached || (now - otherCached.timestamp) >= CACHE_TTL) {
+          // Pre-fetch in background (silently)
+          fetchSimilarPlayers(playerIdNum, opponent, otherStat, true).catch(() => {
+            // Ignore errors for background pre-fetches
+          });
+        }
+      }
+    });
     
     // Cleanup: abort request on unmount or dependency change
     return () => {
