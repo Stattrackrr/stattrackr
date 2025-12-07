@@ -1414,87 +1414,15 @@ export async function GET(request: NextRequest) {
       return null;
     };
     
-    // Filter out players without season averages for the specific stat type - don't process them at all
-    const playersWithStatAverage = new Set<number>();
-    for (const similar of similarPlayers) {
-      const avg = seasonAveragesMap.get(similar.player.id);
-      if (!avg) continue; // Skip if no season average data at all
-      
-      const statTypeLower = statType.toLowerCase();
-      let hasStat = false;
-      
-      // Check if the stat exists (either directly or can be calculated)
-      // Allow 0 values - a player can have 0 of a stat and still be valid
-      if (statTypeLower === 'pts') hasStat = (avg.pts !== null && avg.pts !== undefined);
-      else if (statTypeLower === 'reb') hasStat = (avg.reb !== null && avg.reb !== undefined);
-      else if (statTypeLower === 'ast') hasStat = (avg.ast !== null && avg.ast !== undefined);
-      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') hasStat = (avg.fg3m !== null && avg.fg3m !== undefined);
-      else if (statTypeLower === 'fgm') hasStat = (avg.fgm !== null && avg.fgm !== undefined);
-      else if (statTypeLower === 'fga') hasStat = (avg.fga !== null && avg.fga !== undefined);
-      else if (statTypeLower === 'ftm') hasStat = (avg.ftm !== null && avg.ftm !== undefined);
-      else if (statTypeLower === 'fta') hasStat = (avg.fta !== null && avg.fta !== undefined);
-      else if (statTypeLower === 'oreb') {
-        // OREB might not be in all records - check if it exists or can be calculated
-        hasStat = (avg.oreb !== null && avg.oreb !== undefined) || 
-                  (avg.reb !== null && avg.reb !== undefined); // Fallback to total rebounds
-      }
-      else if (statTypeLower === 'dreb') {
-        // DREB might not be in all records - check if it exists or can be calculated
-        hasStat = (avg.dreb !== null && avg.dreb !== undefined) || 
-                  (avg.reb !== null && avg.reb !== undefined); // Fallback to total rebounds
-      }
-      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') {
-        hasStat = ((avg.turnover !== null && avg.turnover !== undefined) || (avg.to !== null && avg.to !== undefined));
-      }
-      else if (statTypeLower === 'pf') hasStat = (avg.pf !== null && avg.pf !== undefined);
-      else if (statTypeLower === 'stl') hasStat = (avg.stl !== null && avg.stl !== undefined);
-      else if (statTypeLower === 'blk') hasStat = (avg.blk !== null && avg.blk !== undefined);
-      else if (statTypeLower === 'pra') {
-        // PRA can be calculated from pts + reb + ast
-        hasStat = (avg.pts !== null && avg.pts !== undefined) && 
-                  (avg.reb !== null && avg.reb !== undefined) && 
-                  (avg.ast !== null && avg.ast !== undefined);
-      }
-      else if (statTypeLower === 'pr') {
-        // PR can be calculated from pts + reb
-        hasStat = (avg.pts !== null && avg.pts !== undefined) && 
-                  (avg.reb !== null && avg.reb !== undefined);
-      }
-      else if (statTypeLower === 'pa') {
-        // PA can be calculated from pts + ast
-        hasStat = (avg.pts !== null && avg.pts !== undefined) && 
-                  (avg.ast !== null && avg.ast !== undefined);
-      }
-      else if (statTypeLower === 'ra') {
-        // RA can be calculated from reb + ast
-        hasStat = (avg.reb !== null && avg.reb !== undefined) && 
-                  (avg.ast !== null && avg.ast !== undefined);
-      }
-      
-      if (hasStat) {
-        playersWithStatAverage.add(similar.player.id);
-      }
-    }
+    // Don't filter based on season averages - use game data instead
+    // Season averages are only used for display/comparison, not for filtering
+    // This ensures we show results even if season averages are missing or incomplete
+    const filteredSimilarPlayers = similarPlayers;
+    const filteredOpponentGames = allOpponentGames;
     
-    // If no players have season averages, don't filter - allow all players through
-    // (they might have game data even if season averages are missing)
-    let filteredSimilarPlayers = similarPlayers;
-    let filteredOpponentGames = allOpponentGames;
+    console.log(`[Similar Players] Processing ${filteredOpponentGames.length} games for ${filteredSimilarPlayers.length} similar players (not filtering by season averages)`);
     
-    if (playersWithStatAverage.size > 0) {
-      // Only filter if we have some players with season averages
-      filteredSimilarPlayers = similarPlayers.filter(s => playersWithStatAverage.has(s.player.id));
-      filteredOpponentGames = allOpponentGames.filter(({ similar }) => playersWithStatAverage.has(similar.player.id));
-      
-      if (filteredSimilarPlayers.length < similarPlayers.length) {
-        const removed = similarPlayers.length - filteredSimilarPlayers.length;
-        console.log(`[Similar Players] Filtered out ${removed} players without season averages for ${statType}`);
-      }
-    } else {
-      console.log(`[Similar Players] No players have season averages for ${statType}, allowing all players through (will check game data instead)`);
-    }
-    
-    // Process games and use season averages only (only for players with averages)
+    // Process games and use season averages for display if available
     for (const { game, similar } of filteredOpponentGames) {
       const gameDate = game.game?.date;
       if (!gameDate) continue;
