@@ -5731,7 +5731,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
             <SimilarPlayers 
               playerId={playerId} 
               opponent={opponentTeam} 
-              statType={selectedStat || 'PTS'} 
+              statType={(selectedStat || 'PTS').toUpperCase()} 
               isDark={isDark} 
             />
           </div>
@@ -5899,12 +5899,22 @@ const BestOddsTable = memo(function BestOddsTable({
     'reb': 'REB',
     'ast': 'AST',
     'fg3m': 'THREES',
+    'fgm': 'FGM',
+    'fga': 'FGA',
+    'ftm': 'FTM',
+    'fta': 'FTA',
+    'oreb': 'OREB',
+    'dreb': 'DREB',
+    'to': 'TO',
+    'pf': 'PF',
+    'stl': 'STL',
+    'blk': 'BLK',
     'pra': 'PRA',
     'pr': 'PR',
     'pa': 'PA',
     'ra': 'RA',
   };
-  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || 'PTS') : 'PTS';
+  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || selectedStat.toUpperCase()) : 'PTS';
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';
@@ -6302,12 +6312,22 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
     'reb': 'REB',
     'ast': 'AST',
     'fg3m': 'THREES',
+    'fgm': 'FGM',
+    'fga': 'FGA',
+    'ftm': 'FTM',
+    'fta': 'FTA',
+    'oreb': 'OREB',
+    'dreb': 'DREB',
+    'to': 'TO',
+    'pf': 'PF',
+    'stl': 'STL',
+    'blk': 'BLK',
     'pra': 'PRA',
     'pr': 'PR',
     'pa': 'PA',
     'ra': 'RA',
   };
-  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || 'PTS') : 'PTS';
+  const statType = selectedStat ? (statTypeMap[selectedStat.toLowerCase()] || selectedStat.toUpperCase()) : 'PTS';
 
   const home = (propsMode === 'team' ? gamePropsTeam : selectedTeam) || 'HOME';
   const away = opponentTeam || 'AWAY';

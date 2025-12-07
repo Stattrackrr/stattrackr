@@ -37,7 +37,9 @@ const similarPlayersCache = new Map<string, {
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 1 day cache TTL
 
 function getCacheKey(playerId: number, opponent: string, statType: string): string {
-  return `${playerId}:${opponent}:${statType}`;
+  // Normalize statType to uppercase for consistent cache keys
+  const normalizedStatType = statType.toUpperCase();
+  return `${playerId}:${opponent}:${normalizedStatType}`;
 }
 
 export function SimilarPlayers({ playerId, opponent, statType, isDark = false }: SimilarPlayersProps) {
@@ -84,8 +86,10 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         console.log(`[SimilarPlayers] Fetching similar players for playerId=${playerIdNum}, opponent=${opponent}, statType=${statType}`);
       }
       
+      // Normalize statType to uppercase for API (API expects PTS, REB, AST, FGM, etc.)
+      const normalizedStatType = statType.toUpperCase();
       const response = await fetch(
-        `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${statType}`,
+        `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
         { signal: abortController.signal }
       );
 
@@ -158,8 +162,11 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
+    // Normalize statType to uppercase for consistent caching
+    const normalizedStatType = statType.toUpperCase();
+    
     // Check cache first - if we have it, set it immediately (don't show loading)
-    const cacheKey = getCacheKey(playerIdNum, opponent, statType);
+    const cacheKey = getCacheKey(playerIdNum, opponent, normalizedStatType);
     const cached = similarPlayersCache.get(cacheKey);
     const now = Date.now();
     
@@ -178,11 +185,11 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
     
     // Start fetching immediately (pre-fetch) - don't wait for component to be visible
     // This makes the data ready when the user clicks the tab
-    const prefetchPromise = fetchSimilarPlayers(playerIdNum, opponent, statType, true);
+    const prefetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, true);
     prefetchRef.current = prefetchPromise;
 
     // Also set up the normal fetch for when component is visible
-    const normalFetchPromise = fetchSimilarPlayers(playerIdNum, opponent, statType, false);
+    const normalFetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, false);
     
     // Cleanup: abort request on unmount or dependency change
     return () => {
