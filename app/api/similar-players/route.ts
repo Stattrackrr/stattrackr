@@ -626,6 +626,7 @@ export async function GET(request: NextRequest) {
       heightDiff: number;
       playTypeMatches: number;
       minutesDiff: number | null;
+      playerMinutes: number | null; // Player's average minutes for display
     }> = [];
     
     // First pass: filter by height only (FAST - using pre-calculated height_inches from database!)
@@ -930,6 +931,7 @@ export async function GET(request: NextRequest) {
         heightDiff,
         playTypeMatches,
         minutesDiff,
+        playerMinutes: playerMinutes, // Store actual player minutes for display
       });
     }
     
@@ -975,26 +977,63 @@ export async function GET(request: NextRequest) {
     }
     
     // Match cached stats with similar players
-    const allOpponentGames: Array<{ game: any; similar: any }> = [];
+    let allOpponentGames: Array<{ game: any; similar: any }> = [];
+    
+    // Check if cached stats have the stat field we need BEFORE transformation
+    // New stats (FGM, FGA, FTM, FTA, OREB, DREB, PF) might not be in cached stats
+    const statTypeLower = statType.toLowerCase();
+    const needsNewStatFields = ['fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'pf'].includes(statTypeLower);
+    
+    // Check the ORIGINAL cached stats (before transformation) to see if they have actual data
+    let cachedStatsHaveField = true;
+    if (needsNewStatFields && cachedStats.length > 0) {
+      // Check if any cached stat has a non-null value for this stat
+      // This checks the raw database values, not transformed values
+      const hasActualData = cachedStats.some((cachedStat: any) => {
+        if (statTypeLower === 'fgm') return cachedStat.fgm !== undefined && cachedStat.fgm !== null;
+        if (statTypeLower === 'fga') return cachedStat.fga !== undefined && cachedStat.fga !== null;
+        if (statTypeLower === 'ftm') return cachedStat.ftm !== undefined && cachedStat.ftm !== null;
+        if (statTypeLower === 'fta') return cachedStat.fta !== undefined && cachedStat.fta !== null;
+        if (statTypeLower === 'oreb') return cachedStat.oreb !== undefined && cachedStat.oreb !== null;
+        if (statTypeLower === 'dreb') return cachedStat.dreb !== undefined && cachedStat.dreb !== null;
+        if (statTypeLower === 'pf') return cachedStat.pf !== undefined && cachedStat.pf !== null;
+        return true;
+      });
+      
+      // If we have cached stats but none have actual data for this stat, fetch from API
+      if (!hasActualData) {
+        cachedStatsHaveField = false;
+        console.log(`[Similar Players] Cached stats exist but no actual data for ${statType}, fetching from API...`);
+      }
+    }
     
     for (const similar of similarPlayers) {
       const cachedStat = statsMap.get(similar.player.id);
       if (cachedStat) {
         // Transform cached stat to match expected format
+        // Use nullish coalescing to preserve null values (don't convert null to 0)
+        // But we'll use 0 as fallback when extracting statValue later
         allOpponentGames.push({
           game: {
             game: {
               date: cachedStat.game_date,
               id: cachedStat.game_id
             },
-            pts: cachedStat.pts || 0,
-            reb: cachedStat.reb || 0,
-            ast: cachedStat.ast || 0,
-            fg3m: cachedStat.fg3m || 0,
-            stl: cachedStat.stl || 0,
-            blk: cachedStat.blk || 0,
-            turnover: cachedStat.turnovers || 0,
-            to: cachedStat.turnovers || 0,
+            pts: cachedStat.pts ?? 0,
+            reb: cachedStat.reb ?? 0,
+            ast: cachedStat.ast ?? 0,
+            fg3m: cachedStat.fg3m ?? 0,
+            fgm: cachedStat.fgm ?? null, // Preserve null to detect missing data
+            fga: cachedStat.fga ?? null,
+            ftm: cachedStat.ftm ?? null,
+            fta: cachedStat.fta ?? null,
+            oreb: cachedStat.oreb ?? null, // Preserve null to detect missing data
+            dreb: cachedStat.dreb ?? null,
+            stl: cachedStat.stl ?? 0,
+            blk: cachedStat.blk ?? 0,
+            turnover: cachedStat.turnovers ?? cachedStat.turnover ?? 0,
+            to: cachedStat.turnovers ?? cachedStat.turnover ?? 0,
+            pf: cachedStat.pf ?? null,
             fg_pct: cachedStat.fg_pct,
             fg3_pct: cachedStat.fg3_pct,
             min: cachedStat.min,
@@ -1007,9 +1046,45 @@ export async function GET(request: NextRequest) {
     
     console.log(`[Similar Players] Found ${allOpponentGames.length} cached stats vs ${normalizedOpponent}`);
     
-    // FALLBACK: If no cached stats, fetch from BDL API (old method)
+    // Use ONLY cached data - no API fallback to avoid rate limiting
+    // If cached stats are missing, return empty results (cache needs to be synced first)
     if (allOpponentGames.length === 0) {
-      console.log(`[Similar Players] No cached stats found, fetching from BDL API...`);
+      console.log(`[Similar Players] No cached stats found for ${similarPlayers.length} players vs ${normalizedOpponent}. Cache needs to be synced.`);
+      console.log(`[Similar Players] To sync cache, run: GET /api/player-team-stats/sync`);
+      return NextResponse.json({
+        success: true,
+        data: [],
+        targetPlayer: {
+          id: targetPlayer.id,
+          name: `${targetPlayer.first_name} ${targetPlayer.last_name}`,
+          position: targetPosition,
+          height: targetHeightInches,
+          playTypes: targetPlayTypes,
+          minutes: targetMinutes,
+        },
+        debug: {
+          similarPlayersFound: similarPlayers.length,
+          opponentGamesFound: 0,
+          reason: 'No cached stats found - cache needs to be synced. Run: GET /api/player-team-stats/sync'
+        },
+      });
+    }
+    
+    // If cached stats exist but missing the stat field we need, still use cached data
+    // (the stat might be 0 or null, which is valid)
+    if (needsNewStatFields && !cachedStatsHaveField) {
+      console.log(`[Similar Players] Cached stats found but missing ${statType} field. Using cached data (stat may be 0 or null).`);
+      // Continue with cached data - don't fetch from API
+    }
+    
+    // REMOVED: API fallback to prevent rate limiting
+    // All data must come from cache. Sync cache regularly to keep it updated.
+    // To sync cache, run: GET /api/player-team-stats/sync
+    
+    // The entire API fallback section is commented out below
+    // We only use cached data now to prevent rate limiting and make queries instant
+    /*
+    if (false) { // Disabled API fallback
       // Fetch games for all similar players in parallel
       const gamePromises = similarPlayers.map(async (similar) => {
       try {
@@ -1326,6 +1401,7 @@ export async function GET(request: NextRequest) {
       
       console.log(`[Similar Players] Found ${allOpponentGames.length} games vs ${normalizedOpponent} (${cachedStats.length} cached, ${fallbackGames.length} from API)`);
     }
+    */
     
     // Initialize results array
     const results: any[] = [];
@@ -1473,36 +1549,45 @@ export async function GET(request: NextRequest) {
       // Get stat value based on statType
       let statValue = 0;
       const statTypeLower = statType.toLowerCase();
-      if (statTypeLower === 'pts') statValue = game.pts || 0;
-      else if (statTypeLower === 'reb') statValue = game.reb || 0;
-      else if (statTypeLower === 'ast') statValue = game.ast || 0;
-      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') statValue = game.fg3m || 0;
-      else if (statTypeLower === 'fgm') statValue = game.fgm || 0;
-      else if (statTypeLower === 'fga') statValue = game.fga || 0;
-      else if (statTypeLower === 'ftm') statValue = game.ftm || 0;
-      else if (statTypeLower === 'fta') statValue = game.fta || 0;
-      else if (statTypeLower === 'oreb') statValue = game.oreb || 0;
-      else if (statTypeLower === 'dreb') statValue = game.dreb || 0;
-      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') statValue = game.turnover || 0;
-      else if (statTypeLower === 'pf') statValue = game.pf || 0;
-      else if (statTypeLower === 'stl') statValue = game.stl || 0;
-      else if (statTypeLower === 'blk') statValue = game.blk || 0;
+      if (statTypeLower === 'pts') statValue = game.pts ?? 0;
+      else if (statTypeLower === 'reb') statValue = game.reb ?? 0;
+      else if (statTypeLower === 'ast') statValue = game.ast ?? 0;
+      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') statValue = game.fg3m ?? 0;
+      else if (statTypeLower === 'fgm') statValue = game.fgm ?? 0; // Use nullish coalescing to preserve 0 values
+      else if (statTypeLower === 'fga') statValue = game.fga ?? 0;
+      else if (statTypeLower === 'ftm') statValue = game.ftm ?? 0;
+      else if (statTypeLower === 'fta') statValue = game.fta ?? 0;
+      else if (statTypeLower === 'oreb') statValue = game.oreb ?? 0; // Use nullish coalescing to preserve 0 values
+      else if (statTypeLower === 'dreb') statValue = game.dreb ?? 0;
+      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') statValue = game.turnover ?? 0;
+      else if (statTypeLower === 'pf') statValue = game.pf ?? 0;
+      else if (statTypeLower === 'stl') statValue = game.stl ?? 0;
+      else if (statTypeLower === 'blk') statValue = game.blk ?? 0;
       else if (statTypeLower === 'pra') statValue = (game.pts || 0) + (game.reb || 0) + (game.ast || 0);
       else if (statTypeLower === 'pr') statValue = (game.pts || 0) + (game.reb || 0);
       else if (statTypeLower === 'pa') statValue = (game.pts || 0) + (game.ast || 0);
       else if (statTypeLower === 'ra') statValue = (game.reb || 0) + (game.ast || 0);
       else statValue = game[statTypeLower] || 0;
       
-      // Filter out players with total 0
-      if (statValue === 0) {
-        continue;
-      }
+      // Don't filter out 0 values - a player can legitimately have 0 of a stat in a game
+      // (e.g., 0 FTM if they didn't shoot free throws, 0 OREB if they didn't get offensive rebounds)
+      // The statValue === 0 filter was too strict and was filtering out valid games
       
       // Get actual player height
       const playerHeightInches = similar.player.height_inches ?? heightToInches(similar.player.height);
       
       // Get season average for the stat (optional - use 0 if missing)
       const seasonAvg = getSeasonAverage(similar.player.id, statType);
+      
+      // Get minutes played in THIS specific game (not season average)
+      // Try min_decimal first (more precise), then min, then null
+      const gameMinutes = game.min_decimal ?? game.min ?? null;
+      const gameMinutesNum = gameMinutes !== null ? parseFloat(String(gameMinutes)) : null;
+      
+      // Filter out players who played less than 10 minutes in this game
+      if (gameMinutesNum !== null && gameMinutesNum < 10) {
+        continue; // Skip this game - player didn't play enough minutes
+      }
       
       // Don't skip if no season average - use 0 as fallback
       // This allows results to show even if season averages are incomplete
@@ -1524,6 +1609,7 @@ export async function GET(request: NextRequest) {
         playerHeight: playerHeightInches, // Add actual player height in inches
         playTypeMatches: similar.playTypeMatches,
         minutesDiff: similar.minutesDiff,
+        playerMinutes: gameMinutesNum, // Minutes played in THIS specific game vs opponent
       });
     }
     

@@ -1777,9 +1777,10 @@ const PLAYER_STAT_OPTIONS = [
   { key: "ra", label: "RA" },   // Rebounds + Assists
   { key: "fg3m", label: "3PM/A" },
   { key: "fg3_pct", label: "3P%" }, { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
-  { key: "fg_pct", label: "FG%" }, { key: "ftm", label: "FTM" }, { key: "fta", label: "FTA" },
+  { key: "fg_pct", label: "FG%" }, { key: "stl", label: "STL" }, { key: "blk", label: "BLK" },
+  { key: "ftm", label: "FTM" }, { key: "fta", label: "FTA" },
   { key: "ft_pct", label: "FT%" }, { key: "oreb", label: "OREB" }, { key: "dreb", label: "DREB" },
-  { key: "turnover", label: "TO" }, { key: "pf", label: "PF" }, { key: "stl", label: "STL" }, { key: "blk", label: "BLK" }
+  { key: "turnover", label: "TO" }, { key: "pf", label: "PF" }
 ];
 
 const TEAM_STAT_OPTIONS = [
@@ -5506,6 +5507,12 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Reset to "Opponent Breakdown" when player changes or opponent changes
+  // This allows Similar Players to pre-fetch in the background without showing loading states
+  useEffect(() => {
+    setActiveView('breakdown');
+  }, [playerId, opponentTeam]);
 
   useEffect(() => {
     // Don't fetch if opponent team is not set or is invalid
