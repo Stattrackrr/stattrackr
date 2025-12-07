@@ -79,9 +79,6 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       setLoading(true);
       setError(null);
     }
-
-    // Normalize statType to uppercase for API (API expects PTS, REB, AST, FGM, etc.)
-    const normalizedStatType = statType.toUpperCase();
     
     // Add timeout to prevent infinite loading (30 seconds) - declare outside try so it's accessible in catch
     let timeoutId: NodeJS.Timeout | null = null;
