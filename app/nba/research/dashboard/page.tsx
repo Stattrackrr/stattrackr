@@ -5426,15 +5426,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             {DVP_METRICS.map((m) => {
               const rank = perRank[m.key];
               
-              // Debug: log rank value for first metric
-              if (m.key === 'pts') {
-                console.log(`[DVP Display] Rendering rank for ${m.key}:`, {
-                  rank,
-                  rankType: typeof rank,
-                  perRankKeys: Object.keys(perRank),
-                  perRankValue: perRank[m.key]
-                });
-              }
+              // Removed debug logging to prevent spam during re-renders
               
               let borderColor: string;
               let badgeColor: string;
@@ -5473,20 +5465,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
                         {fmt(perStat[m.key], m.isPercentage)}
                       </span>
                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}`} title="Rank (30 better for overs, 1 for unders)">
-                        {(() => {
-                          // Debug: log what we're trying to display
-                          if (m.key === 'pts') {
-                            console.log(`[DVP Display] Rendering badge for ${m.key}:`, {
-                              rank,
-                              rankType: typeof rank,
-                              condition1: typeof rank === 'number',
-                              condition2: rank !== null && rank > 0,
-                              willDisplay: typeof rank === 'number' && rank !== null && rank > 0,
-                              displayValue: typeof rank === 'number' && rank !== null && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : ''
-                            });
-                          }
-                          return typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : '';
-                        })()}
+                        {typeof rank === 'number' && rank > 0 ? `#${rank}` : rank === 0 ? 'N/A' : ''}
                       </span>
                     </div>
                   </div>

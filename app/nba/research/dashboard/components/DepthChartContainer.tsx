@@ -71,7 +71,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   const createDepthChart = (realDepthChartData: DepthChartData | null) => {
     // If we have real scraped depth chart data, use it
     if (realDepthChartData) {
-      console.log(`📊 Using real depth chart data`);
+      // Removed console.log to prevent spam during re-renders
       // The API already returns properly ordered arrays - use them exactly as-is
       const mappedDepthChart: Record<string, any[]> = {
         PG: [],
@@ -102,7 +102,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
     }
     
     // No real depth chart available
-    console.log('❌ No real depth chart data available');
+    // Removed console.log to prevent spam during re-renders
     return null;
   };
 
