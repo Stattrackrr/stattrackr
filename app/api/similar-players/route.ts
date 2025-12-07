@@ -1422,6 +1422,49 @@ export async function GET(request: NextRequest) {
     
     console.log(`[Similar Players] Processing ${filteredOpponentGames.length} games for ${filteredSimilarPlayers.length} similar players (not filtering by season averages)`);
     
+    // If no similar players or no games, return early with debug info
+    if (similarPlayers.length === 0) {
+      console.log(`[Similar Players] No similar players found after filtering (height/position/minutes)`);
+      return NextResponse.json({
+        success: true,
+        data: [],
+        targetPlayer: {
+          id: targetPlayer.id,
+          name: `${targetPlayer.first_name} ${targetPlayer.last_name}`,
+          position: targetPosition,
+          height: targetHeightInches,
+          playTypes: targetPlayTypes,
+          minutes: targetMinutes,
+        },
+        debug: {
+          similarPlayersFound: 0,
+          opponentGamesFound: 0,
+          reason: 'No similar players found after height/position/minutes filtering'
+        },
+      });
+    }
+    
+    if (allOpponentGames.length === 0) {
+      console.log(`[Similar Players] Found ${similarPlayers.length} similar players but no games vs ${normalizedOpponent}`);
+      return NextResponse.json({
+        success: true,
+        data: [],
+        targetPlayer: {
+          id: targetPlayer.id,
+          name: `${targetPlayer.first_name} ${targetPlayer.last_name}`,
+          position: targetPosition,
+          height: targetHeightInches,
+          playTypes: targetPlayTypes,
+          minutes: targetMinutes,
+        },
+        debug: {
+          similarPlayersFound: similarPlayers.length,
+          opponentGamesFound: 0,
+          reason: `No games found vs ${normalizedOpponent}`
+        },
+      });
+    }
+    
     // Process games and use season averages for display if available
     for (const { game, similar } of filteredOpponentGames) {
       const gameDate = game.game?.date;
@@ -1458,13 +1501,11 @@ export async function GET(request: NextRequest) {
       // Get actual player height
       const playerHeightInches = similar.player.height_inches ?? heightToInches(similar.player.height);
       
-      // Get season average for the stat
+      // Get season average for the stat (optional - use 0 if missing)
       const seasonAvg = getSeasonAverage(similar.player.id, statType);
       
-      // Skip if no season average (shouldn't happen due to filtering, but safety check)
-      if (seasonAvg === null || seasonAvg === undefined) {
-        continue;
-      }
+      // Don't skip if no season average - use 0 as fallback
+      // This allows results to show even if season averages are incomplete
       
       results.push({
         playerId: similar.player.id,
@@ -1474,7 +1515,7 @@ export async function GET(request: NextRequest) {
         playerTeam: similar.player.team?.abbreviation || '', // Player's team abbreviation
         headshotUrl: similar.player.headshot_url || null, // Headshot URL from cached player data
         statType,
-        line: seasonAvg, // Only use season average
+        line: seasonAvg ?? 0, // Use season average if available, otherwise 0
         overOdds: null,
         underOdds: null,
         actual: statValue,
