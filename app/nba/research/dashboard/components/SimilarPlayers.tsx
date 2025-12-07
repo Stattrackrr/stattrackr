@@ -134,8 +134,9 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         return;
       }
       console.error('Error fetching similar players:', err);
-      if (!abortController.signal.aborted) {
+      if (!abortController.signal.aborted && !isPrefetch) {
         setError(err.message || 'Failed to load similar players');
+        setLoading(false); // Always clear loading on error
       }
     } finally {
       if (!abortController.signal.aborted && !isPrefetch) {
