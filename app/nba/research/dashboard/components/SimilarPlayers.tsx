@@ -34,7 +34,7 @@ const similarPlayersCache = new Map<string, {
   timestamp: number;
 }>();
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 1 day cache TTL
 
 function getCacheKey(playerId: number, opponent: string, statType: string): string {
   return `${playerId}:${opponent}:${statType}`;
