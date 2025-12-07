@@ -80,16 +80,19 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       setError(null);
     }
 
+    // Normalize statType to uppercase for API (API expects PTS, REB, AST, FGM, etc.)
+    const normalizedStatType = statType.toUpperCase();
+    
+    // Add timeout to prevent infinite loading (30 seconds) - declare outside try so it's accessible in catch
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       if (!isPrefetch) {
         console.log(`[SimilarPlayers] Fetching similar players for playerId=${playerIdNum}, opponent=${opponent}, statType=${statType}`);
       }
       
-      // Normalize statType to uppercase for API (API expects PTS, REB, AST, FGM, etc.)
-      const normalizedStatType = statType.toUpperCase();
-      
-      // Add timeout to prevent infinite loading (30 seconds)
-      const timeoutId = setTimeout(() => {
+      // Set timeout
+      timeoutId = setTimeout(() => {
         if (!abortController.signal.aborted) {
           abortController.abort();
           if (!isPrefetch) {
@@ -144,7 +147,7 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       }
     } catch (err: any) {
       // Clear timeout in case of error
-      if (typeof timeoutId !== 'undefined') {
+      if (timeoutId !== null) {
         clearTimeout(timeoutId);
       }
       
@@ -162,7 +165,7 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       }
     } finally {
       // Ensure timeout is always cleared
-      if (typeof timeoutId !== 'undefined') {
+      if (timeoutId !== null) {
         clearTimeout(timeoutId);
       }
       // Always clear loading if not prefetch and not aborted
