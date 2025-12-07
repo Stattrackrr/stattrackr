@@ -87,10 +87,24 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       
       // Normalize statType to uppercase for API (API expects PTS, REB, AST, FGM, etc.)
       const normalizedStatType = statType.toUpperCase();
+      
+      // Add timeout to prevent infinite loading (30 seconds)
+      const timeoutId = setTimeout(() => {
+        if (!abortController.signal.aborted) {
+          abortController.abort();
+          if (!isPrefetch) {
+            setError('Request timed out. Please try again.');
+            setLoading(false);
+          }
+        }
+      }, 30000);
+      
       const response = await fetch(
         `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
         { signal: abortController.signal }
       );
+      
+      clearTimeout(timeoutId);
 
       // Check if request was aborted
       if (abortController.signal.aborted) {
