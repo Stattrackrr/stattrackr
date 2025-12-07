@@ -158,13 +158,13 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
-    // Check cache first - if we have it, set it immediately
+    // Check cache first - if we have it, set it immediately (don't show loading)
     const cacheKey = getCacheKey(playerIdNum, opponent, statType);
     const cached = similarPlayersCache.get(cacheKey);
     const now = Date.now();
     
     if (cached && (now - cached.timestamp) < CACHE_TTL) {
-      // Use cached data immediately
+      // Use cached data immediately - no loading state needed
       console.log(`[SimilarPlayers] Using cached data for ${cacheKey}`);
       setData(cached.data);
       setError(null);
@@ -172,6 +172,10 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
+    // No cache - start fetching
+    // Show loading state since we need to fetch
+    setLoading(true);
+    
     // Start fetching immediately (pre-fetch) - don't wait for component to be visible
     // This makes the data ready when the user clicks the tab
     const prefetchPromise = fetchSimilarPlayers(playerIdNum, opponent, statType, true);

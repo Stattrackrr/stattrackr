@@ -1374,7 +1374,17 @@ export async function GET(request: NextRequest) {
       if (statTypeLower === 'pts') return avg.pts || null;
       if (statTypeLower === 'reb') return avg.reb || null;
       if (statTypeLower === 'ast') return avg.ast || null;
-      if (statTypeLower === 'threes' || statTypeLower === 'fg3m') return avg.fg3m || null;
+      if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') return avg.fg3m || null;
+      if (statTypeLower === 'fgm') return avg.fgm || null;
+      if (statTypeLower === 'fga') return avg.fga || null;
+      if (statTypeLower === 'ftm') return avg.ftm || null;
+      if (statTypeLower === 'fta') return avg.fta || null;
+      if (statTypeLower === 'oreb') return avg.oreb || null;
+      if (statTypeLower === 'dreb') return avg.dreb || null;
+      if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') return avg.to || null;
+      if (statTypeLower === 'pf') return avg.pf || null;
+      if (statTypeLower === 'stl') return avg.stl || null;
+      if (statTypeLower === 'blk') return avg.blk || null;
       // Calculate combo stats if not stored directly
       if (statTypeLower === 'pra') {
         if (avg.pra !== null && avg.pra !== undefined) return avg.pra;
@@ -1417,7 +1427,17 @@ export async function GET(request: NextRequest) {
       if (statTypeLower === 'pts') hasStat = (avg.pts !== null && avg.pts !== undefined);
       else if (statTypeLower === 'reb') hasStat = (avg.reb !== null && avg.reb !== undefined);
       else if (statTypeLower === 'ast') hasStat = (avg.ast !== null && avg.ast !== undefined);
-      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m') hasStat = (avg.fg3m !== null && avg.fg3m !== undefined);
+      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') hasStat = (avg.fg3m !== null && avg.fg3m !== undefined);
+      else if (statTypeLower === 'fgm') hasStat = (avg.fgm !== null && avg.fgm !== undefined);
+      else if (statTypeLower === 'fga') hasStat = (avg.fga !== null && avg.fga !== undefined);
+      else if (statTypeLower === 'ftm') hasStat = (avg.ftm !== null && avg.ftm !== undefined);
+      else if (statTypeLower === 'fta') hasStat = (avg.fta !== null && avg.fta !== undefined);
+      else if (statTypeLower === 'oreb') hasStat = (avg.oreb !== null && avg.oreb !== undefined);
+      else if (statTypeLower === 'dreb') hasStat = (avg.dreb !== null && avg.dreb !== undefined);
+      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') hasStat = (avg.to !== null && avg.to !== undefined);
+      else if (statTypeLower === 'pf') hasStat = (avg.pf !== null && avg.pf !== undefined);
+      else if (statTypeLower === 'stl') hasStat = (avg.stl !== null && avg.stl !== undefined);
+      else if (statTypeLower === 'blk') hasStat = (avg.blk !== null && avg.blk !== undefined);
       else if (statTypeLower === 'pra') {
         // PRA can be calculated from pts + reb + ast
         hasStat = (avg.pts !== null && avg.pts !== undefined) && 
@@ -1464,7 +1484,17 @@ export async function GET(request: NextRequest) {
       if (statTypeLower === 'pts') statValue = game.pts || 0;
       else if (statTypeLower === 'reb') statValue = game.reb || 0;
       else if (statTypeLower === 'ast') statValue = game.ast || 0;
-      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m') statValue = game.fg3m || 0;
+      else if (statTypeLower === 'threes' || statTypeLower === 'fg3m' || statTypeLower === '3pm') statValue = game.fg3m || 0;
+      else if (statTypeLower === 'fgm') statValue = game.fgm || 0;
+      else if (statTypeLower === 'fga') statValue = game.fga || 0;
+      else if (statTypeLower === 'ftm') statValue = game.ftm || 0;
+      else if (statTypeLower === 'fta') statValue = game.fta || 0;
+      else if (statTypeLower === 'oreb') statValue = game.oreb || 0;
+      else if (statTypeLower === 'dreb') statValue = game.dreb || 0;
+      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') statValue = game.turnover || 0;
+      else if (statTypeLower === 'pf') statValue = game.pf || 0;
+      else if (statTypeLower === 'stl') statValue = game.stl || 0;
+      else if (statTypeLower === 'blk') statValue = game.blk || 0;
       else if (statTypeLower === 'pra') statValue = (game.pts || 0) + (game.reb || 0) + (game.ast || 0);
       else if (statTypeLower === 'pr') statValue = (game.pts || 0) + (game.reb || 0);
       else if (statTypeLower === 'pa') statValue = (game.pts || 0) + (game.ast || 0);
