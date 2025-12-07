@@ -1381,7 +1381,7 @@ export async function GET(request: NextRequest) {
       if (statTypeLower === 'fta') return avg.fta || null;
       if (statTypeLower === 'oreb') return avg.oreb || null;
       if (statTypeLower === 'dreb') return avg.dreb || null;
-      if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') return avg.to || null;
+      if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') return avg.turnover || avg.to || null;
       if (statTypeLower === 'pf') return avg.pf || null;
       if (statTypeLower === 'stl') return avg.stl || null;
       if (statTypeLower === 'blk') return avg.blk || null;
@@ -1434,7 +1434,7 @@ export async function GET(request: NextRequest) {
       else if (statTypeLower === 'fta') hasStat = (avg.fta !== null && avg.fta !== undefined);
       else if (statTypeLower === 'oreb') hasStat = (avg.oreb !== null && avg.oreb !== undefined);
       else if (statTypeLower === 'dreb') hasStat = (avg.dreb !== null && avg.dreb !== undefined);
-      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') hasStat = (avg.to !== null && avg.to !== undefined);
+      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') hasStat = ((avg.turnover !== null && avg.turnover !== undefined) || (avg.to !== null && avg.to !== undefined));
       else if (statTypeLower === 'pf') hasStat = (avg.pf !== null && avg.pf !== undefined);
       else if (statTypeLower === 'stl') hasStat = (avg.stl !== null && avg.stl !== undefined);
       else if (statTypeLower === 'blk') hasStat = (avg.blk !== null && avg.blk !== undefined);

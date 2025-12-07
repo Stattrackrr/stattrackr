@@ -150,8 +150,10 @@ export async function POST(request: NextRequest) {
             ftm: seasonAvg.ftm || 0,
             stl: seasonAvg.stl || 0,
             blk: seasonAvg.blk || 0,
-            turnover: seasonAvg.turnover || 0,
+            turnover: seasonAvg.turnover || seasonAvg.to || 0, // Support both 'turnover' and 'to'
             pf: seasonAvg.pf || 0,
+            oreb: seasonAvg.oreb || 0,
+            dreb: seasonAvg.dreb || 0,
             updated_at: new Date().toISOString()
           };
         } catch (error: any) {
