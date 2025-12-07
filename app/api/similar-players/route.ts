@@ -802,65 +802,45 @@ export async function GET(request: NextRequest) {
     });
     console.log(`[Similar Players] Position distribution:`, Object.fromEntries(positionCounts));
     
-    // Filter by position match - STRICT matching:
-    // - If target has a specific depth chart position, ONLY match candidates with that exact position (no generic BDL)
-    // - If target has multiple possible positions (generic BDL), match candidates with specific positions that match
-    // - Reject candidates with generic BDL positions when target has a specific position (too risky)
+    // Filter by position match - LENIENT matching:
+    // - Allow single-generic positions (G, F, C) to match with their specific counterparts
+    //   - G can match PG or SG (similar heights, similar roles)
+    //   - F can match SF or PF (similar heights, similar roles)
+    //   - C can match C (already specific)
+    // - Reject multi-generic positions (G-F, F-C) as they're too ambiguous
+    // - Height filtering already ensures players are similar size
     const positionCandidates = playersWithPositions.filter(({ position, positionSource, mappedPositions }) => {
       if (!position && mappedPositions.length === 0) return false;
       
-      // If target has a single specific position (from depth chart), be VERY strict
-      if (possiblePositions.length === 1) {
-        const targetPos = possiblePositions[0];
-        
-        // Candidate must have the exact target position
-        if (position === targetPos) {
-          // Good - exact match
-          // BUT: Reject if candidate has generic BDL position - these are unreliable
-          // Only trust specific positions (depth_chart or bdl_specific)
-          if (positionSource === 'bdl_generic') {
-            // Candidate has generic BDL position (G, F, G-F, F-C) - reject even if it matches
-            // Generic positions are too ambiguous (e.g., "F" could be SF or PF, "F-C" could be PF or C)
-            console.log(`[Similar Players] Rejecting ${position} - candidate has generic BDL position ${mappedPositions.join(', ')} but target requires specific ${targetPos}`);
-            return false;
-          }
-          // Only allow if position is from depth chart or specific BDL position
-          return true;
-        }
-        
-        // Candidate doesn't have the exact position - reject
-        // We don't allow generic BDL positions to match specific targets (too risky)
+      // Determine if candidate has multi-generic position (too ambiguous)
+      const isMultiGeneric = positionSource === 'bdl_generic' && mappedPositions.length > 2;
+      
+      // Reject multi-generic positions (G-F, F-C) - too ambiguous
+      if (isMultiGeneric) {
+        console.log(`[Similar Players] Rejecting - candidate has multi-generic position ${mappedPositions.join(', ')} (too ambiguous)`);
         return false;
       }
       
-      // Target has multiple possible positions (generic BDL like "G" or "F")
-      // Only match candidates with specific positions that are in the target's possible positions
+      // Check if candidate's position(s) overlap with target's possible positions
+      let candidatePositions: Array<'PG'|'SG'|'SF'|'PF'|'C'> = [];
+      
       if (position) {
-        // Candidate has a specific position - check if it matches any of target's possible positions
-        if (possiblePositions.includes(position)) {
-          // But still reject if candidate has generic BDL position (unreliable)
-          if (positionSource === 'bdl_generic') {
-            console.log(`[Similar Players] Rejecting ${position} - candidate has generic BDL position but target is also generic`);
-            return false;
-          }
-          return true;
-        }
-        return false;
+        // Candidate has a specific position
+        candidatePositions = [position];
+      } else if (mappedPositions.length > 0) {
+        // Candidate has generic BDL position - use mapped positions
+        candidatePositions = mappedPositions;
       }
       
-      // Candidate has generic BDL position and target is also generic
-      // Only allow if there's an exact overlap (both have the same generic type)
-      // This is still risky, so we'll be conservative
-      if (mappedPositions.length > 0) {
-        // Check if any mapped positions match target's possible positions
-        const hasMatch = mappedPositions.some(pos => possiblePositions.includes(pos));
-        if (hasMatch) {
-          // Still reject generic BDL positions - they're too unreliable
-          console.log(`[Similar Players] Rejecting - candidate has generic BDL position ${mappedPositions.join(', ')} matching target ${possiblePositions.join(', ')} - too ambiguous`);
-          return false;
-        }
+      // Check for any overlap between candidate and target positions
+      const hasOverlap = candidatePositions.some(candidatePos => possiblePositions.includes(candidatePos));
+      
+      if (hasOverlap) {
+        // Positions overlap - allow match (height filtering ensures similarity)
+        return true;
       }
       
+      // No overlap - reject
       return false;
     });
     console.log(`[Similar Players] Found ${positionCandidates.length} candidates matching position ${targetPosition} (possible: ${possiblePositions.join(', ')}) and height`);
