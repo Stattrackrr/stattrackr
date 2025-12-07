@@ -1922,7 +1922,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
     );
   }
 
-  // Prefer current season games; if none, gracefully fall back to last season, then all
+  // Only show current season games - no fallback to previous seasons
   const currentSeason = currentNbaSeason();
   const bySeason = (seasonYear: number) => playerStats.filter(game => {
     if (!game.game?.date) return false;
@@ -1933,13 +1933,9 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
     return gameSeasonYear === seasonYear;
   });
 
-  let displayGames = bySeason(currentSeason);
-  if (displayGames.length === 0) {
-    displayGames = bySeason(currentSeason - 1);
-  }
-  if (displayGames.length === 0) {
-    displayGames = playerStats;
-  }
+  // Only show current season - wait for data to load before filtering
+  // This prevents race condition where previous season shows if current season request is still loading
+  const displayGames = bySeason(currentSeason);
   // Remove games with 0 minutes played
   displayGames = displayGames.filter(g => parseMinutes(g.min) > 0);
   // Limit to 50 most recent games (playerStats are already newest-first)
