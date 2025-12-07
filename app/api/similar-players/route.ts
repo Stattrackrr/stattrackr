@@ -1424,6 +1424,7 @@ export async function GET(request: NextRequest) {
       let hasStat = false;
       
       // Check if the stat exists (either directly or can be calculated)
+      // Allow 0 values - a player can have 0 of a stat and still be valid
       if (statTypeLower === 'pts') hasStat = (avg.pts !== null && avg.pts !== undefined);
       else if (statTypeLower === 'reb') hasStat = (avg.reb !== null && avg.reb !== undefined);
       else if (statTypeLower === 'ast') hasStat = (avg.ast !== null && avg.ast !== undefined);
@@ -1432,9 +1433,19 @@ export async function GET(request: NextRequest) {
       else if (statTypeLower === 'fga') hasStat = (avg.fga !== null && avg.fga !== undefined);
       else if (statTypeLower === 'ftm') hasStat = (avg.ftm !== null && avg.ftm !== undefined);
       else if (statTypeLower === 'fta') hasStat = (avg.fta !== null && avg.fta !== undefined);
-      else if (statTypeLower === 'oreb') hasStat = (avg.oreb !== null && avg.oreb !== undefined);
-      else if (statTypeLower === 'dreb') hasStat = (avg.dreb !== null && avg.dreb !== undefined);
-      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') hasStat = ((avg.turnover !== null && avg.turnover !== undefined) || (avg.to !== null && avg.to !== undefined));
+      else if (statTypeLower === 'oreb') {
+        // OREB might not be in all records - check if it exists or can be calculated
+        hasStat = (avg.oreb !== null && avg.oreb !== undefined) || 
+                  (avg.reb !== null && avg.reb !== undefined); // Fallback to total rebounds
+      }
+      else if (statTypeLower === 'dreb') {
+        // DREB might not be in all records - check if it exists or can be calculated
+        hasStat = (avg.dreb !== null && avg.dreb !== undefined) || 
+                  (avg.reb !== null && avg.reb !== undefined); // Fallback to total rebounds
+      }
+      else if (statTypeLower === 'to' || statTypeLower === 'turnover' || statTypeLower === 'turnovers') {
+        hasStat = ((avg.turnover !== null && avg.turnover !== undefined) || (avg.to !== null && avg.to !== undefined));
+      }
       else if (statTypeLower === 'pf') hasStat = (avg.pf !== null && avg.pf !== undefined);
       else if (statTypeLower === 'stl') hasStat = (avg.stl !== null && avg.stl !== undefined);
       else if (statTypeLower === 'blk') hasStat = (avg.blk !== null && avg.blk !== undefined);
@@ -1465,12 +1476,22 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    const filteredSimilarPlayers = similarPlayers.filter(s => playersWithStatAverage.has(s.player.id));
-    const filteredOpponentGames = allOpponentGames.filter(({ similar }) => playersWithStatAverage.has(similar.player.id));
+    // If no players have season averages, don't filter - allow all players through
+    // (they might have game data even if season averages are missing)
+    let filteredSimilarPlayers = similarPlayers;
+    let filteredOpponentGames = allOpponentGames;
     
-    if (filteredSimilarPlayers.length < similarPlayers.length) {
-      const removed = similarPlayers.length - filteredSimilarPlayers.length;
-      console.log(`[Similar Players] Filtered out ${removed} players without season averages for ${statType}`);
+    if (playersWithStatAverage.size > 0) {
+      // Only filter if we have some players with season averages
+      filteredSimilarPlayers = similarPlayers.filter(s => playersWithStatAverage.has(s.player.id));
+      filteredOpponentGames = allOpponentGames.filter(({ similar }) => playersWithStatAverage.has(similar.player.id));
+      
+      if (filteredSimilarPlayers.length < similarPlayers.length) {
+        const removed = similarPlayers.length - filteredSimilarPlayers.length;
+        console.log(`[Similar Players] Filtered out ${removed} players without season averages for ${statType}`);
+      }
+    } else {
+      console.log(`[Similar Players] No players have season averages for ${statType}, allowing all players through (will check game data instead)`);
     }
     
     // Process games and use season averages only (only for players with averages)
