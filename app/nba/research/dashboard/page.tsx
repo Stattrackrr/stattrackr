@@ -12634,15 +12634,7 @@ const lineMovementInFlightRef = useRef(false);
                     const originalTeamValue = teamValue;
                     const originalOpponentValue = opponentValue;
                     
-                    console.log('📊 Team Matchup Pie Data (Offensive Stats):', {
-                      comparison: selectedComparison,
-                      teamValue,
-                      opponentValue,
-                      currentTeam,
-                      currentOpponent,
-                      currentStats,
-                      opponentStats
-                    });
+                    // Removed console.log to prevent spam during re-renders
 
                     const pieData = createTeamComparisonPieData(
                       teamValue,

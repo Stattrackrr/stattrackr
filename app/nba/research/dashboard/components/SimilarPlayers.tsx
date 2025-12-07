@@ -93,23 +93,24 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         if (!abortController.signal.aborted) {
           abortController.abort();
           if (!isPrefetch) {
-            setError('Request timed out. Please try again.');
+            setError('Request timed out after 30 seconds. Please try again.');
             setLoading(false);
           }
         }
       }, 30000);
       
-      const response = await fetch(
-        `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
-        { signal: abortController.signal }
-      );
-      
-      clearTimeout(timeoutId);
+      try {
+        const response = await fetch(
+          `/api/similar-players?playerId=${playerIdNum}&opponent=${encodeURIComponent(opponent)}&statType=${encodeURIComponent(normalizedStatType)}`,
+          { signal: abortController.signal }
+        );
+        
+        clearTimeout(timeoutId);
 
-      // Check if request was aborted
-      if (abortController.signal.aborted) {
-        return;
-      }
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -143,8 +144,16 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         setData(resultData);
       }
     } catch (err: any) {
+      // Clear timeout in case of error
+      if (typeof timeoutId !== 'undefined') {
+        clearTimeout(timeoutId);
+      }
+      
       // Don't set error if request was aborted or if it's a prefetch
       if (err.name === 'AbortError' || abortController.signal.aborted || isPrefetch) {
+        if (!isPrefetch) {
+          setLoading(false);
+        }
         return;
       }
       console.error('Error fetching similar players:', err);
@@ -153,6 +162,11 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         setLoading(false); // Always clear loading on error
       }
     } finally {
+      // Ensure timeout is always cleared
+      if (typeof timeoutId !== 'undefined') {
+        clearTimeout(timeoutId);
+      }
+      // Always clear loading if not prefetch and not aborted
       if (!abortController.signal.aborted && !isPrefetch) {
         setLoading(false);
       }

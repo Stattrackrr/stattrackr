@@ -100,7 +100,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   const [showOppDef, setShowOppDef] = useState(false); // Show opponent defense
   const [showOppDefMakes, setShowOppDefMakes] = useState(false); // Show opponent defense makes (vs attempts)
 
-  console.log('[Shot Chart] Component rendered with playerId:', playerId);
+  // Removed console.log to prevent spam - component renders frequently
 
   // Set 20-second timeout before allowing fallback to BallDontLie
   useEffect(() => {
@@ -115,7 +115,6 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
 
   // Fetch enhanced shot data from NBA Stats API
   useEffect(() => {
-    console.log('[Shot Chart] useEffect triggered with playerId:', playerId, 'opponentTeam:', opponentTeam);
     const fetchEnhanced = async () => {
       if (!playerId) {
         setEnhancedData(null); // Clear data when no player
@@ -124,13 +123,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       
       // Convert BallDontLie ID to NBA Stats ID
       const nbaPlayerId = getNbaStatsId(playerId);
-      console.log('[Shot Chart] Player ID conversion:', { 
-        bdlId: playerId, 
-        nbaId: nbaPlayerId 
-      });
       
       if (!nbaPlayerId) {
-        console.warn('[Shot Chart] Could not convert player ID to NBA Stats format:', playerId);
         setEnhancedData(null); // Clear data on conversion failure
         return;
       }
@@ -140,18 +134,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       setEnhancedLoading(true);
       
       try {
-        console.log('[Shot Chart] Opponent team value:', {
-          opponentTeam,
-          willFetchDefense: opponentTeam && opponentTeam !== 'N/A'
-        });
-        
         const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
-        console.log('[Shot Chart] Fetching enhanced data:', {
-          bdlPlayerId: playerId,
-          nbaPlayerId: nbaPlayerId,
-          opponentTeam,
-          url: url
-        });
         const response = await fetch(url);
         
         if (response.ok) {
