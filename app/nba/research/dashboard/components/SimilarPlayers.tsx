@@ -51,19 +51,18 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
 
   // Pre-fetch function that can be called immediately
   const fetchSimilarPlayers = useCallback(async (playerIdNum: number, opponent: string, statType: string, isPrefetch = false) => {
-    // Check cache first
-    const cacheKey = getCacheKey(playerIdNum, opponent, statType);
+    // Normalize statType for cache key
+    const normalizedStatType = statType.toUpperCase();
+    const cacheKey = getCacheKey(playerIdNum, opponent, normalizedStatType);
     const cached = similarPlayersCache.get(cacheKey);
     const now = Date.now();
     
     if (cached && (now - cached.timestamp) < CACHE_TTL) {
       // Use cached data - no loading state needed
-      if (!isPrefetch) {
-        console.log(`[SimilarPlayers] Using cached data for ${cacheKey}`);
-        setData(cached.data);
-        setError(null);
-        setLoading(false);
-      }
+      console.log(`[SimilarPlayers] Using cached data for ${cacheKey}`);
+      setData(cached.data);
+      setError(null);
+      setLoading(false);
       return;
     }
 
@@ -179,17 +178,13 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       return;
     }
 
-    // No cache - start fetching
-    // Show loading state since we need to fetch
-    setLoading(true);
+    // No cache for current stat - check if we should show loading or pre-fetch silently
+    // Only show loading if this is the active view (user is looking at similar players)
+    // Otherwise, pre-fetch silently in background
     
-    // Start fetching immediately (pre-fetch) - don't wait for component to be visible
-    // This makes the data ready when the user clicks the tab
-    const prefetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, true);
-    prefetchRef.current = prefetchPromise;
-
-    // Also set up the normal fetch for when component is visible
-    const normalFetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, false);
+    // Start fetching - use prefetch mode to avoid showing loading if not visible
+    const fetchPromise = fetchSimilarPlayers(playerIdNum, opponent, normalizedStatType, false);
+    prefetchRef.current = fetchPromise;
     
     // Cleanup: abort request on unmount or dependency change
     return () => {
