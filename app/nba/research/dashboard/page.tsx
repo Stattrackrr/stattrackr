@@ -8645,18 +8645,15 @@ const lineMovementInFlightRef = useRef(false);
       return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
     };
 
-    // Fetch current + previous + prior, both regular and playoffs (3 seasons total)
-    const [currReg, currPO, prev1Reg, prev1PO, prev2Reg, prev2PO] = await Promise.all([
+    // Only fetch current season (regular + playoffs) - no previous seasons
+    // This ensures we only show current season stats and prevents race conditions
+    const [currReg, currPO] = await Promise.all([
       grab(season, false),        // 2024-25 regular
       grab(season, true),         // 2024-25 playoffs
-      grab(season - 1, false),    // 2023-24 regular  
-      grab(season - 1, true),     // 2023-24 playoffs
-      grab(season - 2, false),    // 2022-23 regular
-      grab(season - 2, true)      // 2022-23 playoffs
     ]);
 
-    // Merge then sort newest-first; downstream will dedupe and slice to timeframe
-    const rows = [...currReg, ...currPO, ...prev1Reg, ...prev1PO, ...prev2Reg, ...prev2PO];
+    // Merge current season data only, then sort newest-first
+    const rows = [...currReg, ...currPO];
     const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
     safe.sort((a, b) => {
       const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
