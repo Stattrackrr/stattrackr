@@ -387,6 +387,7 @@ function getStatValue(stats: BallDontLieStats, key: string): number {
     // Composite stats
     case 'pra': return (stats.pts || 0) + (stats.reb || 0) + (stats.ast || 0);
     case 'pr': return (stats.pts || 0) + (stats.reb || 0);
+    case 'pa': return (stats.pts || 0) + (stats.ast || 0);
     case 'ra': return (stats.reb || 0) + (stats.ast || 0);
     default: return 0;
   }
@@ -1791,6 +1792,7 @@ const PLAYER_STAT_OPTIONS = [
   { key: "ast", label: "AST" },
   { key: "pra", label: "PRA" }, // Points + Rebounds + Assists
   { key: "pr", label: "PR" },   // Points + Rebounds
+  { key: "pa", label: "PA" },   // Points + Assists
   { key: "ra", label: "RA" },   // Rebounds + Assists
   { key: "fg3m", label: "3PM/A" },
   { key: "fg3_pct", label: "3P%" }, { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
