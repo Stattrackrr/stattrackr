@@ -2,18 +2,11 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
-import { createClient } from '@supabase/supabase-js';
 
 export const runtime = "nodejs";
 
 const BDL_BASE = "https://api.balldontlie.io/v1";
 const API_KEY = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAdmin = supabaseUrl && supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
 
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {};
@@ -27,42 +20,7 @@ function normalizePlayer(p: any) {
     full: `${p?.first_name ?? ""} ${p?.last_name ?? ""}`.trim(),
     team: p?.team?.abbreviation ?? "",
     pos: p?.position ?? "",
-    headshotUrl: p?.headshot_url || null, // Include headshot if available
   };
-}
-
-/**
- * Enrich player results with headshots from Supabase
- */
-async function enrichWithHeadshots(results: any[]): Promise<any[]> {
-  if (!supabaseAdmin || results.length === 0) return results;
-  
-  try {
-    const playerIds = results.map(r => r.id).filter(Boolean);
-    if (playerIds.length === 0) return results;
-    
-    const { data: players, error } = await supabaseAdmin
-      .from('players')
-      .select('id, headshot_url')
-      .in('id', playerIds);
-    
-    if (error || !players) return results;
-    
-    // Create a map for fast lookup
-    const headshotMap = new Map<number, string | null>();
-    for (const p of players) {
-      headshotMap.set(p.id, p.headshot_url || null);
-    }
-    
-    // Enrich results with headshots
-    return results.map(r => ({
-      ...r,
-      headshotUrl: headshotMap.get(r.id) || null
-    }));
-  } catch (error) {
-    console.warn('[BDL Players] Error enriching with headshots:', error);
-    return results;
-  }
 }
 
 /**
@@ -168,9 +126,6 @@ export async function GET(req: NextRequest) {
       const T = team.toUpperCase();
       results = results.filter((p: any) => (p.team || "").toUpperCase() === T);
     }
-
-    // Enrich with headshots from Supabase
-    results = await enrichWithHeadshots(results);
 
     const qLower = q.toLowerCase();
     const best =

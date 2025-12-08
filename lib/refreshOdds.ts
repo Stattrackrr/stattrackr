@@ -597,6 +597,16 @@ export async function refreshOddsData(
     // 1) Fetch odds (spreads/ML/totals) for next 24h
     const oddsRows = await fetchOddsForDates(dates);
     const gameIds = Array.from(new Set(oddsRows.map(o => o.game_id)));
+    const vendorsFromOdds = Array.from(new Set(oddsRows.map(o => o.vendor))).sort();
+    console.log(`📊 BDL returned ${oddsRows.length} odds rows from ${vendorsFromOdds.length} vendors: ${vendorsFromOdds.join(', ')}`);
+    console.log(`📊 Expected 10 vendors per docs: betmgm, fanduel, draftkings, bet365, caesars, ballybet, betway, betparx, betrivers, rebet`);
+    const expectedGameVendors = ['betmgm', 'fanduel', 'draftkings', 'bet365', 'caesars', 'ballybet', 'betway', 'betparx', 'betrivers', 'rebet'];
+    const missingGameVendors = expectedGameVendors.filter(v => !vendorsFromOdds.includes(v));
+    console.log(`📊 Missing vendors: ${missingGameVendors.join(', ') || 'none'}`);
+    if (vendorsFromOdds.some(v => !expectedGameVendors.includes(v))) {
+      const extraVendors = vendorsFromOdds.filter(v => !expectedGameVendors.includes(v));
+      console.log(`📊 Extra vendors (not in docs): ${extraVendors.join(', ')}`);
+    }
 
     // 2) Fetch games to map game_id -> teams/date
     const gamesData = await fetchGamesForDates(dates);
@@ -605,6 +615,10 @@ export async function refreshOddsData(
 
     // 3) Fetch player props for those games
     const playerProps = await fetchPlayerPropsForGames(gameIds);
+    const vendorsFromProps = Array.from(new Set(playerProps.map(p => p.vendor))).sort();
+    console.log(`📊 BDL returned ${playerProps.length} player props from ${vendorsFromProps.length} vendors: ${vendorsFromProps.join(', ')}`);
+    console.log(`📊 Expected 8 vendors per docs: draftkings, betway, betrivers, ballybet, betparx, caesars, fanduel, rebet`);
+    console.log(`📊 Missing vendors: ${['betrivers', 'ballybet', 'betparx', 'rebet'].filter(v => !vendorsFromProps.includes(v)).join(', ') || 'none'}`);
 
     // 4) Transform into our GameOdds structure
     const games: GameOdds[] = [];
@@ -635,50 +649,72 @@ export async function refreshOddsData(
       };
 
       // Bookmakers for spreads/ML/totals
+      // Group by vendor to avoid duplicates (BDL might return multiple rows per vendor)
+      const bookmakersByVendor = new Map<string, any>();
+      
       for (const row of oddsList) {
-        const bookRow: any = {
-          name: row.vendor,
-          H2H: { home: 'N/A', away: 'N/A' },
-          Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          BLK: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          STL: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          TO: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          DD: { yes: 'N/A', no: 'N/A' },
-          TD: { yes: 'N/A', no: 'N/A' },
-          PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-          FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
-        };
+        let bookRow = bookmakersByVendor.get(row.vendor);
+        if (!bookRow) {
+          // Create new bookmaker entry
+          bookRow = {
+            name: row.vendor,
+            H2H: { home: 'N/A', away: 'N/A' },
+            Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            BLK: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            STL: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            TO: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            DD: { yes: 'N/A', no: 'N/A' },
+            TD: { yes: 'N/A', no: 'N/A' },
+            PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+            FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
+            meta: {
+              gameHomeTeam: gameOdds.homeTeam,
+              gameAwayTeam: gameOdds.awayTeam,
+            },
+          };
+          bookmakersByVendor.set(row.vendor, bookRow);
+        }
 
-        if (row.moneyline_home_odds !== null) {
+        // Update odds for this vendor (merge data from multiple rows if needed)
+        if (row.moneyline_home_odds !== null && bookRow.H2H.home === 'N/A') {
           bookRow.H2H.home = formatOddsPrice(row.moneyline_home_odds, row.vendor);
         }
-        if (row.moneyline_away_odds !== null) {
+        if (row.moneyline_away_odds !== null && bookRow.H2H.away === 'N/A') {
           bookRow.H2H.away = formatOddsPrice(row.moneyline_away_odds, row.vendor);
         }
-        if (row.spread_home_value !== null) {
+        if (row.spread_home_value !== null && bookRow.Spread.line === 'N/A') {
           bookRow.Spread.line = String(row.spread_home_value);
           bookRow.Spread.over = formatOddsPrice(row.spread_home_odds, row.vendor);
           bookRow.Spread.under = formatOddsPrice(row.spread_away_odds, row.vendor);
         }
-        if (row.total_value !== null) {
+        if (row.total_value !== null && bookRow.Total.line === 'N/A') {
           bookRow.Total.line = String(row.total_value);
           bookRow.Total.over = formatOddsPrice(row.total_over_odds, row.vendor);
           bookRow.Total.under = formatOddsPrice(row.total_under_odds, row.vendor);
         }
-
-        gameOdds.bookmakers.push(bookRow);
+      }
+      
+      // Add all unique vendors to gameOdds
+      gameOdds.bookmakers = Array.from(bookmakersByVendor.values());
+      
+      if (gameOdds.bookmakers.length > 0) {
+        const vendorNames = gameOdds.bookmakers.map(b => b.name).sort().join(', ');
+        console.log(`📊 Game ${gameId} processed ${gameOdds.bookmakers.length} unique vendors for game odds: ${vendorNames}`);
       }
 
       // Player props
       const props = propsByGame.get(gameId) || [];
+      // Allowed milestone values for points only: 10, 15, 20, 25, 30
+      const ALLOWED_POINTS_MILESTONES = [10, 15, 20, 25, 30];
+      
       for (const prop of props) {
         const statKey = mapPropTypeToStatKey(prop.prop_type);
         if (!statKey) continue;
@@ -713,13 +749,55 @@ export async function refreshOddsData(
             under,
           });
         } else if (prop.market?.type === 'milestone') {
-          const oddsVal = prop.market.odds;
-          const numericLine = Number(prop.line_value);
-          // Only include milestones when both line and odds are valid numbers
-          if (Number.isFinite(numericLine) && typeof oddsVal === 'number' && Number.isFinite(oddsVal)) {
-            pushEntry(buildMilestoneEntry(prop.line_value, oddsVal));
+          // Only include milestones for points prop type, from DraftKings or FanDuel only
+          // Normal over/under lines can come from all bookmakers
+          const vendorLower = (bookName || prop.vendor || '').toLowerCase().trim();
+          // Check for exact match or contains (handles variations like "draftkings pick6")
+          const isAllowedMilestoneVendor = 
+            vendorLower === 'draftkings' || 
+            vendorLower === 'fanduel' ||
+            vendorLower.includes('draftkings') ||
+            vendorLower.includes('fanduel');
+          
+          // Debug: log all milestone vendors to see what we're getting
+          if (prop.prop_type === 'points') {
+            const numericLine = Number(prop.line_value);
+            if (ALLOWED_POINTS_MILESTONES.includes(numericLine)) {
+              console.log(`🎯 Milestone ${prop.line_value}+ from vendor: "${bookName}" (lowercase: "${vendorLower}") - Allowed: ${isAllowedMilestoneVendor}`);
+            }
           }
+          
+          // CRITICAL: Skip milestones from non-allowed vendors (Caesars, Betway, etc.)
+          if (!isAllowedMilestoneVendor) {
+            // Don't add this milestone at all - skip to next prop
+            continue;
+          }
+          
+          // Only process points milestones from allowed vendors
+          if (prop.prop_type === 'points') {
+            const numericLine = Number(prop.line_value);
+            const oddsVal = prop.market.odds;
+            
+            // Check if line value is in allowed list and odds are valid
+            if (Number.isFinite(numericLine) && 
+                ALLOWED_POINTS_MILESTONES.includes(numericLine) &&
+                oddsVal !== null && 
+                oddsVal !== undefined && 
+                typeof oddsVal === 'number' && 
+                Number.isFinite(oddsVal)) {
+              pushEntry(buildMilestoneEntry(prop.line_value, oddsVal));
+            }
+          }
+          // For all other prop types, non-allowed milestone values, or non-DK/FD vendors, skip (leave blank)
         }
+      }
+      
+      // Log vendors for debugging
+      const allVendors = new Set<string>();
+      gameOdds.bookmakers.forEach(b => allVendors.add(b.name));
+      Object.keys(gameOdds.playerPropsByBookmaker).forEach(v => allVendors.add(v));
+      if (allVendors.size > 0) {
+        console.log(`📊 Game ${gameId} all vendors: ${Array.from(allVendors).sort().join(', ')}`);
       }
 
       games.push(gameOdds);

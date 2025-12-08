@@ -28,6 +28,7 @@ import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
 import NotificationSystem from '@/components/NotificationSystem';
 import { SimilarPlayers } from './components/SimilarPlayers';
+import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -405,8 +406,22 @@ function getGameStatValue(game: any, key: string, teamAbbr: string): number {
       return homeScore + visitorScore;
     
     case 'spread':
-      // Betting research logic: positive = team lost (failed to cover), negative = team won (covered spread)
-      return isHome ? visitorScore - homeScore : homeScore - visitorScore;
+      // Betting research logic: calculate from selected team's perspective
+      // Favorite (negative spread like -9.5): negative when they win
+      // Underdog (positive spread like +9.5): positive when they win
+      // Calculate the score difference from the selected team's perspective
+      const selectedTeamScore = isHome ? homeScore : visitorScore;
+      const opponentScore = isHome ? visitorScore : homeScore;
+      const margin = selectedTeamScore - opponentScore;
+      // The margin is positive when selected team wins, negative when they lose
+      // But we want: favorite shows negative when they win, underdog shows positive when they win
+      // Since we don't know the historical spread, we'll use the convention:
+      // Negative margin = selected team lost (or didn't cover if favorite)
+      // Positive margin = selected team won (or covered if underdog)
+      // To match betting convention: flip the sign so favorites show negative
+      // We'll infer favorite/underdog from typical patterns, but for now just show the margin
+      // Actually, let's just return the margin and let the display handle the sign convention
+      return margin;
     
     case 'moneyline':
       // 1 = win, 0 = loss
@@ -2395,9 +2410,21 @@ type AltLineItem = {
 };
 
 const partitionAltLineItems = (lines: AltLineItem[]) => {
-  // Calculate consensus line (most common line value)
-  const lineCounts = new Map<number, number>();
+  // Separate milestones from over/under lines
+  const milestones: AltLineItem[] = [];
+  const overUnderLines: AltLineItem[] = [];
+  
   for (const line of lines) {
+    if (line.variantLabel === 'Milestone') {
+      milestones.push(line);
+    } else {
+      overUnderLines.push(line);
+    }
+  }
+  
+  // Calculate consensus line (most common line value) for over/under lines only
+  const lineCounts = new Map<number, number>();
+  for (const line of overUnderLines) {
     lineCounts.set(line.line, (lineCounts.get(line.line) || 0) + 1);
   }
   
@@ -2410,9 +2437,9 @@ const partitionAltLineItems = (lines: AltLineItem[]) => {
     }
   }
   
-  // Group lines by bookmaker
+  // Group over/under lines by bookmaker
   const linesByBookmaker = new Map<string, AltLineItem[]>();
-  for (const line of lines) {
+  for (const line of overUnderLines) {
     const key = (line.bookmaker || '').toLowerCase();
     if (!linesByBookmaker.has(key)) {
       linesByBookmaker.set(key, []);
@@ -2458,7 +2485,10 @@ const partitionAltLineItems = (lines: AltLineItem[]) => {
   
   const primary = Array.from(primaryLines.values());
   
-  return { primary, alternate };
+  // Sort milestones by line value
+  milestones.sort((a, b) => a.line - b.line);
+  
+  return { primary, alternate, milestones };
 };
 
 // Chart controls (updates freely with betting line changes)
@@ -2688,41 +2718,9 @@ const ChartControls = function ChartControls({
     return match ? match[1] : null;
   };
 
+  // Use the centralized bookmaker info from lib/bookmakers.ts
   const getBookmakerInfo = (name: string) => {
-    const bookmakerMap: Record<string, { name: string; logo: string; logoUrl?: string }> = {
-      'DraftKings': { name: 'DraftKings', logo: 'DK', logoUrl: `https://logo.clearbit.com/draftkings.com` },
-      'FanDuel': { name: 'FanDuel', logo: 'FD', logoUrl: `https://logo.clearbit.com/fanduel.com` },
-      'BetMGM': { name: 'BetMGM', logo: 'MGM', logoUrl: `https://logo.clearbit.com/betmgm.com` },
-      'Caesars': { name: 'Caesars', logo: 'CZR', logoUrl: `https://logo.clearbit.com/caesars.com` },
-      'BetRivers': { name: 'BetRivers', logo: 'BR', logoUrl: `https://logo.clearbit.com/betrivers.com` },
-      'Bovada': { name: 'Bovada', logo: 'BV', logoUrl: `https://logo.clearbit.com/bovada.lv` },
-      'BetOnline.ag': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` },
-      'BetOnline': { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` },
-      'BetUS': { name: 'BetUS', logo: 'BU', logoUrl: `https://logo.clearbit.com/betus.com` },
-      'LowVig.ag': { name: 'LowVig.ag', logo: 'LV', logoUrl: `https://logo.clearbit.com/lowvig.ag` },
-      'MyBookie.ag': { name: 'MyBookie.ag', logo: 'MB', logoUrl: `https://logo.clearbit.com/mybookie.ag` },
-      'Fanatics': { name: 'Fanatics', logo: 'FN', logoUrl: `https://logo.clearbit.com/fanatics.com` },
-      'DraftKings Pick6': { name: 'DraftKings Pick6', logo: 'P6', logoUrl: `https://logo.clearbit.com/draftkings.com` },
-      'PrizePicks': { name: 'PrizePicks', logo: 'PP', logoUrl: `/images/prizepicks.avif` },
-      'Underdog Fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
-      'Underdog': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
-      'underdog': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
-      'underdog fantasy': { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` },
-    };
-    const direct = bookmakerMap[name];
-    if (direct) return direct;
-    const normalized = normalizeBookNameForLookup(name);
-    if (normalized && bookmakerMap[normalized]) return bookmakerMap[normalized];
-    
-    // Also check case-insensitive match for Underdog and BetOnline
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes('underdog')) {
-      return { name: 'Underdog', logo: 'UD', logoUrl: `/images/underdog.avif` };
-    }
-    if (nameLower.includes('betonline') || nameLower.includes('bet online')) {
-      return { name: 'BetOnline.ag', logo: 'BO', logoUrl: `/images/betonline.webp` };
-    }
-    return { name, logo: name.substring(0, 2).toUpperCase() };
+    return getBookmakerInfoFromLib(name);
   };
 
   // Display helper: always show + for positive lines
@@ -3097,16 +3095,26 @@ const ChartControls = function ChartControls({
                 : [];
               
               altLines.sort((a: AltLineItem, b: AltLineItem) => {
+                // First, separate milestones from over/under lines
+                const isMilestoneA = a.variantLabel === 'Milestone';
+                const isMilestoneB = b.variantLabel === 'Milestone';
+                if (isMilestoneA !== isMilestoneB) {
+                  // Over/under lines come first (isMilestone = false = 0), milestones come after (true = 1)
+                  return (isMilestoneA ? 1 : 0) - (isMilestoneB ? 1 : 0);
+                }
+                
+                // Within same type, sort by pick'em status
                 const isPickemA = a.isPickem ? 0 : 1;
                 const isPickemB = b.isPickem ? 0 : 1;
                 if (isPickemA !== isPickemB) return isPickemA - isPickemB;
+                
                 // For moneyline, sort by bookmaker name instead of line
                 if (isMoneyline) {
                   return (a.bookmaker || '').localeCompare(b.bookmaker || '');
                 }
                 return a.line - b.line;
               });
-              const { primary: primaryAltLines, alternate: alternateAltLines } = partitionAltLineItems(altLines);
+              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(altLines);
               const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
                 const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
                 const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
@@ -3558,6 +3566,16 @@ const ChartControls = function ChartControls({
                                   )}
                                 </>
                               )}
+                              {milestoneLines.length > 0 && (
+                                <>
+                                  <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                    Milestones
+                                  </div>
+                                  {milestoneLines.map((altLine, idx) =>
+                                    renderAltLineButton(altLine, idx + primaryAltLines.length + alternateAltLines.length)
+                                  )}
+                                </>
+                              )}
                             </>
                           )}
                         </div>
@@ -3620,12 +3638,21 @@ const ChartControls = function ChartControls({
                 : [];
               
               altLines.sort((a: AltLineItem, b: AltLineItem) => {
+                // First, separate milestones from over/under lines
+                const isMilestoneA = a.variantLabel === 'Milestone';
+                const isMilestoneB = b.variantLabel === 'Milestone';
+                if (isMilestoneA !== isMilestoneB) {
+                  // Over/under lines come first (isMilestone = false = 0), milestones come after (true = 1)
+                  return (isMilestoneA ? 1 : 0) - (isMilestoneB ? 1 : 0);
+                }
+                
+                // Within same type, sort by pick'em status
                 const pickA = a.isPickem ? 0 : 1;
                 const pickB = b.isPickem ? 0 : 1;
                 if (pickA !== pickB) return pickA - pickB;
                 return a.line - b.line;
               });
-              const { primary: primaryAltLines, alternate: alternateAltLines } = partitionAltLineItems(altLines);
+              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(altLines);
               const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
                 const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
                 const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
@@ -4064,6 +4091,16 @@ const ChartControls = function ChartControls({
                                       </div>
                                       {alternateAltLines.map((altLine, idx) =>
                                         renderAltLineButton(altLine, idx + primaryAltLines.length)
+                                      )}
+                                    </>
+                                  )}
+                                  {milestoneLines.length > 0 && (
+                                    <>
+                                      <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                        Milestones
+                                      </div>
+                                      {milestoneLines.map((altLine, idx) =>
+                                        renderAltLineButton(altLine, idx + primaryAltLines.length + alternateAltLines.length)
                                       )}
                                     </>
                                   )}
@@ -5912,13 +5949,8 @@ const BestOddsTable = memo(function BestOddsTable({
   const books = useMemo(
     () => {
       const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
-      const filtered = merged.filter((book: any) => {
-        const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
-        return !name.includes('underdog') && 
-               !name.includes('bovada') && 
-               !name.includes('draftkings') && 
-               !name.includes('prizepicks');
-      });
+      // Show all vendors from BDL (no filtering)
+      const filtered = merged;
       
       // If selected team is away, flip spread and swap odds for team mode
       if (propsMode === 'team' && filtered.length > 0) {
@@ -6325,13 +6357,8 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
   const books = useMemo(
     () => {
       const merged = mergeBookRowsByBaseName(hasRealOdds ? realOddsData : PLACEHOLDER_BOOK_ROWS, !hasRealOdds);
-      const filtered = merged.filter((book: any) => {
-        const name = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
-        return !name.includes('underdog') && 
-               !name.includes('bovada') && 
-               !name.includes('draftkings') && 
-               !name.includes('prizepicks');
-      });
+      // Show all vendors from BDL (no filtering)
+      const filtered = merged;
       
       // If selected team is away, flip spread and swap odds for team mode
       if (propsMode === 'team' && filtered.length > 0) {
@@ -10029,9 +10056,23 @@ const lineMovementInFlightRef = useRef(false);
     const isSmallIncrementStat = smallIncrementStats.includes(selectedStat);
     
     // Get min and max values from data
+    // For spread stat, values will be adjusted later, but we need to account for absolute values
+    // to ensure domain covers all possible adjusted values
     const values = chartData.map(d => d.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    let minValue = Math.min(...values);
+    let maxValue = Math.max(...values);
+    
+    // For spread stat in team mode, account for sign adjustment
+    // Values will be adjusted to all negative (favorite) or all positive (underdog)
+    // So we need to ensure domain covers the absolute value range
+    if (propsMode === 'team' && selectedStat === 'spread') {
+      const absValues = values.map(v => Math.abs(v));
+      const maxAbs = Math.max(...absValues);
+      // Domain should accommodate: negative values down to -maxAbs, or positive values up to +maxAbs
+      // We'll set domain to cover both possibilities with padding
+      minValue = -maxAbs;
+      maxValue = maxAbs;
+    }
     
     let minYAxis;
     let maxYAxis;
@@ -10090,12 +10131,39 @@ const lineMovementInFlightRef = useRef(false);
     }
     
     return { domain: [minYAxis, maxYAxis], ticks, dataMin: minValue, dataMax: maxValue };
-  }, [chartData, selectedStat, selectedTimeframe]);
+  }, [chartData, selectedStat, selectedTimeframe, propsMode]);
 
   // Real odds data state
   const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
+
+  // Adjust spread signs based on favorite/underdog status (after realOddsData is available)
+  const adjustedChartData = useMemo(() => {
+    if (propsMode !== 'team' || selectedStat !== 'spread' || chartData.length === 0 || realOddsData.length === 0) {
+      return chartData;
+    }
+
+    // Check the current spread line to determine if selected team is favorite or underdog
+    const firstBook = realOddsData[0] as any;
+    const spreadLine = firstBook?.Spread?.line;
+    
+    if (!spreadLine || spreadLine === 'N/A') {
+      return chartData;
+    }
+
+    const lineVal = parseFloat(String(spreadLine).replace(/[^0-9.+-]/g, ''));
+    const isFavorite = !Number.isNaN(lineVal) && lineVal < 0;
+    
+    // Favorite: always show negative (absolute value with negative sign)
+    // Underdog: always show positive (absolute value, no negative sign)
+    return chartData.map(game => {
+      if (typeof game.value === 'number') {
+        return { ...game, value: isFavorite ? -Math.abs(game.value) : Math.abs(game.value) };
+      }
+      return game;
+    });
+  }, [chartData, propsMode, selectedStat, realOddsData]);
   
   // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
   const getBookRowKey = useCallback((stat: string): string | null => {
@@ -12366,7 +12434,7 @@ const lineMovementInFlightRef = useRef(false);
               onChangeBettingLine={setBettingLine}
               selectedTimeframe={selectedTimeframe}
               onSelectTimeframe={setSelectedTimeframe}
-              chartData={chartData}
+              chartData={adjustedChartData}
               yAxisConfig={yAxisConfig}
               isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
               apiError={propsMode === 'team' ? null : apiError}

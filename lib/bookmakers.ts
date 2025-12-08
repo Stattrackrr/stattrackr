@@ -162,6 +162,30 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: '/images/underdog.avif',
     color: '#F5C000',
   },
+  'betway': {
+    name: 'Betway',
+    logo: 'BW',
+    logoUrl: 'https://logo.clearbit.com/betway.com',
+    color: '#FFCC00',
+  },
+  'ballybet': {
+    name: 'Bally Bet',
+    logo: 'BB',
+    logoUrl: 'https://logo.clearbit.com/ballybet.com',
+    color: '#E31E24',
+  },
+  'betparx': {
+    name: 'BetPARX',
+    logo: 'BP',
+    logoUrl: 'https://logo.clearbit.com/betparx.com',
+    color: '#00A651',
+  },
+  'rebet': {
+    name: 'ReBet',
+    logo: 'RB',
+    logoUrl: 'https://logo.clearbit.com/rebet.com',
+    color: '#6B7280',
+  },
 };
 
 export function getBookmakerInfo(key: string) {

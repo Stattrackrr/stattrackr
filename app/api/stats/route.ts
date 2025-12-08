@@ -82,12 +82,6 @@ export async function GET(req: NextRequest) {
 
       if (!nextPage) break;
       page = nextPage;
-      
-      // Add delay between pagination requests to avoid rate limiting
-      // Only delay if there's a next page (not the last page)
-      if (nextPage && page <= maxPages) {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between pages
-      }
     }
 
     return NextResponse.json({ data: all }, { status: 200 });
