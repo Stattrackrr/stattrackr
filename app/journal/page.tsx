@@ -1872,7 +1872,7 @@ function JournalContent() {
                       const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                       
                       // Check if this is a parlay
-                      const isParlay = bet.market && bet.market.toLowerCase().startsWith('parlay');
+                      const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
                       const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
                       const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
 
@@ -2560,7 +2560,7 @@ function JournalContent() {
                   : 0;
                 
                 // Check if this is a parlay
-                const isParlay = bet.market && bet.market.toLowerCase().startsWith('parlay');
+                const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
                 const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
                 const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
                 
