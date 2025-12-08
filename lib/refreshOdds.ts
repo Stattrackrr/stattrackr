@@ -540,10 +540,6 @@ function mapPropTypeToStatKey(propType: string): string | null {
     points_1q: 'PTS',
     rebounds_1q: 'REB',
     assists_1q: 'AST',
-    points_assists: 'PA',
-    points_rebounds: 'PR',
-    points_rebounds_assists: 'PRA',
-    rebounds_assists: 'RA',
   };
   return map[propType] || null;
 }
