@@ -309,6 +309,8 @@ export interface OfficialOddsCardProps {
   selectedBookmakerName?: string | null;
   selectedBookmakerLine?: number | null;
   propsMode?: 'player' | 'team';
+  selectedPlayer?: any;
+  primaryMarketLine?: number | null;
 }
 
 /* ==== Types (BDL) ==== */
@@ -4871,6 +4873,8 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   selectedBookmakerName,
   selectedBookmakerLine,
   propsMode = 'player',
+  selectedPlayer,
+  primaryMarketLine,
 }: OfficialOddsCardProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -4940,27 +4944,6 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                 );
   };
 
-  const fd = (books || []).find((b: any) => {
-    const baseName = ((b as any)?.meta?.baseName || b?.name || '').toLowerCase();
-    return baseName === 'fanduel';
-  });
-
-              const displayHalfLine = (s: string) => {
-                const v = parseFloat(String(s).replace(/[^0-9.+-]/g, ''));
-                if (Number.isNaN(v)) return s;
-                const frac = Math.abs(v * 10) % 10;
-                if (frac === 0) {
-                  const adj = v - 0.5;
-                  return adj.toFixed(1);
-                }
-                return Number.isFinite(v) ? v.toFixed(1) : s;
-              };
-
-  const spreadLine = fd?.Spread?.line ? displayHalfLine(fd.Spread.line) : 'N/A';
-  const spreadDisplay = spreadLine !== 'N/A' && !spreadLine.startsWith('-') 
-    ? `+${spreadLine}` 
-    : spreadLine;
-
   // Don't render anything for game props
   if (propsMode === 'team') {
     return null;
@@ -4977,24 +4960,16 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                 Market Predicted Outcomes
               </div>
               
-              {/* FanDuel Moneyline and Spread at top */}
-              {fd && (
-                <div className="flex items-center gap-4 text-xs sm:text-sm mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>ML:</span>
-                    <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
-                      {selectedTeam || 'HOME'} {fmtOdds(fd.H2H.home)} / {opponentTeam || 'AWAY'} {fmtOdds(fd.H2H.away)}
-                    </span>
-                        </div>
-                  {fd.Spread && (
-                    <div className="flex items-center gap-2">
-                      <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>Spread:</span>
-                      <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
-                        {spreadDisplay} ({fmtOdds(fd.Spread.over)} / {fmtOdds(fd.Spread.under)})
-                      </span>
-                      </div>
-                  )}
-                    </div>
+              {/* Player Name and Line */}
+              {selectedPlayer && selectedStat && (
+                <div className="flex items-center gap-2 text-xs sm:text-sm mb-2">
+                  <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>
+                    {selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim()}:
+                  </span>
+                  <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
+                    {selectedStat.toUpperCase()} {primaryMarketLine !== null && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
               )}
 
               {/* Two wheels side by side */}
@@ -12865,9 +12840,11 @@ const lineMovementInFlightRef = useRef(false);
                   selectedBookmakerName={selectedBookmakerName}
                   selectedBookmakerLine={selectedBookmakerLine}
                   propsMode={propsMode}
+                  selectedPlayer={selectedPlayer}
+                  primaryMarketLine={primaryMarketLine}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
 
             {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
             <BestOddsTable
@@ -13031,10 +13008,12 @@ const lineMovementInFlightRef = useRef(false);
                     selectedBookmakerName={selectedBookmakerName}
                     selectedBookmakerLine={selectedBookmakerLine}
                     propsMode={propsMode}
+                    selectedPlayer={selectedPlayer}
+                    primaryMarketLine={primaryMarketLine}
                   />
                 </div>
               ) : null
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
