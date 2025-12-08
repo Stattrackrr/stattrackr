@@ -11258,12 +11258,12 @@ const lineMovementInFlightRef = useRef(false);
         }
         
         // Combine all factors with weights
-        // Weights: H2H (35%), Last 5 games (35%), Season avg (30%), then apply DvP and Advanced stats adjustments
+        // Weights: H2H (30%), Last 5 games (35%), Season avg (35%), then apply DvP and Advanced stats adjustments
         let predictedValue = seasonAvg; // Default to season average
         
         // Calculate weighted average of the three main factors
-        let totalWeight = 0.3; // Season avg weight (30%)
-        let weightedSum = seasonAvg * 0.3;
+        let totalWeight = 0.35; // Season avg weight (35%)
+        let weightedSum = seasonAvg * 0.35;
         
         if (last5Avg !== null && last5Stats.length >= 3) {
           // Only use last 5 if we have at least 3 games (35% weight)
@@ -11272,9 +11272,9 @@ const lineMovementInFlightRef = useRef(false);
         }
         
         if (h2hAvg !== null && h2hStats.length >= 2) {
-          // Only use H2H if we have at least 2 games (35% weight)
-          weightedSum += h2hAvg * 0.35;
-          totalWeight += 0.35;
+          // Only use H2H if we have at least 2 games (30% weight)
+          weightedSum += h2hAvg * 0.30;
+          totalWeight += 0.30;
         }
         
         // Normalize by total weight to get weighted average
