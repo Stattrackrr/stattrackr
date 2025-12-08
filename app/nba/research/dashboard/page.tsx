@@ -11223,13 +11223,13 @@ const lineMovementInFlightRef = useRef(false);
         let totalWeight = 0.3; // Season avg weight (30%)
         let weightedSum = seasonAvg * 0.3;
         
-        if (last5Avg !== null && last5Games.length >= 3) {
+        if (last5Avg !== null && last5Stats.length >= 3) {
           // Only use last 5 if we have at least 3 games (35% weight)
           weightedSum += last5Avg * 0.35;
           totalWeight += 0.35;
         }
         
-        if (h2hAvg !== null && h2hGames.length >= 2) {
+        if (h2hAvg !== null && h2hStats.length >= 2) {
           // Only use H2H if we have at least 2 games (35% weight)
           weightedSum += h2hAvg * 0.35;
           totalWeight += 0.35;
