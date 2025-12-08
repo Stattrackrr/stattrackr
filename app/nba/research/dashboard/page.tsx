@@ -11522,6 +11522,30 @@ const lineMovementInFlightRef = useRef(false);
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           />
         )}
+        
+        {/* Expand Sidebar Button - visible when sidebar is closed */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="hidden lg:flex fixed z-[60] items-center justify-center w-8 h-8 bg-gray-300 dark:bg-slate-900 hover:bg-gray-400 dark:hover:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg transition-all"
+            style={{
+              top: '1.5rem',
+              left: 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)',
+              transition: 'left 0.3s ease, top 0.3s ease'
+            }}
+            aria-label="Open sidebar"
+          >
+            <svg 
+              className="w-4 h-4 text-gray-700 dark:text-gray-300 transition-transform"
+              style={{ transform: 'rotate(180deg)' }}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
 <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
