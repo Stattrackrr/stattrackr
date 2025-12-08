@@ -3817,7 +3817,7 @@ const ChartControls = function ChartControls({
                     // Track all lines per bookmaker to identify the true primary line
                     const allLinesByBookmaker = new Map<string, Array<{line: number; over: string; under: string; isPickem: boolean; variantLabel: string | null}>>();
                     
-                    // First pass: collect ALL lines for each bookmaker
+                    // First pass: collect ALL lines for each bookmaker (excluding milestones for initial display)
                     for (const book of realOddsData) {
                       const meta = (book as any)?.meta;
                       const baseName = (meta?.baseName || book?.name || '');
@@ -3826,6 +3826,9 @@ const ChartControls = function ChartControls({
                       
                       // Only consider entries matching the selected stat
                       if (statKey !== bookRowKey) continue;
+                      
+                      // Exclude milestones - only show actual over/under lines on initial load
+                      if (meta?.variantLabel === 'Milestone') continue;
                       
                       const statData = (book as any)[bookRowKey];
                       if (!statData || statData.line === 'N/A') continue;
@@ -3941,11 +3944,15 @@ const ChartControls = function ChartControls({
                     if (selectedBookmaker) {
                       const selectedLower = selectedBookmaker.toLowerCase();
                       
-                      // First, try to find an exact match in realOddsData (includes alternate lines with variants)
+                      // First, try to find an exact match in realOddsData (excluding milestones unless explicitly selected)
                       const exactMatch = bookRowKey ? realOddsData.find((book: any) => {
                         const meta = (book as any)?.meta;
                         const baseName = (meta?.baseName || book?.name || '').toLowerCase();
                         if (baseName !== selectedLower) return false;
+                        
+                        // If no bookmaker is explicitly selected, exclude milestones
+                        // Only show milestones if user explicitly selected that bookmaker's milestone line
+                        if (!selectedBookmaker && meta?.variantLabel === 'Milestone') return false;
                         
                         const statData = (book as any)[bookRowKey];
                         if (!statData || statData.line === 'N/A') return false;
