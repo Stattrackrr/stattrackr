@@ -9846,11 +9846,47 @@ const lineMovementInFlightRef = useRef(false);
 
   const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
 
-  // Hit rate calculations - only recalculate when chartData or bettingLine changes
+  // Hit rate calculations - using statistical distribution instead of simple counting
   const hitRateStats = useMemo<HitRateStats>(() => {
-    const overCount = chartData.filter(d => d.value > bettingLine).length;
-    const underCount = chartData.filter(d => d.value < bettingLine).length;
+    const validValues = chartData
+      .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
+      .filter((v): v is number => Number.isFinite(v));
+    
+    if (validValues.length === 0) {
+      return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: propsMode === 'player' ? baseGameData.length : undefined };
+    }
+    
+    // Calculate statistical metrics
+    const mean = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+    const variance = validValues.reduce((sum, val) => {
+      const diff = val - mean;
+      return sum + (diff * diff);
+    }, 0) / validValues.length;
+    const stdDev = Math.sqrt(variance);
+    const adjustedStdDev = Math.max(stdDev, 2); // Minimum stdDev to avoid division issues
+    
+    // Calculate probability-based hit rates using normal distribution
+    let overProb = 50; // Default to 50% if we can't calculate
+    let underProb = 50;
+    
+    if (Number.isFinite(bettingLine) && adjustedStdDev > 0) {
+      // Use the same normalCDF function we use for predictions
+      const normalCDF = (z: number): number => {
+        const t = 1 / (1 + 0.2316419 * Math.abs(z));
+        const d = 0.3989423 * Math.exp(-z * z / 2);
+        const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        return z > 0 ? 1 - p : p;
+      };
+      
+      const zScore = (bettingLine - mean) / adjustedStdDev;
+      underProb = normalCDF(zScore) * 100;
+      overProb = (1 - normalCDF(zScore)) * 100;
+    }
+    
+    // Convert probabilities to counts for display (maintains compatibility with existing UI)
     const total = chartData.length;
+    const overCount = Math.round((overProb / 100) * total);
+    const underCount = total - overCount;
     
     const safeReduce = (values: number[]): number => {
       if (!values.length) return 0;
@@ -11012,35 +11048,130 @@ const lineMovementInFlightRef = useRef(false);
     // Use primary market line (consensus from real bookmakers) - this is fixed and doesn't change when user adjusts betting line
     const predictionLine = primaryMarketLine;
     
-    // Calculate prediction based on historical data using proper statistical methods
+    // Comprehensive prediction model combining multiple factors
     const calculatePrediction = async () => {
       try {
-        // Calculate average and standard deviation from chartData
         const validValues = chartData.filter((d: any) => Number.isFinite(d.value)).map((d: any) => d.value);
         if (validValues.length === 0) {
           setPredictedOutcome(null);
           return;
         }
         
+        // 1. Last 5 games average (most recent form)
+        const last5Games = chartData.slice(-5).filter((d: any) => Number.isFinite(d.value));
+        const last5Avg = last5Games.length > 0
+          ? last5Games.reduce((sum: number, d: any) => sum + d.value, 0) / last5Games.length
+          : null;
+        
+        // 2. H2H average vs current opponent
+        const normalizedOpponent = opponentTeam && opponentTeam !== 'N/A' && opponentTeam !== 'ALL' && opponentTeam !== ''
+          ? normalizeAbbr(opponentTeam)
+          : null;
+        const h2hGames = normalizedOpponent
+          ? chartData.filter((d: any) => {
+              const gameOpponent = normalizeAbbr(d.opponent || '');
+              return gameOpponent === normalizedOpponent && Number.isFinite(d.value);
+            })
+          : [];
+        const h2hAvg = h2hGames.length > 0
+          ? h2hGames.reduce((sum: number, d: any) => sum + d.value, 0) / h2hGames.length
+          : null;
+        
+        // 3. Season average (baseline)
         const seasonAvg = validValues.reduce((sum: number, val: number) => sum + val, 0) / validValues.length;
         
-        // Calculate actual standard deviation from historical data
+        // 4. DvP adjustment - fetch how opponent defends vs player's position
+        let dvpAdjustment = 0;
+        if (normalizedOpponent && selectedPosition) {
+          try {
+            // Map selectedStat to DvP metric name
+            const statToMetric: Record<string, string> = {
+              'pts': 'pts',
+              'reb': 'reb',
+              'ast': 'ast',
+              'fg3m': 'fg3m',
+              'stl': 'stl',
+              'blk': 'blk',
+              'to': 'to',
+              'fg_pct': 'fg_pct',
+              'ft_pct': 'ft_pct',
+            };
+            const metric = statToMetric[selectedStat] || selectedStat;
+            
+            const dvpResponse = await cachedFetch(
+              `/api/dvp?team=${normalizedOpponent}&metric=${metric}&position=${selectedPosition}`,
+              undefined,
+              120000 // 2 minute cache
+            );
+            if (dvpResponse?.success && dvpResponse?.perGame !== null && Number.isFinite(dvpResponse.perGame)) {
+              // DvP perGame is what opponent allows - compare to league average
+              // If opponent allows more, it's good for the player (positive adjustment)
+              // If opponent allows less, it's bad for the player (negative adjustment)
+              const leagueAvg = seasonAvg; // Use season avg as proxy for league avg
+              dvpAdjustment = (dvpResponse.perGame - leagueAvg) * 0.3; // 30% weight on DvP difference
+            }
+          } catch (dvpError) {
+            console.warn('Failed to fetch DvP data for prediction:', dvpError);
+          }
+        }
+        
+        // 5. Advanced stats/potentials (if available)
+        let advancedStatsAdjustment = 0;
+        if (advancedStats) {
+          // Use usage percentage, pace, and other advanced metrics to adjust
+          // Higher usage = more opportunities = higher expected output
+          if (advancedStats.usage_percentage && Number.isFinite(advancedStats.usage_percentage)) {
+            const usagePct = advancedStats.usage_percentage * 100;
+            // Normalize usage (typical range 15-35%) to adjustment (-2 to +2)
+            advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.5;
+          }
+          // Pace adjustment (higher pace = more possessions = more stats)
+          if (advancedStats.pace && Number.isFinite(advancedStats.pace)) {
+            const paceAdjustment = ((advancedStats.pace - 100) / 10) * 0.3; // 100 is average pace
+            advancedStatsAdjustment += paceAdjustment;
+          }
+        }
+        
+        // Combine all factors with weights
+        // Weights: Last 5 games (40%), H2H (30%), Season avg (30%), then apply DvP and Advanced stats adjustments
+        let predictedValue = seasonAvg; // Default to season average
+        
+        // Calculate weighted average of the three main factors
+        let totalWeight = 0.3; // Season avg weight
+        let weightedSum = seasonAvg * 0.3;
+        
+        if (last5Avg !== null && last5Games.length >= 3) {
+          // Only use last 5 if we have at least 3 games
+          weightedSum += last5Avg * 0.4;
+          totalWeight += 0.4;
+        }
+        
+        if (h2hAvg !== null && h2hGames.length >= 2) {
+          // Only use H2H if we have at least 2 games
+          weightedSum += h2hAvg * 0.3;
+          totalWeight += 0.3;
+        }
+        
+        // Normalize by total weight to get weighted average
+        predictedValue = totalWeight > 0 ? weightedSum / totalWeight : seasonAvg;
+        
+        // Apply adjustments (these are additive, not weighted)
+        predictedValue += dvpAdjustment;
+        predictedValue += advancedStatsAdjustment;
+        
+        // Calculate standard deviation from all historical data
         const variance = validValues.reduce((sum: number, val: number) => {
           const diff = val - seasonAvg;
           return sum + (diff * diff);
         }, 0) / validValues.length;
         const stdDev = Math.sqrt(variance);
-        
-        // Use minimum stdDev of 2 to avoid division by very small numbers
         const adjustedStdDev = Math.max(stdDev, 2);
         
-        if (Number.isFinite(seasonAvg) && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
-          // Calculate z-score: how many standard deviations the line is from the mean
-          const zScore = (predictionLine - seasonAvg) / adjustedStdDev;
+        if (Number.isFinite(predictedValue) && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
+          // Calculate z-score using the predicted value (not season avg)
+          const zScore = (predictionLine - predictedValue) / adjustedStdDev;
           
-          // Use normal distribution CDF approximation to calculate probability
-          // This gives the probability of being UNDER the line
-          // We use the error function approximation for normal CDF
+          // Use normal distribution CDF to calculate probability
           const underProb = normalCDF(zScore) * 100;
           const overProb = (1 - normalCDF(zScore)) * 100;
           
@@ -11095,6 +11226,9 @@ const lineMovementInFlightRef = useRef(false);
     primaryMarketLine, // Only changes when player/stat changes, not when user adjusts betting line
     calculatedImpliedOdds, // Only uses real lines from bookmakers
     chartData, // Historical data for the player/stat
+    opponentTeam, // For H2H calculation
+    selectedPosition, // For DvP calculation
+    advancedStats, // For advanced stats adjustment
   ]);
 
   return (
