@@ -11058,36 +11058,87 @@ const lineMovementInFlightRef = useRef(false);
     const predictionLine = primaryMarketLine;
     
     // Comprehensive prediction model combining multiple factors
+    // IMPORTANT: Use playerStats (unfiltered) instead of chartData (filtered by timeframe) 
+    // so prediction doesn't change when user changes timeframe
     const calculatePrediction = async () => {
       try {
-        const validValues = chartData.filter((d: any) => Number.isFinite(d.value)).map((d: any) => d.value);
-        if (validValues.length === 0) {
+        // Extract all stat values from unfiltered playerStats (not chartData which is filtered by timeframe)
+        const allStatValues = playerStats
+          .filter((stats: any) => {
+            const minutes = parseMinutes(stats.min);
+            return minutes > 0; // Only include games where player played
+          })
+          .map((stats: any) => getStatValue(stats, selectedStat))
+          .filter((val: number) => Number.isFinite(val));
+        
+        if (allStatValues.length === 0) {
           setPredictedOutcome(null);
           return;
         }
         
-        // 1. Last 5 games average (most recent form)
-        const last5Games = chartData.slice(-5).filter((d: any) => Number.isFinite(d.value));
-        const last5Avg = last5Games.length > 0
-          ? last5Games.reduce((sum: number, d: any) => sum + d.value, 0) / last5Games.length
+        // 1. Last 5 games average (most recent form) - use all stats, not filtered
+        const last5Stats = playerStats
+          .filter((stats: any) => {
+            const minutes = parseMinutes(stats.min);
+            return minutes > 0;
+          })
+          .slice(-5)
+          .map((stats: any) => getStatValue(stats, selectedStat))
+          .filter((val: number) => Number.isFinite(val));
+        const last5Avg = last5Stats.length > 0
+          ? last5Stats.reduce((sum: number, val: number) => sum + val, 0) / last5Stats.length
           : null;
         
-        // 2. H2H average vs current opponent
+        // 2. H2H average vs current opponent - use all stats, not filtered
         const normalizedOpponent = opponentTeam && opponentTeam !== 'N/A' && opponentTeam !== 'ALL' && opponentTeam !== ''
           ? normalizeAbbr(opponentTeam)
           : null;
-        const h2hGames = normalizedOpponent
-          ? chartData.filter((d: any) => {
-              const gameOpponent = normalizeAbbr(d.opponent || '');
-              return gameOpponent === normalizedOpponent && Number.isFinite(d.value);
-            })
+        const h2hStats = normalizedOpponent
+          ? playerStats
+              .filter((stats: any) => {
+                const minutes = parseMinutes(stats.min);
+                if (minutes === 0) return false;
+                
+                // Get opponent from game data
+                const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+                const playerTeamNorm = normalizeAbbr(playerTeam);
+                const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+                const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+                const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+                const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+                
+                const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+                let gameOpponent = "";
+                
+                if (playerTeamId && homeTeamId && visitorTeamId) {
+                  if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+                    gameOpponent = normalizeAbbr(visitorTeamAbbr);
+                  } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+                    gameOpponent = normalizeAbbr(homeTeamAbbr);
+                  }
+                }
+                
+                if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+                  const homeNorm = normalizeAbbr(homeTeamAbbr);
+                  const visitorNorm = normalizeAbbr(visitorTeamAbbr);
+                  if (homeNorm === playerTeamNorm) {
+                    gameOpponent = visitorNorm;
+                  } else if (visitorNorm === playerTeamNorm) {
+                    gameOpponent = homeNorm;
+                  }
+                }
+                
+                return normalizeAbbr(gameOpponent) === normalizedOpponent;
+              })
+              .map((stats: any) => getStatValue(stats, selectedStat))
+              .filter((val: number) => Number.isFinite(val))
           : [];
-        const h2hAvg = h2hGames.length > 0
-          ? h2hGames.reduce((sum: number, d: any) => sum + d.value, 0) / h2hGames.length
+        const h2hAvg = h2hStats.length > 0
+          ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
           : null;
         
-        // 3. Season average (baseline)
-        const seasonAvg = validValues.reduce((sum: number, val: number) => sum + val, 0) / validValues.length;
+        // 3. Season average (baseline) - use all stats, not filtered
+        const seasonAvg = allStatValues.reduce((sum: number, val: number) => sum + val, 0) / allStatValues.length;
         
         // 4. DvP adjustment - use rankings for more impactful adjustments
         let dvpAdjustment = 0;
@@ -11204,11 +11255,11 @@ const lineMovementInFlightRef = useRef(false);
           finalPredictedValue = predictedValue * 0.7 + predictionLine * 0.3;
         }
         
-        // Calculate standard deviation from all historical data
-        const variance = validValues.reduce((sum: number, val: number) => {
+        // Calculate standard deviation from all historical data (use allStatValues, not filtered)
+        const variance = allStatValues.reduce((sum: number, val: number) => {
           const diff = val - seasonAvg;
           return sum + (diff * diff);
-        }, 0) / validValues.length;
+        }, 0) / allStatValues.length;
         const stdDev = Math.sqrt(variance);
         const adjustedStdDev = Math.max(stdDev, 2);
         
@@ -11333,7 +11384,7 @@ const lineMovementInFlightRef = useRef(false);
     selectedStat,
     primaryMarketLine, // Only changes when player/stat changes, not when user adjusts betting line
     calculatedImpliedOdds, // Only uses real lines from bookmakers
-    chartData, // Historical data for the player/stat
+    playerStats, // Use unfiltered playerStats instead of chartData (which is filtered by timeframe)
     opponentTeam, // For H2H calculation
     selectedPosition, // For DvP calculation
     advancedStats, // For advanced stats adjustment
