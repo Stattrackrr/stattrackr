@@ -11197,12 +11197,53 @@ const lineMovementInFlightRef = useRef(false);
         // 5. Advanced stats/potentials (if available)
         let advancedStatsAdjustment = 0;
         if (advancedStats) {
-          // Use usage percentage to adjust
+          // Use usage percentage to adjust (applies to all stats)
           // Higher usage = more opportunities = higher expected output
           if (advancedStats.usage_percentage && Number.isFinite(advancedStats.usage_percentage)) {
             const usagePct = advancedStats.usage_percentage * 100;
             // Normalize usage (typical range 15-35%) to adjustment (further reduced)
             advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.15; // Further reduced from 0.25
+          }
+          
+          // Stat-specific advanced stats adjustments
+          if (selectedStat === 'reb') {
+            // Use rebound percentage for rebounds
+            // Higher rebound % = better at getting rebounds relative to opportunities
+            if (advancedStats.rebound_percentage && Number.isFinite(advancedStats.rebound_percentage)) {
+              // Typical rebound % range: 8-20% (centers/forwards higher, guards lower)
+              // Normalize to adjustment: above 14% = positive, below 14% = negative
+              const rebPct = advancedStats.rebound_percentage;
+              const rebAdjustment = ((rebPct - 14) / 6) * 0.5; // Scale: -1 to +1 points adjustment
+              advancedStatsAdjustment += rebAdjustment;
+            }
+            
+            // Also use offensive rebound percentage for rebounds
+            if (advancedStats.offensive_rebound_percentage && Number.isFinite(advancedStats.offensive_rebound_percentage)) {
+              // Typical ORB % range: 2-12% (centers/forwards higher)
+              // Normalize to adjustment: above 6% = positive, below 6% = negative
+              const orbPct = advancedStats.offensive_rebound_percentage;
+              const orbAdjustment = ((orbPct - 6) / 5) * 0.3; // Scale: -0.6 to +0.6 points adjustment
+              advancedStatsAdjustment += orbAdjustment;
+            }
+          } else if (selectedStat === 'ast') {
+            // Use assist percentage for assists
+            // Higher assist % = better at getting assists relative to opportunities
+            if (advancedStats.assist_percentage && Number.isFinite(advancedStats.assist_percentage)) {
+              // Typical assist % range: 10-40% (point guards higher, centers lower)
+              // Normalize to adjustment: above 20% = positive, below 20% = negative
+              const astPct = advancedStats.assist_percentage;
+              const astAdjustment = ((astPct - 20) / 15) * 0.6; // Scale: -0.8 to +0.8 points adjustment
+              advancedStatsAdjustment += astAdjustment;
+            }
+            
+            // Also use assist-to-turnover ratio for assists
+            if (advancedStats.assist_to_turnover && Number.isFinite(advancedStats.assist_to_turnover)) {
+              // Typical A/TO range: 1.5-3.5 (higher = better playmaker)
+              // Normalize to adjustment: above 2.5 = positive, below 2.5 = negative
+              const ato = advancedStats.assist_to_turnover;
+              const atoAdjustment = ((ato - 2.5) / 1) * 0.2; // Scale: -0.2 to +0.2 points adjustment
+              advancedStatsAdjustment += atoAdjustment;
+            }
           }
         }
         
