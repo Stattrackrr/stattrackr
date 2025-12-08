@@ -1464,28 +1464,44 @@ export async function GET(request: NextRequest) {
       // Calculate combo stats if not stored directly
       if (statTypeLower === 'pra') {
         if (avg.pra !== null && avg.pra !== undefined) return avg.pra;
-        const pts = avg.pts || 0;
-        const reb = avg.reb || 0;
-        const ast = avg.ast || 0;
-        return pts + reb + ast || null;
+        const pts = avg.pts ?? null;
+        const reb = avg.reb ?? null;
+        const ast = avg.ast ?? null;
+        // Only calculate if we have all three stats
+        if (pts !== null && reb !== null && ast !== null) {
+          return pts + reb + ast;
+        }
+        return null;
       }
       if (statTypeLower === 'pr') {
         if (avg.pr !== null && avg.pr !== undefined) return avg.pr;
-        const pts = avg.pts || 0;
-        const reb = avg.reb || 0;
-        return pts + reb || null;
+        const pts = avg.pts ?? null;
+        const reb = avg.reb ?? null;
+        // Only calculate if we have both stats
+        if (pts !== null && reb !== null) {
+          return pts + reb;
+        }
+        return null;
       }
       if (statTypeLower === 'pa') {
         if (avg.pa !== null && avg.pa !== undefined) return avg.pa;
-        const pts = avg.pts || 0;
-        const ast = avg.ast || 0;
-        return pts + ast || null;
+        const pts = avg.pts ?? null;
+        const ast = avg.ast ?? null;
+        // Only calculate if we have both stats
+        if (pts !== null && ast !== null) {
+          return pts + ast;
+        }
+        return null;
       }
       if (statTypeLower === 'ra') {
         if (avg.ra !== null && avg.ra !== undefined) return avg.ra;
-        const reb = avg.reb || 0;
-        const ast = avg.ast || 0;
-        return reb + ast || null;
+        const reb = avg.reb ?? null;
+        const ast = avg.ast ?? null;
+        // Only calculate if we have both stats
+        if (reb !== null && ast !== null) {
+          return reb + ast;
+        }
+        return null;
       }
       return null;
     };

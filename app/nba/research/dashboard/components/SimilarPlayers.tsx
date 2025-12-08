@@ -397,7 +397,7 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
       
       // Pre-fetch stats in batches of 3 to avoid rate limiting
       // This ensures instant switching between stats without overwhelming the API
-      const allStats = ['PTS', 'REB', 'AST', 'FGM', 'FGA', 'FTM', 'FTA', 'STL', 'BLK', 'TO', 'PF', 'OREB', 'DREB'];
+      const allStats = ['PTS', 'REB', 'AST', 'PRA', 'PR', 'PA', 'RA', 'FGM', 'FGA', 'FTM', 'FTA', 'STL', 'BLK', 'TO', 'PF', 'OREB', 'DREB'];
       const statsToPrefetch = allStats.filter(stat => stat !== normalizedStatType);
       
       // Process 3 stats at a time, with delays between batches
