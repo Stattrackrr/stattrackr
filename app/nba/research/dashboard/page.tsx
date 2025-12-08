@@ -4967,7 +4967,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                     {selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim()}:
                   </span>
                   <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
-                    {selectedStat.toUpperCase()} {primaryMarketLine !== null && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : 'N/A'}
+                    {selectedStat.toUpperCase()} {primaryMarketLine !== null && primaryMarketLine !== undefined && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : 'N/A'}
                   </span>
                 </div>
               )}
