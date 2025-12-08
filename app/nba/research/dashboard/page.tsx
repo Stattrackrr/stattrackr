@@ -11174,9 +11174,9 @@ const lineMovementInFlightRef = useRef(false);
               if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
                 // Rank 1-10: Very good defense (lower prediction)
                 if (teamRank <= 10) {
-                  // Reduced negative adjustment: -0.8 to -1.5 points based on rank (1 = -1.5, 10 = -0.8)
-                  // Less aggressive than before to avoid overly pessimistic predictions
-                  dvpAdjustment = -0.8 - ((10 - teamRank) / 10) * 0.7;
+                  // Further reduced negative adjustment: -0.5 to -1.0 points based on rank (1 = -1.0, 10 = -0.5)
+                  // Even less aggressive to avoid overly pessimistic predictions - even best defenses don't completely shut down good players
+                  dvpAdjustment = -0.5 - ((10 - teamRank) / 10) * 0.5;
                 }
                 // Rank 11-20: Medium defense (small adjustment)
                 else if (teamRank <= 20) {
