@@ -10864,13 +10864,48 @@ const lineMovementInFlightRef = useRef(false);
   const selectedBookmakerName = selectedBookmakerData.name;
 
   // Calculate implied odds from FanDuel, with fallback to consensus
+  // Calculate primary line from real bookmakers (not alt lines) - used for prediction
+  const primaryMarketLine = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return null;
+    
+    // Collect all real lines (not alt lines) and calculate consensus
+    const realLines: number[] = [];
+    
+    for (const book of realOddsData) {
+      const meta = (book as any)?.meta;
+      // Skip alt lines - only use primary over/under lines
+      if (meta?.variantLabel) continue;
+      
+      const statData = (book as any)[bookRowKey];
+      if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
+        const lineStr = statData.line;
+        const line = (lineStr && lineStr !== 'N/A') 
+          ? (typeof lineStr === 'string' ? parseFloat(lineStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(lineStr)))
+          : null;
+        
+        if (line !== null && Number.isFinite(line)) {
+          realLines.push(line);
+        }
+      }
+    }
+    
+    if (realLines.length === 0) return null;
+    
+    // Calculate consensus (average of all real lines)
+    const consensus = realLines.reduce((sum, line) => sum + line, 0) / realLines.length;
+    return consensus;
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
   const calculatedImpliedOdds = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
     
     const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return null;
     
-    // Try FanDuel first
+    // Try FanDuel first (only real lines, not alt lines)
     const fanduelBook = realOddsData.find((book: any) => {
       const baseName = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
       return baseName === 'fanduel';
@@ -10878,6 +10913,7 @@ const lineMovementInFlightRef = useRef(false);
     
     if (fanduelBook) {
       const meta = (fanduelBook as any)?.meta;
+      // Only use primary over/under lines, skip alt lines
       if (!meta?.variantLabel) {
         const statData = (fanduelBook as any)[bookRowKey];
         if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
@@ -10915,12 +10951,13 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
-    // Fallback to consensus (average of all bookmakers with valid odds)
+    // Fallback to consensus (average of all bookmakers with valid real odds, no alt lines)
     const validBooks: Array<{ over: number; under: number }> = [];
     
     for (const book of realOddsData) {
       const meta = (book as any)?.meta;
-      if (meta?.variantLabel) continue; // Skip alternates
+      // Skip alt lines - only use primary over/under lines
+      if (meta?.variantLabel) continue;
       
       const statData = (book as any)[bookRowKey];
       if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
@@ -10969,15 +11006,15 @@ const lineMovementInFlightRef = useRef(false);
     return null;
   }, [realOddsData, selectedStat, getBookRowKey]);
 
-  // Prediction calculation useEffect
+  // Prediction calculation useEffect - only recalculates when player or stat changes, NOT when line changes
   useEffect(() => {
     if (propsMode !== 'player' || !selectedPlayer || !selectedStat) {
       setPredictedOutcome(null);
       return;
     }
     
-    // Use FanDuel's line with fallback to bettingLine
-    const predictionLine = selectedBookmakerLine ?? bettingLine;
+    // Use primary market line (consensus from real bookmakers) - this is fixed and doesn't change when user adjusts betting line
+    const predictionLine = primaryMarketLine;
     
     // Calculate prediction based on historical data
     // This is a simplified version - you'll need to implement the full prediction logic
@@ -11003,31 +11040,9 @@ const lineMovementInFlightRef = useRef(false);
           const clampedOverProb = Math.max(0, Math.min(100, overProb));
           const clampedUnderProb = 100 - clampedOverProb;
           
-          // Get market probabilities
-          let marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
-          let marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
-          
-          // Fallback: Calculate from selectedBookmakerData if calculatedImpliedOdds is null
-          if (marketOverProb === null) {
-            if (selectedBookmakerData && selectedBookmakerData.overOdds !== null && selectedBookmakerData.underOdds !== null) {
-              const impliedProbabilityFromAmerican = (american: number): number => {
-                if (american > 0) {
-                  return (100 / (american + 100)) * 100;
-                } else {
-                  return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
-                }
-              };
-              
-              const overProb = impliedProbabilityFromAmerican(selectedBookmakerData.overOdds);
-              const underProb = impliedProbabilityFromAmerican(selectedBookmakerData.underOdds);
-              const totalProb = overProb + underProb;
-              
-              if (totalProb > 0) {
-                marketOverProb = (overProb / totalProb) * 100;
-                marketUnderProb = (underProb / totalProb) * 100;
-              }
-            }
-          }
+          // Get market probabilities from calculatedImpliedOdds (which only uses real lines)
+          const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
+          const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
           
           const isOver = clampedOverProb >= 50;
           const statProb = isOver ? clampedOverProb : clampedUnderProb;
@@ -11069,11 +11084,9 @@ const lineMovementInFlightRef = useRef(false);
     propsMode,
     selectedPlayer,
     selectedStat,
-    selectedBookmakerLine,
-    bettingLine,
-    calculatedImpliedOdds,
-    selectedBookmakerData,
-    chartData,
+    primaryMarketLine, // Only changes when player/stat changes, not when user adjusts betting line
+    calculatedImpliedOdds, // Only uses real lines from bookmakers
+    chartData, // Historical data for the player/stat
   ]);
 
   return (
