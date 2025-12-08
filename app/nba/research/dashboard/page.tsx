@@ -10992,6 +10992,16 @@ const lineMovementInFlightRef = useRef(false);
     return null;
   }, [realOddsData, selectedStat, getBookRowKey]);
 
+  // Normal distribution CDF (Cumulative Distribution Function) approximation
+  // Returns the probability that a value from a standard normal distribution is <= z
+  const normalCDF = (z: number): number => {
+    // Abramowitz and Stegun approximation (accurate to ~0.0002)
+    const t = 1 / (1 + 0.2316419 * Math.abs(z));
+    const d = 0.3989423 * Math.exp(-z * z / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return z > 0 ? 1 - p : p;
+  };
+
   // Prediction calculation useEffect - only recalculates when player or stat changes, NOT when line changes
   useEffect(() => {
     if (propsMode !== 'player' || !selectedPlayer || !selectedStat) {
@@ -11002,11 +11012,10 @@ const lineMovementInFlightRef = useRef(false);
     // Use primary market line (consensus from real bookmakers) - this is fixed and doesn't change when user adjusts betting line
     const predictionLine = primaryMarketLine;
     
-    // Calculate prediction based on historical data
-    // This is a simplified version - you'll need to implement the full prediction logic
+    // Calculate prediction based on historical data using proper statistical methods
     const calculatePrediction = async () => {
       try {
-        // Calculate average from chartData
+        // Calculate average and standard deviation from chartData
         const validValues = chartData.filter((d: any) => Number.isFinite(d.value)).map((d: any) => d.value);
         if (validValues.length === 0) {
           setPredictedOutcome(null);
@@ -11015,16 +11024,29 @@ const lineMovementInFlightRef = useRef(false);
         
         const seasonAvg = validValues.reduce((sum: number, val: number) => sum + val, 0) / validValues.length;
         
-        if (Number.isFinite(seasonAvg) && Number.isFinite(predictionLine)) {
-          // Simple probability calculation (you'll need to replace this with your actual logic)
-          const diff = seasonAvg - predictionLine;
-          const stdDev = 5; // Placeholder - should come from actual data
-          const zScore = diff / stdDev;
+        // Calculate actual standard deviation from historical data
+        const variance = validValues.reduce((sum: number, val: number) => {
+          const diff = val - seasonAvg;
+          return sum + (diff * diff);
+        }, 0) / validValues.length;
+        const stdDev = Math.sqrt(variance);
+        
+        // Use minimum stdDev of 2 to avoid division by very small numbers
+        const adjustedStdDev = Math.max(stdDev, 2);
+        
+        if (Number.isFinite(seasonAvg) && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
+          // Calculate z-score: how many standard deviations the line is from the mean
+          const zScore = (predictionLine - seasonAvg) / adjustedStdDev;
           
-          // Convert z-score to probability (simplified)
-          const overProb = 50 + (zScore * 10); // Clamp between 0-100
+          // Use normal distribution CDF approximation to calculate probability
+          // This gives the probability of being UNDER the line
+          // We use the error function approximation for normal CDF
+          const underProb = normalCDF(zScore) * 100;
+          const overProb = (1 - normalCDF(zScore)) * 100;
+          
+          // Clamp probabilities between 0-100
           const clampedOverProb = Math.max(0, Math.min(100, overProb));
-          const clampedUnderProb = 100 - clampedOverProb;
+          const clampedUnderProb = Math.max(0, Math.min(100, underProb));
           
           // Get market probabilities from calculatedImpliedOdds (which only uses real lines)
           const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
