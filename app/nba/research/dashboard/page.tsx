@@ -11328,7 +11328,7 @@ const lineMovementInFlightRef = useRef(false);
     opponentTeam, // For H2H calculation
     selectedPosition, // For DvP calculation
     advancedStats, // For advanced stats adjustment
-    realOddsData, // For EV calculation (actual odds)
+    // Note: realOddsData is accessed from closure, not in deps to avoid array size changes
   ]);
 
   return (
