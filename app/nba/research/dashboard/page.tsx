@@ -11171,7 +11171,7 @@ const lineMovementInFlightRef = useRef(false);
         const stdDev = Math.sqrt(variance);
         const adjustedStdDev = Math.max(stdDev, 2);
         
-        if (Number.isFinite(predictedValue) && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
+        if (Number.isFinite(predictedValue) && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
           // Calculate z-score using the predicted value (not season avg)
           const zScore = (predictionLine - predictedValue) / adjustedStdDev;
           
