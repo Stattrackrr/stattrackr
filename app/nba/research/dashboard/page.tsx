@@ -10840,14 +10840,15 @@ const lineMovementInFlightRef = useRef(false);
 
   // Calculate implied odds from FanDuel, with fallback to consensus
   // Calculate primary line from real bookmakers (not alt lines) - used for prediction
+  // Uses the most common line value (consensus), not the average
   const primaryMarketLine = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
     
     const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return null;
     
-    // Collect all real lines (not alt lines) and calculate consensus
-    const realLines: number[] = [];
+    // Collect all real lines (not alt lines) and find the most common one
+    const lineCounts = new Map<number, number>();
     
     for (const book of realOddsData) {
       const meta = (book as any)?.meta;
@@ -10862,16 +10863,26 @@ const lineMovementInFlightRef = useRef(false);
           : null;
         
         if (line !== null && Number.isFinite(line)) {
-          realLines.push(line);
+          // Round to nearest 0.5 to group similar lines together
+          const roundedLine = Math.round(line * 2) / 2;
+          lineCounts.set(roundedLine, (lineCounts.get(roundedLine) || 0) + 1);
         }
       }
     }
     
-    if (realLines.length === 0) return null;
+    if (lineCounts.size === 0) return null;
     
-    // Calculate consensus (average of all real lines)
-    const consensus = realLines.reduce((sum, line) => sum + line, 0) / realLines.length;
-    return consensus;
+    // Find the most common line (consensus)
+    let consensusLine: number | null = null;
+    let maxCount = 0;
+    for (const [line, count] of lineCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        consensusLine = line;
+      }
+    }
+    
+    return consensusLine;
   }, [realOddsData, selectedStat, getBookRowKey]);
 
   const calculatedImpliedOdds = useMemo(() => {
