@@ -11117,19 +11117,20 @@ const lineMovementInFlightRef = useRef(false);
               const ranks = dvpRankResponse.metrics[metric];
               const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
               
-              // If we have a rank, apply tiered adjustments
+              // If we have a rank, apply tiered adjustments (reduced weight for negative adjustments)
               if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
-                // Rank 1-10: Very good defense (lower prediction)
+                // Rank 1-10: Very good defense (lower prediction) - reduced weight
                 if (teamRank <= 10) {
-                  // Strong negative adjustment: -2 to -4 points based on rank (1 = -4, 10 = -2)
-                  dvpAdjustment = -2 - ((10 - teamRank) / 10) * 2;
+                  // Reduced negative adjustment: -1 to -2 points based on rank (1 = -2, 10 = -1)
+                  // Reduced from -2 to -4 to make negative adjustments less impactful
+                  dvpAdjustment = -1 - ((10 - teamRank) / 10) * 1;
                 }
                 // Rank 11-20: Medium defense (small adjustment)
                 else if (teamRank <= 20) {
                   // Small adjustment: -1 to +1 points based on rank (11 = -1, 20 = +1)
                   dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
                 }
-                // Rank 21-30: Bad defense (raise prediction)
+                // Rank 21-30: Bad defense (raise prediction) - keep full weight
                 else {
                   // Positive adjustment: +2 to +4 points based on rank (21 = +2, 30 = +4)
                   dvpAdjustment = 2 + ((teamRank - 21) / 9) * 2;
