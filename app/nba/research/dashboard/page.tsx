@@ -11108,7 +11108,7 @@ const lineMovementInFlightRef = useRef(false);
               // If opponent allows more, it's good for the player (positive adjustment)
               // If opponent allows less, it's bad for the player (negative adjustment)
               const leagueAvg = seasonAvg; // Use season avg as proxy for league avg
-              dvpAdjustment = (dvpResponse.perGame - leagueAvg) * 0.15; // 15% weight on DvP difference (reduced from 30%)
+              dvpAdjustment = (dvpResponse.perGame - leagueAvg) * 0.1; // 10% weight on DvP difference (further reduced)
             }
           } catch (dvpError) {
             console.warn('Failed to fetch DvP data for prediction:', dvpError);
@@ -11122,8 +11122,8 @@ const lineMovementInFlightRef = useRef(false);
           // Higher usage = more opportunities = higher expected output
           if (advancedStats.usage_percentage && Number.isFinite(advancedStats.usage_percentage)) {
             const usagePct = advancedStats.usage_percentage * 100;
-            // Normalize usage (typical range 15-35%) to adjustment (-1 to +1, reduced from -2 to +2)
-            advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.25; // Reduced from 0.5
+            // Normalize usage (typical range 15-35%) to adjustment (further reduced)
+            advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.15; // Further reduced from 0.25
           }
         }
         
@@ -11132,28 +11132,28 @@ const lineMovementInFlightRef = useRef(false);
         const playerTeamAbbr = normalizeAbbr(selectedPlayer?.teamAbbr || '');
         const teamPaceValue = getTeamPace(playerTeamAbbr);
         if (teamPaceValue > 0) {
-          const paceAdjustment = ((teamPaceValue - 100) / 10) * 0.15; // Reduced from 0.3
+          const paceAdjustment = ((teamPaceValue - 100) / 10) * 0.1; // Further reduced from 0.15
           advancedStatsAdjustment += paceAdjustment;
         }
         
-        // Combine all factors with weights (more conservative to align with market odds)
-        // Weights: Season avg (50%), Last 5 games (30%), H2H (20%), then apply DvP and Advanced stats adjustments
+        // Combine all factors with weights (very conservative to align with market odds)
+        // Weights: Season avg (70%), Last 5 games (20%), H2H (10%), then apply DvP and Advanced stats adjustments
         let predictedValue = seasonAvg; // Default to season average
         
         // Calculate weighted average of the three main factors
-        let totalWeight = 0.5; // Season avg weight (increased from 30%)
-        let weightedSum = seasonAvg * 0.5;
+        let totalWeight = 0.7; // Season avg weight (increased to 70% for more conservative predictions)
+        let weightedSum = seasonAvg * 0.7;
         
         if (last5Avg !== null && last5Games.length >= 3) {
-          // Only use last 5 if we have at least 3 games (reduced weight from 40% to 30%)
-          weightedSum += last5Avg * 0.3;
-          totalWeight += 0.3;
+          // Only use last 5 if we have at least 3 games (further reduced to 20%)
+          weightedSum += last5Avg * 0.2;
+          totalWeight += 0.2;
         }
         
         if (h2hAvg !== null && h2hGames.length >= 2) {
-          // Only use H2H if we have at least 2 games (reduced weight from 30% to 20%)
-          weightedSum += h2hAvg * 0.2;
-          totalWeight += 0.2;
+          // Only use H2H if we have at least 2 games (further reduced to 10%)
+          weightedSum += h2hAvg * 0.1;
+          totalWeight += 0.1;
         }
         
         // Normalize by total weight to get weighted average
