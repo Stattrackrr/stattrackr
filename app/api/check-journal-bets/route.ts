@@ -933,6 +933,41 @@ async function resolveParlayBet(
       return;
     }
     
+    // Update parlay_legs with individual leg results
+    let updatedParlayLegs = bet.parlay_legs;
+    if (bet.parlay_legs && Array.isArray(bet.parlay_legs)) {
+      // Map leg results back to parlay_legs structure
+      updatedParlayLegs = bet.parlay_legs.map((leg: any, index: number) => {
+        const legResult = legResults[index];
+        if (legResult) {
+          return {
+            ...leg,
+            won: legResult.won,
+            void: legResult.void,
+          };
+        }
+        return leg;
+      });
+    } else if (legs.length > 0 && legResults.length === legs.length) {
+      // For legacy parlays without structured data, create parlay_legs with results
+      updatedParlayLegs = legs.map((leg, index) => {
+        const legResult = legResults[index];
+        return {
+          playerName: leg.playerName,
+          playerId: leg.playerId,
+          team: leg.team,
+          opponent: leg.opponent,
+          gameDate: leg.gameDate,
+          overUnder: leg.overUnder,
+          line: leg.line,
+          statType: leg.statType,
+          isGameProp: leg.isGameProp || false,
+          won: legResult ? legResult.won : null,
+          void: legResult ? legResult.void : false,
+        };
+      });
+    }
+    
     // Update parlay bet
     const { error: updateError } = await supabaseAdmin
       .from('bets')
@@ -940,6 +975,7 @@ async function resolveParlayBet(
         status: 'completed',
         result,
         actual_value: parlayWon ? 1 : 0, // 1 for win, 0 for loss
+        parlay_legs: updatedParlayLegs, // Store leg results
       })
       .eq('id', bet.id);
     

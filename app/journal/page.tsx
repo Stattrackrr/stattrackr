@@ -82,6 +82,21 @@ type Bet = {
   bookmaker?: string | null;
   created_at: string;
   opponent?: string | null;
+  actual_value?: number | null;
+  stat_type?: string | null;
+  parlay_legs?: Array<{
+    playerName?: string;
+    playerId?: string;
+    team?: string;
+    opponent?: string;
+    gameDate?: string;
+    overUnder?: 'over' | 'under';
+    line?: number;
+    statType?: string;
+    isGameProp?: boolean;
+    won?: boolean | null;
+    void?: boolean;
+  }> | null;
 };
 
 type BookmakerEntry = { key: string; raw: string };
@@ -132,7 +147,7 @@ function getBookmakerDisplayName(entry: BookmakerEntry): string {
 }
 
 // Helper function to format bookmaker display
-function formatBookmakerDisplay(bookmaker: string | null | undefined, isVoid: boolean = false): string {
+function formatBookmakerDisplay(bookmaker: string | null | undefined, isVoid: boolean = false, isParlay: boolean = false): string {
   // For void bets, show N/A instead of Unknown
   if (isVoid) {
     return 'N/A';
@@ -140,14 +155,22 @@ function formatBookmakerDisplay(bookmaker: string | null | undefined, isVoid: bo
   
   const entries = extractBookmakerEntries(bookmaker);
   if (entries.length === 0) {
-    return 'Unknown';
+    // For parlays, show "PARLAY" instead of "Unknown"
+    return isParlay ? 'PARLAY' : 'Unknown';
   }
 
   const displayNames = entries
     .map((entry) => getBookmakerDisplayName(entry))
     .filter((name, index, arr) => name && arr.indexOf(name) === index);
 
-  return displayNames.length > 0 ? displayNames.join(', ') : 'Unknown';
+  const result = displayNames.length > 0 ? displayNames.join(', ') : 'Unknown';
+  
+  // For parlays, if it's "Unknown" or "Manual Entry", show "PARLAY"
+  if (isParlay && (result === 'Unknown' || result === 'Manual Entry')) {
+    return 'PARLAY';
+  }
+
+  return result;
 }
 
 // Helper function to capitalize player names properly
@@ -200,6 +223,35 @@ function parseParlayLegs(selectionText: string): Array<{
   }
   
   return parsedLegs;
+}
+
+// Helper function to check if a bet was created today (kept for potential future use)
+function isBetCreatedToday(createdAt: string): boolean {
+  if (!createdAt) return false;
+  const betDate = new Date(createdAt);
+  const today = new Date();
+  return (
+    betDate.getDate() === today.getDate() &&
+    betDate.getMonth() === today.getMonth() &&
+    betDate.getFullYear() === today.getFullYear()
+  );
+}
+
+// Helper function to format stat type for display
+function formatStatType(statType: string | null | undefined): string {
+  if (!statType) return '';
+  const statMap: Record<string, string> = {
+    'pts': 'PTS',
+    'reb': 'REB',
+    'ast': 'AST',
+    'stl': 'STL',
+    'blk': 'BLK',
+    'fg3m': '3PM',
+    'pr': 'PR',
+    'pra': 'PRA',
+    'ra': 'RA',
+  };
+  return statMap[statType.toLowerCase()] || statType.toUpperCase();
 }
 
 function JournalContent() {
@@ -1857,11 +1909,26 @@ function JournalContent() {
                                 {legCount} leg Parlay
                               </div>
                               <div className="text-[9px] md:text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5">
-                                {parlayLegs.map((leg, index) => (
-                                  <div key={index} className="break-words">
-                                    {leg.playerName} {leg.overUnder} {leg.line} {leg.statName}
-                                  </div>
-                                ))}
+                                {parlayLegs.map((leg, index) => {
+                                  // Get individual leg result from parlay_legs if available
+                                  const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs[index];
+                                  const legWon = storedLeg && typeof storedLeg.won === 'boolean' 
+                                    ? storedLeg.won 
+                                    : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
+                                  const legVoid = storedLeg?.void === true;
+                                  const showLegIndicators = bet.result !== 'pending' && bet.result !== 'void' && !legVoid && legWon !== null;
+                                  
+                                  return (
+                                    <div key={index} className="break-words flex items-center gap-1">
+                                      {showLegIndicators && (
+                                        <span className={`flex-shrink-0 ${legWon ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                          {legWon ? '✓' : '✗'}
+                                        </span>
+                                      )}
+                                      <span>{leg.playerName} {leg.overUnder} {leg.line} {leg.statName}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </>
                           ) : (
@@ -1869,7 +1936,14 @@ function JournalContent() {
                           )}
                           <div className="flex items-center justify-between text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 flex-wrap gap-1">
                             <span className="break-words">Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
-                            <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
+                            <div className="flex flex-col items-end">
+                              <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
+                              {!isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'pending' && bet.result !== 'void' && bet.stat_type && (
+                                <span className="text-[10px] md:text-xs font-medium text-white dark:text-white mt-0.5">
+                                  Total: {bet.actual_value.toFixed(1)} {formatStatType(bet.stat_type)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {(bet.market || bet.opponent) && (
                             <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-500 break-words">
@@ -1877,7 +1951,7 @@ function JournalContent() {
                             </div>
                           )}
                           <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400">
-                            Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void')}</span>
+                            Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void', isParlay)}</span>
                           </div>
                         </div>
                       );
@@ -2528,11 +2602,26 @@ function JournalContent() {
                           {legCount} leg Parlay
                         </div>
                         <div className="text-xs text-slate-700 dark:text-slate-300 space-y-0.5 mb-1">
-                          {parlayLegs.map((leg, index) => (
-                            <div key={index} className="break-words">
-                              {leg.playerName} {leg.overUnder} {leg.line} {leg.statName}
-                            </div>
-                          ))}
+                          {parlayLegs.map((leg, index) => {
+                            // Get individual leg result from parlay_legs if available
+                            const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs[index];
+                            const legWon = storedLeg && typeof storedLeg.won === 'boolean' 
+                              ? storedLeg.won 
+                              : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
+                            const legVoid = storedLeg?.void === true;
+                            const showLegIndicators = bet.result !== 'pending' && bet.result !== 'void' && !legVoid && legWon !== null;
+                            
+                            return (
+                              <div key={index} className="break-words flex items-center gap-1.5">
+                                {showLegIndicators && (
+                                  <span className={`flex-shrink-0 font-bold ${legWon ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {legWon ? '✓' : '✗'}
+                                  </span>
+                                )}
+                                <span>{leg.playerName} {leg.overUnder} {leg.line} {leg.statName}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     ) : (
@@ -2540,7 +2629,14 @@ function JournalContent() {
                     )}
                     <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                       <span>Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
-                      <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
+                      <div className="flex flex-col items-end">
+                        <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
+                        {!isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'pending' && bet.result !== 'void' && bet.stat_type && (
+                          <span className="text-sm font-medium text-white dark:text-white mt-0.5">
+                            Total: {bet.actual_value.toFixed(1)} {formatStatType(bet.stat_type)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {(bet.market || bet.opponent) && (
                       <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">
