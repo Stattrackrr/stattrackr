@@ -10116,3 +10116,69 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Mon 08/12/2025 22:18:39.45] warm-rosters end (exit 0) 
+[Mon 08/12/2025 22:48:36.68] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251208&window_min=180
+{
+    "success":  true,
+    "date":  "20251208",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 08/12/2025 22:48:39.38] warm-rosters end (exit 0) 
+[Mon 08/12/2025 23:18:36.69] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251208&window_min=180
+{
+    "success":  true,
+    "date":  "20251208",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 08/12/2025 23:18:39.37] warm-rosters end (exit 0) 
+[Mon 08/12/2025 23:48:36.68] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251208&window_min=180
+{
+    "success":  true,
+    "date":  "20251208",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 08/12/2025 23:48:39.17] warm-rosters end (exit 0) 
+[Tue 09/12/2025  0:18:36.71] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251209&window_min=180
+{
+    "success":  true,
+    "date":  "20251209",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 09/12/2025  0:18:39.49] warm-rosters end (exit 0) 
+[Tue 09/12/2025  0:48:36.71] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251209&window_min=180
+{
+    "success":  true,
+    "date":  "20251209",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 09/12/2025  0:48:39.47] warm-rosters end (exit 0) 
+[Tue 09/12/2025  1:18:36.68] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251209&window_min=180
+{
+    "success":  true,
+    "date":  "20251209",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 09/12/2025  1:18:39.42] warm-rosters end (exit 0) 
