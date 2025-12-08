@@ -11080,7 +11080,7 @@ const lineMovementInFlightRef = useRef(false);
         // 3. Season average (baseline)
         const seasonAvg = validValues.reduce((sum: number, val: number) => sum + val, 0) / validValues.length;
         
-        // 4. DvP adjustment - fetch how opponent defends vs player's position
+        // 4. DvP adjustment - use rankings for more impactful adjustments
         let dvpAdjustment = 0;
         if (normalizedOpponent && selectedPosition) {
           try {
@@ -11098,20 +11098,39 @@ const lineMovementInFlightRef = useRef(false);
             };
             const metric = statToMetric[selectedStat] || selectedStat;
             
-            const dvpResponse = await cachedFetch(
-              `/api/dvp?team=${normalizedOpponent}&metric=${metric}&position=${selectedPosition}`,
+            // Fetch DvP rank (1-30, where 1 is best defense, 30 is worst)
+            const dvpRankResponse = await cachedFetch(
+              `/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${metric}&games=82`,
               undefined,
               120000 // 2 minute cache
             );
-            if (dvpResponse?.success && dvpResponse?.perGame !== null && Number.isFinite(dvpResponse.perGame)) {
-              // DvP perGame is what opponent allows - compare to league average
-              // If opponent allows more, it's good for the player (positive adjustment)
-              // If opponent allows less, it's bad for the player (negative adjustment)
-              const leagueAvg = seasonAvg; // Use season avg as proxy for league avg
-              dvpAdjustment = (dvpResponse.perGame - leagueAvg) * 0.1; // 10% weight on DvP difference (further reduced)
+            
+            if (dvpRankResponse?.metrics?.[metric]) {
+              // Get the rank for this specific team
+              const ranks = dvpRankResponse.metrics[metric];
+              const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
+              
+              // If we have a rank, apply tiered adjustments
+              if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
+                // Rank 1-10: Very good defense (lower prediction)
+                if (teamRank <= 10) {
+                  // Strong negative adjustment: -2 to -4 points based on rank (1 = -4, 10 = -2)
+                  dvpAdjustment = -2 - ((10 - teamRank) / 10) * 2;
+                }
+                // Rank 11-20: Medium defense (small adjustment)
+                else if (teamRank <= 20) {
+                  // Small adjustment: -1 to +1 points based on rank (11 = -1, 20 = +1)
+                  dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
+                }
+                // Rank 21-30: Bad defense (raise prediction)
+                else {
+                  // Positive adjustment: +2 to +4 points based on rank (21 = +2, 30 = +4)
+                  dvpAdjustment = 2 + ((teamRank - 21) / 9) * 2;
+                }
+              }
             }
           } catch (dvpError) {
-            console.warn('Failed to fetch DvP data for prediction:', dvpError);
+            console.warn('Failed to fetch DvP rank data for prediction:', dvpError);
           }
         }
         
@@ -11163,6 +11182,19 @@ const lineMovementInFlightRef = useRef(false);
         predictedValue += dvpAdjustment;
         predictedValue += advancedStatsAdjustment;
         
+        // Get market probabilities from calculatedImpliedOdds (which only uses real lines)
+        const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
+        const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
+        
+        // Blend with bookmaker implied odds to "level it out" (30% market influence)
+        // This helps align our predictions with market consensus
+        let finalPredictedValue = predictedValue;
+        if (marketOverProb !== null && marketUnderProb !== null && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine)) {
+          // The market line already reflects market consensus, so we blend our prediction 70% with market line 30%
+          // This pulls our prediction closer to market when there's a big discrepancy
+          finalPredictedValue = predictedValue * 0.7 + predictionLine * 0.3;
+        }
+        
         // Calculate standard deviation from all historical data
         const variance = validValues.reduce((sum: number, val: number) => {
           const diff = val - seasonAvg;
@@ -11171,9 +11203,9 @@ const lineMovementInFlightRef = useRef(false);
         const stdDev = Math.sqrt(variance);
         const adjustedStdDev = Math.max(stdDev, 2);
         
-        if (Number.isFinite(predictedValue) && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
-          // Calculate z-score using the predicted value (not season avg)
-          const zScore = (predictionLine - predictedValue) / adjustedStdDev;
+        if (Number.isFinite(finalPredictedValue) && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
+          // Calculate z-score using the final predicted value (blended with market)
+          const zScore = (predictionLine - finalPredictedValue) / adjustedStdDev;
           
           // Use normal distribution CDF to calculate probability
           const underProb = normalCDF(zScore) * 100;
@@ -11182,10 +11214,6 @@ const lineMovementInFlightRef = useRef(false);
           // Clamp probabilities between 0-100
           const clampedOverProb = Math.max(0, Math.min(100, overProb));
           const clampedUnderProb = Math.max(0, Math.min(100, underProb));
-          
-          // Get market probabilities from calculatedImpliedOdds (which only uses real lines)
-          const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
-          const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
           
           const isOver = clampedOverProb >= 50;
           const statProb = isOver ? clampedOverProb : clampedUnderProb;
