@@ -8125,14 +8125,14 @@ const lineMovementInFlightRef = useRef(false);
     fetchTeamMatchupStats();
   }, [propsMode, gamePropsTeam, selectedTeam, opponentTeam]);
 
-  // Function to fetch a single team's depth chart
+  // Function to fetch a single team's depth chart (with caching to prevent rate limits)
   const fetchTeamDepthChart = async (team: string): Promise<DepthChartData | null> => {
     try {
       if (!team || team === 'N/A') return null;
       const url = `/api/depth-chart?team=${encodeURIComponent(team)}`;
-      const res = await fetch(url);
-      const js = await res.json().catch(() => ({}));
-      if (!res.ok) return null;
+      // Use cachedFetch to prevent duplicate requests and respect rate limits
+      const js = await cachedFetch(url, undefined, 300000); // Cache for 5 minutes
+      if (!js || !js.success) return null;
       return js?.depthChart as DepthChartData | null;
     } catch (error) {
       console.warn(`Failed to fetch depth chart for ${team}:`, error);
