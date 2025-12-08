@@ -11227,11 +11227,78 @@ const lineMovementInFlightRef = useRef(false);
             confidence = absEdge >= 12 ? 'High' : absEdge >= 6 ? 'Medium' : 'Low';
           }
           
-          // Calculate Expected Value (EV)
+          // Calculate Expected Value (EV) using actual betting odds
+          // EV = (Probability × Decimal Odds - 1) × 100
           let expectedValue: number | null = null;
           
-          if (marketProb !== null && marketProb > 0 && marketProb <= 100) {
-            // EV = (StatTrackr Probability / Market Implied Probability - 1) × 100
+          // Get the actual odds for the bet (over or under)
+          const bookRowKey = getBookRowKey(selectedStat);
+          if (bookRowKey && realOddsData && realOddsData.length > 0 && predictionLine !== null && predictionLine !== undefined) {
+            // Find the best odds for the primary market line (consensus line)
+            let bestOverOdds: number | null = null;
+            let bestUnderOdds: number | null = null;
+            
+            for (const book of realOddsData) {
+              const statData = (book as any)[bookRowKey];
+              if (!statData || statData.line === 'N/A') continue;
+              
+              const lineValue = parseFloat(statData.line);
+              if (isNaN(lineValue)) continue;
+              
+              // Only use real lines (not alt lines) - check if it matches primary market line
+              const meta = (book as any)?.meta;
+              if (meta?.variantLabel) continue; // Skip alt lines
+              
+              // Check if this line matches the primary market line (within 0.1)
+              if (Math.abs(lineValue - predictionLine) < 0.1) {
+                // Parse over odds
+                if (statData.over && statData.over !== 'N/A') {
+                  const overOddsStr = statData.over;
+                  const overOdds = typeof overOddsStr === 'string' 
+                    ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, ''))
+                    : parseFloat(String(overOddsStr));
+                  if (Number.isFinite(overOdds) && (bestOverOdds === null || overOdds > bestOverOdds)) {
+                    bestOverOdds = overOdds;
+                  }
+                }
+                
+                // Parse under odds
+                if (statData.under && statData.under !== 'N/A') {
+                  const underOddsStr = statData.under;
+                  const underOdds = typeof underOddsStr === 'string'
+                    ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, ''))
+                    : parseFloat(String(underOddsStr));
+                  if (Number.isFinite(underOdds) && (bestUnderOdds === null || underOdds > bestUnderOdds)) {
+                    bestUnderOdds = underOdds;
+                  }
+                }
+              }
+            }
+            
+            // Calculate EV using the best odds
+            if (isOver && bestOverOdds !== null) {
+              // Convert American odds to decimal odds
+              const decimalOdds = bestOverOdds > 0 
+                ? (bestOverOdds / 100) + 1 
+                : (100 / Math.abs(bestOverOdds)) + 1;
+              
+              // EV = (Probability × Decimal Odds - 1) × 100
+              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
+            } else if (!isOver && bestUnderOdds !== null) {
+              // Convert American odds to decimal odds
+              const decimalOdds = bestUnderOdds > 0 
+                ? (bestUnderOdds / 100) + 1 
+                : (100 / Math.abs(bestUnderOdds)) + 1;
+              
+              // EV = (Probability × Decimal Odds - 1) × 100
+              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
+            }
+          }
+          
+          // Fallback: if we can't get actual odds, use implied probability method
+          if (expectedValue === null && marketProb !== null && marketProb > 0 && marketProb <= 100) {
+            // This is a rough approximation using implied probability
+            // EV ≈ (StatTrackr Probability / Market Implied Probability - 1) × 100
             expectedValue = (statProb / marketProb - 1) * 100;
           }
           
@@ -11261,6 +11328,7 @@ const lineMovementInFlightRef = useRef(false);
     opponentTeam, // For H2H calculation
     selectedPosition, // For DvP calculation
     advancedStats, // For advanced stats adjustment
+    realOddsData, // For EV calculation (actual odds)
   ]);
 
   return (
