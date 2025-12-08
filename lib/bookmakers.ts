@@ -1,27 +1,32 @@
 // Bookmaker display names and logos
+// Using Google's favicon service as it's more reliable than Clearbit in production
+const getLogoUrl = (domain: string): string => {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+};
+
 export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUrl?: string; color: string }> = {
   'draftkings': {
     name: 'DraftKings',
     logo: 'DK',
-    logoUrl: 'https://logo.clearbit.com/draftkings.com',
+    logoUrl: getLogoUrl('draftkings.com'),
     color: '#53D337',
   },
   'fanduel': {
     name: 'FanDuel',
     logo: 'FD',
-    logoUrl: 'https://logo.clearbit.com/fanduel.com',
+    logoUrl: getLogoUrl('fanduel.com'),
     color: '#0070EB',
   },
   'betmgm': {
     name: 'BetMGM',
     logo: 'MGM',
-    logoUrl: 'https://logo.clearbit.com/betmgm.com',
+    logoUrl: getLogoUrl('betmgm.com'),
     color: '#C5A572',
   },
   'caesars': {
     name: 'Caesars',
     logo: 'CZR',
-    logoUrl: 'https://logo.clearbit.com/caesars.com',
+    logoUrl: getLogoUrl('caesars.com'),
     color: '#002855',
   },
   'betonlineag': {
@@ -45,103 +50,103 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betrivers': {
     name: 'BetRivers',
     logo: 'BR',
-    logoUrl: 'https://logo.clearbit.com/betrivers.com',
+    logoUrl: getLogoUrl('betrivers.com'),
     color: '#0054A6',
   },
   'betus': {
     name: 'BetUS',
     logo: 'BU',
-    logoUrl: 'https://logo.clearbit.com/betus.com',
+    logoUrl: getLogoUrl('betus.com'),
     color: '#1E4E8C',
   },
   'bovada': {
     name: 'Bovada',
     logo: 'BV',
-    logoUrl: 'https://logo.clearbit.com/bovada.lv',
+    logoUrl: getLogoUrl('bovada.lv'),
     color: '#C8102E',
   },
   'fanatics': {
     name: 'Fanatics',
     logo: 'FN',
-    logoUrl: 'https://logo.clearbit.com/fanatics.com',
+    logoUrl: getLogoUrl('fanatics.com'),
     color: '#011E41',
   },
   'fanatics sportsbook': {
     name: 'Fanatics',
     logo: 'FN',
-    logoUrl: 'https://logo.clearbit.com/fanatics.com',
+    logoUrl: getLogoUrl('fanatics.com'),
     color: '#011E41',
   },
   'fanatics betting and gaming': {
     name: 'Fanatics',
     logo: 'FN',
-    logoUrl: 'https://logo.clearbit.com/fanatics.com',
+    logoUrl: getLogoUrl('fanatics.com'),
     color: '#011E41',
   },
   'lowvig': {
     name: 'LowVig.ag',
     logo: 'LV',
-    logoUrl: 'https://logo.clearbit.com/lowvig.ag',
+    logoUrl: getLogoUrl('lowvig.ag'),
     color: '#0E7F7F',
   },
   'lowvig.ag': {
     name: 'LowVig.ag',
     logo: 'LV',
-    logoUrl: 'https://logo.clearbit.com/lowvig.ag',
+    logoUrl: getLogoUrl('lowvig.ag'),
     color: '#0E7F7F',
   },
   'mybookieag': {
     name: 'MyBookie.ag',
     logo: 'MB',
-    logoUrl: 'https://logo.clearbit.com/mybookie.ag',
+    logoUrl: getLogoUrl('mybookie.ag'),
     color: '#F26522',
   },
   'mybookie.ag': {
     name: 'MyBookie.ag',
     logo: 'MB',
-    logoUrl: 'https://logo.clearbit.com/mybookie.ag',
+    logoUrl: getLogoUrl('mybookie.ag'),
     color: '#F26522',
   },
   'betrivers sportsbook': {
     name: 'BetRivers',
     logo: 'BR',
-    logoUrl: 'https://logo.clearbit.com/betrivers.com',
+    logoUrl: getLogoUrl('betrivers.com'),
     color: '#0054A6',
   },
   'pointsbet': {
     name: 'PointsBet',
     logo: 'PB',
-    logoUrl: 'https://logo.clearbit.com/pointsbet.com',
+    logoUrl: getLogoUrl('pointsbet.com'),
     color: '#EE3124',
   },
   'bet365': {
     name: 'Bet365',
     logo: '365',
-    logoUrl: 'https://logo.clearbit.com/bet365.com',
+    logoUrl: getLogoUrl('bet365.com'),
     color: '#1C6E38',
   },
   'unibet': {
     name: 'Unibet',
     logo: 'UB',
-    logoUrl: 'https://logo.clearbit.com/unibet.com',
+    logoUrl: getLogoUrl('unibet.com'),
     color: '#43B649',
   },
   'foxbet': {
     name: 'FOX Bet',
     logo: 'FB',
-    logoUrl: 'https://logo.clearbit.com/foxbet.com',
+    logoUrl: getLogoUrl('foxbet.com'),
     color: '#003F87',
   },
   'williamhill': {
     name: 'William Hill',
     logo: 'WH',
-    logoUrl: 'https://logo.clearbit.com/williamhill.com',
+    logoUrl: getLogoUrl('williamhill.com'),
     color: '#00A3DA',
   },
   'pick6': {
     name: 'DraftKings Pick6',
     logo: 'P6',
-    logoUrl: 'https://logo.clearbit.com/draftkings.com',
+    logoUrl: getLogoUrl('draftkings.com'),
     color: '#53D337',
   },
   'prizepicks': {
@@ -165,25 +170,25 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betway': {
     name: 'Betway',
     logo: 'BW',
-    logoUrl: 'https://logo.clearbit.com/betway.com',
+    logoUrl: getLogoUrl('betway.com'),
     color: '#FFCC00',
   },
   'ballybet': {
     name: 'Bally Bet',
     logo: 'BB',
-    logoUrl: 'https://logo.clearbit.com/ballybet.com',
+    logoUrl: getLogoUrl('ballybet.com'),
     color: '#E31E24',
   },
   'betparx': {
     name: 'BetPARX',
     logo: 'BP',
-    logoUrl: 'https://logo.clearbit.com/betparx.com',
+    logoUrl: getLogoUrl('betparx.com'),
     color: '#00A651',
   },
   'rebet': {
     name: 'ReBet',
     logo: 'RB',
-    logoUrl: 'https://logo.clearbit.com/rebet.com',
+    logoUrl: getLogoUrl('rebet.com'),
     color: '#6B7280',
   },
 };

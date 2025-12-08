@@ -3148,14 +3148,17 @@ const ChartControls = function ChartControls({
                           src={bookmakerInfo.logoUrl} 
                           alt={bookmakerInfo.name}
                           className="w-5 h-5 rounded object-contain flex-shrink-0"
-                          onError={(e) => {
+                            onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                             const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'block';
+                            if (fallback) fallback.style.display = 'flex';
                           }}
                         />
                       ) : null}
-                      <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                      <span 
+                        className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${!bookmakerInfo.logoUrl ? 'flex' : 'hidden'}`}
+                        style={{ backgroundColor: bookmakerInfo.color }}
+                      >
                         {bookmakerInfo.logo}
                       </span>
                       
@@ -3464,14 +3467,17 @@ const ChartControls = function ChartControls({
                               src={bookmakerInfo.logoUrl} 
                               alt={bookmakerInfo.name}
                               className="w-6 h-6 sm:w-7 sm:h-7 rounded object-contain flex-shrink-0"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                if (fallback) fallback.style.display = 'block';
-                              }}
+                            onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
                             />
                           ) : null}
-                          <span className={`text-base sm:text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                          <span 
+                            className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${!bookmakerInfo.logoUrl ? 'flex' : 'hidden'}`}
+                            style={{ backgroundColor: bookmakerInfo.color }}
+                          >
                             {bookmakerInfo.logo}
                           </span>
                           {/* Show Goblin/Demon symbol inline with logo for PrizePicks */}
@@ -3686,14 +3692,17 @@ const ChartControls = function ChartControls({
                           src={bookmakerInfo.logoUrl} 
                           alt={bookmakerInfo.name}
                           className="w-5 h-5 rounded object-contain flex-shrink-0"
-                          onError={(e) => {
+                            onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                             const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'block';
+                            if (fallback) fallback.style.display = 'flex';
                           }}
                         />
                       ) : null}
-                      <span className={`text-lg flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
+                      <span 
+                        className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${!bookmakerInfo.logoUrl ? 'flex' : 'hidden'}`}
+                        style={{ backgroundColor: bookmakerInfo.color }}
+                      >
                         {bookmakerInfo.logo}
                       </span>
                       
@@ -4002,11 +4011,11 @@ const ChartControls = function ChartControls({
                                   src={bookmakerInfo.logoUrl} 
                                   alt={bookmakerInfo.name}
                                   className="w-6 h-6 rounded object-contain flex-shrink-0"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                    if (fallback) fallback.style.display = 'block';
-                                  }}
+                            onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
                                 />
                               ) : null}
                               <span className={`text-base flex-shrink-0 ${!bookmakerInfo.logoUrl ? '' : 'hidden'}`}>
@@ -4149,11 +4158,17 @@ const ChartControls = function ChartControls({
                               className="w-5 h-5 rounded object-contain flex-shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
+                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
                               }}
                             />
-                          ) : (
-                            <span className="text-sm">{bookmakerInfo?.logo || ''}</span>
-                          )}
+                          ) : null}
+                          <span 
+                            className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${!bookmakerInfo?.logoUrl ? 'flex' : 'hidden'}`}
+                            style={{ backgroundColor: bookmakerInfo?.color || '#6B7280' }}
+                          >
+                            {bookmakerInfo?.logo || ''}
+                          </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs sm:text-sm font-mono text-blue-600 dark:text-blue-400">
                               Home {fmtOdds(displayBookmaker.over)}
