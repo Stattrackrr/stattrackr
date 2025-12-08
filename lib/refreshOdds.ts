@@ -3,6 +3,7 @@ import cache, { CACHE_TTL } from './cache';
 import { setNBACache } from './nbaCache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
 import { createClient } from '@supabase/supabase-js';
+import { getPlayerNameFromMapping } from './playerIdMapping';
 
 // Validate required environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,8 +28,8 @@ const supabaseAdmin = createClient(
   }
 );
 
-// Store all odds data in a single cache entry
-const ODDS_CACHE_KEY = 'all_nba_odds';
+// Store all odds data in a single cache entry (versioned to avoid old The Odds API cache)
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 // Temporary flag to disable line movement + odds snapshots (reduces Supabase size)
 const LINE_MOVEMENT_ENABLED = process.env.ENABLE_LINE_MOVEMENT === 'true';
@@ -277,47 +278,9 @@ async function saveLineMovementState(movementSnapshots: MovementSnapshot[]) {
   }
 }
 
-// Allowed bookmakers for odds snapshots and general filtering (to reduce database size and API calls)
-// Only these bookmakers will be included - all others are excluded
-const ALLOWED_BOOKMAKERS = [
-  'draftkings',
-  'fanduel',
-  'prizepicks',
-  'prize picks', // Handle space variation
-  'underdog',
-  'underdog fantasy',
-  'fanatics',
-  'fanatics sportsbook', // Handle full name variation
-  'fanatics betting and gaming', // Handle full name variation
-  'caesars',
-];
-
-// The Odds API bookmaker codes (used in the API request)
-// These are the exact codes The Odds API expects
-const ODDS_API_BOOKMAKER_CODES = [
-  'draftkings',
-  'fanduel',
-  'prizepicks',
-  'underdog',
-  'fanatics',
-  'caesars',
-].join(','); // Comma-separated for API parameter
-
-/**
- * Normalize bookmaker name and check if it's in the allowed list
- * Handles variations in naming (case, spaces, punctuation)
- */
-function isAllowedBookmaker(bookmakerName: string): boolean {
-  if (!bookmakerName) return false;
-  
-  const normalized = bookmakerName.toLowerCase().trim().replace(/[.\s]/g, '');
-  
-  return ALLOWED_BOOKMAKERS.some(allowed => {
-    const normalizedAllowed = allowed.toLowerCase().trim().replace(/[.\s]/g, '');
-    return normalized === normalizedAllowed || 
-           normalized.includes(normalizedAllowed) ||
-           normalizedAllowed.includes(normalized);
-  });
+// Allow all vendors provided by BDL (including sportsbooks and pick'em)
+function isAllowedBookmaker(_bookmakerName: string): boolean {
+  return true;
 }
 
 async function saveOddsSnapshots(games: GameOdds[]) {
@@ -434,8 +397,8 @@ async function saveOddsSnapshots(games: GameOdds[]) {
 }
 
 /**
- * Fetch all NBA odds from The Odds API
- * This function is called by the scheduler and the API route
+ * Fetch all NBA odds from BallDontLie (BDL) V2 odds endpoints
+ * This replaces The Odds API integration.
  */
 type RefreshSource =
   | 'scheduler'
@@ -447,111 +410,324 @@ type RefreshSource =
 
 let ongoingRefresh: Promise<OddsCache | null> | null = null;
 
+type BdlOddsRow = {
+  id: number;
+  game_id: number;
+  vendor: string;
+  spread_home_value: string | null;
+  spread_home_odds: number | null;
+  spread_away_value: string | null;
+  spread_away_odds: number | null;
+  moneyline_home_odds: number | null;
+  moneyline_away_odds: number | null;
+  total_value: string | null;
+  total_over_odds: number | null;
+  total_under_odds: number | null;
+  updated_at: string;
+};
+
+type BdlGame = {
+  id: number;
+  date: string;
+  home_team: { abbreviation?: string; full_name?: string; name?: string };
+  visitor_team: { abbreviation?: string; full_name?: string; name?: string };
+};
+
+type BdlPlayerProp = {
+  id: number;
+  game_id: number;
+  player_id: number;
+  vendor: string;
+  prop_type: string;
+  line_value: string;
+  market: {
+    type: 'over_under' | 'milestone';
+    over_odds?: number;
+    under_odds?: number;
+    odds?: number;
+  };
+  updated_at: string;
+};
+
+const BDL_BASE_V2 = 'https://api.balldontlie.io/v2';
+const BDL_BASE_V1 = 'https://api.balldontlie.io/v1'; // games endpoint still v1
+
+const bdlAuthHeader = (() => {
+  const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+  return apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
+})();
+
+const BDL_PER_PAGE = 100;
+
+async function fetchAllPages<T>(baseUrl: string, path: string, params: URLSearchParams): Promise<T[]> {
+  let cursor: string | null = null;
+  const results: T[] = [];
+
+  do {
+    const search = new URLSearchParams(params);
+    search.set('per_page', String(BDL_PER_PAGE));
+    if (cursor) search.set('cursor', cursor);
+
+    const url = `${baseUrl}${path}?${search.toString()}`;
+    const resp = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': bdlAuthHeader,
+      },
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`BDL fetch failed (${path}): ${resp.status} ${text}`);
+    }
+    const json = await resp.json();
+    const data: T[] = json?.data || [];
+    results.push(...data);
+    cursor = json?.meta?.next_cursor || null;
+  } while (cursor);
+
+  return results;
+}
+
+async function fetchGamesForDates(dateStrings: string[]): Promise<BdlGame[]> {
+  const params = new URLSearchParams();
+  dateStrings.forEach(d => params.append('dates[]', d));
+  // Games are on v1
+  return fetchAllPages<BdlGame>(BDL_BASE_V1, '/games', params);
+}
+
+async function fetchOddsForDates(dateStrings: string[]): Promise<BdlOddsRow[]> {
+  const params = new URLSearchParams();
+  dateStrings.forEach(d => params.append('dates[]', d));
+  return fetchAllPages<BdlOddsRow>(BDL_BASE_V2, '/odds', params);
+}
+
+async function fetchPropsForGame(gameId: number): Promise<BdlPlayerProp[]> {
+  const params = new URLSearchParams();
+  params.set('game_id', String(gameId));
+  return fetchAllPages<BdlPlayerProp>(BDL_BASE_V2, '/odds/player_props', params);
+}
+
+function getDateStringsNext24h(): string[] {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return [today, tomorrow];
+}
+
+function normalizeTeamName(team: { abbreviation?: string; full_name?: string; name?: string } | null | undefined): string {
+  if (!team) return 'N/A';
+  return team.abbreviation || team.full_name || team.name || 'N/A';
+}
+
+function mapPropTypeToStatKey(propType: string): string | null {
+  const map: Record<string, string> = {
+    points: 'PTS',
+    rebounds: 'REB',
+    assists: 'AST',
+    threes: 'THREES',
+    blocks: 'BLK',
+    steals: 'STL',
+    turnovers: 'TO',
+    points_rebounds_assists: 'PRA',
+    points_rebounds: 'PR',
+    points_assists: 'PA',
+    rebounds_assists: 'RA',
+    double_double: 'DD',
+    triple_double: 'TD',
+    points_first3min: 'PTS', // best-effort mapping
+    rebounds_first3min: 'REB',
+    assists_first3min: 'AST',
+    points_1q: 'PTS',
+    rebounds_1q: 'REB',
+    assists_1q: 'AST',
+    points_assists: 'PA',
+    points_rebounds: 'PR',
+    points_rebounds_assists: 'PRA',
+    rebounds_assists: 'RA',
+  };
+  return map[propType] || null;
+}
+
+function buildMilestoneEntry(line: string, odds: number | string | null): { line: string; over: string; under: string; variantLabel: string; isMilestone: boolean } {
+  const price = odds === null || odds === undefined ? 'N/A' : formatOddsPrice(odds, 'milestone');
+  return {
+    line,
+    over: price,
+    under: 'N/A',
+    variantLabel: 'Milestone',
+    isMilestone: true,
+  };
+}
+
+async function fetchPlayerPropsForGames(gameIds: number[], concurrency = 6): Promise<BdlPlayerProp[]> {
+  const results: BdlPlayerProp[] = [];
+  let index = 0;
+
+  async function worker() {
+    while (index < gameIds.length) {
+      const current = gameIds[index++];
+      try {
+        const props = await fetchPropsForGame(current);
+        results.push(...props);
+      } catch (err) {
+        console.warn(`⚠️ Failed to fetch props for game ${current}:`, err);
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, gameIds.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
 export async function refreshOddsData(
   options: { source: RefreshSource } = { source: 'scheduler' }
 ) {
-  const ODDS_API_KEY = process.env.ODDS_API_KEY;
+  const bdlApiKeyPresent = !!bdlAuthHeader;
   
-  if (!ODDS_API_KEY) {
-    throw new Error('Odds API key not configured');
+  if (!bdlApiKeyPresent) {
+    throw new Error('BallDontLie API key not configured');
   }
 
-    console.log(`🔄 Starting bulk odds refresh... (source: ${options.source})`);
+  console.log(`🔄 Starting BDL odds refresh... (source: ${options.source})`);
   const startTime = Date.now();
-  
+  const dates = getDateStringsNext24h();
+
   try {
-    // Fetch all NBA games with game odds (H2H, spreads, totals)
-    // Filter bookmakers at API level to reduce data and API calls
-    const gamesUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds`;
-    const baseRegions = process.env.ODDS_REGIONS || 'us,us_dfs';
-    const gamesParams = new URLSearchParams({
-      apiKey: ODDS_API_KEY,
-      regions: baseRegions,
-      markets: 'h2h,spreads,totals',
-      oddsFormat: 'american',
-      dateFormat: 'iso',
-      bookmakers: ODDS_API_BOOKMAKER_CODES, // Filter at API level
-    });
+    // 1) Fetch odds (spreads/ML/totals) for next 24h
+    const oddsRows = await fetchOddsForDates(dates);
+    const gameIds = Array.from(new Set(oddsRows.map(o => o.game_id)));
 
-    const gamesResponse = await fetch(`${gamesUrl}?${gamesParams}`);
-    const gamesData = await gamesResponse.json();
+    // 2) Fetch games to map game_id -> teams/date
+    const gamesData = await fetchGamesForDates(dates);
+    const gameMap = new Map<number, BdlGame>();
+    for (const g of gamesData) gameMap.set(g.id, g);
 
-    if (!gamesResponse.ok) {
-      throw new Error(`Odds API error: ${gamesData.message || 'Unknown error'}`);
+    // 3) Fetch player props for those games
+    const playerProps = await fetchPlayerPropsForGames(gameIds);
+
+    // 4) Transform into our GameOdds structure
+    const games: GameOdds[] = [];
+
+    const oddsByGame = new Map<number, BdlOddsRow[]>();
+    for (const row of oddsRows) {
+      if (!oddsByGame.has(row.game_id)) oddsByGame.set(row.game_id, []);
+      oddsByGame.get(row.game_id)!.push(row);
     }
 
-    // Fetch player props for games starting soon (default: next 20 hours)
-    const now = new Date();
-    const propsWindowHours = Number(process.env.ODDS_PROPS_WINDOW_HOURS || '20');
-    const cutoffTime = new Date(now.getTime() + propsWindowHours * 60 * 60 * 1000);
-    
-    const upcomingGames = gamesData.filter((game: any) => {
-      const gameTime = new Date(game.commence_time);
-      return gameTime >= now && gameTime <= cutoffTime;
-    });
-    
-    console.log(`📊 Fetching player props for ${upcomingGames.length}/${gamesData.length} games (next ${propsWindowHours}h)`);
-    console.log(`⏰ Cutoff: ${cutoffTime.toLocaleString()}`);
-    if (upcomingGames.length > 0) {
-      console.log(`🏀 Sample games: ${upcomingGames.slice(0, 3).map((g: any) => `${g.home_team} vs ${g.away_team} at ${new Date(g.commence_time).toLocaleString()}`).join(', ')}`);
+    const propsByGame = new Map<number, BdlPlayerProp[]>();
+    for (const p of playerProps) {
+      if (!propsByGame.has(p.game_id)) propsByGame.set(p.game_id, []);
+      propsByGame.get(p.game_id)!.push(p);
     }
-    
-    // Include standard and alternate markets (DFS pick'em multipliers live in *_alternate keys)
-    const playerPropsMarkets = [
-      // Standard markets
-      'player_points',
-      'player_rebounds',
-      'player_assists',
-      'player_threes',
-      'player_points_rebounds_assists',
-      'player_points_rebounds',
-      'player_points_assists',
-      'player_rebounds_assists',
-      // Alternate (DFS pick’em goblins/demons) markets
-      'player_points_alternate',
-      'player_rebounds_alternate',
-      'player_assists_alternate',
-      'player_threes_alternate',
-      'player_points_rebounds_assists_alternate',
-      'player_points_rebounds_alternate',
-      'player_points_assists_alternate',
-      'player_rebounds_assists_alternate',
-    ].join(',');
-    const playerPropsPromises = upcomingGames.map(async (game: any) => {
-      try {
-        const eventUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/events/${game.id}/odds`;
-        const eventParams = new URLSearchParams({
-          apiKey: ODDS_API_KEY,
-          regions: baseRegions,
-          markets: playerPropsMarkets,
-          oddsFormat: 'american',
-          dateFormat: 'iso',
-          bookmakers: ODDS_API_BOOKMAKER_CODES, // Filter at API level
-        });
-        
-        const response = await fetch(`${eventUrl}?${eventParams}`);
-        if (response.ok) {
-          return await response.json();
+
+    for (const gameId of gameIds) {
+      const oddsList = oddsByGame.get(gameId) || [];
+      const gameInfo = gameMap.get(gameId) || null;
+
+      const gameOdds: GameOdds = {
+        gameId: String(gameId),
+        homeTeam: normalizeTeamName(gameInfo?.home_team),
+        awayTeam: normalizeTeamName(gameInfo?.visitor_team),
+        commenceTime: gameInfo?.date || '',
+        bookmakers: [],
+        playerPropsByBookmaker: {},
+      };
+
+      // Bookmakers for spreads/ML/totals
+      for (const row of oddsList) {
+        const bookRow: any = {
+          name: row.vendor,
+          H2H: { home: 'N/A', away: 'N/A' },
+          Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          BLK: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          STL: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          TO: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          DD: { yes: 'N/A', no: 'N/A' },
+          TD: { yes: 'N/A', no: 'N/A' },
+          PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+          FIRST_BASKET: { yes: 'N/A', no: 'N/A' },
+        };
+
+        if (row.moneyline_home_odds !== null) {
+          bookRow.H2H.home = formatOddsPrice(row.moneyline_home_odds, row.vendor);
         }
-        return null;
-      } catch (error) {
-        console.warn(`Failed to fetch props for game ${game.id}:`, error);
-        return null;
+        if (row.moneyline_away_odds !== null) {
+          bookRow.H2H.away = formatOddsPrice(row.moneyline_away_odds, row.vendor);
+        }
+        if (row.spread_home_value !== null) {
+          bookRow.Spread.line = String(row.spread_home_value);
+          bookRow.Spread.over = formatOddsPrice(row.spread_home_odds, row.vendor);
+          bookRow.Spread.under = formatOddsPrice(row.spread_away_odds, row.vendor);
+        }
+        if (row.total_value !== null) {
+          bookRow.Total.line = String(row.total_value);
+          bookRow.Total.over = formatOddsPrice(row.total_over_odds, row.vendor);
+          bookRow.Total.under = formatOddsPrice(row.total_under_odds, row.vendor);
+        }
+
+        gameOdds.bookmakers.push(bookRow);
       }
-    });
-    
-    const playerPropsResults = await Promise.all(playerPropsPromises);
-    const playerPropsData = playerPropsResults.filter(r => r !== null);
-    console.log(`✅ Player props fetched for ${playerPropsData.length}/${gamesData.length} games`);
-    console.log(`⚠️  Note: Each game with props counts as 1 additional API call`);
-    console.log(`📊 Total API calls: ${1 + playerPropsData.length} (1 games + ${playerPropsData.length} props)`);
-    console.log(`🎯 Filtering bookmakers at API level: ${ODDS_API_BOOKMAKER_CODES}`);
-    
 
-    // Transform the data
-    const games: GameOdds[] = transformOddsData(gamesData, playerPropsData);
+      // Player props
+      const props = propsByGame.get(gameId) || [];
+      for (const prop of props) {
+        const statKey = mapPropTypeToStatKey(prop.prop_type);
+        if (!statKey) continue;
 
-    const nextUpdate = new Date(now.getTime() + CACHE_TTL.ODDS * 60 * 1000);
+        const playerName = getPlayerNameFromMapping(prop.player_id) || `Player ${prop.player_id}`;
+        const bookName = prop.vendor;
+
+        if (!gameOdds.playerPropsByBookmaker[bookName]) {
+          gameOdds.playerPropsByBookmaker[bookName] = {};
+        }
+        if (!gameOdds.playerPropsByBookmaker[bookName][playerName]) {
+          gameOdds.playerPropsByBookmaker[bookName][playerName] = {};
+        }
+
+        const bucket = gameOdds.playerPropsByBookmaker[bookName][playerName] as Record<string, any>;
+
+        const pushEntry = (entry: any) => {
+          const current = bucket[statKey];
+          if (!Array.isArray(current)) {
+            bucket[statKey] = current ? [current] : [];
+          }
+          const list = bucket[statKey] as Array<any>;
+          list.push(entry);
+        };
+
+        if (prop.market?.type === 'over_under') {
+          const over = formatOddsPrice(prop.market.over_odds, bookName);
+          const under = formatOddsPrice(prop.market.under_odds, bookName);
+          pushEntry({
+            line: prop.line_value,
+            over,
+            under,
+          });
+        } else if (prop.market?.type === 'milestone') {
+          const oddsVal = prop.market.odds;
+          const numericLine = Number(prop.line_value);
+          // Only include milestones when both line and odds are valid numbers
+          if (Number.isFinite(numericLine) && typeof oddsVal === 'number' && Number.isFinite(oddsVal)) {
+            pushEntry(buildMilestoneEntry(prop.line_value, oddsVal));
+          }
+        }
+      }
+
+      games.push(gameOdds);
+    }
+
+    const now = new Date();
+    const ttlMinutes = 30; // cache for 30 minutes
+    const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
     const oddsCache: OddsCache = {
       games,
@@ -560,44 +736,40 @@ export async function refreshOddsData(
     };
 
     // Cache the data in both in-memory and Supabase (persistent, shared across instances)
-    cache.set(ODDS_CACHE_KEY, oddsCache, CACHE_TTL.ODDS);
-    await setNBACache(ODDS_CACHE_KEY, 'odds', oddsCache, CACHE_TTL.ODDS);
-    console.log(`[Odds Cache] 💾 Cached odds data to Supabase (${games.length} games)`);
+    cache.set(ODDS_CACHE_KEY, oddsCache, ttlMinutes);
+    await setNBACache(ODDS_CACHE_KEY, 'odds', oddsCache, ttlMinutes);
+    console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games)`);
 
-    // Save snapshots to database for line movement tracking
-    // Skip in development to prevent server freezing
+    // Save snapshots (line movement) only if enabled
     if (process.env.NODE_ENV === 'production') {
       try {
-        // Add 30-second timeout to prevent hanging (saving 5000+ snapshots can take time)
         await Promise.race([
           saveOddsSnapshots(games),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Snapshot save timeout after 60s')), 60000)
           )
         ]);
         console.log('📸 Odds snapshots saved to database');
       } catch (error) {
         console.error('❌ Failed to save odds snapshots:', error);
-        // Don't fail the whole refresh if snapshot saving fails
       }
     } else {
       console.log('⚠️ Skipping odds snapshots in development mode');
     }
 
     const elapsed = Date.now() - startTime;
-    console.log(`✅ Bulk odds refresh complete in ${elapsed}ms - ${games.length} games cached`);
-    console.log('Sample game teams:', games.slice(0, 3).map(g => `${g.homeTeam} vs ${g.awayTeam}`));
+    console.log(`✅ BDL odds refresh complete in ${elapsed}ms - ${games.length} games cached`);
 
     return {
       success: true,
       gamesCount: games.length,
       lastUpdated: oddsCache.lastUpdated,
       nextUpdate: oddsCache.nextUpdate,
-      apiCalls: 1 + playerPropsData.length, // 1 for games + 1 per game with props
+      apiCalls: oddsRows.length + playerProps.length, // approximate
       elapsed: `${elapsed}ms`
     };
   } catch (error) {
-    console.error('❌ Bulk odds refresh failed:', error);
+    console.error('❌ BDL odds refresh failed:', error);
     throw error;
   }
 }

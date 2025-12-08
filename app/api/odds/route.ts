@@ -31,7 +31,8 @@ export interface BookRow {
   FIRST_BASKET: { yes: string; no: string };
 }
 
-const ODDS_CACHE_KEY = 'all_nba_odds';
+// Versioned key to avoid stale The Odds API cache
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 export async function GET(request: NextRequest) {
   // Check rate limit

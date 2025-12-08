@@ -208,8 +208,8 @@ export const CACHE_TTL = {
   ADVANCED_STATS: 60,
   
   // Odds data - 60 minutes
-  // Rationale: Balance between freshness and external API quota usage
-  ODDS: 60,
+  // Rationale: Balance freshness with BDL quota; refreshed every 30 minutes
+  ODDS: 30,
   
   // Depth chart - 2 hours
   // Rationale: Starting lineups and rotations change daily but not hourly
