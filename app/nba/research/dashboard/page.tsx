@@ -12499,7 +12499,8 @@ const lineMovementInFlightRef = useRef(false);
                 selectedStat={selectedStat}
               />
 
-              {/* Section 2: Team Matchup with Pie Chart */}
+              {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
+              {propsMode === 'team' && (
               <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h4 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">Team Matchup</h4>
@@ -12783,6 +12784,7 @@ const lineMovementInFlightRef = useRef(false);
                   {selectedComparison === 'three_pct' && '3-Point Shooting Percentage Comparison'}
                 </div>
               </div>
+              )}
             </div>
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only */}
@@ -13265,7 +13267,8 @@ const lineMovementInFlightRef = useRef(false);
                   selectedStat={selectedStat}
                 />
 
-                {/* Section 2: Team Matchup with Pie Chart */}
+                {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
+                {propsMode === 'team' && (
                 <div className="pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600">
                   <div className="flex items-center justify-between mb-3 md:mb-4">
                     <h4 className="text-sm md:text-base font-medium text-gray-900 dark:text-white">Team Matchup</h4>
@@ -13784,6 +13787,7 @@ const lineMovementInFlightRef = useRef(false);
                       })()}
                   </div>
                 </div>
+                )}
               </div>
 
             {/* Shot Chart (Desktop) - only in Player Props mode */}
