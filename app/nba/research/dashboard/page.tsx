@@ -11117,23 +11117,22 @@ const lineMovementInFlightRef = useRef(false);
               const ranks = dvpRankResponse.metrics[metric];
               const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
               
-              // If we have a rank, apply tiered adjustments (reduced weight for negative adjustments)
+              // If we have a rank, apply tiered adjustments
               if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
-                // Rank 1-10: Very good defense (lower prediction) - reduced weight
+                // Rank 1-10: Very good defense (lower prediction)
                 if (teamRank <= 10) {
-                  // Reduced negative adjustment: -1 to -2 points based on rank (1 = -2, 10 = -1)
-                  // Reduced from -2 to -4 to make negative adjustments less impactful
-                  dvpAdjustment = -1 - ((10 - teamRank) / 10) * 1;
+                  // Negative adjustment: -1.5 to -2.5 points based on rank (1 = -2.5, 10 = -1.5)
+                  dvpAdjustment = -1.5 - ((10 - teamRank) / 10) * 1;
                 }
                 // Rank 11-20: Medium defense (small adjustment)
                 else if (teamRank <= 20) {
-                  // Small adjustment: -1 to +1 points based on rank (11 = -1, 20 = +1)
-                  dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
+                  // Small adjustment: 0 to +1 points based on rank (11 = 0, 20 = +1)
+                  dvpAdjustment = ((teamRank - 11) / 9) * 1;
                 }
-                // Rank 21-30: Bad defense (raise prediction) - keep full weight
+                // Rank 21-30: Bad defense (raise prediction)
                 else {
-                  // Positive adjustment: +2 to +4 points based on rank (21 = +2, 30 = +4)
-                  dvpAdjustment = 2 + ((teamRank - 21) / 9) * 2;
+                  // Positive adjustment: +1.5 to +2.5 points based on rank (21 = +1.5, 30 = +2.5)
+                  dvpAdjustment = 1.5 + ((teamRank - 21) / 9) * 1;
                 }
               }
             }
