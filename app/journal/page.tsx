@@ -1911,7 +1911,7 @@ function JournalContent() {
                               <div className="text-[9px] md:text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5">
                                 {parlayLegs.map((leg, index) => {
                                   // Get individual leg result from parlay_legs if available
-                                  const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs[index];
+                                  const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) ? bet.parlay_legs[index] : undefined;
                                   const legWon = storedLeg && typeof storedLeg.won === 'boolean' 
                                     ? storedLeg.won 
                                     : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
@@ -2604,7 +2604,7 @@ function JournalContent() {
                         <div className="text-xs text-slate-700 dark:text-slate-300 space-y-0.5 mb-1">
                           {parlayLegs.map((leg, index) => {
                             // Get individual leg result from parlay_legs if available
-                            const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs[index];
+                            const storedLeg = bet.parlay_legs && Array.isArray(bet.parlay_legs) ? bet.parlay_legs[index] : undefined;
                             const legWon = storedLeg && typeof storedLeg.won === 'boolean' 
                               ? storedLeg.won 
                               : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
