@@ -11518,30 +11518,10 @@ const lineMovementInFlightRef = useRef(false);
             isPro={isPro}
             onSubscriptionClick={handleSidebarSubscription}
             onSignOutClick={handleLogout}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           />
         )}
-        
-        {/* Sidebar Toggle Button - visible on tablets/Macs */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="hidden lg:flex fixed z-[60] items-center justify-center w-8 h-8 bg-gray-300 dark:bg-slate-900 hover:bg-gray-400 dark:hover:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg transition-all"
-          style={{
-            top: sidebarOpen ? '1rem' : '1.5rem',
-            left: sidebarOpen ? 'calc(clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px) + var(--sidebar-width, 360px) + 8px)' : 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)',
-            transition: 'left 0.3s ease, top 0.3s ease'
-          }}
-          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-        >
-          <svg 
-            className="w-4 h-4 text-gray-700 dark:text-gray-300 transition-transform"
-            style={{ transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
 <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
           <div 

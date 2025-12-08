@@ -20,6 +20,8 @@ interface LeftSidebarProps {
   onSignOutClick?: () => void;
   showViewTrackingButton?: boolean;
   onViewTrackingClick?: () => void;
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export default function LeftSidebar({
@@ -34,6 +36,8 @@ export default function LeftSidebar({
   onSignOutClick,
   showViewTrackingButton = false,
   onViewTrackingClick,
+  sidebarOpen = true,
+  onToggleSidebar,
 }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
@@ -102,16 +106,36 @@ export default function LeftSidebar({
     >
       {/* Logo at top */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 text-black dark:text-white">
-        <div className="flex items-center gap-2">
-          <Link href="/home" className="cursor-pointer hover:opacity-80 transition-opacity">
-            <StatTrackrLogoWithText 
-              logoSize="w-10 h-10" 
-              textSize="text-2xl" 
-              isDark={isDark}
-            />
-          </Link>
-          {pathname === "/journal" && (
-            <span className="text-2xl font-light opacity-50">Journal</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Link href="/home" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <StatTrackrLogoWithText 
+                logoSize="w-10 h-10" 
+                textSize="text-2xl" 
+                isDark={isDark}
+              />
+            </Link>
+            {pathname === "/journal" && (
+              <span className="text-2xl font-light opacity-50">Journal</span>
+            )}
+          </div>
+          {/* Sidebar Toggle Button - inside sidebar */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="flex items-center justify-center w-8 h-8 bg-gray-200 dark:bg-slate-800 hover:bg-gray-300 dark:hover:bg-slate-700 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm transition-all"
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              <svg 
+                className="w-4 h-4 text-gray-700 dark:text-gray-300 transition-transform"
+                style={{ transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           )}
         </div>
       </div>
