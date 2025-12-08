@@ -11126,8 +11126,8 @@ const lineMovementInFlightRef = useRef(false);
                 }
                 // Rank 11-20: Medium defense (small adjustment)
                 else if (teamRank <= 20) {
-                  // Small adjustment: 0 to +1 points based on rank (11 = 0, 20 = +1)
-                  dvpAdjustment = ((teamRank - 11) / 9) * 1;
+                  // Small adjustment: -1 to +1 points based on rank (11 = -1, 20 = +1)
+                  dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
                 }
                 // Rank 21-30: Bad defense (raise prediction)
                 else {
