@@ -11118,18 +11118,22 @@ const lineMovementInFlightRef = useRef(false);
         // 5. Advanced stats/potentials (if available)
         let advancedStatsAdjustment = 0;
         if (advancedStats) {
-          // Use usage percentage, pace, and other advanced metrics to adjust
+          // Use usage percentage to adjust
           // Higher usage = more opportunities = higher expected output
           if (advancedStats.usage_percentage && Number.isFinite(advancedStats.usage_percentage)) {
             const usagePct = advancedStats.usage_percentage * 100;
             // Normalize usage (typical range 15-35%) to adjustment (-2 to +2)
             advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.5;
           }
-          // Pace adjustment (higher pace = more possessions = more stats)
-          if (advancedStats.pace && Number.isFinite(advancedStats.pace)) {
-            const paceAdjustment = ((advancedStats.pace - 100) / 10) * 0.3; // 100 is average pace
-            advancedStatsAdjustment += paceAdjustment;
-          }
+        }
+        
+        // 6. Team pace adjustment (team-level stat, not player-level)
+        // Higher pace = more possessions = more opportunities for stats
+        const playerTeamAbbr = normalizeAbbr(selectedPlayer?.teamAbbr || '');
+        const teamPaceValue = getTeamPace(playerTeamAbbr);
+        if (teamPaceValue > 0) {
+          const paceAdjustment = ((teamPaceValue - 100) / 10) * 0.3; // 100 is average pace
+          advancedStatsAdjustment += paceAdjustment;
         }
         
         // Combine all factors with weights
