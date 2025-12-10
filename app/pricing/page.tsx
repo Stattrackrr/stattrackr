@@ -405,7 +405,7 @@ export default function PricingPage() {
                 onClick={() => {
                   setShowDashboardDropdown(false);
                   if (!isLoggedIn) {
-                    router.push('/login?redirect=/nba/research/dashboard');
+                    router.push('/login?redirect=/nba');
                     return;
                   }
                   if (!hasPremium) {
@@ -413,7 +413,7 @@ export default function PricingPage() {
                     element?.scrollIntoView({ behavior: 'smooth' });
                     return;
                   }
-                  router.push('/nba/research/dashboard?mode=player');
+                  router.push('/nba');
                 }}
                 className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors flex items-center gap-2 ${
                   !hasPremium

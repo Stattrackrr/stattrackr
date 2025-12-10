@@ -434,20 +434,21 @@ export async function GET(request: NextRequest) {
         // Skip DvP for now to avoid hanging - can be added back later if needed
         const dvpRankResponse = null; // Temporarily disabled to prevent hanging
         
-        if (dvpRankResponse?.metrics?.[metric]) {
-          const ranks = dvpRankResponse.metrics[metric];
-          const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
-          
-          if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
-            if (teamRank <= 10) {
-              dvpAdjustment = -0.5 - ((10 - teamRank) / 10) * 0.5;
-            } else if (teamRank <= 20) {
-              dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
-            } else {
-              dvpAdjustment = 1.5 + ((teamRank - 21) / 9) * 1;
-            }
-          }
-        }
+        // DvP rank logic temporarily disabled
+        // if (dvpRankResponse?.metrics?.[metric]) {
+        //   const ranks = dvpRankResponse.metrics[metric];
+        //   const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
+        //   
+        //   if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
+        //     if (teamRank <= 10) {
+        //       dvpAdjustment = -0.5 - ((10 - teamRank) / 10) * 0.5;
+        //     } else if (teamRank <= 20) {
+        //       dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
+        //     } else {
+        //       dvpAdjustment = 1.5 + ((teamRank - 21) / 9) * 1;
+        //     }
+        //   }
+        // }
       } catch (dvpError) {
         console.warn('Failed to fetch DvP rank data:', dvpError);
       }
