@@ -147,10 +147,10 @@ export async function GET(request: NextRequest) {
     
     if (!bypassCache) {
       // Try Supabase cache first (persistent, shared across instances)
-      // Use longer timeout for large cache entries
+      // Use longer timeout for large cache entries (30s to handle slow Supabase)
       cachedData = await getNBACache<any>(cacheKey, {
-        restTimeoutMs: 20000,
-        jsTimeoutMs: 20000,
+        restTimeoutMs: 30000,
+        jsTimeoutMs: 30000,
       });
       
       // Fallback to in-memory cache
@@ -180,8 +180,8 @@ export async function GET(request: NextRequest) {
             if (!rankings) {
               console.log(`[Play Type Analysis] Rankings not in-memory, checking Supabase...`);
               rankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
-                restTimeoutMs: 8000, // Shorter timeout for fast response
-                jsTimeoutMs: 8000,
+                restTimeoutMs: 15000, // 15s timeout for defensive rankings
+                jsTimeoutMs: 15000,
               });
               
               // If found in Supabase, also cache in-memory for next time

@@ -86,7 +86,7 @@ export default function LeftSidebar({
   };
 
   const sports = [
-    { name: "NBA", href: "/nba/research/dashboard" },
+    { name: "NBA", href: "/nba" },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
@@ -360,7 +360,11 @@ export default function LeftSidebar({
                 <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Odds</label>
                 <select 
                   value={oddsFormat}
-                  onChange={(e) => setOddsFormat((e.target.value as 'american' | 'decimal'))}
+                  onChange={(e) => {
+                    const newFormat = e.target.value as 'american' | 'decimal';
+                    setOddsFormat(newFormat);
+                    localStorage.setItem('oddsFormat', newFormat);
+                  }}
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="american">American</option>

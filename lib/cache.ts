@@ -211,9 +211,10 @@ export const CACHE_TTL = {
   // Rationale: Balance freshness with BDL quota; refreshed every 30 minutes
   ODDS: 30,
   
-  // Depth chart - 2 hours
-  // Rationale: Starting lineups and rotations change daily but not hourly
-  DEPTH_CHART: 120,
+  // Depth chart - 8 hours
+  // Rationale: Starting lineups and rotations change daily but not hourly.
+  // 8-hour cache reduces API calls to ESPN and prevents rate limiting.
+  DEPTH_CHART: 8 * 60,
   
   // Injury reports - 30 minutes
   // Rationale: Injury status can change quickly on game days

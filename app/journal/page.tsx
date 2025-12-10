@@ -683,6 +683,42 @@ function JournalContent() {
     return amount * (conversionRates[fromCurrency]?.[toCurrency] || 1);
   };
 
+  // Delete bet from journal
+  const handleDeleteBet = async (betId: string) => {
+    if (!confirm('Are you sure you want to delete this bet?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('bets')
+        .delete()
+        .eq('id', betId);
+
+      if (error) {
+        console.error('Failed to delete bet:', error);
+        alert('Failed to delete bet. Please try again.');
+        return;
+      }
+
+      // Refresh bets list
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data, error: fetchError } = await supabase
+          .from('bets')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (!fetchError && data) {
+          setBets(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting bet:', error);
+      alert('An error occurred while deleting the bet. Please try again.');
+    }
+  };
+
   // Filter bets based on current filters (no currency filter)
   // Voids bypass all filters but are still included in the result
   const filteredBets = useMemo(() => {
@@ -1907,29 +1943,43 @@ function JournalContent() {
                         }`}>
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                            {(isFinal || isLiveButDetermined) && (
-                              <span className={`text-[9px] md:text-[10px] font-bold ${
-                                bet.result === 'win' 
-                                  ? 'text-green-600 dark:text-green-400'
-                                  : bet.result === 'void'
-                                  ? 'text-gray-600 dark:text-gray-400'
-                                  : 'text-red-600 dark:text-red-400'
-                              }`}>
-                                {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
-                              </span>
-                            )}
-                            {isPending && (
-                              <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
-                            )}
-                            {isLive && !isDetermined && (
-                              <span className="text-[9px] md:text-[10px] font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                            <div className="flex items-center gap-1.5">
+                              {(isFinal || isLiveButDetermined) && (
+                                <span className={`text-[9px] md:text-[10px] font-bold ${
+                                  bet.result === 'win' 
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : bet.result === 'void'
+                                    ? 'text-gray-600 dark:text-gray-400'
+                                    : 'text-red-600 dark:text-red-400'
+                                }`}>
+                                  {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
                                 </span>
-                                LIVE
-                              </span>
-                            )}
+                              )}
+                              {isPending && (
+                                <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                              )}
+                              {isLive && !isDetermined && (
+                                <span className="text-[9px] md:text-[10px] font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                                  <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                  </span>
+                                  LIVE
+                                </span>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBet(bet.id);
+                                }}
+                                className="p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                                title="Delete bet"
+                              >
+                                <svg className="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           {isParlay && parlayLegs.length > 0 ? (
                             <>
@@ -2634,31 +2684,45 @@ function JournalContent() {
                   }`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                      {(isFinal || isLiveButDetermined) && (
-                        <span className={`text-xs font-bold ${
-                          bet.result === 'win' 
-                            ? 'text-green-600 dark:text-green-400'
-                            : bet.result === 'void'
-                            ? 'text-gray-600 dark:text-gray-400'
-                            : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          {bet.result === 'void' ? 'VOID' : 
-                            `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
-                          }
-                        </span>
-                      )}
-                      {isPending && (
-                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
-                      )}
-                      {isLive && !isDetermined && (
-                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                      <div className="flex items-center gap-2">
+                        {(isFinal || isLiveButDetermined) && (
+                          <span className={`text-xs font-bold ${
+                            bet.result === 'win' 
+                              ? 'text-green-600 dark:text-green-400'
+                              : bet.result === 'void'
+                              ? 'text-gray-600 dark:text-gray-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }`}>
+                            {bet.result === 'void' ? 'VOID' : 
+                              `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
+                            }
                           </span>
-                          LIVE
-                        </span>
-                      )}
+                        )}
+                        {isPending && (
+                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                        )}
+                        {isLive && !isDetermined && (
+                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                            <span className="relative flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                            </span>
+                            LIVE
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBet(bet.id);
+                          }}
+                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                          title="Delete bet"
+                        >
+                          <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     {isParlay && parlayLegs.length > 0 ? (
                       <>

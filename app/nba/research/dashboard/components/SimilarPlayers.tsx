@@ -27,6 +27,7 @@ interface SimilarPlayersProps {
   opponent: string;
   statType: string;
   isDark?: boolean;
+  shouldFetch?: boolean; // Only fetch when this is true (allows delaying until other components load)
 }
 
 // Module-level cache to persist across component unmounts/remounts
@@ -81,7 +82,7 @@ function getCacheKey(playerId: number, opponent: string, statType: string): stri
   return `${playerId}:${opponent}:${normalizedStatType}`;
 }
 
-export function SimilarPlayers({ playerId, opponent, statType, isDark = false }: SimilarPlayersProps) {
+export function SimilarPlayers({ playerId, opponent, statType, isDark = false, shouldFetch = true }: SimilarPlayersProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SimilarPlayerData[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -331,6 +332,11 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
 
   // Pre-fetch when props change (even if component isn't visible)
   useEffect(() => {
+    // Don't fetch if shouldFetch is false (waiting for other components to load)
+    if (!shouldFetch) {
+      return;
+    }
+    
     // Add a small debounce to prevent rapid re-renders from causing multiple requests
     const timeoutId = setTimeout(() => {
       // Validate playerId - must be a valid number
@@ -447,7 +453,7 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false }:
         activeRequestRef.current = null;
       }
     };
-  }, [playerId, opponent, statType, fetchSimilarPlayers]);
+  }, [playerId, opponent, statType, shouldFetch, fetchSimilarPlayers]);
 
   // Validate playerId before rendering
   const playerIdNum = playerId ? (typeof playerId === 'string' ? parseInt(playerId, 10) : Number(playerId)) : null;

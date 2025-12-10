@@ -459,7 +459,7 @@ const bdlAuthHeader = (() => {
 
 const BDL_PER_PAGE = 100;
 
-async function fetchAllPages<T>(baseUrl: string, path: string, params: URLSearchParams): Promise<T[]> {
+async function fetchAllPages<T>(baseUrl: string, path: string, params: URLSearchParams, timeoutMs = 30000): Promise<T[]> {
   let cursor: string | null = null;
   const results: T[] = [];
 
@@ -469,20 +469,37 @@ async function fetchAllPages<T>(baseUrl: string, path: string, params: URLSearch
     if (cursor) search.set('cursor', cursor);
 
     const url = `${baseUrl}${path}?${search.toString()}`;
-    const resp = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': bdlAuthHeader,
-      },
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`BDL fetch failed (${path}): ${resp.status} ${text}`);
+    
+    // Add timeout to fetch
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': bdlAuthHeader,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`BDL fetch failed (${path}): ${resp.status} ${text}`);
+      }
+      const json = await resp.json();
+      const data: T[] = json?.data || [];
+      results.push(...data);
+      cursor = json?.meta?.next_cursor || null;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        console.error(`⏱️ Timeout fetching ${path} after ${timeoutMs}ms`);
+        throw new Error(`BDL fetch timeout (${path}): Request took longer than ${timeoutMs}ms`);
+      }
+      throw err;
     }
-    const json = await resp.json();
-    const data: T[] = json?.data || [];
-    results.push(...data);
-    cursor = json?.meta?.next_cursor || null;
   } while (cursor);
 
   return results;
@@ -504,7 +521,31 @@ async function fetchOddsForDates(dateStrings: string[]): Promise<BdlOddsRow[]> {
 async function fetchPropsForGame(gameId: number): Promise<BdlPlayerProp[]> {
   const params = new URLSearchParams();
   params.set('game_id', String(gameId));
-  return fetchAllPages<BdlPlayerProp>(BDL_BASE_V2, '/odds/player_props', params);
+  const startTime = Date.now();
+  try {
+    // Use longer timeout for player props (60s) as they can be large
+    const props = await fetchAllPages<BdlPlayerProp>(BDL_BASE_V2, '/odds/player_props', params, 60000);
+    const fetchTime = Date.now() - startTime;
+    
+    // Debug: Log vendors per game with detailed breakdown
+    const vendorsForGame = Array.from(new Set(props.map(p => p.vendor))).sort();
+    const propsByVendor = new Map<string, number>();
+    props.forEach(p => {
+      const count = propsByVendor.get(p.vendor) || 0;
+      propsByVendor.set(p.vendor, count + 1);
+    });
+    if (vendorsForGame.length > 0) {
+      console.log(`📊 Game ${gameId}: BDL returned ${props.length} player props from ${vendorsForGame.length} vendors: ${vendorsForGame.join(', ')} (took ${fetchTime}ms)`);
+      console.log(`📊 Game ${gameId}: Props per vendor:`, Array.from(propsByVendor.entries()).map(([v, c]) => `${v}:${c}`).join(', '));
+    } else {
+      console.log(`⚠️ Game ${gameId}: BDL returned 0 player props (took ${fetchTime}ms)`);
+    }
+    return props;
+  } catch (err: any) {
+    const fetchTime = Date.now() - startTime;
+    console.error(`❌ Game ${gameId}: Failed to fetch player props after ${fetchTime}ms:`, err.message);
+    throw err;
+  }
 }
 
 function getDateStringsNext24h(): string[] {
@@ -557,6 +598,7 @@ function buildMilestoneEntry(line: string, odds: number | string | null): { line
 
 async function fetchPlayerPropsForGames(gameIds: number[], concurrency = 6): Promise<BdlPlayerProp[]> {
   const results: BdlPlayerProp[] = [];
+  const errors: Array<{ gameId: number; error: string }> = [];
   let index = 0;
 
   async function worker() {
@@ -565,14 +607,24 @@ async function fetchPlayerPropsForGames(gameIds: number[], concurrency = 6): Pro
       try {
         const props = await fetchPropsForGame(current);
         results.push(...props);
-      } catch (err) {
-        console.warn(`⚠️ Failed to fetch props for game ${current}:`, err);
+      } catch (err: any) {
+        const errorMsg = err?.message || String(err);
+        errors.push({ gameId: current, error: errorMsg });
+        console.warn(`⚠️ Failed to fetch props for game ${current}:`, errorMsg);
       }
     }
   }
 
+  const startTime = Date.now();
   const workers = Array.from({ length: Math.min(concurrency, gameIds.length) }, () => worker());
   await Promise.all(workers);
+  const totalTime = Date.now() - startTime;
+  
+  if (errors.length > 0) {
+    console.warn(`⚠️ ${errors.length} games failed to fetch player props:`, errors.map(e => `Game ${e.gameId}: ${e.error}`).join('; '));
+  }
+  console.log(`📊 Fetched player props for ${gameIds.length} games (${results.length} total props, ${errors.length} failed) in ${totalTime}ms`);
+  
   return results;
 }
 
@@ -612,9 +664,20 @@ export async function refreshOddsData(
     // 3) Fetch player props for those games
     const playerProps = await fetchPlayerPropsForGames(gameIds);
     const vendorsFromProps = Array.from(new Set(playerProps.map(p => p.vendor))).sort();
+    const propsCountByVendor = new Map<string, number>();
+    playerProps.forEach(p => {
+      const count = propsCountByVendor.get(p.vendor) || 0;
+      propsCountByVendor.set(p.vendor, count + 1);
+    });
     console.log(`📊 BDL returned ${playerProps.length} player props from ${vendorsFromProps.length} vendors: ${vendorsFromProps.join(', ')}`);
+    console.log(`📊 Props count per vendor:`, Array.from(propsCountByVendor.entries()).map(([v, c]) => `${v}:${c}`).sort().join(', '));
     console.log(`📊 Expected 8 vendors per docs: draftkings, betway, betrivers, ballybet, betparx, caesars, fanduel, rebet`);
-    console.log(`📊 Missing vendors: ${['betrivers', 'ballybet', 'betparx', 'rebet'].filter(v => !vendorsFromProps.includes(v)).join(', ') || 'none'}`);
+    const expectedVendors = ['draftkings', 'betway', 'betrivers', 'ballybet', 'betparx', 'caesars', 'fanduel', 'rebet'];
+    const missingVendors = expectedVendors.filter(v => !vendorsFromProps.includes(v));
+    console.log(`📊 Missing vendors: ${missingVendors.join(', ') || 'none'}`);
+    if (missingVendors.length > 0) {
+      console.warn(`⚠️ WARNING: BDL API is missing ${missingVendors.length} expected vendors for player props!`);
+    }
 
     // 4) Transform into our GameOdds structure
     const games: GameOdds[] = [];
@@ -711,21 +774,36 @@ export async function refreshOddsData(
       // Allowed milestone values for points only: 10, 15, 20, 25, 30
       const ALLOWED_POINTS_MILESTONES = [10, 15, 20, 25, 30];
       
+      // Debug: Track which vendors have which prop types
+      const vendorPropTypes = new Map<string, Set<string>>();
+      let skippedProps = 0;
+      let processedProps = 0;
+      
       for (const prop of props) {
         const statKey = mapPropTypeToStatKey(prop.prop_type);
-        if (!statKey) continue;
+        if (!statKey) {
+          skippedProps++;
+          continue;
+        }
+        processedProps++;
+        
+        // Track vendor and prop type
+        if (!vendorPropTypes.has(prop.vendor)) {
+          vendorPropTypes.set(prop.vendor, new Set());
+        }
+        vendorPropTypes.get(prop.vendor)!.add(prop.prop_type);
 
         const playerName = getPlayerNameFromMapping(prop.player_id) || `Player ${prop.player_id}`;
-        const bookName = prop.vendor;
+        const vendorName = prop.vendor;
 
-        if (!gameOdds.playerPropsByBookmaker[bookName]) {
-          gameOdds.playerPropsByBookmaker[bookName] = {};
+        if (!gameOdds.playerPropsByBookmaker[vendorName]) {
+          gameOdds.playerPropsByBookmaker[vendorName] = {};
         }
-        if (!gameOdds.playerPropsByBookmaker[bookName][playerName]) {
-          gameOdds.playerPropsByBookmaker[bookName][playerName] = {};
+        if (!gameOdds.playerPropsByBookmaker[vendorName][playerName]) {
+          gameOdds.playerPropsByBookmaker[vendorName][playerName] = {};
         }
 
-        const bucket = gameOdds.playerPropsByBookmaker[bookName][playerName] as Record<string, any>;
+        const bucket = gameOdds.playerPropsByBookmaker[vendorName][playerName] as Record<string, any>;
 
         const pushEntry = (entry: any) => {
           const current = bucket[statKey];
@@ -737,17 +815,27 @@ export async function refreshOddsData(
         };
 
         if (prop.market?.type === 'over_under') {
-          const over = formatOddsPrice(prop.market.over_odds, bookName);
-          const under = formatOddsPrice(prop.market.under_odds, bookName);
+          // Parse line_value as number to ensure proper sorting
+          const lineNum = parseFloat(prop.line_value);
+          const line = Number.isFinite(lineNum) ? lineNum : parseFloat(String(prop.line_value)) || 0;
+          
+          // Get raw odds values from BDL - use them as-is, BDL should return them correctly
+          const rawOverOdds = prop.market.over_odds;
+          const rawUnderOdds = prop.market.under_odds;
+          
+          // Format odds
+          const over = formatOddsPrice(rawOverOdds, vendorName);
+          const under = formatOddsPrice(rawUnderOdds, vendorName);
+          
           pushEntry({
-            line: prop.line_value,
+            line,
             over,
             under,
           });
         } else if (prop.market?.type === 'milestone') {
           // Only include milestones for points prop type, from DraftKings or FanDuel only
           // Normal over/under lines can come from all bookmakers
-          const vendorLower = (bookName || prop.vendor || '').toLowerCase().trim();
+          const vendorLower = (vendorName || prop.vendor || '').toLowerCase().trim();
           // Check for exact match or contains (handles variations like "draftkings pick6")
           const isAllowedMilestoneVendor = 
             vendorLower === 'draftkings' || 
@@ -759,7 +847,7 @@ export async function refreshOddsData(
           if (prop.prop_type === 'points') {
             const numericLine = Number(prop.line_value);
             if (ALLOWED_POINTS_MILESTONES.includes(numericLine)) {
-              console.log(`🎯 Milestone ${prop.line_value}+ from vendor: "${bookName}" (lowercase: "${vendorLower}") - Allowed: ${isAllowedMilestoneVendor}`);
+              console.log(`🎯 Milestone ${prop.line_value}+ from vendor: "${vendorName}" (lowercase: "${vendorLower}") - Allowed: ${isAllowedMilestoneVendor}`);
             }
           }
           
@@ -794,10 +882,29 @@ export async function refreshOddsData(
       Object.keys(gameOdds.playerPropsByBookmaker).forEach(v => allVendors.add(v));
       if (allVendors.size > 0) {
         console.log(`📊 Game ${gameId} all vendors: ${Array.from(allVendors).sort().join(', ')}`);
+        const playerPropVendors = Object.keys(gameOdds.playerPropsByBookmaker).sort();
+        console.log(`📊 Game ${gameId} player prop vendors: ${playerPropVendors.length} - ${playerPropVendors.join(', ')}`);
+        console.log(`📊 Game ${gameId} processed ${processedProps} props, skipped ${skippedProps} props (unmapped prop types)`);
+        if (vendorPropTypes.size > 0) {
+          console.log(`📊 Game ${gameId} vendors and their prop types:`, Array.from(vendorPropTypes.entries()).map(([v, types]) => `${v}:[${Array.from(types).join(',')}]`).join('; '));
+        }
       }
 
       games.push(gameOdds);
     }
+    
+    // Summary: Log all unique vendors found across all games
+    const allUniqueVendors = new Set<string>();
+    games.forEach(g => {
+      g.bookmakers.forEach(b => allUniqueVendors.add(b.name));
+      Object.keys(g.playerPropsByBookmaker).forEach(v => allUniqueVendors.add(v));
+    });
+    console.log(`📊 SUMMARY: Found ${allUniqueVendors.size} unique vendors across all games: ${Array.from(allUniqueVendors).sort().join(', ')}`);
+    const allPlayerPropVendors = new Set<string>();
+    games.forEach(g => {
+      Object.keys(g.playerPropsByBookmaker).forEach(v => allPlayerPropVendors.add(v));
+    });
+    console.log(`📊 SUMMARY: Found ${allPlayerPropVendors.size} unique player prop vendors: ${Array.from(allPlayerPropVendors).sort().join(', ')}`);
 
     const now = new Date();
     const ttlMinutes = 30; // cache for 30 minutes
@@ -813,6 +920,34 @@ export async function refreshOddsData(
     cache.set(ODDS_CACHE_KEY, oddsCache, ttlMinutes);
     await setNBACache(ODDS_CACHE_KEY, 'odds', oddsCache, ttlMinutes);
     console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games)`);
+    
+    // Trigger background player props update (non-blocking)
+    // This ensures player props cache updates automatically when odds change
+    // Users continue seeing old cached data until new cache is ready
+    try {
+      // Call background update endpoint internally (don't await - fire and forget)
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      
+      fetch(`${baseUrl}/api/nba/player-props/background-update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Don't wait for response - this is fire-and-forget
+      }).catch(err => {
+        // Silently fail - this is background processing
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Odds Refresh] Background player props update triggered (may fail in dev if server not running)');
+        }
+      });
+      
+      console.log(`[Odds Refresh] 🔄 Triggered background player props update (non-blocking)`);
+    } catch (err) {
+      // Ignore errors - background update is optional
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Odds Refresh] Could not trigger background update (expected in dev)');
+      }
+    }
 
     // Save snapshots (line movement) only if enabled
     if (process.env.NODE_ENV === 'production') {

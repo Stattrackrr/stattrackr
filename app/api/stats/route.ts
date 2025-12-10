@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { BdlPlayerStats, BdlPaginatedResponse } from "@/lib/types/apiResponses";
 import { checkRateLimit } from "@/lib/rateLimit";
+import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
 
 export const runtime = "nodejs";
 
@@ -42,12 +43,6 @@ async function bdlFetch(url: URL) {
 }
 
 export async function GET(req: NextRequest) {
-  // Check rate limit
-  const rateLimitResult = checkRateLimit(req);
-  if (!rateLimitResult.allowed) {
-    return rateLimitResult.response!;
-  }
-
   try {
     const { searchParams } = new URL(req.url);
     const playerId = searchParams.get("player_id");
@@ -55,6 +50,7 @@ export async function GET(req: NextRequest) {
     const perPageParam = Number(searchParams.get("per_page") || 40);
     const maxPages = Number(searchParams.get("max_pages") || 3); // cap requests
     const postseason = (searchParams.get("postseason") || "false").toLowerCase() === "true";
+    const forceRefresh = searchParams.get("refresh") === "1" || searchParams.get("refresh") === "true";
 
     if (!playerId) {
       return NextResponse.json(
@@ -66,6 +62,44 @@ export async function GET(req: NextRequest) {
     // Default to a safe recent season if not provided
     const season = Number(seasonParam || 2023);
 
+    // Check cache first (before rate limiting) - use same cache key format as /api/bdl/stats
+    const cacheKey = getCacheKey.playerStats(playerId, season);
+    const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+    // Only use cache if it has actual data (not empty arrays) AND not forcing refresh
+    if (!forceRefresh && cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+      // Debug: log cached data structure to verify game/team are included
+      if (cachedData.data.length > 0) {
+        console.log('[Stats API] Cached stat structure:', {
+          playerId,
+          season,
+          totalStats: cachedData.data.length,
+          hasGame: !!cachedData.data[0]?.game,
+          hasGameDate: !!cachedData.data[0]?.game?.date,
+          hasTeam: !!cachedData.data[0]?.team,
+          hasTeamAbbr: !!cachedData.data[0]?.team?.abbreviation,
+          sampleStatKeys: Object.keys(cachedData.data[0] || {}),
+        });
+      }
+      // Return cached data even if rate limited
+      return NextResponse.json(cachedData, { status: 200 });
+    }
+    
+    // If cache exists but is empty, log it and continue to fetch fresh data
+    if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length === 0) {
+      console.log(`[Stats API] Cache hit but empty array for player ${playerId}, season ${season}. Fetching fresh data...`);
+    }
+
+    // Only check rate limit if we need to fetch fresh data
+    const rateLimitResult = checkRateLimit(req);
+    if (!rateLimitResult.allowed) {
+      // If rate limited but we have some cached data (even if empty), return it
+      if (cachedData) {
+        return NextResponse.json(cachedData, { status: 200 });
+      }
+      // No cache and rate limited - return error
+      return rateLimitResult.response!;
+    }
+
     const all: BdlPlayerStats[] = [];
     let page = 1;
 
@@ -75,6 +109,18 @@ export async function GET(req: NextRequest) {
 
       // Expect shape: { data: [], meta: { next_page, total_pages, current_page } }
       const batch = Array.isArray(json?.data) ? json.data : [];
+      
+      // Debug: log sample stat structure to verify game/team are included
+      if (batch.length > 0 && all.length === 0) {
+        console.log('[Stats API] Sample stat from BDL:', {
+          hasGame: !!batch[0]?.game,
+          hasGameDate: !!batch[0]?.game?.date,
+          hasTeam: !!batch[0]?.team,
+          hasTeamAbbr: !!batch[0]?.team?.abbreviation,
+          statKeys: Object.keys(batch[0] || {}),
+        });
+      }
+      
       all.push(...batch);
 
       const nextPage =
@@ -84,9 +130,32 @@ export async function GET(req: NextRequest) {
       page = nextPage;
     }
 
-    return NextResponse.json({ data: all }, { status: 200 });
+    // Cache the successful response (only if we have data)
+    const responseData = { data: all };
+    // Only cache if we have actual data (don't cache empty arrays)
+    if (all.length > 0) {
+      cache.set(cacheKey, responseData, CACHE_TTL.PLAYER_STATS);
+    } else {
+      console.log(`[Stats API] Not caching empty array for player ${playerId}, season ${season}`);
+    }
+
+    return NextResponse.json(responseData, { status: 200 });
   } catch (err: any) {
     console.error('Stats API error:', err);
+    
+    // Try to return cached data even on error
+    const { searchParams } = new URL(req.url);
+    const playerId = searchParams.get("player_id");
+    const seasonParam = searchParams.get("season");
+    const season = Number(seasonParam || 2023);
+    if (playerId) {
+      const cacheKey = getCacheKey.playerStats(playerId, season);
+      const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(cachedData, { status: 200 });
+      }
+    }
+    
     return NextResponse.json(
       { error: err?.message || "Internal error fetching stats", data: [] },
       { status: 500 }

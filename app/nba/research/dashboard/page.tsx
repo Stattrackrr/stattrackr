@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -17,6 +17,7 @@ import { AdvancedStats } from './types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getFullTeamName, getTeamAbbr } from '@/lib/teamMapping';
 import { OddsSnapshot, deriveOpeningCurrentMovement, filterByMarket } from '@/lib/odds';
+import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
@@ -2426,73 +2427,18 @@ const partitionAltLineItems = (lines: AltLineItem[]) => {
     }
   }
   
-  // Calculate consensus line (most common line value) for over/under lines only
-  const lineCounts = new Map<number, number>();
-  for (const line of overUnderLines) {
-    lineCounts.set(line.line, (lineCounts.get(line.line) || 0) + 1);
-  }
-  
-  let consensusLine: number | null = null;
-  let maxCount = 0;
-  for (const [line, count] of lineCounts.entries()) {
-    if (count > maxCount) {
-      maxCount = count;
-      consensusLine = line;
-    }
-  }
-  
-  // Group over/under lines by bookmaker
-  const linesByBookmaker = new Map<string, AltLineItem[]>();
-  for (const line of overUnderLines) {
-    const key = (line.bookmaker || '').toLowerCase();
-    if (!linesByBookmaker.has(key)) {
-      linesByBookmaker.set(key, []);
-    }
-    linesByBookmaker.get(key)!.push(line);
-  }
-  
-  // Identify primary line for each bookmaker (closest to consensus)
-  const primaryLines = new Map<string, AltLineItem>();
-  const alternate: AltLineItem[] = [];
-  
-  for (const [bookmaker, bookmakerLines] of linesByBookmaker.entries()) {
-    if (bookmakerLines.length === 0) continue;
-    
-    let primaryLine = bookmakerLines[0]; // Default to first
-    
-    // If we have consensus and multiple lines, find closest to consensus
-    if (consensusLine !== null && bookmakerLines.length > 1) {
-      let closestLine = bookmakerLines[0];
-      let minDiff = Math.abs(bookmakerLines[0].line - consensusLine);
-      
-      for (const line of bookmakerLines) {
-        const diff = Math.abs(line.line - consensusLine);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestLine = line;
-        }
-      }
-      primaryLine = closestLine;
-    }
-    
-    primaryLines.set(bookmaker, primaryLine);
-    
-    // All other lines for this bookmaker are alternates
-    for (const line of bookmakerLines) {
-      if (line.line !== primaryLine.line || 
-          line.over !== primaryLine.over || 
-          line.under !== primaryLine.under) {
-        alternate.push(line);
-      }
-    }
-  }
-  
-  const primary = Array.from(primaryLines.values());
+  // USER REQUEST: Show ALL over/under lines (not just one per bookmaker)
+  // Don't separate into primary/alternate - show everything except milestones
+  // Sort all over/under lines by line value
+  overUnderLines.sort((a, b) => a.line - b.line);
   
   // Sort milestones by line value
   milestones.sort((a, b) => a.line - b.line);
   
-  return { primary, alternate, milestones };
+  // Return all over/under lines as "primary" (they'll all be shown)
+  // Keep alternate empty (no separation needed)
+  // Milestones are excluded as requested
+  return { primary: overUnderLines, alternate: [], milestones: [] };
 };
 
 // Chart controls (updates freely with betting line changes)
@@ -2741,6 +2687,9 @@ const ChartControls = function ChartControls({
       'reb': 'REB',
       'ast': 'AST',
       'fg3m': 'THREES',
+      'stl': 'STL',
+      'blk': 'BLK',
+      'to': 'TO',
       'pra': 'PRA',
       'pr': 'PR',
       'pa': 'PA',
@@ -3098,7 +3047,19 @@ const ChartControls = function ChartControls({
                     .filter((item: AltLineItem | null): item is AltLineItem => item !== null))
                 : [];
               
-              altLines.sort((a: AltLineItem, b: AltLineItem) => {
+              // Deduplicate: Remove lines with same bookmaker, line value, over odds, and under odds
+              const seen = new Set<string>();
+              const uniqueAltLines: AltLineItem[] = [];
+              for (const line of altLines) {
+                // Create a unique key: bookmaker + line + over + under
+                const key = `${(line.bookmaker || '').toLowerCase()}|${line.line}|${line.over}|${line.under}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  uniqueAltLines.push(line);
+                }
+              }
+              
+              uniqueAltLines.sort((a: AltLineItem, b: AltLineItem) => {
                 // First, separate milestones from over/under lines
                 const isMilestoneA = a.variantLabel === 'Milestone';
                 const isMilestoneB = b.variantLabel === 'Milestone';
@@ -3118,7 +3079,20 @@ const ChartControls = function ChartControls({
                 }
                 return a.line - b.line;
               });
-              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(altLines);
+              
+              // Deduplicate: Remove lines with same bookmaker, line value, over odds, and under odds
+              const seenMobile = new Set<string>();
+              const uniqueAltLinesMobile: AltLineItem[] = [];
+              for (const line of altLines) {
+                // Create a unique key: bookmaker + line + over + under
+                const key = `${(line.bookmaker || '').toLowerCase()}|${line.line}|${line.over}|${line.under}`;
+                if (!seenMobile.has(key)) {
+                  seenMobile.add(key);
+                  uniqueAltLinesMobile.push(line);
+                }
+              }
+              
+              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(uniqueAltLinesMobile);
               const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
                 const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
                 const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
@@ -3662,7 +3636,20 @@ const ChartControls = function ChartControls({
                 if (pickA !== pickB) return pickA - pickB;
                 return a.line - b.line;
               });
-              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(altLines);
+              
+              // Deduplicate: Remove lines with same bookmaker, line value, over odds, and under odds
+              const seenMobile = new Set<string>();
+              const uniqueAltLinesMobile: AltLineItem[] = [];
+              for (const line of altLines) {
+                // Create a unique key: bookmaker + line + over + under
+                const key = `${(line.bookmaker || '').toLowerCase()}|${line.line}|${line.over}|${line.under}`;
+                if (!seenMobile.has(key)) {
+                  seenMobile.add(key);
+                  uniqueAltLinesMobile.push(line);
+                }
+              }
+              
+              const { primary: primaryAltLines, alternate: alternateAltLines, milestones: milestoneLines } = partitionAltLineItems(uniqueAltLinesMobile);
               const renderAltLineButton = (altLine: AltLineItem, idx: number) => {
                 const bookmakerInfo = getBookmakerInfo(altLine.bookmaker);
                 const isSelected = Math.abs(altLine.line - displayLine) < 0.01;
@@ -4695,6 +4682,23 @@ const ChartContainer = function ChartContainer({
 }: any) {
   const totalSamples = hitRateStats?.total ?? chartData.length;
   const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
+  
+  // Check if URL params indicate a player should be loaded (for initial page load detection)
+  // Use useState/useEffect to avoid hydration mismatch (server renders false, client checks after mount)
+  const [hasUrlPlayer, setHasUrlPlayer] = useState(false);
+  
+  useEffect(() => {
+    if (propsMode === 'player') {
+      try {
+        const url = new URL(window.location.href);
+        const pid = url.searchParams.get('pid');
+        const name = url.searchParams.get('name');
+        setHasUrlPlayer(!!(pid && name));
+      } catch {
+        setHasUrlPlayer(false);
+      }
+    }
+  }, [propsMode]);
 
   const formatAverageValue = (avg: AverageStatInfo): string => {
     if (!Number.isFinite(avg.value)) return '0.0';
@@ -4770,11 +4774,15 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-            <OverRatePill 
-              overCount={overSamples} 
-              total={totalSamples} 
-              isDark={isDark} 
-            />
+            {totalSamples > 0 ? (
+              <OverRatePill 
+                overCount={overSamples} 
+                total={totalSamples} 
+                isDark={isDark} 
+              />
+            ) : ((selectedPlayer || hasUrlPlayer) && isLoading) ? (
+              <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
+            ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
               <span className="text-xs text-gray-600 dark:text-gray-400">
                 ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
@@ -4789,11 +4797,15 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-            <OverRatePill 
-              overCount={overSamples} 
-              total={totalSamples} 
-              isDark={isDark} 
-            />
+            {totalSamples > 0 ? (
+              <OverRatePill 
+                overCount={overSamples} 
+                total={totalSamples} 
+                isDark={isDark} 
+              />
+            ) : ((selectedPlayer || hasUrlPlayer) && isLoading) ? (
+              <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
+            ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
               <span className="text-xs text-gray-600 dark:text-gray-400">
                 ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
@@ -5167,20 +5179,12 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       const teamCacheKey = `${targetOpp}:82`;
       const rankCacheKey = `${targetPos}:82`;
       
-      // Force refresh: clear caches and fetch fresh data
-      // This ensures latest ingested data is shown immediately
-      // TEMPORARY: Always refresh to apply the 0-minute player filter fix
-      const shouldRefresh = true; // Force refresh to apply fix
-      if (shouldRefresh) {
-        dvpTeamCache.delete(teamCacheKey);
-        dvpRankCache.delete(rankCacheKey);
-      }
-      
+      // Check cache first - only refresh if needed
       const teamCached = dvpTeamCache.get(teamCacheKey);
       const rankCached = dvpRankCache.get(rankCacheKey);
       
       // Show team stats immediately if available, ranks can load in background
-      if (teamCached && !shouldRefresh) {
+      if (teamCached && rankCached) {
         const map: Record<string, number | null> = {};
         for (const m of DVP_METRICS) {
           const perGame = teamCached.metrics?.[m.key];
@@ -5216,25 +5220,29 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
       try {
         const metricsStr = DVP_METRICS.map(m => m.key).join(',');
         
-        // Fetch only what we don't have cached (or if refreshing)
+        // Fetch only what we don't have cached
         const promises: Promise<any>[] = [];
         
-        // Always fetch fresh to apply the 0-minute player filter fix
-        promises.push(
+        // Only fetch if not cached
+        if (!teamCached) {
+          promises.push(
             cachedFetch<any>(
-            `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82&refresh=1`,
-            undefined,
-            0 // No cache - always fetch fresh
-          ).then(data => ({ type: 'team', data }))
-        );
+              `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
+              undefined,
+              60 // Cache for 60 minutes
+            ).then(data => ({ type: 'team', data }))
+          );
+        }
         
-        promises.push(
+        if (!rankCached) {
+          promises.push(
             cachedFetch<any>(
-            `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82&refresh=1`,
-            undefined,
-            0 // No cache - always fetch fresh
-          ).then(data => ({ type: 'rank', data }))
-        );
+              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
+              undefined,
+              60 // Cache for 60 minutes
+            ).then(data => ({ type: 'rank', data }))
+          );
+        }
         
         if (promises.length > 0) {
           const results = await Promise.all(promises);
@@ -5524,7 +5532,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   selectedTimeFilter,
   propsMode,
   playerId,
-  selectedStat
+  selectedStat,
+  canLoadSimilarPlayers
 }: { 
   isDark: boolean; 
   opponentTeam: string; 
@@ -5532,6 +5541,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   propsMode?: 'player' | 'team';
   playerId?: string | number | null;
   selectedStat?: string;
+  canLoadSimilarPlayers?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [activeView, setActiveView] = useState<'breakdown' | 'similar'>('breakdown');
@@ -5747,14 +5757,15 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
       </div>
 
       <div className="space-y-4">
-        {/* Always render SimilarPlayers (hidden when breakdown is active) so it starts fetching immediately when player is selected */}
+        {/* Render SimilarPlayers only after other components have loaded (hidden when breakdown is active) */}
         {propsMode === 'player' && playerId && (
           <div className={activeView === 'breakdown' ? 'hidden' : ''}>
             <SimilarPlayers 
               playerId={playerId} 
               opponent={opponentTeam} 
               statType={(selectedStat || 'PTS').toUpperCase()} 
-              isDark={isDark} 
+              isDark={isDark}
+              shouldFetch={canLoadSimilarPlayers}
             />
           </div>
         )}
@@ -5878,7 +5889,8 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   prev.selectedTimeFilter === next.selectedTimeFilter &&
   prev.propsMode === next.propsMode &&
   prev.playerId === next.playerId &&
-  prev.selectedStat === next.selectedStat
+  prev.selectedStat === next.selectedStat &&
+  prev.canLoadSimilarPlayers === next.canLoadSimilarPlayers
 ));
 
 // Best Odds Table Component with mounted state to avoid hydration mismatch
@@ -6922,8 +6934,61 @@ function NBADashboardContent() {
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
   
+  // Track if stat was set from URL to prevent default stat logic from overriding it
+  const statFromUrlRef = useRef(false);
+  
+  // Use Next.js useSearchParams to read URL parameters
+  const searchParams = useSearchParams();
+  
+  // Watch for stat parameter in URL and set it immediately
+  useEffect(() => {
+    const stat = searchParams.get('stat');
+    if (stat) {
+      const normalizedStat = (() => {
+        const statUpper = stat.toUpperCase();
+        if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
+          return 'fg3m';
+        }
+        return stat.toLowerCase();
+      })();
+      
+      console.log(`[Dashboard] 🎯 useSearchParams: Found stat="${stat}" -> "${normalizedStat}"`);
+      statFromUrlRef.current = true;
+      setSelectedStat(normalizedStat);
+      
+      // Store in session storage
+      const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          parsed.selectedStat = normalizedStat;
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+        } catch {}
+      }
+    }
+  }, [searchParams]);
+  
   // Ensure correct default stat is set when propsMode changes
   useEffect(() => {
+    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}`);
+    
+    // Check if there's a stat in the URL - if so, don't override it
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const urlStat = url.searchParams.get('stat');
+      if (urlStat) {
+        console.log(`[Dashboard] ⏭️ Skipping default stat logic - stat "${urlStat}" found in URL`);
+        return;
+      }
+    }
+    
+    // Skip if stat was set from URL (don't override it)
+    if (statFromUrlRef.current) {
+      console.log(`[Dashboard] ⏭️ Skipping default stat logic - stat was set from URL (ref flag)`);
+      statFromUrlRef.current = false; // Reset flag after skipping once
+      return;
+    }
+    
     if (propsMode === 'player') {
       // Force non-Pro users back to Game Props mode
       if (!isPro) {
@@ -6939,6 +7004,7 @@ function NBADashboardContent() {
       if (selectedStat !== 'pts') {
         const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
         if (!playerStatExists) {
+          console.log(`[Dashboard] ⚠️ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
           setSelectedStat('pts');
         }
       }
@@ -6949,7 +7015,7 @@ function NBADashboardContent() {
         setSelectedStat('total_pts');
       }
     }
-  }, [propsMode, isPro]);
+  }, [propsMode, isPro, selectedStat]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
@@ -7116,6 +7182,9 @@ const lineMovementInFlightRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   
+  // Track when it's safe to load SimilarPlayers (after other components finish)
+  const [canLoadSimilarPlayers, setCanLoadSimilarPlayers] = useState(false);
+  
   // Clear odds data when player changes (odds are separate from player stats)
   // Player stats are cleared by handlePlayerSelect functions at the start
   useEffect(() => {
@@ -7139,6 +7208,25 @@ const lineMovementInFlightRef = useRef(false);
     setBookOpeningLine(null);
     setBookCurrentLine(null);
   }, [selectedPlayer]);
+  
+  // Delay SimilarPlayers loading until other components finish
+  useEffect(() => {
+    // Reset when player changes
+    setCanLoadSimilarPlayers(false);
+    
+    // Compute playerId the same way it's used elsewhere
+    const playerId = resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null);
+    
+    // Wait until player stats are loaded, then add a delay for other components
+    if (!isLoading && selectedPlayer && playerId) {
+      // Give other components (DvP, opponent analysis) time to load first
+      const delayTimer = setTimeout(() => {
+        setCanLoadSimilarPlayers(true);
+      }, 3000); // 3 second delay after stats load to let other components finish
+      
+      return () => clearTimeout(delayTimer);
+    }
+  }, [isLoading, selectedPlayer, resolvedPlayerId]);
   
   // Advanced stats state
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
@@ -8389,6 +8477,7 @@ const lineMovementInFlightRef = useRef(false);
 
   // On mount: restore from sessionStorage and URL once
   useEffect(() => {
+    console.log(`[Dashboard] 🚀 Mount useEffect running - checking URL and session storage`);
     let initialPropsMode: 'player' | 'team' = 'player';
     let shouldLoadDefaultPlayer = true;
     
@@ -8407,7 +8496,14 @@ const lineMovementInFlightRef = useRef(false);
             setGamePropsTeam(saved.gamePropsTeam);
           }
         }
-        if (saved?.selectedStat) setSelectedStat(saved.selectedStat);
+        // Don't restore stat from session storage if there's a stat in the URL (URL takes precedence)
+        const urlHasStat = typeof window !== 'undefined' ? new URL(window.location.href).searchParams.get('stat') : null;
+        if (saved?.selectedStat && !urlHasStat) {
+          console.log(`[Dashboard] 📦 Restoring stat from session storage: "${saved.selectedStat}" (no stat in URL)`);
+          setSelectedStat(saved.selectedStat);
+        } else if (urlHasStat) {
+          console.log(`[Dashboard] ⏭️ Skipping session storage stat restore - stat "${urlHasStat}" found in URL`);
+        }
         // Only restore selectedTimeframe if we have playerStats loaded (prevents race condition)
         // If playerStats is empty, don't restore timeframe yet - wait for stats to load first
         if (saved?.selectedTimeframe && playerStats.length > 0) {
@@ -8420,18 +8516,75 @@ const lineMovementInFlightRef = useRef(false);
     try {
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
+        console.log(`[Dashboard] 🔍 Full URL: ${url.href}`);
         const pid = url.searchParams.get('pid');
         const name = url.searchParams.get('name');
+        const player = url.searchParams.get('player'); // Support 'player' param (from player props page)
         const team = url.searchParams.get('team') || undefined;
         const stat = url.searchParams.get('stat');
+        const line = url.searchParams.get('line');
         const tf = url.searchParams.get('tf');
         const mode = url.searchParams.get('mode');
         
+        console.log(`[Dashboard] 🔍 URL params: stat="${stat}", player="${player}", mode="${mode}", line="${line}"`);
+        console.log(`[Dashboard] 🔍 All URL params:`, Object.fromEntries(url.searchParams.entries()));
+        
+        // Set stat from URL FIRST (before propsMode) to prevent default stat logic from overriding it
+        if (stat) {
+          console.log(`[Dashboard] ✅ Found stat in URL: "${stat}"`);
+          // Normalize stat from props page format (uppercase) to dashboard format (lowercase)
+          // Also handle special cases like "THREES" -> "fg3m"
+          const normalizedStat = (() => {
+            const statUpper = stat.toUpperCase();
+            // Map special cases first
+            if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
+              return 'fg3m';
+            }
+            // Convert uppercase to lowercase for standard stats
+            // Props page uses: PTS, REB, AST, STL, BLK, PRA, PA, PR, RA
+            // Dashboard expects: pts, reb, ast, stl, blk, pra, pa, pr, ra
+            return stat.toLowerCase();
+          })();
+          
+          console.log(`[Dashboard] 📊 Setting stat from URL: "${stat}" -> "${normalizedStat}"`);
+          
+          // Set flag to prevent default stat logic from overriding
+          statFromUrlRef.current = true;
+          setSelectedStat(normalizedStat);
+          
+          // Store in session storage to persist across player loading
+          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              parsed.selectedStat = normalizedStat;
+              sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+            } catch {}
+          }
+          
+          // If line is provided, set it for this stat (use normalized stat for the key)
+          if (line) {
+            const lineValue = parseFloat(line);
+            if (!isNaN(lineValue)) {
+              setBettingLines(prev => ({
+                ...prev,
+                [normalizedStat]: Math.abs(lineValue) // Use absolute value (line can be negative for under props)
+              }));
+            }
+          }
+        } else {
+          console.log(`[Dashboard] ⚠️ No stat parameter found in URL`);
+        }
+        
+        // Set propsMode AFTER stat (so default stat logic can see the URL stat)
         if (mode === 'team' || mode === 'player') {
+          console.log(`[Dashboard] 📝 Setting propsMode from URL: "${mode}"`);
           initialPropsMode = mode;
           setPropsMode(mode);
         }
-        if (stat) setSelectedStat(stat);
+        
+        // Handle 'player' param (from player props page) - use it if 'name' is not provided
+        const playerName = name || player;
         // Only restore timeframe from URL if we have playerStats loaded (prevents race condition)
         if (tf && playerStats.length > 0) {
           setSelectedTimeframe(tf);
@@ -8446,16 +8599,134 @@ const lineMovementInFlightRef = useRef(false);
             } catch {}
           }
         }
-        if (pid && name) {
-          const r: BdlSearchResult = { id: Number(pid), full: name, team, pos: undefined };
+        // Handle player selection - support both 'pid+name' and 'player' params
+        if (pid && playerName) {
+          const r: BdlSearchResult = { id: Number(pid), full: playerName, team, pos: undefined };
           if (initialPropsMode === 'player') {
             handlePlayerSelectFromSearch(r);
             shouldLoadDefaultPlayer = false;
             return;
           }
+        } else if (playerName && !pid) {
+          // If only 'player' name is provided (from player props page), search for the player
+          if (initialPropsMode === 'player') {
+            // Trigger search for the player name
+            const searchForPlayer = async () => {
+              try {
+                console.log(`[Dashboard] 🔍 Searching for player: "${playerName}"`);
+                // Try searching with 'all=true' to include inactive players if needed
+                let res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}`);
+                if (!res.ok) {
+                  console.error(`[Dashboard] ❌ Failed to search for player "${playerName}":`, res.status, res.statusText);
+                  return;
+                }
+                let json = await res.json();
+                console.log(`[Dashboard] 📋 Search results for "${playerName}":`, json);
+                console.log(`[Dashboard] 📋 Response structure:`, {
+                  hasResults: !!json?.results,
+                  resultsType: Array.isArray(json?.results) ? 'array' : typeof json?.results,
+                  resultsLength: Array.isArray(json?.results) ? json.results.length : 'not array',
+                  hasData: !!json?.data,
+                  dataType: Array.isArray(json?.data) ? 'array' : typeof json?.data,
+                  dataLength: Array.isArray(json?.data) ? json.data.length : 'not array',
+                  hasError: !!json?.error,
+                  error: json?.error
+                });
+                
+                // Try both 'results' and 'data' fields (API might return either)
+                let rawResults = json?.results;
+                if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
+                  rawResults = json?.data;
+                }
+                
+                // If no results, try searching with 'all=true' to include inactive players
+                if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
+                  console.log(`[Dashboard] 🔄 No results found, trying with all=true (including inactive players)...`);
+                  res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}&all=true`);
+                  if (res.ok) {
+                    json = await res.json();
+                    rawResults = json?.results || json?.data;
+                    console.log(`[Dashboard] 📋 Search with all=true returned:`, {
+                      resultsCount: Array.isArray(rawResults) ? rawResults.length : 0,
+                      response: json
+                    });
+                  }
+                }
+                
+                // If still no results, try searching with just last name
+                if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
+                  const nameParts = playerName.trim().split(/\s+/);
+                  if (nameParts.length > 1) {
+                    const lastName = nameParts[nameParts.length - 1];
+                    console.log(`[Dashboard] 🔄 No results found, trying with last name only: "${lastName}"...`);
+                    res = await fetch(`/api/bdl/players?q=${encodeURIComponent(lastName)}&all=true`);
+                    if (res.ok) {
+                      json = await res.json();
+                      rawResults = json?.results || json?.data;
+                      console.log(`[Dashboard] 📋 Search with last name returned:`, {
+                        resultsCount: Array.isArray(rawResults) ? rawResults.length : 0,
+                        response: json
+                      });
+                    }
+                  }
+                }
+                
+                const results: BdlSearchResult[] = Array.isArray(rawResults) && rawResults.length > 0
+                  ? rawResults.map((r: any) => ({ 
+                      id: r.id, 
+                      full: r.full, 
+                      team: r.team, 
+                      pos: r.pos, 
+                      headshotUrl: r.headshotUrl || null 
+                    }))
+                  : [];
+                console.log(`[Dashboard] 📊 Parsed ${results.length} results for "${playerName}"`);
+                if (results && results.length > 0) {
+                  // Try to find exact match first, then use first result
+                  const playerNameLower = playerName.toLowerCase().trim();
+                  let playerResult = results.find(r => r.full.toLowerCase().trim() === playerNameLower);
+                  if (!playerResult) {
+                    // Try partial match (first name or last name)
+                    playerResult = results.find(r => {
+                      const fullLower = r.full.toLowerCase().trim();
+                      return fullLower.includes(playerNameLower) || playerNameLower.includes(fullLower);
+                    });
+                  }
+                  // Fallback to first result
+                  if (!playerResult) {
+                    playerResult = results[0];
+                  }
+                  
+                  console.log(`[Dashboard] ✅ Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
+                  const r: BdlSearchResult = {
+                    id: playerResult.id,
+                    full: playerResult.full,
+                    team: playerResult.team,
+                    pos: playerResult.pos
+                  };
+                  console.log(`[Dashboard] 🚀 Calling handlePlayerSelectFromSearch for:`, r);
+                  await handlePlayerSelectFromSearch(r);
+                  shouldLoadDefaultPlayer = false;
+                } else {
+                  console.warn(`[Dashboard] ⚠️ No results found for player: "${playerName}"`);
+                  console.warn(`[Dashboard] ⚠️ API response was:`, json);
+                }
+              } catch (error) {
+                console.error(`[Dashboard] ❌ Error searching for player "${playerName}":`, error);
+              }
+            };
+            // Don't await here - let it run in background, but don't return immediately
+            searchForPlayer().catch(err => {
+              console.error('[Dashboard] Unhandled error in searchForPlayer:', err);
+            });
+            shouldLoadDefaultPlayer = false;
+            // Don't return here - let the useEffect continue to set up other things
+          }
         }
       }
-    } catch {}
+    } catch (urlError) {
+      console.error('[Dashboard] Error processing URL parameters:', urlError);
+    }
 
     // Finally, restore saved player if in player mode
     if (initialPropsMode === 'player') {
@@ -8666,6 +8937,7 @@ const lineMovementInFlightRef = useRef(false);
 
   // Core function to fetch player stats (without UI state updates)
   const fetchSortedStatsCore = async (playerId: string) => {
+    console.log('[fetchSortedStatsCore] Starting fetch for playerId:', playerId);
     const season = currentNbaSeason();
     const grab = async (yr: number, postseason = false) => {
       const r = await fetch(`/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`);
@@ -8685,7 +8957,45 @@ const lineMovementInFlightRef = useRef(false);
     // Merge current + previous season data, then sort newest-first
     // The baseGameData useMemo will filter by selectedTimeframe to show current/last season
     const rows = [...currReg, ...currPO, ...prev1Reg, ...prev1PO];
+    
+    // Debug: log the structure of received stats
+    if (rows.length > 0) {
+      console.log('[fetchSortedStatsCore] Received stats structure:', {
+        playerId,
+        totalRows: rows.length,
+        currReg: currReg.length,
+        currPO: currPO.length,
+        prev1Reg: prev1Reg.length,
+        prev1PO: prev1PO.length,
+        sampleStat: rows[0],
+        hasGame: !!rows[0]?.game,
+        hasGameDate: !!rows[0]?.game?.date,
+        hasTeam: !!rows[0]?.team,
+        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
+        sampleStatKeys: Object.keys(rows[0] || {}),
+      });
+    }
+    
     const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
+    
+    // Debug: log if we're filtering out all stats
+    if (rows.length > 0 && safe.length === 0) {
+      console.warn('[fetchSortedStatsCore] All stats filtered out! Sample stat structure:', {
+        totalRows: rows.length,
+        sampleStat: rows[0],
+        hasGame: !!rows[0]?.game,
+        hasGameDate: !!rows[0]?.game?.date,
+        hasTeam: !!rows[0]?.team,
+        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
+      });
+    } else if (rows.length > 0) {
+      console.log('[fetchSortedStatsCore] Filtered stats:', {
+        totalRows: rows.length,
+        safeRows: safe.length,
+        filteredOut: rows.length - safe.length,
+      });
+    }
+    
     safe.sort((a, b) => {
       const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
       const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
@@ -9001,6 +9311,19 @@ const lineMovementInFlightRef = useRef(false);
         fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
       }
       
+      // Debug: log what we're setting as playerStats
+      console.log('[Dashboard] Setting playerStats:', {
+        playerId: pid,
+        playerName: player.full,
+        rowsCount: rows.length,
+        sampleRow: rows[0],
+        hasGame: !!rows[0]?.game,
+        hasGameDate: !!rows[0]?.game?.date,
+        hasTeam: !!rows[0]?.team,
+        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
+        sampleRowKeys: rows[0] ? Object.keys(rows[0]) : [],
+      });
+      
       setPlayerStats(rows);
       
       // Use sample data team directly for default players - NO GAME DATA FALLBACK
@@ -9198,8 +9521,11 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
-      // Fallback to depth chart roster for jersey if still missing
-      if (!jerseyNumber && playerTeamRoster) {
+      // Get position from search result, or fetch from depth chart if missing
+      let playerPosition = r.pos || tempPlayer.position || '';
+      
+      // Fallback to depth chart roster for jersey and position if still missing
+      if (playerTeamRoster) {
         // Search all positions in roster for this player
         const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
         for (const pos of positions) {
@@ -9210,9 +9536,15 @@ const lineMovementInFlightRef = useRef(false);
               (p.name.toLowerCase().includes(r.full.toLowerCase()) || 
                r.full.toLowerCase().includes(p.name.toLowerCase()))
             );
-            if (found && found.jersey && found.jersey !== 'N/A') {
-              jerseyNumber = Number(found.jersey);
-              console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
+            if (found) {
+              if (!jerseyNumber && found.jersey && found.jersey !== 'N/A') {
+                jerseyNumber = Number(found.jersey);
+                console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
+              }
+              if (!playerPosition) {
+                playerPosition = pos;
+                console.log(`✅ Found position ${playerPosition} from depth chart for ${r.full}`);
+              }
               break;
             }
           }
@@ -9233,15 +9565,20 @@ const lineMovementInFlightRef = useRef(false);
             console.log(`✅ Found height ${heightFeetData}'${heightInchesData}" from ESPN for ${r.full}`);
           }
         }
+        if (!playerPosition && espnData.position) {
+          playerPosition = espnData.position;
+          console.log(`✅ Found position ${playerPosition} from ESPN for ${r.full}`);
+        }
       }
       
-      // Update player object with search API team + BDL data
+      // Update player object with search API team + BDL data + position
       setSelectedPlayer({
         ...tempPlayer,
         teamAbbr: currentTeam,
         jersey: jerseyNumber,
         heightFeet: heightFeetData,
         heightInches: heightInchesData,
+        position: playerPosition || undefined,
         // Add raw height as fallback for debugging
         rawHeight: bdlPlayerData?.height || undefined,
       });
@@ -9447,18 +9784,62 @@ const lineMovementInFlightRef = useRef(false);
     }
     
     // Player mode: use existing player stats logic
-    // IMPORTANT: If playerStats is empty but we have a selectedPlayer, this might be a race condition
+    // IMPORTANT: If playerStats is empty but we have a selectedPlayer or resolvedPlayerId, this might be a race condition
     // Don't return empty array immediately - check if we're in the middle of a fetch
     if (!playerStats.length) {
-      // If we have a selectedPlayer but no stats, we might be loading
-      // Return empty array to prevent showing wrong data, but don't break the memoization
-      if (selectedPlayer && isLoading) {
-        // Still loading - return empty to show loading state
+      // Check if URL params indicate a player should be loaded (for initial page load detection)
+      let hasUrlPlayer = false;
+      if (typeof window !== 'undefined' && propsMode === 'player') {
+        try {
+          const url = new URL(window.location.href);
+          const pid = url.searchParams.get('pid');
+          const name = url.searchParams.get('name');
+          hasUrlPlayer = !!(pid && name);
+          // Debug: log URL check details
+          console.log('[baseGameData] URL check:', {
+            href: window.location.href,
+            search: window.location.search,
+            pid,
+            name,
+            mode: url.searchParams.get('mode'),
+            hasUrlPlayer,
+          });
+        } catch (e) {
+          console.warn('[baseGameData] URL check error:', e);
+        }
+      }
+      
+      // Debug: log why we're returning empty
+      console.log('[baseGameData] No playerStats:', {
+        playerStatsLength: playerStats.length,
+        selectedPlayer: selectedPlayer?.full,
+        resolvedPlayerId,
+        isLoading,
+        hasUrlPlayer,
+      });
+      // If we have a selectedPlayer OR resolvedPlayerId OR URL params indicate a player, we're either loading or haven't started loading yet
+      // This can happen on initial page load when URL params exist but selectedPlayer/fetch hasn't started
+      // Return empty array to prevent showing wrong data (0/0), but don't break the memoization
+      if (selectedPlayer || resolvedPlayerId || hasUrlPlayer) {
+        // Player is selected/resolved/indicated by URL but stats aren't loaded yet - treat as loading state
+        // This prevents showing "0/0" during initial load
         return [];
       }
       // No player selected or stats truly empty - return empty
       return [];
     }
+    
+    // Debug: log stats structure at the start of baseGameData processing
+    console.log('[baseGameData] Processing playerStats:', {
+      playerStatsLength: playerStats.length,
+      selectedPlayer: selectedPlayer?.full,
+      selectedTimeframe,
+      sampleStat: playerStats[0],
+      hasGame: !!playerStats[0]?.game,
+      hasGameDate: !!playerStats[0]?.game?.date,
+      hasTeam: !!playerStats[0]?.team,
+      hasTeamAbbr: !!playerStats[0]?.team?.abbreviation,
+    });
     
     // Filter out games where player played 0 minutes FIRST
     const gamesPlayed = playerStats.filter(stats => {
@@ -9508,7 +9889,23 @@ const lineMovementInFlightRef = useRef(false);
     }
     
     // Special case filters
-    if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
+    // For L5, L10, L15, L20 - filter to current season only (like "thisseason")
+    const n = parseInt(selectedTimeframe.replace('last', ''));
+    if (!Number.isNaN(n) && ['last5', 'last10', 'last15', 'last20'].includes(selectedTimeframe)) {
+      const currentSeason = currentNbaSeason();
+      filteredGames = gamesPlayed.filter(stats => {
+        if (!stats.game?.date) return false;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        
+        // NBA season spans two calendar years (e.g., 2024-25 season)
+        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
+        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+        return gameSeasonYear === currentSeason;
+      });
+      console.log(`📅 ${selectedTimeframe.toUpperCase()}: Filtered to ${filteredGames.length} games from current season ${currentSeason}-${(currentSeason + 1) % 100}`);
+    } else if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
       // Filter games to only show those against the current opponent team
       if (opponentTeam && opponentTeam !== '') {
         const normalizedOpponent = normalizeAbbr(opponentTeam);
@@ -9611,16 +10008,21 @@ const lineMovementInFlightRef = useRef(false);
       });
     }
     
-    const n = parseInt(selectedTimeframe.replace('last', ''));
-    const newestFirst = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe) 
-      ? filteredGames 
-      : (!Number.isNaN(n) ? filteredGames.slice(0, n) : filteredGames);
+    // Sort games by date (newest first) before applying timeframe filters
+    const sortedByDate = [...filteredGames].sort((a, b) => {
+      const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+      const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
     
-    // Deduplicate by gameId to fix API duplicate data issue
+    // n was already parsed above for season filtering, but we need it again for slicing
+    const nForSlice = parseInt(selectedTimeframe.replace('last', ''));
+    
+    // Deduplicate by gameId to fix API duplicate data issue (on sorted games)
     const uniqueGames = [];
     const seenGameIds = new Set();
     
-    for (const game of newestFirst) {
+    for (const game of sortedByDate) {
       const gameId = game?.game?.id;
       if (gameId && !seenGameIds.has(gameId)) {
         seenGameIds.add(gameId);
@@ -9631,12 +10033,32 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
-    console.log(`📈 Deduplicated: ${newestFirst.length} → ${uniqueGames.length} unique games`);
+    console.log(`📈 Deduplicated: ${sortedByDate.length} → ${uniqueGames.length} unique games`);
     
-    // Apply timeframe to unique games and reverse for chronological order
-    const timeframeGames = !Number.isNaN(n) ? uniqueGames.slice(0, n) : uniqueGames;
-    const ordered = timeframeGames.slice().reverse(); // left→right oldest→newest
-    return ordered.map((stats, index) => {
+    // Apply timeframe to unique games - use slice(0, n) to get FIRST n games (most recent)
+    // Since uniqueGames is sorted newest-first, slice(0, n) gives us the newest n games
+    // For special timeframes (h2h, lastseason, thisseason), don't slice
+    const timeframeGames = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe)
+      ? uniqueGames
+      : (!Number.isNaN(nForSlice) ? uniqueGames.slice(0, nForSlice) : uniqueGames);
+    
+    // Reverse for chronological order (left→right oldest→newest)
+    const ordered = timeframeGames.slice().reverse();
+    
+    // Debug: log before mapping
+    console.log('[baseGameData] Before mapping:', {
+      selectedTimeframe,
+      gamesPlayedCount: gamesPlayed.length,
+      filteredGamesCount: filteredGames.length,
+      uniqueGamesCount: uniqueGames.length,
+      timeframeGamesCount: timeframeGames.length,
+      orderedCount: ordered.length,
+      sampleOrderedStat: ordered[0],
+      hasGame: !!ordered[0]?.game,
+      hasGameDate: !!ordered[0]?.game?.date,
+    });
+    
+    const result = ordered.map((stats, index) => {
       const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
       const playerTeamNorm = normalizeAbbr(playerTeam);
       
@@ -9683,7 +10105,14 @@ const lineMovementInFlightRef = useRef(false);
         tickLabel,              // what we show on the axis
       };
     });
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading]); // Added isLoading to prevent race conditions when stats are being fetched
+    
+    console.log('[baseGameData] Final result:', {
+      resultLength: result.length,
+      selectedTimeframe,
+    });
+    
+    return result;
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Added isLoading and resolvedPlayerId to prevent race conditions when stats are being fetched
   
   // Precompute back-to-back games (player mode)
   const backToBackGameIds = useMemo(() => {
@@ -9721,7 +10150,7 @@ const lineMovementInFlightRef = useRef(false);
   // Apply advanced filters to base data for player mode
   const filteredGameData = useMemo(() => {
     if (propsMode !== 'player') return baseGameData;
-    return baseGameData.filter((g: any) => {
+    const filtered = baseGameData.filter((g: any) => {
       const stats = g?.stats;
       const game = stats?.game;
 
@@ -9752,6 +10181,21 @@ const lineMovementInFlightRef = useRef(false);
 
       return true;
     });
+    
+    // Debug: log filtering results
+    console.log('[filteredGameData] Filtering results:', {
+      baseGameDataLength: baseGameData.length,
+      filteredLength: filtered.length,
+      minMinutesFilter,
+      maxMinutesFilter,
+      excludeBlowouts,
+      excludeBackToBack,
+      teammateFilterId,
+      withWithoutMode,
+      sampleFiltered: filtered[0],
+    });
+    
+    return filtered;
   }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds]);
 
   /* -------- Chart data with current stat values ----------
@@ -9806,6 +10250,16 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
+    // Debug: log chartData computation
+    console.log('[chartData] Computed chartData:', {
+      propsMode,
+      sourceLength: source.length,
+      chartDataLength: mapped.length,
+      selectedStat,
+      sampleChartData: mapped[0],
+      sampleValue: mapped[0]?.value,
+    });
+    
     return mapped;
   }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
 
@@ -9857,11 +10311,48 @@ const lineMovementInFlightRef = useRef(false);
 
   // Hit rate calculations - using statistical distribution instead of simple counting
   const hitRateStats = useMemo<HitRateStats>(() => {
+    // Debug: log chartData values before filtering
+    console.log('[hitRateStats] Processing chartData:', {
+      chartDataLength: chartData.length,
+      sampleChartData: chartData[0],
+      sampleValue: chartData[0]?.value,
+      sampleValueType: typeof chartData[0]?.value,
+      allValues: chartData.map(d => d.value),
+      allValueTypes: chartData.map(d => typeof d.value),
+    });
+    
     const validValues = chartData
       .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
       .filter((v): v is number => Number.isFinite(v));
     
+    // Debug: log filtering results
+    console.log('[hitRateStats] Valid values:', {
+      validValuesLength: validValues.length,
+      validValues,
+      chartDataLength: chartData.length,
+      filteredOut: chartData.length - validValues.length,
+    });
+    
     if (validValues.length === 0) {
+      // Check if URL params indicate a player should be loaded (for initial page load detection)
+      let hasUrlPlayer = false;
+      if (typeof window !== 'undefined' && propsMode === 'player') {
+        try {
+          const url = new URL(window.location.href);
+          const pid = url.searchParams.get('pid');
+          const name = url.searchParams.get('name');
+          hasUrlPlayer = !!(pid && name);
+        } catch {}
+      }
+      
+      // If we have a selectedPlayer or resolvedPlayerId or URL params but no data, we're likely still loading
+      // Don't show "0/0" - return empty stats that won't display the pill
+      if (propsMode === 'player' && (selectedPlayer || resolvedPlayerId || hasUrlPlayer) && (isLoading || chartData.length === 0)) {
+        console.log('[hitRateStats] Loading state - player exists but no data yet');
+        // Return empty but with a flag that we're loading (chartData.length === 0 means we're waiting)
+        return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: undefined };
+      }
+      console.warn('[hitRateStats] No valid values found! Returning 0/0');
       return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: propsMode === 'player' ? baseGameData.length : undefined };
     }
     
@@ -9954,7 +10445,7 @@ const lineMovementInFlightRef = useRef(false);
     const totalBeforeFilters = propsMode === 'player' ? baseGameData.length : undefined;
     
     return { overCount, underCount, total, averages, totalBeforeFilters };
-  }, [chartData, bettingLine, selectedStat, currentStatOptions, propsMode, baseGameData.length]);
+  }, [chartData, bettingLine, selectedStat, currentStatOptions, propsMode, baseGameData.length, selectedPlayer, isLoading]);
 
   // Custom tooltip content - completely independent to prevent lag when adjusting betting line
   const customTooltip = ({ active, payload, label }: any) => {
@@ -10207,6 +10698,9 @@ const lineMovementInFlightRef = useRef(false);
       'reb': 'REB',
       'ast': 'AST',
       'fg3m': 'THREES',
+      'stl': 'STL',
+      'blk': 'BLK',
+      'to': 'TO',
       'pra': 'PRA',
       'pr': 'PR',
       'pa': 'PA',
@@ -10948,35 +11442,9 @@ const lineMovementInFlightRef = useRef(false);
       if (!meta?.variantLabel) {
         const statData = (fanduelBook as any)[bookRowKey];
         if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
-          const overOddsStr = statData.over;
-          const underOddsStr = statData.under;
-          
-          const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
-            ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
-            : null;
-          const underOdds = (underOddsStr && underOddsStr !== 'N/A')
-            ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
-            : null;
-          
-          if (overOdds !== null && underOdds !== null && Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
-            const impliedProbabilityFromAmerican = (american: number): number => {
-              if (american > 0) {
-                return (100 / (american + 100)) * 100;
-              } else {
-                return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
-              }
-            };
-            
-            const overProb = impliedProbabilityFromAmerican(overOdds);
-            const underProb = impliedProbabilityFromAmerican(underOdds);
-            const totalProb = overProb + underProb;
-            
-            if (totalProb > 0) {
-              return {
-                overImpliedProb: (overProb / totalProb) * 100,
-                underImpliedProb: (underProb / totalProb) * 100,
-              };
-            }
+          const fanduelImplied = calculateImpliedProbabilities(statData.over, statData.under);
+          if (fanduelImplied) {
+            return fanduelImplied;
           }
         }
       }
@@ -10992,35 +11460,12 @@ const lineMovementInFlightRef = useRef(false);
       
       const statData = (book as any)[bookRowKey];
       if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
-        const overOddsStr = statData.over;
-        const underOddsStr = statData.under;
-        
-        const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
-          ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
-          : null;
-        const underOdds = (underOddsStr && underOddsStr !== 'N/A')
-          ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
-          : null;
-        
-        if (overOdds !== null && underOdds !== null && Number.isFinite(overOdds) && Number.isFinite(underOdds)) {
-          const impliedProbabilityFromAmerican = (american: number): number => {
-            if (american > 0) {
-              return (100 / (american + 100)) * 100;
-            } else {
-              return (Math.abs(american) / (Math.abs(american) + 100)) * 100;
-            }
-          };
-          
-          const overProb = impliedProbabilityFromAmerican(overOdds);
-          const underProb = impliedProbabilityFromAmerican(underOdds);
-          const totalProb = overProb + underProb;
-          
-          if (totalProb > 0) {
-            validBooks.push({
-              over: (overProb / totalProb) * 100,
-              under: (underProb / totalProb) * 100,
-            });
-          }
+        const bookImplied = calculateImpliedProbabilities(statData.over, statData.under);
+        if (bookImplied) {
+          validBooks.push({
+            over: bookImplied.overImpliedProb,
+            under: bookImplied.underImpliedProb,
+          });
         }
       }
     }
@@ -11057,11 +11502,172 @@ const lineMovementInFlightRef = useRef(false);
     // Use primary market line (consensus from real bookmakers) - this is fixed and doesn't change when user adjusts betting line
     const predictionLine = primaryMarketLine;
     
-    // Comprehensive prediction model combining multiple factors
-    // IMPORTANT: Use playerStats (unfiltered) instead of chartData (filtered by timeframe) 
-    // so prediction doesn't change when user changes timeframe
+    // Use shared API endpoint for prediction calculation to ensure consistency with Top Player Props page
     const calculatePrediction = async () => {
       try {
+        if (!selectedPlayer?.id) {
+          setPredictedOutcome(null);
+          return;
+        }
+
+        // Build API request params - use selectedPlayer.id (BallDon'tLie ID)
+        if (!predictionLine || !Number.isFinite(predictionLine)) {
+          console.warn('[Dashboard] No valid prediction line available:', predictionLine, 'cannot calculate prediction');
+          setPredictedOutcome(null);
+          return;
+        }
+        
+        console.log('[Dashboard] Calling prediction API with:', {
+          playerId: selectedPlayer.id,
+          statType: selectedStat,
+          line: predictionLine,
+          playerTeam: selectedPlayer.teamAbbr,
+          opponent: opponentTeam
+        });
+        
+        const params = new URLSearchParams({
+          playerId: selectedPlayer.id.toString(),
+          statType: selectedStat,
+          line: predictionLine.toString(),
+          playerTeam: selectedPlayer.teamAbbr || '',
+          opponent: opponentTeam || '',
+          position: selectedPosition || '',
+        });
+
+        // Add market probabilities for blending if available
+        const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
+        const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
+        if (marketOverProb !== null && marketUnderProb !== null && predictionLine !== null) {
+          params.append('marketLine', predictionLine.toString());
+          params.append('marketOverProb', marketOverProb.toString());
+          params.append('marketUnderProb', marketUnderProb.toString());
+        }
+
+        // Call shared API endpoint
+        const response = await fetch(`/api/prediction?${params.toString()}`);
+        if (!response.ok) {
+          console.error('[Dashboard] Failed to fetch prediction from API');
+          setPredictedOutcome(null);
+          return;
+        }
+
+        const data = await response.json();
+        if (data.error) {
+          console.error('[Dashboard] Prediction API error:', data.error);
+          setPredictedOutcome(null);
+          return;
+        }
+
+        if (data.overProb !== null && data.overProb !== undefined && 
+            data.underProb !== null && data.underProb !== undefined) {
+          // Calculate confidence and EV (these are dashboard-specific, not in API)
+          const isOver = data.overProb >= 50;
+          const statProb = isOver ? data.overProb : data.underProb;
+          const marketProb = isOver ? marketOverProb : marketUnderProb;
+          
+          // Calculate edge and confidence
+          const edge = marketProb != null ? statProb - marketProb : null;
+          let confidence: 'High' | 'Medium' | 'Low' = 'Low';
+          if (edge != null) {
+            const absEdge = Math.abs(edge);
+            confidence = absEdge >= 12 ? 'High' : absEdge >= 6 ? 'Medium' : 'Low';
+          }
+          
+          // Calculate Expected Value (EV) using actual betting odds
+          let expectedValue: number | null = null;
+          
+          // Get the actual odds for the bet (over or under)
+          const bookRowKey = getBookRowKey(selectedStat);
+          if (bookRowKey && realOddsData && realOddsData.length > 0 && predictionLine !== null && predictionLine !== undefined) {
+            // Find the best odds for the primary market line (consensus line)
+            let bestOverOdds: number | null = null;
+            let bestUnderOdds: number | null = null;
+            
+            for (const book of realOddsData) {
+              const statData = (book as any)[bookRowKey];
+              if (!statData || statData.line === 'N/A') continue;
+              
+              const lineValue = parseFloat(statData.line);
+              if (isNaN(lineValue)) continue;
+              
+              // Only use real lines (not alt lines) - check if it matches primary market line
+              const meta = (book as any)?.meta;
+              if (meta?.variantLabel) continue; // Skip alt lines
+              
+              // Check if this line matches the primary market line (within 0.1)
+              if (Math.abs(lineValue - predictionLine) < 0.1) {
+                // Parse over odds
+                if (statData.over && statData.over !== 'N/A') {
+                  const overOddsStr = statData.over;
+                  const overOdds = typeof overOddsStr === 'string' 
+                    ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, ''))
+                    : parseFloat(String(overOddsStr));
+                  if (Number.isFinite(overOdds) && (bestOverOdds === null || overOdds > bestOverOdds)) {
+                    bestOverOdds = overOdds;
+                  }
+                }
+                
+                // Parse under odds
+                if (statData.under && statData.under !== 'N/A') {
+                  const underOddsStr = statData.under;
+                  const underOdds = typeof underOddsStr === 'string'
+                    ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, ''))
+                    : parseFloat(String(underOddsStr));
+                  if (Number.isFinite(underOdds) && (bestUnderOdds === null || underOdds > bestUnderOdds)) {
+                    bestUnderOdds = underOdds;
+                  }
+                }
+              }
+            }
+            
+            // Calculate EV using the best odds
+            if (isOver && bestOverOdds !== null) {
+              // Convert American odds to decimal odds
+              const decimalOdds = bestOverOdds > 0 
+                ? (bestOverOdds / 100) + 1 
+                : (100 / Math.abs(bestOverOdds)) + 1;
+              
+              // EV = (Probability × Decimal Odds - 1) × 100
+              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
+            } else if (!isOver && bestUnderOdds !== null) {
+              // Convert American odds to decimal odds
+              const decimalOdds = bestUnderOdds > 0 
+                ? (bestUnderOdds / 100) + 1 
+                : (100 / Math.abs(bestUnderOdds)) + 1;
+              
+              // EV = (Probability × Decimal Odds - 1) × 100
+              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
+            }
+          }
+          
+          // Fallback: if we can't get actual odds, use implied probability method
+          if (expectedValue === null && marketProb !== null && marketProb > 0 && marketProb <= 100) {
+            // This is a rough approximation using implied probability
+            // EV ≈ (StatTrackr Probability / Market Implied Probability - 1) × 100
+            expectedValue = (statProb / marketProb - 1) * 100;
+          }
+          
+          setPredictedOutcome({
+            overProb: data.overProb,
+            underProb: data.underProb,
+            confidence,
+            expectedValue,
+          });
+          return;
+        }
+
+        // API returned null probabilities - log the full response for debugging
+        console.warn('[Dashboard] API returned null probabilities. Full response:', JSON.stringify(data, null, 2));
+        setPredictedOutcome(null);
+        return;
+      } catch (error) {
+        console.error('[Dashboard] Error fetching prediction from API:', error);
+        setPredictedOutcome(null);
+        return;
+      }
+      
+      // OLD CLIENT-SIDE CALCULATION (now disabled, using API instead)
+      /*try {
         // Extract all stat values from unfiltered playerStats (not chartData which is filtered by timeframe)
         const allStatValues = playerStats
           .filter((stats: any) => {
@@ -11077,12 +11683,18 @@ const lineMovementInFlightRef = useRef(false);
         }
         
         // 1. Last 5 games average (most recent form) - use all stats, not filtered
-        const last5Stats = playerStats
+        // Sort by date newest-first, then take first 5
+        const sortedStats = [...playerStats].sort((a, b) => {
+          const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+          const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+          return dateB - dateA; // Newest first
+        });
+        const last5Stats = sortedStats
           .filter((stats: any) => {
             const minutes = parseMinutes(stats.min);
             return minutes > 0;
           })
-          .slice(-5)
+          .slice(0, 5)
           .map((stats: any) => getStatValue(stats, selectedStat))
           .filter((val: number) => Number.isFinite(val));
         const last5Avg = last5Stats.length > 0
@@ -11417,6 +12029,7 @@ const lineMovementInFlightRef = useRef(false);
         console.error('Error calculating prediction:', error);
         setPredictedOutcome(null);
       }
+      */
     };
     
     calculatePrediction();
@@ -11799,6 +12412,23 @@ const lineMovementInFlightRef = useRef(false);
                   ) : (
                     // Player Props mode - show player info
                     <div>
+                      {/* Back button to player props page */}
+                      {selectedPlayer && (
+                        <button
+                          onClick={() => router.push('/nba')}
+                          className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                        >
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          <span>Back to Player Props</span>
+                        </button>
+                      )}
                       <div className="flex items-baseline gap-3 mb-1">
                         <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
                         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
@@ -12350,9 +12980,28 @@ const lineMovementInFlightRef = useRef(false);
                     )
                   ) : (
                     // Player Props mode - show player name
-                    <div className="flex items-baseline gap-3">
-                      <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
-                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
+                    <div>
+                      {/* Back button to player props page */}
+                      {selectedPlayer && (
+                        <button
+                          onClick={() => router.push('/nba')}
+                          className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                        >
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          <span>Back to Player Props</span>
+                        </button>
+                      )}
+                      <div className="flex items-baseline gap-3">
+                        <h1 className="text-lg font-bold text-gray-900 dark:text-white">{playerInfo.name}</h1>
+                        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{playerInfo.jersey}</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -12858,6 +13507,7 @@ const lineMovementInFlightRef = useRef(false);
                 propsMode={propsMode}
                 playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                 selectedStat={selectedStat}
+                canLoadSimilarPlayers={canLoadSimilarPlayers}
               />
 
               {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
@@ -13630,6 +14280,7 @@ const lineMovementInFlightRef = useRef(false);
                   propsMode={propsMode}
                   playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                   selectedStat={selectedStat}
+                  canLoadSimilarPlayers={canLoadSimilarPlayers}
                 />
 
                 {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
@@ -14174,167 +14825,6 @@ const lineMovementInFlightRef = useRef(false);
               </div>
             )}
 
-            {/* Advanced Stats Container (Desktop - Right Panel) - only in Player Props mode, below Shot Chart */}
-            {propsMode === 'player' && (
-              <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700" style={{ minHeight: '200px' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Advanced Stats</h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Current season stats</span>
-                </div>
-                {advancedStats ? (
-                  <div className="grid grid-cols-3 gap-4">
-                    {/* Offensive Metrics */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Offensive</h4>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>OFF RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.offensive_rating ? 'text-gray-400' :
-                            advancedStats.offensive_rating >= 115 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.offensive_rating >= 108 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.offensive_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>TS%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.true_shooting_percentage ? 'text-gray-400' :
-                            (advancedStats.true_shooting_percentage * 100) >= 58 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.true_shooting_percentage * 100) >= 54 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.true_shooting_percentage ? (advancedStats.true_shooting_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>eFG%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.effective_field_goal_percentage ? 'text-gray-400' :
-                            (advancedStats.effective_field_goal_percentage * 100) >= 55 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.effective_field_goal_percentage * 100) >= 50 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.effective_field_goal_percentage ? (advancedStats.effective_field_goal_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>USG%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.usage_percentage ? 'text-gray-400' :
-                            (advancedStats.usage_percentage * 100) >= 28 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.usage_percentage * 100) >= 22 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.usage_percentage ? (advancedStats.usage_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Impact & Defensive Metrics */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Impact & Defense</h4>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>NET RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.net_rating ? 'text-gray-400' :
-                            advancedStats.net_rating >= 3 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.net_rating >= -2 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.net_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>DEF RTG</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.defensive_rating ? 'text-gray-400' :
-                            advancedStats.defensive_rating <= 108 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.defensive_rating <= 112 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.defensive_rating?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>PIE</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.pie ? 'text-gray-400' :
-                            (advancedStats.pie * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.pie * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.pie ? (advancedStats.pie * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>PACE</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.pace ? 'text-gray-400' :
-                            advancedStats.pace >= 102 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.pace >= 98 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.pace?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Rebounding & Playmaking */}
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-1">Rebounding & Playmaking</h4>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>REB%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.rebound_percentage ? 'text-gray-400' :
-                            (advancedStats.rebound_percentage * 100) >= 15 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.rebound_percentage * 100) >= 10 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.rebound_percentage ? (advancedStats.rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>AST%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.assist_percentage ? 'text-gray-400' :
-                            (advancedStats.assist_percentage * 100) >= 25 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.assist_percentage * 100) >= 15 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.assist_percentage ? (advancedStats.assist_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>OREB%</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.offensive_rebound_percentage ? 'text-gray-400' :
-                            (advancedStats.offensive_rebound_percentage * 100) >= 8 ? 'text-green-600 dark:text-green-400' :
-                            (advancedStats.offensive_rebound_percentage * 100) >= 4 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.offensive_rebound_percentage ? (advancedStats.offensive_rebound_percentage * 100).toFixed(1) + '%' : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>AST/TO</span>
-                          <span className={`font-semibold ${
-                            !advancedStats.assist_to_turnover ? 'text-gray-400' :
-                            advancedStats.assist_to_turnover >= 2.0 ? 'text-green-600 dark:text-green-400' :
-                            advancedStats.assist_to_turnover >= 1.5 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'
-                          }`}>
-                            {advancedStats.assist_to_turnover?.toFixed(1) || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : advancedStatsLoading ? (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading advanced stats...</div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No advanced stats available</div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* ESP Injury Report (Desktop) - always visible in both modes */}
             <div className="hidden lg:block">

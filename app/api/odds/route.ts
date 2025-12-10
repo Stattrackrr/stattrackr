@@ -35,17 +35,38 @@ export interface BookRow {
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 export async function GET(request: NextRequest) {
-  // Check rate limit
-  const rateLimitResult = checkRateLimit(request);
-  if (!rateLimitResult.allowed) {
-    return rateLimitResult.response!;
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');
     const team = searchParams.get('team');
     const forceRefresh = searchParams.get('refresh') === '1';
+    
+    // Check cache FIRST before rate limiting - we can serve cached data even if rate limited
+    // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
+    let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
+      restTimeoutMs: 10000, // 10s timeout for odds cache
+      jsTimeoutMs: 10000,
+    });
+    
+    // Fallback to in-memory cache
+    if (!oddsCache) {
+      oddsCache = cache.get(ODDS_CACHE_KEY);
+    }
+    
+    // If we have cached data, we can serve it even if rate limited
+    // Only check rate limit if we need to refresh or don't have cache
+    if (!oddsCache || forceRefresh) {
+      const rateLimitResult = checkRateLimit(request);
+      if (!rateLimitResult.allowed) {
+        // If rate limited but we have cache, serve it anyway
+        if (oddsCache) {
+          console.log('[Odds API] Rate limited but serving cached data');
+        } else {
+          // No cache and rate limited - return error
+          return rateLimitResult.response!;
+        }
+      }
+    }
     
     // If force refresh is requested, clear cache and refresh
     if (forceRefresh) {
@@ -62,17 +83,6 @@ export async function GET(request: NextRequest) {
         loading: true,
         message: 'Cache cleared, refreshing odds data...'
       });
-    }
-    
-    // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
-    let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
-      restTimeoutMs: 10000, // 10s timeout for odds cache
-      jsTimeoutMs: 10000,
-    });
-    
-    // Fallback to in-memory cache
-    if (!oddsCache) {
-      oddsCache = cache.get(ODDS_CACHE_KEY);
     }
     
     // If no cache, trigger background refresh but don't wait for it
@@ -202,7 +212,7 @@ export async function GET(request: NextRequest) {
         if (match) return match;
       }
       
-      // Try partial match (contains)
+      // Try partial match (contains) - more lenient
       const partialMatch = availableKeys.find(
         p => {
           const normalizedP = normalizePlayerNameForMatching(p);
@@ -210,6 +220,29 @@ export async function GET(request: NextRequest) {
         }
       );
       if (partialMatch) return partialMatch;
+      
+      // Try matching by last name only (for cases like "T. Herro" vs "Tyler Herro")
+      const searchParts = normalizedSearch.split(' ').filter(Boolean);
+      if (searchParts.length >= 2) {
+        const searchLastName = searchParts[searchParts.length - 1];
+        const lastNameMatch = availableKeys.find(
+          p => {
+            const normalizedP = normalizePlayerNameForMatching(p);
+            const pParts = normalizedP.split(' ').filter(Boolean);
+            if (pParts.length >= 2) {
+              const pLastName = pParts[pParts.length - 1];
+              // Match if last names are the same and first initial matches
+              if (pLastName === searchLastName) {
+                const searchFirstInitial = searchParts[0][0];
+                const pFirstInitial = pParts[0][0];
+                return searchFirstInitial === pFirstInitial || pParts[0].startsWith(searchFirstInitial) || searchParts[0].startsWith(pFirstInitial);
+              }
+            }
+            return false;
+          }
+        );
+        if (lastNameMatch) return lastNameMatch;
+      }
       
       return null;
     };
@@ -248,10 +281,18 @@ export async function GET(request: NextRequest) {
             // Try to find the actual player key using fuzzy matching
             const availablePlayerKeys = Object.keys(playerPropsByBookmaker[bookName] || {});
             const actualPlayerKey = findMatchingPlayerKey(player, availablePlayerKeys);
-            if (!actualPlayerKey) continue;
+            if (!actualPlayerKey) {
+              // Debug: log when player not found for a bookmaker (only for first few to avoid spam)
+              if (availablePlayerKeys.length > 0 && Math.random() < 0.1) { // Log 10% of misses to reduce noise
+                console.log(`[Odds API] Player "${player}" not found in ${bookName}. Available keys (sample):`, availablePlayerKeys.slice(0, 3));
+              }
+              continue;
+            }
             
             const bookmakerProps = playerPropsByBookmaker[bookName]?.[actualPlayerKey];
-            if (!bookmakerProps || Object.keys(bookmakerProps).length === 0) continue;
+            if (!bookmakerProps || Object.keys(bookmakerProps).length === 0) {
+              continue;
+            }
 
             const blankRow: BookRow = {
               name: bookName,
@@ -328,11 +369,31 @@ export async function GET(request: NextRequest) {
     }
     
     // No specific query - return all games
+    // Debug: Collect vendor information
+    const allVendors = new Set<string>();
+    const allPlayerPropVendors = new Set<string>();
+    oddsCache.games.forEach((game: any) => {
+      game.bookmakers?.forEach((b: any) => allVendors.add(b.name));
+      Object.keys(game.playerPropsByBookmaker || {}).forEach(v => {
+        allVendors.add(v);
+        allPlayerPropVendors.add(v);
+      });
+    });
+    
+    console.log(`[Odds API] Returning ${oddsCache.games.length} games with ${allVendors.size} total vendors: ${Array.from(allVendors).sort().join(', ')}`);
+    console.log(`[Odds API] Player prop vendors: ${allPlayerPropVendors.size} - ${Array.from(allPlayerPropVendors).sort().join(', ')}`);
+    
     return NextResponse.json({
       success: true,
       data: oddsCache.games,
       lastUpdated: oddsCache.lastUpdated,
-      nextUpdate: oddsCache.nextUpdate
+      nextUpdate: oddsCache.nextUpdate,
+      _debug: {
+        totalVendors: allVendors.size,
+        vendors: Array.from(allVendors).sort(),
+        playerPropVendors: Array.from(allPlayerPropVendors).sort(),
+        gamesCount: oddsCache.games.length
+      }
     });
 
   } catch (error) {

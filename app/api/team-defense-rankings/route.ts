@@ -268,11 +268,11 @@ export async function GET(request: NextRequest) {
     const cacheKey = `team_defense_rankings_${season}`;
 
     // Check Supabase cache FIRST (persistent, shared across instances) - this is the primary source
-    // Use longer timeout for large cache entries
+    // Use longer timeout for large cache entries (30s to handle slow Supabase)
     let cached = !bypassCache 
       ? await getNBACache<any>(cacheKey, {
-          restTimeoutMs: 20000, // 20s for large payloads
-          jsTimeoutMs: 20000,
+          restTimeoutMs: 30000, // 30s for large payloads
+          jsTimeoutMs: 30000,
         })
       : null;
     

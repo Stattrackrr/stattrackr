@@ -1,5 +1,9 @@
 /**
  * Manually trigger the check-journal-bets API
+ * 
+ * Usage:
+ *   node scripts/trigger-check-journal-bets.js
+ *   node scripts/trigger-check-journal-bets.js recalculate
  */
 
 require('dotenv').config({ path: '.env.local' });
@@ -8,10 +12,20 @@ const API_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 async function triggerCheck() {
   try {
-    console.log('🔄 Triggering check-journal-bets API...\n');
+    const args = process.argv.slice(2);
+    const recalculate = args.includes('recalculate');
+    
+    const url = `${API_URL}/api/check-journal-bets${recalculate ? '?recalculate=true' : ''}`;
+    
+    console.log('🔄 Triggering check-journal-bets API...');
+    if (recalculate) {
+      console.log('   Mode: RECALCULATE (will re-check already resolved bets)\n');
+    } else {
+      console.log('   Mode: NORMAL (will only check pending bets)\n');
+    }
     
     // Call the API endpoint
-    const response = await fetch(`${API_URL}/api/check-journal-bets`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -318,10 +318,10 @@ export default function PricingPage() {
           <button
             onClick={() => {
               if (!isLoggedIn) {
-                router.push('/login?redirect=/nba/research/dashboard');
+                router.push('/login?redirect=/nba');
                 return;
               }
-              router.push('/nba/research/dashboard');
+              router.push('/nba');
             }}
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
@@ -433,10 +433,10 @@ export default function PricingPage() {
                 onClick={() => {
                   setShowDashboardDropdown(false);
                   if (!isLoggedIn) {
-                    router.push('/login?redirect=/nba/research/dashboard');
+                    router.push('/login?redirect=/nba');
                     return;
                   }
-                  router.push('/nba/research/dashboard?mode=team');
+                  router.push('/nba');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
@@ -479,7 +479,7 @@ export default function PricingPage() {
             data-dashboard-button
             onClick={() => {
               if (!isLoggedIn) {
-                router.push('/login?redirect=/nba/research/dashboard');
+                router.push('/login?redirect=/nba');
                 return;
               }
               setShowDashboardDropdown(!showDashboardDropdown);
@@ -1724,7 +1724,7 @@ export default function PricingPage() {
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => router.push('/nba/research/dashboard')} className="text-gray-400 hover:text-white text-sm transition-colors">
+                    <button onClick={() => router.push('/nba')} className="text-gray-400 hover:text-white text-sm transition-colors">
                       Dashboard
                     </button>
                   </li>

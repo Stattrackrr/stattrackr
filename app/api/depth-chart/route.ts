@@ -73,18 +73,6 @@ const ALT: Record<'PG'|'SG'|'SF'|'PF'|'C', Array<'PG'|'SG'|'SF'|'PF'|'C'>> = {
 };
 
 export async function GET(req: NextRequest) {
-  // Skip rate limiting for internal API calls (from similar-players)
-  // Check if this is an internal request by looking for a special header
-  const isInternalRequest = req.headers.get('user-agent')?.includes('StatTrackr-Internal');
-  
-  // Only check rate limit for external requests
-  if (!isInternalRequest) {
-    const rateLimitResult = checkRateLimit(req);
-    if (!rateLimitResult.allowed) {
-      return rateLimitResult.response!;
-    }
-  }
-  
   try {
     const { searchParams } = new URL(req.url);
     const inputTeam = (searchParams.get('team') || '').toUpperCase();
@@ -95,11 +83,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing team' }, { status: 400 });
     }
 
-    // Try cache first unless forced refresh
+    // Try cache first unless forced refresh - check cache BEFORE rate limiting
     const cacheKey = getCacheKey.depthChart(inputTeam);
     if (!forceRefresh) {
       const hit = cache.get<any>(cacheKey);
-      if (hit) return NextResponse.json(hit, { status: 200 });
+      if (hit) {
+        // Return cached data even if rate limited
+        return NextResponse.json(hit, { status: 200 });
+      }
+    }
+    
+    // Skip rate limiting for internal API calls (from similar-players)
+    // Check if this is an internal request by looking for a special header
+    const isInternalRequest = req.headers.get('user-agent')?.includes('StatTrackr-Internal');
+    
+    // Only check rate limit for external requests (and only if cache miss)
+    if (!isInternalRequest) {
+      const rateLimitResult = checkRateLimit(req);
+      if (!rateLimitResult.allowed) {
+        // If rate limited but we have cached data (shouldn't happen since we checked above, but just in case)
+        const cachedHit = cache.get<any>(cacheKey);
+        if (cachedHit) {
+          return NextResponse.json(cachedHit, { status: 200 });
+        }
+        // No cache and rate limited - return rate limit error
+        return rateLimitResult.response!;
+      }
     }
 
     // Resolve ESPN team by abbreviation

@@ -17,6 +17,13 @@ function currentNbaSeason(): number {
 
 const POS = new Set(['PG','SG','SF','PF','C']);
 const METRICS = new Set(['pts','reb','ast','fg3m','fg3a','fga','fgm','fg_pct','fg3_pct','stl','blk','to']);
+// Combined stats that need to be calculated from component stats
+const COMBINED_STATS = {
+  'pra': ['pts', 'reb', 'ast'],  // Points + Rebounds + Assists
+  'pa': ['pts', 'ast'],          // Points + Assists
+  'pr': ['pts', 'reb'],          // Points + Rebounds
+  'ra': ['reb', 'ast'],          // Rebounds + Assists
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +35,10 @@ export async function GET(req: NextRequest) {
     const seasonYear = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
     const forceRefresh = searchParams.get('refresh') === '1';
 
-    if (!METRICS.has(metric)) {
+    // Check if it's a combined stat
+    const isCombinedStat = COMBINED_STATS[metric as keyof typeof COMBINED_STATS];
+    
+    if (!METRICS.has(metric) && !isCombinedStat) {
       return NextResponse.json({ success: false, error: `unsupported metric: ${metric}` }, { status: 400 });
     }
     if (!POS.has(pos)) {
@@ -53,32 +63,90 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No BettingPros data available' }, { status: 500 });
     }
     
-    const bpMetric = OUR_TO_BP_METRIC[metric] || metric;
     const teams = Object.keys(NBA_TEAMS);
     
     // Get values for all teams
-    const results = teams.map((t) => {
-      try {
-        const teamAbbr = normalizeAbbr(t);
-        const bpTeamAbbr = OUR_TO_BP_ABBR[teamAbbr] || teamAbbr;
-        
-        const teamStats = bpData.teamStats?.[bpTeamAbbr];
-        if (!teamStats) {
+    let results: Array<{ team: string; value: number | null }>;
+    
+    if (isCombinedStat) {
+      // For combined stats, sum the component stat values
+      const componentMetrics = isCombinedStat;
+      console.log(`[DVP Rank API] Calculating combined stat ${metric} from components: ${componentMetrics.join(', ')}`);
+      
+      results = teams.map((t) => {
+        try {
+          const teamAbbr = normalizeAbbr(t);
+          const bpTeamAbbr = OUR_TO_BP_ABBR[teamAbbr] || teamAbbr;
+          
+          const teamStats = bpData.teamStats?.[bpTeamAbbr];
+          if (!teamStats) {
+            return { team: t, value: null };
+          }
+
+          const positionData = teamStats[pos] || teamStats['ALL'];
+          if (!positionData) {
+            return { team: t, value: null };
+          }
+
+          // Sum the component stat values
+          let combinedValue: number | null = null;
+          let hasAllComponents = true;
+          
+          for (const componentMetric of componentMetrics) {
+            const bpComponentMetric = OUR_TO_BP_METRIC[componentMetric] || componentMetric;
+            const componentValue = positionData[bpComponentMetric];
+            
+            if (componentValue === undefined || componentValue === null) {
+              hasAllComponents = false;
+              break;
+            }
+            
+            const numValue = Number(componentValue);
+            if (isNaN(numValue)) {
+              hasAllComponents = false;
+              break;
+            }
+            
+            if (combinedValue === null) {
+              combinedValue = numValue;
+            } else {
+              combinedValue += numValue;
+            }
+          }
+          
+          return { team: t, value: hasAllComponents ? combinedValue : null };
+        } catch (e: any) {
+          console.error(`[DVP Rank API] Error processing team ${t}:`, e);
           return { team: t, value: null };
         }
+      });
+    } else {
+      // For regular stats, use existing logic
+      const bpMetric = OUR_TO_BP_METRIC[metric] || metric;
+      
+      results = teams.map((t) => {
+        try {
+          const teamAbbr = normalizeAbbr(t);
+          const bpTeamAbbr = OUR_TO_BP_ABBR[teamAbbr] || teamAbbr;
+          
+          const teamStats = bpData.teamStats?.[bpTeamAbbr];
+          if (!teamStats) {
+            return { team: t, value: null };
+          }
 
-        const positionData = teamStats[pos] || teamStats['ALL'];
-        if (!positionData) {
+          const positionData = teamStats[pos] || teamStats['ALL'];
+          if (!positionData) {
+            return { team: t, value: null };
+          }
+
+          const value = positionData[bpMetric];
+          return { team: t, value: value !== undefined ? Number(value) : null };
+        } catch (e: any) {
+          console.error(`[DVP Rank API] Error processing team ${t}:`, e);
           return { team: t, value: null };
         }
-
-        const value = positionData[bpMetric];
-        return { team: t, value: value !== undefined ? Number(value) : null };
-      } catch (e: any) {
-        console.error(`[DVP Rank API] Error processing team ${t}:`, e);
-        return { team: t, value: null };
-      }
-    });
+      });
+    }
 
     // Compute ranks: lower value -> rank 1, higher value -> rank 30
     const valid = results.filter(r => r.value != null) as Array<{team: string, value: number}>;
