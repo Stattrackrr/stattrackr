@@ -2538,7 +2538,7 @@ export default function NBALandingPage() {
                 paddingRight: 0,
               }}
             >
-          <div className="h-full pb-12" style={{ paddingLeft: '8px', paddingRight: '0px', paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className="h-full pb-12 pr-1 lg:pr-0" style={{ paddingLeft: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Search Bar */}
             <div className="mb-2">
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
@@ -2577,7 +2577,11 @@ export default function NBALandingPage() {
                       setPropTypeDropdownOpen(false);
                     }}
                     className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      mounted && isDark
+                      gamesDropdownOpen
+                        ? mounted && isDark
+                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          : 'bg-gray-50 border-gray-400 text-gray-800'
+                        : mounted && isDark
                         ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
@@ -2669,7 +2673,11 @@ export default function NBALandingPage() {
                       setGamesDropdownOpen(false);
                     }}
                     className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      mounted && isDark
+                      bookmakerDropdownOpen
+                        ? mounted && isDark
+                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          : 'bg-gray-50 border-gray-400 text-gray-800'
+                        : mounted && isDark
                         ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
@@ -2748,7 +2756,11 @@ export default function NBALandingPage() {
                       setGamesDropdownOpen(false);
                     }}
                     className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      mounted && isDark
+                      propTypeDropdownOpen
+                        ? mounted && isDark
+                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          : 'bg-gray-50 border-gray-400 text-gray-800'
+                        : mounted && isDark
                         ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
