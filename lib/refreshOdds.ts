@@ -907,7 +907,7 @@ export async function refreshOddsData(
     console.log(`📊 SUMMARY: Found ${allPlayerPropVendors.size} unique player prop vendors: ${Array.from(allPlayerPropVendors).sort().join(', ')}`);
 
     const now = new Date();
-    const ttlMinutes = 30; // cache for 30 minutes
+    const ttlMinutes = 2 * 60; // cache for 2 hours
     const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
     const oddsCache: OddsCache = {

@@ -2513,8 +2513,9 @@ export default function NBALandingPage() {
             <LeftSidebar
               oddsFormat={oddsFormat}
               setOddsFormat={(format) => {
-                setOddsFormat(format);
-                localStorage.setItem('oddsFormat', format);
+                const formatValue = typeof format === 'function' ? format(oddsFormat) : format;
+                setOddsFormat(formatValue);
+                localStorage.setItem('oddsFormat', formatValue);
               }}
               hasPremium={isPro}
               avatarUrl={avatarUrl}
