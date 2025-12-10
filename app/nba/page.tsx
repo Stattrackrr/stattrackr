@@ -3829,13 +3829,13 @@ export default function NBALandingPage() {
                           };
                           
                           // Helper to format hit rate percentage
-                          const getHitRatePercent = (hitRate: { hits: number; total: number } | null): string => {
+                          const getHitRatePercent = (hitRate: { hits: number; total: number } | null | undefined): string => {
                             if (!hitRate || hitRate.total === 0) return '-';
                             return `${((hitRate.hits / hitRate.total) * 100).toFixed(0)}%`;
                           };
                           
                           // Helper to get stat box color based on hit rate
-                          const getStatBoxStyle = (hitRate: { hits: number; total: number } | null, isStreak = false) => {
+                          const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
                             let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                             let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                             
