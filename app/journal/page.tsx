@@ -3061,7 +3061,7 @@ function FinalStatsIndicator({
   line: number; 
   statType: string; 
   overUnder: 'over' | 'under';
-  result: 'win' | 'loss' | 'void';
+  result: 'win' | 'loss' | 'void' | 'pending';
 }) {
   const isWholeNumber = line % 1 === 0;
   const isWinning = overUnder === 'over' 
