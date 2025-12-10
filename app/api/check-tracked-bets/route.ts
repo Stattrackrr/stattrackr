@@ -267,6 +267,9 @@ export async function GET(request: Request) {
           case 'ast':
             actualValue = stats.ast;
             break;
+          case 'pa':
+            actualValue = stats.pts + stats.ast;
+            break;
           case 'pr':
             actualValue = stats.pts + stats.reb;
             break;

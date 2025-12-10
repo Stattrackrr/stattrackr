@@ -504,6 +504,7 @@ async function resolveParlayBet(
           case 'pts': actualValue = stats.pts; break;
           case 'reb': actualValue = stats.reb; break;
           case 'ast': actualValue = stats.ast; break;
+          case 'pa': actualValue = stats.pts + stats.ast; break;
           case 'pr': actualValue = stats.pts + stats.reb; break;
           case 'pra': actualValue = stats.pts + stats.reb + stats.ast; break;
           case 'ra': actualValue = stats.reb + stats.ast; break;
@@ -791,6 +792,9 @@ async function resolveParlayBet(
             break;
           case 'ast':
             actualValue = stats.ast;
+            break;
+          case 'pa':
+            actualValue = stats.pts + stats.ast;
             break;
           case 'pr':
             actualValue = stats.pts + stats.reb;
@@ -1298,6 +1302,7 @@ export async function GET(request: Request) {
                   case 'pts': currentValue = liveStats.pts; break;
                   case 'reb': currentValue = liveStats.reb; break;
                   case 'ast': currentValue = liveStats.ast; break;
+                  case 'pa': currentValue = liveStats.pts + liveStats.ast; break;
                   case 'pr': currentValue = liveStats.pts + liveStats.reb; break;
                   case 'pra': currentValue = liveStats.pts + liveStats.reb + liveStats.ast; break;
                   case 'ra': currentValue = liveStats.reb + liveStats.ast; break;
@@ -1550,6 +1555,9 @@ export async function GET(request: Request) {
             break;
           case 'ast':
             actualValue = stats.ast;
+            break;
+          case 'pa':
+            actualValue = stats.pts + stats.ast;
             break;
           case 'pr':
             actualValue = stats.pts + stats.reb;

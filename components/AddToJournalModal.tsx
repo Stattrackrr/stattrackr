@@ -63,6 +63,7 @@ const PLAYER_STAT_OPTIONS = [
   { value: 'pts', label: 'Points' },
   { value: 'reb', label: 'Rebounds' },
   { value: 'ast', label: 'Assists' },
+  { value: 'pa', label: 'Points + Assists' },
   { value: 'pr', label: 'Points + Rebounds' },
   { value: 'pra', label: 'Points + Rebounds + Assists' },
   { value: 'ra', label: 'Rebounds + Assists' },
