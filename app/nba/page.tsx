@@ -460,7 +460,7 @@ export default function NBALandingPage() {
           return gameDate === todayStr;
         });
         
-        console.log('[NBA Landing] Today\'s games found:', todaysGames.length, todaysGames.slice(0, 3).map(g => ({
+        console.log('[NBA Landing] Today\'s games found:', todaysGames.length, todaysGames.slice(0, 3).map((g: any) => ({
           id: g.id,
           date: g.date,
           status: g.status,
