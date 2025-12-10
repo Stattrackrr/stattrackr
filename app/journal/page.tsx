@@ -85,6 +85,10 @@ type Bet = {
   opponent?: string | null;
   actual_value?: number | null;
   stat_type?: string | null;
+  player_id?: string | null;
+  game_date?: string | null;
+  line?: number | null;
+  over_under?: 'over' | 'under' | null;
   parlay_legs?: Array<{
     playerName?: string;
     playerId?: string;
