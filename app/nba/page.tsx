@@ -1515,7 +1515,17 @@ export default function NBALandingPage() {
       const playerId = getPlayerIdFromName(playerName);
       if (!playerId) {
         console.warn(`[calculatePlayerAverages] No player ID found for: ${playerName}`);
-        return { last5: null, last10: null, h2h: null };
+        return { 
+          last5: null, 
+          last10: null, 
+          h2h: null,
+          last5HitRate: null,
+          last10HitRate: null,
+          h2hHitRate: null,
+          seasonAvg: null,
+          seasonHitRate: null,
+          streak: null
+        };
       }
 
       const currentSeason = currentNbaSeason();
@@ -1626,7 +1636,17 @@ export default function NBALandingPage() {
           hasGameDate: !!allStats[0]?.game?.date,
           hasTeam: !!allStats[0]?.team,
         });
-        return { last5: null, last10: null, h2h: null };
+        return { 
+          last5: null, 
+          last10: null, 
+          h2h: null,
+          last5HitRate: null,
+          last10HitRate: null,
+          h2hHitRate: null,
+          seasonAvg: null,
+          seasonHitRate: null,
+          streak: null
+        };
       }
 
       const getStatValue = (game: any, stat: string): number => {
