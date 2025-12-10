@@ -2414,7 +2414,7 @@ type AltLineItem = {
   variantLabel?: string | null;
 };
 
-const partitionAltLineItems = (lines: AltLineItem[]) => {
+const partitionAltLineItems = (lines: AltLineItem[]): { primary: AltLineItem[]; alternate: AltLineItem[]; milestones: AltLineItem[] } => {
   // Separate milestones from over/under lines
   const milestones: AltLineItem[] = [];
   const overUnderLines: AltLineItem[] = [];
@@ -2438,7 +2438,7 @@ const partitionAltLineItems = (lines: AltLineItem[]) => {
   // Return all over/under lines as "primary" (they'll all be shown)
   // Keep alternate empty (no separation needed)
   // Milestones are excluded as requested
-  return { primary: overUnderLines, alternate: [], milestones: [] };
+  return { primary: overUnderLines, alternate: [] as AltLineItem[], milestones: [] as AltLineItem[] };
 };
 
 // Chart controls (updates freely with betting line changes)
@@ -10917,7 +10917,7 @@ const lineMovementInFlightRef = useRef(false);
         
         const partitioned = partitionAltLineItems(allLines);
         primaryLines = partitioned.primary;
-        const alternateLines = partitioned.alternate;
+        const alternateLines: AltLineItem[] = partitioned.alternate;
         
         // Create a set of primary line keys (bookmaker + line) for quick lookup
         primaryKeysSet = new Set(
