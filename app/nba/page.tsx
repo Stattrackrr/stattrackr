@@ -3423,13 +3423,13 @@ export default function NBALandingPage() {
                                       <div className={`text-[10px] ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                         StatTrackr
                                       </div>
-                                      {prop.stattrackrOverProb !== null && prop.stattrackrUnderProb !== null ? (
+                                      {prop.stattrackrOverProb != null && prop.stattrackrUnderProb != null ? (
                                         <div className="flex flex-col gap-0.5">
-                                          <div className={`text-sm font-semibold ${prop.stattrackrOverProb >= prop.stattrackrUnderProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                            Over {prop.stattrackrOverProb.toFixed(1)}%
+                                          <div className={`text-sm font-semibold ${prop.stattrackrOverProb! >= prop.stattrackrUnderProb! ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            Over {prop.stattrackrOverProb!.toFixed(1)}%
                                           </div>
-                                          <div className={`text-sm font-semibold ${prop.stattrackrUnderProb >= prop.stattrackrOverProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                            Under {prop.stattrackrUnderProb.toFixed(1)}%
+                                          <div className={`text-sm font-semibold ${prop.stattrackrUnderProb! >= prop.stattrackrOverProb! ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            Under {prop.stattrackrUnderProb!.toFixed(1)}%
                                           </div>
                                         </div>
                                       ) : (
