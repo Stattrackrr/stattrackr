@@ -1471,7 +1471,7 @@ export default function NBALandingPage() {
       
       if (teamValue && teamValue.value !== null && teamValue.value !== undefined) {
         statValue = typeof teamValue.value === 'number' ? teamValue.value : parseFloat(String(teamValue.value));
-        if (isNaN(statValue)) statValue = null;
+        if (statValue !== null && isNaN(statValue)) statValue = null;
       }
       
       if (rank === null || rank === undefined) {
