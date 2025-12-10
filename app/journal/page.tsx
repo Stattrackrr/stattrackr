@@ -79,6 +79,7 @@ type Bet = {
   currency: string;
   odds: number;
   result: 'win' | 'loss' | 'void' | 'pending';
+  status?: 'pending' | 'live' | 'completed' | null;
   bookmaker?: string | null;
   created_at: string;
   opponent?: string | null;
@@ -1876,9 +1877,23 @@ function JournalContent() {
                       const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
                       const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
 
+                      // Determine bet state: pending (blue), live (orange), or final (green/red)
+                      // A bet can be live but already determined (win/loss) if outcome was determined early
+                      const isLive = bet.status === 'live';
+                      const isDetermined = bet.result === 'win' || bet.result === 'loss';
+                      const isPending = !isLive && (bet.result === 'pending' || (bet.status && bet.status !== 'completed'));
+                      const isFinal = bet.status === 'completed';
+                      const isLiveButDetermined = isLive && isDetermined;
+                      
                       return (
                         <div key={bet.id} className={`p-1.5 md:p-2 rounded-lg border-2 ${
-                          bet.result === 'pending' 
+                          isLiveButDetermined
+                            ? bet.result === 'win'
+                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400'
+                              : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
+                            : isLive
+                            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 dark:border-orange-400'
+                            : isPending
                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
                             : bet.result === 'win' 
                             ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400'
@@ -1888,7 +1903,7 @@ function JournalContent() {
                         }`}>
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                            {bet.result !== 'pending' && (
+                            {(isFinal || isLiveButDetermined) && (
                               <span className={`text-[9px] md:text-[10px] font-bold ${
                                 bet.result === 'win' 
                                   ? 'text-green-600 dark:text-green-400'
@@ -1899,8 +1914,17 @@ function JournalContent() {
                                 {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
                               </span>
                             )}
-                            {bet.result === 'pending' && (
+                            {isPending && (
                               <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                            )}
+                            {isLive && !isDetermined && (
+                              <span className="text-[9px] md:text-[10px] font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                </span>
+                                LIVE
+                              </span>
                             )}
                           </div>
                           {isParlay && parlayLegs.length > 0 ? (
@@ -1916,7 +1940,7 @@ function JournalContent() {
                                     ? storedLeg.won 
                                     : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
                                   const legVoid = storedLeg?.void === true;
-                                  const showLegIndicators = bet.result !== 'pending' && bet.result !== 'void' && !legVoid && legWon !== null;
+                                  const showLegIndicators = (isFinal || isLiveButDetermined) && bet.result !== 'void' && !legVoid && legWon !== null;
                                   
                                   return (
                                     <div key={index} className="break-words flex items-center gap-1">
@@ -1938,11 +1962,6 @@ function JournalContent() {
                             <span className="break-words">Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
                             <div className="flex flex-col items-end">
                               <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
-                              {!isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'pending' && bet.result !== 'void' && bet.stat_type && (
-                                <span className="text-[10px] md:text-xs font-medium text-white dark:text-white mt-0.5">
-                                  Total: {bet.actual_value.toFixed(1)} {formatStatType(bet.stat_type)}
-                                </span>
-                              )}
                             </div>
                           </div>
                           {(bet.market || bet.opponent) && (
@@ -1953,6 +1972,24 @@ function JournalContent() {
                           <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400">
                             Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void', isParlay)}</span>
                           </div>
+                          {isLive && !isParlay && bet.player_id && bet.game_date && bet.stat_type && bet.line && bet.over_under && (
+                            <LiveStatsIndicator
+                              playerId={bet.player_id}
+                              gameDate={bet.game_date}
+                              statType={bet.stat_type}
+                              line={bet.line}
+                              overUnder={bet.over_under}
+                            />
+                          )}
+                          {!isLive && (isFinal || isLiveButDetermined) && !isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'void' && bet.stat_type && bet.line && bet.over_under && (
+                            <FinalStatsIndicator
+                              actualValue={bet.actual_value}
+                              line={bet.line}
+                              statType={bet.stat_type}
+                              overUnder={bet.over_under}
+                              result={bet.result}
+                            />
+                          )}
                         </div>
                       );
                     })
@@ -2567,9 +2604,23 @@ function JournalContent() {
                 const betDate = new Date(bet.date);
                 const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+                // Determine bet state: pending (blue), live (orange), or final (green/red)
+                // A bet can be live but already determined (win/loss) if outcome was determined early
+                const isLive = bet.status === 'live';
+                const isDetermined = bet.result === 'win' || bet.result === 'loss';
+                const isPending = !isLive && (bet.result === 'pending' || (bet.status && bet.status !== 'completed'));
+                const isFinal = bet.status === 'completed';
+                const isLiveButDetermined = isLive && isDetermined;
+                
                 return (
                   <div key={bet.id} className={`p-2.5 rounded-lg border-2 ${
-                    bet.result === 'pending' 
+                    isLiveButDetermined
+                      ? bet.result === 'win'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
+                      : isLive
+                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 dark:border-orange-400'
+                      : isPending
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
                       : bet.result === 'win' 
                       ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400'
@@ -2579,7 +2630,7 @@ function JournalContent() {
                   }`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                      {bet.result !== 'pending' && (
+                      {(isFinal || isLiveButDetermined) && (
                         <span className={`text-xs font-bold ${
                           bet.result === 'win' 
                             ? 'text-green-600 dark:text-green-400'
@@ -2592,8 +2643,17 @@ function JournalContent() {
                           }
                         </span>
                       )}
-                      {bet.result === 'pending' && (
+                      {isPending && (
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                      )}
+                      {isLive && !isDetermined && (
+                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                          </span>
+                          LIVE
+                        </span>
                       )}
                     </div>
                     {isParlay && parlayLegs.length > 0 ? (
@@ -2609,7 +2669,7 @@ function JournalContent() {
                               ? storedLeg.won 
                               : (bet.result === 'win' ? true : null); // Fallback to parlay result if no individual data
                             const legVoid = storedLeg?.void === true;
-                            const showLegIndicators = bet.result !== 'pending' && bet.result !== 'void' && !legVoid && legWon !== null;
+                            const showLegIndicators = (isFinal || isLiveButDetermined) && bet.result !== 'void' && !legVoid && legWon !== null;
                             
                             return (
                               <div key={index} className="break-words flex items-center gap-1.5">
@@ -2631,17 +2691,30 @@ function JournalContent() {
                       <span>Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
                       <div className="flex flex-col items-end">
                         <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
-                        {!isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'pending' && bet.result !== 'void' && bet.stat_type && (
-                          <span className="text-sm font-medium text-white dark:text-white mt-0.5">
-                            Total: {bet.actual_value.toFixed(1)} {formatStatType(bet.stat_type)}
-                          </span>
-                        )}
                       </div>
                     </div>
                     {(bet.market || bet.opponent) && (
                       <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">
                         {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
                       </div>
+                    )}
+                    {isLive && !isParlay && bet.player_id && bet.game_date && bet.stat_type && bet.line && bet.over_under && (
+                      <LiveStatsIndicator
+                        playerId={bet.player_id}
+                        gameDate={bet.game_date}
+                        statType={bet.stat_type}
+                        line={bet.line}
+                        overUnder={bet.over_under}
+                      />
+                    )}
+                    {!isLive && (isFinal || isLiveButDetermined) && !isParlay && bet.actual_value !== null && bet.actual_value !== undefined && bet.result !== 'void' && bet.stat_type && bet.line && bet.over_under && (
+                      <FinalStatsIndicator
+                        actualValue={bet.actual_value}
+                        line={bet.line}
+                        statType={bet.stat_type}
+                        overUnder={bet.over_under}
+                        result={bet.result}
+                      />
                     )}
                   </div>
                 );
@@ -2855,6 +2928,164 @@ function JournalContent() {
             <span className="text-xs font-medium">Profile</span>
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Live Stats Indicator Component
+function LiveStatsIndicator({ 
+  playerId, 
+  gameDate, 
+  statType, 
+  line, 
+  overUnder 
+}: { 
+  playerId: string; 
+  gameDate: string; 
+  statType: string; 
+  line: number; 
+  overUnder: 'over' | 'under';
+}) {
+  const [liveStats, setLiveStats] = useState<{ pts: number; reb: number; ast: number; stl: number; blk: number; fg3m: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    const fetchLiveStats = async () => {
+      try {
+        const response = await fetch(`/api/live-stats?playerId=${playerId}&gameDate=${gameDate}`);
+        if (response.ok) {
+          const data = await response.json();
+          setLiveStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching live stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Fetch immediately
+    fetchLiveStats();
+    
+    // Then fetch every 30 seconds
+    interval = setInterval(fetchLiveStats, 30000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [playerId, gameDate]);
+
+  if (loading || !liveStats) {
+    return (
+      <div className="mt-1.5 text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500">
+        Loading live stats...
+      </div>
+    );
+  }
+
+  // Calculate current stat value
+  let currentValue = 0;
+  switch (statType) {
+    case 'pts': currentValue = liveStats.pts; break;
+    case 'reb': currentValue = liveStats.reb; break;
+    case 'ast': currentValue = liveStats.ast; break;
+    case 'stl': currentValue = liveStats.stl; break;
+    case 'blk': currentValue = liveStats.blk; break;
+    case 'fg3m': currentValue = liveStats.fg3m; break;
+    case 'pr': currentValue = liveStats.pts + liveStats.reb; break;
+    case 'pra': currentValue = liveStats.pts + liveStats.reb + liveStats.ast; break;
+    case 'ra': currentValue = liveStats.reb + liveStats.ast; break;
+  }
+
+  // For "over" bets: progress bar goes from 0 to line (capped at 100% when current >= line)
+  // For "under" bets: progress bar shows how close we are to the line (0% = 0, 100% = line)
+  const isWholeNumber = line % 1 === 0;
+  
+  // Calculate progress percentage
+  let progressPercent = 0;
+  if (overUnder === 'over') {
+    // For over bets: 0% at 0, 100% when current >= line
+    progressPercent = Math.min(100, (currentValue / line) * 100);
+  } else {
+    // For under bets: 0% at 0, 100% when current >= line (shows how close to losing)
+    progressPercent = Math.min(100, (currentValue / line) * 100);
+  }
+
+  // Determine color based on current status
+  const isWinning = overUnder === 'over' 
+    ? (isWholeNumber ? currentValue >= line : currentValue > line)
+    : (isWholeNumber ? currentValue <= line : currentValue < line);
+  
+  // For live bets: green if winning, red if losing (no yellow/orange for determined bets)
+  // Only show orange/yellow if bet is still undetermined
+  const progressColor = isWinning 
+    ? 'bg-green-500 dark:bg-green-400' 
+    : 'bg-red-500 dark:bg-red-400';
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex items-center justify-between text-[9px] md:text-[10px]">
+        <span className="text-slate-600 dark:text-slate-400">
+          Live: <span className="font-semibold text-orange-600 dark:text-orange-400">{currentValue.toFixed(1)}</span> / {line} {formatStatType(statType)}
+        </span>
+        <span className={`font-medium ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
+          {overUnder === 'over' ? (currentValue >= line ? '✓' : '→') : (currentValue <= line ? '✓' : '→')}
+        </span>
+      </div>
+      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+        <div 
+          className={`h-full ${progressColor} transition-all duration-500 ease-out`}
+          style={{ width: `${Math.min(100, progressPercent)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Final Stats Indicator Component (for completed bets)
+function FinalStatsIndicator({ 
+  actualValue, 
+  line, 
+  statType, 
+  overUnder,
+  result
+}: { 
+  actualValue: number; 
+  line: number; 
+  statType: string; 
+  overUnder: 'over' | 'under';
+  result: 'win' | 'loss' | 'void';
+}) {
+  const isWholeNumber = line % 1 === 0;
+  const isWinning = overUnder === 'over' 
+    ? (isWholeNumber ? actualValue >= line : actualValue > line)
+    : (isWholeNumber ? actualValue <= line : actualValue < line);
+  
+  // Calculate progress percentage (same as live indicator)
+  const progressPercent = Math.min(100, (actualValue / line) * 100);
+  
+  const progressColor = isWinning 
+    ? 'bg-green-500 dark:bg-green-400' 
+    : 'bg-red-500 dark:bg-red-400';
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex items-center justify-between text-[9px] md:text-[10px]">
+        <span className="text-slate-600 dark:text-slate-400">
+          Final: <span className={`font-semibold ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{actualValue.toFixed(1)}</span> / {line} {formatStatType(statType)}
+        </span>
+        <span className={`font-medium ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          {isWinning ? '✓' : '✗'}
+        </span>
+      </div>
+      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+        <div 
+          className={`h-full ${progressColor} transition-all duration-500 ease-out`}
+          style={{ width: `${Math.min(100, progressPercent)}%` }}
+        />
       </div>
     </div>
   );
