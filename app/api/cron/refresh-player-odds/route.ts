@@ -22,7 +22,7 @@ export const maxDuration = 300; // 5 minutes
  * - Preserves unchanged lines
  */
 
-const ODDS_CACHE_KEY = 'all_nba_odds';
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_ODDS_CACHE_PREFIX = 'player_odds:';
 const PLAYER_STATS_CACHE_PREFIX = 'player_stats:';
 const CACHE_TTL_MINUTES = 120; // 2 hours

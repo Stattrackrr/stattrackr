@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
 
 // Store all odds data in a single cache entry
-const ODDS_CACHE_KEY = 'all_nba_odds';
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 // Route segment config to prevent treating non-handler exports as routes
 export const runtime = 'nodejs';

@@ -5,7 +5,7 @@ import { getNBACache } from "@/lib/nbaCache";
 import cache from "@/lib/cache";
 import type { OddsCache } from "@/app/api/odds/refresh/route";
 
-const ODDS_CACHE_KEY = 'all_nba_odds';
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 export async function GET(req: NextRequest) {
   try {

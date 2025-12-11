@@ -6,7 +6,7 @@ import type { OddsCache } from '@/app/api/odds/refresh/route';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const ODDS_CACHE_KEY = 'all_nba_odds';
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 export async function GET(req: NextRequest) {
   try {

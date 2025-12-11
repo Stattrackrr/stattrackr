@@ -8,7 +8,7 @@ import type { OddsCache } from '@/app/api/odds/refresh/route';
 
 export const runtime = 'nodejs';
 
-const ODDS_CACHE_KEY = 'all_nba_odds';
+const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 // Map stat types to our cache keys
 const STAT_TO_KEY: Record<string, string> = {
