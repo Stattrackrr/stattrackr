@@ -12,31 +12,67 @@ const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
 
 /**
- * Get the earliest game date from odds cache
+ * Get the earliest game date from odds cache in US Eastern Time
+ * NBA games are scheduled in US Eastern Time, so we need to convert dates accordingly
  */
 function getGameDateFromOddsCache(oddsCache: OddsCache): string {
+  // Helper to get US Eastern Time date string
+  const getUSEasternDateString = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+      // Convert MM/DD/YYYY to YYYY-MM-DD
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    });
+  };
+  
   if (!oddsCache.games || oddsCache.games.length === 0) {
-    return new Date().toISOString().split('T')[0];
+    // Fallback to today's date in US ET if no games
+    return getUSEasternDateString(new Date());
   }
   
-  const dates = oddsCache.games
-    .map(game => game.commenceTime)
-    .filter(Boolean)
-    .map(time => {
-      try {
-        const date = new Date(time);
-        return date.toISOString().split('T')[0];
-      } catch {
-        return null;
+  // Get today's date in US Eastern Time
+  const todayUSET = getUSEasternDateString(new Date());
+  
+  // Extract all unique dates from games
+  const gameDates = new Set<string>();
+  
+  for (const game of oddsCache.games) {
+    if (!game.commenceTime) continue;
+    
+    try {
+      const commenceStr = String(game.commenceTime).trim();
+      
+      if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+        // Date-only string from BDL API - use it directly, no conversion needed
+        gameDates.add(commenceStr);
+      } else {
+        // Has time component, parse and convert to US ET
+        const date = new Date(commenceStr);
+        const gameDateUSET = getUSEasternDateString(date);
+        gameDates.add(gameDateUSET);
       }
-    })
-    .filter(Boolean) as string[];
-  
-  if (dates.length === 0) {
-    return new Date().toISOString().split('T')[0];
+    } catch {
+      continue;
+    }
   }
   
-  return dates.sort()[0];
+  if (gameDates.size === 0) {
+    return todayUSET;
+  }
+  
+  // PRIORITIZE TODAY: If today's date is in the game dates, use it
+  // Otherwise, use the earliest date (tomorrow)
+  if (gameDates.has(todayUSET)) {
+    return todayUSET;
+  }
+  
+  // No games for today, use the earliest date (should be tomorrow)
+  const sortedDates = Array.from(gameDates).sort();
+  return sortedDates[0];
 }
 
 /**

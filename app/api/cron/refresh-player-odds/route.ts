@@ -87,7 +87,8 @@ interface PlayerOddsCache {
 }
 
 /**
- * Get all players with games today or tomorrow
+ * Get all players with games today or tomorrow (in US Eastern Time)
+ * NBA games are scheduled in US Eastern Time, so we need to use ET dates
  */
 async function getPlayersWithGames(): Promise<Array<{
   playerId: string;
@@ -98,14 +99,24 @@ async function getPlayersWithGames(): Promise<Array<{
   gameDate: string;
 }>> {
   try {
-    // Get games from BDL for today and tomorrow
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Get dates in US Eastern Time (NBA games are scheduled in ET)
+    const getUSEasternDateString = (date: Date): string => {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+        // Convert MM/DD/YYYY to YYYY-MM-DD
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      });
+    };
     
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const todayUSET = getUSEasternDateString(now);
+    const tomorrowUSET = getUSEasternDateString(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+    
+    console.log(`[CRON] 📅 Using US Eastern Time dates: today=${todayUSET}, tomorrow=${tomorrowUSET}`);
     
     const BDL_BASE = 'https://api.balldontlie.io/v1';
     const BDL_HEADERS: Record<string, string> = {
@@ -114,11 +125,11 @@ async function getPlayersWithGames(): Promise<Array<{
       Authorization: `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
     };
     
-    // Fetch games for today and tomorrow
+    // Fetch games for today and tomorrow (in US ET)
     const gamesUrl = new URL(`${BDL_BASE}/games`);
     gamesUrl.searchParams.set('per_page', '100');
-    gamesUrl.searchParams.set('dates[]', todayStr);
-    gamesUrl.searchParams.append('dates[]', tomorrowStr);
+    gamesUrl.searchParams.set('dates[]', todayUSET);
+    gamesUrl.searchParams.append('dates[]', tomorrowUSET);
     
     const gamesResponse = await fetch(gamesUrl.toString(), { headers: BDL_HEADERS, cache: 'no-store' });
     if (!gamesResponse.ok) {
@@ -158,7 +169,18 @@ async function getPlayersWithGames(): Promise<Array<{
       
       if (!homeAbbr || !awayAbbr) continue;
       
-      const gameDate = game.date ? (typeof game.date === 'string' ? game.date.split('T')[0] : new Date(game.date).toISOString().split('T')[0]) : todayStr;
+      // Parse game date and convert to US ET if needed
+      let gameDate: string;
+      if (game.date) {
+        if (typeof game.date === 'string') {
+          gameDate = game.date.split('T')[0];
+        } else {
+          // Convert to US ET date string
+          gameDate = getUSEasternDateString(new Date(game.date));
+        }
+      } else {
+        gameDate = todayUSET; // Fallback to today in US ET
+      }
       const gameId = String(game.id);
       
       // Fetch players for home team

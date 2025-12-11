@@ -7,41 +7,109 @@ import type { OddsCache } from '@/app/api/odds/refresh/route';
 
 // Cache key for odds (matches the one in app/api/odds/route.ts)
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
+const ODDS_CACHE_KEY_STAGING = 'all_nba_odds_v2_bdl_staging';
 
 // Cache key prefix for player props
 // Version 2: Added combined stats DvP support (PRA, PA, PR, RA)
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
 
 /**
- * Get the earliest game date from odds cache
+ * Get the game date from odds cache in US Eastern Time
  * This represents the date of the games we're showing props for
+ * NBA games are scheduled in US Eastern Time, so we need to convert dates accordingly
+ * PRIORITIZES TODAY'S GAMES over tomorrow's games
  */
 function getGameDateFromOddsCache(oddsCache: OddsCache): string {
+  // Helper to get US Eastern Time date string
+  const getUSEasternDateString = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+      // Convert MM/DD/YYYY to YYYY-MM-DD
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    });
+  };
+  
+  // Get today's date in US Eastern Time
+  const todayUSET = getUSEasternDateString(new Date());
+  
   if (!oddsCache.games || oddsCache.games.length === 0) {
-    // Fallback to today's date if no games
-    return new Date().toISOString().split('T')[0];
+    // Fallback to today's date in US ET if no games
+    return todayUSET;
   }
   
-  // Find the earliest commenceTime from all games
-  const dates = oddsCache.games
-    .map(game => game.commenceTime)
-    .filter(Boolean)
-    .map(time => {
-      try {
-        const date = new Date(time);
-        return date.toISOString().split('T')[0];
-      } catch {
-        return null;
+  // Extract all unique dates from games, converted to US ET
+  const gameDates = new Set<string>();
+  const dateDetails: Array<{ commenceTime: string; parsedDate: string; gameDateUSET: string; rawDate: string }> = [];
+  
+  for (const game of oddsCache.games) {
+    if (!game.commenceTime) continue;
+    
+    try {
+      // If commenceTime is a date-only string (YYYY-MM-DD), use it directly as the date
+      // BDL API returns dates in YYYY-MM-DD format, which is already the game date
+      const commenceStr = String(game.commenceTime).trim();
+      let gameDateUSET: string;
+      
+      if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+        // Date-only string from BDL API - this IS the game date, use it directly
+        // No need to parse and convert - it's already in the correct format
+        gameDateUSET = commenceStr;
+        gameDates.add(gameDateUSET);
+        
+        dateDetails.push({
+          commenceTime: commenceStr,
+          parsedDate: 'N/A (date-only)',
+          gameDateUSET,
+          rawDate: commenceStr
+        });
+      } else {
+        // Has time component, parse and convert to US ET
+        const date = new Date(commenceStr);
+        gameDateUSET = getUSEasternDateString(date);
+        gameDates.add(gameDateUSET);
+        
+        dateDetails.push({
+          commenceTime: commenceStr,
+          parsedDate: date.toISOString(),
+          gameDateUSET,
+          rawDate: commenceStr
+        });
       }
-    })
-    .filter(Boolean) as string[];
-  
-  if (dates.length === 0) {
-    return new Date().toISOString().split('T')[0];
+    } catch (e) {
+      console.warn(`[Player Props API] Failed to parse commenceTime: ${game.commenceTime}`, e);
+      continue;
+    }
   }
   
-  // Return the earliest date (games are typically for today or tomorrow)
-  return dates.sort()[0];
+  // Log date extraction details
+  console.log(`[Player Props API] 📊 Extracted ${gameDates.size} unique dates from ${oddsCache.games.length} games`);
+  console.log(`[Player Props API] 📊 Today (US ET): ${todayUSET}`);
+  console.log(`[Player Props API] 📊 Available game dates: ${Array.from(gameDates).sort().join(', ')}`);
+  if (dateDetails.length > 0) {
+    console.log(`[Player Props API] 📊 Sample date details (first 3):`, dateDetails.slice(0, 3));
+  }
+  
+  if (gameDates.size === 0) {
+    console.log(`[Player Props API] ⚠️ No game dates extracted, falling back to today: ${todayUSET}`);
+    return todayUSET;
+  }
+  
+  // PRIORITIZE TODAY: If today's date is in the game dates, use it
+  // Otherwise, use the earliest date (tomorrow)
+  if (gameDates.has(todayUSET)) {
+    console.log(`[Player Props API] ✅ Using TODAY's date: ${todayUSET} (found ${gameDates.size} unique game dates)`);
+    return todayUSET;
+  }
+  
+  // No games for today, use the earliest date (should be tomorrow)
+  const sortedDates = Array.from(gameDates).sort();
+  const earliestDate = sortedDates[0];
+  console.log(`[Player Props API] ⚠️ No games for today (${todayUSET}), using earliest date: ${earliestDate} (found ${gameDates.size} unique game dates: ${sortedDates.join(', ')})`);
+  return earliestDate;
 }
 
 /**
@@ -114,24 +182,43 @@ export async function GET(request: NextRequest) {
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
       restTimeoutMs: 10000,
       jsTimeoutMs: 10000,
+      quiet: false,
     });
     
     // Fallback to in-memory cache
     if (!oddsCache) {
       const { cache: inMemoryCache } = await import('@/lib/cache');
       oddsCache = inMemoryCache.get(ODDS_CACHE_KEY);
+      if (oddsCache) {
+        console.log(`[Player Props API] ✅ Using in-memory odds cache (${oddsCache.games?.length || 0} games)`);
+      }
+    }
+    
+    // If main cache is empty, try staging cache (if a refresh is in progress)
+    if (!oddsCache) {
+      console.log(`[Player Props API] ⚠️ Main odds cache empty, checking staging key: ${ODDS_CACHE_KEY_STAGING}`);
+      oddsCache = await getNBACache<OddsCache>(ODDS_CACHE_KEY_STAGING, {
+        restTimeoutMs: 5000, // Shorter timeout for staging
+        jsTimeoutMs: 5000,
+        quiet: true, // Don't log verbose messages for staging fallback
+      });
+      if (oddsCache) {
+        console.log(`[Player Props API] ✅ Using STAGING odds cache (${oddsCache.games?.length || 0} games)`);
+      }
     }
     
     if (!oddsCache || !oddsCache.lastUpdated) {
+      console.error(`[Player Props API] ❌ No odds data available (checked main, in-memory, and staging caches)`);
       return NextResponse.json({
         success: false,
-        error: 'No odds data available',
+        error: 'No odds data available - odds cache may be refreshing',
         data: []
       }, { status: 503 });
     }
     
-    // Get the game date from odds cache (earliest game date)
+    // Get the game date from odds cache (prioritizes today's games)
     const gameDate = getGameDateFromOddsCache(oddsCache);
+    console.log(`[Player Props API] 📅 GET: Determined game date: ${gameDate} (from ${oddsCache.games?.length || 0} games)`);
     
     // Get unique player prop vendors to detect vendor changes
     const playerPropVendors = getPlayerPropVendors(oddsCache);
@@ -324,20 +411,52 @@ export async function POST(request: NextRequest) {
       quiet: true,
     });
     
+    // Fallback to in-memory cache
     if (!oddsCache) {
       const { cache: inMemoryCache } = await import('@/lib/cache');
       oddsCache = inMemoryCache.get(ODDS_CACHE_KEY);
+      if (oddsCache) {
+        console.log(`[Player Props API] ✅ POST: Using in-memory odds cache (${oddsCache.games?.length || 0} games)`);
+      }
     }
     
-    // Get game date from body, or extract from odds cache if not provided
-    let finalGameDate = gameDate;
-    if (!finalGameDate) {
+    // If main cache is empty, try staging cache (if a refresh is in progress)
+    if (!oddsCache) {
+      console.log(`[Player Props API] ⚠️ POST: Main odds cache empty, checking staging key: ${ODDS_CACHE_KEY_STAGING}`);
+      oddsCache = await getNBACache<OddsCache>(ODDS_CACHE_KEY_STAGING, {
+        restTimeoutMs: 5000, // Shorter timeout for staging
+        jsTimeoutMs: 5000,
+        quiet: true,
+      });
       if (oddsCache) {
-        finalGameDate = getGameDateFromOddsCache(oddsCache);
-      } else {
-        // Last resort: use today's date
-        finalGameDate = new Date().toISOString().split('T')[0];
+        console.log(`[Player Props API] ✅ POST: Using STAGING odds cache (${oddsCache.games?.length || 0} games)`);
       }
+    }
+    
+    // Always recalculate game date from odds cache to ensure consistency (prioritizes today)
+    // Don't trust the client's gameDate - recalculate from odds cache
+    let finalGameDate: string;
+    if (oddsCache) {
+      finalGameDate = getGameDateFromOddsCache(oddsCache);
+      if (gameDate && gameDate !== finalGameDate) {
+        console.log(`[Player Props API] 📅 POST: Recalculated game date from client's ${gameDate} to ${finalGameDate} (from ${oddsCache.games?.length || 0} games)`);
+      } else {
+        console.log(`[Player Props API] 📅 POST: Using game date: ${finalGameDate} (from ${oddsCache.games?.length || 0} games)`);
+      }
+    } else {
+      // Last resort: use today's date in US ET
+      const getUSEasternDateString = (date: Date): string => {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        });
+      };
+      finalGameDate = getUSEasternDateString(new Date());
+      console.log(`[Player Props API] ⚠️ POST: No odds cache, using today's date: ${finalGameDate}`);
     }
     
     // Get unique player prop vendors from odds cache (same logic as GET handler)

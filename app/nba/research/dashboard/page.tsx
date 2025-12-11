@@ -28,7 +28,6 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
 import NotificationSystem from '@/components/NotificationSystem';
-import { SimilarPlayers } from './components/SimilarPlayers';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 
 // Depth chart types
@@ -2236,11 +2235,21 @@ const PureChart = memo(function PureChart({
 
 // Per-button memoized components to prevent unrelated re-renders
 const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, isDark }: { label: string; value: string; isSelected: boolean; onSelect: (v: string) => void; isDark: boolean }) {
-  const onClick = useCallback(() => onSelect(value), [onSelect, value]);
+  const onClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(value);
+  }, [onSelect, value]);
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
+      className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
@@ -5537,8 +5546,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   selectedTimeFilter,
   propsMode,
   playerId,
-  selectedStat,
-  canLoadSimilarPlayers
+  selectedStat
 }: { 
   isDark: boolean; 
   opponentTeam: string; 
@@ -5546,10 +5554,9 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   propsMode?: 'player' | 'team';
   playerId?: string | number | null;
   selectedStat?: string;
-  canLoadSimilarPlayers?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [activeView, setActiveView] = useState<'breakdown' | 'similar'>('breakdown');
+  const [activeView, setActiveView] = useState<'breakdown'>('breakdown');
   const [teamStats, setTeamStats] = useState<any>(null);
   const [teamRanks, setTeamRanks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -5560,7 +5567,6 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   }, []);
 
   // Reset to "Opponent Breakdown" when player changes or opponent changes
-  // This allows Similar Players to pre-fetch in the background without showing loading states
   useEffect(() => {
     setActiveView('breakdown');
   }, [playerId, opponentTeam]);
@@ -5727,54 +5733,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
         <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
       </div>
       
-      {/* Toggle buttons for Opponent Breakdown / Similar Players */}
-      <div className="flex items-center gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveView('breakdown')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeView === 'breakdown'
-              ? mounted && isDark
-                ? 'text-white border-b-2 border-cyan-400'
-                : 'text-gray-900 border-b-2 border-cyan-500'
-              : mounted && isDark
-              ? 'text-gray-400 hover:text-gray-300'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Opponent Breakdown
-        </button>
-        {propsMode === 'player' && playerId && (
-          <button
-            onClick={() => setActiveView('similar')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'similar'
-                ? mounted && isDark
-                  ? 'text-white border-b-2 border-purple-500'
-                  : 'text-gray-900 border-b-2 border-purple-500'
-                : mounted && isDark
-                ? 'text-gray-400 hover:text-gray-300'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Similar Players
-          </button>
-        )}
-      </div>
-
       <div className="space-y-4">
-        {/* Render SimilarPlayers only after other components have loaded (hidden when breakdown is active) */}
-        {propsMode === 'player' && playerId && (
-          <div className={activeView === 'breakdown' ? 'hidden' : ''}>
-            <SimilarPlayers 
-              playerId={playerId} 
-              opponent={opponentTeam} 
-              statType={(selectedStat || 'PTS').toUpperCase()} 
-              isDark={isDark}
-              shouldFetch={canLoadSimilarPlayers}
-            />
-          </div>
-        )}
-
         {activeView === 'breakdown' ? (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -5894,8 +5853,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
   prev.selectedTimeFilter === next.selectedTimeFilter &&
   prev.propsMode === next.propsMode &&
   prev.playerId === next.playerId &&
-  prev.selectedStat === next.selectedStat &&
-  prev.canLoadSimilarPlayers === next.canLoadSimilarPlayers
+  prev.selectedStat === next.selectedStat
 ));
 
 // Best Odds Table Component with mounted state to avoid hydration mismatch
@@ -6941,9 +6899,36 @@ function NBADashboardContent() {
   
   // Track if stat was set from URL to prevent default stat logic from overriding it
   const statFromUrlRef = useRef(false);
+  // Track if user manually selected a stat (to prevent default logic from overriding)
+  const userSelectedStatRef = useRef(false);
   // Store the initial stat from URL immediately on mount (before any navigation)
   const initialStatFromUrlRef = useRef<string | null>(null);
   const hasCapturedInitialStatRef = useRef(false);
+  
+  // Wrapper for setSelectedStat that marks it as a user selection and updates URL immediately
+  const handleStatSelect = useCallback((stat: string) => {
+    userSelectedStatRef.current = true; // Mark as user selection
+    setSelectedStat(stat);
+    console.log(`[Dashboard] 👤 User selected stat: "${stat}"`);
+    
+    // Update URL immediately to prevent race conditions
+    if (typeof window !== 'undefined' && router) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('stat', stat);
+      router.replace(url.pathname + url.search, { scroll: false });
+      console.log(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
+      
+      // Mark that URL was updated by user, so useSearchParams doesn't override it
+      statFromUrlRef.current = true;
+      
+      // Reset the user selection flag after a short delay to allow URL to update
+      // This prevents useSearchParams from reading the old URL value
+      setTimeout(() => {
+        userSelectedStatRef.current = false;
+        console.log(`[Dashboard] ✅ Reset user selection flag after URL update`);
+      }, 100); // 100ms should be enough for router.replace to complete
+    }
+  }, [router]);
   
   // Use Next.js useSearchParams to read URL parameters
   const searchParams = useSearchParams();
@@ -6977,28 +6962,42 @@ function NBADashboardContent() {
     }
   }, []); // Run only once on mount
   
+  // Track if we've used the initial stat from mount (only use it once)
+  const hasUsedInitialStatRef = useRef(false);
+  
   // Watch for stat parameter in URL and set it immediately
   useEffect(() => {
-    // If we captured an initial stat from URL on mount, use that instead (URL might have been changed)
-    if (initialStatFromUrlRef.current) {
-      console.log(`[Dashboard] 🎯 useSearchParams: Using initial stat from mount: "${initialStatFromUrlRef.current}" (URL may have been changed)`);
-      console.log(`[Dashboard] 🔍 Current URL: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
+    const stat = searchParams.get('stat');
+    
+    // Only use initial stat from mount on the VERY FIRST render, then always respect URL
+    if (!hasUsedInitialStatRef.current && initialStatFromUrlRef.current) {
+      hasUsedInitialStatRef.current = true;
+      // Clear the initial stat ref so we don't use it again
+      const initialStat = initialStatFromUrlRef.current;
+      initialStatFromUrlRef.current = null; // Clear it so we don't reset to it later
+      console.log(`[Dashboard] 🎯 useSearchParams: Using initial stat from mount: "${initialStat}"`);
       statFromUrlRef.current = true;
-      setSelectedStat(initialStatFromUrlRef.current);
+      setSelectedStat(initialStat);
       
       // Store in session storage
       const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          parsed.selectedStat = initialStatFromUrlRef.current;
+          parsed.selectedStat = initialStat;
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
         } catch {}
       }
-      return; // Don't check searchParams if we have initial stat
+      return; // Use initial stat on first render only
     }
     
-    const stat = searchParams.get('stat');
+    // After first render, always respect the current URL parameter
+    // BUT skip if user just manually selected a stat (to prevent override)
+    if (userSelectedStatRef.current) {
+      console.log(`[Dashboard] ⏭️ useSearchParams: Skipping - user just manually selected stat`);
+      return;
+    }
+    
     if (stat) {
       const normalizedStat = (() => {
         const statUpper = stat.toUpperCase();
@@ -7008,39 +7007,76 @@ function NBADashboardContent() {
         return stat.toLowerCase();
       })();
       
-      console.log(`[Dashboard] 🎯 useSearchParams: Found stat="${stat}" -> "${normalizedStat}"`);
-      console.log(`[Dashboard] 🔍 Full URL at useSearchParams: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
-      
-      // Verify the stat exists in PLAYER_STAT_OPTIONS before setting
-      const statExists = PLAYER_STAT_OPTIONS.find(s => s.key === normalizedStat);
-      if (!statExists) {
-        console.warn(`[Dashboard] ⚠️ Stat "${normalizedStat}" not found in PLAYER_STAT_OPTIONS, but setting it anyway from URL`);
-      }
-      
-      statFromUrlRef.current = true;
-      setSelectedStat(normalizedStat);
-      
-      // Store in session storage
-      const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          parsed.selectedStat = normalizedStat;
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
-        } catch {}
+      // Only update if it's different from current stat to avoid unnecessary re-renders
+      if (normalizedStat !== selectedStat) {
+        console.log(`[Dashboard] 🎯 useSearchParams: Updating stat from URL: "${stat}" -> "${normalizedStat}" (current: "${selectedStat}")`);
+        statFromUrlRef.current = true;
+        setSelectedStat(normalizedStat);
+        
+        // Store in session storage
+        const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            parsed.selectedStat = normalizedStat;
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+          } catch {}
+        }
       }
     } else {
       console.log(`[Dashboard] ⚠️ useSearchParams: No stat parameter found in URL`);
-      console.log(`[Dashboard] 🔍 Full URL at useSearchParams: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedStat]);
   
-  // Ensure correct default stat is set when propsMode changes
+  // Sync selectedStat to URL when it changes (but don't trigger if it came from URL or user just selected)
   useEffect(() => {
-    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}"`);
+    // Skip if stat was just set from URL (to avoid circular updates)
+    if (statFromUrlRef.current) {
+      statFromUrlRef.current = false; // Reset flag for next user interaction
+      return;
+    }
+    
+    // Skip if user just manually selected a stat (handleStatSelect already updated URL)
+    if (userSelectedStatRef.current) {
+      userSelectedStatRef.current = false; // Reset after one check
+      return;
+    }
+    
+    // Skip if this is the initial mount and we haven't processed URL yet
+    if (!hasUsedInitialStatRef.current) {
+      return;
+    }
+    
+    // Update URL with current stat (only for non-user-initiated changes)
+    if (typeof window !== 'undefined' && router) {
+      const url = new URL(window.location.href);
+      const currentStat = url.searchParams.get('stat');
+      
+      // Only update if different to avoid unnecessary navigation
+      if (currentStat !== selectedStat) {
+        url.searchParams.set('stat', selectedStat);
+        // Use replace to avoid adding to history
+        router.replace(url.pathname + url.search, { scroll: false });
+        console.log(`[Dashboard] 🔄 Updated URL stat parameter to: "${selectedStat}"`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStat]); // router is stable, don't need it in deps
+  
+  // Ensure correct default stat is set when propsMode changes (but not when user clicks stats)
+  useEffect(() => {
+    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}", userSelectedStat=${userSelectedStatRef.current}`);
+    
+    // Skip if user manually selected a stat (don't override user choice)
+    if (userSelectedStatRef.current) {
+      console.log(`[Dashboard] ⏭️ Skipping default stat logic - user manually selected stat`);
+      userSelectedStatRef.current = false; // Reset after one check
+      return;
+    }
     
     // Skip if we have an initial stat from URL (don't override it, even if URL was changed)
-    if (initialStatFromUrlRef.current) {
+    // But only if we haven't used it yet - after first use, always respect URL
+    if (initialStatFromUrlRef.current && !hasUsedInitialStatRef.current) {
       console.log(`[Dashboard] ⏭️ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
       return;
     }
@@ -7073,22 +7109,21 @@ function NBADashboardContent() {
       // Clear opponent when switching to player mode (player props don't have opponents)
       setOpponentTeam('');
       
-      // Set default stat if needed
-      if (selectedStat !== 'pts') {
-        const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
-        if (!playerStatExists) {
-          console.log(`[Dashboard] ⚠️ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
-          setSelectedStat('pts');
-        }
+      // Set default stat ONLY if current stat is invalid for player mode
+      // Don't reset if user has a valid stat selected
+      const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
+      if (!playerStatExists && selectedStat !== 'pts') {
+        console.log(`[Dashboard] ⚠️ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
+        setSelectedStat('pts');
       }
-    } else if (propsMode === 'team' && selectedStat !== 'total_pts') {
-      // Only change if we're not already on total_pts to avoid unnecessary updates
+    } else if (propsMode === 'team') {
+      // Only change if current stat is invalid for team mode
       const teamStatExists = TEAM_STAT_OPTIONS.find(s => s.key === selectedStat);
-      if (!teamStatExists) {
+      if (!teamStatExists && selectedStat !== 'total_pts') {
         setSelectedStat('total_pts');
       }
     }
-  }, [propsMode, isPro, selectedStat]);
+  }, [propsMode, isPro]); // Removed selectedStat from deps - only run when propsMode changes, not on every stat change
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
@@ -7255,9 +7290,6 @@ const lineMovementInFlightRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   
-  // Track when it's safe to load SimilarPlayers (after other components finish)
-  const [canLoadSimilarPlayers, setCanLoadSimilarPlayers] = useState(false);
-  
   // Clear odds data when player changes (odds are separate from player stats)
   // Player stats are cleared by handlePlayerSelect functions at the start
   useEffect(() => {
@@ -7281,25 +7313,6 @@ const lineMovementInFlightRef = useRef(false);
     setBookOpeningLine(null);
     setBookCurrentLine(null);
   }, [selectedPlayer]);
-  
-  // Delay SimilarPlayers loading until other components finish
-  useEffect(() => {
-    // Reset when player changes
-    setCanLoadSimilarPlayers(false);
-    
-    // Compute playerId the same way it's used elsewhere
-    const playerId = resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null);
-    
-    // Wait until player stats are loaded, then add a delay for other components
-    if (!isLoading && selectedPlayer && playerId) {
-      // Give other components (DvP, opponent analysis) time to load first
-      const delayTimer = setTimeout(() => {
-        setCanLoadSimilarPlayers(true);
-      }, 3000); // 3 second delay after stats load to let other components finish
-      
-      return () => clearTimeout(delayTimer);
-    }
-  }, [isLoading, selectedPlayer, resolvedPlayerId]);
   
   // Advanced stats state
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
@@ -9457,11 +9470,15 @@ const lineMovementInFlightRef = useRef(false);
       // Reset betting lines to default for new player
       setBettingLines({});
       
-      // Set opponent team based on games schedule (will update when games load)
-      const opponent = getOpponentTeam(currentTeam, todaysGames);
-      const normalizedOpponent = normalizeAbbr(opponent);
-      console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (raw: ${opponent})`);
-      setOpponentTeam(normalizedOpponent);
+      // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
+      if (todaysGames.length > 0) {
+        const opponent = getOpponentTeam(currentTeam, todaysGames);
+        const normalizedOpponent = normalizeAbbr(opponent);
+        console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (games already loaded)`);
+        setOpponentTeam(normalizedOpponent);
+      } else {
+        console.log(`[Player Select] Team set to ${currentTeam}, opponent will be set when games load`);
+      }
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
     } catch (e: any) {
@@ -9662,11 +9679,15 @@ const lineMovementInFlightRef = useRef(false);
       // Reset betting lines to default for new player
       setBettingLines({});
       
-      // Set opponent team based on games schedule
-      const opponent = getOpponentTeam(currentTeam, todaysGames);
-      const normalizedOpponent = normalizeAbbr(opponent);
-      console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (raw: ${opponent})`);
-      setOpponentTeam(normalizedOpponent);
+      // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
+      if (todaysGames.length > 0) {
+        const opponent = getOpponentTeam(currentTeam, todaysGames);
+        const normalizedOpponent = normalizeAbbr(opponent);
+        console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (games already loaded)`);
+        setOpponentTeam(normalizedOpponent);
+      } else {
+        console.log(`[Player Select] Team set to ${currentTeam}, opponent will be set when games load`);
+      }
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
       console.log('✅ handlePlayerSelectFromSearch completed successfully');
@@ -11317,7 +11338,19 @@ const lineMovementInFlightRef = useRef(false);
         return;
       }
       
-      setRealOddsData(data.data || []);
+      const oddsData = data.data || [];
+      console.log('[fetchOddsData] Setting realOddsData:', {
+        length: oddsData.length,
+        sampleBook: oddsData[0] ? {
+          name: oddsData[0].name,
+          hasPRA: !!oddsData[0].PRA,
+          PRA: oddsData[0].PRA,
+          hasPTS: !!oddsData[0].PTS,
+          hasREB: !!oddsData[0].REB,
+          hasAST: !!oddsData[0].AST,
+        } : null
+      });
+      setRealOddsData(oddsData);
       
       // Store home/away teams for team mode
       if (propsMode === 'team' && data.homeTeam && data.awayTeam) {
@@ -11393,8 +11426,8 @@ const lineMovementInFlightRef = useRef(false);
     return () => clearTimeout(timeoutId);
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
-  const americanToDecimal = (odds: string): string => {
-    if (odds === 'N/A') return 'N/A';
+  const americanToDecimal = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
     const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
     if (isNaN(n)) return odds;
     const dec = n > 0 ? (1 + n / 100) : (1 + 100 / Math.abs(n));
@@ -11402,15 +11435,15 @@ const lineMovementInFlightRef = useRef(false);
   };
 
   // Ensure positive American odds show a leading '+' and strip any surrounding noise
-  const normalizeAmerican = (odds: string): string => {
-    if (odds === 'N/A') return 'N/A';
+  const normalizeAmerican = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
     const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
     if (isNaN(n)) return odds;
     return n > 0 ? `+${n}` : `${n}`;
   };
 
-  const fmtOdds = (odds: string): string => {
-    if (odds === 'N/A') return 'N/A';
+  const fmtOdds = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
     return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
   };
 
@@ -11494,10 +11527,39 @@ const lineMovementInFlightRef = useRef(false);
   // Calculate primary line from real bookmakers (not alt lines) - used for prediction
   // Uses the most common line value (consensus), not the average
   const primaryMarketLine = useMemo(() => {
-    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
+    console.log('[primaryMarketLine] START calculation:', { 
+      hasRealOddsData: !!realOddsData, 
+      realOddsDataLength: realOddsData?.length || 0, 
+      selectedStat,
+      realOddsDataType: typeof realOddsData,
+      isArray: Array.isArray(realOddsData)
+    });
+    
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) {
+      console.log('[primaryMarketLine] EARLY RETURN - No data:', { 
+        hasRealOddsData: !!realOddsData, 
+        realOddsDataLength: realOddsData?.length || 0, 
+        selectedStat 
+      });
+      return null;
+    }
     
     const bookRowKey = getBookRowKey(selectedStat);
-    if (!bookRowKey) return null;
+    console.log('[primaryMarketLine] bookRowKey result:', { selectedStat, bookRowKey });
+    if (!bookRowKey) {
+      console.log('[primaryMarketLine] EARLY RETURN - No bookRowKey for stat:', selectedStat);
+      return null;
+    }
+    
+    console.log('[primaryMarketLine] Calculating for:', { selectedStat, bookRowKey, realOddsDataLength: realOddsData.length });
+    console.log('[primaryMarketLine] Sample book structure:', realOddsData[0] ? {
+      name: realOddsData[0].name,
+      keys: Object.keys(realOddsData[0]),
+      hasPRA: 'PRA' in realOddsData[0],
+      PRA: (realOddsData[0] as any).PRA,
+      hasBookRowKey: bookRowKey in realOddsData[0],
+      bookRowKeyValue: (realOddsData[0] as any)[bookRowKey]
+    } : null);
     
     // Collect all real lines (not alt lines) and find the most common one
     const lineCounts = new Map<number, number>();
@@ -11505,9 +11567,24 @@ const lineMovementInFlightRef = useRef(false);
     for (const book of realOddsData) {
       const meta = (book as any)?.meta;
       // Skip alt lines - only use primary over/under lines
-      if (meta?.variantLabel) continue;
+      if (meta?.variantLabel) {
+        console.log('[primaryMarketLine] Skipping alt line:', meta.variantLabel);
+        continue;
+      }
       
       const statData = (book as any)[bookRowKey];
+      console.log('[primaryMarketLine] Checking book:', { 
+        bookName: book?.name || meta?.baseName, 
+        hasStatData: !!statData, 
+        statDataType: typeof statData,
+        statDataIsObject: statData && typeof statData === 'object',
+        statDataKeys: statData && typeof statData === 'object' ? Object.keys(statData) : null,
+        statDataLine: statData?.line,
+        statDataOver: statData?.over,
+        statDataUnder: statData?.under,
+        fullStatData: statData
+      });
+      
       if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
         const lineStr = statData.line;
         const line = (lineStr && lineStr !== 'N/A') 
@@ -11518,11 +11595,27 @@ const lineMovementInFlightRef = useRef(false);
           // Round to nearest 0.5 to group similar lines together
           const roundedLine = Math.round(line * 2) / 2;
           lineCounts.set(roundedLine, (lineCounts.get(roundedLine) || 0) + 1);
+          console.log('[primaryMarketLine] ✅ Found valid line:', { line, roundedLine, count: lineCounts.get(roundedLine) });
+        } else {
+          console.log('[primaryMarketLine] ❌ Invalid line value:', { lineStr, parsed: line, isFinite: Number.isFinite(line) });
         }
+      } else {
+        console.log('[primaryMarketLine] ❌ Stat data missing or N/A:', { 
+          hasStatData: !!statData,
+          line: statData?.line,
+          over: statData?.over,
+          under: statData?.under,
+          lineCheck: statData?.line !== 'N/A',
+          overCheck: statData?.over !== 'N/A',
+          underCheck: statData?.under !== 'N/A'
+        });
       }
     }
     
-    if (lineCounts.size === 0) return null;
+    if (lineCounts.size === 0) {
+      console.log('[primaryMarketLine] ❌ No valid lines found after processing all books');
+      return null;
+    }
     
     // Find the most common line (consensus)
     let consensusLine: number | null = null;
@@ -11534,8 +11627,18 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
+    console.log('[primaryMarketLine] ✅ Consensus line:', { consensusLine, maxCount, allLines: Array.from(lineCounts.entries()) });
     return consensusLine;
   }, [realOddsData, selectedStat, getBookRowKey]);
+  
+  // Debug: Log when primaryMarketLine changes
+  useEffect(() => {
+    console.log('[primaryMarketLine] Value changed:', { 
+      primaryMarketLine, 
+      realOddsDataLength: realOddsData?.length || 0,
+      selectedStat 
+    });
+  }, [primaryMarketLine, realOddsData, selectedStat]);
 
   const calculatedImpliedOdds = useMemo(() => {
     if (!realOddsData || realOddsData.length === 0 || !selectedStat) return null;
@@ -13567,7 +13670,7 @@ const lineMovementInFlightRef = useRef(false);
               isDark={isDark}
               currentStatOptions={currentStatOptions}
               selectedStat={selectedStat}
-              onSelectStat={setSelectedStat}
+              onSelectStat={handleStatSelect}
               bettingLine={bettingLine}
               onChangeBettingLine={setBettingLine}
               selectedTimeframe={selectedTimeframe}
@@ -13621,7 +13724,6 @@ const lineMovementInFlightRef = useRef(false);
                 propsMode={propsMode}
                 playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                 selectedStat={selectedStat}
-                canLoadSimilarPlayers={canLoadSimilarPlayers}
               />
 
               {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
@@ -14394,7 +14496,6 @@ const lineMovementInFlightRef = useRef(false);
                   propsMode={propsMode}
                   playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                   selectedStat={selectedStat}
-                  canLoadSimilarPlayers={canLoadSimilarPlayers}
                 />
 
                 {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}

@@ -59,6 +59,7 @@ export function getTeamAbbr(fullName: string): string {
 /**
  * Check if a game involves a specific team (by abbreviation)
  * Handles both abbreviations (e.g., "LAL") and full names (e.g., "Los Angeles Lakers")
+ * Also handles partial matches (e.g., "Milwaukee" matches "Milwaukee Bucks")
  */
 export function gameInvolvesTeam(homeTeam: string, awayTeam: string, teamAbbr: string): boolean {
   const fullName = getFullTeamName(teamAbbr);
@@ -71,7 +72,7 @@ export function gameInvolvesTeam(homeTeam: string, awayTeam: string, teamAbbr: s
     return true;
   }
   
-  // Check if homeTeam or awayTeam matches the full name
+  // Check if homeTeam or awayTeam matches the full name exactly
   if (homeTeam === fullName || awayTeam === fullName) {
     return true;
   }
@@ -79,6 +80,18 @@ export function gameInvolvesTeam(homeTeam: string, awayTeam: string, teamAbbr: s
   // Also check normalized full name (case-insensitive)
   const normalizedFullName = fullName.toUpperCase().trim();
   if (normalizedHome === normalizedFullName || normalizedAway === normalizedFullName) {
+    return true;
+  }
+  
+  // Check if stored team name contains the full name (e.g., "Milwaukee Bucks" contains "Milwaukee")
+  // or if full name contains stored team name (e.g., "Milwaukee" is in "Milwaukee Bucks")
+  if (normalizedHome.includes(normalizedFullName) || normalizedAway.includes(normalizedFullName) ||
+      normalizedFullName.includes(normalizedHome) || normalizedFullName.includes(normalizedAway)) {
+    return true;
+  }
+  
+  // Also check if stored team name contains abbreviation (e.g., "MIL Bucks" contains "MIL")
+  if (normalizedHome.includes(normalizedAbbr) || normalizedAway.includes(normalizedAbbr)) {
     return true;
   }
   

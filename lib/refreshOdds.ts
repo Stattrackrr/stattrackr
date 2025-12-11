@@ -549,15 +549,43 @@ async function fetchPropsForGame(gameId: number): Promise<BdlPlayerProp[]> {
 }
 
 function getDateStringsNext24h(): string[] {
+  // Get dates in US Eastern Time (NBA games are scheduled in ET)
+  // Include yesterday, today, and tomorrow to catch all relevant games
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  return [today, tomorrow];
+  
+  const getUSEasternDateString = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+      // Convert MM/DD/YYYY to YYYY-MM-DD
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    });
+  };
+  
+  const yesterdayUSET = getUSEasternDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const todayUSET = getUSEasternDateString(now);
+  const tomorrowUSET = getUSEasternDateString(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+  
+  // Return unique dates (in case of timezone edge cases)
+  const dates = [yesterdayUSET, todayUSET, tomorrowUSET].filter((v, i, a) => a.indexOf(v) === i);
+  
+  console.log(`📅 US Eastern Time dates: yesterday=${yesterdayUSET}, today=${todayUSET}, tomorrow=${tomorrowUSET}`);
+  return dates;
 }
 
 function normalizeTeamName(team: { abbreviation?: string; full_name?: string; name?: string } | null | undefined): string {
-  if (!team) return 'N/A';
-  return team.abbreviation || team.full_name || team.name || 'N/A';
+  if (!team) {
+    console.warn('[normalizeTeamName] Team is null/undefined, returning N/A');
+    return 'N/A';
+  }
+  const result = team.abbreviation || team.full_name || team.name || 'N/A';
+  if (result === 'N/A') {
+    console.warn('[normalizeTeamName] Team object has no abbreviation, full_name, or name:', JSON.stringify(team));
+  }
+  return result;
 }
 
 function mapPropTypeToStatKey(propType: string): string | null {
@@ -640,11 +668,15 @@ export async function refreshOddsData(
   console.log(`🔄 Starting BDL odds refresh... (source: ${options.source})`);
   const startTime = Date.now();
   const dates = getDateStringsNext24h();
+  console.log(`📅 Fetching odds for dates: ${dates.join(', ')} (US Eastern Time dates)`);
 
   try {
     // 1) Fetch odds (spreads/ML/totals) for next 24h
+    console.log(`📡 Calling BDL API: /odds?dates[]=${dates.join('&dates[]=')}`);
     const oddsRows = await fetchOddsForDates(dates);
+    console.log(`📊 BDL returned ${oddsRows.length} odds rows for ${dates.join(', ')}`);
     const gameIds = Array.from(new Set(oddsRows.map(o => o.game_id)));
+    console.log(`📊 Found ${gameIds.length} unique game IDs from odds: ${gameIds.slice(0, 5).join(', ')}${gameIds.length > 5 ? '...' : ''}`);
     const vendorsFromOdds = Array.from(new Set(oddsRows.map(o => o.vendor))).sort();
     console.log(`📊 BDL returned ${oddsRows.length} odds rows from ${vendorsFromOdds.length} vendors: ${vendorsFromOdds.join(', ')}`);
     console.log(`📊 Expected 10 vendors per docs: betmgm, fanduel, draftkings, bet365, caesars, ballybet, betway, betparx, betrivers, rebet`);
@@ -657,9 +689,18 @@ export async function refreshOddsData(
     }
 
     // 2) Fetch games to map game_id -> teams/date
+    console.log(`📡 Calling BDL API: /games?dates[]=${dates.join('&dates[]=')}`);
     const gamesData = await fetchGamesForDates(dates);
+    console.log(`📊 BDL returned ${gamesData.length} games for ${dates.join(', ')}`);
     const gameMap = new Map<number, BdlGame>();
     for (const g of gamesData) gameMap.set(g.id, g);
+    
+    // Log game details
+    if (gamesData.length > 0) {
+      console.log(`📊 Games found:`, gamesData.map(g => `${g.visitor_team?.abbreviation || g.visitor_team?.name} @ ${g.home_team?.abbreviation || g.home_team?.name} (${g.date})`).join(', '));
+    } else {
+      console.warn(`⚠️ No games found for dates: ${dates.join(', ')}`);
+    }
 
     // 3) Fetch player props for those games
     const playerProps = await fetchPlayerPropsForGames(gameIds);
@@ -911,17 +952,77 @@ export async function refreshOddsData(
     const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
     // Prune games that started more than 1 hour ago (player props not needed after start)
+    // BUT: Keep games that are "today", "tomorrow", or "day after tomorrow" in US Eastern Time
+    // This ensures users in different timezones (like Australia) still see relevant games
     const ONE_HOUR_MS = 60 * 60 * 1000;
     const nowMs = now.getTime();
+    
+    // Get today, tomorrow, and day after tomorrow in US Eastern Time
+    const getUSEasternDateString = (date: Date): string => {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date);
+    };
+    
+    const todayUSET = getUSEasternDateString(now);
+    const tomorrowUSET = getUSEasternDateString(new Date(nowMs + 24 * 60 * 60 * 1000));
+    const dayAfterUSET = getUSEasternDateString(new Date(nowMs + 2 * 24 * 60 * 60 * 1000));
+    
     const prunedGames = games.filter((g) => {
-      const startMs = g?.commenceTime ? new Date(g.commenceTime).getTime() : Number.NaN;
+      if (!g?.commenceTime) {
+        console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: no commenceTime`);
+        return true; // Keep if no commence time (be conservative)
+      }
+      
+      // If commenceTime is a date-only string (YYYY-MM-DD), parse it carefully
+      const commenceStr = String(g.commenceTime).trim();
+      let startMs: number;
+      let gameDateUSET: string | null = null;
+      
+      if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+        // Date-only string: parse as UTC noon to avoid timezone issues
+        const [year, month, day] = commenceStr.split('-').map(Number);
+        const dateInUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+        startMs = dateInUTC.getTime();
+        
+        // Get the date string in US ET for this commenceTime
+        gameDateUSET = getUSEasternDateString(dateInUTC);
+        
+        // Keep if game is today, tomorrow, or day after tomorrow in US ET
+        if (gameDateUSET === todayUSET || gameDateUSET === tomorrowUSET || gameDateUSET === dayAfterUSET) {
+          console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: date ${gameDateUSET} is in range (${todayUSET}, ${tomorrowUSET}, ${dayAfterUSET})`);
+          return true;
+        } else {
+          console.log(`🧹 Pruning game ${g.homeTeam} vs ${g.awayTeam}: date ${gameDateUSET} is NOT in range (${todayUSET}, ${tomorrowUSET}, ${dayAfterUSET})`);
+          return false;
+        }
+      } else {
+        // Has time component, parse normally
+        startMs = new Date(commenceStr).getTime();
+        gameDateUSET = getUSEasternDateString(new Date(startMs));
+      }
+      
       // Keep if start time invalid (be conservative), or starts in future, or started within past hour
-      if (!Number.isFinite(startMs)) return true;
-      return startMs >= (nowMs - ONE_HOUR_MS);
+      if (!Number.isFinite(startMs)) {
+        console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: invalid start time`);
+        return true;
+      }
+      const keep = startMs >= (nowMs - ONE_HOUR_MS);
+      if (!keep) {
+        console.log(`🧹 Pruning game ${g.homeTeam} vs ${g.awayTeam}: started >1h ago (${gameDateUSET}, startMs: ${startMs}, nowMs: ${nowMs}, diff: ${nowMs - startMs}ms)`);
+      }
+      return keep;
     });
 
     if (prunedGames.length !== games.length) {
       console.log(`🧹 Pruned ${games.length - prunedGames.length} games that started >1h ago. Keeping ${prunedGames.length}.`);
+      console.log(`🧹 US ET dates: today=${todayUSET}, tomorrow=${tomorrowUSET}, dayAfter=${dayAfterUSET}`);
+      console.log(`🧹 Kept games:`, prunedGames.map(g => `${g.homeTeam} vs ${g.awayTeam} (${g.commenceTime})`).join(', '));
+      const pruned = games.filter(g => !prunedGames.includes(g));
+      console.log(`🧹 Pruned games:`, pruned.map(g => `${g.homeTeam} vs ${g.awayTeam} (${g.commenceTime})`).join(', '));
     }
 
     // Get previous cache to compare (before we potentially overwrite it)
@@ -981,10 +1082,31 @@ export async function refreshOddsData(
       nextUpdate: nextUpdate.toISOString(),
     };
 
-    // Cache the data in both in-memory and Supabase (persistent, shared across instances)
+    // STAGING APPROACH: Build new cache in staging key first, then swap atomically
+    // This ensures users always see the old cache until the new one is fully ready
+    const STAGING_CACHE_KEY = 'all_nba_odds_v2_bdl_staging';
+    
+    // Step 1: Write new cache to staging key (old cache still available at main key)
+    console.log(`[Odds Cache] 📦 Writing new cache to staging key: ${STAGING_CACHE_KEY}`);
+    cache.set(STAGING_CACHE_KEY, newCache, ttlMinutes);
+    await setNBACache(STAGING_CACHE_KEY, 'odds', newCache, ttlMinutes);
+    console.log(`[Odds Cache] ✅ Staging cache ready (${games.length} games)`);
+    
+    // Step 2: Atomically swap staging to main (users now see new cache)
+    // This is an atomic operation - old cache is replaced only when new one is complete
+    console.log(`[Odds Cache] 🔄 Swapping staging cache to main key: ${ODDS_CACHE_KEY}`);
     cache.set(ODDS_CACHE_KEY, newCache, ttlMinutes);
     await setNBACache(ODDS_CACHE_KEY, 'odds', newCache, ttlMinutes);
-    console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games)`);
+    console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games) - swap complete`);
+    
+    // Step 3: Clean up staging key (optional, but keeps cache clean)
+    try {
+      cache.delete(STAGING_CACHE_KEY);
+      // Note: We don't delete from Supabase staging key - it can serve as backup
+      // and will expire naturally based on TTL
+    } catch (e) {
+      // Ignore cleanup errors
+    }
     
     // Trigger background player props update (non-blocking)
     // This ensures player props cache updates automatically when odds change
