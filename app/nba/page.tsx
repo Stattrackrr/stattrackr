@@ -1037,6 +1037,9 @@ export default function NBALandingPage() {
           dvpRating: null,
           dvpStatValue: null,
         })));
+        
+        // Set loading to false so props are displayed immediately (they'll update as processing completes)
+        setPropsLoading(false);
 
         // Process props in small parallel batches for speed
         const processedProps: PlayerProp[] = [];
