@@ -1002,8 +1002,8 @@ export async function refreshOddsData(
     return {
       success: true,
       gamesCount: games.length,
-      lastUpdated: oddsCache.lastUpdated,
-      nextUpdate: oddsCache.nextUpdate,
+      lastUpdated: newCache.lastUpdated,
+      nextUpdate: newCache.nextUpdate,
       apiCalls: oddsRows.length + playerProps.length, // approximate
       elapsed: `${elapsed}ms`
     };
