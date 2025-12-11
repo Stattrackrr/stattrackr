@@ -924,6 +924,21 @@ export async function refreshOddsData(
       console.log(`🧹 Pruned ${games.length - prunedGames.length} games that started >1h ago. Keeping ${prunedGames.length}.`);
     }
 
+    // If pruning removed everything, keep previous cache to avoid blanking the UI between windows
+    if (prunedGames.length === 0) {
+      console.warn('[Odds Cache] ⚠️ Pruned games is empty (all games started >1h ago). Keeping previous cache.');
+      const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
+      if (previous) {
+        return {
+          success: true,
+          gamesCount: previous.games.length,
+          lastUpdated: previous.lastUpdated,
+          nextUpdate: previous.nextUpdate,
+          note: 'served previous cache because pruning removed all games'
+        };
+      }
+    }
+
     const newCache: OddsCache = {
       games: prunedGames,
       lastUpdated: now.toISOString(),
