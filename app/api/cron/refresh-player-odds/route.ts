@@ -26,6 +26,11 @@ const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_ODDS_CACHE_PREFIX = 'player_odds:';
 const PLAYER_STATS_CACHE_PREFIX = 'player_stats:';
 const CACHE_TTL_MINUTES = 120; // 2 hours
+const HOURS_BETWEEN_PLAYER_SCANS = 20; // Only process players once per day
+const PLAYER_SCAN_BUDGET_MS = 4 * 60 * 1000; // 4 minutes to stay under Vercel's 5m limit
+const PLAYER_SCAN_BATCH_SIZE = 5; // smaller batch to reduce spikes
+const LAST_FULL_SCAN_KEY = 'player_odds:last_full_scan';
+const PLAYER_SCAN_CHECKPOINT_KEY = 'player_odds:last_full_scan_checkpoint';
 
 // Only these bookmakers will be included (all others excluded to reduce API calls)
 const ALLOWED_BOOKMAKERS: string[] = [
@@ -488,12 +493,10 @@ export async function GET(req: NextRequest) {
     console.log(`[CRON] ✅ Bulk odds cache refreshed successfully`);
     
     // Check if we should do per-player processing (only once per day when new odds are released)
-    const lastFullScanKey = 'player_odds:last_full_scan';
-    const lastFullScan = await getNBACache<string>(lastFullScanKey, { quiet: true });
+    const lastFullScan = await getNBACache<string>(LAST_FULL_SCAN_KEY, { quiet: true });
     const now = Date.now();
     const lastFullScanTime = lastFullScan ? new Date(lastFullScan).getTime() : 0;
     const timeSinceLastFullScan = now - lastFullScanTime;
-    const HOURS_BETWEEN_PLAYER_SCANS = 20; // Only process players once per day
     const shouldDoPlayerScan = !lastFullScan || 
       timeSinceLastFullScan >= (HOURS_BETWEEN_PLAYER_SCANS * 60 * 60 * 1000);
     
@@ -533,10 +536,24 @@ export async function GET(req: NextRequest) {
     let processed = 0;
     let errors = 0;
     
-    // Process players in batches to avoid overwhelming the API
-    const batchSize = 10;
-    for (let i = 0; i < players.length; i += batchSize) {
-      const batch = players.slice(i, i + batchSize);
+    // Resume from checkpoint if previous run stopped early
+    const checkpoint = await getNBACache<{ index: number; timestamp: string }>(PLAYER_SCAN_CHECKPOINT_KEY, { quiet: true });
+    let startIndex = 0;
+    if (checkpoint?.index !== undefined) {
+      const checkpointAge = checkpoint.timestamp ? now - new Date(checkpoint.timestamp).getTime() : Number.MAX_SAFE_INTEGER;
+      // If checkpoint older than 26h, reset
+      if (checkpointAge < 26 * 60 * 60 * 1000) {
+        startIndex = checkpoint.index;
+        console.log(`[CRON] Resuming per-player processing from checkpoint index ${startIndex}`);
+      } else {
+        console.log('[CRON] Checkpoint expired, starting from beginning');
+      }
+    }
+
+    const startProcessingTime = Date.now();
+    let i = startIndex;
+    for (; i < players.length; i += PLAYER_SCAN_BATCH_SIZE) {
+      const batch = players.slice(i, i + PLAYER_SCAN_BATCH_SIZE);
       
       const batchResults = await Promise.allSettled(
         batch.map(player => updatePlayerOddsCache(player, true, bulkOddsResult))
@@ -554,13 +571,37 @@ export async function GET(req: NextRequest) {
       }
       
       // Delay between batches
-      if (i + batchSize < players.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      if (i + PLAYER_SCAN_BATCH_SIZE < players.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Stop if we are close to the time budget
+      const elapsedBudget = Date.now() - startProcessingTime;
+      if (elapsedBudget >= PLAYER_SCAN_BUDGET_MS) {
+        const nextIndex = i + PLAYER_SCAN_BATCH_SIZE;
+        await setNBACache(PLAYER_SCAN_CHECKPOINT_KEY, 'metadata', { index: nextIndex, timestamp: new Date().toISOString() }, 26 * 60, true);
+        const elapsed = Date.now() - startTime;
+        console.log(`[CRON] ⏱️ Time budget reached, stopping at index ${nextIndex}/${players.length} after ${elapsedBudget}ms`);
+        return NextResponse.json({
+          success: true,
+          bulkOddsRefreshed: true,
+          playerScanCompleted: false,
+          checkpointIndex: nextIndex,
+          playersProcessed: processed,
+          totalPlayers: players.length,
+          updated: totalUpdated,
+          unchanged: totalUnchanged,
+          errors,
+          elapsed: `${elapsed}ms`,
+          timestamp,
+          message: 'Bulk odds refreshed; per-player scan paused at checkpoint (will resume next run)',
+        });
       }
     }
     
-    // Update last full scan timestamp
-    await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), 24 * 60, true);
+    // Finished all players: clear checkpoint and update last full scan timestamp
+    await setNBACache(PLAYER_SCAN_CHECKPOINT_KEY, 'metadata', null as any, 1, true);
+    await setNBACache(LAST_FULL_SCAN_KEY, 'metadata', new Date().toISOString(), 24 * 60, true);
     
     const elapsed = Date.now() - startTime;
     console.log(`[CRON] ✅ refresh-player-odds completed in ${elapsed}ms: bulk odds refreshed, ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);
