@@ -476,46 +476,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { searchParams } = new URL(req.url);
-    const scanType = searchParams.get('type') || 'update'; // 'full' or 'update'
-    const isFullScan = scanType === 'full';
-    
-    console.log(`[CRON] 🔄 refresh-player-odds: Starting ${isFullScan ? 'FULL' : 'UPDATE'} scan...`);
-    
-    // Get all players with games today/tomorrow
-    const players = await getPlayersWithGames();
-    console.log(`[refresh-player-odds] Found ${players.length} players with games`);
-    
-    if (players.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No players with games today/tomorrow',
-        playersProcessed: 0,
-        updated: 0,
-        unchanged: 0,
-      });
-    }
-    
-    // Check if we should do a full scan (every 120 minutes)
-    const lastFullScanKey = 'player_odds:last_full_scan';
-    const lastFullScan = await getNBACache<string>(lastFullScanKey, { quiet: true });
-    const now = Date.now();
-    const lastFullScanTime = lastFullScan ? new Date(lastFullScan).getTime() : 0;
-    const timeSinceLastFullScan = now - lastFullScanTime;
-    const shouldDoFullScan = !lastFullScan || 
-      timeSinceLastFullScan >= (CACHE_TTL_MINUTES * 60 * 1000);
-    
-    const actualScanType = shouldDoFullScan ? 'full' : scanType;
-    
-    console.log(`[refresh-player-odds] Last full scan: ${lastFullScan || 'never'}, Time since: ${Math.round(timeSinceLastFullScan / 60000)} minutes, Doing: ${actualScanType} scan`);
-    
-    let totalUpdated = 0;
-    let totalUnchanged = 0;
-    let processed = 0;
-    let errors = 0;
-    
-    // Refresh bulk odds cache once for all players
-    console.log(`[refresh-player-odds] Refreshing bulk odds cache...`);
+    // Always refresh bulk odds cache (this is fast and keeps the cache warm)
+    console.log(`[CRON] 🔄 refresh-player-odds: Refreshing bulk odds cache...`);
     const bulkOddsResult = await refreshOddsData({ source: 'cron/refresh-player-odds' });
     if (!bulkOddsResult) {
       return NextResponse.json({
@@ -523,7 +485,53 @@ export async function GET(req: NextRequest) {
         error: 'Failed to refresh bulk odds cache',
       }, { status: 500 });
     }
-    console.log(`[refresh-player-odds] Bulk odds cache refreshed, processing ${players.length} players...`);
+    console.log(`[CRON] ✅ Bulk odds cache refreshed successfully`);
+    
+    // Check if we should do per-player processing (only once per day when new odds are released)
+    const lastFullScanKey = 'player_odds:last_full_scan';
+    const lastFullScan = await getNBACache<string>(lastFullScanKey, { quiet: true });
+    const now = Date.now();
+    const lastFullScanTime = lastFullScan ? new Date(lastFullScan).getTime() : 0;
+    const timeSinceLastFullScan = now - lastFullScanTime;
+    const HOURS_BETWEEN_PLAYER_SCANS = 20; // Only process players once per day
+    const shouldDoPlayerScan = !lastFullScan || 
+      timeSinceLastFullScan >= (HOURS_BETWEEN_PLAYER_SCANS * 60 * 60 * 1000);
+    
+    if (!shouldDoPlayerScan) {
+      const elapsed = Date.now() - startTime;
+      const hoursSinceLastScan = Math.round(timeSinceLastFullScan / (60 * 60 * 1000));
+      console.log(`[CRON] ⏭️ Skipping per-player processing (last scan was ${hoursSinceLastScan} hours ago, only needed once per day)`);
+      
+      return NextResponse.json({
+        success: true,
+        bulkOddsRefreshed: true,
+        playerScanSkipped: true,
+        hoursSinceLastPlayerScan: hoursSinceLastScan,
+        elapsed: `${elapsed}ms`,
+        timestamp,
+        message: 'Bulk odds refreshed, per-player scan skipped (only needed once per day)',
+      });
+    }
+    
+    // Do per-player processing (only once per day)
+    console.log(`[CRON] 🔄 Starting per-player processing (once per day when new odds are released)...`);
+    
+    const players = await getPlayersWithGames();
+    console.log(`[CRON] Found ${players.length} players with games`);
+    
+    if (players.length === 0) {
+      return NextResponse.json({
+        success: true,
+        bulkOddsRefreshed: true,
+        message: 'Bulk odds refreshed, but no players with games today/tomorrow',
+        playersProcessed: 0,
+      });
+    }
+    
+    let totalUpdated = 0;
+    let totalUnchanged = 0;
+    let processed = 0;
+    let errors = 0;
     
     // Process players in batches to avoid overwhelming the API
     const batchSize = 10;
@@ -531,7 +539,7 @@ export async function GET(req: NextRequest) {
       const batch = players.slice(i, i + batchSize);
       
       const batchResults = await Promise.allSettled(
-        batch.map(player => updatePlayerOddsCache(player, actualScanType === 'full', bulkOddsResult))
+        batch.map(player => updatePlayerOddsCache(player, true, bulkOddsResult))
       );
       
       for (const result of batchResults) {
@@ -541,7 +549,7 @@ export async function GET(req: NextRequest) {
           processed++;
         } else {
           errors++;
-          console.error('[refresh-player-odds] Error processing player:', result.reason);
+          console.error('[CRON] Error processing player:', result.reason);
         }
       }
       
@@ -551,17 +559,16 @@ export async function GET(req: NextRequest) {
       }
     }
     
-    // Update last full scan timestamp if we did a full scan
-    if (actualScanType === 'full') {
-      await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), CACHE_TTL_MINUTES, true);
-    }
+    // Update last full scan timestamp
+    await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), 24 * 60, true);
     
     const elapsed = Date.now() - startTime;
-    console.log(`[CRON] ✅ refresh-player-odds completed in ${elapsed}ms: ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);
+    console.log(`[CRON] ✅ refresh-player-odds completed in ${elapsed}ms: bulk odds refreshed, ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);
     
     return NextResponse.json({
       success: true,
-      scanType: actualScanType,
+      bulkOddsRefreshed: true,
+      playerScanCompleted: true,
       playersProcessed: processed,
       totalPlayers: players.length,
       updated: totalUpdated,
@@ -569,7 +576,7 @@ export async function GET(req: NextRequest) {
       errors,
       elapsed: `${elapsed}ms`,
       timestamp,
-      message: `${actualScanType === 'full' ? 'Full' : 'Update'} scan completed`,
+      message: 'Bulk odds refreshed and per-player scan completed',
     });
   } catch (e: any) {
     const elapsed = Date.now() - startTime;

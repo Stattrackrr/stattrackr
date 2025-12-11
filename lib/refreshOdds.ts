@@ -843,8 +843,8 @@ export async function refreshOddsData(
             vendorLower.includes('draftkings') ||
             vendorLower.includes('fanduel');
           
-          // Debug: log all milestone vendors to see what we're getting
-          if (prop.prop_type === 'points') {
+          // Debug: only log milestones in development (too verbose for production)
+          if (process.env.NODE_ENV === 'development' && prop.prop_type === 'points') {
             const numericLine = Number(prop.line_value);
             if (ALLOWED_POINTS_MILESTONES.includes(numericLine)) {
               console.log(`🎯 Milestone ${prop.line_value}+ from vendor: "${vendorName}" (lowercase: "${vendorLower}") - Allowed: ${isAllowedMilestoneVendor}`);
