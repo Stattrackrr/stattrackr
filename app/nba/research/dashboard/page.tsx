@@ -2194,10 +2194,14 @@ const PureChart = memo(function PureChart({
   return (
     <div className="h-full w-full">
       {isLoading ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <div className="text-gray-600 dark:text-gray-400">Loading player stats...</div>
+        <div className="h-full w-full flex flex-col gap-4 animate-pulse">
+          <div className="h-6 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-64 w-full rounded-xl bg-gray-200 dark:bg-gray-700" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700 hidden sm:block" />
           </div>
         </div>
       ) : (
@@ -4648,6 +4652,7 @@ const ChartContainer = function ChartContainer({
   chartData,
   yAxisConfig,
   isLoading,
+  oddsLoading,
   apiError,
   selectedPlayer,
   propsMode,
@@ -4780,7 +4785,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
                 total={totalSamples} 
                 isDark={isDark} 
               />
-            ) : ((selectedPlayer || hasUrlPlayer) && isLoading) ? (
+            ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
               <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
             ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
@@ -4803,7 +4808,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
                 total={totalSamples} 
                 isDark={isDark} 
               />
-            ) : ((selectedPlayer || hasUrlPlayer) && isLoading) ? (
+            ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
               <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
             ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
@@ -4817,7 +4822,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
       </div>
       <div className="flex-1 min-h-0">
         <PureChart
-          isLoading={isLoading}
+          isLoading={isLoading || (oddsLoading ?? false)}
           chartData={chartData}
           yAxisConfig={yAxisConfig}
           isDark={isDark}
@@ -4835,7 +4840,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
       
       {/* Mobile-only: X-axis line and team logos strip below chart */}
       {/* Only show logos for L5, L10, and H2H on mobile */}
-      {!isLoading && chartData && chartData.length > 0 && (selectedTimeframe === 'last5' || selectedTimeframe === 'last10' || selectedTimeframe === 'h2h') && (
+      {!isLoading && !(oddsLoading ?? false) && chartData && chartData.length > 0 && (selectedTimeframe === 'last5' || selectedTimeframe === 'last10' || selectedTimeframe === 'h2h') && (
         <div className="sm:hidden pb-3 overflow-x-auto custom-scrollbar">
           {/* X-axis line */}
           <div className="w-full h-0.5 bg-gray-300 dark:bg-gray-600 mb-1" style={{ paddingLeft: '6px', marginRight: '-2px' }}></div>
@@ -6936,12 +6941,63 @@ function NBADashboardContent() {
   
   // Track if stat was set from URL to prevent default stat logic from overriding it
   const statFromUrlRef = useRef(false);
+  // Store the initial stat from URL immediately on mount (before any navigation)
+  const initialStatFromUrlRef = useRef<string | null>(null);
+  const hasCapturedInitialStatRef = useRef(false);
   
   // Use Next.js useSearchParams to read URL parameters
   const searchParams = useSearchParams();
   
+  // Capture stat from URL IMMEDIATELY on mount (before any other code runs)
+  useEffect(() => {
+    if (hasCapturedInitialStatRef.current) return;
+    hasCapturedInitialStatRef.current = true;
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const stat = url.searchParams.get('stat');
+        if (stat) {
+          const normalizedStat = (() => {
+            const statUpper = stat.toUpperCase();
+            if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
+              return 'fg3m';
+            }
+            return stat.toLowerCase();
+          })();
+          initialStatFromUrlRef.current = normalizedStat;
+          console.log(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
+          statFromUrlRef.current = true;
+          // Set it immediately
+          setSelectedStat(normalizedStat);
+        }
+      } catch (e) {
+        console.error('[Dashboard] Error capturing initial stat from URL:', e);
+      }
+    }
+  }, []); // Run only once on mount
+  
   // Watch for stat parameter in URL and set it immediately
   useEffect(() => {
+    // If we captured an initial stat from URL on mount, use that instead (URL might have been changed)
+    if (initialStatFromUrlRef.current) {
+      console.log(`[Dashboard] 🎯 useSearchParams: Using initial stat from mount: "${initialStatFromUrlRef.current}" (URL may have been changed)`);
+      console.log(`[Dashboard] 🔍 Current URL: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
+      statFromUrlRef.current = true;
+      setSelectedStat(initialStatFromUrlRef.current);
+      
+      // Store in session storage
+      const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          parsed.selectedStat = initialStatFromUrlRef.current;
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+        } catch {}
+      }
+      return; // Don't check searchParams if we have initial stat
+    }
+    
     const stat = searchParams.get('stat');
     if (stat) {
       const normalizedStat = (() => {
@@ -6953,6 +7009,14 @@ function NBADashboardContent() {
       })();
       
       console.log(`[Dashboard] 🎯 useSearchParams: Found stat="${stat}" -> "${normalizedStat}"`);
+      console.log(`[Dashboard] 🔍 Full URL at useSearchParams: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
+      
+      // Verify the stat exists in PLAYER_STAT_OPTIONS before setting
+      const statExists = PLAYER_STAT_OPTIONS.find(s => s.key === normalizedStat);
+      if (!statExists) {
+        console.warn(`[Dashboard] ⚠️ Stat "${normalizedStat}" not found in PLAYER_STAT_OPTIONS, but setting it anyway from URL`);
+      }
+      
       statFromUrlRef.current = true;
       setSelectedStat(normalizedStat);
       
@@ -6965,12 +7029,21 @@ function NBADashboardContent() {
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
         } catch {}
       }
+    } else {
+      console.log(`[Dashboard] ⚠️ useSearchParams: No stat parameter found in URL`);
+      console.log(`[Dashboard] 🔍 Full URL at useSearchParams: ${typeof window !== 'undefined' ? window.location.href : 'N/A'}`);
     }
   }, [searchParams]);
   
   // Ensure correct default stat is set when propsMode changes
   useEffect(() => {
-    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}`);
+    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}"`);
+    
+    // Skip if we have an initial stat from URL (don't override it, even if URL was changed)
+    if (initialStatFromUrlRef.current) {
+      console.log(`[Dashboard] ⏭️ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
+      return;
+    }
     
     // Check if there's a stat in the URL - if so, don't override it
     if (typeof window !== 'undefined') {
@@ -8515,8 +8588,10 @@ const lineMovementInFlightRef = useRef(false);
     // Then check URL parameters (can override session storage)
     try {
       if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        console.log(`[Dashboard] 🔍 Full URL: ${url.href}`);
+        // Capture initial URL IMMEDIATELY to prevent race conditions
+        const initialUrl = window.location.href;
+        console.log(`[Dashboard] 🔍 Initial URL (captured immediately): ${initialUrl}`);
+        const url = new URL(initialUrl);
         const pid = url.searchParams.get('pid');
         const name = url.searchParams.get('name');
         const player = url.searchParams.get('player'); // Support 'player' param (from player props page)
@@ -8528,6 +8603,7 @@ const lineMovementInFlightRef = useRef(false);
         
         console.log(`[Dashboard] 🔍 URL params: stat="${stat}", player="${player}", mode="${mode}", line="${line}"`);
         console.log(`[Dashboard] 🔍 All URL params:`, Object.fromEntries(url.searchParams.entries()));
+        console.log(`[Dashboard] 🔍 Current window.location.href: ${window.location.href}`);
         
         // Set stat from URL FIRST (before propsMode) to prevent default stat logic from overriding it
         if (stat) {
@@ -9847,7 +9923,7 @@ const lineMovementInFlightRef = useRef(false);
       return minutes > 0;
     });
     
-    // THEN apply timeframe to get exact number of played games
+    // THEN apply opponent filter (if any) and timeframe logic on a deduped, date-sorted pool
     let filteredGames = gamesPlayed;
     
     // First, apply opponent filtering if a specific opponent is selected (not ALL)
@@ -9888,23 +9964,60 @@ const lineMovementInFlightRef = useRef(false);
       console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent}`);
     }
     
+    // Deduplicate by game id and sort DESC before timeframe selection
+    const dedupAndSortDesc = (games: any[]) => {
+      const sorted = [...games].sort((a, b) => {
+        const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+        const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+        return db - da;
+      });
+      const seen = new Set<number | string>();
+      const out: typeof games = [];
+      for (const g of sorted) {
+        const gid = (g as any)?.game?.id ?? (g as any)?.game_id;
+        if (gid && seen.has(gid)) continue;
+        if (gid) seen.add(gid);
+        out.push(g);
+      }
+      return out;
+    };
+
     // Special case filters
-    // For L5, L10, L15, L20 - filter to current season only (like "thisseason")
+    // For L5, L10, L15, L20 - prefer current season, but backfill from previous seasons to reach N games
     const n = parseInt(selectedTimeframe.replace('last', ''));
     if (!Number.isNaN(n) && ['last5', 'last10', 'last15', 'last20'].includes(selectedTimeframe)) {
       const currentSeason = currentNbaSeason();
-      filteredGames = gamesPlayed.filter(stats => {
-        if (!stats.game?.date) return false;
+      
+      const getSeasonYear = (stats: any) => {
+        if (!stats.game?.date) return null;
         const gameDate = new Date(stats.game.date);
         const gameYear = gameDate.getFullYear();
         const gameMonth = gameDate.getMonth();
-        
-        // NBA season spans two calendar years (e.g., 2024-25 season)
-        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
-        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-        return gameSeasonYear === currentSeason;
-      });
-      console.log(`📅 ${selectedTimeframe.toUpperCase()}: Filtered to ${filteredGames.length} games from current season ${currentSeason}-${(currentSeason + 1) % 100}`);
+        return gameMonth >= 9 ? gameYear : gameYear - 1; // Oct-Dec -> season year, Jan-Apr -> season year - 1
+      };
+      
+      // Dedup and sort before selection to avoid losing count after slicing
+      const pool = dedupAndSortDesc(filteredGames);
+      
+      // Separate by season (all games already have >0 minutes)
+      const currentSeasonGames = pool.filter(stats => getSeasonYear(stats) === currentSeason);
+      const otherSeasonGames = pool.filter(stats => getSeasonYear(stats) !== currentSeason);
+      
+      // Take N games: prefer current season first, then backfill from previous seasons
+      const result: typeof filteredGames = [];
+      
+      // First, add current season games up to N
+      for (let i = 0; i < currentSeasonGames.length && result.length < n; i++) {
+        result.push(currentSeasonGames[i]);
+      }
+      
+      // Then backfill from previous seasons to reach N
+      for (let i = 0; i < otherSeasonGames.length && result.length < n; i++) {
+        result.push(otherSeasonGames[i]);
+      }
+      
+      filteredGames = result;
+      console.log(`📅 ${selectedTimeframe.toUpperCase()}: Using ${filteredGames.length}/${n} games (current season ${currentSeason}-${(currentSeason + 1) % 100}: ${currentSeasonGames.length}, backfill: ${Math.max(filteredGames.length - currentSeasonGames.length, 0)}, pool (dedup) total: ${pool.length})`);
     } else if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
       // Filter games to only show those against the current opponent team
       if (opponentTeam && opponentTeam !== '') {
@@ -13462,6 +13575,7 @@ const lineMovementInFlightRef = useRef(false);
               chartData={adjustedChartData}
               yAxisConfig={yAxisConfig}
               isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
+              oddsLoading={propsMode === 'player' ? oddsLoading : false}
               apiError={propsMode === 'team' ? null : apiError}
               selectedPlayer={selectedPlayer}
               propsMode={propsMode}

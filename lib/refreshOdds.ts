@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import cache, { CACHE_TTL } from './cache';
-import { setNBACache } from './nbaCache';
+import { getNBACache, setNBACache } from './nbaCache';
 import type { GameOdds, OddsCache } from '@/app/api/odds/refresh/route';
 import { createClient } from '@supabase/supabase-js';
 import { getPlayerNameFromMapping } from './playerIdMapping';
@@ -910,15 +910,45 @@ export async function refreshOddsData(
     const ttlMinutes = 2 * 60; // cache for 2 hours
     const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
-    const oddsCache: OddsCache = {
-      games,
+    // Prune games that started more than 1 hour ago (player props not needed after start)
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const nowMs = now.getTime();
+    const prunedGames = games.filter((g) => {
+      const startMs = g?.commenceTime ? new Date(g.commenceTime).getTime() : Number.NaN;
+      // Keep if start time invalid (be conservative), or starts in future, or started within past hour
+      if (!Number.isFinite(startMs)) return true;
+      return startMs >= (nowMs - ONE_HOUR_MS);
+    });
+
+    if (prunedGames.length !== games.length) {
+      console.log(`🧹 Pruned ${games.length - prunedGames.length} games that started >1h ago. Keeping ${prunedGames.length}.`);
+    }
+
+    const newCache: OddsCache = {
+      games: prunedGames,
       lastUpdated: now.toISOString(),
       nextUpdate: nextUpdate.toISOString(),
     };
 
+    // If the new payload is empty, keep the previous cache (avoid zeroing)
+    if (games.length === 0) {
+      console.warn('[Odds Cache] ⚠️ Refresh returned 0 games. Keeping previous cache.');
+      const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
+      if (previous) {
+        return {
+          success: true,
+          gamesCount: previous.games.length,
+          lastUpdated: previous.lastUpdated,
+          nextUpdate: previous.nextUpdate,
+          note: 'served previous cache because refresh returned 0 games'
+        };
+      }
+      // If no previous cache, fall through and set empty (rare)
+    }
+
     // Cache the data in both in-memory and Supabase (persistent, shared across instances)
-    cache.set(ODDS_CACHE_KEY, oddsCache, ttlMinutes);
-    await setNBACache(ODDS_CACHE_KEY, 'odds', oddsCache, ttlMinutes);
+    cache.set(ODDS_CACHE_KEY, newCache, ttlMinutes);
+    await setNBACache(ODDS_CACHE_KEY, 'odds', newCache, ttlMinutes);
     console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games)`);
     
     // Trigger background player props update (non-blocking)
@@ -988,7 +1018,20 @@ export async function ensureOddsCache(options: {
   force?: boolean;
 }): Promise<OddsCache | null> {
   const existing = cache.get<OddsCache>(ODDS_CACHE_KEY);
+
+  // If we have cache and not forcing, return it immediately but trigger a background refresh if stale
   if (existing && !options.force) {
+    const lastUpdated = existing.lastUpdated ? new Date(existing.lastUpdated).getTime() : 0;
+    const ageMinutes = lastUpdated ? (Date.now() - lastUpdated) / 60000 : Infinity;
+    const STALE_MINUTES = 45; // background refresh threshold requested
+
+    if (ageMinutes > STALE_MINUTES && !ongoingRefresh) {
+      console.log(`[ensureOddsCache] Cache age ${ageMinutes.toFixed(1)}m > ${STALE_MINUTES}m. Triggering background refresh (non-blocking).`);
+      ensureOddsCache({ source: 'ensureOddsCache', force: true }).catch(err => {
+        console.warn('[ensureOddsCache] Background refresh failed:', err);
+      });
+    }
+
     return existing;
   }
 

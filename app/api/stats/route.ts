@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 // app/api/stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { BdlPlayerStats, BdlPaginatedResponse } from "@/lib/types/apiResponses";
+import { TEAM_ID_TO_ABBR } from "@/lib/nbaConstants";
 import { checkRateLimit } from "@/lib/rateLimit";
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
 
@@ -108,7 +109,24 @@ export async function GET(req: NextRequest) {
       const json = await bdlFetch(url) as BdlPaginatedResponse<BdlPlayerStats>;
 
       // Expect shape: { data: [], meta: { next_page, total_pages, current_page } }
-      const batch = Array.isArray(json?.data) ? json.data : [];
+      // Enrich each stat with home/visitor team objects (some BDL responses only include *_team_id)
+      const batch = (Array.isArray(json?.data) ? json.data : []).map((stat) => {
+        if (!stat?.game) return stat;
+        const game = stat.game as any;
+        const homeTeamId = game.home_team?.id ?? game.home_team_id;
+        const visitorTeamId = game.visitor_team?.id ?? game.visitor_team_id;
+        const homeAbbr = game.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+        const visitorAbbr = game.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+
+        return {
+          ...stat,
+          game: {
+            ...game,
+            home_team: game.home_team ?? (homeAbbr ? { id: homeTeamId ?? null, abbreviation: homeAbbr } : undefined),
+            visitor_team: game.visitor_team ?? (visitorAbbr ? { id: visitorTeamId ?? null, abbreviation: visitorAbbr } : undefined),
+          },
+        };
+      });
       
       // Debug: log sample stat structure to verify game/team are included
       if (batch.length > 0 && all.length === 0) {

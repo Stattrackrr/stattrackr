@@ -140,3 +140,4 @@ WHERE user_id IN (
 -- 4. Be careful with date ranges - check your timezone settings
 -- 5. Double-check user_id values before running DELETE
 
+

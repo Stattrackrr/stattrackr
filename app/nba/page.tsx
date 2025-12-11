@@ -1360,8 +1360,8 @@ export default function NBALandingPage() {
         }
       }
       
-      console.warn(`[getPlayerPosition] Player ${playerName} not found in depth chart for ${teamAbbr}. Available players:`, allPlayers);
-      console.warn(`[getPlayerPosition] Searching for normalized: "${normalizedPlayerName}"`);
+              console.warn(`[getPlayerPosition] Player ${playerName} not found in depth chart for ${teamAbbr}. Available players:`, allPlayers);
+              console.warn(`[getPlayerPosition] Searching for normalized: "${normalizedPlayerName}"`);
 
       // Fallback: try BallDontLie player search (position field is often populated)
       try {
@@ -1461,7 +1461,7 @@ export default function NBALandingPage() {
       
       // Fetch rank instead of perGame value (API uses 'pos' parameter)
       const url = `/api/dvp/rank?pos=${position}&metric=${metric}`;
-      console.log(`[getDvpRating] Fetching rank: ${url} (opponent: "${opponent}" -> teamAbbr: "${teamAbbr}")`);
+          console.log(`[getDvpRating] Fetching rank: ${url} (opponent: "${opponent}" -> teamAbbr: "${teamAbbr}")`);
       
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) {
@@ -1526,7 +1526,14 @@ export default function NBALandingPage() {
     }
   };
 
-  // Calculate L5, L10, H2H averages and hit rates
+// Debug helpers
+const DEBUG_H2H_PLAYER = (process.env.NEXT_PUBLIC_DEBUG_H2H_PLAYER || '').toLowerCase().trim();
+
+// Simple in-memory cache to reduce duplicate /api/stats calls per player/season/postseason
+const playerStatsCache = new Map<string, any[]>();
+const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
+
+// Calculate L5, L10, H2H averages and hit rates
   const calculatePlayerAverages = async (
     playerName: string, 
     statType: string, 
@@ -1545,6 +1552,7 @@ export default function NBALandingPage() {
     streak: number | null;
   }> => {
     try {
+      const shouldDebugH2H = !DEBUG_H2H_PLAYER || playerName.toLowerCase() === DEBUG_H2H_PLAYER;
       const playerId = getPlayerIdFromName(playerName);
       if (!playerId) {
         console.warn(`[calculatePlayerAverages] No player ID found for: ${playerName}`);
@@ -1566,29 +1574,80 @@ export default function NBALandingPage() {
       // Fetch both current and previous season data (like dashboard does)
       // Add retry logic for 429 errors and optimize to reduce API calls
       const grab = async (yr: number, postseason = false, retries = 2): Promise<any[]> => {
+        const cacheKey = `${playerId}-${yr}-${postseason ? 'po' : 'reg'}`;
+
+        // Return cached data if available
+        if (playerStatsCache.has(cacheKey)) {
+          return playerStatsCache.get(cacheKey)!;
+        }
+        // If a fetch is already in flight, await it
+        if (playerStatsPromiseCache.has(cacheKey)) {
+          return playerStatsPromiseCache.get(cacheKey)!;
+        }
+
+        const fetchPromise = (async () => {
         for (let attempt = 0; attempt <= retries; attempt++) {
           try {
             const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`;
-            console.log(`[calculatePlayerAverages] Fetching: ${url}`);
+            console.log(`[calculatePlayerAverages] Fetching: ${url} (attempt ${attempt + 1}/${retries + 1})`);
             const r = await fetch(url);
             
+            // Try to parse response even on 429 - API might return cached data
+            let j: any = {};
+            try {
+              j = await r.json();
+            } catch (e) {
+              // If JSON parse fails, try to get text for error message
+              const text = await r.text().catch(() => '');
+              console.warn(`[calculatePlayerAverages] Failed to parse response for ${playerId}, season ${yr}, postseason ${postseason}:`, text);
+            }
+            
+            // Check if we got cached data even on 429
+            const data = Array.isArray(j?.data) ? j.data : [];
+            if (data.length > 0) {
+              // We have data (possibly cached), use it even if status is 429
+              console.log(`[calculatePlayerAverages] Got ${data.length} stats (${r.status === 429 ? 'cached' : 'fresh'}) for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}`);
+              playerStatsCache.set(cacheKey, data);
+              return data;
+            }
+            
             if (r.status === 429) {
-              // Rate limited - wait and retry
+              // Rate limited and no cached data - wait and retry
               if (attempt < retries) {
-                const waitTime = (attempt + 1) * 1000; // Exponential backoff: 1s, 2s
+                const waitTime = (attempt + 1) * 2000; // Exponential backoff: 2s, 4s
+                console.log(`[calculatePlayerAverages] Rate limited, waiting ${waitTime}ms before retry...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
                 continue;
               }
               // Last attempt failed - return empty array
-              console.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, postseason ${postseason}`);
+              console.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, postseason ${postseason} - no cached data available`);
               return [];
             }
             if (!r.ok) {
               console.warn(`[calculatePlayerAverages] API error ${r.status} for ${playerId}, season ${yr}, postseason ${postseason}`);
               return [];
             }
-            const j = await r.json().catch(() => ({}));
-            const data = Array.isArray(j?.data) ? j.data : [];
+            
+            // Deep debug: log full structure of first game if available
+            if (data.length > 0 && process.env.NODE_ENV !== 'production') {
+              const first = data[0];
+              console.log(`[calculatePlayerAverages][DEBUG] First game structure for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}:`, {
+                topLevelKeys: Object.keys(first || {}),
+                hasGame: !!first?.game,
+                gameKeys: first?.game ? Object.keys(first.game) : [],
+                hasHomeTeam: !!first?.game?.home_team,
+                homeTeamKeys: first?.game?.home_team ? Object.keys(first.game.home_team) : [],
+                homeTeamAbbr: first?.game?.home_team?.abbreviation,
+                hasVisitorTeam: !!first?.game?.visitor_team,
+                visitorTeamKeys: first?.game?.visitor_team ? Object.keys(first.game.visitor_team) : [],
+                visitorTeamAbbr: first?.game?.visitor_team?.abbreviation,
+                hasTeam: !!first?.team,
+                teamKeys: first?.team ? Object.keys(first.team) : [],
+                teamAbbr: first?.team?.abbreviation,
+                fullFirstGame: first,
+              });
+            }
+            
             console.log(`[calculatePlayerAverages] Got ${data.length} stats for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}`, {
               hasData: !!j?.data,
               isArray: Array.isArray(j?.data),
@@ -1613,24 +1672,40 @@ export default function NBALandingPage() {
           }
         }
         return [];
+        })();
+
+        playerStatsPromiseCache.set(cacheKey, fetchPromise);
+        try {
+          const result = await fetchPromise;
+          return result;
+        } finally {
+          playerStatsPromiseCache.delete(cacheKey);
+        }
       };
 
-      // Use the EXACT same logic as the dashboard - fetch all seasons at once
-      // 2025 season exists and has 20 games
-      const [currReg, currPO, prev1Reg, prev1PO] = await Promise.all([
-        grab(currentSeason, false),        // 2025 season regular
-        grab(currentSeason, true),         // 2025 season playoffs
-        grab(currentSeason - 1, false),    // 2024 season regular
-        grab(currentSeason - 1, true),     // 2024 season playoffs
-      ]);
+      // Align with dashboard: fetch current + last + previous season (reg + PO)
+      // Stagger requests slightly to avoid rate limits (100ms delay between each)
+      const currReg = await grab(currentSeason, false);        // current season regular
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const currPO = await grab(currentSeason, true);         // current season playoffs
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const prev1Reg = await grab(currentSeason - 1, false);    // previous season regular
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const prev1PO = await grab(currentSeason - 1, true);     // previous season playoffs
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const prev2Reg = await grab(currentSeason - 2, false);    // season before last regular
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const prev2PO = await grab(currentSeason - 2, true);     // season before last playoffs
 
       // Merge all data and filter (like dashboard does)
-      const allStats = [...currReg, ...currPO, ...prev1Reg, ...prev1PO];
+      const allStats = [...currReg, ...currPO, ...prev1Reg, ...prev1PO, ...prev2Reg, ...prev2PO];
       console.log(`[calculatePlayerAverages] Merged stats for ${playerName}:`, {
         currReg: currReg.length,
         currPO: currPO.length,
         prev1Reg: prev1Reg.length,
         prev1PO: prev1PO.length,
+        prev2Reg: prev2Reg.length,
+        prev2PO: prev2PO.length,
         total: allStats.length,
       });
       
@@ -1827,6 +1902,7 @@ export default function NBALandingPage() {
       // H2H average - COPY EXACT LOGIC FROM DASHBOARD (lines 9634-9669)
       let h2hAvg: number | null = null;
       let h2hStats: number[] = [];
+      let normalizedOpponent: string | null = null;
       if (opponent && opponent !== 'ALL' && opponent !== 'N/A' && opponent !== '') {
         // Use EXACT same normalizeAbbr function as dashboard
         const normalizeAbbr = (abbr: string): string => {
@@ -1849,13 +1925,27 @@ export default function NBALandingPage() {
           }
         }
         
-        const normalizedOpponent = normalizeAbbr(TEAM_FULL_TO_ABBR[correctOpponent] || correctOpponent);
+        // Normalize opponent - handle both abbreviations and full names
+        // Try TEAM_FULL_TO_ABBR first (if it's a full name), otherwise use as-is (if it's already an abbreviation)
+        normalizedOpponent = normalizeAbbr(TEAM_FULL_TO_ABBR[correctOpponent] || correctOpponent);
+        
+        // Debug: log opponent normalization
+        if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
+          console.log(`[calculatePlayerAverages][H2H Normalization] ${playerName} ${statType}:`, {
+            originalOpponent: opponent,
+            correctOpponent,
+            normalizedOpponent,
+            playerTeam,
+            teamFullToAbbrLookup: TEAM_FULL_TO_ABBR[correctOpponent],
+          });
+        }
         
         // EXACT COPY FROM DASHBOARD (lines 9638-9669) - just filter, no corrections
         h2hStats = gamesWithStats
           .filter((stats: any) => {
             // EXACT COPY: stats?.team?.abbreviation || selectedPlayer?.teamAbbr || ""
-            const playerTeamFromStats = stats?.team?.abbreviation || "";
+            // Use playerTeam parameter as fallback (like dashboard uses selectedPlayer?.teamAbbr)
+            const playerTeamFromStats = stats?.team?.abbreviation || (playerTeam ? (TEAM_FULL_TO_ABBR[playerTeam] || playerTeam) : "") || "";
             const playerTeamNorm = normalizeAbbr(playerTeamFromStats);
             
             // Get opponent from game data (EXACT COPY FROM DASHBOARD)
@@ -1906,12 +1996,52 @@ export default function NBALandingPage() {
           
           if (fallbackStats.length > 0) {
             h2hStats = fallbackStats;
+            console.log('[calculatePlayerAverages][H2H Fallback] Used fallback games', {
+              playerName,
+              statType,
+              line,
+              opponent,
+              normalizedOpponent,
+              fallbackCount: fallbackStats.length,
+            });
           }
         }
         
         h2hAvg = h2hStats.length > 0
           ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
           : null;
+        
+        // Debug: log H2H calculation result
+        if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
+          console.log(`[calculatePlayerAverages][H2H Result] ${playerName} ${statType} vs ${opponent}:`, {
+            normalizedOpponent,
+            playerTeam,
+            h2hStatsCount: h2hStats.length,
+            h2hAvg: h2hAvg?.toFixed(2),
+            totalGamesAvailable: gamesWithStats.length,
+            sampleOpponents: gamesWithStats.slice(0, 5).map((g: any) => {
+              const homeTeamId = g?.game?.home_team?.id ?? (g?.game as any)?.home_team_id;
+              const visitorTeamId = g?.game?.visitor_team?.id ?? (g?.game as any)?.visitor_team_id;
+              const homeTeamAbbr = g?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+              const visitorTeamAbbr = g?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+              const pt = g?.team?.abbreviation || (playerTeam ? (TEAM_FULL_TO_ABBR[playerTeam] || playerTeam) : "");
+              const ptNorm = normalizeAbbr(pt);
+              const ptId = ABBR_TO_TEAM_ID[ptNorm];
+              let opp = "";
+              if (ptId && homeTeamId && visitorTeamId) {
+                if (ptId === homeTeamId && visitorTeamAbbr) opp = normalizeAbbr(visitorTeamAbbr);
+                else if (ptId === visitorTeamId && homeTeamAbbr) opp = normalizeAbbr(homeTeamAbbr);
+              }
+              if (!opp && homeTeamAbbr && visitorTeamAbbr) {
+                const hNorm = normalizeAbbr(homeTeamAbbr);
+                const vNorm = normalizeAbbr(visitorTeamAbbr);
+                if (ptNorm === hNorm) opp = vNorm;
+                else if (ptNorm === vNorm) opp = hNorm;
+              }
+              return { date: g?.game?.date, playerTeam: ptNorm, opponent: opp, home: homeTeamAbbr, visitor: visitorTeamAbbr };
+            }),
+          });
+        }
       }
       
       // Calculate H2H hit rate (how many times hit over the line)
@@ -1919,6 +2049,95 @@ export default function NBALandingPage() {
       if (line !== undefined && line !== null && Number.isFinite(line) && h2hStats && h2hStats.length > 0) {
         const hits = h2hStats.filter((val: number) => val > line).length;
         h2hHitRate = { hits, total: h2hStats.length };
+      }
+
+      // Debug when H2H is missing
+      if (shouldDebugH2H && (!h2hStats || h2hStats.length === 0 || h2hAvg === null) && process.env.NODE_ENV !== 'production') {
+        const normalizeAbbrLocal = (abbr: string): string => (abbr || '').toUpperCase().trim();
+        const opponentCounts: Record<string, number> = {};
+        const fullOpponentCounts: Record<string, number> = {};
+
+        // Build full opponent counts across all gamesWithStats
+        for (const g of gamesWithStats) {
+          const homeTeamId = g?.game?.home_team?.id ?? (g?.game as any)?.home_team_id;
+          const visitorTeamId = g?.game?.visitor_team?.id ?? (g?.game as any)?.visitor_team_id;
+          const homeTeamAbbr = g?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = g?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          const homeNorm = normalizeAbbrLocal(homeTeamAbbr || '');
+          const awayNorm = normalizeAbbrLocal(visitorTeamAbbr || '');
+          const playerTeamFromStats = g?.team?.abbreviation || '';
+          const playerTeamNorm = normalizeAbbrLocal(playerTeamFromStats);
+
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let gameOpponent = '';
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              gameOpponent = normalizeAbbrLocal(visitorTeamAbbr);
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              gameOpponent = normalizeAbbrLocal(homeTeamAbbr);
+            }
+          }
+          if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+            else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+          }
+
+          const key = gameOpponent || 'unknown';
+          fullOpponentCounts[key] = (fullOpponentCounts[key] || 0) + 1;
+        }
+
+        const sampleGames = gamesWithStats.slice(0, 6).map((g: any) => {
+          const homeTeamId = g?.game?.home_team?.id ?? (g?.game as any)?.home_team_id;
+          const visitorTeamId = g?.game?.visitor_team?.id ?? (g?.game as any)?.visitor_team_id;
+          const homeTeamAbbr = g?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = g?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          const homeNorm = normalizeAbbrLocal(homeTeamAbbr || '');
+          const awayNorm = normalizeAbbrLocal(visitorTeamAbbr || '');
+          const playerTeamFromStats = g?.team?.abbreviation || '';
+          const playerTeamNorm = normalizeAbbrLocal(playerTeamFromStats);
+
+          // Derive the opponent the player faced in this game (same logic as the main filter)
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let gameOpponent = '';
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              gameOpponent = normalizeAbbrLocal(visitorTeamAbbr);
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              gameOpponent = normalizeAbbrLocal(homeTeamAbbr);
+            }
+          }
+          if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+            else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+          }
+
+          const key = gameOpponent || 'unknown';
+          opponentCounts[key] = (opponentCounts[key] || 0) + 1;
+
+          return {
+            date: g?.game?.date,
+            home: homeTeamAbbr,
+            visitor: visitorTeamAbbr,
+            playerTeam: playerTeamFromStats,
+            derivedOpponent: gameOpponent || null,
+            statValue: g?.statValue,
+          };
+        });
+
+        console.warn('[calculatePlayerAverages][H2H Missing]', {
+          playerName,
+          statType,
+          opponent,
+          playerTeam,
+          line,
+          normalizedOpponent,
+          gamesWithStatsCount: gamesWithStats.length,
+          h2hStatsCount: h2hStats?.length || 0,
+          sampleGame: gamesWithStats[0]?.game || null,
+          opponentCounts,
+          fullOpponentCounts,
+          sampleGames,
+        });
       }
 
       // Calculate streak: consecutive games over the line (starting from most recent)
@@ -3170,6 +3389,21 @@ export default function NBALandingPage() {
                               // Try to find abbreviation from full name
                               return TEAM_FULL_TO_ABBR[team] || team.toUpperCase();
                             };
+                            // Normalize stat for dashboard URL so it lands on the right tab (e.g., steals -> stl)
+                            const normalizeStatForDashboard = (stat: string): string => {
+                              const upper = (stat || '').toUpperCase().trim();
+                              if (upper === 'THREES' || upper === '3PM' || upper === '3PM/A' || upper === 'FG3M') return 'fg3m';
+                              if (upper === 'PTS' || upper === 'POINTS') return 'pts';
+                              if (upper === 'REB' || upper === 'REBOUNDS') return 'reb';
+                              if (upper === 'AST' || upper === 'ASSISTS') return 'ast';
+                              if (upper === 'PRA') return 'pra';
+                              if (upper === 'PR') return 'pr';
+                              if (upper === 'PA') return 'pa';
+                              if (upper === 'RA') return 'ra';
+                              if (upper === 'STL' || upper === 'STEALS') return 'stl';
+                              if (upper === 'BLK' || upper === 'BLOCKS') return 'blk';
+                              return upper.toLowerCase();
+                            };
                             const teamAbbr = normalizeTeam(prop.team);
                             const opponentAbbr = normalizeTeam(prop.opponent);
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
@@ -3178,12 +3412,53 @@ export default function NBALandingPage() {
                               <tr
                                 key={idx}
                                 className={`border-b ${mounted && isDark ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
-                                onClick={() => {
-                                  const params = new URLSearchParams();
-                                  params.set('player', prop.playerName);
-                                  params.set('stat', prop.statType);
-                                  params.set('line', prop.line.toString());
-                                  router.push(`/nba/research/dashboard?${params.toString()}`);
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  
+                                  // Force immediate log before any async operations
+                                  const clickData = {
+                                    player: prop.playerName,
+                                    statType: prop.statType,
+                                    line: prop.line,
+                                    timestamp: Date.now(),
+                                  };
+                                  console.warn('🔵 [PropClick] CLICKED!', clickData);
+                                  
+                                  // Store in sessionStorage so it persists even if console is cleared
+                                  if (typeof window !== 'undefined') {
+                                    try {
+                                      sessionStorage.setItem('last_prop_click', JSON.stringify(clickData));
+                                    } catch {}
+                                  }
+                                  
+                                  const normalizedStat = normalizeStatForDashboard(prop.statType);
+                                  const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}`;
+                                  
+                                  console.log('[PropClick] Navigating to dashboard', {
+                                    ...clickData,
+                                    normalizedStat,
+                                    finalUrl,
+                                    fullProp: prop,
+                                  });
+                                  
+                                  // Store final URL for debugging
+                                  if (typeof window !== 'undefined') {
+                                    try {
+                                      sessionStorage.setItem('last_prop_url', finalUrl);
+                                    } catch {}
+                                  }
+                                  
+                                  // Clear saved dashboard session to avoid flashing previous player/stat on navigation
+                                  if (typeof window !== 'undefined') {
+                                    try {
+                                      window.sessionStorage.removeItem('nba_dashboard_session_v1');
+                                    } catch (e) {
+                                      console.warn('Failed to clear dashboard session storage', e);
+                                    }
+                                  }
+                                  
+                                  router.push(finalUrl);
                                 }}
                               >
                                 {/* Player Column */}

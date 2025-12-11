@@ -458,13 +458,20 @@ async function updatePlayerOddsCache(
 }
 
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  const timestamp = new Date().toISOString();
+  
+  console.log(`[CRON] 🕐 refresh-player-odds started at ${timestamp}`);
+  
   const authResult = authorizeCronRequest(req);
   if (!authResult.authorized) {
+    console.log(`[CRON] ❌ refresh-player-odds unauthorized`);
     return authResult.response;
   }
 
   const rateResult = checkRateLimit(req, strictRateLimiter);
   if (!rateResult.allowed && rateResult.response) {
+    console.log(`[CRON] ⚠️ refresh-player-odds rate limited`);
     return rateResult.response;
   }
 
@@ -473,7 +480,7 @@ export async function GET(req: NextRequest) {
     const scanType = searchParams.get('type') || 'update'; // 'full' or 'update'
     const isFullScan = scanType === 'full';
     
-    console.log(`[refresh-player-odds] Starting ${isFullScan ? 'FULL' : 'UPDATE'} scan...`);
+    console.log(`[CRON] 🔄 refresh-player-odds: Starting ${isFullScan ? 'FULL' : 'UPDATE'} scan...`);
     
     // Get all players with games today/tomorrow
     const players = await getPlayersWithGames();
@@ -549,7 +556,8 @@ export async function GET(req: NextRequest) {
       await setNBACache(lastFullScanKey, 'metadata', new Date().toISOString(), CACHE_TTL_MINUTES, true);
     }
     
-    console.log(`[refresh-player-odds] Completed: ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);
+    const elapsed = Date.now() - startTime;
+    console.log(`[CRON] ✅ refresh-player-odds completed in ${elapsed}ms: ${processed} players processed, ${totalUpdated} lines updated, ${totalUnchanged} unchanged, ${errors} errors`);
     
     return NextResponse.json({
       success: true,
@@ -559,12 +567,20 @@ export async function GET(req: NextRequest) {
       updated: totalUpdated,
       unchanged: totalUnchanged,
       errors,
+      elapsed: `${elapsed}ms`,
+      timestamp,
       message: `${actualScanType === 'full' ? 'Full' : 'Update'} scan completed`,
     });
   } catch (e: any) {
-    console.error('[refresh-player-odds] Error:', e.message);
+    const elapsed = Date.now() - startTime;
+    console.error(`[CRON] ❌ refresh-player-odds failed after ${elapsed}ms:`, e.message);
     return NextResponse.json(
-      { success: false, error: e?.message || 'Refresh player odds failed' },
+      { 
+        success: false, 
+        error: e?.message || 'Refresh player odds failed',
+        elapsed: `${elapsed}ms`,
+        timestamp 
+      },
       { status: 500 }
     );
   }
