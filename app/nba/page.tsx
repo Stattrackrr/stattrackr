@@ -1362,6 +1362,39 @@ export default function NBALandingPage() {
       
       console.warn(`[getPlayerPosition] Player ${playerName} not found in depth chart for ${teamAbbr}. Available players:`, allPlayers);
       console.warn(`[getPlayerPosition] Searching for normalized: "${normalizedPlayerName}"`);
+
+      // Fallback: try BallDontLie player search (position field is often populated)
+      try {
+        const bdlUrl = `/api/bdl/players?team=${encodeURIComponent(teamAbbr)}&q=${encodeURIComponent(playerName)}&per_page=5`;
+        const bdlRes = await fetch(bdlUrl, { cache: 'no-store' });
+        if (bdlRes.ok) {
+          const bdlJson = await bdlRes.json();
+          const candidates: any[] = Array.isArray(bdlJson?.results) ? bdlJson.results : [];
+          const normalizeBdlName = (s: string) => normalize(s);
+          const posMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {
+            'PG': 'PG', 'SG': 'SG', 'SF': 'SF', 'PF': 'PF', 'C': 'C',
+            'G': 'SG', 'F': 'SF', 'GF': 'SG', 'FG': 'SF', 'FC': 'C', 'C-F': 'C', 'F-C': 'C'
+          };
+          for (const cand of candidates) {
+            const cName = cand?.full || cand?.name || `${cand?.first_name || ''} ${cand?.last_name || ''}`.trim();
+            const cNorm = normalizeBdlName(cName);
+            if (!cNorm) continue;
+            if (cNorm === normalizedPlayerName || cNorm.includes(normalizedPlayerName) || normalizedPlayerName.includes(cNorm)) {
+              const rawPos = String(cand?.position || cand?.pos || '').toUpperCase().trim();
+              const mapped = posMap[rawPos] || null;
+              if (mapped) {
+                console.log(`[getPlayerPosition] ✅ Fallback matched ${playerName} via BDL (${cName}) -> ${mapped}`);
+                return mapped;
+              }
+            }
+          }
+        } else {
+          console.warn(`[getPlayerPosition] BDL search not ok (${bdlRes.status}) for ${playerName}`);
+        }
+      } catch (err) {
+        console.warn(`[getPlayerPosition] BDL fallback failed for ${playerName}:`, err);
+      }
+
       return null;
     } catch (error) {
       console.error(`[getPlayerPosition] Error for ${playerName} on ${team}:`, error);
