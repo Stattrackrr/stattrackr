@@ -924,31 +924,12 @@ export async function refreshOddsData(
       console.log(`🧹 Pruned ${games.length - prunedGames.length} games that started >1h ago. Keeping ${prunedGames.length}.`);
     }
 
-    // If pruning removed everything, keep previous cache to avoid blanking the UI between windows
-    if (prunedGames.length === 0) {
-      console.warn('[Odds Cache] ⚠️ Pruned games is empty (all games started >1h ago). Keeping previous cache.');
-      const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
-      if (previous) {
-        return {
-          success: true,
-          gamesCount: previous.games.length,
-          lastUpdated: previous.lastUpdated,
-          nextUpdate: previous.nextUpdate,
-          note: 'served previous cache because pruning removed all games'
-        };
-      }
-    }
-
-    const newCache: OddsCache = {
-      games: prunedGames,
-      lastUpdated: now.toISOString(),
-      nextUpdate: nextUpdate.toISOString(),
-    };
-
+    // Get previous cache to compare (before we potentially overwrite it)
+    const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
+    
     // If the new payload is empty, keep the previous cache (avoid zeroing)
     if (games.length === 0) {
       console.warn('[Odds Cache] ⚠️ Refresh returned 0 games. Keeping previous cache.');
-      const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
       if (previous) {
         return {
           success: true,
@@ -960,6 +941,45 @@ export async function refreshOddsData(
       }
       // If no previous cache, fall through and set empty (rare)
     }
+    
+    // If pruning removed all games, preserve previous cache to avoid blanking the UI
+    if (prunedGames.length === 0 && previous && previous.games.length > 0) {
+      console.warn('[Odds Cache] ⚠️ Pruning removed all games but previous cache has data. Preserving previous cache.');
+      return {
+        success: true,
+        gamesCount: previous.games.length,
+        lastUpdated: previous.lastUpdated,
+        nextUpdate: previous.nextUpdate,
+        note: 'preserved previous cache because pruning removed all games'
+      };
+    }
+    
+    // If new cache has significantly fewer games than previous, preserve previous (avoid clearing during refresh)
+    // Only do this if previous cache is recent (< 2 hours old) to avoid keeping stale data
+    // This prevents background refreshes from clearing the cache during page loads
+    if (previous && previous.games.length > 0 && prunedGames.length > 0) {
+      const previousAge = previous.lastUpdated ? (now.getTime() - new Date(previous.lastUpdated).getTime()) / 60000 : Infinity;
+      const isPreviousRecent = previousAge < 120; // Less than 2 hours old
+      
+      // If previous has games and new has way fewer (less than 50% of previous), preserve previous
+      // This prevents the "flash and disappear" issue where background refresh clears cache during page load
+      if (isPreviousRecent && prunedGames.length < (previous.games.length * 0.5)) {
+        console.warn(`[Odds Cache] ⚠️ New cache has ${prunedGames.length} games vs previous ${previous.games.length}. Preserving previous cache to avoid clearing during refresh.`);
+        return {
+          success: true,
+          gamesCount: previous.games.length,
+          lastUpdated: previous.lastUpdated,
+          nextUpdate: previous.nextUpdate,
+          note: 'preserved previous cache because new cache has significantly fewer games'
+        };
+      }
+    }
+
+    const newCache: OddsCache = {
+      games: prunedGames,
+      lastUpdated: now.toISOString(),
+      nextUpdate: nextUpdate.toISOString(),
+    };
 
     // Cache the data in both in-memory and Supabase (persistent, shared across instances)
     cache.set(ODDS_CACHE_KEY, newCache, ttlMinutes);
