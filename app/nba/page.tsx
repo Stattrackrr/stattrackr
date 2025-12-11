@@ -1888,6 +1888,26 @@ export default function NBALandingPage() {
           })
           .slice(0, 6) // Limit to last 6 H2H games (same as dashboard)
           .map((s: any) => s.statValue);
+
+        // Fallback: if no H2H stats found (e.g., team mapping edge cases), include any game where either side matches the opponent abbr
+        if (h2hStats.length === 0 && normalizedOpponent) {
+          const fallbackStats = gamesWithStats
+            .filter((stats: any) => {
+              const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+              const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+              const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+              const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+              const homeNorm = normalizeAbbr(homeTeamAbbr || '');
+              const awayNorm = normalizeAbbr(visitorTeamAbbr || '');
+              return homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
+            })
+            .slice(0, 6)
+            .map((s: any) => s.statValue);
+          
+          if (fallbackStats.length > 0) {
+            h2hStats = fallbackStats;
+          }
+        }
         
         h2hAvg = h2hStats.length > 0
           ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
