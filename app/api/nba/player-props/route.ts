@@ -163,57 +163,90 @@ export async function GET(request: NextRequest) {
     if (!cachedProps) {
       console.log(`[Player Props API] ⚠️ No cache for current odds version - checking for stale cache...`);
       
-      // Try to find any recent cache for the same game date (even if odds version is different)
+      // Try to find any recent cache for the same game date (even if odds version or vendor count is different)
       // This allows serving stale data while new cache is being built
       try {
-        const staleCacheKeys = cache.keys().filter(key => 
+        // First try in-memory cache
+        const inMemoryStaleKeys = cache.keys().filter(key => 
           key.startsWith(PLAYER_PROPS_CACHE_PREFIX) && key.includes(gameDate)
         );
         
-        if (staleCacheKeys.length > 0) {
-          // Get the most recent stale cache (check in-memory first)
-          let staleCache: any = null;
-          for (const staleKey of staleCacheKeys) {
-            const stale = cache.get<any>(staleKey);
-            if (stale && Array.isArray(stale) && stale.length > 0) {
-              staleCache = stale;
-              console.log(`[Player Props API] 📦 Serving stale cache from previous odds version (${stale.length} props) - new cache will be built in background`);
-              break;
+        let staleCache: any = null;
+        
+        // Check in-memory cache first (faster)
+        for (const staleKey of inMemoryStaleKeys) {
+          const stale = cache.get<any>(staleKey);
+          if (stale && Array.isArray(stale) && stale.length > 0) {
+            staleCache = stale;
+            console.log(`[Player Props API] 📦 Serving stale cache from in-memory (${stale.length} props) - new cache will be built in background`);
+            break;
+          }
+        }
+        
+        // If not found in-memory, check Supabase (try up to 10 keys to find any valid cache)
+        if (!staleCache && inMemoryStaleKeys.length > 0) {
+          for (const staleKey of inMemoryStaleKeys.slice(0, 10)) {
+            try {
+              const stale = await getNBACache<any>(staleKey, {
+                restTimeoutMs: 5000,
+                jsTimeoutMs: 5000,
+                quiet: true,
+              });
+              if (stale && Array.isArray(stale) && stale.length > 0) {
+                staleCache = stale;
+                console.log(`[Player Props API] 📦 Serving stale cache from Supabase (${stale.length} props) - key: ${staleKey}`);
+                break;
+              }
+            } catch (e) {
+              // Ignore errors when checking stale cache
             }
           }
+        }
+        
+        // If still no cache found, try searching Supabase more broadly (any cache for this date)
+        // This is a fallback if the cache key format changed
+        if (!staleCache) {
+          // Try a few common cache key patterns
+          const commonPatterns = [
+            `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`,
+            `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-`,
+          ];
           
-          // Also check Supabase for stale cache (try first 3 keys)
-          if (!staleCache && staleCacheKeys.length > 0) {
-            for (const staleKey of staleCacheKeys.slice(0, 3)) {
+          for (const pattern of commonPatterns) {
+            // We can't easily list all Supabase keys, but we can try a few variations
+            // Try with different vendor counts (2, 3, 4, 5, 6, 7, 8)
+            for (let v = 2; v <= 8; v++) {
+              const testKey = `${pattern}${oddsCache.lastUpdated}-v${v}`;
               try {
-                const stale = await getNBACache<any>(staleKey, {
-                  restTimeoutMs: 5000,
-                  jsTimeoutMs: 5000,
+                const testCache = await getNBACache<any>(testKey, {
+                  restTimeoutMs: 3000,
+                  jsTimeoutMs: 3000,
                   quiet: true,
                 });
-                if (stale && Array.isArray(stale) && stale.length > 0) {
-                  staleCache = stale;
-                  console.log(`[Player Props API] 📦 Serving stale cache from Supabase (${stale.length} props)`);
+                if (testCache && Array.isArray(testCache) && testCache.length > 0) {
+                  staleCache = testCache;
+                  console.log(`[Player Props API] 📦 Found stale cache with different vendor count (${testCache.length} props) - key: ${testKey}`);
                   break;
                 }
               } catch (e) {
-                // Ignore errors when checking stale cache
+                // Ignore
               }
             }
+            if (staleCache) break;
           }
-          
-          if (staleCache) {
-            // Serve stale cache but mark it as stale so client knows to update in background
-            return NextResponse.json({
-              success: true,
-              data: staleCache,
-              lastUpdated: oddsCache.lastUpdated,
-              gameDate,
-              cached: true,
-              stale: true, // Indicates this is stale cache from previous odds version
-              message: 'Serving cached data from previous odds version - new cache being built in background'
-            });
-          }
+        }
+        
+        if (staleCache) {
+          // Serve stale cache but mark it as stale so client knows to update in background
+          return NextResponse.json({
+            success: true,
+            data: staleCache,
+            lastUpdated: oddsCache.lastUpdated,
+            gameDate,
+            cached: true,
+            stale: true, // Indicates this is stale cache from previous odds version
+            message: 'Serving cached data from previous odds version - new cache being built in background'
+          });
         }
       } catch (staleError) {
         // Ignore errors when checking for stale cache - just proceed to cache miss
