@@ -374,7 +374,8 @@ async function processPlayerProps() {
   }
   
   // Process in batches (call production APIs for stats/dvp/depth-chart)
-  const BATCH_SIZE = 5;
+  // Increased batch size and process in parallel for speed
+  const BATCH_SIZE = 20; // Process 20 props at a time in parallel
   const MAX_RUNTIME_MS = 55 * 60 * 1000; // 55 minutes (leave 5 min buffer)
   const startTime = Date.now();
   
@@ -474,11 +475,14 @@ async function processPlayerProps() {
     }, 60);
     
     if (i + BATCH_SIZE < uniqueProps.length) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if ((i / BATCH_SIZE) % 5 === 0) {
-        const elapsed = Date.now() - startTime;
-        console.log(`[GitHub Actions] Progress: ${Math.min(i + BATCH_SIZE, uniqueProps.length)}/${uniqueProps.length} (${Math.round(elapsed/1000)}s)`);
-      }
+      // Small delay between batches to avoid overwhelming APIs
+      await new Promise(resolve => setTimeout(resolve, 100));
+      // Log progress every batch
+      const elapsed = Date.now() - startTime;
+      const propsPerSecond = (i + BATCH_SIZE) / (elapsed / 1000);
+      const remaining = uniqueProps.length - (i + BATCH_SIZE);
+      const eta = remaining / propsPerSecond;
+      console.log(`[GitHub Actions] Progress: ${Math.min(i + BATCH_SIZE, uniqueProps.length)}/${uniqueProps.length} (${Math.round(elapsed/1000)}s, ~${Math.round(eta)}s remaining)`);
     }
   }
   
