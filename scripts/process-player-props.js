@@ -544,20 +544,33 @@ async function processPlayerProps() {
         if (playerId) {
           try {
             // Fetch stats for current and previous season (regular + playoffs)
+            // EXACT SAME LOGIC AS CLIENT-SIDE: fetch regular first, then playoffs sequentially with delay
             const currentSeason = currentNbaSeason();
             const allStats = [];
             
-            for (const season of [currentSeason, currentSeason - 1]) {
-              for (const postseason of [false, true]) {
-                try {
-                  const statsData = await callAPI(`/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}`).catch(() => ({ data: [] }));
-                  if (statsData?.data && Array.isArray(statsData.data)) {
-                    allStats.push(...statsData.data);
-                  }
-                } catch (e) {
-                  // Continue on error
-                }
-              }
+            // Fetch current season: regular first, then playoffs (sequential with delay)
+            const currSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
+            if (currSeasonReg?.data && Array.isArray(currSeasonReg.data)) {
+              allStats.push(...currSeasonReg.data);
+            }
+            await new Promise(resolve => setTimeout(resolve, 300)); // Delay between regular and postseason
+            const currSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=true`).catch(() => ({ data: [] }));
+            if (currSeasonPo?.data && Array.isArray(currSeasonPo.data)) {
+              allStats.push(...currSeasonPo.data);
+            }
+            
+            // Small delay between seasons
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Fetch previous season: regular first, then playoffs (sequential with delay)
+            const prevSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
+            if (prevSeasonReg?.data && Array.isArray(prevSeasonReg.data)) {
+              allStats.push(...prevSeasonReg.data);
+            }
+            await new Promise(resolve => setTimeout(resolve, 300)); // Delay between regular and postseason
+            const prevSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=true`).catch(() => ({ data: [] }));
+            if (prevSeasonPo?.data && Array.isArray(prevSeasonPo.data)) {
+              allStats.push(...prevSeasonPo.data);
             }
             
             // Filter, deduplicate, and sort stats
