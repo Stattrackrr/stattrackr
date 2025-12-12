@@ -549,29 +549,59 @@ async function processPlayerProps() {
             const allStats = [];
             
             // Fetch current season: regular first, then playoffs (sequential with delay)
-            const currSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
-            if (currSeasonReg?.data && Array.isArray(currSeasonReg.data)) {
-              allStats.push(...currSeasonReg.data);
+            let currSeasonReg;
+            try {
+              currSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`);
+              if (currSeasonReg?.data && Array.isArray(currSeasonReg.data)) {
+                allStats.push(...currSeasonReg.data);
+                console.log(`[GitHub Actions] ✅ Fetched ${currSeasonReg.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason}, regular`);
+              }
+            } catch (e) {
+              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason}, regular:`, e.message);
             }
+            
             await new Promise(resolve => setTimeout(resolve, 300)); // Delay between regular and postseason
-            const currSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=true`).catch(() => ({ data: [] }));
-            if (currSeasonPo?.data && Array.isArray(currSeasonPo.data)) {
-              allStats.push(...currSeasonPo.data);
+            
+            let currSeasonPo;
+            try {
+              currSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=true`);
+              if (currSeasonPo?.data && Array.isArray(currSeasonPo.data)) {
+                allStats.push(...currSeasonPo.data);
+                console.log(`[GitHub Actions] ✅ Fetched ${currSeasonPo.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason}, playoffs`);
+              }
+            } catch (e) {
+              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason}, playoffs:`, e.message);
             }
             
             // Small delay between seasons
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // Fetch previous season: regular first, then playoffs (sequential with delay)
-            const prevSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
-            if (prevSeasonReg?.data && Array.isArray(prevSeasonReg.data)) {
-              allStats.push(...prevSeasonReg.data);
+            let prevSeasonReg;
+            try {
+              prevSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=false`);
+              if (prevSeasonReg?.data && Array.isArray(prevSeasonReg.data)) {
+                allStats.push(...prevSeasonReg.data);
+                console.log(`[GitHub Actions] ✅ Fetched ${prevSeasonReg.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, regular`);
+              }
+            } catch (e) {
+              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, regular:`, e.message);
             }
+            
             await new Promise(resolve => setTimeout(resolve, 300)); // Delay between regular and postseason
-            const prevSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=true`).catch(() => ({ data: [] }));
-            if (prevSeasonPo?.data && Array.isArray(prevSeasonPo.data)) {
-              allStats.push(...prevSeasonPo.data);
+            
+            let prevSeasonPo;
+            try {
+              prevSeasonPo = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=true`);
+              if (prevSeasonPo?.data && Array.isArray(prevSeasonPo.data)) {
+                allStats.push(...prevSeasonPo.data);
+                console.log(`[GitHub Actions] ✅ Fetched ${prevSeasonPo.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, playoffs`);
+              }
+            } catch (e) {
+              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, playoffs:`, e.message);
             }
+            
+            console.log(`[GitHub Actions] 📊 Total stats fetched for ${prop.playerName}: ${allStats.length}`);
             
             // Filter, deduplicate, and sort stats
             const validStats = allStats.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
@@ -609,6 +639,8 @@ async function processPlayerProps() {
               });
             
             if (gamesWithStats.length > 0) {
+              console.log(`[GitHub Actions] ✅ Found ${gamesWithStats.length} games with stats for ${prop.playerName} ${prop.statType}`);
+              
               // Calculate season average
               const seasonValues = gamesWithStats.map((g) => g.statValue);
               const seasonSum = seasonValues.reduce((sum, val) => sum + val, 0);
@@ -749,8 +781,12 @@ async function processPlayerProps() {
               }
             }
           } catch (e) {
-            console.error(`[GitHub Actions] Error calculating averages for ${prop.playerName}:`, e.message);
+            console.error(`[GitHub Actions] ❌ Error calculating averages for ${prop.playerName}:`, e.message);
+            console.error(`[GitHub Actions] Stack:`, e.stack);
           }
+        } else {
+          console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName} - skipping stats calculation`);
+        }
         }
         
         // Get DvP (with caching)
@@ -825,7 +861,25 @@ async function processPlayerProps() {
     }
   }
   
+  // Count props with actual stats
+  const propsWithStatsCount = propsWithStats.filter(p => 
+    p.last5Avg !== null || p.last10Avg !== null || p.h2hAvg !== null || p.seasonAvg !== null
+  ).length;
+  
   console.log(`[GitHub Actions] ✅ Calculated stats for ${propsWithStats.length} props`);
+  console.log(`[GitHub Actions] 📊 Props with stats: ${propsWithStatsCount}/${propsWithStats.length}`);
+  
+  // Sample a few props to verify stats are present
+  const sampleProps = propsWithStats.slice(0, 5).map(p => ({
+    player: p.playerName,
+    stat: p.statType,
+    last5: p.last5Avg,
+    last10: p.last10Avg,
+    h2h: p.h2hAvg,
+    season: p.seasonAvg,
+    streak: p.streak
+  }));
+  console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
   // Clear checkpoint and save final cache
   await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
