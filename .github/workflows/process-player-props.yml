@@ -1,0 +1,41 @@
+name: Process Player Props
+
+on:
+  schedule:
+    # Run every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: process-player-props
+  cancel-in-progress: false  # Don't cancel - let it complete
+
+jobs:
+  process_props:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # Allow up to 60 minutes for processing
+    continue-on-error: true  # Don't fail workflow if processing fails
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      CURL_FLAGS: "-fsS --retry 3 --retry-delay 5 --max-time 3600"  # 1 hour max time
+    steps:
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL secret not set; skipping workflow"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process Player Props
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Starting player props processing..."
+          curl $CURL_FLAGS -X POST \
+            -H 'Accept: application/json' \
+            "$PROD_URL/api/nba/player-props/process?refresh=1" || echo "Processing failed but continuing"
+          echo "✅ Player props processing completed"
+
