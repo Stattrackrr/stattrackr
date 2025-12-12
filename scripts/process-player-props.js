@@ -394,20 +394,28 @@ async function processPlayerProps() {
     }
     
     const batch = uniqueProps.slice(i, i + BATCH_SIZE);
-    const batchResults = [];
     
-    for (const prop of batch) {
+    // Process batch in parallel with caching
+    const playerIdCache = new Map();
+    const depthChartCache = new Map();
+    const statsCache = new Map();
+    const dvpCache = new Map();
+    
+    // Process all props in batch in parallel
+    const batchPromises = batch.map(async (prop) => {
       try {
-        // Process prop directly - call production APIs for stats/depth-chart/DvP (read-only, fast)
-        // All processing logic is here in GitHub Actions
-        try {
-          // Get player ID from production API (read-only)
+        // Get player ID (with caching)
+        let playerId = playerIdCache.get(prop.playerName);
+        if (!playerId) {
           const playerSearch = await callAPI(`/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`).catch(() => ({ results: [] }));
-          const playerId = playerSearch?.results?.[0]?.id || prop.playerId || '';
-          
-          // Get position from depth chart API (read-only)
+          playerId = playerSearch?.results?.[0]?.id || prop.playerId || '';
+          if (playerId) playerIdCache.set(prop.playerName, playerId);
+        }
+        
+        // Get position from depth chart (with caching)
+        let position = depthChartCache.get(prop.team);
+        if (!position) {
           const depthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
-          let position = null;
           if (depthChart?.depthChart) {
             // Find player in depth chart
             for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
@@ -421,48 +429,54 @@ async function processPlayerProps() {
               }
             }
           }
-          
-          // Get stats from production API (read-only)
-          let stats = null;
-          if (playerId) {
+          if (position) depthChartCache.set(prop.team, position);
+        }
+        
+        // Get stats (with caching)
+        let stats = null;
+        if (playerId) {
+          const cacheKey = `${playerId}-${prop.statType}`;
+          stats = statsCache.get(cacheKey);
+          if (!stats) {
             const currentSeason = new Date().getFullYear();
             const statsData = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
             stats = statsData?.data || [];
+            if (stats.length > 0) statsCache.set(cacheKey, stats);
           }
-          
-          // Get DvP from production API (read-only)
-          let dvp = { rank: null, statValue: null };
-          if (position && prop.opponent) {
+        }
+        
+        // Get DvP (with caching)
+        let dvp = { rank: null, statValue: null };
+        if (position && prop.opponent) {
+          const dvpKey = `${position}-${prop.statType}-${prop.opponent}`;
+          dvp = dvpCache.get(dvpKey);
+          if (!dvp) {
             const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${prop.statType.toLowerCase()}`).catch(() => null);
             if (dvpData?.ranks) {
               const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
-              dvp.rank = dvpData.ranks[teamAbbr] || null;
-              const teamValue = dvpData.values?.find(v => v.team?.toUpperCase() === teamAbbr);
-              dvp.statValue = teamValue?.value || null;
+              dvp = {
+                rank: dvpData.ranks[teamAbbr] || null,
+                statValue: dvpData.values?.find(v => v.team?.toUpperCase() === teamAbbr)?.value || null
+              };
+              dvpCache.set(dvpKey, dvp);
             }
           }
-          
-          // Calculate averages from stats (simplified - full logic would be here)
-          batchResults.push({
-            ...prop,
-            playerId,
-            position,
-            dvpRating: dvp.rank,
-            dvpStatValue: dvp.statValue,
-            // Stats calculations would go here (last5, last10, h2h, season, streak)
-            // For now, leaving as null - full implementation would calculate from stats array
-          });
-        } catch (e) {
-          console.error(`[GitHub Actions] Error processing ${prop.playerName}:`, e.message);
-          batchResults.push({ ...prop, position: null, dvpRating: null, dvpStatValue: null });
         }
         
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (error) {
-        console.error(`[GitHub Actions] Error for ${prop.playerName}:`, error.message);
-        batchResults.push({ ...prop, position: null, dvpRating: null, dvpStatValue: null });
+        return {
+          ...prop,
+          playerId,
+          position,
+          dvpRating: dvp.rank,
+          dvpStatValue: dvp.statValue,
+        };
+      } catch (e) {
+        console.error(`[GitHub Actions] Error processing ${prop.playerName}:`, e.message);
+        return { ...prop, position: null, dvpRating: null, dvpStatValue: null };
       }
-    }
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
     
     propsWithStats.push(...batchResults);
     
