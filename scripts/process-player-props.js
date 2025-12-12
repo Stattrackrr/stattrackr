@@ -225,12 +225,6 @@ function calculateImpliedProbabilities(overOddsStr, underOddsStr) {
   return null;
 }
 
-function getPlayerIdFromName(playerName) {
-  // Call production API to get player ID mapping
-  // For now, return empty string - will be filled when processing
-  return '';
-}
-
 function getPlayerPropVendors(oddsCache) {
   const vendors = new Set();
   if (oddsCache.games && Array.isArray(oddsCache.games)) {
