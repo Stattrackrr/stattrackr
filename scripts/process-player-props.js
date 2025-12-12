@@ -314,11 +314,19 @@ async function processPlayerProps() {
   
   console.log(`[GitHub Actions] 📅 Processing for game date: ${gameDate}, vendors: ${vendorCount}`);
   
+  // Check for force refresh flag
+  const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('-r');
+  
   // Check existing cache
   const existingCache = await getCache(cacheKey);
-  if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
+  if (existingCache && Array.isArray(existingCache) && existingCache.length > 0 && !forceRefresh) {
     console.log(`[GitHub Actions] ✅ Cache already exists (${existingCache.length} props)`);
+    console.log(`[GitHub Actions] 💡 Use --refresh flag to force recalculation`);
     return;
+  }
+  
+  if (forceRefresh) {
+    console.log(`[GitHub Actions] 🔄 Force refresh requested, recalculating all props...`);
   }
   
   // Extract props from odds cache (same logic as route.ts)

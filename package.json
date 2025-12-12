@@ -13,6 +13,7 @@
     "logs:json": "node scripts/view-logs.js --json",
     "logs:deployments": "vercel ls --prod",
     "process:player-props": "node scripts/process-player-props.js",
+    "process:player-props:refresh": "node scripts/process-player-props.js --refresh",
     "gh:workflows": "gh workflow list",
     "gh:logs": "gh run list --workflow=process-player-props.yml --limit 5",
     "gh:view": "gh run view --log"
