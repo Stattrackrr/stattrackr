@@ -18,9 +18,41 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Import mappings - use production API to get these or inline them
-// For now, we'll call production APIs for stats/depth-chart/DvP (read-only, fast)
-// All processing logic is here in the script
+// Import player ID mappings (same as frontend uses)
+const fs = require('fs');
+const path = require('path');
+let PLAYER_ID_MAPPINGS = [];
+try {
+  const mappingFile = fs.readFileSync(path.join(__dirname, '../lib/playerIdMapping.ts'), 'utf8');
+  // Extract the array from the TypeScript file
+  const arrayMatch = mappingFile.match(/export const PLAYER_ID_MAPPINGS: PlayerIdMapping\[\] = \[([\s\S]*?)\];/);
+  if (arrayMatch) {
+    // Parse the array entries
+    const entries = arrayMatch[1].match(/\{[\s\S]*?\}/g) || [];
+    PLAYER_ID_MAPPINGS = entries.map(entry => {
+      const bdlIdMatch = entry.match(/bdlId:\s*['"]([^'"]+)['"]/);
+      const nameMatch = entry.match(/name:\s*['"]([^'"]+)['"]/);
+      return {
+        bdlId: bdlIdMatch ? bdlIdMatch[1] : null,
+        name: nameMatch ? nameMatch[1] : null
+      };
+    }).filter(m => m.bdlId && m.name);
+    console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings`);
+  }
+} catch (e) {
+  console.warn(`[GitHub Actions] ⚠️ Failed to load player ID mappings:`, e.message);
+}
+
+// Helper to get player ID from name (same as frontend)
+function getPlayerIdFromName(playerName) {
+  if (!playerName || !PLAYER_ID_MAPPINGS.length) return null;
+  const mapping = PLAYER_ID_MAPPINGS.find(m => 
+    m.name.toLowerCase() === playerName.toLowerCase() ||
+    m.name.toLowerCase().includes(playerName.toLowerCase()) ||
+    playerName.toLowerCase().includes(m.name.toLowerCase())
+  );
+  return mapping?.bdlId || null;
+}
 
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
@@ -500,32 +532,36 @@ async function processPlayerProps() {
     // Process all props in batch in parallel
     const batchPromises = batch.map(async (prop) => {
       try {
-        // Get player ID (with caching)
+        // Get player ID (with caching) - use same logic as frontend
         let playerId = playerIdCache.get(prop.playerName);
         if (!playerId) {
-          try {
-            const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
-            const playerSearch = await callAPI(searchUrl);
-            if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
-              playerId = playerSearch.results[0].id || prop.playerId || '';
-              if (playerId) {
-                playerIdCache.set(prop.playerName, playerId);
-                console.log(`[GitHub Actions] ✅ Found player ID for ${prop.playerName}: ${playerId}`);
-              } else {
-                console.warn(`[GitHub Actions] ⚠️ Player search returned results but no ID for ${prop.playerName}. Results:`, playerSearch.results.slice(0, 2));
+          // First try the player ID mappings (same as frontend)
+          playerId = getPlayerIdFromName(prop.playerName);
+          
+          // If not found in mappings, try API as fallback
+          if (!playerId) {
+            try {
+              const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
+              const playerSearch = await callAPI(searchUrl);
+              if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
+                playerId = playerSearch.results[0].id || '';
               }
-            } else {
-              console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName}. Search returned:`, playerSearch);
+            } catch (e) {
+              // API failed, continue with null
             }
-          } catch (e) {
-            console.error(`[GitHub Actions] ❌ Error searching for player ${prop.playerName}:`, e.message);
-            // Try fallback to prop.playerId if available
+          }
+          
+          // Final fallback to prop.playerId if available
+          if (!playerId) {
             playerId = prop.playerId || '';
           }
           
-          // Final fallback
-          if (!playerId) {
-            playerId = prop.playerId || '';
+          // Cache the result
+          if (playerId) {
+            playerIdCache.set(prop.playerName, playerId);
+            console.log(`[GitHub Actions] ✅ Found player ID for ${prop.playerName}: ${playerId}`);
+          } else {
+            console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName}`);
           }
         }
         
