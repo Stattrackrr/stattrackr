@@ -787,7 +787,6 @@ async function processPlayerProps() {
         } else {
           console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName} - skipping stats calculation`);
         }
-        }
         
         // Get DvP (with caching)
         let dvp = { rank: null, statValue: null };
