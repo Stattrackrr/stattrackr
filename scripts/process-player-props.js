@@ -451,13 +451,21 @@ async function processPlayerProps() {
           const dvpKey = `${position}-${prop.statType}-${prop.opponent}`;
           dvp = dvpCache.get(dvpKey);
           if (!dvp) {
-            const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${prop.statType.toLowerCase()}`).catch(() => null);
-            if (dvpData?.ranks) {
-              const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
-              dvp = {
-                rank: dvpData.ranks[teamAbbr] || null,
-                statValue: dvpData.values?.find(v => v.team?.toUpperCase() === teamAbbr)?.value || null
-              };
+            try {
+              const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${prop.statType.toLowerCase()}`).catch(() => null);
+              if (dvpData && dvpData.ranks) {
+                const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
+                dvp = {
+                  rank: dvpData.ranks[teamAbbr] || null,
+                  statValue: dvpData.values?.find(v => v.team?.toUpperCase() === teamAbbr)?.value || null
+                };
+                dvpCache.set(dvpKey, dvp);
+              } else {
+                // Cache null result to avoid repeated failed calls
+                dvpCache.set(dvpKey, dvp);
+              }
+            } catch (e) {
+              // Error fetching DvP - use null values
               dvpCache.set(dvpKey, dvp);
             }
           }
