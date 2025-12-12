@@ -8,6 +8,7 @@ import { TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { currentNbaSeason, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
 import { PLAYER_ID_MAPPINGS } from '@/lib/playerIdMapping';
+import { queuedFetch } from '@/lib/requestQueue';
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
@@ -200,7 +201,7 @@ async function calculatePlayerAverages(
       for (const postseason of [false, true]) {
         try {
           const url = `${baseUrl}/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}`;
-          const response = await fetch(url, { cache: 'no-store' });
+          const response = await queuedFetch(url, { cache: 'no-store' });
           if (response.ok || response.status === 429) {
             const json = await response.json().catch(() => ({}));
             const data = Array.isArray(json?.data) ? json.data : [];
@@ -455,7 +456,7 @@ async function getPlayerPosition(baseUrl: string, playerName: string, team: stri
   try {
     const teamAbbr = TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim();
     const url = `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`;
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await queuedFetch(url, { cache: 'no-store' });
     
     if (!response.ok) {
       console.warn(`[getPlayerPosition] Depth chart API not ok for ${teamAbbr}: ${response.status}`);
@@ -548,7 +549,7 @@ async function getPlayerPositionFallback(baseUrl: string, playerName: string, te
     };
     
     const bdlUrl = `${baseUrl}/api/bdl/players?team=${encodeURIComponent(teamAbbr)}&q=${encodeURIComponent(playerName)}&per_page=5`;
-    const bdlRes = await fetch(bdlUrl, { cache: 'no-store' });
+    const bdlRes = await queuedFetch(bdlUrl, { cache: 'no-store' });
     if (bdlRes.ok) {
       const bdlJson = await bdlRes.json();
       const candidates: any[] = Array.isArray(bdlJson?.results) ? bdlJson.results : [];
@@ -639,7 +640,7 @@ async function getDvpRating(
     const url = `${baseUrl}/api/dvp/rank?pos=${position}&metric=${metric}`;
     console.log(`[getDvpRating] Fetching rank: ${url} (opponent: "${opponent}" -> teamAbbr: "${teamAbbr}")`);
     
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await queuedFetch(url, { cache: 'no-store' });
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
       console.warn(`[getDvpRating] Rank API not ok: ${response.status} for ${url}`, errorText);
@@ -984,8 +985,8 @@ async function processPlayerPropsCore(request: NextRequest) {
     }
     
     // Process props in batches with timeout monitoring
-    // Reduced batch size to process more batches before timeout
-    const BATCH_SIZE = 10; // Smaller batches = more frequent checkpoints
+    // Reduced batch size to process more batches before timeout and reduce rate limiting
+    const BATCH_SIZE = 5; // Smaller batches = more frequent checkpoints + less rate limiting
     const MAX_RUNTIME_MS = 4 * 60 * 1000; // 4 minutes (leave 1 min buffer)
     const startTime = Date.now();
     
@@ -1016,7 +1017,11 @@ async function processPlayerPropsCore(request: NextRequest) {
         });
       }
       const batch = uniqueProps.slice(i, i + BATCH_SIZE);
-      const batchPromises = batch.map(async (prop) => {
+      
+      // Process props sequentially within batch to reduce rate limiting
+      // Instead of parallel processing, process one at a time
+      const batchResults: any[] = [];
+      for (const prop of batch) {
         try {
           // Try to determine player's actual team by trying both teams for position lookup
           // This fixes the issue where we incorrectly assigned homeTeamAbbr to all players
@@ -1038,19 +1043,22 @@ async function processPlayerPropsCore(request: NextRequest) {
             }
           }
           
-          // Run averages and DvP in parallel (they're independent once we have position)
-          const [averages, dvp] = await Promise.all([
-            calculatePlayerAverages(
-              baseUrl,
-              prop.playerId,
-              prop.playerName,
-              prop.statType,
-              actualOpponent,
-              actualTeam,
-              prop.line
-            ),
-            getDvpRating(baseUrl, actualOpponent, position, prop.statType),
-          ]);
+          // Run averages and DvP sequentially to reduce rate limiting
+          // (Changed from parallel to sequential)
+          const averages = await calculatePlayerAverages(
+            baseUrl,
+            prop.playerId,
+            prop.playerName,
+            prop.statType,
+            actualOpponent,
+            actualTeam,
+            prop.line
+          );
+          
+          // Small delay before DvP call
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const dvp = await getDvpRating(baseUrl, actualOpponent, position, prop.statType);
           
           // Log if position or DvP is missing for debugging
           if (!position) {
@@ -1060,7 +1068,7 @@ async function processPlayerPropsCore(request: NextRequest) {
             console.warn(`[Player Props Process] ⚠️ No DvP rank for ${prop.playerName} vs ${actualOpponent} (${position})`);
           }
           
-          return {
+          batchResults.push({
             ...prop,
             team: actualTeam, // Use the correctly determined team
             opponent: actualOpponent, // Use the correctly determined opponent
@@ -1068,11 +1076,11 @@ async function processPlayerPropsCore(request: NextRequest) {
             position, // Store position for reference/debugging
             dvpRating: dvp.rank,
             dvpStatValue: dvp.statValue,
-          };
+          });
         } catch (error) {
           console.error(`[Player Props Process] Error calculating stats for ${prop.playerName} ${prop.statType}:`, error);
           // Return prop with null stats instead of completely missing stats
-          return {
+          batchResults.push({
             ...prop,
             last5Avg: null,
             last10Avg: null,
@@ -1086,11 +1094,15 @@ async function processPlayerPropsCore(request: NextRequest) {
             position: null,
             dvpRating: null,
             dvpStatValue: null,
-          };
+          });
         }
-      });
+        
+        // Add delay between props to reduce rate limiting
+        if (batch.indexOf(prop) < batch.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
       
-      const batchResults = await Promise.all(batchPromises);
       propsWithStats.push(...batchResults);
       
       // Save checkpoint after each batch (for recovery)
@@ -1105,9 +1117,9 @@ async function processPlayerPropsCore(request: NextRequest) {
         // Ignore checkpoint save errors - not critical
       });
       
-      // Reduced delay between batches (from 200ms to 100ms) to speed up
+      // Increased delay between batches to reduce rate limiting
       if (i + BATCH_SIZE < uniqueProps.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
         // Log progress every 5 batches
         if ((i / BATCH_SIZE) % 5 === 0) {
           const elapsed = Date.now() - startTime;
