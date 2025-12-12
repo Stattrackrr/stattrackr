@@ -449,15 +449,19 @@ async function processPlayerProps() {
         let dvp = { rank: null, statValue: null };
         if (position && prop.opponent) {
           const dvpKey = `${position}-${prop.statType}-${prop.opponent}`;
-          dvp = dvpCache.get(dvpKey);
-          if (!dvp) {
+          const cachedDvp = dvpCache.get(dvpKey);
+          if (cachedDvp && typeof cachedDvp === 'object') {
+            dvp = cachedDvp;
+          } else {
             try {
               const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${prop.statType.toLowerCase()}`).catch(() => null);
-              if (dvpData && dvpData.ranks) {
+              if (dvpData && dvpData.ranks && typeof dvpData.ranks === 'object') {
                 const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
                 dvp = {
                   rank: dvpData.ranks[teamAbbr] || null,
-                  statValue: dvpData.values?.find(v => v.team?.toUpperCase() === teamAbbr)?.value || null
+                  statValue: (dvpData.values && Array.isArray(dvpData.values)) 
+                    ? (dvpData.values.find(v => v && v.team && v.team.toUpperCase() === teamAbbr)?.value || null)
+                    : null
                 };
                 dvpCache.set(dvpKey, dvp);
               } else {
@@ -471,12 +475,15 @@ async function processPlayerProps() {
           }
         }
         
+        // Ensure dvp is always an object with rank and statValue
+        const safeDvp = (dvp && typeof dvp === 'object') ? dvp : { rank: null, statValue: null };
+        
         return {
           ...prop,
           playerId,
           position,
-          dvpRating: dvp.rank,
-          dvpStatValue: dvp.statValue,
+          dvpRating: safeDvp.rank || null,
+          dvpStatValue: safeDvp.statValue || null,
         };
       } catch (e) {
         console.error(`[GitHub Actions] Error processing ${prop.playerName}:`, e.message);
