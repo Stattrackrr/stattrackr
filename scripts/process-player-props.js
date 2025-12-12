@@ -4,7 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const fetch = require('node-fetch');
+// Use built-in fetch (Node.js 18+) - no need for node-fetch
 require('dotenv').config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

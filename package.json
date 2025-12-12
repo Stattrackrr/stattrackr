@@ -11,7 +11,8 @@
     "warm:rosters": "node scripts/warm-rosters.js",
     "logs": "node scripts/view-logs.js",
     "logs:json": "node scripts/view-logs.js --json",
-    "logs:deployments": "vercel ls --prod"
+    "logs:deployments": "vercel ls --prod",
+    "process:player-props": "node scripts/process-player-props.js"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.2.0",
