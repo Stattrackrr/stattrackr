@@ -35,26 +35,32 @@ try {
   if (arrayStart === -1) {
     console.warn(`[GitHub Actions] ⚠️ Could not find PLAYER_ID_MAPPINGS in file`);
   } else {
-    // Find the opening bracket
-    const bracketStart = mappingFile.indexOf('[', arrayStart);
-    console.log(`[GitHub Actions] 🔍 Found opening bracket at index: ${bracketStart}`);
-    
-    if (bracketStart === -1) {
-      console.warn(`[GitHub Actions] ⚠️ Could not find opening bracket`);
+    // Find the opening bracket AFTER the type annotation (skip PlayerIdMapping[])
+    // Look for the = sign first, then find the [ after that
+    const equalsSign = mappingFile.indexOf('=', arrayStart);
+    if (equalsSign === -1) {
+      console.warn(`[GitHub Actions] ⚠️ Could not find equals sign`);
     } else {
-      // Find matching closing bracket (handle nested brackets)
-      let bracketCount = 0;
-      let bracketEnd = bracketStart;
-      for (let i = bracketStart; i < mappingFile.length; i++) {
-        if (mappingFile[i] === '[') bracketCount++;
-        if (mappingFile[i] === ']') bracketCount--;
-        if (bracketCount === 0) {
-          bracketEnd = i;
-          break;
+      // Find the opening bracket after the equals sign
+      const bracketStart = mappingFile.indexOf('[', equalsSign);
+      console.log(`[GitHub Actions] 🔍 Found opening bracket at index: ${bracketStart} (after = at ${equalsSign})`);
+      
+      if (bracketStart === -1) {
+        console.warn(`[GitHub Actions] ⚠️ Could not find opening bracket`);
+      } else {
+        // Find matching closing bracket (handle nested brackets)
+        let bracketCount = 0;
+        let bracketEnd = bracketStart;
+        for (let i = bracketStart; i < mappingFile.length; i++) {
+          if (mappingFile[i] === '[') bracketCount++;
+          if (mappingFile[i] === ']') bracketCount--;
+          if (bracketCount === 0) {
+            bracketEnd = i;
+            break;
+          }
         }
-      }
-      console.log(`[GitHub Actions] 🔍 Found closing bracket at index: ${bracketEnd}`);
-      console.log(`[GitHub Actions] 🔍 Array content length: ${bracketEnd - bracketStart - 1} characters`);
+        console.log(`[GitHub Actions] 🔍 Found closing bracket at index: ${bracketEnd}`);
+        console.log(`[GitHub Actions] 🔍 Array content length: ${bracketEnd - bracketStart - 1} characters`);
       
       const arrayContent = mappingFile.substring(bracketStart + 1, bracketEnd);
       // Parse entries - each entry is on its own line: { bdlId: 'X', nbaId: 'Y', name: 'Z' },
@@ -93,6 +99,7 @@ try {
       // Show first few mappings as sample
       if (PLAYER_ID_MAPPINGS.length > 0) {
         console.log(`[GitHub Actions] 📋 Sample mappings:`, PLAYER_ID_MAPPINGS.slice(0, 3));
+      }
       }
     }
   }
