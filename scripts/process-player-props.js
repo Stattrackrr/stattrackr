@@ -23,14 +23,22 @@ const fs = require('fs');
 const path = require('path');
 let PLAYER_ID_MAPPINGS = [];
 try {
-  const mappingFile = fs.readFileSync(path.join(__dirname, '../lib/playerIdMapping.ts'), 'utf8');
+  const mappingFilePath = path.join(__dirname, '../lib/playerIdMapping.ts');
+  console.log(`[GitHub Actions] 📁 Loading mappings from: ${mappingFilePath}`);
+  const mappingFile = fs.readFileSync(mappingFilePath, 'utf8');
+  console.log(`[GitHub Actions] 📄 File size: ${mappingFile.length} bytes`);
+  
   // Extract the array from the TypeScript file - match everything between [ and ];
   const arrayStart = mappingFile.indexOf('export const PLAYER_ID_MAPPINGS');
+  console.log(`[GitHub Actions] 🔍 Found export at index: ${arrayStart}`);
+  
   if (arrayStart === -1) {
     console.warn(`[GitHub Actions] ⚠️ Could not find PLAYER_ID_MAPPINGS in file`);
   } else {
     // Find the opening bracket
     const bracketStart = mappingFile.indexOf('[', arrayStart);
+    console.log(`[GitHub Actions] 🔍 Found opening bracket at index: ${bracketStart}`);
+    
     if (bracketStart === -1) {
       console.warn(`[GitHub Actions] ⚠️ Could not find opening bracket`);
     } else {
@@ -45,11 +53,17 @@ try {
           break;
         }
       }
+      console.log(`[GitHub Actions] 🔍 Found closing bracket at index: ${bracketEnd}`);
+      console.log(`[GitHub Actions] 🔍 Array content length: ${bracketEnd - bracketStart - 1} characters`);
       
       const arrayContent = mappingFile.substring(bracketStart + 1, bracketEnd);
       // Parse entries - each entry is on its own line: { bdlId: 'X', nbaId: 'Y', name: 'Z' },
       const lines = arrayContent.split('\n');
+      console.log(`[GitHub Actions] 🔍 Total lines in array: ${lines.length}`);
+      
       PLAYER_ID_MAPPINGS = [];
+      let parsedCount = 0;
+      let skippedCount = 0;
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.startsWith('{') && trimmed.includes('bdlId')) {
@@ -60,15 +74,26 @@ try {
               bdlId: bdlIdMatch[1],
               name: nameMatch[1]
             });
+            parsedCount++;
+          } else {
+            skippedCount++;
+            if (skippedCount <= 3) {
+              console.log(`[GitHub Actions] ⚠️ Skipped line (no match): ${trimmed.substring(0, 50)}...`);
+            }
           }
         }
       }
-      console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings`);
+      console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings (parsed: ${parsedCount}, skipped: ${skippedCount})`);
       
       // Debug: Check if specific players are loaded
       const testPlayers = ['Josh Giddey', 'Isaac Okoro', 'K.J. Simpson', 'Zach Collins', 'Miles Bridges'];
       const found = testPlayers.filter(p => PLAYER_ID_MAPPINGS.some(m => m.name === p));
       console.log(`[GitHub Actions] 🔍 Test players found: ${found.length}/${testPlayers.length}`, found);
+      
+      // Show first few mappings as sample
+      if (PLAYER_ID_MAPPINGS.length > 0) {
+        console.log(`[GitHub Actions] 📋 Sample mappings:`, PLAYER_ID_MAPPINGS.slice(0, 3));
+      }
     }
   }
 } catch (e) {
