@@ -196,7 +196,7 @@ export const ESPN_LOGO_SLUG: Record<string, string> = {
 // ESPN filename exceptions for base 500/ path
 export const ESPN_FILE_ABBR: Record<string, string> = {
   NOP: 'no',
-  UTA: 'uta',
+  UTA: 'utah',
 };
 
 export function normalizeAbbr(abbr: string): string {

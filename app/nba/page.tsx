@@ -38,8 +38,6 @@ interface PlayerProp {
   underOdds: string;
   impliedOverProb: number;
   impliedUnderProb: number;
-  stattrackrOverProb?: number | null;
-  stattrackrUnderProb?: number | null;
   bestLine: number;
   bookmaker: string;
   confidence: 'High' | 'Medium' | 'Low';
@@ -55,6 +53,7 @@ interface PlayerProp {
   seasonAvg?: number | null;
   seasonHitRate?: { hits: number; total: number } | null;
   streak?: number | null;
+  position?: 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null; // Player position (used for DvP calculation)
   dvpRating?: number | null;
   dvpStatValue?: number | null;
   bookmakerLines?: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>;
@@ -487,751 +486,7 @@ export default function NBALandingPage() {
     return pickemBookmakers.some(key => lower.includes(key));
   };
 
-  // Fetch player props with good win chances from BDL
-  useEffect(() => {
-    const fetchPlayerProps = async () => {
-      try {
-        setPropsLoading(true);
-        
-        // First, check if we have cached processed player props
-        // Add ?refresh=1 to URL to force clear cache (for testing)
-        const urlParams = new URLSearchParams(window.location.search);
-        const forceRefresh = urlParams.get('refresh') === '1';
-        const cacheUrl = forceRefresh ? '/api/nba/player-props?refresh=1' : '/api/nba/player-props';
-        
-        const cacheResponse = await fetch(cacheUrl);
-        if (cacheResponse.ok) {
-          const cacheData = await cacheResponse.json();
-          if (forceRefresh) {
-            console.log('[NBA Landing] Cache cleared, will reprocess player props');
-            // Continue to processing below
-          } else if (cacheData.success && cacheData.cached && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
-            if (cacheData.stale) {
-              console.log(`[NBA Landing] 📦 Using stale cached player props data (${cacheData.data.length} props) - will update in background`);
-              // Show stale data immediately
-              setPlayerProps(cacheData.data);
-              setPropsLoading(false);
-              // Continue processing in background to update cache (don't return)
-            } else {
-              console.log(`[NBA Landing] ✅ Using fresh cached player props data (${cacheData.data.length} props)`);
-              setPlayerProps(cacheData.data);
-              setPropsLoading(false);
-              return; // Use cached data, skip processing
-            }
-          } else {
-            console.log(`[NBA Landing] Cache response received but not usable:`, {
-              success: cacheData.success,
-              cached: cacheData.cached,
-              hasData: !!cacheData.data,
-              dataLength: Array.isArray(cacheData.data) ? cacheData.data.length : 'not array',
-              message: cacheData.message
-            });
-          }
-        } else {
-          console.warn(`[NBA Landing] Cache API error: ${cacheResponse.status} ${cacheResponse.statusText}`);
-        }
-        
-        // Cache miss - need to process data
-        console.log('[NBA Landing] ⚠️ Cache miss - processing player props...');
-        
-        // Get odds data from BDL (via /api/odds which uses BDL)
-        // When no query params, /api/odds returns { success: true, data: games[], ... }
-        // If forceRefresh, also force refresh the odds cache
-        const oddsUrl = forceRefresh ? '/api/odds?refresh=1' : '/api/odds';
-        const oddsResponse = await fetch(oddsUrl);
-        
-        let oddsData: any;
-        if (oddsResponse.ok) {
-          oddsData = await oddsResponse.json();
-          // Debug: Log vendor information from API
-          if (oddsData._debug) {
-            console.log(`[NBA Landing] 🔍 API Response - Total vendors: ${oddsData._debug.totalVendors}, Player prop vendors: ${oddsData._debug.playerPropVendors.length}`);
-            console.log(`[NBA Landing] 🔍 API Response - All vendors: ${oddsData._debug.vendors.join(', ')}`);
-            console.log(`[NBA Landing] 🔍 API Response - Player prop vendors: ${oddsData._debug.playerPropVendors.join(', ')}`);
-          }
-        } else if (!oddsResponse.ok) {
-          console.error('[NBA Landing] Odds API error:', oddsResponse.status, oddsResponse.statusText);
-          if (oddsResponse.status === 429) {
-            console.warn('[NBA Landing] Rate limited - trying to get cached data');
-            // Try to get cached data even if rate limited
-            // The API might still return cached data in the response body
-            try {
-              oddsData = await oddsResponse.json();
-              // If the response has cached data, use it
-              if (oddsData?.data && Array.isArray(oddsData.data) && oddsData.data.length > 0) {
-                console.log('[NBA Landing] Found cached data despite rate limit');
-              } else {
-                console.warn('[NBA Landing] No cached data available');
-                setPlayerProps([]);
-                setPropsLoading(false);
-                return;
-              }
-            } catch (e) {
-              console.error('[NBA Landing] Could not parse rate limit response');
-              setPlayerProps([]);
-              setPropsLoading(false);
-              return;
-            }
-          } else {
-            setPlayerProps([]);
-            setPropsLoading(false);
-            return;
-          }
-        } else {
-          oddsData = await oddsResponse.json();
-        }
-        
-        // The /api/odds endpoint returns games in data field when no filters
-        let games: any[] = [];
-        
-        console.log('[NBA Landing] Odds API response:', { 
-          success: oddsData?.success, 
-          hasData: !!oddsData?.data, 
-          dataIsArray: Array.isArray(oddsData?.data),
-          dataLength: oddsData?.data?.length,
-          hasGames: !!oddsData?.games,
-          gamesIsArray: Array.isArray(oddsData?.games),
-          fullResponse: oddsData
-        });
-        
-        if (oddsData?.success && oddsData.data && Array.isArray(oddsData.data)) {
-          games = oddsData.data;
-        } else if (oddsData?.games && Array.isArray(oddsData.games)) {
-          // Fallback: direct cache structure (shouldn't happen but handle it)
-          games = oddsData.games;
-        } else {
-          // No data available
-          console.log('[NBA Landing] No games data found in response');
-          setPlayerProps([]);
-          setPropsLoading(false);
-          return;
-        }
-        
-        console.log('[NBA Landing] Found games:', games.length);
-        
-        if (games.length === 0) {
-          console.log('[NBA Landing] No games available');
-          setPlayerProps([]);
-          setPropsLoading(false);
-          return;
-        }
-        // Collect all props with full data, then find best lines
-        const allProps: Array<{
-          playerName: string;
-          team: string;
-          opponent: string;
-          statType: string;
-          line: number;
-          overOdds: string;
-          underOdds: string;
-          overProb: number;
-          underProb: number;
-          bookmaker: string;
-          gameDate: string;
-        }> = [];
-
-        // For each game, extract player props from BDL structure
-        console.log('[NBA Landing] Processing games for player props...');
-        let gamesWithProps = 0;
-        let totalPropsFound = 0;
-        
-        // DEBUG: Collect all bookmakers from raw data before processing
-        const allRawBookmakers = new Set<string>();
-        for (const game of games) {
-          if (game?.playerPropsByBookmaker && typeof game.playerPropsByBookmaker === 'object') {
-            Object.keys(game.playerPropsByBookmaker).forEach(bookmakerName => {
-              if (bookmakerName && !isPickemBookmaker(bookmakerName)) {
-                allRawBookmakers.add(bookmakerName);
-              }
-            });
-          }
-        }
-        console.log(`[NBA Landing] 🔍 DEBUG: Found ${allRawBookmakers.size} unique bookmakers in raw data:`, Array.from(allRawBookmakers).sort().join(', '));
-        
-        for (const game of games) {
-          if (!game || !game.playerPropsByBookmaker || typeof game.playerPropsByBookmaker !== 'object') {
-            continue;
-          }
-          gamesWithProps++;
-
-          const homeTeam = game.homeTeam || '';
-          const awayTeam = game.awayTeam || '';
-          const gameDate = game.commenceTime || new Date().toISOString().split('T')[0];
-          
-          console.log(`[NBA Landing] Game teams: homeTeam="${homeTeam}", awayTeam="${awayTeam}"`);
-          
-          // Get list of valid bookmakers from game.bookmakers
-          // Also include bookmakers from playerPropsByBookmaker (dashboard behavior)
-          const validBookmakers = new Set<string>();
-          if (game.bookmakers && Array.isArray(game.bookmakers)) {
-            game.bookmakers.forEach((book: any) => {
-              if (book?.name) {
-                validBookmakers.add(book.name);
-              }
-            });
-          }
-          
-          // CRITICAL: Add ALL bookmakers from playerPropsByBookmaker (even if not in game.bookmakers)
-          // This ensures we show all bookmakers that have player props available
-          // This is the source of truth for which bookmakers have player props
-          if (game.playerPropsByBookmaker && typeof game.playerPropsByBookmaker === 'object') {
-            Object.keys(game.playerPropsByBookmaker).forEach(bookmakerName => {
-              if (bookmakerName && !isPickemBookmaker(bookmakerName)) {
-                validBookmakers.add(bookmakerName);
-              }
-            });
-          }
-          
-          // Iterate through ALL bookmakers in playerPropsByBookmaker
-          // This is the primary source - don't filter by game.bookmakers
-          for (const [bookmakerName, bookmakerProps] of Object.entries(game.playerPropsByBookmaker)) {
-            if (!bookmakerProps || typeof bookmakerProps !== 'object') continue;
-            
-            // Skip pick'em/DFS-only bookmakers (PrizePicks, Underdog, DraftKings Pick6)
-            if (isPickemBookmaker(bookmakerName)) {
-              continue;
-            }
-            
-            // Process ALL bookmakers that have player props (no additional filtering)
-            // The validBookmakers set is just for reference, but we process everything from playerPropsByBookmaker
-            
-            // Iterate through players
-            for (const [playerName, playerData] of Object.entries(bookmakerProps)) {
-              if (!playerData || typeof playerData !== 'object') continue;
-              
-              const propsData = playerData as any;
-              
-              // Check each stat type (BDL uses arrays for multiple lines)
-              // Only show real over/under lines for core stats
-              // (Points, Rebounds, Assists, 3PM, Steals, Blocks, combos PRA/PR/PA/RA)
-              const statTypes = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'THREES', 'PRA', 'PA', 'PR', 'RA'];
-              
-              for (const statType of statTypes) {
-                const statData = propsData[statType];
-                if (!statData) continue;
-                
-                // Handle both single entry and array of entries (BDL can have multiple lines)
-                const entries = Array.isArray(statData) ? statData : [statData];
-                
-                for (const entry of entries) {
-                  if (!entry || !entry.line || entry.line === 'N/A') continue;
-                  
-                  // Filter out pick'em props (isPickem: true) - these are DFS-only and shouldn't be shown
-                  if (entry.isPickem === true) continue;
-                  
-                  // Filter out variant labels (Goblin/Demon from PrizePicks) - these are special promotions
-                  if (entry.variantLabel && (entry.variantLabel.toLowerCase().includes('goblin') || entry.variantLabel.toLowerCase().includes('demon'))) {
-                    continue;
-                  }
-                  
-                  const line = parseFloat(entry.line);
-                  if (isNaN(line)) continue;
-                  
-                  
-                  // Get over/under odds (BDL format)
-                  const overOddsStr = entry.over;
-                  const underOddsStr = entry.under;
-                  
-                  // Only process props with valid odds
-                  if (!overOddsStr || overOddsStr === 'N/A' || !underOddsStr || underOddsStr === 'N/A') continue;
-                  
-                  // Filter out pick'em odds (both +100) - these are DFS-only
-                  if (overOddsStr === '+100' && underOddsStr === '+100') continue;
-                  
-                  // Parse American odds (format: "+150", "-110", etc.)
-                  const overOdds = parseAmericanOdds(overOddsStr);
-                  const underOdds = parseAmericanOdds(underOddsStr);
-                  
-                  // Only process props with valid parsed odds
-                  if (overOdds === null || underOdds === null) continue;
-                  
-                  
-                  // Calculate implied probabilities using shared utility (same as dashboard)
-                  const implied = calculateImpliedProbabilities(overOdds, underOdds);
-                  const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(overOdds);
-                  const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(underOdds);
-                  
-                  // Normalize teams to abbreviations (same as dashboard)
-                  const normalizeAbbr = (abbr: string): string => {
-                    if (!abbr) return '';
-                    return abbr.toUpperCase().trim();
-                  };
-                  const homeTeamAbbr = normalizeAbbr(TEAM_FULL_TO_ABBR[homeTeam] || homeTeam);
-                  const awayTeamAbbr = normalizeAbbr(TEAM_FULL_TO_ABBR[awayTeam] || awayTeam);
-                  
-                  // We don't know which team the player is on from props data
-                  // We'll default to home team, but the opponent fix logic will correct it
-                  // The opponent MUST be the other team in the game
-                  // Store both as abbreviations for consistency
-                  const playerTeam = homeTeamAbbr; // Use abbreviation for consistency
-                  const opponentAbbr = awayTeamAbbr;
-                  
-                  allProps.push({
-                    playerName,
-                    team: playerTeam,
-                    opponent: opponentAbbr,
-                    statType,
-                    line,
-                    overOdds: overOddsStr,
-                    underOdds: underOddsStr,
-                    overProb,
-                    underProb,
-                    bookmaker: bookmakerName,
-                    gameDate,
-                  });
-                  totalPropsFound++;
-                }
-              }
-            }
-          }
-        }
-
-        console.log('[NBA Landing] Total props found:', totalPropsFound, 'from', gamesWithProps, 'games');
-        
-        // DEBUG: Log bookmakers found in processed props
-        const bookmakersInProps = new Set<string>();
-        allProps.forEach(prop => {
-          if (prop.bookmaker) bookmakersInProps.add(prop.bookmaker);
-        });
-        console.log(`[NBA Landing] 🔍 DEBUG: Found ${bookmakersInProps.size} unique bookmakers in processed props:`, Array.from(bookmakersInProps).sort().join(', '));
-        
-        // Group by player/stat/line to match dashboard behavior
-        // The dashboard shows one row per bookmaker, with the primary line for each stat
-        // We need to group by player/stat and find the most common/primary line
-        const propsByPlayerStatLine = new Map<string, typeof allProps>();
-        for (const prop of allProps) {
-          // Group by player/stat/line (rounded to nearest 0.5 to handle half-line variations)
-          const roundedLine = Math.round(prop.line * 2) / 2;
-          const key = `${prop.playerName}|${prop.statType}|${roundedLine}`;
-          if (!propsByPlayerStatLine.has(key)) {
-            propsByPlayerStatLine.set(key, []);
-          }
-          propsByPlayerStatLine.get(key)!.push(prop);
-        }
-
-        const props: PlayerProp[] = [];
-        
-        // Group by player/stat to find the best line for each player/stat combination
-        // We want to compare ALL available lines and pick the one with the most bookmakers
-        const propsByPlayerStat = new Map<string, typeof allProps>();
-        for (const [key, propGroup] of propsByPlayerStatLine.entries()) {
-          const [playerName, statType] = key.split('|');
-          const playerStatKey = `${playerName}|${statType}`;
-          if (!propsByPlayerStat.has(playerStatKey)) {
-            propsByPlayerStat.set(playerStatKey, []);
-          }
-          // Add all props from this line group (we'll pick the best one later)
-          propsByPlayerStat.get(playerStatKey)!.push(...propGroup);
-        }
-        
-        for (const [key, propGroup] of propsByPlayerStat.entries()) {
-          // Find the best line - prioritize line with MOST bookmakers, then highest implied probability
-          // Group by line value first to count bookmakers per line
-          const linesByValue = new Map<number, typeof allProps>();
-          for (const prop of propGroup) {
-            const roundedLine = Math.round(prop.line * 2) / 2;
-            if (!linesByValue.has(roundedLine)) {
-              linesByValue.set(roundedLine, []);
-            }
-            linesByValue.get(roundedLine)!.push(prop);
-          }
-          
-          // Find the line with the most bookmakers
-          let bestLineValue: number | null = null;
-          let maxBookmakerCount = 0;
-          
-          for (const [lineValue, lineProps] of linesByValue.entries()) {
-            // Count unique bookmakers for this line
-            const uniqueBookmakers = new Set(lineProps.map(p => p.bookmaker));
-            const bookmakerCount = uniqueBookmakers.size;
-            
-            if (bookmakerCount > maxBookmakerCount) {
-              maxBookmakerCount = bookmakerCount;
-              bestLineValue = lineValue;
-            } else if (bookmakerCount === maxBookmakerCount && bestLineValue !== null) {
-              // Tie-breaker: use probability
-              const currentBestProps = linesByValue.get(bestLineValue) || [];
-              const currentBestMaxProb = currentBestProps.length > 0 
-                ? Math.max(...currentBestProps.map(p => Math.max(p.overProb, p.underProb)))
-                : 0;
-              const newLineMaxProb = lineProps.length > 0
-                ? Math.max(...lineProps.map(p => Math.max(p.overProb, p.underProb)))
-                : 0;
-              if (newLineMaxProb > currentBestMaxProb) {
-                bestLineValue = lineValue;
-              }
-            }
-          }
-          
-          // Get the best prop from the best line
-          const bestLineProps = bestLineValue !== null ? linesByValue.get(bestLineValue) || [] : [];
-          if (bestLineProps.length === 0) continue;
-          
-          // Pick the prop with highest probability from the best line
-          const bestProp = bestLineProps.reduce((best, current) => {
-            const bestMaxProb = Math.max(best.overProb, best.underProb);
-            const currentMaxProb = Math.max(current.overProb, current.underProb);
-            return currentMaxProb > bestMaxProb ? current : best;
-          });
-
-          const bestProb = Math.max(bestProp.overProb, bestProp.underProb);
-          
-          // Only include props with >50% implied probability
-          if (bestProb > 50) {
-            
-            // Collect all bookmaker lines for this player/stat/line combination
-            const allLinesForPlayerStat = allProps.filter(p => 
-              p.playerName === bestProp.playerName && 
-              p.statType === bestProp.statType
-            );
-            const allLinesForSameLine = allLinesForPlayerStat
-              .filter(p => Math.abs(p.line - bestProp.line) < 0.1) // Same line
-              .map(p => ({
-                bookmaker: p.bookmaker,
-                line: p.line,
-                overOdds: p.overOdds,
-                underOdds: p.underOdds,
-              }));
-            
-            // Deduplicate: Remove lines with same bookmaker, line value, over odds, and under odds
-            const seenBookmakerLines = new Set<string>();
-            const bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> = [];
-            for (const line of allLinesForSameLine) {
-              // Create a unique key: bookmaker + line + over + under
-              const key = `${(line.bookmaker || '').toLowerCase()}|${line.line}|${line.overOdds}|${line.underOdds}`;
-              if (!seenBookmakerLines.has(key)) {
-                seenBookmakerLines.add(key);
-                bookmakerLines.push(line);
-              }
-            }
-
-            // Only add props with valid odds (overOdds and underOdds are not N/A)
-            if (bestProp.overOdds && bestProp.overOdds !== 'N/A' && bestProp.underOdds && bestProp.underOdds !== 'N/A') {
-              // Calculate implied probabilities using shared utility (same as dashboard)
-              // Try FanDuel first, then fallback to consensus
-              let impliedOverProb = bestProp.overProb;
-              let impliedUnderProb = bestProp.underProb;
-              
-              // Try FanDuel first (EXACT COPY FROM DASHBOARD lines 11159-11202)
-              const fanduelLine = bookmakerLines.find(line => 
-                line.bookmaker?.toLowerCase().includes('fanduel') || 
-                line.bookmaker?.toLowerCase() === 'fd'
-              );
-              
-              if (fanduelLine && fanduelLine.overOdds && fanduelLine.overOdds !== 'N/A' && 
-                  fanduelLine.underOdds && fanduelLine.underOdds !== 'N/A') {
-                const fanduelImplied = calculateImpliedProbabilities(fanduelLine.overOdds, fanduelLine.underOdds);
-                if (fanduelImplied) {
-                  impliedOverProb = fanduelImplied.overImpliedProb;
-                  impliedUnderProb = fanduelImplied.underImpliedProb;
-                }
-              } else {
-                // Fallback to consensus (EXACT COPY FROM DASHBOARD lines 11205-11255)
-                const validBooks: Array<{ over: number; under: number }> = [];
-                
-                for (const line of bookmakerLines) {
-                  if (!line.overOdds || line.overOdds === 'N/A' || !line.underOdds || line.underOdds === 'N/A') continue;
-                  
-                  const lineImplied = calculateImpliedProbabilities(line.overOdds, line.underOdds);
-                  if (lineImplied) {
-                    validBooks.push({
-                      over: lineImplied.overImpliedProb,
-                      under: lineImplied.underImpliedProb,
-                    });
-                  }
-                }
-                
-                if (validBooks.length > 0) {
-                  const avgOver = validBooks.reduce((sum, b) => sum + b.over, 0) / validBooks.length;
-                  const avgUnder = validBooks.reduce((sum, b) => sum + b.under, 0) / validBooks.length;
-                  impliedOverProb = avgOver;
-                  impliedUnderProb = avgUnder;
-                }
-              }
-              
-              props.push({
-                playerName: bestProp.playerName,
-                playerId: '',
-                team: bestProp.team,
-                opponent: bestProp.opponent,
-                statType: bestProp.statType,
-                line: bestProp.line,
-                overProb: bestProp.overProb,
-                underProb: bestProp.underProb,
-                overOdds: bestProp.overOdds,
-                underOdds: bestProp.underOdds,
-                impliedOverProb: impliedOverProb,
-                impliedUnderProb: impliedUnderProb,
-                stattrackrOverProb: null, // Will calculate later
-                stattrackrUnderProb: null, // Will calculate later
-                bestLine: bestProp.line,
-                bookmaker: bestProp.bookmaker,
-                confidence: bestProb > 70 ? 'High' : bestProb > 65 ? 'Medium' : 'Low',
-                gameDate: bestProp.gameDate,
-                last5Avg: null, // Will calculate later
-                last10Avg: null, // Will calculate later
-                h2hAvg: null, // Will calculate later
-                bookmakerLines: bookmakerLines,
-              });
-            }
-          }
-        }
-
-        console.log('[NBA Landing] Props after filtering (>50% prob):', props.length);
-        
-        // Remove duplicates (same player/stat/line combination)
-        const uniqueProps = props.filter((prop, index, self) =>
-          index === self.findIndex((p) => 
-            p.playerName === prop.playerName && 
-            p.statType === prop.statType && 
-            Math.abs(p.line - prop.line) < 0.1
-          )
-        );
-        
-        console.log('[NBA Landing] Unique props after deduplication:', uniqueProps.length);
-
-        // Filter to only props with valid odds before calculating averages
-        const propsWithValidOdds = uniqueProps.filter(prop => 
-          prop.overOdds && 
-          prop.overOdds !== 'N/A' && 
-          prop.underOdds && 
-          prop.underOdds !== 'N/A' &&
-          parseAmericanOdds(prop.overOdds) !== null &&
-          parseAmericanOdds(prop.underOdds) !== null
-        );
-        
-        console.log('[NBA Landing] Props with valid odds:', propsWithValidOdds.length);
-        console.log('[NBA Landing] Processing props count (unique players):', propsWithValidOdds.length);
-
-        // Sort by probability (highest first) so we pick the strongest line per player
-        const propsSorted = [...propsWithValidOdds].sort((a, b) => {
-          const aProb = Math.max(a.overProb, a.underProb);
-          const bProb = Math.max(b.overProb, b.underProb);
-          return bProb - aProb;
-        });
-
-        // Keep only one prop per player (highest prob)
-        const seenPlayerStatForProcess = new Set<string>();
-        const propsToProcess: PlayerProp[] = [];
-        for (const prop of propsSorted) {
-          const key = `${prop.playerName}|${prop.statType}`;
-          if (seenPlayerStatForProcess.has(key)) continue;
-          seenPlayerStatForProcess.add(key);
-          propsToProcess.push(prop);
-        }
-
-        // Show placeholders immediately
-        setPlayerProps(propsToProcess.map(prop => ({
-          ...prop,
-          stattrackrOverProb: null,
-          stattrackrUnderProb: null,
-          last5Avg: null,
-          last10Avg: null,
-          h2hAvg: null,
-          last5HitRate: null,
-          last10HitRate: null,
-          h2hHitRate: null,
-          seasonAvg: null,
-          seasonHitRate: null,
-          streak: null,
-          dvpRating: null,
-          dvpStatValue: null,
-        })));
-        
-        // Set loading to false so props are displayed immediately (they'll update as processing completes)
-        setPropsLoading(false);
-
-        // Process props in small parallel batches for speed
-        const processedProps: PlayerProp[] = [];
-        const BATCH_SIZE = 8;
-
-        const processOneProp = async (prop: PlayerProp): Promise<PlayerProp> => {
-          let workingProp = { ...prop };
-          try {
-            // Normalize team names to abbreviations before position lookup
-            const normalizeTeamForLookup = (team: string): string => {
-              if (!team) return '';
-              const upper = team.toUpperCase().trim();
-              if (upper.length <= 3) return upper;
-              return TEAM_FULL_TO_ABBR[upper] || TEAM_FULL_TO_ABBR[team] || upper;
-            };
-            
-            const normalizedTeam = normalizeTeamForLookup(workingProp.team);
-            const normalizedOpponent = normalizeTeamForLookup(workingProp.opponent);
-            
-            let position = await getPlayerPosition(workingProp.playerName, normalizedTeam);
-            if (!position && normalizedOpponent) {
-              const posOnOpp = await getPlayerPosition(workingProp.playerName, normalizedOpponent);
-              if (posOnOpp) {
-                // Swap teams - ensure both are abbreviations
-                workingProp = { 
-                  ...workingProp, 
-                  team: normalizedOpponent, 
-                  opponent: normalizedTeam 
-                };
-                position = posOnOpp;
-              }
-            } else {
-              // Ensure both are stored as abbreviations
-              workingProp = {
-                ...workingProp,
-                team: normalizedTeam,
-                opponent: normalizedOpponent
-              };
-            }
-
-            const [prediction, averages, dvpData] = await Promise.all([
-              calculateStatTrackrPrediction(
-                workingProp.playerName,
-                workingProp.statType,
-                workingProp.line,
-                workingProp.team,
-                workingProp.opponent,
-                workingProp.impliedOverProb,
-                workingProp.impliedUnderProb
-              ),
-              calculatePlayerAverages(
-                workingProp.playerName,
-                workingProp.statType,
-                workingProp.opponent,
-                workingProp.team,
-                workingProp.line
-              ),
-              // Try to get DvP - will return { rank: null, statValue: null } if position/opponent is missing
-              getDvpRating(workingProp.opponent, position, workingProp.statType).catch(err => {
-                console.warn(`[processOneProp] DvP fetch failed for ${workingProp.playerName} vs ${workingProp.opponent}:`, err);
-                return { rank: null, statValue: null };
-              }),
-            ]);
-            
-            const dvpRating = dvpData?.rank ?? null;
-            const dvpStatValue = dvpData?.statValue ?? null;
-
-            return {
-              ...workingProp,
-              stattrackrOverProb: prediction?.overProb ?? null,
-              stattrackrUnderProb: prediction?.underProb ?? null,
-              last5Avg: averages.last5 ?? null,
-              last10Avg: averages.last10 ?? null,
-              h2hAvg: averages.h2h ?? null,
-              last5HitRate: averages.last5HitRate ?? null,
-              last10HitRate: averages.last10HitRate ?? null,
-              h2hHitRate: averages.h2hHitRate ?? null,
-              seasonAvg: averages.seasonAvg ?? null,
-              seasonHitRate: averages.seasonHitRate ?? null,
-              streak: averages.streak ?? null,
-              dvpRating: dvpRating ?? null,
-              dvpStatValue: dvpStatValue ?? null,
-            };
-          } catch (error) {
-            console.warn(`[NBA Landing] Failed to process prop (${prop.playerName}):`, error);
-            return {
-              ...workingProp,
-              stattrackrOverProb: null,
-              stattrackrUnderProb: null,
-              last5Avg: null,
-              last10Avg: null,
-              h2hAvg: null,
-              last5HitRate: null,
-              last10HitRate: null,
-              h2hHitRate: null,
-              seasonAvg: null,
-              seasonHitRate: null,
-              streak: null,
-              dvpRating: null,
-              dvpStatValue: null,
-            };
-          }
-        };
-
-        for (let start = 0; start < propsToProcess.length; start += BATCH_SIZE) {
-          const batch = propsToProcess.slice(start, start + BATCH_SIZE);
-          const results = await Promise.all(batch.map(p => processOneProp(p)));
-          processedProps.push(...results);
-
-          const remainingProps = propsToProcess.slice(start + BATCH_SIZE).map(p => ({
-            ...p,
-            stattrackrOverProb: null,
-            stattrackrUnderProb: null,
-            last5Avg: null,
-            last10Avg: null,
-            h2hAvg: null,
-            last5HitRate: null,
-            last10HitRate: null,
-            h2hHitRate: null,
-            seasonAvg: null,
-            seasonHitRate: null,
-            streak: null,
-            dvpRating: null,
-            dvpStatValue: null,
-          }));
-
-          setPlayerProps([...processedProps, ...remainingProps]);
-        }
-        
-        // After processing is complete, save to cache
-        if (processedProps.length > 0) {
-          try {
-            // Get odds lastUpdated timestamp and game date to use as cache key
-            const oddsResponse = await fetch('/api/odds');
-            if (oddsResponse.ok) {
-              const oddsData = await oddsResponse.json();
-              if (oddsData.lastUpdated) {
-                // Extract game date from games (earliest commenceTime)
-                let gameDate: string | null = null;
-                if (games && games.length > 0) {
-                  const dates = games
-                    .map((g: any) => g.commenceTime)
-                    .filter(Boolean)
-                    .map((time: string) => {
-                      try {
-                        return new Date(time).toISOString().split('T')[0];
-                      } catch {
-                        return null;
-                      }
-                    })
-                    .filter(Boolean) as string[];
-                  
-                  if (dates.length > 0) {
-                    gameDate = dates.sort()[0]; // Earliest date
-                  }
-                }
-                
-                // Fallback to today if no game date found
-                if (!gameDate) {
-                  gameDate = new Date().toISOString().split('T')[0];
-                }
-                
-                // Save processed props to cache
-                await fetch('/api/nba/player-props', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    data: processedProps,
-                    oddsLastUpdated: oddsData.lastUpdated,
-                    gameDate
-                  })
-                });
-                console.log('[NBA Landing] Saved processed props to cache for date:', gameDate);
-              }
-            }
-          } catch (cacheError) {
-            console.warn('[NBA Landing] Failed to save to cache:', cacheError);
-            // Don't fail the whole request if caching fails
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching player props from BDL:', error);
-        setPlayerProps([]);
-      } finally {
-        setPropsLoading(false);
-      }
-    };
-
-    fetchPlayerProps();
-  }, []);
-
-  // Helper function to get player ID from player name
+  // Helper function to get player ID from player name (moved before useEffect for accessibility)
   const getPlayerIdFromName = (playerName: string): string | null => {
     const mapping = PLAYER_ID_MAPPINGS.find(m => 
       m.name.toLowerCase() === playerName.toLowerCase() ||
@@ -1242,170 +497,55 @@ export default function NBALandingPage() {
     return mapping?.bdlId || null;
   };
 
-  // Helper function to get player position from depth chart
-  const getPlayerPosition = async (playerName: string, team: string): Promise<'PG' | 'SG' | 'SF' | 'PF' | 'C' | null> => {
-    try {
-      if (!team) {
-        console.warn(`[getPlayerPosition] No team provided for ${playerName}`);
-        return null;
-      }
-      
-      // Normalize team name to abbreviation
-      const teamAbbr = TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim();
-      
-      // Fetch depth chart for the team
-      let response = await fetch(`/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`);
-      
-      // If 429 (rate limited), retry once after a short delay (cache might be populated by another request)
-      if (!response.ok && response.status === 429) {
-        console.warn(`[getPlayerPosition] Rate limited for ${teamAbbr}, retrying after delay...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        response = await fetch(`/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`);
-      }
-      
-      if (!response.ok) {
-        console.warn(`[getPlayerPosition] Depth chart API not ok for ${teamAbbr}:`, response.status);
-        return null;
-      }
-      
-      const data = await response.json();
-      if (!data || !data.success || !data.depthChart) {
-        console.warn(`[getPlayerPosition] No depth chart data for ${teamAbbr}`);
-        return null;
-      }
-      
-      // Normalize player name for matching - more aggressive normalization
-      const normalize = (s: string) => {
-        return String(s || '')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .replace(/[^a-z\s]/g, ' ')
-          .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-      };
-      const normalizedPlayerName = normalize(playerName);
-      
-      console.log(`[getPlayerPosition] Looking up ${playerName} on ${teamAbbr} -> normalized: "${normalizedPlayerName}"`);
-      
-      // Helper to extract player name from depth chart entry (depth chart returns { name, jersey } objects)
-      const getPlayerName = (player: any): string => {
-        if (typeof player === 'string') return player;
-        return player?.name || player?.displayName || player?.fullName || String(player || '');
-      };
-      
-      // Log all players in depth chart for debugging
-      const allPlayers: string[] = [];
-      const allPlayerNames: string[] = [];
-      const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
-      for (const pos of positions) {
-        const players = data.depthChart[pos] || [];
-        const playerNames = players.map((p: any) => getPlayerName(p));
-        allPlayers.push(...playerNames.map((name: string) => `${pos}: ${name}`));
-        allPlayerNames.push(...playerNames);
-      }
-      console.log(`[getPlayerPosition] Depth chart players for ${teamAbbr}:`, allPlayers);
-      console.log(`[getPlayerPosition] All player names (normalized):`, allPlayerNames.map(n => `"${normalize(n)}"`));
-      
-      // Check each position in the depth chart
-      for (const pos of positions) {
-        const players = data.depthChart[pos] || [];
-        for (const player of players) {
-          const playerNameFromChart = getPlayerName(player);
-          if (!playerNameFromChart) continue;
-          
-          const normalizedChartName = normalize(playerNameFromChart);
-          // Check exact match or partial match (either direction)
-          if (normalizedChartName === normalizedPlayerName || 
-              normalizedChartName.includes(normalizedPlayerName) ||
-              normalizedPlayerName.includes(normalizedChartName)) {
-            console.log(`[getPlayerPosition] ✅ Found ${playerName} (matched with "${playerNameFromChart}") as ${pos} on ${teamAbbr}`);
-            return pos;
-          }
-        }
-      }
-      
-      // Try matching by first and last name separately
-      const nameParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
-      if (nameParts.length >= 2) {
-        const firstName = nameParts[0];
-        const lastName = nameParts[nameParts.length - 1];
-        for (const pos of positions) {
-          const players = data.depthChart[pos] || [];
-          for (const player of players) {
-            const playerNameFromChart = getPlayerName(player);
-            if (!playerNameFromChart) continue;
-            
-            const normalizedChartName = normalize(playerNameFromChart);
-            const chartParts = normalizedChartName.split(' ').filter(p => p.length > 0);
-            if (chartParts.length >= 2) {
-              const chartFirst = chartParts[0];
-              const chartLast = chartParts[chartParts.length - 1];
-              // Match if first and last names match (more flexible)
-              if ((firstName === chartFirst && lastName === chartLast) ||
-                  (firstName.includes(chartFirst) && lastName.includes(chartLast)) ||
-                  (chartFirst.includes(firstName) && chartLast.includes(lastName)) ||
-                  (firstName === chartFirst || lastName === chartLast) ||
-                  (normalizedPlayerName.includes(chartFirst) && normalizedPlayerName.includes(chartLast)) ||
-                  (normalizedChartName.includes(firstName) && normalizedChartName.includes(lastName))) {
-                console.log(`[getPlayerPosition] ✅ Found ${playerName} (matched by name parts with "${playerNameFromChart}") as ${pos} on ${teamAbbr}`);
-                return pos;
-              }
-            } else if (chartParts.length === 1) {
-              // Single name - try matching against any part
-              if (nameParts.some(part => part === chartParts[0] || chartParts[0].includes(part) || part.includes(chartParts[0]))) {
-                console.log(`[getPlayerPosition] ✅ Found ${playerName} (matched single name with "${playerNameFromChart}") as ${pos} on ${teamAbbr}`);
-                return pos;
-              }
-            }
-          }
-        }
-      }
-      
-              console.warn(`[getPlayerPosition] Player ${playerName} not found in depth chart for ${teamAbbr}. Available players:`, allPlayers);
-              console.warn(`[getPlayerPosition] Searching for normalized: "${normalizedPlayerName}"`);
-
-      // Fallback: try BallDontLie player search (position field is often populated)
+  // Fetch player props with good win chances from BDL
+  useEffect(() => {
+    const fetchPlayerProps = async () => {
       try {
-        const bdlUrl = `/api/bdl/players?team=${encodeURIComponent(teamAbbr)}&q=${encodeURIComponent(playerName)}&per_page=5`;
-        const bdlRes = await fetch(bdlUrl, { cache: 'no-store' });
-        if (bdlRes.ok) {
-          const bdlJson = await bdlRes.json();
-          const candidates: any[] = Array.isArray(bdlJson?.results) ? bdlJson.results : [];
-          const normalizeBdlName = (s: string) => normalize(s);
-          const posMap: Record<string, 'PG'|'SG'|'SF'|'PF'|'C'> = {
-            'PG': 'PG', 'SG': 'SG', 'SF': 'SF', 'PF': 'PF', 'C': 'C',
-            'G': 'SG', 'F': 'SF', 'GF': 'SG', 'FG': 'SF', 'FC': 'C', 'C-F': 'C', 'F-C': 'C'
-          };
-          for (const cand of candidates) {
-            const cName = cand?.full || cand?.name || `${cand?.first_name || ''} ${cand?.last_name || ''}`.trim();
-            const cNorm = normalizeBdlName(cName);
-            if (!cNorm) continue;
-            if (cNorm === normalizedPlayerName || cNorm.includes(normalizedPlayerName) || normalizedPlayerName.includes(cNorm)) {
-              const rawPos = String(cand?.position || cand?.pos || '').toUpperCase().trim();
-              const mapped = posMap[rawPos] || null;
-              if (mapped) {
-                console.log(`[getPlayerPosition] ✅ Fallback matched ${playerName} via BDL (${cName}) -> ${mapped}`);
-                return mapped;
-              }
-            }
+        setPropsLoading(true);
+        
+        // Only read from cache - no processing on client side
+        // Processing is done server-side by cron job
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceRefresh = urlParams.get('refresh') === '1';
+        const cacheUrl = forceRefresh ? '/api/nba/player-props?refresh=1' : '/api/nba/player-props';
+        
+        const cacheResponse = await fetch(cacheUrl);
+        if (cacheResponse.ok) {
+          const cacheData = await cacheResponse.json();
+          if (forceRefresh) {
+            console.log('[NBA Landing] Cache cleared - cron will repopulate');
+            setPlayerProps([]);
+            setPropsLoading(false);
+            return;
+          } else if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
+            console.log(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
+            setPlayerProps(cacheData.data);
+            setPropsLoading(false);
+            return;
+          } else {
+            console.log(`[NBA Landing] ⚠️ No cached data available - cron will populate cache`);
+            setPlayerProps([]);
+            setPropsLoading(false);
+            return;
           }
         } else {
-          console.warn(`[getPlayerPosition] BDL search not ok (${bdlRes.status}) for ${playerName}`);
+          console.warn(`[NBA Landing] Cache API error: ${cacheResponse.status} ${cacheResponse.statusText}`);
+          setPlayerProps([]);
+          setPropsLoading(false);
+          return;
         }
-      } catch (err) {
-        console.warn(`[getPlayerPosition] BDL fallback failed for ${playerName}:`, err);
+      } catch (error) {
+        console.error('[NBA Landing] Error fetching player props:', error);
+        setPlayerProps([]);
+        setPropsLoading(false);
       }
+    };
 
-      return null;
-    } catch (error) {
-      console.error(`[getPlayerPosition] Error for ${playerName} on ${team}:`, error);
-      return null;
-    }
-  };
+    fetchPlayerProps();
+  }, []);
 
-  // Helper function to map stat type to DvP metric
+  // Note: getPlayerPosition and getDvpRating are no longer needed on client-side
+  // Position and DvP are calculated server-side during processing and stored in cache
   const mapStatTypeToDvpMetric = (statType: string): string | null => {
     const mapping: Record<string, string> = {
       'PTS': 'pts',
@@ -1574,10 +714,10 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
       const currentSeason = currentNbaSeason();
       
-      // Fetch both current and previous season data (like dashboard does)
-      // Add retry logic for 429 errors and optimize to reduce API calls
-      const grab = async (yr: number, postseason = false, retries = 2): Promise<any[]> => {
-        const cacheKey = `${playerId}-${yr}-${postseason ? 'po' : 'reg'}`;
+      // Fetch stats per season - fetch both regular and playoffs in parallel
+      // This reduces from 4 requests to 2 requests per player (2 seasons x 2 parallel fetches each)
+      const grabSeason = async (yr: number, retries = 2): Promise<any[]> => {
+        const cacheKey = `${playerId}-${yr}-all`;
 
         // Return cached data if available
         if (playerStatsCache.has(cacheKey)) {
@@ -1588,93 +728,96 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           return playerStatsPromiseCache.get(cacheKey)!;
         }
 
-        const fetchPromise = (async () => {
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`;
-            console.log(`[calculatePlayerAverages] Fetching: ${url} (attempt ${attempt + 1}/${retries + 1})`);
-            const r = await fetch(url);
-            
-            // Try to parse response even on 429 - API might return cached data
-            let j: any = {};
+        const fetchSingle = async (postseason: boolean, suffix: string): Promise<any[]> => {
+          // Use queued fetch to prevent rate limiting
+          const { queuedFetch } = await import('@/lib/requestQueue');
+          const singleCacheKey = `${playerId}-${yr}-${postseason ? 'po' : 'reg'}`;
+          
+          // Return cached data if available
+          if (playerStatsCache.has(singleCacheKey)) {
+            return playerStatsCache.get(singleCacheKey)!;
+          }
+          
+          for (let attempt = 0; attempt <= retries; attempt++) {
             try {
-              j = await r.json();
-            } catch (e) {
-              // If JSON parse fails, try to get text for error message
-              const text = await r.text().catch(() => '');
-              console.warn(`[calculatePlayerAverages] Failed to parse response for ${playerId}, season ${yr}, postseason ${postseason}:`, text);
-            }
+              const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`;
+              const requestId = `stats-${playerId}-${yr}-${suffix}`;
+              console.log(`[calculatePlayerAverages] Fetching ${suffix}: ${url} (attempt ${attempt + 1}/${retries + 1})`);
+              const r = await queuedFetch(url, {}, requestId);
             
-            // Check if we got cached data even on 429
-            const data = Array.isArray(j?.data) ? j.data : [];
-            if (data.length > 0) {
-              // We have data (possibly cached), use it even if status is 429
-              console.log(`[calculatePlayerAverages] Got ${data.length} stats (${r.status === 429 ? 'cached' : 'fresh'}) for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}`);
-              playerStatsCache.set(cacheKey, data);
+              // Try to parse response even on 429 - API might return cached data
+              let j: any = {};
+              try {
+                j = await r.json();
+              } catch (e) {
+                const text = await r.text().catch(() => '');
+                console.warn(`[calculatePlayerAverages] Failed to parse response for ${playerId}, season ${yr}, ${suffix}:`, text);
+              }
+              
+              // Check if we got cached data even on 429
+              const data = Array.isArray(j?.data) ? j.data : [];
+              if (data.length > 0) {
+                console.log(`[calculatePlayerAverages] Got ${data.length} stats (${r.status === 429 ? 'cached' : 'fresh'}) for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
+                playerStatsCache.set(singleCacheKey, data);
+                return data;
+              }
+              
+              if (r.status === 429) {
+                if (attempt < retries) {
+                  const waitTime = (attempt + 1) * 2000;
+                  console.log(`[calculatePlayerAverages] Rate limited, waiting ${waitTime}ms before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, waitTime));
+                  continue;
+                }
+                console.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, ${suffix} - no cached data available`);
+                return [];
+              }
+              if (!r.ok) {
+                console.warn(`[calculatePlayerAverages] API error ${r.status} for ${playerId}, season ${yr}, ${suffix}`);
+                return [];
+              }
+              
               return data;
-            }
-            
-            if (r.status === 429) {
-              // Rate limited and no cached data - wait and retry
+            } catch (error: any) {
+              // If queuedFetch threw a 429 error, try to extract cached data from error.response
+              if (error?.status === 429 && error?.response) {
+                try {
+                  const j = await error.response.json();
+                  const data = Array.isArray(j?.data) ? j.data : [];
+                  if (data.length > 0) {
+                    console.log(`[calculatePlayerAverages] Got ${data.length} cached stats from 429 error for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
+                    playerStatsCache.set(singleCacheKey, data);
+                    return data;
+                  }
+                } catch (parseError) {
+                  // Failed to parse error response, continue to retry logic
+                }
+              }
+              
               if (attempt < retries) {
-                const waitTime = (attempt + 1) * 2000; // Exponential backoff: 2s, 4s
-                console.log(`[calculatePlayerAverages] Rate limited, waiting ${waitTime}ms before retry...`);
+                const waitTime = (attempt + 1) * 1000;
+                console.log(`[calculatePlayerAverages] Error on attempt ${attempt + 1}, retrying in ${waitTime}ms...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
                 continue;
               }
-              // Last attempt failed - return empty array
-              console.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, postseason ${postseason} - no cached data available`);
+              console.error(`[calculatePlayerAverages] Error fetching stats for ${playerId}, ${suffix}:`, error);
               return [];
             }
-            if (!r.ok) {
-              console.warn(`[calculatePlayerAverages] API error ${r.status} for ${playerId}, season ${yr}, postseason ${postseason}`);
-              return [];
-            }
-            
-            // Deep debug: log full structure of first game if available
-            if (data.length > 0 && process.env.NODE_ENV !== 'production') {
-              const first = data[0];
-              console.log(`[calculatePlayerAverages][DEBUG] First game structure for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}:`, {
-                topLevelKeys: Object.keys(first || {}),
-                hasGame: !!first?.game,
-                gameKeys: first?.game ? Object.keys(first.game) : [],
-                hasHomeTeam: !!first?.game?.home_team,
-                homeTeamKeys: first?.game?.home_team ? Object.keys(first.game.home_team) : [],
-                homeTeamAbbr: first?.game?.home_team?.abbreviation,
-                hasVisitorTeam: !!first?.game?.visitor_team,
-                visitorTeamKeys: first?.game?.visitor_team ? Object.keys(first.game.visitor_team) : [],
-                visitorTeamAbbr: first?.game?.visitor_team?.abbreviation,
-                hasTeam: !!first?.team,
-                teamKeys: first?.team ? Object.keys(first.team) : [],
-                teamAbbr: first?.team?.abbreviation,
-                fullFirstGame: first,
-              });
-            }
-            
-            console.log(`[calculatePlayerAverages] Got ${data.length} stats for ${playerName} (${playerId}), season ${yr}, postseason ${postseason}`, {
-              hasData: !!j?.data,
-              isArray: Array.isArray(j?.data),
-              dataLength: data.length,
-              responseKeys: Object.keys(j || {}),
-              sampleData: data[0] ? {
-                hasGame: !!data[0].game,
-                hasGameDate: !!data[0].game?.date,
-                hasTeam: !!data[0].team,
-                gameDate: data[0].game?.date,
-                teamAbbr: data[0].team?.abbreviation,
-              } : null,
-            });
-            return data;
-          } catch (error) {
-            if (attempt < retries) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              continue;
-            }
-            console.error(`[calculatePlayerAverages] Error fetching stats for ${playerId}:`, error);
-            return [];
           }
-        }
-        return [];
+          return [];
+        };
+
+        // Fetch regular first, then playoffs sequentially to avoid rate limiting
+        // Even with RequestQueue limiting to 1 concurrent, sequential is safer
+        const fetchPromise = (async () => {
+          const regular = await fetchSingle(false, 'reg');
+          // Small delay between regular and postseason to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const playoffs = await fetchSingle(true, 'po');
+          const combined = [...regular, ...playoffs];
+          // Cache the combined result
+          playerStatsCache.set(cacheKey, combined);
+          return combined;
         })();
 
         playerStatsPromiseCache.set(cacheKey, fetchPromise);
@@ -1686,29 +829,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         }
       };
 
-      // Align with dashboard: fetch current + last + previous season (reg + PO)
-      // Stagger requests slightly to avoid rate limits (100ms delay between each)
-      const currReg = await grab(currentSeason, false);        // current season regular
+      // Fetch stats per season - fetch both regular and playoffs in parallel
+      // This reduces from 4 requests to 2 requests per player (2 seasons x 2 parallel fetches each)
+      const currSeason = await grabSeason(currentSeason);        // current season (2025/2026) - regular + playoffs in parallel
       await new Promise(resolve => setTimeout(resolve, 100));
-      const currPO = await grab(currentSeason, true);         // current season playoffs
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const prev1Reg = await grab(currentSeason - 1, false);    // previous season regular
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const prev1PO = await grab(currentSeason - 1, true);     // previous season playoffs
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const prev2Reg = await grab(currentSeason - 2, false);    // season before last regular
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const prev2PO = await grab(currentSeason - 2, true);     // season before last playoffs
+      const prev1Season = await grabSeason(currentSeason - 1);    // previous season (2024/2025) - regular + playoffs in parallel
 
       // Merge all data and filter (like dashboard does)
-      const allStats = [...currReg, ...currPO, ...prev1Reg, ...prev1PO, ...prev2Reg, ...prev2PO];
+      const allStats = [...currSeason, ...prev1Season];
       console.log(`[calculatePlayerAverages] Merged stats for ${playerName}:`, {
-        currReg: currReg.length,
-        currPO: currPO.length,
-        prev1Reg: prev1Reg.length,
-        prev1PO: prev1PO.length,
-        prev2Reg: prev2Reg.length,
-        prev2PO: prev2PO.length,
+        currSeason: currSeason.length,
+        prev1Season: prev1Season.length,
         total: allStats.length,
       });
       
@@ -1780,10 +911,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           'REB': 'reb',
           'AST': 'ast',
           'STL': 'stl',
+          'BLK': 'blk',
           'THREES': 'fg3m',
         };
         const key = statMap[stat] || stat.toLowerCase();
-        return parseFloat(game[key] || 0) || 0;
+        const rawValue = game[key];
+        // Handle null, undefined, or empty string explicitly
+        if (rawValue === null || rawValue === undefined || rawValue === '') {
+          return 0;
+        }
+        const parsed = parseFloat(rawValue);
+        return Number.isFinite(parsed) ? parsed : 0;
       };
 
       // Helper function to parse minutes (same as dashboard)
@@ -1800,12 +938,36 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
       // CRITICAL: Filter out ALL games with 0 minutes FIRST, then get stat values
       // Then RE-SORT to ensure newest-first order (filtering might affect order)
-      const gamesWithStats = uniqueStats
-        .filter((stats: any) => {
-          const minutes = parseMinutes(stats.min);
-          // STRICT: Only include games where player actually played (minutes > 0)
-          return minutes > 0;
-        })
+      const gamesWithMinutes = uniqueStats.filter((stats: any) => {
+        const minutes = parseMinutes(stats.min);
+        // STRICT: Only include games where player actually played (minutes > 0)
+        return minutes > 0;
+      });
+      
+      console.log(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithMinutes.length} games with minutes > 0`);
+      
+      // Log sample stat structure to debug stat extraction
+      if (gamesWithMinutes.length > 0) {
+        const sample = gamesWithMinutes[0];
+        console.log(`[calculatePlayerAverages] ${playerName} ${statType} sample stat:`, {
+          hasPts: sample.pts !== undefined && sample.pts !== null,
+          hasReb: sample.reb !== undefined && sample.reb !== null,
+          hasAst: sample.ast !== undefined && sample.ast !== null,
+          hasStl: sample.stl !== undefined && sample.stl !== null,
+          hasBlk: sample.blk !== undefined && sample.blk !== null,
+          hasFg3m: sample.fg3m !== undefined && sample.fg3m !== null,
+          pts: sample.pts,
+          reb: sample.reb,
+          ast: sample.ast,
+          stl: sample.stl,
+          blk: sample.blk,
+          fg3m: sample.fg3m,
+          statType,
+          statMapKey: statType === 'PTS' ? 'pts' : statType === 'REB' ? 'reb' : statType === 'AST' ? 'ast' : statType === 'STL' ? 'stl' : statType === 'BLK' ? 'blk' : statType === 'THREES' ? 'fg3m' : statType.toLowerCase(),
+        });
+      }
+      
+      const gamesWithStats = gamesWithMinutes
         .map((stats: any) => {
           const statValue = getStatValue(stats, statType);
           return {
@@ -1815,7 +977,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         })
         .filter((stats: any) => {
           // Only include games with valid (finite) stat values
-          return Number.isFinite(stats.statValue);
+          // Note: 0 is a valid stat value (player had 0 points/rebounds/etc), so we keep it
+          const isValid = Number.isFinite(stats.statValue);
+          if (!isValid) {
+            console.warn(`[calculatePlayerAverages] Invalid stat value for ${playerName} ${statType}:`, {
+              statValue: stats.statValue,
+              gameDate: stats?.game?.date,
+              rawStat: stats[statType.toLowerCase()] || stats[statType] || 'missing',
+              allStatKeys: Object.keys(stats),
+            });
+          }
+          return isValid;
         })
         .sort((a, b) => {
           // RE-SORT by date to ensure newest-first (critical for L5/L10)
@@ -1823,6 +995,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
           return dateB - dateA; // Newest first
         });
+      
+      console.log(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithStats.length} games with valid stat values (from ${gamesWithMinutes.length} games with minutes)`);
 
       if (gamesWithStats.length === 0) {
         return { 
@@ -2198,107 +1372,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     }
   };
 
-  // Calculate StatTrackr prediction (simplified - will enhance with full calculation later)
-  const calculateStatTrackrPrediction = async (
-    playerName: string, 
-    statType: string, 
-    line: number, 
-    team: string, 
-    opponent: string,
-    impliedOverProb?: number | null,
-    impliedUnderProb?: number | null
-  ): Promise<{ overProb: number; underProb: number } | null> => {
-    try {
-      const playerId = getPlayerIdFromName(playerName);
-      if (!playerId) return null;
-
-      // Use shared API endpoint that matches dashboard calculation
-      const params = new URLSearchParams({
-        playerId,
-        statType,
-        line: line.toString(),
-        playerTeam: team || '',
-        opponent: opponent || '',
-      });
-
-      // Add market probabilities for blending if available
-      if (impliedOverProb !== null && impliedOverProb !== undefined && 
-          impliedUnderProb !== null && impliedUnderProb !== undefined) {
-        params.append('marketLine', line.toString());
-        params.append('marketOverProb', impliedOverProb.toString());
-        params.append('marketUnderProb', impliedUnderProb.toString());
-      }
-
-      console.log('[calculateStatTrackrPrediction] Calling API with params:', {
-        playerId,
-        statType,
-        line,
-        team,
-        opponent,
-        hasMarketProbs: impliedOverProb !== null && impliedUnderProb !== null,
-        impliedOverProb,
-        impliedUnderProb
-      });
-
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      try {
-        const response = await fetch(`/api/prediction?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          // Only log as warning if it's a common/expected error (like "No stats data available")
-          if (errorText.includes('No stats data available') || errorText.includes('not found')) {
-            // Suppress this common error - it's expected for some players
-            return null;
-          }
-          console.warn('[calculateStatTrackrPrediction] API error:', response.status, errorText);
-          return null;
-        }
-
-        const data = await response.json();
-        console.log('[calculateStatTrackrPrediction] API response:', JSON.stringify(data, null, 2));
-        
-        if (data.error) {
-          // Suppress "No stats data available" errors - they're expected for some players
-          if (data.error === 'No stats data available' || data.error?.includes('not found')) {
-            return null;
-          }
-          console.warn('[calculateStatTrackrPrediction] API error:', data.error, data.details);
-          return null;
-        }
-        
-        if (data.overProb !== null && data.overProb !== undefined && 
-            data.underProb !== null && data.underProb !== undefined) {
-          console.log('[calculateStatTrackrPrediction] Successfully got probabilities:', data.overProb, data.underProb);
-          return {
-            overProb: data.overProb,
-            underProb: data.underProb,
-          };
-        }
-
-        // Suppress warning for null probabilities - it's expected when stats aren't available
-        return null;
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
-          console.error('[calculateStatTrackrPrediction] Request timed out after 30 seconds');
-        } else {
-          console.error('[calculateStatTrackrPrediction] Fetch error:', fetchError);
-        }
-        return null;
-      }
-    } catch (error) {
-      console.error('[calculateStatTrackrPrediction] Error:', error);
-      return null;
-    }
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2625,7 +1698,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           
           case 'ip':
             // Sort by bookmaker implied over probability (highest = best)
-            // Use impliedOverProb (bookmaker) instead of StatTrackr
             aValue = a.impliedOverProb ?? null;
             bValue = b.impliedOverProb ?? null;
             break;
@@ -2676,8 +1748,9 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       if (aL5 !== null || bL5 !== null) {
         return (bL5 ?? -1) - (aL5 ?? -1);
       }
-      const aProb = Math.max(a.stattrackrOverProb ?? a.overProb, a.stattrackrUnderProb ?? a.underProb);
-      const bProb = Math.max(b.stattrackrOverProb ?? b.overProb, b.stattrackrUnderProb ?? b.underProb);
+      // Use implied probabilities for sorting
+      const aProb = Math.max(a.overProb, a.underProb);
+      const bProb = Math.max(b.overProb, b.underProb);
       return bProb - aProb;
     });
   }, [uniquePlayerProps, propLineSort, columnSort]);
@@ -2745,6 +1818,30 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           --content-margin-right: 0px;
           --content-padding-left: 0px;
           --content-padding-right: 0px;
+        }
+
+        .mobile-filter-scroll::-webkit-scrollbar {
+          height: 8px;
+        }
+        .mobile-filter-scroll::-webkit-scrollbar-track {
+          background: #f3f4f6;
+          border-radius: 4px;
+        }
+        .mobile-filter-scroll::-webkit-scrollbar-thumb {
+          background: #9ca3af;
+          border-radius: 4px;
+        }
+        .mobile-filter-scroll::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
+        }
+        .dark .mobile-filter-scroll::-webkit-scrollbar-track {
+          background: #1f2937;
+        }
+        .dark .mobile-filter-scroll::-webkit-scrollbar-thumb {
+          background: #4b5563;
+        }
+        .dark .mobile-filter-scroll::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
         }
 
         @media (min-width: 1024px) {
@@ -2861,11 +1958,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium whitespace-nowrap">
                       Games
                     </span>
                     <svg
-                      className={`w-4 h-4 transition-transform ${gamesDropdownOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ${gamesDropdownOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -2880,7 +1977,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         className="fixed inset-0 z-10"
                         onClick={() => setGamesDropdownOpen(false)}
                       />
-                      <div className={`absolute top-full left-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto w-full ${
+                      <div className={`absolute top-full left-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto w-full min-w-max ${
                         mounted && isDark
                           ? 'bg-gray-800 border-gray-700'
                           : 'bg-white border-gray-300'
@@ -2895,7 +1992,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                             return (
                               <label
                                 key={game.id}
-                                className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all ${
+                                className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
                                   isSelected
                                     ? mounted && isDark
                                       ? 'bg-purple-600 text-white'
@@ -2909,26 +2006,26 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleGame(game.id)}
-                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
                                 />
-                                <div className="flex items-center gap-2 flex-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                   {awayLogoUrl && (
                                     <img
                                       src={awayLogoUrl}
                                       alt={awayTeam}
-                                      className="w-6 h-6 object-contain"
+                                      className="w-6 h-6 object-contain flex-shrink-0"
                                     />
                                   )}
-                                  <span className="text-sm font-medium">{awayTeam}</span>
-                                  <span className="text-sm text-gray-500">@</span>
+                                  <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
+                                  <span className="text-sm text-gray-500 flex-shrink-0">@</span>
                                   {homeLogoUrl && (
                                     <img
                                       src={homeLogoUrl}
                                       alt={homeTeam}
-                                      className="w-6 h-6 object-contain"
+                                      className="w-6 h-6 object-contain flex-shrink-0"
                                     />
                                   )}
-                                  <span className="text-sm font-medium">{homeTeam}</span>
+                                  <span className="text-sm font-medium flex-shrink-0">{homeTeam}</span>
                                 </div>
                               </label>
                             );
@@ -2957,11 +2054,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium whitespace-nowrap">
                       Bookmakers
                     </span>
                     <svg
-                      className={`w-4 h-4 transition-transform ${bookmakerDropdownOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ${bookmakerDropdownOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -3040,11 +2137,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium whitespace-nowrap">
                       Prop Types
                     </span>
                     <svg
-                      className={`w-4 h-4 transition-transform ${propTypeDropdownOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ${propTypeDropdownOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -3743,7 +2840,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   </div>
                                 </td>
                                 
-                                {/* IP Column - Implied Odds and StatTrackr */}
+                                {/* IP Column - Implied Odds */}
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-6">
                                     {/* Bookmakers */}
@@ -3759,27 +2856,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                           Under {prop.impliedUnderProb.toFixed(1)}%
                                         </div>
                                       </div>
-                                    </div>
-                                    
-                                    {/* StatTrackr */}
-                                    <div className="flex flex-col gap-1">
-                                      <div className={`text-[10px] ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        StatTrackr
-                                      </div>
-                                      {prop.stattrackrOverProb != null && prop.stattrackrUnderProb != null ? (
-                                        <div className="flex flex-col gap-0.5">
-                                          <div className={`text-sm font-semibold ${prop.stattrackrOverProb! >= prop.stattrackrUnderProb! ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                            Over {prop.stattrackrOverProb!.toFixed(1)}%
-                                          </div>
-                                          <div className={`text-sm font-semibold ${prop.stattrackrUnderProb! >= prop.stattrackrOverProb! ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                            Under {prop.stattrackrUnderProb!.toFixed(1)}%
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className={`text-xs ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                          Calculating...
-                                        </div>
-                                      )}
                                     </div>
                                   </div>
                                 </td>
@@ -4136,6 +3212,224 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       </table>
                       </div>
                       
+                      {/* Mobile Column Sort Filters - Scrollable row above player props */}
+                      <div className="lg:hidden mb-4 w-full px-0.5">
+                        <div 
+                          className="overflow-x-auto mobile-filter-scroll"
+                          style={{ 
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: mounted && isDark ? '#4b5563 #1f2937' : '#9ca3af #f3f4f6',
+                            paddingLeft: '0.5rem',
+                            paddingRight: '1rem'
+                          }}
+                        >
+                          <div className="flex gap-2 min-w-max pb-2" style={{ width: 'max-content' }}>
+                            {/* IP Sort */}
+                            <button
+                              onClick={() => handleColumnSort('ip')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.ip !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>IP</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.ip !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.ip === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.ip === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.ip === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* DvP Sort */}
+                            <button
+                              onClick={() => handleColumnSort('dvp')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.dvp !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>DvP</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.dvp !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.dvp === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.dvp === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.dvp === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* L5 Sort */}
+                            <button
+                              onClick={() => handleColumnSort('l5')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.l5 !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>L5</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.l5 !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.l5 === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.l5 === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.l5 === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* L10 Sort */}
+                            <button
+                              onClick={() => handleColumnSort('l10')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.l10 !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>L10</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.l10 !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.l10 === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.l10 === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.l10 === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* H2H Sort */}
+                            <button
+                              onClick={() => handleColumnSort('h2h')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.h2h !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>H2H</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.h2h !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.h2h === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.h2h === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.h2h === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* Season Sort */}
+                            <button
+                              onClick={() => handleColumnSort('season')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.season !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>Season</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.season !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.season === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.season === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.season === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* Streak Sort */}
+                            <button
+                              onClick={() => handleColumnSort('streak')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                                columnSort.streak !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>Streak</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.streak !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.streak === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.streak === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.streak === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {/* Mobile Card View - Hidden on desktop */}
                       <div className="lg:hidden space-y-4">
                         {paginatedPlayerProps.map((prop, idx) => {
@@ -4181,30 +3475,37 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
                             let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                             let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
+                            let glowColor: string | null = null;
                             
                             if (isStreak) {
                               const streakValue = prop.streak ?? 0;
                               if (streakValue === 0) {
                                 bgColor = '#B03A3A'; // red
                                 borderColor = '#ef4444';
+                                glowColor = '#ef4444';
                               } else if (streakValue === 1) {
                                 bgColor = '#E88A3B'; // orange
                                 borderColor = '#f97316';
+                                glowColor = '#f97316';
                               } else {
                                 bgColor = '#22c55e'; // green
                                 borderColor = '#22c55e';
+                                glowColor = '#22c55e';
                               }
                             } else if (hitRate) {
                               const percent = (hitRate.hits / hitRate.total) * 100;
                               if (percent < 30) {
                                 bgColor = '#B03A3A'; // red
                                 borderColor = '#ef4444';
+                                glowColor = '#ef4444';
                               } else if (percent < 70) {
                                 bgColor = '#E88A3B'; // orange
                                 borderColor = '#f97316';
+                                glowColor = '#f97316';
                               } else {
                                 bgColor = '#22c55e'; // green
                                 borderColor = '#22c55e';
+                                glowColor = '#22c55e';
                               }
                             }
                             
@@ -4214,6 +3515,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 : bgColor,
                               borderColor: borderColor,
                               borderWidth: '1px',
+                              boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
                             };
                           };
                           
@@ -4265,9 +3567,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     <span className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                       {prop.playerName}
                                     </span>
-                                    <span className={`text-xs px-2 py-0.5 rounded ${mounted && isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                                      nba
-                                    </span>
                                     {/* Team Logos */}
                                     <div className="flex items-center gap-1">
                                       {teamLogoUrl && (
@@ -4292,7 +3591,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                         />
                                       )}
                                     </div>
-                                    {/* IP Boxes - Bookmaker and StatTrackr */}
+                                    {/* IP Boxes - Bookmaker */}
                                     <div className="flex items-center gap-2 ml-auto">
                                       {/* Bookmaker IP */}
                                       <div className="flex flex-col items-center justify-center rounded border px-2.5 py-1.5" style={getStatBoxStyle(null)}>
@@ -4304,16 +3603,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                           {prop.impliedUnderProb !== null && prop.impliedUnderProb !== undefined ? `U ${prop.impliedUnderProb.toFixed(1)}%` : '-'}
                                         </div>
                                       </div>
-                                      {/* StatTrackr IP */}
-                                      <div className="flex flex-col items-center justify-center rounded border px-2.5 py-1.5" style={getStatBoxStyle(null)}>
-                                        <div className={`text-[9px] font-medium mb-1 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>STKR</div>
-                                        <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                          {prop.stattrackrOverProb !== null && prop.stattrackrOverProb !== undefined ? `O ${prop.stattrackrOverProb.toFixed(1)}%` : '-'}
-                                        </div>
-                                        <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                          {prop.stattrackrUnderProb !== null && prop.stattrackrUnderProb !== undefined ? `U ${prop.stattrackrUnderProb.toFixed(1)}%` : '-'}
-                                        </div>
-                                      </div>
                                     </div>
                                   </div>
                                   <div className={`text-sm font-medium mb-1 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
@@ -4323,11 +3612,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               </div>
                               
                               {/* Statistics Grid */}
-                              <div className={`grid grid-cols-7 gap-1.5 p-2 rounded-lg mb-3 ${
+                              <div className={`grid grid-cols-7 gap-1.5 p-2 rounded-lg mb-3 w-full ${
                                 mounted && isDark ? 'bg-gray-900' : 'bg-gray-50'
-                              }`}>
+                              }`} style={{ width: '100%' }}>
                                 {/* L5 */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(prop.last5HitRate)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>L5</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.last5HitRate)}
@@ -4335,7 +3624,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* L10 */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(prop.last10HitRate)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.last10HitRate)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>L10</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.last10HitRate)}
@@ -4343,7 +3632,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* H2H */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(prop.h2hHitRate)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.h2hHitRate)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>H2H</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.h2hHitRate)}
@@ -4351,7 +3640,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* STRK */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(null, true)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(null, true)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>STRK</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.streak ?? '-'}
@@ -4359,7 +3648,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* AVG */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(null)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(null)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>AVG</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.seasonAvg !== null && prop.seasonAvg !== undefined ? prop.seasonAvg.toFixed(1) : '-'}
@@ -4367,7 +3656,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* SZN */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={getStatBoxStyle(prop.seasonHitRate)}>
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.seasonHitRate)}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>SZN</div>
                                   <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.seasonHitRate)}
@@ -4375,27 +3664,33 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 </div>
                                 
                                 {/* DvP */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5" style={(() => {
+                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={(() => {
                                   if (prop.dvpRating === null || prop.dvpRating === undefined) {
                                     return { background: mounted && isDark ? '#374151' : '#f9fafb', borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' };
                                   }
                                   let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                   let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
+                                  let glowColor: string | null = null;
                                   if (prop.dvpRating >= 26) {
                                     bgColor = '#22c55e';
                                     borderColor = '#22c55e';
+                                    glowColor = '#22c55e';
                                   } else if (prop.dvpRating >= 21) {
                                     bgColor = '#22c55e';
                                     borderColor = '#22c55e';
+                                    glowColor = '#22c55e';
                                   } else if (prop.dvpRating >= 16) {
                                     bgColor = '#f97316';
                                     borderColor = '#f97316';
+                                    glowColor = '#f97316';
                                   } else if (prop.dvpRating >= 11) {
                                     bgColor = '#f97316';
                                     borderColor = '#f97316';
+                                    glowColor = '#f97316';
                                   } else {
                                     bgColor = '#ef4444';
                                     borderColor = '#ef4444';
+                                    glowColor = '#ef4444';
                                   }
                             return {
                               background: bgColor !== (mounted && isDark ? '#374151' : '#f9fafb')
@@ -4403,6 +3698,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 : bgColor,
                               borderColor: borderColor,
                               borderWidth: '1px',
+                              boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
                             };
                                 })()}>
                                   <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>DvP</div>
