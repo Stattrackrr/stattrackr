@@ -623,31 +623,88 @@ async function processPlayerProps() {
                 averages.last10HitRate = { hits, total: last10Values.length };
               }
               
-              // Calculate H2H average (simplified - full logic would match route.ts)
+              // Calculate H2H average - EXACT COPY FROM route.ts
               if (prop.opponent && prop.opponent !== 'ALL' && prop.opponent !== 'N/A' && prop.opponent !== '') {
-                const normalizeAbbr = (abbr) => (abbr || '').toUpperCase().trim();
-                const normalizedOpponent = normalizeAbbr(TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent);
+                const normalizeAbbr = (abbr) => {
+                  if (!abbr) return '';
+                  return String(abbr).toUpperCase().trim();
+                };
                 
-                const h2hStats = gamesWithStats
+                // Determine correct opponent: if player's actual team matches provided opponent, they're swapped
+                let correctOpponent = prop.opponent;
+                if (gamesWithStats.length > 0 && prop.team) {
+                  const playerActualTeam = gamesWithStats[0]?.team?.abbreviation || '';
+                  const playerActualTeamNorm = normalizeAbbr(playerActualTeam);
+                  const providedTeamNorm = normalizeAbbr(TEAM_FULL_TO_ABBR[prop.team] || prop.team);
+                  const providedOpponentNorm = normalizeAbbr(TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent);
+                  
+                  // If player's actual team matches the provided opponent, they're swapped
+                  if (playerActualTeamNorm === providedOpponentNorm) {
+                    // Player is on the "opponent" team, so the real opponent is the "team"
+                    correctOpponent = prop.team;
+                  }
+                }
+                
+                // Normalize opponent
+                const normalizedOpponent = normalizeAbbr(TEAM_FULL_TO_ABBR[correctOpponent] || correctOpponent);
+                
+                // Filter H2H games - EXACT COPY FROM route.ts
+                let h2hStats = gamesWithStats
                   .filter((stats) => {
+                    // Get player team from stats
+                    const playerTeamFromStats = stats?.team?.abbreviation || (prop.team ? (TEAM_FULL_TO_ABBR[prop.team] || prop.team) : '') || '';
+                    const playerTeamNorm = normalizeAbbr(playerTeamFromStats);
+                    
+                    // Get opponent from game data
                     const homeTeamId = stats?.game?.home_team?.id ?? stats?.game?.home_team_id;
                     const visitorTeamId = stats?.game?.visitor_team?.id ?? stats?.game?.visitor_team_id;
                     const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
                     const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-                    const playerTeamNorm = normalizeAbbr(stats?.team?.abbreviation || prop.team);
                     
+                    // Determine opponent using team IDs/abbrs
+                    const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
                     let gameOpponent = '';
-                    if (homeTeamAbbr && visitorTeamAbbr) {
+                    
+                    if (playerTeamId && homeTeamId && visitorTeamId) {
+                      if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+                        gameOpponent = normalizeAbbr(visitorTeamAbbr);
+                      } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+                        gameOpponent = normalizeAbbr(homeTeamAbbr);
+                      }
+                    }
+                    
+                    // Fallback: compare abbreviations directly if IDs missing
+                    if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
                       const homeNorm = normalizeAbbr(homeTeamAbbr);
                       const awayNorm = normalizeAbbr(visitorTeamAbbr);
-                      if (playerTeamNorm === homeNorm) gameOpponent = awayNorm;
-                      else if (playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+                      if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+                      else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
                     }
                     
                     return gameOpponent === normalizedOpponent;
                   })
-                  .slice(0, 6)
+                  .slice(0, 6) // Limit to last 6 H2H games
                   .map((s) => s.statValue);
+                
+                // Fallback: if no H2H stats found, include any game where either side matches the opponent abbr
+                if (h2hStats.length === 0 && normalizedOpponent) {
+                  const fallbackStats = gamesWithStats
+                    .filter((stats) => {
+                      const homeTeamId = stats?.game?.home_team?.id ?? stats?.game?.home_team_id;
+                      const visitorTeamId = stats?.game?.visitor_team?.id ?? stats?.game?.visitor_team_id;
+                      const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+                      const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+                      const homeNorm = normalizeAbbr(homeTeamAbbr || '');
+                      const awayNorm = normalizeAbbr(visitorTeamAbbr || '');
+                      return homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
+                    })
+                    .slice(0, 6)
+                    .map((s) => s.statValue);
+                  
+                  if (fallbackStats.length > 0) {
+                    h2hStats = fallbackStats;
+                  }
+                }
                 
                 if (h2hStats.length > 0) {
                   averages.h2hAvg = h2hStats.reduce((sum, val) => sum + val, 0) / h2hStats.length;
