@@ -14,6 +14,7 @@ export const maxDuration = 300; // 5 minutes
 
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
+const CHECKPOINT_CACHE_PREFIX = 'nba-player-props-checkpoint-v2';
 
 // Helper functions (simplified versions from client code)
 function parseAmericanOdds(oddsStr: string): number | null {
@@ -709,6 +710,58 @@ export async function POST(request: NextRequest) {
   try {
     console.log('[Player Props Process] 📥 Processing request received');
     
+    // Check if this is a background/async request (from cron or manual trigger)
+    const { searchParams } = new URL(request.url);
+    const asyncMode = searchParams.get('async') === '1' || request.headers.get('x-async') === 'true';
+    
+    // If async mode, start processing in background and return immediately
+    if (asyncMode) {
+      console.log('[Player Props Process] 🔄 Starting async processing (will complete in background)');
+      
+      // Start processing in background (don't await)
+      processPlayerPropsAsync(request).catch((error) => {
+        console.error('[Player Props Process] ❌ Background processing error:', error);
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Processing started in background',
+        note: 'Processing will complete asynchronously and update cache when finished. Check logs for progress.',
+      });
+    }
+    
+    // Synchronous mode (for testing/debugging)
+    return await processPlayerPropsSync(request);
+    
+  } catch (error) {
+    console.error('[Player Props Process] Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, { status: 500 });
+  }
+}
+
+async function processPlayerPropsSync(request: NextRequest) {
+  return await processPlayerPropsCore(request);
+}
+
+async function processPlayerPropsAsync(request: NextRequest) {
+  // Process in background - don't await, just start it
+  processPlayerPropsCore(request).catch((error) => {
+    console.error('[Player Props Process] ❌ Background processing error:', error);
+  });
+  
+  // Return immediately
+  return NextResponse.json({
+    success: true,
+    message: 'Processing started in background',
+    note: 'Processing will complete asynchronously and update cache when finished. Check logs for progress.',
+  });
+}
+
+async function processPlayerPropsCore(request: NextRequest) {
+  try {
     // Get odds cache
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
       restTimeoutMs: 10000,
@@ -907,12 +960,61 @@ export async function POST(request: NextRequest) {
     
     // Calculate stats for each prop
     const baseUrl = getBaseUrl(request);
-    const propsWithStats: any[] = [];
     
-    // Process props in larger batches with more parallelism to speed up processing
-    // Increased batch size from 5 to 20 to reduce total processing time
-    const BATCH_SIZE = 20;
-    for (let i = 0; i < uniqueProps.length; i += BATCH_SIZE) {
+    // Checkpoint system: Load existing checkpoint if available
+    const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}-${oddsCache.lastUpdated}-v${vendorCount}`;
+    let startIndex = 0;
+    let propsWithStats: any[] = [];
+    
+    // Try to load checkpoint
+    const checkpoint = await getNBACache<{ processedProps: any[]; startIndex: number }>(checkpointKey, {
+      restTimeoutMs: 5000,
+      jsTimeoutMs: 5000,
+      quiet: true,
+    });
+    
+    if (checkpoint && checkpoint.processedProps && checkpoint.startIndex > 0) {
+      console.log(`[Player Props Process] 📍 Resuming from checkpoint at index ${checkpoint.startIndex} (${checkpoint.processedProps.length} props already processed)`);
+      startIndex = checkpoint.startIndex;
+      propsWithStats = checkpoint.processedProps;
+    } else {
+      // No checkpoint, start fresh
+      propsWithStats = [];
+      startIndex = 0;
+    }
+    
+    // Process props in batches with timeout monitoring
+    // Reduced batch size to process more batches before timeout
+    const BATCH_SIZE = 10; // Smaller batches = more frequent checkpoints
+    const MAX_RUNTIME_MS = 4 * 60 * 1000; // 4 minutes (leave 1 min buffer)
+    const startTime = Date.now();
+    
+    for (let i = startIndex; i < uniqueProps.length; i += BATCH_SIZE) {
+      // Check if we're approaching timeout
+      const elapsed = Date.now() - startTime;
+      if (elapsed > MAX_RUNTIME_MS) {
+        console.log(`[Player Props Process] ⏱️ Approaching timeout (${Math.round(elapsed/1000)}s), saving checkpoint at index ${i}...`);
+        
+        // Save checkpoint
+        const checkpointData = {
+          processedProps: propsWithStats,
+          startIndex: i,
+          totalProps: uniqueProps.length,
+          processedCount: propsWithStats.length,
+        };
+        cache.set(checkpointKey, checkpointData, 60); // 1 hour TTL
+        await setNBACache(checkpointKey, 'checkpoint', checkpointData, 60, false);
+        
+        console.log(`[Player Props Process] 💾 Checkpoint saved: ${propsWithStats.length}/${uniqueProps.length} props processed`);
+        return NextResponse.json({
+          success: true,
+          message: 'Processing paused due to timeout - checkpoint saved',
+          processed: propsWithStats.length,
+          total: uniqueProps.length,
+          nextIndex: i,
+          note: 'Next cron run will continue from checkpoint',
+        });
+      }
       const batch = uniqueProps.slice(i, i + BATCH_SIZE);
       const batchPromises = batch.map(async (prop) => {
         try {
@@ -991,17 +1093,39 @@ export async function POST(request: NextRequest) {
       const batchResults = await Promise.all(batchPromises);
       propsWithStats.push(...batchResults);
       
+      // Save checkpoint after each batch (for recovery)
+      const checkpointData = {
+        processedProps: propsWithStats,
+        startIndex: i + BATCH_SIZE,
+        totalProps: uniqueProps.length,
+        processedCount: propsWithStats.length,
+      };
+      cache.set(checkpointKey, checkpointData, 60); // 1 hour TTL
+      await setNBACache(checkpointKey, 'checkpoint', checkpointData, 60, false).catch(() => {
+        // Ignore checkpoint save errors - not critical
+      });
+      
       // Reduced delay between batches (from 200ms to 100ms) to speed up
       if (i + BATCH_SIZE < uniqueProps.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
-        // Log progress every 10 batches
-        if ((i / BATCH_SIZE) % 10 === 0) {
-          console.log(`[Player Props Process] Progress: ${Math.min(i + BATCH_SIZE, uniqueProps.length)}/${uniqueProps.length} props processed`);
+        // Log progress every 5 batches
+        if ((i / BATCH_SIZE) % 5 === 0) {
+          const elapsed = Date.now() - startTime;
+          console.log(`[Player Props Process] Progress: ${Math.min(i + BATCH_SIZE, uniqueProps.length)}/${uniqueProps.length} props processed (${Math.round(elapsed/1000)}s elapsed)`);
         }
       }
     }
     
     console.log(`[Player Props Process] ✅ Calculated stats for ${propsWithStats.length} props`);
+    
+    // Clear checkpoint since we're done
+    try {
+      cache.delete(checkpointKey);
+      const { deleteNBACache } = await import('@/lib/nbaCache');
+      await deleteNBACache(checkpointKey);
+    } catch (e) {
+      // Ignore cleanup errors
+    }
     
     // Cache the results
     cache.set(cacheKey, propsWithStats, 24 * 60);

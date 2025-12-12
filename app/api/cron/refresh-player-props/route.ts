@@ -37,10 +37,12 @@ export async function GET(req: NextRequest) {
     
     // Fire and forget - don't await the response
     // This allows the cron to return immediately while processing continues in background
-    fetch(processUrl, {
+    // Add async=1 parameter to make the processing endpoint return immediately
+    fetch(`${processUrl}?async=1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-async': 'true',
       },
       cache: 'no-store',
     }).catch((error) => {
