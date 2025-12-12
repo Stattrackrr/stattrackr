@@ -561,8 +561,8 @@ async function processPlayerProps() {
   }
   
   // Process in batches (call production APIs for stats/dvp/depth-chart)
-  // Increased batch size and process in parallel for speed
-  const BATCH_SIZE = 20; // Process 20 props at a time in parallel
+  // Reduced batch size to avoid 429 rate limits
+  const BATCH_SIZE = 5; // Process 5 props at a time in parallel
   const MAX_RUNTIME_MS = 55 * 60 * 1000; // 55 minutes (leave 5 min buffer)
   const startTime = Date.now();
   
@@ -592,14 +592,21 @@ async function processPlayerProps() {
     const batchPromises = batch.map(async (prop) => {
       try {
         // Get player ID (with caching) - use same logic as frontend
+        // Skip if playerName looks like a numeric ID (data issue)
+        if (/^\d+$/.test(prop.playerName)) {
+          console.warn(`[GitHub Actions] ⚠️ Skipping prop with numeric playerName: ${prop.playerName}`);
+          return { ...prop, position: null, dvpRating: null, dvpStatValue: null };
+        }
+        
         let playerId = playerIdCache.get(prop.playerName);
         if (!playerId) {
           // First try the player ID mappings (same as frontend)
           playerId = getPlayerIdFromName(prop.playerName);
           
-          // If not found in mappings, try API as fallback
+          // If not found in mappings, try API as fallback (with delay to avoid rate limits)
           if (!playerId) {
             try {
+              await new Promise(resolve => setTimeout(resolve, 500)); // Delay before API call
               const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
               const playerSearch = await callAPI(searchUrl);
               if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
