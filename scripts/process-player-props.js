@@ -503,9 +503,30 @@ async function processPlayerProps() {
         // Get player ID (with caching)
         let playerId = playerIdCache.get(prop.playerName);
         if (!playerId) {
-          const playerSearch = await callAPI(`/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`).catch(() => ({ results: [] }));
-          playerId = playerSearch?.results?.[0]?.id || prop.playerId || '';
-          if (playerId) playerIdCache.set(prop.playerName, playerId);
+          try {
+            const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
+            const playerSearch = await callAPI(searchUrl);
+            if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
+              playerId = playerSearch.results[0].id || prop.playerId || '';
+              if (playerId) {
+                playerIdCache.set(prop.playerName, playerId);
+                console.log(`[GitHub Actions] ✅ Found player ID for ${prop.playerName}: ${playerId}`);
+              } else {
+                console.warn(`[GitHub Actions] ⚠️ Player search returned results but no ID for ${prop.playerName}. Results:`, playerSearch.results.slice(0, 2));
+              }
+            } else {
+              console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName}. Search returned:`, playerSearch);
+            }
+          } catch (e) {
+            console.error(`[GitHub Actions] ❌ Error searching for player ${prop.playerName}:`, e.message);
+            // Try fallback to prop.playerId if available
+            playerId = prop.playerId || '';
+          }
+          
+          // Final fallback
+          if (!playerId) {
+            playerId = prop.playerId || '';
+          }
         }
         
         // Get position from depth chart (with caching)
