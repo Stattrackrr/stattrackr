@@ -36,6 +36,7 @@ jobs:
           echo "🔄 Starting player props processing..."
           curl $CURL_FLAGS -X POST \
             -H 'Accept: application/json' \
+            -L \
             "$PROD_URL/api/nba/player-props/process?refresh=1" || echo "Processing failed but continuing"
           echo "✅ Player props processing completed"
 

@@ -316,14 +316,14 @@ export async function GET(request: NextRequest) {
           const now = new Date();
           const recentTimestamps: string[] = [];
           
-          // Generate timestamps for the last 24 hours (every 30 minutes)
-          for (let minutesAgo = 0; minutesAgo <= 24 * 60; minutesAgo += 30) {
+          // Generate timestamps for the last 48 hours (every 15 minutes) - more lenient
+          for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 15) {
             const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
             recentTimestamps.push(timestamp.toISOString());
           }
           
           // Try each recent timestamp with current vendor count (with longer timeout)
-          for (const ts of recentTimestamps.slice(0, 20)) { // Try up to 20 timestamps (10 hours)
+          for (const ts of recentTimestamps.slice(0, 50)) { // Try up to 50 timestamps (12.5 hours)
             const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${ts}-v${vendorCount}`;
             try {
               const testCache = await getNBACache<any>(testKey, {
@@ -342,26 +342,35 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // Last resort: Try any vendor count for same date in Supabase
+        // Last resort: Try any vendor count AND any timestamp for same date in Supabase
         if (!staleCache) {
-          console.log(`[Player Props API] 🔍 Trying Supabase with any vendor count for date ${gameDate}...`);
-          for (let v = 2; v <= 8; v++) {
+          console.log(`[Player Props API] 🔍 Trying Supabase with any vendor count and any timestamp for date ${gameDate}...`);
+          
+          // Try vendor counts 2-10
+          for (let v = 2; v <= 10; v++) {
             if (v === vendorCount) continue; // Already tried this
-            const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${oddsCache.lastUpdated}-v${v}`;
-            try {
-              const testCache = await getNBACache<any>(testKey, {
-                restTimeoutMs: 15000, // Increased timeout for stale cache lookup
-                jsTimeoutMs: 15000,
-                quiet: true,
-              });
-              if (testCache && Array.isArray(testCache) && testCache.length > 0) {
-                staleCache = testCache;
-                console.log(`[Player Props API] 📦 Serving stale cache from Supabase (different vendor count: ${testCache.length} props) - key: ${testKey}`);
-                break;
+            
+            // Try recent timestamps with this vendor count
+            const now = new Date();
+            for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 30) {
+              const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
+              const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${timestamp.toISOString()}-v${v}`;
+              try {
+                const testCache = await getNBACache<any>(testKey, {
+                  restTimeoutMs: 10000, // Shorter timeout for this exhaustive search
+                  jsTimeoutMs: 10000,
+                  quiet: true,
+                });
+                if (testCache && Array.isArray(testCache) && testCache.length > 0) {
+                  staleCache = testCache;
+                  console.log(`[Player Props API] 📦 Serving stale cache from Supabase (vendor ${v}, ${minutesAgo}min ago: ${testCache.length} props) - key: ${testKey}`);
+                  break;
+                }
+              } catch (e) {
+                // Ignore
               }
-            } catch (e) {
-              // Ignore
             }
+            if (staleCache) break; // Found it, stop searching
           }
         }
         
