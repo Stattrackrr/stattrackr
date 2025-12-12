@@ -205,6 +205,94 @@ async function callAPI(endpoint) {
   return response.json();
 }
 
+// Helper to get stat value from game stats
+function getStatValue(game, statType) {
+  if (statType === 'PRA') {
+    return (parseFloat(game.pts || 0) || 0) + (parseFloat(game.reb || 0) || 0) + (parseFloat(game.ast || 0) || 0);
+  }
+  if (statType === 'PA') {
+    return (parseFloat(game.pts || 0) || 0) + (parseFloat(game.ast || 0) || 0);
+  }
+  if (statType === 'PR') {
+    return (parseFloat(game.pts || 0) || 0) + (parseFloat(game.reb || 0) || 0);
+  }
+  if (statType === 'RA') {
+    return (parseFloat(game.reb || 0) || 0) + (parseFloat(game.ast || 0) || 0);
+  }
+  
+  const statMap = {
+    'PTS': 'pts',
+    'REB': 'reb',
+    'AST': 'ast',
+    'STL': 'stl',
+    'BLK': 'blk',
+    'THREES': 'fg3m',
+  };
+  const key = statMap[statType] || statType.toLowerCase();
+  const rawValue = game[key];
+  if (rawValue === null || rawValue === undefined || rawValue === '') {
+    return 0;
+  }
+  const parsed = parseFloat(rawValue);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// Helper to parse minutes
+function parseMinutes(minVal) {
+  if (typeof minVal === 'number') return minVal;
+  if (!minVal) return 0;
+  const str = String(minVal);
+  const match = str.match(/(\d+):(\d+)/);
+  if (match) {
+    return parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
+  }
+  return parseFloat(str) || 0;
+}
+
+// Team ID mappings (from nbaConstants)
+const TEAM_ID_TO_ABBR = {
+  1: 'ATL', 2: 'BOS', 3: 'BKN', 4: 'CHA', 5: 'CHI', 6: 'CLE', 7: 'DAL', 8: 'DEN', 9: 'DET', 10: 'GSW',
+  11: 'HOU', 12: 'IND', 13: 'LAC', 14: 'LAL', 15: 'MEM', 16: 'MIA', 17: 'MIL', 18: 'MIN', 19: 'NOP', 20: 'NYK',
+  21: 'OKC', 22: 'ORL', 23: 'PHI', 24: 'PHX', 25: 'POR', 26: 'SAC', 27: 'SAS', 28: 'TOR', 29: 'UTA', 30: 'WAS'
+};
+
+const ABBR_TO_TEAM_ID = {};
+for (const [id, abbr] of Object.entries(TEAM_ID_TO_ABBR)) {
+  ABBR_TO_TEAM_ID[abbr] = parseInt(id, 10);
+}
+
+// Current NBA season
+function currentNbaSeason() {
+  const now = new Date();
+  const month = now.getMonth();
+  const day = now.getDate();
+  if (month === 9 && day < 15) {
+    return now.getFullYear() - 1;
+  }
+  if (month >= 9) {
+    return now.getFullYear();
+  }
+  return now.getFullYear() - 1;
+}
+
+// Map stat type to DvP metric
+function mapStatTypeToDvpMetric(statType) {
+  const mapping = {
+    'PTS': 'pts',
+    'REB': 'reb',
+    'AST': 'ast',
+    'STL': 'stl',
+    'BLK': 'blk',
+    'THREES': 'fg3m',
+    'FG3M': 'fg3m',
+    'PRA': 'pra',
+    'PA': 'pa',
+    'PR': 'pr',
+    'RA': 'ra',
+  };
+  return mapping[statType.toUpperCase()] || null;
+}
+
 // Process player props
 async function processPlayerProps() {
   console.log('[GitHub Actions] 🚀 Starting player props processing...');
@@ -432,45 +520,188 @@ async function processPlayerProps() {
           if (position) depthChartCache.set(prop.team, position);
         }
         
-        // Get stats (with caching)
-        let stats = null;
+        // Calculate player averages (fetch stats and calculate L5, L10, H2H, Season, Streak)
+        let averages = {
+          last5Avg: null,
+          last10Avg: null,
+          h2hAvg: null,
+          seasonAvg: null,
+          last5HitRate: null,
+          last10HitRate: null,
+          h2hHitRate: null,
+          seasonHitRate: null,
+          streak: null,
+        };
+        
         if (playerId) {
-          const cacheKey = `${playerId}-${prop.statType}`;
-          stats = statsCache.get(cacheKey);
-          if (!stats) {
-            const currentSeason = new Date().getFullYear();
-            const statsData = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`).catch(() => ({ data: [] }));
-            stats = statsData?.data || [];
-            if (stats.length > 0) statsCache.set(cacheKey, stats);
+          try {
+            // Fetch stats for current and previous season (regular + playoffs)
+            const currentSeason = currentNbaSeason();
+            const allStats = [];
+            
+            for (const season of [currentSeason, currentSeason - 1]) {
+              for (const postseason of [false, true]) {
+                try {
+                  const statsData = await callAPI(`/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}`).catch(() => ({ data: [] }));
+                  if (statsData?.data && Array.isArray(statsData.data)) {
+                    allStats.push(...statsData.data);
+                  }
+                } catch (e) {
+                  // Continue on error
+                }
+              }
+            }
+            
+            // Filter, deduplicate, and sort stats
+            const validStats = allStats.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
+            const uniqueStatsMap = new Map();
+            for (const stat of validStats) {
+              const gameId = stat?.game?.id;
+              if (gameId && !uniqueStatsMap.has(gameId)) {
+                uniqueStatsMap.set(gameId, stat);
+              }
+            }
+            const uniqueStats = Array.from(uniqueStatsMap.values());
+            uniqueStats.sort((a, b) => {
+              const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+              const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+              return db - da; // newest first
+            });
+            
+            // Filter games with minutes > 0
+            const gamesWithMinutes = uniqueStats.filter((stats) => {
+              const minutes = parseMinutes(stats.min);
+              return minutes > 0;
+            });
+            
+            // Get stat values
+            const gamesWithStats = gamesWithMinutes
+              .map((stats) => ({
+                ...stats,
+                statValue: getStatValue(stats, prop.statType),
+              }))
+              .filter((stats) => Number.isFinite(stats.statValue))
+              .sort((a, b) => {
+                const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+                const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+                return dateB - dateA;
+              });
+            
+            if (gamesWithStats.length > 0) {
+              // Calculate season average
+              const seasonValues = gamesWithStats.map((g) => g.statValue);
+              const seasonSum = seasonValues.reduce((sum, val) => sum + val, 0);
+              averages.seasonAvg = seasonValues.length > 0 ? seasonSum / seasonValues.length : null;
+              
+              // Calculate season hit rate
+              if (Number.isFinite(prop.line) && seasonValues.length > 0) {
+                const hits = seasonValues.filter((val) => val > prop.line).length;
+                averages.seasonHitRate = { hits, total: seasonValues.length };
+              }
+              
+              // Calculate last 5 average
+              const last5Games = gamesWithStats.slice(0, 5);
+              const last5Values = last5Games.map((g) => g.statValue);
+              const last5Sum = last5Values.reduce((sum, val) => sum + val, 0);
+              averages.last5Avg = last5Values.length > 0 ? last5Sum / last5Values.length : null;
+              
+              // Calculate last 5 hit rate
+              if (Number.isFinite(prop.line) && last5Values.length > 0) {
+                const hits = last5Values.filter((val) => val > prop.line).length;
+                averages.last5HitRate = { hits, total: last5Values.length };
+              }
+              
+              // Calculate last 10 average
+              const last10Games = gamesWithStats.slice(0, 10);
+              const last10Values = last10Games.map((g) => g.statValue);
+              const last10Sum = last10Values.reduce((sum, val) => sum + val, 0);
+              averages.last10Avg = last10Values.length > 0 ? last10Sum / last10Values.length : null;
+              
+              // Calculate last 10 hit rate
+              if (Number.isFinite(prop.line) && last10Values.length > 0) {
+                const hits = last10Values.filter((val) => val > prop.line).length;
+                averages.last10HitRate = { hits, total: last10Values.length };
+              }
+              
+              // Calculate H2H average (simplified - full logic would match route.ts)
+              if (prop.opponent && prop.opponent !== 'ALL' && prop.opponent !== 'N/A' && prop.opponent !== '') {
+                const normalizeAbbr = (abbr) => (abbr || '').toUpperCase().trim();
+                const normalizedOpponent = normalizeAbbr(TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent);
+                
+                const h2hStats = gamesWithStats
+                  .filter((stats) => {
+                    const homeTeamId = stats?.game?.home_team?.id ?? stats?.game?.home_team_id;
+                    const visitorTeamId = stats?.game?.visitor_team?.id ?? stats?.game?.visitor_team_id;
+                    const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+                    const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+                    const playerTeamNorm = normalizeAbbr(stats?.team?.abbreviation || prop.team);
+                    
+                    let gameOpponent = '';
+                    if (homeTeamAbbr && visitorTeamAbbr) {
+                      const homeNorm = normalizeAbbr(homeTeamAbbr);
+                      const awayNorm = normalizeAbbr(visitorTeamAbbr);
+                      if (playerTeamNorm === homeNorm) gameOpponent = awayNorm;
+                      else if (playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+                    }
+                    
+                    return gameOpponent === normalizedOpponent;
+                  })
+                  .slice(0, 6)
+                  .map((s) => s.statValue);
+                
+                if (h2hStats.length > 0) {
+                  averages.h2hAvg = h2hStats.reduce((sum, val) => sum + val, 0) / h2hStats.length;
+                  if (Number.isFinite(prop.line)) {
+                    const hits = h2hStats.filter((val) => val > prop.line).length;
+                    averages.h2hHitRate = { hits, total: h2hStats.length };
+                  }
+                }
+              }
+              
+              // Calculate streak
+              if (Number.isFinite(prop.line)) {
+                averages.streak = 0;
+                for (const game of gamesWithStats) {
+                  if (game.statValue > prop.line) {
+                    averages.streak++;
+                  } else {
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error(`[GitHub Actions] Error calculating averages for ${prop.playerName}:`, e.message);
           }
         }
         
         // Get DvP (with caching)
         let dvp = { rank: null, statValue: null };
         if (position && prop.opponent) {
-          const dvpKey = `${position}-${prop.statType}-${prop.opponent}`;
-          const cachedDvp = dvpCache.get(dvpKey);
-          if (cachedDvp && typeof cachedDvp === 'object') {
-            dvp = cachedDvp;
-          } else {
-            try {
-              const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${prop.statType.toLowerCase()}`).catch(() => null);
-              if (dvpData && dvpData.ranks && typeof dvpData.ranks === 'object') {
-                const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
-                dvp = {
-                  rank: dvpData.ranks[teamAbbr] || null,
-                  statValue: (dvpData.values && Array.isArray(dvpData.values)) 
-                    ? (dvpData.values.find(v => v && v.team && v.team.toUpperCase() === teamAbbr)?.value || null)
-                    : null
-                };
-                dvpCache.set(dvpKey, dvp);
-              } else {
-                // Cache null result to avoid repeated failed calls
+          const dvpMetric = mapStatTypeToDvpMetric(prop.statType);
+          if (dvpMetric) {
+            const dvpKey = `${position}-${dvpMetric}-${prop.opponent}`;
+            const cachedDvp = dvpCache.get(dvpKey);
+            if (cachedDvp && typeof cachedDvp === 'object') {
+              dvp = cachedDvp;
+            } else {
+              try {
+                const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${dvpMetric}`).catch(() => null);
+                if (dvpData && dvpData.ranks && typeof dvpData.ranks === 'object') {
+                  const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
+                  dvp = {
+                    rank: dvpData.ranks[teamAbbr] || null,
+                    statValue: (dvpData.values && Array.isArray(dvpData.values)) 
+                      ? (dvpData.values.find(v => v && v.team && v.team.toUpperCase() === teamAbbr)?.value || null)
+                      : null
+                  };
+                  dvpCache.set(dvpKey, dvp);
+                } else {
+                  dvpCache.set(dvpKey, dvp);
+                }
+              } catch (e) {
                 dvpCache.set(dvpKey, dvp);
               }
-            } catch (e) {
-              // Error fetching DvP - use null values
-              dvpCache.set(dvpKey, dvp);
             }
           }
         }
@@ -482,6 +713,7 @@ async function processPlayerProps() {
           ...prop,
           playerId,
           position,
+          ...averages,
           dvpRating: safeDvp.rank || null,
           dvpStatValue: safeDvp.statValue || null,
         };
