@@ -24,27 +24,52 @@ const path = require('path');
 let PLAYER_ID_MAPPINGS = [];
 try {
   const mappingFile = fs.readFileSync(path.join(__dirname, '../lib/playerIdMapping.ts'), 'utf8');
-  // Extract the array from the TypeScript file - use a more robust regex
-  const arrayMatch = mappingFile.match(/export const PLAYER_ID_MAPPINGS[^=]*=\s*\[([\s\S]*?)\];/);
-  if (arrayMatch) {
-    // Parse the array entries - handle multi-line entries
-    const entries = arrayMatch[1].match(/\{[^}]*bdlId[^}]*\}/g) || [];
-    PLAYER_ID_MAPPINGS = entries.map(entry => {
-      // More flexible regex to handle different quote styles and whitespace
-      const bdlIdMatch = entry.match(/bdlId:\s*['"`]([^'"`]+)['"`]/);
-      const nameMatch = entry.match(/name:\s*['"`]([^'"`]+)['"`]/);
-      const bdlId = bdlIdMatch ? bdlIdMatch[1] : null;
-      const name = nameMatch ? nameMatch[1] : null;
-      return { bdlId, name };
-    }).filter(m => m.bdlId && m.name);
-    console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings`);
-    
-    // Debug: Check if specific players are loaded
-    const testPlayers = ['Josh Giddey', 'Isaac Okoro', 'K.J. Simpson', 'Zach Collins', 'Miles Bridges'];
-    const found = testPlayers.filter(p => PLAYER_ID_MAPPINGS.some(m => m.name === p));
-    console.log(`[GitHub Actions] 🔍 Test players found: ${found.length}/${testPlayers.length}`, found);
+  // Extract the array from the TypeScript file - match everything between [ and ];
+  const arrayStart = mappingFile.indexOf('export const PLAYER_ID_MAPPINGS');
+  if (arrayStart === -1) {
+    console.warn(`[GitHub Actions] ⚠️ Could not find PLAYER_ID_MAPPINGS in file`);
   } else {
-    console.warn(`[GitHub Actions] ⚠️ Could not find PLAYER_ID_MAPPINGS array in file`);
+    // Find the opening bracket
+    const bracketStart = mappingFile.indexOf('[', arrayStart);
+    if (bracketStart === -1) {
+      console.warn(`[GitHub Actions] ⚠️ Could not find opening bracket`);
+    } else {
+      // Find matching closing bracket (handle nested brackets)
+      let bracketCount = 0;
+      let bracketEnd = bracketStart;
+      for (let i = bracketStart; i < mappingFile.length; i++) {
+        if (mappingFile[i] === '[') bracketCount++;
+        if (mappingFile[i] === ']') bracketCount--;
+        if (bracketCount === 0) {
+          bracketEnd = i;
+          break;
+        }
+      }
+      
+      const arrayContent = mappingFile.substring(bracketStart + 1, bracketEnd);
+      // Parse entries - each entry is on its own line: { bdlId: 'X', nbaId: 'Y', name: 'Z' },
+      const lines = arrayContent.split('\n');
+      PLAYER_ID_MAPPINGS = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('{') && trimmed.includes('bdlId')) {
+          const bdlIdMatch = trimmed.match(/bdlId:\s*['"]([^'"]+)['"]/);
+          const nameMatch = trimmed.match(/name:\s*['"]([^'"]+)['"]/);
+          if (bdlIdMatch && nameMatch) {
+            PLAYER_ID_MAPPINGS.push({
+              bdlId: bdlIdMatch[1],
+              name: nameMatch[1]
+            });
+          }
+        }
+      }
+      console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings`);
+      
+      // Debug: Check if specific players are loaded
+      const testPlayers = ['Josh Giddey', 'Isaac Okoro', 'K.J. Simpson', 'Zach Collins', 'Miles Bridges'];
+      const found = testPlayers.filter(p => PLAYER_ID_MAPPINGS.some(m => m.name === p));
+      console.log(`[GitHub Actions] 🔍 Test players found: ${found.length}/${testPlayers.length}`, found);
+    }
   }
 } catch (e) {
   console.warn(`[GitHub Actions] ⚠️ Failed to load player ID mappings:`, e.message);
