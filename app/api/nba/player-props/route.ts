@@ -147,35 +147,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const forceRefresh = searchParams.get('refresh') === '1';
     
-    // If force refresh is requested, clear all player props caches
+    // refresh=1 just forces reading from Supabase (bypasses in-memory cache)
+    // It doesn't clear cache or trigger processing - just reads the latest processed cache
     if (forceRefresh) {
-      console.log('[Player Props API] Force refresh requested - clearing all player props caches...');
-      
-      // Clear all caches that match the prefix
-      const { cache: inMemoryCache } = await import('@/lib/cache');
-      const cacheKeys = inMemoryCache.keys();
-      for (const key of cacheKeys) {
-        if (key.startsWith(PLAYER_PROPS_CACHE_PREFIX)) {
-          inMemoryCache.delete(key);
-          console.log(`[Player Props API] Cleared cache key: ${key}`);
-        }
-      }
-      
-      // Also try to clear from shared cache (Upstash Redis)
-      try {
-        const { getNBACache } = await import('@/lib/nbaCache');
-        // Note: We can't easily list all keys in Upstash, so we'll clear on next cache miss
-        console.log('[Player Props API] Shared cache will be cleared on next cache miss');
-      } catch (e) {
-        console.warn('[Player Props API] Could not clear shared cache:', e);
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: [],
-        cached: false,
-        message: 'Cache cleared - refresh the page to reprocess player props'
-      });
+      console.log('[Player Props API] Refresh requested - reading from Supabase cache (bypassing in-memory)...');
     }
     
     // First, get the odds cache to check lastUpdated timestamp
@@ -231,26 +206,39 @@ export async function GET(request: NextRequest) {
     console.log(`[Player Props API] 📊 GET: Cache lookup details: gameDate=${gameDate}, lastUpdated=${oddsCache.lastUpdated}, vendorCount=${vendorCount} (${playerPropVendors.join(', ')})`);
     
     // Check if we have cached processed player props for this odds version
-    // First check shared cache (Supabase) with longer timeout
-    let cachedProps = await getNBACache<any>(cacheKey, {
-      restTimeoutMs: 30000, // Increased from 10s to 30s
-      jsTimeoutMs: 30000,   // Increased from 10s to 30s
-      quiet: false, // Enable logging to debug cache issues
-    });
+    // If refresh=1, only check Supabase (bypass in-memory cache to get latest)
+    let cachedProps: any = null;
     
-    if (cachedProps) {
-      console.log(`[Player Props API] ✅ Cache HIT (Supabase) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
-    } else {
-      console.log(`[Player Props API] ⚠️ Cache MISS (Supabase) for key: ${cacheKey} - checking in-memory cache...`);
-    }
-    
-    // Fallback to in-memory cache
-    if (!cachedProps) {
-      cachedProps = cache.get<any>(cacheKey);
+    if (forceRefresh) {
+      // refresh=1: Only check Supabase (bypass in-memory cache to get latest)
+      cachedProps = await getNBACache<any>(cacheKey, {
+        restTimeoutMs: 30000,
+        jsTimeoutMs: 30000,
+        quiet: false,
+      });
       if (cachedProps) {
-        console.log(`[Player Props API] ✅ Cache HIT (in-memory) for game date: ${gameDate}, odds version: ${oddsCache.lastUpdated}, vendors: ${vendorCount} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
+        console.log(`[Player Props API] ✅ Cache HIT (Supabase, refresh=1) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
       } else {
-        console.log(`[Player Props API] ⚠️ Cache MISS (in-memory) for key: ${cacheKey}`);
+        console.log(`[Player Props API] ⚠️ Cache MISS (Supabase, refresh=1) for key: ${cacheKey}`);
+      }
+    } else {
+      // Normal flow: Check Supabase first, then in-memory cache
+      cachedProps = await getNBACache<any>(cacheKey, {
+        restTimeoutMs: 30000,
+        jsTimeoutMs: 30000,
+        quiet: false,
+      });
+      
+      if (cachedProps) {
+        console.log(`[Player Props API] ✅ Cache HIT (Supabase) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
+      } else {
+        console.log(`[Player Props API] ⚠️ Cache MISS (Supabase) for key: ${cacheKey} - checking in-memory cache...`);
+        cachedProps = cache.get<any>(cacheKey);
+        if (cachedProps) {
+          console.log(`[Player Props API] ✅ Cache HIT (in-memory) for game date: ${gameDate}, odds version: ${oddsCache.lastUpdated}, vendors: ${vendorCount} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
+        } else {
+          console.log(`[Player Props API] ⚠️ Cache MISS (in-memory) for key: ${cacheKey}`);
+        }
       }
     }
     

@@ -507,23 +507,29 @@ export default function NBALandingPage() {
         // Processing is done server-side by cron job
         const urlParams = new URLSearchParams(window.location.search);
         const forceRefresh = urlParams.get('refresh') === '1';
-        const cacheUrl = forceRefresh ? '/api/nba/player-props?refresh=1' : '/api/nba/player-props';
+        // Always read from cache - refresh=1 just forces a fresh fetch (no cache headers)
+        const cacheUrl = '/api/nba/player-props';
         
-        const cacheResponse = await fetch(cacheUrl);
+        const cacheResponse = await fetch(cacheUrl, {
+          cache: forceRefresh ? 'no-store' : 'default'
+        });
+        console.log(`[NBA Landing] API response status: ${cacheResponse.status}`);
         if (cacheResponse.ok) {
           const cacheData = await cacheResponse.json();
-          if (forceRefresh) {
-            console.log('[NBA Landing] Cache cleared - cron will repopulate');
-            setPlayerProps([]);
-            setPropsLoading(false);
-            return;
-          } else if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
+          console.log(`[NBA Landing] API response data:`, { 
+            success: cacheData.success, 
+            dataLength: cacheData.data?.length, 
+            isArray: Array.isArray(cacheData.data),
+            stale: cacheData.stale 
+          });
+          if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
             console.log(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
             setPlayerProps(cacheData.data);
             setPropsLoading(false);
             return;
           } else {
             console.log(`[NBA Landing] ⚠️ No cached data available - cron will populate cache`);
+            console.log(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data });
             setPlayerProps([]);
             setPropsLoading(false);
             return;
