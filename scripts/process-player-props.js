@@ -24,23 +24,31 @@ const path = require('path');
 let PLAYER_ID_MAPPINGS = [];
 try {
   const mappingFile = fs.readFileSync(path.join(__dirname, '../lib/playerIdMapping.ts'), 'utf8');
-  // Extract the array from the TypeScript file
-  const arrayMatch = mappingFile.match(/export const PLAYER_ID_MAPPINGS: PlayerIdMapping\[\] = \[([\s\S]*?)\];/);
+  // Extract the array from the TypeScript file - use a more robust regex
+  const arrayMatch = mappingFile.match(/export const PLAYER_ID_MAPPINGS[^=]*=\s*\[([\s\S]*?)\];/);
   if (arrayMatch) {
-    // Parse the array entries
-    const entries = arrayMatch[1].match(/\{[\s\S]*?\}/g) || [];
+    // Parse the array entries - handle multi-line entries
+    const entries = arrayMatch[1].match(/\{[^}]*bdlId[^}]*\}/g) || [];
     PLAYER_ID_MAPPINGS = entries.map(entry => {
-      const bdlIdMatch = entry.match(/bdlId:\s*['"]([^'"]+)['"]/);
-      const nameMatch = entry.match(/name:\s*['"]([^'"]+)['"]/);
-      return {
-        bdlId: bdlIdMatch ? bdlIdMatch[1] : null,
-        name: nameMatch ? nameMatch[1] : null
-      };
+      // More flexible regex to handle different quote styles and whitespace
+      const bdlIdMatch = entry.match(/bdlId:\s*['"`]([^'"`]+)['"`]/);
+      const nameMatch = entry.match(/name:\s*['"`]([^'"`]+)['"`]/);
+      const bdlId = bdlIdMatch ? bdlIdMatch[1] : null;
+      const name = nameMatch ? nameMatch[1] : null;
+      return { bdlId, name };
     }).filter(m => m.bdlId && m.name);
     console.log(`[GitHub Actions] ✅ Loaded ${PLAYER_ID_MAPPINGS.length} player ID mappings`);
+    
+    // Debug: Check if specific players are loaded
+    const testPlayers = ['Josh Giddey', 'Isaac Okoro', 'K.J. Simpson', 'Zach Collins', 'Miles Bridges'];
+    const found = testPlayers.filter(p => PLAYER_ID_MAPPINGS.some(m => m.name === p));
+    console.log(`[GitHub Actions] 🔍 Test players found: ${found.length}/${testPlayers.length}`, found);
+  } else {
+    console.warn(`[GitHub Actions] ⚠️ Could not find PLAYER_ID_MAPPINGS array in file`);
   }
 } catch (e) {
   console.warn(`[GitHub Actions] ⚠️ Failed to load player ID mappings:`, e.message);
+  console.warn(`[GitHub Actions] Stack:`, e.stack);
 }
 
 // Helper to get player ID from name (same as frontend)
