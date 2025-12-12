@@ -180,8 +180,8 @@ export async function GET(request: NextRequest) {
     
     // First, get the odds cache to check lastUpdated timestamp
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
-      restTimeoutMs: 10000,
-      jsTimeoutMs: 10000,
+      restTimeoutMs: 30000, // Increased from 10s to 30s
+      jsTimeoutMs: 30000,   // Increased from 10s to 30s
       quiet: false,
     });
     
@@ -227,21 +227,30 @@ export async function GET(request: NextRequest) {
     // Get cache key based on game date, odds lastUpdated, and vendor count
     // This ensures cache invalidates when vendors change (e.g., from 2 to 7)
     const cacheKey = getPlayerPropsCacheKey(gameDate, oddsCache.lastUpdated, vendorCount);
-    console.log(`[Player Props API] 🔑 Looking up cache with key: ${cacheKey}`);
+    console.log(`[Player Props API] 🔑 GET: Looking up cache with key: ${cacheKey}`);
+    console.log(`[Player Props API] 📊 GET: Cache lookup details: gameDate=${gameDate}, lastUpdated=${oddsCache.lastUpdated}, vendorCount=${vendorCount} (${playerPropVendors.join(', ')})`);
     
     // Check if we have cached processed player props for this odds version
     // First check shared cache (Supabase) with longer timeout
     let cachedProps = await getNBACache<any>(cacheKey, {
-      restTimeoutMs: 10000,
-      jsTimeoutMs: 10000,
+      restTimeoutMs: 30000, // Increased from 10s to 30s
+      jsTimeoutMs: 30000,   // Increased from 10s to 30s
       quiet: false, // Enable logging to debug cache issues
     });
+    
+    if (cachedProps) {
+      console.log(`[Player Props API] ✅ Cache HIT (Supabase) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
+    } else {
+      console.log(`[Player Props API] ⚠️ Cache MISS (Supabase) for key: ${cacheKey} - checking in-memory cache...`);
+    }
     
     // Fallback to in-memory cache
     if (!cachedProps) {
       cachedProps = cache.get<any>(cacheKey);
       if (cachedProps) {
-        console.log(`[Player Props API] Cache HIT (in-memory) for game date: ${gameDate}, odds version: ${oddsCache.lastUpdated}, vendors: ${vendorCount}`);
+        console.log(`[Player Props API] ✅ Cache HIT (in-memory) for game date: ${gameDate}, odds version: ${oddsCache.lastUpdated}, vendors: ${vendorCount} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
+      } else {
+        console.log(`[Player Props API] ⚠️ Cache MISS (in-memory) for key: ${cacheKey}`);
       }
     }
     
@@ -250,81 +259,115 @@ export async function GET(request: NextRequest) {
     if (!cachedProps) {
       console.log(`[Player Props API] ⚠️ No cache for current odds version - checking for stale cache...`);
       
-      // Try to find any recent cache for the same game date (even if odds version or vendor count is different)
+      // Try to find any recent cache for the same game date and vendor count
       // This allows serving stale data while new cache is being built
+      // Priority: 1) Same vendor count, 2) Same date (any vendor count)
+      let staleCache: any = null;
+      
       try {
-        // First try in-memory cache
-        const inMemoryStaleKeys = cache.keys().filter(key => 
-          key.startsWith(PLAYER_PROPS_CACHE_PREFIX) && key.includes(gameDate)
-        );
+        // First try in-memory cache - look for same date AND vendor count
+        const allCacheKeys = cache.keys();
+        console.log(`[Player Props API] 🔍 Checking ${allCacheKeys.length} in-memory cache keys for stale cache...`);
         
-        let staleCache: any = null;
+        // Priority 1: Same date AND vendor count (most likely to match)
+        const exactMatchKeys = allCacheKeys.filter(key => {
+          if (!key.startsWith(PLAYER_PROPS_CACHE_PREFIX) || !key.includes(gameDate)) return false;
+          // Check if vendor count matches: key format is ...-v{N}
+          const vendorMatch = key.includes(`-v${vendorCount}`);
+          return vendorMatch;
+        });
         
-        // Check in-memory cache first (faster)
-        for (const staleKey of inMemoryStaleKeys) {
+        console.log(`[Player Props API] 🔍 Found ${exactMatchKeys.length} exact match keys (date + vendor count):`, exactMatchKeys);
+        
+        // Check exact matches first
+        for (const staleKey of exactMatchKeys) {
           const stale = cache.get<any>(staleKey);
           if (stale && Array.isArray(stale) && stale.length > 0) {
             staleCache = stale;
-            console.log(`[Player Props API] 📦 Serving stale cache from in-memory (${stale.length} props) - new cache will be built in background`);
+            console.log(`[Player Props API] 📦 Serving stale cache from in-memory (exact match: ${stale.length} props) - key: ${staleKey}`);
             break;
           }
         }
         
-        // If not found in-memory, check Supabase (try up to 10 keys to find any valid cache)
-        if (!staleCache && inMemoryStaleKeys.length > 0) {
-          for (const staleKey of inMemoryStaleKeys.slice(0, 10)) {
-            try {
-              const stale = await getNBACache<any>(staleKey, {
-                restTimeoutMs: 5000,
-                jsTimeoutMs: 5000,
-                quiet: true,
-              });
-              if (stale && Array.isArray(stale) && stale.length > 0) {
-                staleCache = stale;
-                console.log(`[Player Props API] 📦 Serving stale cache from Supabase (${stale.length} props) - key: ${staleKey}`);
-                break;
-              }
-            } catch (e) {
-              // Ignore errors when checking stale cache
+        // Priority 2: Same date, any vendor count (if exact match not found)
+        if (!staleCache) {
+          const dateMatchKeys = allCacheKeys.filter(key => 
+            key.startsWith(PLAYER_PROPS_CACHE_PREFIX) && key.includes(gameDate)
+          );
+          console.log(`[Player Props API] 🔍 Found ${dateMatchKeys.length} date match keys (any vendor count):`, dateMatchKeys);
+          
+          for (const staleKey of dateMatchKeys) {
+            const stale = cache.get<any>(staleKey);
+            if (stale && Array.isArray(stale) && stale.length > 0) {
+              staleCache = stale;
+              console.log(`[Player Props API] 📦 Serving stale cache from in-memory (date match: ${stale.length} props) - key: ${staleKey}`);
+              break;
             }
           }
         }
         
-        // If still no cache found, try searching Supabase more broadly (any cache for this date)
-        // This is a fallback if the cache key format changed
+        // If not found in-memory, try Supabase with same vendor count first
         if (!staleCache) {
-          // Try a few common cache key patterns
-          const commonPatterns = [
-            `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`,
-            `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-`,
-          ];
+          console.log(`[Player Props API] 🔍 Checking Supabase for stale cache (same vendor count: ${vendorCount})...`);
           
-          for (const pattern of commonPatterns) {
-            // We can't easily list all Supabase keys, but we can try a few variations
-            // Try with different vendor counts (2, 3, 4, 5, 6, 7, 8)
-            for (let v = 2; v <= 8; v++) {
-              const testKey = `${pattern}${oddsCache.lastUpdated}-v${v}`;
-              try {
-                const testCache = await getNBACache<any>(testKey, {
-                  restTimeoutMs: 3000,
-                  jsTimeoutMs: 3000,
-                  quiet: true,
-                });
-                if (testCache && Array.isArray(testCache) && testCache.length > 0) {
-                  staleCache = testCache;
-                  console.log(`[Player Props API] 📦 Found stale cache with different vendor count (${testCache.length} props) - key: ${testKey}`);
-                  break;
-                }
-              } catch (e) {
-                // Ignore
+          // Try with current vendor count but different lastUpdated timestamps
+          // We'll try a few variations by checking recent timestamps (within last 24 hours)
+          // Since we can't list all keys, we'll try constructing keys with recent timestamps
+          const now = new Date();
+          const recentTimestamps: string[] = [];
+          
+          // Generate timestamps for the last 24 hours (every 30 minutes)
+          for (let minutesAgo = 0; minutesAgo <= 24 * 60; minutesAgo += 30) {
+            const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
+            recentTimestamps.push(timestamp.toISOString());
+          }
+          
+          // Try each recent timestamp with current vendor count (with longer timeout)
+          for (const ts of recentTimestamps.slice(0, 20)) { // Try up to 20 timestamps (10 hours)
+            const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${ts}-v${vendorCount}`;
+            try {
+              const testCache = await getNBACache<any>(testKey, {
+                restTimeoutMs: 15000, // Increased timeout for stale cache lookup
+                jsTimeoutMs: 15000,
+                quiet: true,
+              });
+              if (testCache && Array.isArray(testCache) && testCache.length > 0) {
+                staleCache = testCache;
+                console.log(`[Player Props API] 📦 Serving stale cache from Supabase (exact vendor match: ${testCache.length} props) - key: ${testKey}`);
+                break;
               }
+            } catch (e) {
+              // Ignore errors
             }
-            if (staleCache) break;
+          }
+        }
+        
+        // Last resort: Try any vendor count for same date in Supabase
+        if (!staleCache) {
+          console.log(`[Player Props API] 🔍 Trying Supabase with any vendor count for date ${gameDate}...`);
+          for (let v = 2; v <= 8; v++) {
+            if (v === vendorCount) continue; // Already tried this
+            const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${oddsCache.lastUpdated}-v${v}`;
+            try {
+              const testCache = await getNBACache<any>(testKey, {
+                restTimeoutMs: 15000, // Increased timeout for stale cache lookup
+                jsTimeoutMs: 15000,
+                quiet: true,
+              });
+              if (testCache && Array.isArray(testCache) && testCache.length > 0) {
+                staleCache = testCache;
+                console.log(`[Player Props API] 📦 Serving stale cache from Supabase (different vendor count: ${testCache.length} props) - key: ${testKey}`);
+                break;
+              }
+            } catch (e) {
+              // Ignore
+            }
           }
         }
         
         if (staleCache) {
           // Serve stale cache but mark it as stale so client knows to update in background
+          console.log(`[Player Props API] ✅ GET: Serving stale cache (${staleCache.length} props) - client will update in background`);
           return NextResponse.json({
             success: true,
             data: staleCache,
@@ -334,6 +377,8 @@ export async function GET(request: NextRequest) {
             stale: true, // Indicates this is stale cache from previous odds version
             message: 'Serving cached data from previous odds version - new cache being built in background'
           });
+        } else {
+          console.log(`[Player Props API] ⚠️ GET: No stale cache found after extensive search`);
         }
       } catch (staleError) {
         // Ignore errors when checking for stale cache - just proceed to cache miss
@@ -394,10 +439,22 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Player Props API] 📥 POST request received');
     const body = await request.json();
     const { data, oddsLastUpdated, gameDate } = body;
     
+    console.log('[Player Props API] 📥 POST body:', {
+      hasData: !!data,
+      dataLength: Array.isArray(data) ? data.length : 'not array',
+      oddsLastUpdated,
+      gameDate
+    });
+    
     if (!data || !oddsLastUpdated) {
+      console.warn('[Player Props API] ❌ POST: Missing data or oddsLastUpdated', {
+        hasData: !!data,
+        hasOddsLastUpdated: !!oddsLastUpdated
+      });
       return NextResponse.json({
         success: false,
         error: 'Missing data or oddsLastUpdated'
@@ -433,16 +490,25 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Always recalculate game date from odds cache to ensure consistency (prioritizes today)
-    // Don't trust the client's gameDate - recalculate from odds cache
+    // Use the client's gameDate if provided and valid, otherwise recalculate from odds cache
+    // This ensures cache key matches what the client used when saving
     let finalGameDate: string;
-    if (oddsCache) {
-      finalGameDate = getGameDateFromOddsCache(oddsCache);
-      if (gameDate && gameDate !== finalGameDate) {
-        console.log(`[Player Props API] 📅 POST: Recalculated game date from client's ${gameDate} to ${finalGameDate} (from ${oddsCache.games?.length || 0} games)`);
-      } else {
-        console.log(`[Player Props API] 📅 POST: Using game date: ${finalGameDate} (from ${oddsCache.games?.length || 0} games)`);
+    if (gameDate && /^\d{4}-\d{2}-\d{2}$/.test(gameDate)) {
+      // Client provided a valid date - use it to ensure cache key matches
+      finalGameDate = gameDate;
+      console.log(`[Player Props API] 📅 POST: Using client-provided game date: ${finalGameDate}`);
+      
+      // Verify it matches what we'd calculate from odds cache (for debugging)
+      if (oddsCache) {
+        const calculatedDate = getGameDateFromOddsCache(oddsCache);
+        if (gameDate !== calculatedDate) {
+          console.log(`[Player Props API] ⚠️ POST: Client date (${finalGameDate}) differs from calculated (${calculatedDate}) - using client date for cache key consistency`);
+        }
       }
+    } else if (oddsCache) {
+      // No valid client date, recalculate from odds cache
+      finalGameDate = getGameDateFromOddsCache(oddsCache);
+      console.log(`[Player Props API] 📅 POST: Recalculated game date from odds cache: ${finalGameDate} (from ${oddsCache.games?.length || 0} games)`);
     } else {
       // Last resort: use today's date in US ET
       const getUSEasternDateString = (date: Date): string => {
@@ -456,16 +522,25 @@ export async function POST(request: NextRequest) {
         });
       };
       finalGameDate = getUSEasternDateString(new Date());
-      console.log(`[Player Props API] ⚠️ POST: No odds cache, using today's date: ${finalGameDate}`);
+      console.log(`[Player Props API] ⚠️ POST: No odds cache or client date, using today's date: ${finalGameDate}`);
     }
     
     // Get unique player prop vendors from odds cache (same logic as GET handler)
     // This ensures cache keys match between GET and POST
+    // IMPORTANT: Use the odds cache that matches the oddsLastUpdated timestamp
+    // If the current odds cache has a different lastUpdated, we need to find the matching one
     let vendorCount = 0;
     if (oddsCache) {
+      // Check if the odds cache's lastUpdated matches what the client sent
+      // If not, the vendor count might be different, causing cache key mismatch
+      if (oddsCache.lastUpdated !== oddsLastUpdated) {
+        console.log(`[Player Props API] ⚠️ POST: Odds cache lastUpdated (${oddsCache.lastUpdated}) differs from client's (${oddsLastUpdated})`);
+        console.log(`[Player Props API] ⚠️ POST: This might cause cache key mismatch - vendor count may be incorrect`);
+      }
+      
       const playerPropVendors = getPlayerPropVendors(oddsCache);
       vendorCount = playerPropVendors.length;
-      console.log(`[Player Props API] Using vendor count from odds cache: ${vendorCount} (${playerPropVendors.join(', ')})`);
+      console.log(`[Player Props API] 📊 POST: Using vendor count from odds cache: ${vendorCount} (${playerPropVendors.join(', ')})`);
     } else {
       // Fallback: extract from processed data if odds cache unavailable
       const vendors = new Set<string>();
@@ -480,10 +555,19 @@ export async function POST(request: NextRequest) {
         }
       }
       vendorCount = vendors.size;
+      console.log(`[Player Props API] 📊 POST: Using vendor count from processed data: ${vendorCount}`);
     }
     
     // Get cache key based on game date, odds lastUpdated, and vendor count
+    // Use the client's oddsLastUpdated to ensure cache key matches what GET will look for
     const cacheKey = getPlayerPropsCacheKey(finalGameDate, oddsLastUpdated, vendorCount);
+    
+    console.log(`[Player Props API] 🔑 POST: Cache key components:`, {
+      gameDate: finalGameDate,
+      oddsLastUpdated,
+      vendorCount,
+      cacheKey
+    });
     
     // Cache for 24 hours (safety net - will naturally invalidate when odds refresh or date changes)
     // Store in both in-memory cache and shared cache (Supabase)
