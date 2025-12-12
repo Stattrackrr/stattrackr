@@ -304,14 +304,14 @@ export async function GET(request: NextRequest) {
           const now = new Date();
           const recentTimestamps: string[] = [];
           
-          // Generate timestamps for the last 48 hours (every 15 minutes) - more lenient
-          for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 15) {
+          // Generate timestamps for the last 48 hours (every 5 minutes) - more aggressive
+          for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 5) {
             const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
             recentTimestamps.push(timestamp.toISOString());
           }
           
           // Try each recent timestamp with current vendor count (with longer timeout)
-          for (const ts of recentTimestamps.slice(0, 50)) { // Try up to 50 timestamps (12.5 hours)
+          for (const ts of recentTimestamps.slice(0, 200)) { // Try up to 200 timestamps (16+ hours)
             const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${ts}-v${vendorCount}`;
             try {
               const testCache = await getNBACache<any>(testKey, {
@@ -338,15 +338,15 @@ export async function GET(request: NextRequest) {
           for (let v = 2; v <= 10; v++) {
             if (v === vendorCount) continue; // Already tried this
             
-            // Try recent timestamps with this vendor count
+            // Try recent timestamps with this vendor count (more aggressive - every 5 minutes)
             const now = new Date();
-            for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 30) {
+            for (let minutesAgo = 0; minutesAgo <= 48 * 60; minutesAgo += 5) {
               const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
               const testKey = `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${timestamp.toISOString()}-v${v}`;
               try {
                 const testCache = await getNBACache<any>(testKey, {
-                  restTimeoutMs: 10000, // Shorter timeout for this exhaustive search
-                  jsTimeoutMs: 10000,
+                  restTimeoutMs: 5000, // Shorter timeout for this exhaustive search
+                  jsTimeoutMs: 5000,
                   quiet: true,
                 });
                 if (testCache && Array.isArray(testCache) && testCache.length > 0) {
