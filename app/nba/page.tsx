@@ -524,6 +524,14 @@ export default function NBALandingPage() {
           });
           if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
             console.log(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
+          
+          // Debug: Check which stat types are present
+          const statTypes = new Set(cacheData.data.map((p: PlayerProp) => p.statType));
+          console.log(`[NBA Landing] 📊 Stat types in cache:`, Array.from(statTypes).sort());
+          const stlCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'STL').length;
+          const blkCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'BLK').length;
+          const threesCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'THREES').length;
+          console.log(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
             setPlayerProps(cacheData.data);
             setPropsLoading(false);
             return;
