@@ -760,25 +760,55 @@ async function processPlayerProps() {
           }
         }
         
-        // Get position from depth chart (with caching)
-        let position = depthChartCache.get(prop.team);
-        if (!position) {
-          const depthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
-          if (depthChart?.depthChart) {
-            // Find player in depth chart
+        // Determine which team the player is actually on (try both home and away)
+        // This is needed because we initially assign all players to home team
+        let actualTeam = prop.team;
+        let actualOpponent = prop.opponent;
+        let position = null;
+        
+        // Try home team first
+        let foundOnHomeTeam = false;
+        const homeDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
+        if (homeDepthChart?.depthChart) {
+          for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
+            const players = homeDepthChart.depthChart[pos] || [];
+            if (players.some(p => {
+              const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
+              return name.toLowerCase().includes(prop.playerName.toLowerCase()) || prop.playerName.toLowerCase().includes(name.toLowerCase());
+            })) {
+              position = pos;
+              foundOnHomeTeam = true;
+              actualTeam = prop.team; // Home team
+              actualOpponent = prop.opponent; // Away team
+              depthChartCache.set(prop.team, position);
+              break;
+            }
+          }
+        }
+        
+        // If not found on home team, try away team
+        if (!foundOnHomeTeam && prop.opponent) {
+          const awayDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.opponent)}`).catch(() => null);
+          if (awayDepthChart?.depthChart) {
             for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
-              const players = depthChart.depthChart[pos] || [];
+              const players = awayDepthChart.depthChart[pos] || [];
               if (players.some(p => {
                 const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
                 return name.toLowerCase().includes(prop.playerName.toLowerCase()) || prop.playerName.toLowerCase().includes(name.toLowerCase());
               })) {
                 position = pos;
+                actualTeam = prop.opponent; // Away team (swap)
+                actualOpponent = prop.team; // Home team (swap)
+                depthChartCache.set(prop.opponent, position);
                 break;
               }
             }
           }
-          if (position) depthChartCache.set(prop.team, position);
         }
+        
+        // Update prop with correct team/opponent
+        prop.team = actualTeam;
+        prop.opponent = actualOpponent;
         
         // Calculate player averages (fetch stats and calculate L5, L10, H2H, Season, Streak)
         let averages = {
@@ -1015,12 +1045,12 @@ async function processPlayerProps() {
           console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName} - skipping stats calculation`);
         }
         
-        // Get DvP (with caching)
+        // Get DvP (with caching) - use actualOpponent (the team the player is facing)
         let dvp = { rank: null, statValue: null };
-        if (position && prop.opponent) {
+        if (position && actualOpponent) {
           const dvpMetric = mapStatTypeToDvpMetric(prop.statType);
           if (dvpMetric) {
-            const dvpKey = `${position}-${dvpMetric}-${prop.opponent}`;
+            const dvpKey = `${position}-${dvpMetric}-${actualOpponent}`;
             const cachedDvp = dvpCache.get(dvpKey);
             if (cachedDvp && typeof cachedDvp === 'object') {
               dvp = cachedDvp;
@@ -1028,7 +1058,7 @@ async function processPlayerProps() {
               try {
                 const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${dvpMetric}`).catch(() => null);
                 if (dvpData && dvpData.ranks && typeof dvpData.ranks === 'object') {
-                  const teamAbbr = TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
+                  const teamAbbr = TEAM_FULL_TO_ABBR[actualOpponent] || actualOpponent.toUpperCase();
                   dvp = {
                     rank: dvpData.ranks[teamAbbr] || null,
                     statValue: (dvpData.values && Array.isArray(dvpData.values)) 

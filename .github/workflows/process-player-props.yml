@@ -73,10 +73,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Wait 5 minutes
+      - name: Wait 2 minutes
         run: |
-          echo "⏳ Waiting 5 minutes before processing secondary stats..."
-          sleep 300
+          echo "⏳ Waiting 2 minutes before processing secondary stats..."
+          sleep 120
           echo "✅ Wait complete, starting secondary stats processing"
 
       - name: Process Secondary Stats (STL, BLK, THREES)
