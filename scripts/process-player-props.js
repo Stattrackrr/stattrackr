@@ -1118,19 +1118,29 @@ async function processPlayerProps() {
   console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
   // Merge with existing props if we filtered stats
-  let finalProps = propsWithStats;
+  let finalProps = [...propsWithStats]; // Start with new props
   if (allowedStats && existingPropsMap.size > 0) {
     console.log(`[GitHub Actions] 🔀 Merging ${propsWithStats.length} new props with ${existingPropsMap.size} existing props...`);
     
-    // Add existing props that aren't in our filtered set
+    // Create a Set of keys from new props to avoid duplicates
+    const newPropsKeys = new Set();
+    for (const prop of propsWithStats) {
+      const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+      newPropsKeys.add(key);
+    }
+    
+    // Add existing props that aren't in our filtered set AND aren't already in new props
+    let addedCount = 0;
     for (const [key, existingProp] of existingPropsMap.entries()) {
       // Only keep existing props if they're NOT in our filtered stat list
-      if (!allowedStats.includes(existingProp.statType)) {
+      // AND not already in the new props (to avoid duplicates)
+      if (!allowedStats.includes(existingProp.statType) && !newPropsKeys.has(key)) {
         finalProps.push(existingProp);
+        addedCount++;
       }
     }
     
-    console.log(`[GitHub Actions] ✅ Merged cache: ${finalProps.length} total props (${propsWithStats.length} new, ${finalProps.length - propsWithStats.length} existing)`);
+    console.log(`[GitHub Actions] ✅ Merged cache: ${finalProps.length} total props (${propsWithStats.length} new, ${addedCount} existing)`);
   }
   
   // Clear checkpoint and save final cache
