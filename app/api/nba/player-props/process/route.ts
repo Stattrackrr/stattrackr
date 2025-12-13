@@ -866,14 +866,16 @@ async function processPlayerPropsCore(request: NextRequest) {
               if (!overOddsStr || overOddsStr === 'N/A' || !underOddsStr || underOddsStr === 'N/A') continue;
               if (overOddsStr === '+100' && underOddsStr === '+100') continue;
               
+              // Parse American odds to decimal (for storage/display)
               const overOdds = parseAmericanOdds(overOddsStr);
               const underOdds = parseAmericanOdds(underOddsStr);
               
               if (overOdds === null || underOdds === null) continue;
               
-              const implied = calculateImpliedProbabilities(overOdds, underOdds);
-              const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(overOdds);
-              const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(underOdds);
+              // Calculate implied probabilities from ORIGINAL American odds strings (not decimal)
+              const implied = calculateImpliedProbabilities(overOddsStr, underOddsStr);
+              const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(parseFloat(overOddsStr.replace(/[^0-9+-]/g, '')));
+              const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(parseFloat(underOddsStr.replace(/[^0-9+-]/g, '')));
               
               // Find player ID from mappings
               const playerMapping = PLAYER_ID_MAPPINGS.find(m => 
