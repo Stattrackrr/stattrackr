@@ -29,6 +29,7 @@ import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
 import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
 import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
+import serverLogger from '@/lib/serverLogger';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -7282,10 +7283,51 @@ const lineMovementInFlightRef = useRef(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  
+  // Debug: Track renders and state changes
+  const renderCountRef = useRef(0);
+  const lastUrlRef = useRef<string>('');
+  const lastTimeframeRef = useRef<string>('');
+  const lastPlayerStatsLengthRef = useRef<number>(0);
+  
+  // Debug: Track component renders and key state changes
+  useEffect(() => {
+    renderCountRef.current += 1;
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const urlChanged = currentUrl !== lastUrlRef.current;
+    const timeframeChanged = selectedTimeframe !== lastTimeframeRef.current;
+    const statsChanged = playerStats.length !== lastPlayerStatsLengthRef.current;
+    
+    if (urlChanged || timeframeChanged || statsChanged || renderCountRef.current <= 3) {
+      const renderData = {
+        timestamp: new Date().toISOString(),
+        url: currentUrl,
+        urlChanged,
+        selectedPlayer: selectedPlayer?.full || 'none',
+        resolvedPlayerId,
+        selectedTimeframe,
+        timeframeChanged,
+        playerStatsLength: playerStats.length,
+        statsChanged,
+        isLoading,
+        selectedStat,
+        opponentTeam
+      };
+      
+      // Log to both browser console and server terminal
+      console.log(`🎨 [Render #${renderCountRef.current}]`, renderData);
+      serverLogger.log(`🎨 [Render #${renderCountRef.current}]`, { data: renderData });
+      
+      if (urlChanged) lastUrlRef.current = currentUrl;
+      if (timeframeChanged) lastTimeframeRef.current = selectedTimeframe;
+      if (statsChanged) lastPlayerStatsLengthRef.current = playerStats.length;
+    }
+  });
 
   // selection + data
   const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
+  const isHandlingPlayerSelectRef = useRef<boolean>(false);
   const [playerStats, setPlayerStats] = useState<BallDontLieStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -8674,16 +8716,32 @@ const lineMovementInFlightRef = useRef(false);
         
         // Handle 'player' param (from player props page) - use it if 'name' is not provided
         const playerName = name || player;
-        // Only restore timeframe from URL if we have playerStats loaded (prevents race condition)
-        if (tf && playerStats.length > 0) {
+        // When coming from player props page, default to "thisseason" to show current season data
+        // Only use URL timeframe if explicitly provided, otherwise default to current season
+        if (tf) {
+          // Set timeframe immediately from URL (don't wait for stats to load)
+          // This ensures the correct timeframe is active when stats load
+          console.log(`[Dashboard] ✅ Setting timeframe from URL: "${tf}"`);
           setSelectedTimeframe(tf);
-        } else if (tf) {
-          // Store it to restore later when stats load
+          // Also store it in session storage for persistence
           const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
           if (saved) {
             try {
               const parsed = JSON.parse(saved);
               parsed.selectedTimeframe = tf;
+              sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+            } catch {}
+          }
+        } else if (playerName) {
+          // Coming from player props page without explicit timeframe - default to current season
+          console.log(`[Dashboard] Setting default timeframe to "thisseason" for player from props page`);
+          setSelectedTimeframe('thisseason');
+          // Store in session storage
+          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              parsed.selectedTimeframe = 'thisseason';
               sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
             } catch {}
           }
@@ -8699,28 +8757,23 @@ const lineMovementInFlightRef = useRef(false);
         } else if (playerName && !pid) {
           // If only 'player' name is provided (from player props page), search for the player
           if (initialPropsMode === 'player') {
+            // Set loading state immediately to prevent double render
+            setIsLoading(true);
             // Trigger search for the player name
             const searchForPlayer = async () => {
               try {
-                console.log(`[Dashboard] 🔍 Searching for player: "${playerName}"`);
+                console.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
+                serverLogger.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
                 // Try searching with 'all=true' to include inactive players if needed
                 let res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}`);
                 if (!res.ok) {
-                  console.error(`[Dashboard] ❌ Failed to search for player "${playerName}":`, res.status, res.statusText);
+                  console.error(`[Dashboard] ❌ [Props Page] Failed to search for player "${playerName}":`, res.status, res.statusText);
+                  setApiError(`Failed to search for player: ${res.statusText}`);
+                  setIsLoading(false);
                   return;
                 }
                 let json = await res.json();
-                console.log(`[Dashboard] 📋 Search results for "${playerName}":`, json);
-                console.log(`[Dashboard] 📋 Response structure:`, {
-                  hasResults: !!json?.results,
-                  resultsType: Array.isArray(json?.results) ? 'array' : typeof json?.results,
-                  resultsLength: Array.isArray(json?.results) ? json.results.length : 'not array',
-                  hasData: !!json?.data,
-                  dataType: Array.isArray(json?.data) ? 'array' : typeof json?.data,
-                  dataLength: Array.isArray(json?.data) ? json.data.length : 'not array',
-                  hasError: !!json?.error,
-                  error: json?.error
-                });
+                console.log(`[Dashboard] 📋 [Props Page] Search results for "${playerName}":`, json);
                 
                 // Try both 'results' and 'data' fields (API might return either)
                 let rawResults = json?.results;
@@ -8730,12 +8783,12 @@ const lineMovementInFlightRef = useRef(false);
                 
                 // If no results, try searching with 'all=true' to include inactive players
                 if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
-                  console.log(`[Dashboard] 🔄 No results found, trying with all=true (including inactive players)...`);
+                  console.log(`[Dashboard] 🔄 [Props Page] No results found, trying with all=true (including inactive players)...`);
                   res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}&all=true`);
                   if (res.ok) {
                     json = await res.json();
                     rawResults = json?.results || json?.data;
-                    console.log(`[Dashboard] 📋 Search with all=true returned:`, {
+                    console.log(`[Dashboard] 📋 [Props Page] Search with all=true returned:`, {
                       resultsCount: Array.isArray(rawResults) ? rawResults.length : 0,
                       response: json
                     });
@@ -8747,12 +8800,12 @@ const lineMovementInFlightRef = useRef(false);
                   const nameParts = playerName.trim().split(/\s+/);
                   if (nameParts.length > 1) {
                     const lastName = nameParts[nameParts.length - 1];
-                    console.log(`[Dashboard] 🔄 No results found, trying with last name only: "${lastName}"...`);
+                    console.log(`[Dashboard] 🔄 [Props Page] No results found, trying with last name only: "${lastName}"...`);
                     res = await fetch(`/api/bdl/players?q=${encodeURIComponent(lastName)}&all=true`);
                     if (res.ok) {
                       json = await res.json();
                       rawResults = json?.results || json?.data;
-                      console.log(`[Dashboard] 📋 Search with last name returned:`, {
+                      console.log(`[Dashboard] 📋 [Props Page] Search with last name returned:`, {
                         resultsCount: Array.isArray(rawResults) ? rawResults.length : 0,
                         response: json
                       });
@@ -8769,7 +8822,7 @@ const lineMovementInFlightRef = useRef(false);
                       headshotUrl: r.headshotUrl || null 
                     }))
                   : [];
-                console.log(`[Dashboard] 📊 Parsed ${results.length} results for "${playerName}"`);
+                console.log(`[Dashboard] 📊 [Props Page] Parsed ${results.length} results for "${playerName}"`);
                 if (results && results.length > 0) {
                   // Try to find exact match first, then use first result
                   const playerNameLower = playerName.toLowerCase().trim();
@@ -8786,27 +8839,35 @@ const lineMovementInFlightRef = useRef(false);
                     playerResult = results[0];
                   }
                   
-                  console.log(`[Dashboard] ✅ Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
+                  console.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
+                  serverLogger.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full}`, { data: { id: playerResult.id, team: playerResult.team } });
                   const r: BdlSearchResult = {
                     id: playerResult.id,
                     full: playerResult.full,
                     team: playerResult.team,
                     pos: playerResult.pos
                   };
-                  console.log(`[Dashboard] 🚀 Calling handlePlayerSelectFromSearch for:`, r);
+                  console.log(`[Dashboard] 🚀 [Props Page] Calling handlePlayerSelectFromSearch for:`, r);
+                  serverLogger.log(`[Dashboard] 🚀 [Props Page] Calling handlePlayerSelectFromSearch`, { data: r });
                   await handlePlayerSelectFromSearch(r);
                   shouldLoadDefaultPlayer = false;
                 } else {
-                  console.warn(`[Dashboard] ⚠️ No results found for player: "${playerName}"`);
-                  console.warn(`[Dashboard] ⚠️ API response was:`, json);
+                  console.warn(`[Dashboard] ⚠️ [Props Page] No results found for player: "${playerName}"`);
+                  console.warn(`[Dashboard] ⚠️ [Props Page] API response was:`, json);
+                  setApiError(`Player "${playerName}" not found. Please try searching manually.`);
+                  setIsLoading(false); // Clear loading state if no results found
                 }
               } catch (error) {
-                console.error(`[Dashboard] ❌ Error searching for player "${playerName}":`, error);
+                console.error(`[Dashboard] ❌ [Props Page] Error searching for player "${playerName}":`, error);
+                setApiError(`Error searching for player: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                setIsLoading(false); // Clear loading state on error
               }
             };
-            // Don't await here - let it run in background, but don't return immediately
+            // Await the search to ensure it completes before continuing
             searchForPlayer().catch(err => {
-              console.error('[Dashboard] Unhandled error in searchForPlayer:', err);
+              console.error('[Dashboard] ❌ [Props Page] Unhandled error in searchForPlayer:', err);
+              setApiError(`Failed to load player: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              setIsLoading(false); // Clear loading state on error
             });
             shouldLoadDefaultPlayer = false;
             // Don't return here - let the useEffect continue to set up other things
@@ -8849,9 +8910,23 @@ const lineMovementInFlightRef = useRef(false);
 
   // Restore timeframe from session storage when playerStats loads (fixes race condition)
   // Only run once when playerStats first loads, not on every timeframe change
+  // NOTE: This should NOT override URL parameters - URL params are set immediately in initial useEffect
   const hasRestoredTimeframeRef = useRef(false);
   useEffect(() => {
+    // Only restore if:
+    // 1. Stats are loaded
+    // 2. We haven't restored yet
+    // 3. We're still on the default timeframe (last10) - meaning no URL param or manual selection happened
+    // 4. There's a saved timeframe that's different from the default
     if (playerStats.length > 0 && !hasRestoredTimeframeRef.current && selectedTimeframe === 'last10') {
+      // Check if URL has a timeframe param - if so, don't override it
+      const urlHasTimeframe = typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('tf');
+      if (urlHasTimeframe) {
+        console.log('[Dashboard] ⚠️ Skipping timeframe restore - URL has timeframe param');
+        hasRestoredTimeframeRef.current = true;
+        return;
+      }
+      
       // Only restore if we're still on default timeframe (last10)
       // This means we haven't manually selected a timeframe yet
       try {
@@ -8859,13 +8934,14 @@ const lineMovementInFlightRef = useRef(false);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
+            console.log(`[Dashboard] 🔄 Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
             setSelectedTimeframe(parsed.selectedTimeframe);
           }
         }
       } catch {}
       hasRestoredTimeframeRef.current = true;
     }
-  }, [playerStats.length]); // Removed selectedTimeframe from dependencies to prevent re-running on every change
+  }, [playerStats.length, selectedTimeframe]); // Added selectedTimeframe to check current value
 
   /* --------- Live search (debounced) using /api/bdl/players ---------- */
   useEffect(() => {
@@ -8950,25 +9026,37 @@ const lineMovementInFlightRef = useRef(false);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
         
-        // Update URL for share/save
-        const url = new URL(window.location.href);
-        url.searchParams.set('mode', propsMode);
+        // Check if we're loading from URL params (has 'player' but not 'pid')
+        // If so, don't update URL immediately to prevent double reload
+        const currentUrl = new URL(window.location.href);
+        const hasPlayerParam = currentUrl.searchParams.has('player');
+        const hasPidParam = currentUrl.searchParams.has('pid');
+        const isLoadingFromUrl = hasPlayerParam && !hasPidParam;
         
-        if (selectedPlayer && selectedTeam && propsMode === 'player') {
-          const r = baseSave.player as BdlSearchResult;
-          url.searchParams.set('pid', String(r.id));
-          url.searchParams.set('name', r.full);
-          url.searchParams.set('team', selectedTeam);
-        } else {
-          // Remove player-specific params when not in player mode
-          url.searchParams.delete('pid');
-          url.searchParams.delete('name');
-          url.searchParams.delete('team');
+        // Update URL for share/save (but skip if we're still loading from URL params)
+        if (!isLoadingFromUrl) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('mode', propsMode);
+          
+          if (selectedPlayer && selectedTeam && propsMode === 'player') {
+            const r = baseSave.player as BdlSearchResult;
+            url.searchParams.set('pid', String(r.id));
+            url.searchParams.set('name', r.full);
+            url.searchParams.set('team', selectedTeam);
+            // Remove 'player' param if it exists (we now have pid/name/team)
+            url.searchParams.delete('player');
+          } else {
+            // Remove player-specific params when not in player mode
+            url.searchParams.delete('pid');
+            url.searchParams.delete('name');
+            url.searchParams.delete('team');
+            url.searchParams.delete('player');
+          }
+          
+          url.searchParams.set('stat', selectedStat);
+          url.searchParams.set('tf', selectedTimeframe);
+          window.history.replaceState({}, '', url.toString());
         }
-        
-        url.searchParams.set('stat', selectedStat);
-        url.searchParams.set('tf', selectedTimeframe);
-        window.history.replaceState({}, '', url.toString());
       }
     } catch {}
   }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam]);
@@ -9036,7 +9124,8 @@ const lineMovementInFlightRef = useRef(false);
     // This reduces from 4 requests to 2 requests per player (2 seasons x 1 parallel fetch each)
     const grabSeason = async (yr: number) => {
       const fetchRegular = async () => {
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=false`;
+        // Dashboard always bypasses cache - use refresh=1 to force API call
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=false&refresh=1`;
         const requestId = `stats-${playerId}-${yr}-reg`;
         try {
           const r = await queuedFetch(url, {}, requestId);
@@ -9044,7 +9133,7 @@ const lineMovementInFlightRef = useRef(false);
           return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
         } catch (error: any) {
           if (error?.status === 429) {
-            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array (will use cache if available)`);
+            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array`);
             return [];
           }
           throw error;
@@ -9052,7 +9141,8 @@ const lineMovementInFlightRef = useRef(false);
       };
 
       const fetchPlayoffs = async () => {
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=true`;
+        // Dashboard always bypasses cache - use refresh=1 to force API call
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=true&refresh=1`;
         const requestId = `stats-${playerId}-${yr}-po`;
         try {
           const r = await queuedFetch(url, {}, requestId);
@@ -9060,7 +9150,7 @@ const lineMovementInFlightRef = useRef(false);
           return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
         } catch (error: any) {
           if (error?.status === 429) {
-            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array (will use cache if available)`);
+            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array`);
             return [];
           }
           throw error;
@@ -9084,6 +9174,37 @@ const lineMovementInFlightRef = useRef(false);
     // Merge current + previous season data, then sort newest-first
     // The baseGameData useMemo will filter by selectedTimeframe to show current/last season
     const rows = [...currSeason, ...prevSeason];
+    
+    // Debug: log season breakdown to help diagnose filtering issues
+    if (rows.length > 0) {
+      const currentSeason = currentNbaSeason();
+      const getSeasonYear = (stat: any) => {
+        if (!stat.game?.date) return null;
+        const d = new Date(stat.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return m >= 9 ? y : y - 1;
+      };
+      const currentSeasonCount = rows.filter(s => getSeasonYear(s) === currentSeason).length;
+      const lastSeasonCount = rows.filter(s => getSeasonYear(s) === currentSeason - 1).length;
+      
+      // Log sample dates from each season to verify they're being included
+      const currentSeasonSample = rows.filter(s => getSeasonYear(s) === currentSeason).slice(0, 3).map(s => ({
+        date: s.game?.date,
+        min: s.min
+      }));
+      const lastSeasonSample = rows.filter(s => getSeasonYear(s) === currentSeason - 1).slice(0, 3).map(s => ({
+        date: s.game?.date,
+        min: s.min
+      }));
+      
+      console.log(`[fetchSortedStatsCore] Season breakdown: current (${currentSeason}): ${currentSeasonCount} games, last (${currentSeason - 1}): ${lastSeasonCount} games, total: ${rows.length}`, {
+        currSeasonLength: currSeason.length,
+        prevSeasonLength: prevSeason.length,
+        currentSeasonSample,
+        lastSeasonSample
+      });
+    }
     
     // Debug: log the structure of received stats
     if (rows.length > 0) {
@@ -9154,6 +9275,22 @@ const lineMovementInFlightRef = useRef(false);
       const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
       return db - da; // newest first
     });
+    
+    // Debug: Log final return value to see what's being returned
+    if (safe.length > 0) {
+      const currentSeason = currentNbaSeason();
+      const getSeasonYear = (stat: any) => {
+        if (!stat.game?.date) return null;
+        const d = new Date(stat.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return m >= 9 ? y : y - 1;
+      };
+      const finalCurrentSeasonCount = safe.filter(s => getSeasonYear(s) === currentSeason).length;
+      const finalLastSeasonCount = safe.filter(s => getSeasonYear(s) === currentSeason - 1).length;
+      console.log(`[fetchSortedStatsCore] FINAL RETURN: returning ${safe.length} stats (current: ${finalCurrentSeasonCount}, last: ${finalLastSeasonCount})`);
+    }
+    
     return safe;
   };
 
@@ -9534,6 +9671,15 @@ const lineMovementInFlightRef = useRef(false);
       // Reset betting lines to default for new player
       setBettingLines({});
       
+      // Set timeframe to "thisseason" when selecting a new player (unless already set from URL)
+      // This ensures current season data is shown by default
+      const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+      const urlTimeframe = url?.searchParams.get('tf');
+      if (!urlTimeframe) {
+        console.log(`[Player Select] Setting default timeframe to "thisseason" for new player`);
+        setSelectedTimeframe('thisseason');
+      }
+      
       // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
       if (todaysGames.length > 0) {
         const opponent = getOpponentTeam(currentTeam, todaysGames);
@@ -9553,9 +9699,32 @@ const lineMovementInFlightRef = useRef(false);
 
   // Select from live search results
   const handlePlayerSelectFromSearch = async (r: BdlSearchResult) => {
-    console.log('🔍 handlePlayerSelectFromSearch called with:', r);
-    setIsLoading(true); 
-    setApiError(null);
+    // Prevent duplicate calls
+    if (isHandlingPlayerSelectRef.current) {
+      console.log('🔍 [handlePlayerSelectFromSearch] Already handling, skipping duplicate call');
+      return;
+    }
+    
+    isHandlingPlayerSelectRef.current = true;
+    
+    try {
+      const callData = {
+        player: r.full,
+        id: r.id,
+        team: r.team,
+        pos: r.pos,
+        stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+      };
+      console.log('🔍 [handlePlayerSelectFromSearch] Called with:', callData);
+      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Called with', { data: callData });
+      // Only set loading if not already loading (prevents double render when called from URL params)
+      if (!isLoading) {
+        console.log('🔍 [handlePlayerSelectFromSearch] Setting isLoading=true');
+        setIsLoading(true);
+      } else {
+        console.log('🔍 [handlePlayerSelectFromSearch] Already loading, skipping setIsLoading');
+      }
+      setApiError(null);
     
     // Clear premium stats immediately when switching players
     setAdvancedStats(null);
@@ -9608,11 +9777,29 @@ const lineMovementInFlightRef = useRef(false);
       // OPTIMIZATION: Lazy load premium stats
       // Fetch critical path data first: game stats + BDL player data + ESPN (as fallback)
       // Then load premium features (advanced stats, shot distance) in background
+      console.log('🔍 [handlePlayerSelectFromSearch] Starting parallel fetches for:', { pid, name: r.full });
+      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Starting parallel fetches', { data: { pid, name: r.full } });
       const [rows, bdlPlayerData, espnData] = await Promise.all([
-        fetchSortedStats(pid),
-        fetchBdlPlayerData(pid),
-        fetchEspnPlayerData(r.full, r.team).catch(() => null) // Fetch ESPN in parallel as fallback
+        fetchSortedStats(pid).catch(err => {
+          console.error('❌ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
+          return [];
+        }),
+        fetchBdlPlayerData(pid).catch(err => {
+          console.error('❌ [handlePlayerSelectFromSearch] fetchBdlPlayerData failed:', err);
+          return null;
+        }),
+        fetchEspnPlayerData(r.full, r.team).catch(err => {
+          console.warn('⚠️ [handlePlayerSelectFromSearch] fetchEspnPlayerData failed (non-critical):', err);
+          return null;
+        })
       ]);
+      const fetchCompleteData = {
+        statsCount: rows.length,
+        hasBdlData: !!bdlPlayerData,
+        hasEspnData: !!espnData
+      };
+      console.log('🔍 [handlePlayerSelectFromSearch] Fetches completed:', fetchCompleteData);
+      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Fetches completed', { data: fetchCompleteData });
       
       // Start premium fetches in background (don't await)
       if (hasPremium) {
@@ -9743,6 +9930,15 @@ const lineMovementInFlightRef = useRef(false);
       // Reset betting lines to default for new player
       setBettingLines({});
       
+      // Set timeframe to "thisseason" when selecting a new player (unless already set from URL)
+      // This ensures current season data is shown by default
+      const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+      const urlTimeframe = url?.searchParams.get('tf');
+      if (!urlTimeframe) {
+        console.log(`[Player Select] Setting default timeframe to "thisseason" for new player`);
+        setSelectedTimeframe('thisseason');
+      }
+      
       // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
       if (todaysGames.length > 0) {
         const opponent = getOpponentTeam(currentTeam, todaysGames);
@@ -9761,6 +9957,10 @@ const lineMovementInFlightRef = useRef(false);
       setPlayerStats([]);
       setOpponentTeam('N/A');
     } finally {
+      isHandlingPlayerSelectRef.current = false;
+    }
+    } finally {
+      isHandlingPlayerSelectRef.current = false;
       setIsLoading(false);
       setShowDropdown(false);
       setSearchQuery('');
@@ -10008,6 +10208,76 @@ const lineMovementInFlightRef = useRef(false);
       return minutes > 0;
     });
     
+    // Debug: Log breakdown of gamesPlayed by season year to diagnose filtering issues
+    if (selectedTimeframe === 'thisseason') {
+      const currentSeason = currentNbaSeason();
+      const gamesBySeasonYear: Record<number, number> = {};
+      const gamesWithZeroMinutes: Record<number, number> = {};
+      const currentSeasonStats: any[] = [];
+      const lastSeasonStats: any[] = [];
+      
+      playerStats.forEach(s => {
+        const minutes = parseMinutes(s.min);
+        if (!s.game?.date) return;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        
+        if (minutes > 0) {
+          gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
+          if (gameSeasonYear === currentSeason) {
+            currentSeasonStats.push({ date: s.game.date, min: s.min, minutes });
+          } else {
+            lastSeasonStats.push({ date: s.game.date, min: s.min, minutes });
+          }
+        } else {
+          gamesWithZeroMinutes[gameSeasonYear] = (gamesWithZeroMinutes[gameSeasonYear] || 0) + 1;
+        }
+      });
+      
+      const breakdown = {
+        totalPlayerStats: playerStats.length,
+        totalGamesPlayed: gamesPlayed.length,
+        gamesBySeasonYear,
+        gamesWithZeroMinutes,
+        currentSeason,
+        expectedCurrentSeasonGames: gamesBySeasonYear[currentSeason] || 0,
+        expectedLastSeasonGames: gamesBySeasonYear[currentSeason - 1] || 0,
+        currentSeasonStatsSample: currentSeasonStats.slice(0, 5),
+        lastSeasonStatsSample: lastSeasonStats.slice(0, 5),
+        currentSeasonStatsCount: currentSeasonStats.length,
+        lastSeasonStatsCount: lastSeasonStats.length
+      };
+      
+      console.log(`[baseGameData] 📊 Games breakdown for "thisseason" filter:`, breakdown);
+      serverLogger.log(`[baseGameData] 📊 Games breakdown: totalStats=${breakdown.totalPlayerStats}, gamesPlayed=${breakdown.totalGamesPlayed}, currentSeason=${breakdown.currentSeason}, currentSeasonGames=${breakdown.expectedCurrentSeasonGames}, lastSeasonGames=${breakdown.expectedLastSeasonGames}`, { data: breakdown });
+    }
+    
+    // If timeframe is "thisseason" and we're still loading, check if we have current season data yet
+    // This prevents showing last season data while current season is still loading
+    // BUT: If we already have current season data, show it even if still loading (might be loading more data)
+    if (selectedTimeframe === 'thisseason' && isLoading) {
+      const currentSeason = currentNbaSeason();
+      const currentSeasonGames = gamesPlayed.filter(stats => {
+        if (!stats.game?.date) return false;
+        const d = new Date(stats.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return (m >= 9 ? y : y - 1) === currentSeason;
+      });
+      
+      // If we don't have ANY current season data yet, return empty to prevent showing last season data
+      // But if we have some current season data, continue processing (don't return empty)
+      if (currentSeasonGames.length === 0) {
+        console.log(`[This Season] Still loading current season data, waiting... (have ${gamesPlayed.length} games but none from current season ${currentSeason})`);
+        return [];
+      } else {
+        console.log(`[This Season] Have ${currentSeasonGames.length} current season games, showing them even though still loading`);
+        // Continue processing - we have current season data to show
+      }
+    }
+    
     // THEN apply opponent filter (if any) and timeframe logic on a deduped, date-sorted pool
     let filteredGames = gamesPlayed;
     
@@ -10163,26 +10433,129 @@ const lineMovementInFlightRef = useRef(false);
     } else if (selectedTimeframe === 'thisseason') {
       // Filter to current season games only
       const currentSeason = currentNbaSeason();
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      // Calculate the season start year for the current NBA season
+      // If we're in Oct-Dec, current season started this year (e.g., Dec 2025 = 2025-26 season = year 2025)
+      // If we're in Jan-Apr, current season started last year (e.g., Jan 2025 = 2024-25 season = year 2024)
+      const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+      
       filteredGames = gamesPlayed.filter(stats => {
         if (!stats.game?.date) return false;
         const gameDate = new Date(stats.game.date);
         const gameYear = gameDate.getFullYear();
         const gameMonth = gameDate.getMonth();
         
-        // NBA season spans two calendar years (e.g., 2024-25 season)
-        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
+        // Calculate which NBA season this game belongs to
+        // Games from Oct-Dec belong to the season year (e.g., Oct 2024 = 2024-25 season = year 2024)
+        // Games from Jan-Apr belong to the previous calendar year's season (e.g., Apr 2025 = 2024-25 season = year 2024)
         const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-        return gameSeasonYear === currentSeason;
+        
+        // Game must be from the current NBA season
+        return gameSeasonYear === seasonStartYear;
       });
-      console.log(`📅 This Season: Filtered to ${filteredGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
+      const allGameDates = gamesPlayed.map(s => s.game?.date).filter(Boolean);
       
-      // If thisseason filter returns empty but we have playerStats, log a warning
-      // This might indicate a data issue or race condition
+      // Debug: Check what season years the games actually belong to
+      // Show both filtered and unfiltered games to understand the mismatch
+      const gameSeasonYears = gamesPlayed.slice(0, 10).map(s => {
+        if (!s.game?.date) return null;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        return { date: s.game.date, year: y, month: m, seasonYear: gameSeasonYear, matches: gameSeasonYear === seasonStartYear };
+      });
+      
+      // Also check the filtered games to see what we're actually showing
+      const filteredGameSeasonYears = filteredGames.slice(0, 10).map(s => {
+        if (!s.game?.date) return null;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        return { date: s.game.date, year: y, month: m, seasonYear: gameSeasonYear };
+      });
+      
+      // Show breakdown of games by season year to understand the data
+      const gamesBySeasonYear: Record<number, number> = {};
+      gamesPlayed.forEach(s => {
+        if (!s.game?.date) return;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
+      });
+      
+      const filterData = {
+        currentSeason,
+        seasonStartYear: seasonStartYear,
+        totalGames: gamesPlayed.length,
+        filteredGames: filteredGames.length,
+        isLoading,
+        selectedPlayer: selectedPlayer?.full,
+        sampleDates: allGameDates.slice(0, 5),
+        sampleFilteredDates: filteredGames.slice(0, 5).map(s => s.game?.date),
+        selectedTimeframe,
+        gameSeasonYears: gameSeasonYears.filter(Boolean),
+        filteredGameSeasonYears: filteredGameSeasonYears.filter(Boolean),
+        gamesBySeasonYear
+      };
+      console.log(`📅 [This Season Filter]`, filterData);
+      serverLogger.log(`📅 [This Season Filter]`, { data: filterData });
+      
+      // If thisseason filter returns empty but we have playerStats, check if current season data is still loading
+      // If we're still loading (isLoading is true), return empty array to prevent showing last season data
       if (filteredGames.length === 0 && gamesPlayed.length > 0) {
-        console.warn(`⚠️ This Season filter returned 0 games but player has ${gamesPlayed.length} total games. This might be a data issue.`);
-        // Show sample game dates for debugging
-        const sampleDates = gamesPlayed.slice(0, 5).map(s => s.game?.date).filter(Boolean);
-        console.warn(`   Sample game dates:`, sampleDates);
+        // Check if we have any current season games in the full playerStats (might still be loading)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+        
+        const currentSeasonInAllStats = playerStats.filter(s => {
+          if (!s.game?.date) return false;
+          const d = new Date(s.game.date);
+          const y = d.getFullYear();
+          const m = d.getMonth();
+          const gameSeasonYear = m >= 9 ? y : y - 1;
+          return gameSeasonYear === seasonStartYear;
+        });
+        
+        console.warn(`⚠️ [This Season Filter] Returned 0 games but player has ${gamesPlayed.length} total games.`, {
+          currentSeason,
+          isLoading,
+          currentSeasonInAllStatsCount: currentSeasonInAllStats.length,
+          sampleDates: allGameDates.slice(0, 10),
+          sampleCurrentSeasonDates: currentSeasonInAllStats.slice(0, 5).map(s => s.game?.date)
+        });
+        
+        // If we're still loading AND we have current season games in the full stats, wait for them
+        // Otherwise, if loading is done and still no current season games, log warning
+        if (isLoading && currentSeasonInAllStats.length > 0) {
+          console.log(`[This Season] Current season data still loading (${currentSeasonInAllStats.length} games found in full stats), waiting...`);
+          // Return empty to prevent showing last season data while current season loads
+          filteredGames = [];
+        } else if (!isLoading) {
+          // Debug: log sample game dates to understand the issue
+          const sampleDates = gamesPlayed.slice(0, 5).map(s => {
+            if (!s.game?.date) return null;
+            const d = new Date(s.game.date);
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            const gameSeasonYear = m >= 9 ? y : y - 1;
+            return { date: s.game.date, year: y, month: m, gameSeasonYear, currentSeason };
+          });
+          console.warn(`⚠️ This Season filter returned 0 games but player has ${gamesPlayed.length} total games.`, {
+            currentSeason,
+            sampleDates,
+            allGameDates: gamesPlayed.map(s => s.game?.date).filter(Boolean).slice(0, 10),
+            isLoading,
+            currentSeasonInAllStats: currentSeasonInAllStats.length
+          });
+        }
       }
     }
     

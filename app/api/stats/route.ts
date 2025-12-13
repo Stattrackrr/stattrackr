@@ -83,11 +83,15 @@ export async function GET(req: NextRequest) {
     // This ensures regular season and postseason stats are cached separately
     const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
     const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
-    // Only use cache if it has actual data (not empty arrays) AND not forcing refresh
-    if (!forceRefresh && cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+    
+    // Dashboard stats chart always bypasses cache (refresh=1) - other features can use cache
+    if (forceRefresh) {
+      console.log(`[Stats API] 🔄 Bypassing cache (refresh=1) for player ${playerId}, season ${season}, postseason ${postseason}`);
+    } else if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+      // Only use cache if it has actual data (not empty arrays) AND not forcing refresh
       // Debug: log cached data structure to verify game/team are included
       if (cachedData.data.length > 0) {
-        console.log('[Stats API] Cached stat structure:', {
+        console.log('[Stats API] ✅ Using cached data:', {
           playerId,
           season,
           postseason,
