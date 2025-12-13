@@ -93,30 +93,25 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
     console.log(`[Player Props API] 📊 Sample date details (first 3):`, dateDetails.slice(0, 3));
   }
   
-  // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
-  // STRICT: Only process games that are exactly tomorrow, not any future date
-  // Calculate tomorrow in US ET (not 24 hours from now, but actual tomorrow in US ET)
+  // Calculate tomorrow's date
   const todayUSETStr = getUSEasternDateString(new Date());
   const [year, month, day] = todayUSETStr.split('-').map(Number);
-  const tomorrowDate = new Date(year, month - 1, day + 1); // month is 0-indexed
+  const tomorrowDate = new Date(year, month - 1, day + 1);
   const tomorrowUSET = getUSEasternDateString(tomorrowDate);
-  
-  if (gameDates.size === 0) {
-    console.log(`[Player Props API] ⚠️ No game dates extracted, falling back to tomorrow: ${tomorrowUSET}`);
-    return tomorrowUSET;
+
+  // Default: Show today's props if available, otherwise tomorrow
+  if (gameDates.has(todayUSETStr)) {
+    console.log(`[Player Props API] ✅ Using TODAY's date: ${todayUSETStr}`);
+    return todayUSETStr;
   }
   
   if (gameDates.has(tomorrowUSET)) {
-    console.log(`[Player Props API] ✅ Using TOMORROW's date: ${tomorrowUSET} (found ${gameDates.size} unique game dates)`);
+    console.log(`[Player Props API] ✅ Using TOMORROW's date: ${tomorrowUSET} (no games today)`);
     return tomorrowUSET;
   }
   
-  // NO FALLBACK: If no games for tomorrow, return tomorrow anyway
-  // This ensures we don't process games from 2-3 days in the future
-  console.log(`[Player Props API] ⚠️ No games found for tomorrow (${tomorrowUSET})`);
-  console.log(`[Player Props API] 📊 Available game dates: ${Array.from(gameDates).sort().join(', ')}`);
-  console.log(`[Player Props API] 📅 Today: ${todayUSET}, Tomorrow: ${tomorrowUSET}`);
-  console.log(`[Player Props API] ⚠️ Returning tomorrow anyway - cache will be empty until tomorrow's games are available`);
+  // Fallback to tomorrow
+  console.log(`[Player Props API] ⚠️ No games found for today or tomorrow, falling back to tomorrow: ${tomorrowUSET}`);
   return tomorrowUSET;
 }
 
@@ -195,8 +190,75 @@ export async function GET(request: NextRequest) {
     }
     
     // Get the game date from odds cache (prioritizes today's games)
-    const gameDate = getGameDateFromOddsCache(oddsCache);
-    console.log(`[Player Props API] 📅 GET: Determined game date: ${gameDate} (from ${oddsCache.games?.length || 0} games)`);
+    let gameDate = getGameDateFromOddsCache(oddsCache);
+    console.log(`[Player Props API] 📅 GET: Initial game date: ${gameDate} (from ${oddsCache.games?.length || 0} games)`);
+    
+    // Helper to get US Eastern Time date string (duplicated from getGameDateFromOddsCache for use in GET handler)
+    const getUSEasternDateStringLocal = (date: Date): string => {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      });
+    };
+    
+    // Check if last game of today has started - if so, switch to tomorrow's props if ready
+    const todayUSETStr = getUSEasternDateStringLocal(new Date());
+    const todayGames = oddsCache.games?.filter((game: any) => {
+      if (!game.commenceTime) return false;
+      const commenceStr = String(game.commenceTime).trim();
+      let gameDateUSET: string;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+        gameDateUSET = commenceStr;
+      } else {
+        const date = new Date(commenceStr);
+        gameDateUSET = getUSEasternDateStringLocal(date);
+      }
+      return gameDateUSET === todayUSETStr;
+    }) || [];
+
+    if (todayGames.length > 0 && gameDate === todayUSETStr) {
+      // Find the latest tipoff time for today's games
+      let lastTipoff: Date | null = null;
+      for (const game of todayGames) {
+        if (!game.commenceTime) continue;
+        const commenceStr = String(game.commenceTime).trim();
+        let tipoffDate: Date;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+          const [y, m, d] = commenceStr.split('-').map(Number);
+          const etDateStr = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}T19:00:00`;
+          tipoffDate = new Date(etDateStr + '-05:00');
+          if (m >= 3 && m <= 11) {
+            tipoffDate = new Date(etDateStr + '-04:00');
+          }
+        } else {
+          tipoffDate = new Date(commenceStr);
+        }
+        if (!lastTipoff || tipoffDate > lastTipoff) {
+          lastTipoff = tipoffDate;
+        }
+      }
+
+      // If last game has started, check if tomorrow's props are ready
+      const now = new Date();
+      if (lastTipoff && now >= lastTipoff) {
+        const [y, m, d] = todayUSETStr.split('-').map(Number);
+        const tomorrowDate = new Date(y, m - 1, d + 1);
+        const tomorrowUSET = getUSEasternDateStringLocal(tomorrowDate);
+        const tomorrowCacheKey = getPlayerPropsCacheKey(tomorrowUSET);
+        const tomorrowProps = await getNBACache<any[]>(tomorrowCacheKey, { quiet: true });
+        
+        if (tomorrowProps && Array.isArray(tomorrowProps) && tomorrowProps.length > 0) {
+          console.log(`[Player Props API] ✅ Last game started, switching to TOMORROW's props (${tomorrowProps.length} props ready)`);
+          gameDate = tomorrowUSET;
+        } else {
+          console.log(`[Player Props API] ⏳ Last game started, but tomorrow's props not ready yet - showing today's props`);
+        }
+      }
+    }
     
     // Get cache key based on game date only (simplified)
     const cacheKey = getPlayerPropsCacheKey(gameDate);

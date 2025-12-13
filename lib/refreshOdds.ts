@@ -429,6 +429,7 @@ type BdlOddsRow = {
 type BdlGame = {
   id: number;
   date: string;
+  datetime?: string; // Full datetime if available from BDL API
   home_team: { abbreviation?: string; full_name?: string; name?: string };
   visitor_team: { abbreviation?: string; full_name?: string; name?: string };
 };
@@ -743,7 +744,8 @@ export async function refreshOddsData(
         gameId: String(gameId),
         homeTeam: normalizeTeamName(gameInfo?.home_team),
         awayTeam: normalizeTeamName(gameInfo?.visitor_team),
-        commenceTime: gameInfo?.date || '',
+        // Use datetime if available (has time), otherwise fall back to date-only
+        commenceTime: gameInfo?.datetime || gameInfo?.date || '',
         bookmakers: [],
         playerPropsByBookmaker: {},
       };

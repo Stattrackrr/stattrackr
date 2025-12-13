@@ -501,12 +501,42 @@ export default function NBALandingPage() {
   useEffect(() => {
     const fetchPlayerProps = async () => {
       try {
+        // Check sessionStorage first for instant load when navigating back
+        const CACHE_KEY = 'nba-player-props-cache';
+        const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+        const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceRefresh = urlParams.get('refresh') === '1';
+        
+        if (!forceRefresh && typeof window !== 'undefined') {
+          const cachedData = sessionStorage.getItem(CACHE_KEY);
+          const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+          
+          if (cachedData && cachedTimestamp) {
+            const age = Date.now() - parseInt(cachedTimestamp, 10);
+            if (age < CACHE_TTL_MS) {
+              try {
+                const parsed = JSON.parse(cachedData);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  console.log(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
+                  setPlayerProps(parsed);
+                  setPropsLoading(false);
+                  return; // Use cached data, skip API call
+                }
+              } catch (e) {
+                console.warn('[NBA Landing] ⚠️ Failed to parse cached data, fetching fresh');
+              }
+            } else {
+              console.log(`[NBA Landing] ⏰ Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
+            }
+          }
+        }
+        
         setPropsLoading(true);
         
         // Only read from cache - no processing on client side
         // Processing is done server-side by cron job
-        const urlParams = new URLSearchParams(window.location.search);
-        const forceRefresh = urlParams.get('refresh') === '1';
         // Always read from cache - refresh=1 just forces a fresh fetch (no cache headers)
         const cacheUrl = '/api/nba/player-props';
         
@@ -533,6 +563,18 @@ export default function NBALandingPage() {
           const threesCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'THREES').length;
           console.log(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
             setPlayerProps(cacheData.data);
+            
+            // Save to sessionStorage for instant load on back navigation
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData.data));
+                sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                console.log(`[NBA Landing] 💾 Cached ${cacheData.data.length} player props to sessionStorage`);
+              } catch (e) {
+                console.warn('[NBA Landing] ⚠️ Failed to cache to sessionStorage:', e);
+              }
+            }
+            
             setPropsLoading(false);
             return;
           } else {
