@@ -73,8 +73,38 @@ try {
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.startsWith('{') && trimmed.includes('bdlId')) {
+          // Handle both single and double quotes, and allow apostrophes in names
+          // Match: bdlId: 'X' or bdlId: "X"
           const bdlIdMatch = trimmed.match(/bdlId:\s*['"]([^'"]+)['"]/);
-          const nameMatch = trimmed.match(/name:\s*['"]([^'"]+)['"]/);
+          
+          // For name, handle escaped apostrophes (e.g., De\'Aaron Fox)
+          // Find name: field and extract value between quotes, handling escaped quotes
+          let nameMatch = null;
+          const nameFieldIndex = trimmed.indexOf('name:');
+          if (nameFieldIndex !== -1) {
+            // Find the quote character after name:
+            const afterName = trimmed.substring(nameFieldIndex + 5);
+            const quoteMatch = afterName.match(/^\s*['"]/);
+            if (quoteMatch) {
+              const quoteChar = quoteMatch[0].trim();
+              const nameStart = nameFieldIndex + 5 + afterName.indexOf(quoteChar);
+              // Find the closing quote, but skip escaped quotes (\' or \")
+              let nameEnd = nameStart + 1;
+              while (nameEnd < trimmed.length) {
+                if (trimmed[nameEnd] === quoteChar && trimmed[nameEnd - 1] !== '\\') {
+                  break;
+                }
+                nameEnd++;
+              }
+              if (nameEnd < trimmed.length) {
+                let nameValue = trimmed.substring(nameStart + 1, nameEnd);
+                // Unescape apostrophes: \' becomes '
+                nameValue = nameValue.replace(/\\'/g, "'").replace(/\\"/g, '"');
+                nameMatch = [null, nameValue];
+              }
+            }
+          }
+          
           if (bdlIdMatch && nameMatch) {
             PLAYER_ID_MAPPINGS.push({
               bdlId: bdlIdMatch[1],
