@@ -799,6 +799,19 @@ async function processPlayerProps() {
         let actualOpponent = prop.opponent;
         let position = null;
         
+        // Helper function to normalize names for matching (handles apostrophes and special characters)
+        const normalizeNameForMatch = (name) => {
+          if (!name) return '';
+          // Remove apostrophes, hyphens, and other special chars, convert to lowercase
+          return name.toLowerCase()
+            .replace(/[''`]/g, '') // Remove apostrophes (straight, curly, backtick)
+            .replace(/[^a-z0-9\s]/g, '') // Remove all other special chars
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+        };
+        
+        const normalizedPlayerName = normalizeNameForMatch(prop.playerName);
+        
         // Try home team first
         let foundOnHomeTeam = false;
         const homeDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
@@ -807,13 +820,18 @@ async function processPlayerProps() {
             const players = homeDepthChart.depthChart[pos] || [];
             if (players.some(p => {
               const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
-              return name.toLowerCase().includes(prop.playerName.toLowerCase()) || prop.playerName.toLowerCase().includes(name.toLowerCase());
+              const normalizedName = normalizeNameForMatch(name);
+              // Check if normalized names match (handles apostrophes and special chars)
+              return normalizedName === normalizedPlayerName || 
+                     normalizedName.includes(normalizedPlayerName) || 
+                     normalizedPlayerName.includes(normalizedName);
             })) {
               position = pos;
               foundOnHomeTeam = true;
               actualTeam = prop.team; // Home team
               actualOpponent = prop.opponent; // Away team
               depthChartCache.set(prop.team, position);
+              console.log(`[GitHub Actions] ✅ Found position for ${prop.playerName} on ${prop.team}: ${position}`);
               break;
             }
           }
@@ -827,16 +845,25 @@ async function processPlayerProps() {
               const players = awayDepthChart.depthChart[pos] || [];
               if (players.some(p => {
                 const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
-                return name.toLowerCase().includes(prop.playerName.toLowerCase()) || prop.playerName.toLowerCase().includes(name.toLowerCase());
+                const normalizedName = normalizeNameForMatch(name);
+                // Check if normalized names match (handles apostrophes and special chars)
+                return normalizedName === normalizedPlayerName || 
+                       normalizedName.includes(normalizedPlayerName) || 
+                       normalizedPlayerName.includes(normalizedName);
               })) {
                 position = pos;
                 actualTeam = prop.opponent; // Away team (swap)
                 actualOpponent = prop.team; // Home team (swap)
                 depthChartCache.set(prop.opponent, position);
+                console.log(`[GitHub Actions] ✅ Found position for ${prop.playerName} on ${prop.opponent}: ${position}`);
                 break;
               }
             }
           }
+        }
+        
+        if (!position) {
+          console.warn(`[GitHub Actions] ⚠️ No position found for ${prop.playerName} (${actualTeam}) - DvP will be null`);
         }
         
         // Update prop with correct team/opponent
