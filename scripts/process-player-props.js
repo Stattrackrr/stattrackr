@@ -664,6 +664,26 @@ async function processPlayerProps() {
         const currentMaxProb = Math.max(current.overProb, current.underProb);
         return currentMaxProb > bestMaxProb ? current : best;
       });
+      
+      // Merge all bookmakerLines from all props in the group
+      const allBookmakerLines = [];
+      const seenBookmakers = new Set();
+      for (const prop of propGroup) {
+        if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines)) {
+          for (const line of prop.bookmakerLines) {
+            // Deduplicate by bookmaker name (in case same bookmaker appears multiple times)
+            const bookmakerKey = `${line.bookmaker}|${line.line}`;
+            if (!seenBookmakers.has(bookmakerKey)) {
+              allBookmakerLines.push(line);
+              seenBookmakers.add(bookmakerKey);
+            }
+          }
+        }
+      }
+      
+      // Update bestProp with merged bookmakerLines
+      bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
+      
       processedProps.push(bestProp);
     }
   }
