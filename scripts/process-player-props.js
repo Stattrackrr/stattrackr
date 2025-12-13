@@ -174,29 +174,61 @@ function getGameDateFromOddsCache(oddsCache) {
     });
   };
   
-  const todayUSET = getUSEasternDateString(new Date());
+  // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
+  const tomorrowUSET = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
   
   if (!oddsCache.games || oddsCache.games.length === 0) {
-    return todayUSET;
+    return tomorrowUSET;
   }
   
+  // Filter games to only include tomorrow's games
+  const tomorrowGames = oddsCache.games.filter(game => {
+    if (!game.commenceTime) return false;
+    const commenceStr = String(game.commenceTime).trim();
+    let gameDateUSET;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+      gameDateUSET = commenceStr;
+    } else {
+      const date = new Date(commenceStr);
+      gameDateUSET = getUSEasternDateString(date);
+    }
+    return gameDateUSET === tomorrowUSET;
+  });
+  
+  // If we have games for tomorrow, use tomorrow's date
+  if (tomorrowGames.length > 0) {
+    console.log(`[GitHub Actions] ✅ Found ${tomorrowGames.length} games for TOMORROW: ${tomorrowUSET}`);
+    return tomorrowUSET;
+  }
+  
+  // Fallback: if no games for tomorrow, use the earliest future date
   const gameDates = new Set();
+  const todayUSET = getUSEasternDateString(new Date());
   for (const game of oddsCache.games) {
     if (!game.commenceTime) continue;
     const commenceStr = String(game.commenceTime).trim();
+    let gameDateUSET;
     if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-      gameDates.add(commenceStr);
+      gameDateUSET = commenceStr;
     } else {
       const date = new Date(commenceStr);
-      gameDates.add(getUSEasternDateString(date));
+      gameDateUSET = getUSEasternDateString(date);
+    }
+    // Only include future dates (not today or past)
+    if (gameDateUSET > todayUSET) {
+      gameDates.add(gameDateUSET);
     }
   }
   
-  if (gameDates.has(todayUSET)) {
-    return todayUSET;
+  if (gameDates.size > 0) {
+    const earliestFutureDate = Array.from(gameDates).sort()[0];
+    console.log(`[GitHub Actions] ⚠️ No games for tomorrow (${tomorrowUSET}), using earliest future date: ${earliestFutureDate}`);
+    return earliestFutureDate;
   }
   
-  return Array.from(gameDates).sort()[0] || todayUSET;
+  // Last resort: return tomorrow anyway
+  console.log(`[GitHub Actions] ⚠️ No future games found, using tomorrow: ${tomorrowUSET}`);
+  return tomorrowUSET;
 }
 
 function calculateImpliedProbabilities(overOddsStr, underOddsStr) {
@@ -442,8 +474,35 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 🔄 Force refresh requested, recalculating all props...`);
   }
   
-  // Extract props from odds cache (same logic as route.ts)
-  const games = oddsCache.games || [];
+  // Extract props from odds cache - FILTER TO ONLY TOMORROW'S GAMES
+  const tomorrowUSET = getGameDateFromOddsCache(oddsCache);
+  const getUSEasternDateString = (date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    });
+  };
+  
+  // Filter games to only tomorrow's games
+  const games = (oddsCache.games || []).filter(game => {
+    if (!game.commenceTime) return false;
+    const commenceStr = String(game.commenceTime).trim();
+    let gameDateUSET;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+      gameDateUSET = commenceStr;
+    } else {
+      const date = new Date(commenceStr);
+      gameDateUSET = getUSEasternDateString(date);
+    }
+    return gameDateUSET === tomorrowUSET;
+  });
+  
+  console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${tomorrowUSET}) out of ${oddsCache.games?.length || 0} total games`);
+  
   const allProps = [];
   
   for (const game of games) {

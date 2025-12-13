@@ -93,23 +93,30 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
     console.log(`[Player Props API] 📊 Sample date details (first 3):`, dateDetails.slice(0, 3));
   }
   
+  // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
+  const tomorrowUSET = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  
   if (gameDates.size === 0) {
-    console.log(`[Player Props API] ⚠️ No game dates extracted, falling back to today: ${todayUSET}`);
-    return todayUSET;
+    console.log(`[Player Props API] ⚠️ No game dates extracted, falling back to tomorrow: ${tomorrowUSET}`);
+    return tomorrowUSET;
   }
   
-  // PRIORITIZE TODAY: If today's date is in the game dates, use it
-  // Otherwise, use the earliest date (tomorrow)
-  if (gameDates.has(todayUSET)) {
-    console.log(`[Player Props API] ✅ Using TODAY's date: ${todayUSET} (found ${gameDates.size} unique game dates)`);
-    return todayUSET;
+  if (gameDates.has(tomorrowUSET)) {
+    console.log(`[Player Props API] ✅ Using TOMORROW's date: ${tomorrowUSET} (found ${gameDates.size} unique game dates)`);
+    return tomorrowUSET;
   }
   
-  // No games for today, use the earliest date (should be tomorrow)
-  const sortedDates = Array.from(gameDates).sort();
-  const earliestDate = sortedDates[0];
-  console.log(`[Player Props API] ⚠️ No games for today (${todayUSET}), using earliest date: ${earliestDate} (found ${gameDates.size} unique game dates: ${sortedDates.join(', ')})`);
-  return earliestDate;
+  // No games for tomorrow, use the earliest future date
+  const sortedDates = Array.from(gameDates).sort().filter(d => d > todayUSET);
+  if (sortedDates.length > 0) {
+    const earliestFutureDate = sortedDates[0];
+    console.log(`[Player Props API] ⚠️ No games for tomorrow (${tomorrowUSET}), using earliest future date: ${earliestFutureDate}`);
+    return earliestFutureDate;
+  }
+  
+  // Last resort: return tomorrow anyway
+  console.log(`[Player Props API] ⚠️ No future games found, using tomorrow: ${tomorrowUSET}`);
+  return tomorrowUSET;
 }
 
 /**

@@ -2,8 +2,9 @@ name: Process Player Props
 
 on:
   schedule:
-    # Run every 2 hours
-    - cron: '0 */2 * * *'
+    # Run once per day at 2:00 AM ET (7:00 AM UTC) - process tomorrow's games
+    # Stats don't change, so we only need to process once per day
+    - cron: '0 7 * * *'
   workflow_dispatch: {}
 
 concurrency:
