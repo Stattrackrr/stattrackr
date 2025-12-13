@@ -177,10 +177,10 @@ function getGameDateFromOddsCache(oddsCache) {
   // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
   // STRICT: Only process games that are exactly tomorrow, not any future date
   // Calculate tomorrow in US ET (not 24 hours from now, but actual tomorrow in US ET)
-  const nowInUSET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const tomorrowInUSET = new Date(nowInUSET);
-  tomorrowInUSET.setDate(tomorrowInUSET.getDate() + 1);
-  const tomorrowUSET = getUSEasternDateString(tomorrowInUSET);
+  const todayUSET = getUSEasternDateString(new Date());
+  const [year, month, day] = todayUSET.split('-').map(Number);
+  const tomorrowDate = new Date(year, month - 1, day + 1); // month is 0-indexed
+  const tomorrowUSET = getUSEasternDateString(tomorrowDate);
   
   if (!oddsCache.games || oddsCache.games.length === 0) {
     console.log(`[GitHub Actions] ⚠️ No games in cache, using tomorrow: ${tomorrowUSET}`);
