@@ -262,17 +262,36 @@ function getGameDateFromOddsCache(oddsCache) {
 }
 
 function calculateImpliedProbabilities(overOddsStr, underOddsStr) {
-  const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
-    ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
-    : null;
-  const underOdds = (underOddsStr && underOddsStr !== 'N/A')
-    ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
-    : null;
+  // Parse American odds strings (e.g., "+130", "-110") to numeric American odds
+  const parseAmericanOddsValue = (oddsStr) => {
+    if (!oddsStr || oddsStr === 'N/A') return null;
+    // Remove all non-numeric characters except +, -, and decimal point
+    const cleaned = typeof oddsStr === 'string' 
+      ? oddsStr.replace(/[^0-9.+-]/g, '') 
+      : String(oddsStr).replace(/[^0-9.+-]/g, '');
+    const num = parseFloat(cleaned);
+    if (isNaN(num) || !Number.isFinite(num)) return null;
+    // If the number is between 1 and 10, it might be decimal odds - convert to American
+    if (num >= 1 && num <= 10 && !cleaned.includes('+') && !cleaned.includes('-')) {
+      // This is decimal odds, convert to American
+      if (num >= 2.0) {
+        return (num - 1) * 100; // e.g., 2.3 -> +130
+      } else {
+        return -100 / (num - 1); // e.g., 1.3 -> -333.33
+      }
+    }
+    // Otherwise, treat as American odds
+    return num;
+  };
+  
+  const overOdds = parseAmericanOddsValue(overOddsStr);
+  const underOdds = parseAmericanOddsValue(underOddsStr);
   
   if (overOdds === null || underOdds === null || !Number.isFinite(overOdds) || !Number.isFinite(underOdds)) {
     return null;
   }
   
+  // Calculate implied probabilities from American odds
   const overProb = overOdds >= 0 ? (100 / (overOdds + 100)) * 100 : (Math.abs(overOdds) / (Math.abs(overOdds) + 100)) * 100;
   const underProb = underOdds >= 0 ? (100 / (underOdds + 100)) * 100 : (Math.abs(underOdds) / (Math.abs(underOdds) + 100)) * 100;
   const totalProb = overProb + underProb;
@@ -589,14 +608,16 @@ async function processPlayerProps() {
             if (!overOddsStr || overOddsStr === 'N/A' || !underOddsStr || underOddsStr === 'N/A') continue;
             if (overOddsStr === '+100' && underOddsStr === '+100') continue;
             
+            // Parse American odds to decimal (for storage/display)
             const overOdds = parseAmericanOdds(overOddsStr);
             const underOdds = parseAmericanOdds(underOddsStr);
             
             if (overOdds === null || underOdds === null) continue;
             
-            const implied = calculateImpliedProbabilities(overOdds, underOdds);
-            const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(overOdds);
-            const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(underOdds);
+            // Calculate implied probabilities from ORIGINAL American odds strings (not decimal)
+            const implied = calculateImpliedProbabilities(overOddsStr, underOddsStr);
+            const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(parseFloat(overOddsStr.replace(/[^0-9+-]/g, '')));
+            const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(parseFloat(underOddsStr.replace(/[^0-9+-]/g, '')));
             
             // Player ID will be fetched from production API during stats calculation
             const playerId = '';
