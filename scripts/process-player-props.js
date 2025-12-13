@@ -799,13 +799,14 @@ async function processPlayerProps() {
         let actualOpponent = prop.opponent;
         let position = null;
         
-        // Helper function to normalize names for matching (handles apostrophes and special characters)
+        // Helper function to normalize names for matching
+        // MUST match the depth chart API's `norm` function exactly:
+        // norm = (s) => (s || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
         const normalizeNameForMatch = (name) => {
           if (!name) return '';
-          // Remove apostrophes, hyphens, and other special chars, convert to lowercase
           return name.toLowerCase()
-            .replace(/[''`]/g, '') // Remove apostrophes (straight, curly, backtick)
-            .replace(/[^a-z0-9\s]/g, '') // Remove all other special chars
+            .replace(/[^a-z\s]/g, '') // Remove all non-alphabetic chars (including apostrophes, numbers, etc.)
+            .replace(/\b(jr|sr|ii|iii|iv)\b/g, '') // Remove suffixes
             .replace(/\s+/g, ' ') // Normalize whitespace
             .trim();
         };
