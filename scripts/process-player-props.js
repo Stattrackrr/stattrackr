@@ -1161,15 +1161,24 @@ async function processPlayerProps() {
     
     // Add existing props that aren't in our filtered set AND aren't already in new props
     let addedCount = 0;
+    let filteredOutCount = 0;
+    let duplicateCount = 0;
     for (const [key, existingProp] of existingPropsMap.entries()) {
       // Only keep existing props if they're NOT in our filtered stat list
       // AND not already in the new props (to avoid duplicates)
-      if (!allowedStats.includes(existingProp.statType) && !newPropsKeys.has(key)) {
+      if (newPropsKeys.has(key)) {
+        duplicateCount++;
+        continue; // Skip duplicates
+      }
+      if (!allowedStats.includes(existingProp.statType)) {
         finalProps.push(existingProp);
         addedCount++;
+      } else {
+        filteredOutCount++;
       }
     }
     
+    console.log(`[GitHub Actions] 📊 Merge details: ${addedCount} kept, ${filteredOutCount} filtered (same stat type), ${duplicateCount} duplicates`);
     console.log(`[GitHub Actions] ✅ Merged cache: ${finalProps.length} total props (${propsWithStats.length} new, ${addedCount} existing)`);
   }
   
