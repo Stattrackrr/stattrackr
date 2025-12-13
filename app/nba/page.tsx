@@ -2643,8 +2643,13 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                           linesByValue.get(lineValue)!.push(line);
                                         });
 
+                                        // Sort by number of bookmakers (descending) - favor lines with more bookmakers
+                                        const sortedLines = Array.from(linesByValue.entries()).sort((a, b) => {
+                                          return b[1].length - a[1].length; // More bookmakers first
+                                        });
+
                                         // Render each unique line value
-                                        return Array.from(linesByValue.entries()).map(([lineValue, lines]) => {
+                                        return sortedLines.map(([lineValue, lines]) => {
                                           // Use a stable key: player name + stat type + line value
                                           const expandKey = `${prop.playerName}|${prop.statType}|${lineValue}`;
                                           // Show 2 initially, or all if there are 2 or fewer
@@ -3741,11 +3746,16 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   }
                                 });
                                 
+                                // Sort by number of bookmakers (descending) - favor lines with more bookmakers
+                                const sortedLines = Array.from(linesByValue.entries()).sort((a, b) => {
+                                  return b[1].length - a[1].length; // More bookmakers first
+                                });
+                                
                                 return (
                                   <div className="flex items-center gap-2">
                                     <div className="overflow-x-auto -mx-2 px-2 lg:-mx-4 lg:px-4 flex-1">
                                       <div className="flex gap-2 min-w-max">
-                                        {Array.from(linesByValue.entries()).map(([lineValue, lines]) => (
+                                        {sortedLines.map(([lineValue, lines]) => (
                                           lines.slice(0, 3).map((line, lineIdx) => {
                                             const bookmakerKey = line.bookmaker?.toLowerCase() || '';
                                             const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;

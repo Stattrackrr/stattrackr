@@ -492,25 +492,10 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 📊 Filtering stats to: ${allowedStats.join(', ')}`);
   }
   
-  // Check existing cache
-  // If we're filtering stats, we want to merge with existing cache
+  // Always overwrite cache - no merging or early returns
   const existingCache = await getCache(cacheKey);
-  let existingPropsMap = new Map();
-  
   if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
-    if (allowedStats && !forceRefresh) {
-      // We're filtering stats - merge with existing cache
-      console.log(`[GitHub Actions] 📦 Found existing cache (${existingCache.length} props) - will merge with new stats`);
-      for (const prop of existingCache) {
-        const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
-        existingPropsMap.set(key, prop);
-      }
-    } else if (!forceRefresh) {
-      // No stat filter and not forcing refresh - use existing cache
-      console.log(`[GitHub Actions] ✅ Cache already exists (${existingCache.length} props)`);
-      console.log(`[GitHub Actions] 💡 Use --refresh flag to force recalculation`);
-      return;
-    }
+    console.log(`[GitHub Actions] 📦 Found existing cache (${existingCache.length} props) - will overwrite with new data`);
   }
   
   if (forceRefresh) {
@@ -1019,15 +1004,35 @@ async function processPlayerProps() {
             if (gamesWithStats.length > 0) {
               console.log(`[GitHub Actions] ✅ Found ${gamesWithStats.length} games with stats for ${prop.playerName} ${prop.statType}`);
               
-              // Calculate season average
-              const seasonValues = gamesWithStats.map((g) => g.statValue);
+              // Filter to current season games only (EXACT SAME LOGIC AS DASHBOARD)
+              const getSeasonYear = (stats) => {
+                if (!stats?.game?.date) return null;
+                const gameDate = new Date(stats.game.date);
+                const gameYear = gameDate.getFullYear();
+                const gameMonth = gameDate.getMonth();
+                // NBA season spans two calendar years (e.g., 2024-25 season)
+                // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
+                return gameMonth >= 9 ? gameYear : gameYear - 1;
+              };
+              
+              const currentSeasonGames = gamesWithStats.filter((stats) => {
+                const gameSeasonYear = getSeasonYear(stats);
+                return gameSeasonYear === currentSeason;
+              });
+              
+              console.log(`[GitHub Actions] 📅 Current season (${currentSeason}): ${currentSeasonGames.length} games, Total: ${gamesWithStats.length} games`);
+              
+              // Calculate season average from CURRENT SEASON ONLY
+              const seasonValues = currentSeasonGames.map((g) => g.statValue);
               const seasonSum = seasonValues.reduce((sum, val) => sum + val, 0);
               averages.seasonAvg = seasonValues.length > 0 ? seasonSum / seasonValues.length : null;
               
-              // Calculate season hit rate
+              // Calculate season hit rate from CURRENT SEASON ONLY
               if (Number.isFinite(prop.line) && seasonValues.length > 0) {
                 const hits = seasonValues.filter((val) => val > prop.line).length;
                 averages.seasonHitRate = { hits, total: seasonValues.length };
+              } else {
+                averages.seasonHitRate = null;
               }
               
               // Calculate last 5 average
@@ -1305,40 +1310,9 @@ async function processPlayerProps() {
   }));
   console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
-  // Merge with existing props if we filtered stats
-  let finalProps = [...propsWithStats]; // Start with new props
-  if (allowedStats && existingPropsMap.size > 0) {
-    console.log(`[GitHub Actions] 🔀 Merging ${propsWithStats.length} new props with ${existingPropsMap.size} existing props...`);
-    
-    // Create a Set of keys from new props to avoid duplicates
-    const newPropsKeys = new Set();
-    for (const prop of propsWithStats) {
-      const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
-      newPropsKeys.add(key);
-    }
-    
-    // Add existing props that aren't in our filtered set AND aren't already in new props
-    let addedCount = 0;
-    let filteredOutCount = 0;
-    let duplicateCount = 0;
-    for (const [key, existingProp] of existingPropsMap.entries()) {
-      // Only keep existing props if they're NOT in our filtered stat list
-      // AND not already in the new props (to avoid duplicates)
-      if (newPropsKeys.has(key)) {
-        duplicateCount++;
-        continue; // Skip duplicates
-      }
-      if (!allowedStats.includes(existingProp.statType)) {
-        finalProps.push(existingProp);
-        addedCount++;
-      } else {
-        filteredOutCount++;
-      }
-    }
-    
-    console.log(`[GitHub Actions] 📊 Merge details: ${addedCount} kept, ${filteredOutCount} filtered (same stat type), ${duplicateCount} duplicates`);
-    console.log(`[GitHub Actions] ✅ Merged cache: ${finalProps.length} total props (${propsWithStats.length} new, ${addedCount} existing)`);
-  }
+  // Always overwrite - no merging
+  const finalProps = [...propsWithStats];
+  console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (overwriting existing)`);
   
   // Clear checkpoint and save final cache
   try {
