@@ -1114,25 +1114,62 @@ async function processPlayerProps() {
             const cachedDvp = dvpCache.get(dvpKey);
             if (cachedDvp && typeof cachedDvp === 'object') {
               dvp = cachedDvp;
+              if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                console.log(`[GitHub Actions] 🔍 DvP (cached) for ${prop.playerName}: position=${position}, opponent=${actualOpponent}, metric=${dvpMetric}, rank=${dvp.rank}`);
+              }
             } else {
               try {
-                const dvpData = await callAPI(`/api/dvp/rank?pos=${position}&metric=${dvpMetric}`).catch(() => null);
+                const dvpUrl = `/api/dvp/rank?pos=${position}&metric=${dvpMetric}`;
+                if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                  console.log(`[GitHub Actions] 🔍 Fetching DvP for ${prop.playerName}: ${dvpUrl}`);
+                  console.log(`[GitHub Actions] 🔍 DvP params: position=${position}, opponent=${actualOpponent}, metric=${dvpMetric}, statType=${prop.statType}`);
+                }
+                const dvpData = await callAPI(dvpUrl).catch((e) => {
+                  if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                    console.error(`[GitHub Actions] ❌ DvP API error for ${prop.playerName}:`, e.message);
+                  }
+                  return null;
+                });
                 if (dvpData && dvpData.ranks && typeof dvpData.ranks === 'object') {
                   const teamAbbr = TEAM_FULL_TO_ABBR[actualOpponent] || actualOpponent.toUpperCase();
-                  dvp = {
-                    rank: dvpData.ranks[teamAbbr] || null,
-                    statValue: (dvpData.values && Array.isArray(dvpData.values)) 
-                      ? (dvpData.values.find(v => v && v.team && v.team.toUpperCase() === teamAbbr)?.value || null)
-                      : null
-                  };
+                  const rank = dvpData.ranks[teamAbbr] || null;
+                  const statValue = (dvpData.values && Array.isArray(dvpData.values)) 
+                    ? (dvpData.values.find(v => v && v.team && v.team.toUpperCase() === teamAbbr)?.value || null)
+                    : null;
+                  
+                  dvp = { rank, statValue };
                   dvpCache.set(dvpKey, dvp);
+                  
+                  if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                    console.log(`[GitHub Actions] ✅ DvP for ${prop.playerName}: teamAbbr=${teamAbbr}, rank=${rank}, statValue=${statValue}`);
+                    console.log(`[GitHub Actions] 🔍 Available ranks keys:`, Object.keys(dvpData.ranks).slice(0, 10));
+                    console.log(`[GitHub Actions] 🔍 Looking for team: ${teamAbbr} in ranks`);
+                  }
                 } else {
                   dvpCache.set(dvpKey, dvp);
+                  if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                    console.warn(`[GitHub Actions] ⚠️ No DvP data returned for ${prop.playerName}:`, {
+                      hasData: !!dvpData,
+                      hasRanks: !!(dvpData && dvpData.ranks),
+                      ranksType: dvpData && typeof dvpData.ranks
+                    });
+                  }
                 }
               } catch (e) {
                 dvpCache.set(dvpKey, dvp);
+                if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+                  console.error(`[GitHub Actions] ❌ DvP exception for ${prop.playerName}:`, e.message);
+                }
               }
             }
+          } else {
+            if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+              console.warn(`[GitHub Actions] ⚠️ No DvP metric mapping for ${prop.playerName} statType=${prop.statType}`);
+            }
+          }
+        } else {
+          if (prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox')) {
+            console.warn(`[GitHub Actions] ⚠️ Missing DvP prerequisites for ${prop.playerName}: position=${position}, actualOpponent=${actualOpponent}`);
           }
         }
         

@@ -11540,3 +11540,50 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Sat 13/12/2025 23:18:40.27] warm-rosters end (exit 0) 
+[Sat 13/12/2025 23:48:37.39] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
+{
+    "success":  true,
+    "date":  "20251213",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 13/12/2025 23:48:40.74] warm-rosters end (exit 0) 
+[Sun 14/12/2025  0:18:37.38] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  true,
+    "date":  "20251214",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 14/12/2025  0:18:41.04] warm-rosters end (exit 0) 
+[Sun 14/12/2025  0:48:37.36] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  true,
+    "date":  "20251214",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 14/12/2025  0:48:40.53] warm-rosters end (exit 0) 
+[Sun 14/12/2025  1:18:37.37] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  true,
+    "date":  "20251214",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sun 14/12/2025  1:18:40.46] warm-rosters end (exit 0) 
+[Sun 14/12/2025  1:48:36.55] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+^C
