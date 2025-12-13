@@ -2868,12 +2868,22 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                         Bookmakers
                                       </div>
                                       <div className="flex flex-col gap-0.5">
-                                        <div className={`text-sm font-semibold ${prop.impliedOverProb >= prop.impliedUnderProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                          Over {prop.impliedOverProb.toFixed(1)}%
-                                        </div>
-                                        <div className={`text-sm font-semibold ${prop.impliedUnderProb >= prop.impliedOverProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                          Under {prop.impliedUnderProb.toFixed(1)}%
-                                        </div>
+                                        {(() => {
+                                          // Calculate implied probabilities on-the-fly from odds (not from cache)
+                                          const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
+                                          const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? 50);
+                                          const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? 50);
+                                          return (
+                                            <>
+                                              <div className={`text-sm font-semibold ${overProb >= underProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                Over {overProb.toFixed(1)}%
+                                              </div>
+                                              <div className={`text-sm font-semibold ${underProb >= overProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                Under {underProb.toFixed(1)}%
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </div>
@@ -3615,12 +3625,22 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       {/* Bookmaker IP */}
                                       <div className="flex flex-col items-center justify-center rounded border px-2.5 py-1.5" style={getStatBoxStyle(null)}>
                                         <div className={`text-[9px] font-medium mb-1 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Books</div>
-                                        <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                          {prop.impliedOverProb !== null && prop.impliedOverProb !== undefined ? `O ${prop.impliedOverProb.toFixed(1)}%` : '-'}
-                                        </div>
-                                        <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                          {prop.impliedUnderProb !== null && prop.impliedUnderProb !== undefined ? `U ${prop.impliedUnderProb.toFixed(1)}%` : '-'}
-                                        </div>
+                                        {(() => {
+                                          // Calculate implied probabilities on-the-fly from odds
+                                          const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
+                                          const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? null);
+                                          const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? null);
+                                          return (
+                                            <>
+                                              <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                                {overProb !== null && overProb !== undefined ? `O ${overProb.toFixed(1)}%` : '-'}
+                                              </div>
+                                              <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                                {underProb !== null && underProb !== undefined ? `U ${underProb.toFixed(1)}%` : '-'}
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </div>
