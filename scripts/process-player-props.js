@@ -1207,9 +1207,30 @@ async function processPlayerProps() {
     await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
     console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}`);
     console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
+    
+    // Debug: Log stat type breakdown
+    const statTypeCounts = {};
+    finalProps.forEach(prop => {
+      statTypeCounts[prop.statType] = (statTypeCounts[prop.statType] || 0) + 1;
+    });
+    console.log(`[GitHub Actions] 📊 Stat type breakdown:`, statTypeCounts);
+    
     await setCache(cacheKey, finalProps, 24 * 60);
     console.log(`[GitHub Actions] ✅ Processing complete! Saved ${finalProps.length} props to cache`);
     console.log(`[GitHub Actions] 🔑 Cache key saved: ${cacheKey}`);
+    
+    // Verify the save by reading it back
+    const verifyCache = await getCache(cacheKey);
+    if (verifyCache && Array.isArray(verifyCache)) {
+      console.log(`[GitHub Actions] ✅ Verified: Cache contains ${verifyCache.length} props after save`);
+      const verifyStatTypes = {};
+      verifyCache.forEach(prop => {
+        verifyStatTypes[prop.statType] = (verifyStatTypes[prop.statType] || 0) + 1;
+      });
+      console.log(`[GitHub Actions] 📊 Verified stat types:`, verifyStatTypes);
+    } else {
+      console.warn(`[GitHub Actions] ⚠️ Warning: Could not verify cache after save`);
+    }
   } catch (e) {
     console.error(`[GitHub Actions] ⚠️ Error saving final cache: ${e.message}`);
     // Try to save anyway - partial data is better than no data
