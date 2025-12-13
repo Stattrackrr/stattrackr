@@ -1449,10 +1449,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return Array.from(types).sort();
   }, [playerProps]);
 
-  // Initialize selected filters when data loads (all selected by default)
+  // Initialize selected filters when data loads (all selected by default, except Betway)
   useEffect(() => {
     if (availableBookmakers.length > 0 && selectedBookmakers.size === 0) {
-      setSelectedBookmakers(new Set(availableBookmakers));
+      // Exclude Betway from default selection (still fetched, just unchecked by default)
+      const defaultBookmakers = availableBookmakers.filter(bm => 
+        bm.toLowerCase() !== 'betway'
+      );
+      setSelectedBookmakers(new Set(defaultBookmakers));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableBookmakers]);
