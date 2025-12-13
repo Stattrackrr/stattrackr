@@ -811,20 +811,41 @@ async function processPlayerProps() {
         };
         
         const normalizedPlayerName = normalizeNameForMatch(prop.playerName);
+        const isDebugPlayer = prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox');
+        
+        if (isDebugPlayer) {
+          console.log(`[GitHub Actions] 🔍 Looking for position for ${prop.playerName}`);
+          console.log(`[GitHub Actions] 🔍 Normalized name: "${normalizedPlayerName}"`);
+          console.log(`[GitHub Actions] 🔍 Checking teams: home=${prop.team}, away=${prop.opponent}`);
+        }
         
         // Try home team first
         let foundOnHomeTeam = false;
         const homeDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
         if (homeDepthChart?.depthChart) {
+          if (isDebugPlayer) {
+            console.log(`[GitHub Actions] 🔍 Checking home team ${prop.team} depth chart...`);
+          }
           for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
             const players = homeDepthChart.depthChart[pos] || [];
+            if (isDebugPlayer && players.length > 0) {
+              const sampleNames = players.slice(0, 3).map(p => {
+                const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
+                return `${name} (normalized: "${normalizeNameForMatch(name)}")`;
+              });
+              console.log(`[GitHub Actions] 🔍 ${prop.team} ${pos} players (sample):`, sampleNames);
+            }
             if (players.some(p => {
               const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
               const normalizedName = normalizeNameForMatch(name);
               // Check if normalized names match (handles apostrophes and special chars)
-              return normalizedName === normalizedPlayerName || 
+              const matches = normalizedName === normalizedPlayerName || 
                      normalizedName.includes(normalizedPlayerName) || 
                      normalizedPlayerName.includes(normalizedName);
+              if (isDebugPlayer && matches) {
+                console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
+              }
+              return matches;
             })) {
               position = pos;
               foundOnHomeTeam = true;
@@ -835,21 +856,37 @@ async function processPlayerProps() {
               break;
             }
           }
+        } else if (isDebugPlayer) {
+          console.warn(`[GitHub Actions] ⚠️ No depth chart data for home team ${prop.team}`);
         }
         
         // If not found on home team, try away team
         if (!foundOnHomeTeam && prop.opponent) {
           const awayDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.opponent)}`).catch(() => null);
           if (awayDepthChart?.depthChart) {
+            if (isDebugPlayer) {
+              console.log(`[GitHub Actions] 🔍 Checking away team ${prop.opponent} depth chart...`);
+            }
             for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
               const players = awayDepthChart.depthChart[pos] || [];
+              if (isDebugPlayer && players.length > 0) {
+                const sampleNames = players.slice(0, 3).map(p => {
+                  const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
+                  return `${name} (normalized: "${normalizeNameForMatch(name)}")`;
+                });
+                console.log(`[GitHub Actions] 🔍 ${prop.opponent} ${pos} players (sample):`, sampleNames);
+              }
               if (players.some(p => {
                 const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
                 const normalizedName = normalizeNameForMatch(name);
                 // Check if normalized names match (handles apostrophes and special chars)
-                return normalizedName === normalizedPlayerName || 
+                const matches = normalizedName === normalizedPlayerName || 
                        normalizedName.includes(normalizedPlayerName) || 
                        normalizedPlayerName.includes(normalizedName);
+                if (isDebugPlayer && matches) {
+                  console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
+                }
+                return matches;
               })) {
                 position = pos;
                 actualTeam = prop.opponent; // Away team (swap)
@@ -859,11 +896,17 @@ async function processPlayerProps() {
                 break;
               }
             }
+          } else if (isDebugPlayer) {
+            console.warn(`[GitHub Actions] ⚠️ No depth chart data for away team ${prop.opponent}`);
           }
         }
         
         if (!position) {
           console.warn(`[GitHub Actions] ⚠️ No position found for ${prop.playerName} (${actualTeam}) - DvP will be null`);
+          if (isDebugPlayer) {
+            console.warn(`[GitHub Actions] ⚠️ Searched in: home=${prop.team}, away=${prop.opponent}`);
+            console.warn(`[GitHub Actions] ⚠️ Normalized search name: "${normalizedPlayerName}"`);
+          }
         }
         
         // Update prop with correct team/opponent
