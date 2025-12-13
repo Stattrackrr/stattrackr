@@ -408,12 +408,34 @@ async function processPlayerProps() {
   // Check for force refresh flag
   const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('-r');
   
+  // Check for stat filter (e.g., --stats=PRA,RA,PR,PA,POINTS,REB,AST)
+  let allowedStats = null;
+  const statsArg = process.argv.find(arg => arg.startsWith('--stats='));
+  if (statsArg) {
+    const statsList = statsArg.split('=')[1];
+    allowedStats = statsList.split(',').map(s => s.trim().toUpperCase());
+    console.log(`[GitHub Actions] 📊 Filtering stats to: ${allowedStats.join(', ')}`);
+  }
+  
   // Check existing cache
+  // If we're filtering stats, we want to merge with existing cache
   const existingCache = await getCache(cacheKey);
-  if (existingCache && Array.isArray(existingCache) && existingCache.length > 0 && !forceRefresh) {
-    console.log(`[GitHub Actions] ✅ Cache already exists (${existingCache.length} props)`);
-    console.log(`[GitHub Actions] 💡 Use --refresh flag to force recalculation`);
-    return;
+  let existingPropsMap = new Map();
+  
+  if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
+    if (allowedStats && !forceRefresh) {
+      // We're filtering stats - merge with existing cache
+      console.log(`[GitHub Actions] 📦 Found existing cache (${existingCache.length} props) - will merge with new stats`);
+      for (const prop of existingCache) {
+        const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+        existingPropsMap.set(key, prop);
+      }
+    } else if (!forceRefresh) {
+      // No stat filter and not forcing refresh - use existing cache
+      console.log(`[GitHub Actions] ✅ Cache already exists (${existingCache.length} props)`);
+      console.log(`[GitHub Actions] 💡 Use --refresh flag to force recalculation`);
+      return;
+    }
   }
   
   if (forceRefresh) {
@@ -443,6 +465,10 @@ async function processPlayerProps() {
         const statTypes = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'THREES', 'PRA', 'PA', 'PR', 'RA'];
         
         for (const statType of statTypes) {
+          // Filter by allowed stats if specified
+          if (allowedStats && !allowedStats.includes(statType)) {
+            continue;
+          }
           const statData = propsData[statType];
           if (!statData) continue;
           
@@ -988,13 +1014,29 @@ async function processPlayerProps() {
   }));
   console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
+  // Merge with existing props if we filtered stats
+  let finalProps = propsWithStats;
+  if (allowedStats && existingPropsMap.size > 0) {
+    console.log(`[GitHub Actions] 🔀 Merging ${propsWithStats.length} new props with ${existingPropsMap.size} existing props...`);
+    
+    // Add existing props that aren't in our filtered set
+    for (const [key, existingProp] of existingPropsMap.entries()) {
+      // Only keep existing props if they're NOT in our filtered stat list
+      if (!allowedStats.includes(existingProp.statType)) {
+        finalProps.push(existingProp);
+      }
+    }
+    
+    console.log(`[GitHub Actions] ✅ Merged cache: ${finalProps.length} total props (${propsWithStats.length} new, ${finalProps.length - propsWithStats.length} existing)`);
+  }
+  
   // Clear checkpoint and save final cache
   try {
     await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
     console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}`);
-    console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${propsWithStats.length}`);
-    await setCache(cacheKey, propsWithStats, 24 * 60);
-    console.log(`[GitHub Actions] ✅ Processing complete! Saved ${propsWithStats.length} props to cache`);
+    console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
+    await setCache(cacheKey, finalProps, 24 * 60);
+    console.log(`[GitHub Actions] ✅ Processing complete! Saved ${finalProps.length} props to cache`);
     console.log(`[GitHub Actions] 🔑 Cache key saved: ${cacheKey}`);
   } catch (e) {
     console.error(`[GitHub Actions] ⚠️ Error saving final cache: ${e.message}`);

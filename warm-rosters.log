@@ -11450,3 +11450,60 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Sat 13/12/2025 17:21:01.47] warm-rosters end (exit 0) 
+[Sat 13/12/2025 17:48:37.85] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
+{
+    "success":  true,
+    "date":  "20251213",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 13/12/2025 17:48:41.24] warm-rosters end (exit 0) 
+[Sat 13/12/2025 18:18:37.39] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
+{
+    "success":  true,
+    "date":  "20251213",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 13/12/2025 18:18:40.46] warm-rosters end (exit 0) 
+[Sat 13/12/2025 18:58:51.91] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251213"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251212"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251214"
+}
+No games found for today/Añ1 or requests failed.
+At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
++ ...  $worked) { throw "No games found for today/Añ1 or requests failed."  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (No games found ...equests failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
+ 
+[Sat 13/12/2025 18:58:54.35] warm-rosters end (exit 1) 
+[Sat 13/12/2025 21:49:13.56] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
+{
+    "success":  true,
+    "date":  "20251213",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Sat 13/12/2025 21:49:21.48] warm-rosters end (exit 0) 

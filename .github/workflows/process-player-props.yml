@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false  # Don't cancel - let it complete
 
 jobs:
-  process_props:
+  process_props_main:
     runs-on: ubuntu-latest
     timeout-minutes: 60  # Allow up to 60 minutes for processing
     continue-on-error: true  # Don't fail workflow if processing fails
@@ -42,11 +42,46 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Process Player Props
+      - name: Process Main Stats (PRA, RA, PR, PA, POINTS, REB, AST)
         if: steps.check_prod_url.outputs.configured == 'true'
         continue-on-error: true
         run: |
-          echo "🔄 Starting player props processing..."
-          node scripts/process-player-props.js
-          echo "✅ Player props processing completed"
+          echo "🔄 Starting player props processing for main stats..."
+          node scripts/process-player-props.js --stats=PRA,RA,PR,PA,PTS,REB,AST
+          echo "✅ Main stats processing completed"
+
+  process_props_secondary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # Allow up to 60 minutes for processing
+    continue-on-error: true  # Don't fail workflow if processing fails
+    needs: process_props_main  # Wait for main stats to complete
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Wait 5 minutes
+        run: |
+          echo "⏳ Waiting 5 minutes before processing secondary stats..."
+          sleep 300
+          echo "✅ Wait complete, starting secondary stats processing"
+
+      - name: Process Secondary Stats (STL, BLK, THREES)
+        continue-on-error: true
+        run: |
+          echo "🔄 Starting player props processing for secondary stats..."
+          node scripts/process-player-props.js --stats=STL,BLK,THREES
+          echo "✅ Secondary stats processing completed"
 
