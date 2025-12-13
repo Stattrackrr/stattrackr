@@ -175,13 +175,15 @@ function getGameDateFromOddsCache(oddsCache) {
   };
   
   // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
+  // STRICT: Only process games that are exactly tomorrow, not any future date
   const tomorrowUSET = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
   
   if (!oddsCache.games || oddsCache.games.length === 0) {
+    console.log(`[GitHub Actions] ⚠️ No games in cache, using tomorrow: ${tomorrowUSET}`);
     return tomorrowUSET;
   }
   
-  // Filter games to only include tomorrow's games
+  // Filter games to ONLY include tomorrow's games (strict check)
   const tomorrowGames = oddsCache.games.filter(game => {
     if (!game.commenceTime) return false;
     const commenceStr = String(game.commenceTime).trim();
@@ -197,13 +199,14 @@ function getGameDateFromOddsCache(oddsCache) {
   
   // If we have games for tomorrow, use tomorrow's date
   if (tomorrowGames.length > 0) {
-    console.log(`[GitHub Actions] ✅ Found ${tomorrowGames.length} games for TOMORROW: ${tomorrowUSET}`);
+    console.log(`[GitHub Actions] ✅ Found ${tomorrowGames.length} games for TOMORROW (${tomorrowUSET})`);
     return tomorrowUSET;
   }
   
-  // Fallback: if no games for tomorrow, use the earliest future date
-  const gameDates = new Set();
+  // NO FALLBACK: If no games for tomorrow, return tomorrow anyway but log a warning
+  // This ensures we don't process games from 2-3 days in the future
   const todayUSET = getUSEasternDateString(new Date());
+  const allGameDates = new Set();
   for (const game of oddsCache.games) {
     if (!game.commenceTime) continue;
     const commenceStr = String(game.commenceTime).trim();
@@ -214,20 +217,13 @@ function getGameDateFromOddsCache(oddsCache) {
       const date = new Date(commenceStr);
       gameDateUSET = getUSEasternDateString(date);
     }
-    // Only include future dates (not today or past)
-    if (gameDateUSET > todayUSET) {
-      gameDates.add(gameDateUSET);
-    }
+    allGameDates.add(gameDateUSET);
   }
   
-  if (gameDates.size > 0) {
-    const earliestFutureDate = Array.from(gameDates).sort()[0];
-    console.log(`[GitHub Actions] ⚠️ No games for tomorrow (${tomorrowUSET}), using earliest future date: ${earliestFutureDate}`);
-    return earliestFutureDate;
-  }
-  
-  // Last resort: return tomorrow anyway
-  console.log(`[GitHub Actions] ⚠️ No future games found, using tomorrow: ${tomorrowUSET}`);
+  console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${tomorrowUSET})`);
+  console.log(`[GitHub Actions] 📊 Available game dates in cache: ${Array.from(allGameDates).sort().join(', ')}`);
+  console.log(`[GitHub Actions] 📅 Today: ${todayUSET}, Tomorrow: ${tomorrowUSET}`);
+  console.log(`[GitHub Actions] ⚠️ Returning tomorrow anyway - will result in empty cache (no games to process)`);
   return tomorrowUSET;
 }
 
@@ -502,6 +498,20 @@ async function processPlayerProps() {
   });
   
   console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${tomorrowUSET}) out of ${oddsCache.games?.length || 0} total games`);
+  
+  if (games.length === 0) {
+    console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${tomorrowUSET}) - nothing to process`);
+    console.log(`[GitHub Actions] 💡 This is normal if tomorrow's games aren't in the odds cache yet`);
+    return;
+  }
+  
+  // Log which teams are playing tomorrow
+  const tomorrowTeams = new Set();
+  for (const game of games) {
+    if (game.homeTeam) tomorrowTeams.add(game.homeTeam);
+    if (game.awayTeam) tomorrowTeams.add(game.awayTeam);
+  }
+  console.log(`[GitHub Actions] 🏀 Teams playing tomorrow: ${Array.from(tomorrowTeams).join(', ')}`);
   
   const allProps = [];
   

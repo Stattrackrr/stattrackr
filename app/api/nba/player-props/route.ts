@@ -94,6 +94,7 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
   }
   
   // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
+  // STRICT: Only process games that are exactly tomorrow, not any future date
   const tomorrowUSET = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
   
   if (gameDates.size === 0) {
@@ -106,16 +107,12 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
     return tomorrowUSET;
   }
   
-  // No games for tomorrow, use the earliest future date
-  const sortedDates = Array.from(gameDates).sort().filter(d => d > todayUSET);
-  if (sortedDates.length > 0) {
-    const earliestFutureDate = sortedDates[0];
-    console.log(`[Player Props API] ⚠️ No games for tomorrow (${tomorrowUSET}), using earliest future date: ${earliestFutureDate}`);
-    return earliestFutureDate;
-  }
-  
-  // Last resort: return tomorrow anyway
-  console.log(`[Player Props API] ⚠️ No future games found, using tomorrow: ${tomorrowUSET}`);
+  // NO FALLBACK: If no games for tomorrow, return tomorrow anyway
+  // This ensures we don't process games from 2-3 days in the future
+  console.log(`[Player Props API] ⚠️ No games found for tomorrow (${tomorrowUSET})`);
+  console.log(`[Player Props API] 📊 Available game dates: ${Array.from(gameDates).sort().join(', ')}`);
+  console.log(`[Player Props API] 📅 Today: ${todayUSET}, Tomorrow: ${tomorrowUSET}`);
+  console.log(`[Player Props API] ⚠️ Returning tomorrow anyway - cache will be empty until tomorrow's games are available`);
   return tomorrowUSET;
 }
 
