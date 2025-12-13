@@ -120,8 +120,8 @@ function getPlayerIdFromName(playerName) {
 }
 
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
-const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
-const CHECKPOINT_CACHE_PREFIX = 'nba-player-props-checkpoint-v2';
+const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
+const CHECKPOINT_CACHE_PREFIX = 'nba-player-props-checkpoint';
 
 // Helper functions
 function parseAmericanOdds(oddsStr) {
@@ -239,8 +239,9 @@ function getPlayerPropVendors(oddsCache) {
   return Array.from(vendors).sort();
 }
 
-function getPlayerPropsCacheKey(gameDate, oddsLastUpdated, vendorCount) {
-  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${oddsLastUpdated}-v${vendorCount}`;
+function getPlayerPropsCacheKey(gameDate) {
+  // Simple key: just date, no timestamp or vendor count
+  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`;
 }
 
 // Cache helpers
@@ -398,12 +399,11 @@ async function processPlayerProps() {
   console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
   
   const gameDate = getGameDateFromOddsCache(oddsCache);
-  const vendors = getPlayerPropVendors(oddsCache);
-  const vendorCount = vendors.length;
-  const cacheKey = getPlayerPropsCacheKey(gameDate, oddsCache.lastUpdated, vendorCount);
-  const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}-${oddsCache.lastUpdated}-v${vendorCount}`;
+  const cacheKey = getPlayerPropsCacheKey(gameDate);
+  const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}`;
   
-  console.log(`[GitHub Actions] 📅 Processing for game date: ${gameDate}, vendors: ${vendorCount}`);
+  console.log(`[GitHub Actions] 📅 Processing for game date: ${gameDate}`);
+  console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
   
   // Check for force refresh flag
   const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('-r');
@@ -992,7 +992,7 @@ async function processPlayerProps() {
   try {
     await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
     console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}`);
-    console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, lastUpdated=${oddsCache.lastUpdated}, vendorCount=${vendorCount}`);
+    console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${propsWithStats.length}`);
     await setCache(cacheKey, propsWithStats, 24 * 60);
     console.log(`[GitHub Actions] ✅ Processing complete! Saved ${propsWithStats.length} props to cache`);
     console.log(`[GitHub Actions] 🔑 Cache key saved: ${cacheKey}`);

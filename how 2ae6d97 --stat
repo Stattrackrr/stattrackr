@@ -1,0 +1,20 @@
+[33mf77b84d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m Make Supabase cache write non-blocking to prevent timeouts
+[33mf3755bb[m Remove prop deduplication to show all props (300+) instead of one per player
+[33m2ae6d97[m Fix player props not displaying during processing - set loading to false after placeholders
+[33m2f213fe[m Improve stale cache fallback for player props
+[33mf9e2042[m Prevent cache clearing during background refresh race condition
+[33m4d6870e[m Preserve odds cache when pruning removes all games
+[33m14183ff[m Add time-budgeted per-player odds scan with checkpoint
+[33ma93babb[m Limit player odds cron to daily per-player scan
+[33m109e2b3[m Fix refreshOdds return to use new cache refs
+[33ma964eb0[m Improve odds refresh cadence and pruning
+[33m293fdb5[m Add fallback H2H match: accept any game where opponent abbr matches
+[33m40057f6[m Fallback to BDL position lookup when depth chart misses player (DvP)
+[33m2dc29fd[m Use consistent odds cache key across player props endpoints
+[33m1790ae9[m Fix player props filter styling and update player odds refresh to 90 minutes
+[33mec2af83[m Fix TypeScript error: add explicit return type to partitionAltLineItems function
+[33ma402adf[m Fix TypeScript errors: update getStatBoxStyle and getHitRatePercent to accept undefined
+[33mfd65f51[m Fix TypeScript error: handle undefined case for stattrackrOverProb and stattrackrUnderProb
+[33m54abcdb[m Change odds cache TTL from 30 minutes to 2 hours and fix TypeScript error in setOddsFormat
+[33m507533c[m Fix TypeScript error: Add all required return properties to calculatePlayerAverages
+[33meafa3a7[m Fix TypeScript error: Add null check before isNaN call

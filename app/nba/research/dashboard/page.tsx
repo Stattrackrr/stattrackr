@@ -9028,41 +9028,105 @@ const lineMovementInFlightRef = useRef(false);
   const fetchSortedStatsCore = async (playerId: string) => {
     console.log('[fetchSortedStatsCore] Starting fetch for playerId:', playerId);
     const season = currentNbaSeason();
-    const grab = async (yr: number, postseason = false) => {
-      const r = await fetch(`/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`);
-      const j = await r.json().catch(() => ({}));
-      return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+    
+    // Use queued fetch to prevent rate limiting
+    const { queuedFetch } = await import('@/lib/requestQueue');
+    
+    // Fetch stats for a season - fetch both regular and playoffs in parallel
+    // This reduces from 4 requests to 2 requests per player (2 seasons x 1 parallel fetch each)
+    const grabSeason = async (yr: number) => {
+      const fetchRegular = async () => {
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=false`;
+        const requestId = `stats-${playerId}-${yr}-reg`;
+        try {
+          const r = await queuedFetch(url, {}, requestId);
+          const j = await r.json().catch(() => ({}));
+          return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+        } catch (error: any) {
+          if (error?.status === 429) {
+            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array (will use cache if available)`);
+            return [];
+          }
+          throw error;
+        }
+      };
+
+      const fetchPlayoffs = async () => {
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=true`;
+        const requestId = `stats-${playerId}-${yr}-po`;
+        try {
+          const r = await queuedFetch(url, {}, requestId);
+          const j = await r.json().catch(() => ({}));
+          return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+        } catch (error: any) {
+          if (error?.status === 429) {
+            console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array (will use cache if available)`);
+            return [];
+          }
+          throw error;
+        }
+      };
+
+      // Fetch both in parallel (request queue will handle concurrency)
+      const [regular, playoffs] = await Promise.all([
+        fetchRegular(),
+        fetchPlayoffs()
+      ]);
+
+      return [...regular, ...playoffs];
     };
 
-    // Fetch current season + previous season (for "last season" filter and H2H comparisons)
-    // We need both seasons available in playerStats, but default display will show only current season
-    const [currReg, currPO, prev1Reg, prev1PO] = await Promise.all([
-      grab(season, false),        // 2024-25 regular
-      grab(season, true),         // 2024-25 playoffs
-      grab(season - 1, false),    // 2023-24 regular (for last season filter)
-      grab(season - 1, true),     // 2023-24 playoffs (for last season filter)
-    ]);
+    // Fetch sequentially to avoid rate limiting
+    // Process most important first (current season), then previous season
+    const currSeason = await grabSeason(season);        // 2024-25 (regular + playoffs in parallel)
+    const prevSeason = await grabSeason(season - 1);    // 2023-24 (regular + playoffs in parallel)
 
     // Merge current + previous season data, then sort newest-first
     // The baseGameData useMemo will filter by selectedTimeframe to show current/last season
-    const rows = [...currReg, ...currPO, ...prev1Reg, ...prev1PO];
+    const rows = [...currSeason, ...prevSeason];
     
     // Debug: log the structure of received stats
     if (rows.length > 0) {
+      const sampleStat = rows[0];
       console.log('[fetchSortedStatsCore] Received stats structure:', {
         playerId,
         totalRows: rows.length,
-        currReg: currReg.length,
-        currPO: currPO.length,
-        prev1Reg: prev1Reg.length,
-        prev1PO: prev1PO.length,
-        sampleStat: rows[0],
-        hasGame: !!rows[0]?.game,
-        hasGameDate: !!rows[0]?.game?.date,
-        hasTeam: !!rows[0]?.team,
-        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
-        sampleStatKeys: Object.keys(rows[0] || {}),
+        currSeason: currSeason.length,
+        prevSeason: prevSeason.length,
+        hasGame: !!sampleStat?.game,
+        hasGameDate: !!sampleStat?.game?.date,
+        hasTeam: !!sampleStat?.team,
+        hasTeamAbbr: !!sampleStat?.team?.abbreviation,
+        sampleStatKeys: Object.keys(sampleStat || {}),
+        // Log actual stat values to verify all fields are present
+        statValues: {
+          pts: sampleStat?.pts,
+          reb: sampleStat?.reb,
+          ast: sampleStat?.ast,
+          stl: sampleStat?.stl,
+          blk: sampleStat?.blk,
+          fg3m: sampleStat?.fg3m,
+          fgm: sampleStat?.fgm,
+          fga: sampleStat?.fga,
+          ftm: sampleStat?.ftm,
+          fta: sampleStat?.fta,
+          turnover: sampleStat?.turnover,
+          pf: sampleStat?.pf,
+          oreb: sampleStat?.oreb,
+          dreb: sampleStat?.dreb,
+        },
       });
+      
+      // Check stat coverage across all rows
+      const statCoverage = {
+        hasPts: rows.filter(s => s.pts !== undefined && s.pts !== null).length,
+        hasReb: rows.filter(s => s.reb !== undefined && s.reb !== null).length,
+        hasAst: rows.filter(s => s.ast !== undefined && s.ast !== null).length,
+        hasStl: rows.filter(s => s.stl !== undefined && s.stl !== null).length,
+        hasBlk: rows.filter(s => s.blk !== undefined && s.blk !== null).length,
+        hasFg3m: rows.filter(s => s.fg3m !== undefined && s.fg3m !== null).length,
+      };
+      console.log(`[fetchSortedStatsCore] Stat coverage across ${rows.length} stats:`, statCoverage);
     }
     
     const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));

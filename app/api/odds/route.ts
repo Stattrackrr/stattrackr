@@ -24,12 +24,6 @@ export interface BookRow {
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 export async function GET(request: NextRequest) {
-  // Check rate limit
-  const rateLimitResult = checkRateLimit(request);
-  if (!rateLimitResult.allowed) {
-    return rateLimitResult.response!;
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');
@@ -37,9 +31,10 @@ export async function GET(request: NextRequest) {
     
     // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
     // Always read from main key (staging is only used during refresh)
+    // Reduce timeout to prevent long waits
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
-      restTimeoutMs: 10000, // 10s timeout for odds cache
-      jsTimeoutMs: 10000,
+      restTimeoutMs: 5000, // 5s timeout for odds cache (reduced from 10s)
+      jsTimeoutMs: 5000,
     });
     
     // Fallback to in-memory cache
@@ -52,8 +47,24 @@ export async function GET(request: NextRequest) {
     // 2. Main key should always have data (either old or new)
     // 3. This ensures users always see the stable main cache
     
-    // If no cache, wait for refresh to complete (with timeout)
-    if (!oddsCache) {
+    // If we have cached data, return it immediately (even if rate limited)
+    if (oddsCache) {
+      // Continue to process and return cached data below
+    } else {
+      // No cache - check rate limit before triggering refresh
+      const rateLimitResult = checkRateLimit(request);
+      if (!rateLimitResult.allowed) {
+        // Rate limited and no cache - return 429 but with a helpful message
+        return NextResponse.json({
+          success: false,
+          error: 'Rate limit exceeded',
+          data: [],
+          message: 'Too many requests. Please try again later.',
+          loading: true
+        }, { status: 429 });
+      }
+      
+      // Not rate limited - trigger refresh
       console.warn('No odds data in cache - triggering refresh and waiting...');
       try {
         // Wait for refresh with 30 second timeout
@@ -66,8 +77,8 @@ export async function GET(request: NextRequest) {
         
         // Refresh completed - get the new cache
         oddsCache = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
-          restTimeoutMs: 10000,
-          jsTimeoutMs: 10000,
+          restTimeoutMs: 5000,
+          jsTimeoutMs: 5000,
         });
         if (!oddsCache) {
           oddsCache = cache.get(ODDS_CACHE_KEY);

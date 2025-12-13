@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
 
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
-const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
+const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
 const CHECKPOINT_CACHE_PREFIX = 'nba-player-props-checkpoint-v2';
 
 // Helper functions (simplified versions from client code)
@@ -93,8 +93,8 @@ function getPlayerPropVendors(oddsCache: OddsCache): string[] {
   return Array.from(vendors).sort();
 }
 
-function getPlayerPropsCacheKey(gameDate: string, oddsLastUpdated: string, vendorCount: number): string {
-  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${oddsLastUpdated}-v${vendorCount}`;
+function getPlayerPropsCacheKey(gameDate: string): string {
+  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`;
 }
 
 // Helper to get base URL for internal API calls
@@ -783,11 +783,10 @@ async function processPlayerPropsCore(request: NextRequest) {
     }
     
     const gameDate = getGameDateFromOddsCache(oddsCache);
-    const playerPropVendors = getPlayerPropVendors(oddsCache);
-    const vendorCount = playerPropVendors.length;
-    const cacheKey = getPlayerPropsCacheKey(gameDate, oddsCache.lastUpdated, vendorCount);
+    const cacheKey = getPlayerPropsCacheKey(gameDate);
     
-    console.log(`[Player Props Process] 📅 Processing for game date: ${gameDate}, vendors: ${vendorCount}`);
+    console.log(`[Player Props Process] 📅 Processing for game date: ${gameDate}`);
+    console.log(`[Player Props Process] 🔑 Cache key: ${cacheKey}`);
     
     // Check for force refresh parameter
     const { searchParams } = new URL(request.url);
@@ -963,7 +962,7 @@ async function processPlayerPropsCore(request: NextRequest) {
     const baseUrl = getBaseUrl(request);
     
     // Checkpoint system: Load existing checkpoint if available
-    const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}-${oddsCache.lastUpdated}-v${vendorCount}`;
+    const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}`;
     let startIndex = 0;
     let propsWithStats: any[] = [];
     

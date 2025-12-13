@@ -9,7 +9,7 @@ import type { OddsCache } from '@/app/api/odds/refresh/route';
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
 // Cache key prefix for player props
-const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props-processed-v2';
+const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
 
 /**
  * Get the earliest game date from odds cache in US Eastern Time
@@ -95,8 +95,8 @@ function getPlayerPropVendors(oddsCache: OddsCache): string[] {
 /**
  * Get the cache key based on game date, odds lastUpdated timestamp, and vendor count
  */
-function getPlayerPropsCacheKey(gameDate: string, oddsLastUpdated: string, vendorCount: number): string {
-  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}-${oddsLastUpdated}-v${vendorCount}`;
+function getPlayerPropsCacheKey(gameDate: string): string {
+  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`;
 }
 
 /**
@@ -130,9 +130,7 @@ export async function POST(request: NextRequest) {
     
     // Calculate cache key for current odds
     const gameDate = getGameDateFromOddsCache(oddsCache);
-    const playerPropVendors = getPlayerPropVendors(oddsCache);
-    const vendorCount = playerPropVendors.length;
-    const cacheKey = getPlayerPropsCacheKey(gameDate, oddsCache.lastUpdated, vendorCount);
+    const cacheKey = getPlayerPropsCacheKey(gameDate);
     
     // Check if we already have cached props for this odds version
     let existingCache = await getNBACache<any>(cacheKey, {
@@ -168,7 +166,6 @@ export async function POST(request: NextRequest) {
       message: 'Cache needs updating - will be populated on next user visit',
       cacheKey,
       gameDate,
-      vendorCount,
       lastUpdated: oddsCache.lastUpdated
     });
     
@@ -208,9 +205,7 @@ export async function GET(request: NextRequest) {
     
     // Calculate cache key
     const gameDate = getGameDateFromOddsCache(oddsCache);
-    const playerPropVendors = getPlayerPropVendors(oddsCache);
-    const vendorCount = playerPropVendors.length;
-    const cacheKey = getPlayerPropsCacheKey(gameDate, oddsCache.lastUpdated, vendorCount);
+    const cacheKey = getPlayerPropsCacheKey(gameDate);
     
     // Check if cache exists
     let cachedProps = await getNBACache<any>(cacheKey, {
@@ -230,7 +225,6 @@ export async function GET(request: NextRequest) {
       needsUpdate,
       cacheKey,
       gameDate,
-      vendorCount,
       lastUpdated: oddsCache.lastUpdated,
       cachedPropsCount: Array.isArray(cachedProps) ? cachedProps.length : 0
     });

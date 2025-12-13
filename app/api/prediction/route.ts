@@ -151,13 +151,29 @@ export async function GET(request: NextRequest) {
     
     // Use internal stats API which handles pagination properly
     // Always force refresh to get fresh data from BDL
-    const fetchStats = async (season: number, postseason: boolean) => {
+    const fetchStats = async (season: number, postseason: boolean, delayMs: number = 0) => {
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
       const origin = request.nextUrl.origin;
       // Use cache unless forceRefresh is explicitly requested
       const refreshParam = forceRefresh ? '&refresh=1' : '';
       const url = `${origin}/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}${refreshParam}`;
       const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
       if (!res.ok) {
+        // If rate limited, try to return cached data if available
+        if (res.status === 429) {
+          console.warn(`[prediction API] Rate limited for season ${season}, postseason ${postseason}, attempting to parse cached data...`);
+          try {
+            const data = await res.json();
+            if (Array.isArray(data?.data) && data.data.length > 0) {
+              console.log(`[prediction API] Got cached data despite 429: ${data.data.length} stats`);
+              return data.data;
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
         console.warn(`[prediction API] Failed to fetch stats for season ${season}, postseason ${postseason}:`, res.status);
         return [];
       }
@@ -165,13 +181,12 @@ export async function GET(request: NextRequest) {
       return Array.isArray(data?.data) ? data.data : [];
     };
     
-    // Fetch all stats in parallel: current season (reg + post), last season (reg + post)
-    const [currentReg, currentPost, lastReg, lastPost] = await Promise.all([
-      fetchStats(nbaSeason, false),
-      fetchStats(nbaSeason, true),
-      fetchStats(lastSeason, false),
-      fetchStats(lastSeason, true),
-    ]);
+    // Fetch all stats sequentially to avoid rate limits: current season (reg + post), last season (reg + post)
+    // Sequential calls with small delays reduce the chance of hitting rate limits
+    const currentReg = await fetchStats(nbaSeason, false, 0);
+    const currentPost = await fetchStats(nbaSeason, true, 200); // 200ms delay between calls
+    const lastReg = await fetchStats(lastSeason, false, 200);
+    const lastPost = await fetchStats(lastSeason, true, 200);
     
     // Combine all stats
     const allStats = [...currentReg, ...currentPost, ...lastReg, ...lastPost];
