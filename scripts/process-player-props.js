@@ -799,12 +799,29 @@ async function processPlayerProps() {
         let actualOpponent = prop.opponent;
         let position = null;
         
+        // Helper function to decode HTML entities (e.g., &#x27; or &#39; to ')
+        const decodeHtmlEntities = (str) => {
+          if (!str) return '';
+          // Decode common HTML entities
+          return str
+            .replace(/&#x27;/g, "'")  // &#x27; -> '
+            .replace(/&#39;/g, "'")   // &#39; -> '
+            .replace(/&apos;/g, "'")  // &apos; -> '
+            .replace(/&quot;/g, '"')   // &quot; -> "
+            .replace(/&amp;/g, '&')    // &amp; -> &
+            .replace(/&lt;/g, '<')     // &lt; -> <
+            .replace(/&gt;/g, '>');    // &gt; -> >
+        };
+        
         // Helper function to normalize names for matching
         // MUST match the depth chart API's `norm` function exactly:
         // norm = (s) => (s || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
+        // BUT: We need to decode HTML entities first (depth chart returns &#x27; for apostrophes)
         const normalizeNameForMatch = (name) => {
           if (!name) return '';
-          return name.toLowerCase()
+          // First decode HTML entities, then normalize
+          const decoded = decodeHtmlEntities(name);
+          return decoded.toLowerCase()
             .replace(/[^a-z\s]/g, '') // Remove all non-alphabetic chars (including apostrophes, numbers, etc.)
             .replace(/\b(jr|sr|ii|iii|iv)\b/g, '') // Remove suffixes
             .replace(/\s+/g, ' ') // Normalize whitespace
