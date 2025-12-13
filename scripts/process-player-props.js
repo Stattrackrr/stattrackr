@@ -330,7 +330,7 @@ async function setCache(key, value, ttlMinutes = 24 * 60) {
   const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
   
   try {
-    await supabase
+    const { data, error } = await supabase
       .from('nba_api_cache')
       .upsert({
         cache_key: key,
@@ -338,9 +338,22 @@ async function setCache(key, value, ttlMinutes = 24 * 60) {
         data: value,
         expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'cache_key'
       });
+    
+    if (error) {
+      console.error(`[GitHub Actions] ❌ Failed to save cache ${key}:`, error.message);
+      console.error(`[GitHub Actions] ❌ Error details:`, error);
+      throw error;
+    }
+    
+    console.log(`[GitHub Actions] ✅ Successfully saved cache ${key} (${Array.isArray(value) ? value.length : 'unknown'} items)`);
+    return true;
   } catch (e) {
-    console.error(`Failed to save cache: ${e.message}`);
+    console.error(`[GitHub Actions] ❌ Exception saving cache ${key}:`, e.message);
+    console.error(`[GitHub Actions] ❌ Stack:`, e.stack);
+    throw e; // Re-throw so caller knows it failed
   }
 }
 
