@@ -6982,7 +6982,7 @@ function NBADashboardContent() {
       
       // Store in session storage
       const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-      if (saved) {
+      if (saved && typeof saved === 'string') {
         try {
           const parsed = JSON.parse(saved);
           parsed.selectedStat = initialStat;
@@ -8707,7 +8707,7 @@ const lineMovementInFlightRef = useRef(false);
           
           // Store in session storage to persist across player loading
           const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved) {
+          if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
               parsed.selectedStat = normalizedStat;
@@ -8748,7 +8748,7 @@ const lineMovementInFlightRef = useRef(false);
           setSelectedTimeframe(tf);
           // Also store it in session storage for persistence
           const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved) {
+          if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
               parsed.selectedTimeframe = tf;
@@ -8767,7 +8767,7 @@ const lineMovementInFlightRef = useRef(false);
           }
           // Store in session storage
           const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved) {
+          if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
               parsed.selectedTimeframe = 'last10';
@@ -8783,7 +8783,7 @@ const lineMovementInFlightRef = useRef(false);
           setSelectedTimeframe('last10');
           // Store in session storage
           const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved) {
+          if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
               parsed.selectedTimeframe = 'last10';
@@ -9044,7 +9044,7 @@ const lineMovementInFlightRef = useRef(false);
       // This means we haven't manually selected a timeframe yet
       try {
         const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-        if (saved) {
+        if (saved && typeof saved === 'string') {
           const parsed = JSON.parse(saved);
           if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
             console.log(`[Dashboard] 🔄 Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
