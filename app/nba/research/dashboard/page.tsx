@@ -8782,13 +8782,15 @@ const lineMovementInFlightRef = useRef(false);
           console.log(`[Dashboard] Setting default timeframe to "last10" for player from props page`);
           setSelectedTimeframe('last10');
           // Store in session storage
-          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-          if (saved && typeof saved === 'string') {
-            try {
-              const parsed = JSON.parse(saved);
-              parsed.selectedTimeframe = 'last10';
-              sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
-            } catch {}
+          if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem(SESSION_KEY);
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved);
+                parsed.selectedTimeframe = 'last10';
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+              } catch {}
+            }
           }
         }
         // Handle player selection - support both 'pid+name' and 'player' params
