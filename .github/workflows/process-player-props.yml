@@ -1,10 +1,8 @@
 name: Process Player Props
 
 on:
-  schedule:
-    # Run once per day at 2:00 AM ET (7:00 AM UTC) - process tomorrow's games
-    # Stats don't change, so we only need to process once per day
-    - cron: '0 7 * * *'
+  # Only trigger manually or via tipoff workflow - no scheduled runs
+  # The tipoff workflow will trigger this when latest game tips off
   workflow_dispatch: {}
 
 concurrency:
