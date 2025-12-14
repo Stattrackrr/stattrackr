@@ -811,44 +811,75 @@ async function processPlayerProps() {
     const batchPromises = batch.map(async (prop) => {
       try {
         // Get player ID (with caching) - use same logic as frontend
-        // Skip if playerName looks like a numeric ID (data issue)
-        if (/^\d+$/.test(prop.playerName)) {
-          console.warn(`[GitHub Actions] ⚠️ Skipping prop with numeric playerName: ${prop.playerName}`);
-          return { ...prop, position: null, dvpRating: null, dvpStatValue: null };
-        }
+        // Handle case where playerName is a numeric ID (data quality issue from odds provider)
+        let playerId = null;
+        let actualPlayerName = prop.playerName;
         
-        let playerId = playerIdCache.get(prop.playerName);
-        if (!playerId) {
-          // First try the player ID mappings (same as frontend)
-          playerId = getPlayerIdFromName(prop.playerName);
+        if (/^\d+$/.test(prop.playerName)) {
+          // Player name is numeric - this is likely a player ID from the odds provider
+          // Try to use it as the player ID and look up the actual name
+          console.warn(`[GitHub Actions] ⚠️ Player name is numeric ID: ${prop.playerName} - attempting to look up player`);
+          playerId = prop.playerName;
           
-          // If not found in mappings, try API as fallback (with delay to avoid rate limits)
-          if (!playerId) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, 100)); // Delay before API call
-              const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
-              const playerSearch = await callAPI(searchUrl);
-              if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
-                playerId = playerSearch.results[0].id || '';
+          // Try to look up player by ID to get the actual name
+          try {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const playerByIdUrl = `/api/bdl/player/${prop.playerName}`;
+            const playerByIdResponse = await callAPI(playerByIdUrl).catch(() => null);
+            if (playerByIdResponse && playerByIdResponse.data) {
+              const playerData = playerByIdResponse.data;
+              if (playerData.first_name && playerData.last_name) {
+                actualPlayerName = `${playerData.first_name} ${playerData.last_name}`;
+                console.log(`[GitHub Actions] ✅ Found player name for ID ${prop.playerName}: ${actualPlayerName}`);
               }
-            } catch (e) {
-              // API failed, continue with null
+            }
+          } catch (e) {
+            // API failed, continue with numeric ID
+            console.warn(`[GitHub Actions] ⚠️ Could not look up player name for ID ${prop.playerName}: ${e.message}`);
+          }
+        } else {
+          // Normal case: playerName is a name string
+          playerId = playerIdCache.get(prop.playerName);
+          if (!playerId) {
+            // First try the player ID mappings (same as frontend)
+            playerId = getPlayerIdFromName(prop.playerName);
+            
+            // If not found in mappings, try API as fallback (with delay to avoid rate limits)
+            if (!playerId) {
+              try {
+                await new Promise(resolve => setTimeout(resolve, 100)); // Delay before API call
+                const searchUrl = `/api/bdl/players?q=${encodeURIComponent(prop.playerName)}&per_page=5`;
+                const playerSearch = await callAPI(searchUrl);
+                if (playerSearch?.results && Array.isArray(playerSearch.results) && playerSearch.results.length > 0) {
+                  playerId = playerSearch.results[0].id || '';
+                  // Update actual player name if API returned a different format
+                  const apiPlayer = playerSearch.results[0];
+                  if (apiPlayer.first_name && apiPlayer.last_name) {
+                    actualPlayerName = `${apiPlayer.first_name} ${apiPlayer.last_name}`;
+                  }
+                }
+              } catch (e) {
+                // API failed, continue with null
+              }
+            }
+            
+            // Final fallback to prop.playerId if available
+            if (!playerId) {
+              playerId = prop.playerId || '';
+            }
+            
+            // Cache the result
+            if (playerId) {
+              playerIdCache.set(prop.playerName, playerId);
+              console.log(`[GitHub Actions] ✅ Found player ID for ${prop.playerName}: ${playerId}`);
+            } else {
+              console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName}`);
             }
           }
-          
-          // Final fallback to prop.playerId if available
-          if (!playerId) {
-            playerId = prop.playerId || '';
-          }
-          
-          // Cache the result
-          if (playerId) {
-            playerIdCache.set(prop.playerName, playerId);
-            console.log(`[GitHub Actions] ✅ Found player ID for ${prop.playerName}: ${playerId}`);
-          } else {
-            console.warn(`[GitHub Actions] ⚠️ No player ID found for ${prop.playerName}`);
-          }
         }
+        
+        // Use actual player name for position lookup (not the numeric ID if that's what we got)
+        const nameForPositionLookup = actualPlayerName;
         
         // Determine which team the player is actually on (try both home and away)
         // This is needed because we initially assign all players to home team
@@ -885,11 +916,11 @@ async function processPlayerProps() {
             .trim();
         };
         
-        const normalizedPlayerName = normalizeNameForMatch(prop.playerName);
-        const isDebugPlayer = prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox') || prop.playerName.toLowerCase().includes('claxton');
+        const normalizedPlayerName = normalizeNameForMatch(nameForPositionLookup);
+        const isDebugPlayer = nameForPositionLookup.includes("'") || nameForPositionLookup.toLowerCase().includes('fox') || nameForPositionLookup.toLowerCase().includes('claxton') || /^\d+$/.test(prop.playerName);
         
         if (isDebugPlayer) {
-          console.log(`[GitHub Actions] 🔍 Looking for position for ${prop.playerName}`);
+          console.log(`[GitHub Actions] 🔍 Looking for position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''}`);
           console.log(`[GitHub Actions] 🔍 Normalized name: "${normalizedPlayerName}"`);
           console.log(`[GitHub Actions] 🔍 Checking teams: home=${prop.team}, away=${prop.opponent}`);
         }
@@ -949,7 +980,7 @@ async function processPlayerProps() {
               actualTeam = prop.team; // Home team
               actualOpponent = prop.opponent; // Away team
               depthChartCache.set(prop.team, position);
-              console.log(`[GitHub Actions] ✅ Found position for ${prop.playerName} on ${prop.team}: ${position}`);
+              console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.team}: ${position}`);
               break;
             }
           }
@@ -1011,7 +1042,7 @@ async function processPlayerProps() {
                 actualTeam = prop.opponent; // Away team (swap)
                 actualOpponent = prop.team; // Home team (swap)
                 depthChartCache.set(prop.opponent, position);
-                console.log(`[GitHub Actions] ✅ Found position for ${prop.playerName} on ${prop.opponent}: ${position}`);
+                console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.opponent}: ${position}`);
                 break;
               }
             }
@@ -1021,7 +1052,7 @@ async function processPlayerProps() {
         }
         
         if (!position) {
-          console.warn(`[GitHub Actions] ⚠️ No position found for ${prop.playerName} (${actualTeam}) - DvP will be null`);
+          console.warn(`[GitHub Actions] ⚠️ No position found for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} (${actualTeam}) - DvP will be null`);
           if (isDebugPlayer) {
             console.warn(`[GitHub Actions] ⚠️ Searched in: home=${prop.team}, away=${prop.opponent}`);
             console.warn(`[GitHub Actions] ⚠️ Normalized search name: "${normalizedPlayerName}"`);
