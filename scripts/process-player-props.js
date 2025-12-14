@@ -1390,7 +1390,21 @@ async function processPlayerProps() {
   // Also merge when filtering by stats (secondary stats job merging with main stats)
   const shouldMerge = propsSplit || (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
   
-  if (shouldMerge && existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
+  // When splitting by props, read cache again right before saving to get latest from parallel jobs
+  let cacheToMerge = existingCache;
+  if (propsSplit) {
+    console.log(`[GitHub Actions] 🔄 Re-reading cache before merge to get latest from parallel jobs...`);
+    const latestCache = await getCache(cacheKey);
+    if (latestCache && Array.isArray(latestCache) && latestCache.length > 0) {
+      cacheToMerge = latestCache;
+      console.log(`[GitHub Actions] 📦 Found updated cache (${cacheToMerge.length} props) - will merge with new data`);
+    } else if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
+      cacheToMerge = existingCache;
+      console.log(`[GitHub Actions] 📦 Using initial cache (${cacheToMerge.length} props) - no updates from parallel jobs yet`);
+    }
+  }
+  
+  if (shouldMerge && cacheToMerge && Array.isArray(cacheToMerge) && cacheToMerge.length > 0) {
     // Create a Set of keys from new props to avoid duplicates
     const newPropsKeys = new Set(
       propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
@@ -1399,7 +1413,7 @@ async function processPlayerProps() {
     if (propsSplit) {
       // When splitting by props: merge ALL existing props (from other parallel jobs)
       // Only exclude exact duplicates based on player|stat|line
-      const uniqueExistingProps = existingCache.filter(existingProp => {
+      const uniqueExistingProps = cacheToMerge.filter(existingProp => {
         const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
         return !newPropsKeys.has(key);
       });
@@ -1408,7 +1422,7 @@ async function processPlayerProps() {
       console.log(`[GitHub Actions] 🔀 Merging (split mode): ${propsWithStats.length} new props + ${uniqueExistingProps.length} existing props = ${finalProps.length} total`);
     } else if (allowedStats) {
       // When filtering by stats: only keep existing props that are NOT in the filtered stat list
-      const existingPropsToKeep = existingCache.filter(existingProp => {
+      const existingPropsToKeep = cacheToMerge.filter(existingProp => {
         return !allowedStats.includes(existingProp.statType);
       });
       
@@ -1418,7 +1432,7 @@ async function processPlayerProps() {
       });
       
       finalProps = [...propsWithStats, ...uniqueExistingProps];
-      console.log(`[GitHub Actions] 🔀 Merging (stats filter): ${propsWithStats.length} new props + ${uniqueExistingProps.length} existing props (kept ${existingPropsToKeep.length} total, filtered ${existingCache.length - existingPropsToKeep.length} duplicates)`);
+      console.log(`[GitHub Actions] 🔀 Merging (stats filter): ${propsWithStats.length} new props + ${uniqueExistingProps.length} existing props (kept ${existingPropsToKeep.length} total, filtered ${cacheToMerge.length - existingPropsToKeep.length} duplicates)`);
     }
     
     console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (merged with existing)`);
