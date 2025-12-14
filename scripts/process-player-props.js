@@ -1604,8 +1604,33 @@ async function processPlayerProps() {
         }
       }
       
+      // IMPORTANT: Clear old cache ONLY after processing is complete and we're ready to save new cache
+      // This ensures we never have an empty cache - old cache is only cleared when new cache is ready
+      // For split jobs, we merge (don't clear) because other parallel jobs might still be writing
+      // For non-split jobs, we clear and replace atomically
+      
+      // Always clear checkpoint (safe - it's just a progress tracker)
       await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
-      console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}${retry > 0 ? ` (retry ${retry})` : ''}`);
+      
+      // Only clear main cache if NOT splitting (single job processing all props)
+      // When splitting, we merge with other jobs' results, so we can't clear
+      if (!propsSplit && finalProps.length > 0) {
+        console.log(`[GitHub Actions] 🧹 Clearing old cache before saving new cache (non-split job)...`);
+        try {
+          await supabase.from('nba_api_cache').delete().eq('cache_key', cacheKey);
+          console.log(`[GitHub Actions] ✅ Cleared old cache for key: ${cacheKey}`);
+        } catch (clearError) {
+          console.warn(`[GitHub Actions] ⚠️ Warning: Could not clear old cache (non-fatal): ${clearError.message}`);
+          // Continue anyway - setCache will overwrite
+        }
+      } else if (propsSplit) {
+        console.log(`[GitHub Actions] 📦 Split job: Merging with existing cache (not clearing - other jobs may be writing)`);
+      } else if (finalProps.length === 0) {
+        console.warn(`[GitHub Actions] ⚠️ No props to save - skipping cache clear to preserve existing data`);
+        throw new Error('No props processed - cannot clear cache without replacement data');
+      }
+      
+      console.log(`[GitHub Actions] 💾 Saving ${propsSplit ? 'merged' : 'new'} cache with key: ${cacheKey}${retry > 0 ? ` (retry ${retry})` : ''}`);
       console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
       
       // Debug: Log stat type breakdown
@@ -1615,6 +1640,7 @@ async function processPlayerProps() {
       });
       console.log(`[GitHub Actions] 📊 Stat type breakdown:`, statTypeCounts);
       
+      // Save the new cache (replaces old one if we cleared it, or merges if splitting)
       await setCache(cacheKey, finalProps, 24 * 60);
       
       // Verify the save by reading it back (with small delay to ensure write completed)
