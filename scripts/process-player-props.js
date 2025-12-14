@@ -1441,44 +1441,117 @@ async function processPlayerProps() {
   }
   
   // Clear checkpoint and save final cache
-  try {
-    await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
-    console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}`);
-    console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
-    
-    // Debug: Log stat type breakdown
-    const statTypeCounts = {};
-    finalProps.forEach(prop => {
-      statTypeCounts[prop.statType] = (statTypeCounts[prop.statType] || 0) + 1;
-    });
-    console.log(`[GitHub Actions] 📊 Stat type breakdown:`, statTypeCounts);
-    
-    await setCache(cacheKey, finalProps, 24 * 60);
-    console.log(`[GitHub Actions] ✅ Processing complete! Saved ${finalProps.length} props to cache`);
-    console.log(`[GitHub Actions] 🔑 Cache key saved: ${cacheKey}`);
-    
-    // Verify the save by reading it back
-    const verifyCache = await getCache(cacheKey);
-    if (verifyCache && Array.isArray(verifyCache)) {
-      console.log(`[GitHub Actions] ✅ Verified: Cache contains ${verifyCache.length} props after save`);
-      const verifyStatTypes = {};
-      verifyCache.forEach(prop => {
-        verifyStatTypes[prop.statType] = (verifyStatTypes[prop.statType] || 0) + 1;
-      });
-      console.log(`[GitHub Actions] 📊 Verified stat types:`, verifyStatTypes);
-    } else {
-      console.warn(`[GitHub Actions] ⚠️ Warning: Could not verify cache after save`);
-    }
-  } catch (e) {
-    console.error(`[GitHub Actions] ⚠️ Error saving final cache: ${e.message}`);
-    // Try to save anyway - partial data is better than no data
+  // When splitting by props, use retry logic to handle race conditions
+  const maxRetries = propsSplit ? 3 : 1;
+  let savedSuccessfully = false;
+  
+  for (let retry = 0; retry < maxRetries && !savedSuccessfully; retry++) {
     try {
-      await setCache(cacheKey, propsWithStats, 24 * 60);
-      console.log(`[GitHub Actions] ✅ Retry successful! Saved ${propsWithStats.length} props to cache`);
-    } catch (e2) {
-      console.error(`[GitHub Actions] ❌ Failed to save cache after retry: ${e2.message}`);
-      throw e2; // Re-throw to trigger the outer catch
+      // If retrying, re-read cache to get latest (another job may have written)
+      if (retry > 0 && propsSplit) {
+        console.log(`[GitHub Actions] 🔄 Retry ${retry}: Re-reading cache before save...`);
+        const retryCache = await getCache(cacheKey);
+        if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
+          // Re-merge with latest cache
+          const newPropsKeys = new Set(
+            propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
+          );
+          const uniqueExistingProps = retryCache.filter(existingProp => {
+            const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
+            return !newPropsKeys.has(key);
+          });
+          finalProps = [...propsWithStats, ...uniqueExistingProps];
+          console.log(`[GitHub Actions] 🔀 Re-merged for retry: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
+        }
+      }
+      
+      await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
+      console.log(`[GitHub Actions] 💾 Saving cache with key: ${cacheKey}${retry > 0 ? ` (retry ${retry})` : ''}`);
+      console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
+      
+      // Debug: Log stat type breakdown
+      const statTypeCounts = {};
+      finalProps.forEach(prop => {
+        statTypeCounts[prop.statType] = (statTypeCounts[prop.statType] || 0) + 1;
+      });
+      console.log(`[GitHub Actions] 📊 Stat type breakdown:`, statTypeCounts);
+      
+      await setCache(cacheKey, finalProps, 24 * 60);
+      
+      // Verify the save by reading it back (with small delay to ensure write completed)
+      if (propsSplit) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for cache to propagate
+      }
+      const verifyCache = await getCache(cacheKey);
+      
+      if (verifyCache && Array.isArray(verifyCache)) {
+        // Check if our props are in the cache (at least some of them)
+        const ourPropsKeys = new Set(
+          propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
+        );
+        const ourPropsInCache = verifyCache.filter(prop => {
+          const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+          return ourPropsKeys.has(key);
+        });
+        
+        // If at least 80% of our props are in cache, consider it successful
+        const successThreshold = Math.floor(propsWithStats.length * 0.8);
+        if (ourPropsInCache.length >= successThreshold) {
+          savedSuccessfully = true;
+          console.log(`[GitHub Actions] ✅ Verified: Cache contains ${verifyCache.length} props after save (${ourPropsInCache.length}/${propsWithStats.length} of our props present)`);
+          const verifyStatTypes = {};
+          verifyCache.forEach(prop => {
+            verifyStatTypes[prop.statType] = (verifyStatTypes[prop.statType] || 0) + 1;
+          });
+          console.log(`[GitHub Actions] 📊 Verified stat types:`, verifyStatTypes);
+        } else {
+          console.warn(`[GitHub Actions] ⚠️ Verification failed: Only ${ourPropsInCache.length}/${propsWithStats.length} of our props in cache (threshold: ${successThreshold})`);
+          if (retry < maxRetries - 1) {
+            const delay = (retry + 1) * 1000; // Exponential backoff: 1s, 2s, 3s
+            console.log(`[GitHub Actions] 🔄 Will retry in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      } else {
+        console.warn(`[GitHub Actions] ⚠️ Warning: Could not verify cache after save`);
+        // If no cache found, assume it's a first write and accept it
+        if (!existingCache || existingCache.length === 0) {
+          savedSuccessfully = true;
+        } else if (retry < maxRetries - 1) {
+          const delay = (retry + 1) * 1000;
+          console.log(`[GitHub Actions] 🔄 Will retry in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      if (savedSuccessfully) {
+        console.log(`[GitHub Actions] ✅ Processing complete! Saved ${finalProps.length} props to cache`);
+        console.log(`[GitHub Actions] 🔑 Cache key saved: ${cacheKey}`);
+        break; // Exit retry loop on success
+      }
+    } catch (e) {
+      console.error(`[GitHub Actions] ⚠️ Error saving final cache (attempt ${retry + 1}/${maxRetries}): ${e.message}`);
+      if (retry === maxRetries - 1) {
+        // Last retry failed, try to save partial data
+        try {
+          await setCache(cacheKey, propsWithStats, 24 * 60);
+          console.log(`[GitHub Actions] ✅ Saved partial data: ${propsWithStats.length} props to cache`);
+        } catch (e2) {
+          console.error(`[GitHub Actions] ❌ Failed to save cache after all retries: ${e2.message}`);
+          throw e2;
+        }
+      } else {
+        // Wait before retrying
+        const delay = (retry + 1) * 1000;
+        console.log(`[GitHub Actions] 🔄 Will retry in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
+  }
+  
+  if (!savedSuccessfully && !propsSplit) {
+    // For non-split jobs, if we couldn't save, that's an error
+    throw new Error('Failed to save cache after all retries');
   }
 }
 
