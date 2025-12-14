@@ -964,32 +964,25 @@ async function processPlayerProps() {
           console.log(`[GitHub Actions] 🔍 Checking teams: home=${prop.team}, away=${prop.opponent}`);
         }
         
-        // Try home team first
-        let foundOnHomeTeam = false;
-        const homeDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
-        if (homeDepthChart?.depthChart) {
-          if (isDebugPlayer) {
-            console.log(`[GitHub Actions] 🔍 Checking home team ${prop.team} depth chart...`);
-          }
-          for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
-            const players = homeDepthChart.depthChart[pos] || [];
-            if (isDebugPlayer && players.length > 0) {
-              const sampleNames = players.slice(0, 3).map(p => {
-                const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
-                return `${name} (normalized: "${normalizeNameForMatch(name)}")`;
-              });
-              console.log(`[GitHub Actions] 🔍 ${prop.team} ${pos} players (sample):`, sampleNames);
-            }
-            if (players.some(p => {
+        // Helper function to find player in depth chart and return all positions with their depth indices
+        const findPlayerPositions = (depthChart, teamAbbr) => {
+          const matches = []; // Array of { position, depthIndex }
+          const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+          
+          for (const pos of positions) {
+            const players = depthChart[pos] || [];
+            for (let depthIndex = 0; depthIndex < players.length; depthIndex++) {
+              const p = players[depthIndex];
               const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
               const normalizedName = normalizeNameForMatch(name);
+              
               // Check if normalized names match (handles apostrophes and special chars)
-              let matches = normalizedName === normalizedPlayerName || 
+              let matchesName = normalizedName === normalizedPlayerName || 
                      normalizedName.includes(normalizedPlayerName) || 
                      normalizedPlayerName.includes(normalizedName);
               
               // If no match, try matching by last name + first name prefix (handles "Nic" vs "Nicolas")
-              if (!matches) {
+              if (!matchesName) {
                 const playerParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
                 const chartParts = normalizedName.split(' ').filter(p => p.length > 0);
                 
@@ -1004,24 +997,50 @@ async function processPlayerProps() {
                       (playerFirst === chartFirst || 
                        playerFirst.startsWith(chartFirst) || 
                        chartFirst.startsWith(playerFirst))) {
-                    matches = true;
+                    matchesName = true;
                   }
                 }
               }
               
-              if (isDebugPlayer && matches) {
-                console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
+              if (matchesName) {
+                if (isDebugPlayer) {
+                  console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") at ${pos} depth ${depthIndex} (${depthIndex === 0 ? 'Starter' : `${depthIndex + 1}nd/rd/th`})`);
+                }
+                matches.push({ position: pos, depthIndex });
               }
-              return matches;
-            })) {
-              position = pos;
-              foundOnHomeTeam = true;
-              actualTeam = prop.team; // Home team
-              actualOpponent = prop.opponent; // Away team
-              depthChartCache.set(prop.team, position);
-              console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.team}: ${position}`);
-              break;
             }
+          }
+          
+          return matches;
+        };
+        
+        // Try home team first
+        let foundOnHomeTeam = false;
+        const homeDepthChart = await callAPI(`/api/depth-chart?team=${encodeURIComponent(prop.team)}`).catch(() => null);
+        if (homeDepthChart?.depthChart) {
+          if (isDebugPlayer) {
+            console.log(`[GitHub Actions] 🔍 Checking home team ${prop.team} depth chart...`);
+          }
+          
+          const matches = findPlayerPositions(homeDepthChart.depthChart, prop.team);
+          
+          if (matches.length > 0) {
+            // Sort by depth index (lowest first), then by position priority (PG > SG > SF > PF > C)
+            const positionPriority = { 'PG': 0, 'SG': 1, 'SF': 2, 'PF': 3, 'C': 4 };
+            matches.sort((a, b) => {
+              if (a.depthIndex !== b.depthIndex) {
+                return a.depthIndex - b.depthIndex; // Lower depth index = higher priority
+              }
+              return positionPriority[a.position] - positionPriority[b.position]; // Tie-break by position order
+            });
+            
+            const bestMatch = matches[0];
+            position = bestMatch.position;
+            foundOnHomeTeam = true;
+            actualTeam = prop.team; // Home team
+            actualOpponent = prop.opponent; // Away team
+            depthChartCache.set(prop.team, position);
+            console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.team}: ${position} (depth ${bestMatch.depthIndex}${bestMatch.depthIndex === 0 ? ', Starter' : `, ${bestMatch.depthIndex + 1}nd/rd/th string`}${matches.length > 1 ? `, also found at: ${matches.slice(1).map(m => `${m.position} depth ${m.depthIndex}`).join(', ')}` : ''})`);
           }
         } else if (isDebugPlayer) {
           console.warn(`[GitHub Actions] ⚠️ No depth chart data for home team ${prop.team}`);
@@ -1034,56 +1053,25 @@ async function processPlayerProps() {
             if (isDebugPlayer) {
               console.log(`[GitHub Actions] 🔍 Checking away team ${prop.opponent} depth chart...`);
             }
-            for (const pos of ['PG', 'SG', 'SF', 'PF', 'C']) {
-              const players = awayDepthChart.depthChart[pos] || [];
-              if (isDebugPlayer && players.length > 0) {
-                const sampleNames = players.slice(0, 3).map(p => {
-                  const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
-                  return `${name} (normalized: "${normalizeNameForMatch(name)}")`;
-                });
-                console.log(`[GitHub Actions] 🔍 ${prop.opponent} ${pos} players (sample):`, sampleNames);
-              }
-              if (players.some(p => {
-                const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
-                const normalizedName = normalizeNameForMatch(name);
-                // Check if normalized names match (handles apostrophes and special chars)
-                let matches = normalizedName === normalizedPlayerName || 
-                       normalizedName.includes(normalizedPlayerName) || 
-                       normalizedPlayerName.includes(normalizedName);
-                
-                // If no match, try matching by last name + first name prefix (handles "Nic" vs "Nicolas")
-                if (!matches) {
-                  const playerParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
-                  const chartParts = normalizedName.split(' ').filter(p => p.length > 0);
-                  
-                  if (playerParts.length >= 2 && chartParts.length >= 2) {
-                    const playerFirst = playerParts[0];
-                    const playerLast = playerParts[playerParts.length - 1];
-                    const chartFirst = chartParts[0];
-                    const chartLast = chartParts[chartParts.length - 1];
-                    
-                    // Match if last names match AND (first names match OR one is a prefix of the other)
-                    if (playerLast === chartLast && 
-                        (playerFirst === chartFirst || 
-                         playerFirst.startsWith(chartFirst) || 
-                         chartFirst.startsWith(playerFirst))) {
-                      matches = true;
-                    }
-                  }
+            
+            const matches = findPlayerPositions(awayDepthChart.depthChart, prop.opponent);
+            
+            if (matches.length > 0) {
+              // Sort by depth index (lowest first), then by position priority (PG > SG > SF > PF > C)
+              const positionPriority = { 'PG': 0, 'SG': 1, 'SF': 2, 'PF': 3, 'C': 4 };
+              matches.sort((a, b) => {
+                if (a.depthIndex !== b.depthIndex) {
+                  return a.depthIndex - b.depthIndex; // Lower depth index = higher priority
                 }
-                
-                if (isDebugPlayer && matches) {
-                  console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
-                }
-                return matches;
-              })) {
-                position = pos;
-                actualTeam = prop.opponent; // Away team (swap)
-                actualOpponent = prop.team; // Home team (swap)
-                depthChartCache.set(prop.opponent, position);
-                console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.opponent}: ${position}`);
-                break;
-              }
+                return positionPriority[a.position] - positionPriority[b.position]; // Tie-break by position order
+              });
+              
+              const bestMatch = matches[0];
+              position = bestMatch.position;
+              actualTeam = prop.opponent; // Away team (swap)
+              actualOpponent = prop.team; // Home team (swap)
+              depthChartCache.set(prop.opponent, position);
+              console.log(`[GitHub Actions] ✅ Found position for ${nameForPositionLookup}${prop.playerName !== nameForPositionLookup ? ` (original: ${prop.playerName})` : ''} on ${prop.opponent}: ${position} (depth ${bestMatch.depthIndex}${bestMatch.depthIndex === 0 ? ', Starter' : `, ${bestMatch.depthIndex + 1}nd/rd/th string`}${matches.length > 1 ? `, also found at: ${matches.slice(1).map(m => `${m.position} depth ${m.depthIndex}`).join(', ')}` : ''})`);
             }
           } else if (isDebugPlayer) {
             console.warn(`[GitHub Actions] ⚠️ No depth chart data for away team ${prop.opponent}`);
