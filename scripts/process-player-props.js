@@ -511,6 +511,31 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 📊 Filtering stats to: ${allowedStats.join(', ')}`);
   }
   
+  // Check for split parameter (e.g., --split=1/3 means first third)
+  // Can split by games OR by props (if --split-props flag is used)
+  let gameSplit = null;
+  let propsSplit = null;
+  const splitArg = process.argv.find(arg => arg.startsWith('--split='));
+  const splitProps = process.argv.includes('--split-props');
+  
+  if (splitArg) {
+    const splitValue = splitArg.split('=')[1];
+    const match = splitValue.match(/(\d+)\/(\d+)/);
+    if (match) {
+      const part = parseInt(match[1], 10);
+      const total = parseInt(match[2], 10);
+      if (part > 0 && part <= total) {
+        if (splitProps) {
+          propsSplit = { part, total };
+          console.log(`[GitHub Actions] 🔀 Splitting props: processing part ${part} of ${total}`);
+        } else {
+          gameSplit = { part, total };
+          console.log(`[GitHub Actions] 🔀 Splitting games: processing part ${part} of ${total}`);
+        }
+      }
+    }
+  }
+  
   // Check for existing cache - will merge if filtering by stats, otherwise overwrite
   const existingCache = await getCache(cacheKey);
   if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
@@ -539,7 +564,7 @@ async function processPlayerProps() {
   };
   
   // Filter games to only tomorrow's games
-  const games = (oddsCache.games || []).filter(game => {
+  let games = (oddsCache.games || []).filter(game => {
     if (!game.commenceTime) return false;
     const commenceStr = String(game.commenceTime).trim();
     let gameDateUSET;
@@ -551,6 +576,16 @@ async function processPlayerProps() {
     }
     return gameDateUSET === tomorrowUSET;
   });
+  
+  // Apply game split if specified (split games into chunks)
+  if (gameSplit && games.length > 0) {
+    const totalGames = games.length;
+    const chunkSize = Math.ceil(totalGames / gameSplit.total);
+    const startIndex = (gameSplit.part - 1) * chunkSize;
+    const endIndex = Math.min(startIndex + chunkSize, totalGames);
+    games = games.slice(startIndex, endIndex);
+    console.log(`[GitHub Actions] 🔀 Split games: ${startIndex}-${endIndex} of ${totalGames} (part ${gameSplit.part}/${gameSplit.total})`);
+  }
   
   console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${tomorrowUSET}) out of ${oddsCache.games?.length || 0} total games`);
   
@@ -712,7 +747,7 @@ async function processPlayerProps() {
   }
   
   // Remove duplicates
-  const uniqueProps = processedProps.filter((prop, index, self) =>
+  let uniqueProps = processedProps.filter((prop, index, self) =>
     index === self.findIndex((p) => 
       p.playerName === prop.playerName && 
       p.statType === prop.statType && 
@@ -721,6 +756,16 @@ async function processPlayerProps() {
   );
   
   console.log(`[GitHub Actions] ✅ Processed ${uniqueProps.length} props, calculating stats...`);
+  
+  // Apply props split if specified (split props into chunks instead of games)
+  if (propsSplit && uniqueProps.length > 0) {
+    const totalProps = uniqueProps.length;
+    const chunkSize = Math.ceil(totalProps / propsSplit.total);
+    const startIndex = (propsSplit.part - 1) * chunkSize;
+    const endIndex = Math.min(startIndex + chunkSize, totalProps);
+    uniqueProps = uniqueProps.slice(startIndex, endIndex);
+    console.log(`[GitHub Actions] 🔀 Split props: ${startIndex}-${endIndex} of ${totalProps} (part ${propsSplit.part}/${propsSplit.total})`);
+  }
   
   // Load checkpoint
   let startIndex = 0;
@@ -733,8 +778,10 @@ async function processPlayerProps() {
   }
   
   // Process in batches (call production APIs for stats/dvp/depth-chart)
-  // Reduced batch size to avoid 429 rate limits
-  const BATCH_SIZE = 5; // Process 5 props at a time in parallel (10 API calls max)
+  // Batch size of 5 is safe when props are split equally across jobs
+  // Each prop can make 2-6 API calls (player ID, depth chart, stats, DvP)
+  // With props split 1/3 per job, 5 props/batch * 3 jobs = manageable load
+  const BATCH_SIZE = 5; // Process 5 props at a time in parallel
   const MAX_RUNTIME_MS = 55 * 60 * 1000; // 55 minutes (leave 5 min buffer)
   const startTime = Date.now();
   
@@ -1305,6 +1352,7 @@ async function processPlayerProps() {
     
     if (i + BATCH_SIZE < uniqueProps.length) {
       // Delay between batches to avoid overwhelming APIs
+      // With props split equally across jobs, batch size 5 is safe
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between batches
       // Log progress every batch
       const elapsed = Date.now() - startTime;
