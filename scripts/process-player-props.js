@@ -886,7 +886,7 @@ async function processPlayerProps() {
         };
         
         const normalizedPlayerName = normalizeNameForMatch(prop.playerName);
-        const isDebugPlayer = prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox');
+        const isDebugPlayer = prop.playerName.includes("'") || prop.playerName.toLowerCase().includes('fox') || prop.playerName.toLowerCase().includes('claxton');
         
         if (isDebugPlayer) {
           console.log(`[GitHub Actions] 🔍 Looking for position for ${prop.playerName}`);
@@ -914,9 +914,31 @@ async function processPlayerProps() {
               const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
               const normalizedName = normalizeNameForMatch(name);
               // Check if normalized names match (handles apostrophes and special chars)
-              const matches = normalizedName === normalizedPlayerName || 
+              let matches = normalizedName === normalizedPlayerName || 
                      normalizedName.includes(normalizedPlayerName) || 
                      normalizedPlayerName.includes(normalizedName);
+              
+              // If no match, try matching by last name + first name prefix (handles "Nic" vs "Nicolas")
+              if (!matches) {
+                const playerParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
+                const chartParts = normalizedName.split(' ').filter(p => p.length > 0);
+                
+                if (playerParts.length >= 2 && chartParts.length >= 2) {
+                  const playerFirst = playerParts[0];
+                  const playerLast = playerParts[playerParts.length - 1];
+                  const chartFirst = chartParts[0];
+                  const chartLast = chartParts[chartParts.length - 1];
+                  
+                  // Match if last names match AND (first names match OR one is a prefix of the other)
+                  if (playerLast === chartLast && 
+                      (playerFirst === chartFirst || 
+                       playerFirst.startsWith(chartFirst) || 
+                       chartFirst.startsWith(playerFirst))) {
+                    matches = true;
+                  }
+                }
+              }
+              
               if (isDebugPlayer && matches) {
                 console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
               }
@@ -955,9 +977,31 @@ async function processPlayerProps() {
                 const name = typeof p === 'string' ? p : (p?.name || p?.displayName || '');
                 const normalizedName = normalizeNameForMatch(name);
                 // Check if normalized names match (handles apostrophes and special chars)
-                const matches = normalizedName === normalizedPlayerName || 
+                let matches = normalizedName === normalizedPlayerName || 
                        normalizedName.includes(normalizedPlayerName) || 
                        normalizedPlayerName.includes(normalizedName);
+                
+                // If no match, try matching by last name + first name prefix (handles "Nic" vs "Nicolas")
+                if (!matches) {
+                  const playerParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
+                  const chartParts = normalizedName.split(' ').filter(p => p.length > 0);
+                  
+                  if (playerParts.length >= 2 && chartParts.length >= 2) {
+                    const playerFirst = playerParts[0];
+                    const playerLast = playerParts[playerParts.length - 1];
+                    const chartFirst = chartParts[0];
+                    const chartLast = chartParts[chartParts.length - 1];
+                    
+                    // Match if last names match AND (first names match OR one is a prefix of the other)
+                    if (playerLast === chartLast && 
+                        (playerFirst === chartFirst || 
+                         playerFirst.startsWith(chartFirst) || 
+                         chartFirst.startsWith(playerFirst))) {
+                      matches = true;
+                    }
+                  }
+                }
+                
                 if (isDebugPlayer && matches) {
                   console.log(`[GitHub Actions] ✅ Match found! "${name}" (normalized: "${normalizedName}") matches "${prop.playerName}" (normalized: "${normalizedPlayerName}")`);
                 }
