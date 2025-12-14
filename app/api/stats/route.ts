@@ -38,7 +38,7 @@ function buildStatsUrl(playerId: string, season: number, page: number = 1, perPa
   return url;
 }
 
-async function bdlFetch(url: URL) {
+async function bdlFetch(url: URL, timeoutMs: number = 30000) {
   // BDL docs say "Authorization: YOUR_API_KEY" but Bearer format also works
   // We use Bearer format for consistency with other APIs
   const headers: Record<string, string> = {};
@@ -47,16 +47,35 @@ async function bdlFetch(url: URL) {
     headers["Authorization"] = API_KEY.startsWith('Bearer ') ? API_KEY : `Bearer ${API_KEY}`;
   }
 
-  const res = await fetch(url, { headers });
-  // If BDL returns a rate-limit message or 4xx, surface it gracefully
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    const error: any = new Error(`BallDon'tLie ${res.status}: ${txt || res.statusText}`);
-    error.status = res.status;
-    error.response = res;
+  // Add timeout to prevent hanging requests (30s per page is reasonable)
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`BDL API timeout after ${timeoutMs/1000}s: ${url.toString()}`));
+    }, timeoutMs);
+  });
+
+  const fetchPromise = fetch(url, { headers });
+  
+  try {
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+    // If BDL returns a rate-limit message or 4xx, surface it gracefully
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      const error: any = new Error(`BallDon'tLie ${res.status}: ${txt || res.statusText}`);
+      error.status = res.status;
+      error.response = res;
+      throw error;
+    }
+    return res.json();
+  } catch (error: any) {
+    // If it's a timeout, make it clear
+    if (error.message?.includes('timeout')) {
+      const timeoutError: any = new Error(`BDL API request timed out after ${timeoutMs/1000}s: ${url.toString()}`);
+      timeoutError.isTimeout = true;
+      throw timeoutError;
+    }
     throw error;
   }
-  return res.json();
 }
 
 export async function GET(req: NextRequest) {
@@ -150,7 +169,32 @@ export async function GET(req: NextRequest) {
 
       while (page <= maxPages) {
         const url = buildStatsUrl(playerId, season, page, perPageParam, postseason);
-        const json = await bdlFetch(url) as BdlPaginatedResponse<BdlPlayerStats>; 
+        let json: BdlPaginatedResponse<BdlPlayerStats>;
+        
+        try {
+          // 30s timeout per page (reasonable for BDL API)
+          json = await bdlFetch(url, 30000) as BdlPaginatedResponse<BdlPlayerStats>;
+        } catch (error: any) {
+          // If timeout on first page, try to return cached data
+          if (error.isTimeout && page === 1) {
+            console.warn(`[Stats API] Timeout on first page for player ${playerId}, season ${season}, postseason ${postseason} - checking cache...`);
+            const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
+            const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+            if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+              console.log(`[Stats API] Returning cached data after timeout: ${cachedData.data.length} stats`);
+              return cachedData.data;
+            }
+          }
+          
+          // If timeout on later pages, return what we have so far
+          if (error.isTimeout && all.length > 0) {
+            console.warn(`[Stats API] Timeout on page ${page}, returning ${all.length} stats collected so far`);
+            return all;
+          }
+          
+          // Otherwise, re-throw the error
+          throw error;
+        } 
 
         // Expect shape: { data: [], meta: { next_page, total_pages, current_page } }
         // Enrich each stat with home/visitor team objects (some BDL responses only include *_team_id)
@@ -243,8 +287,29 @@ export async function GET(req: NextRequest) {
     inFlightRequests.set(requestKey, fetchPromise);
 
     try {
-      const all = await fetchPromise;
+      // Add overall timeout (60s total for all pages - should be enough for 3 pages at 30s each)
+      // But we want to fail faster if it's really stuck
+      const overallTimeout = 60000; // 60s total
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Stats API overall timeout after ${overallTimeout/1000}s for player ${playerId}`));
+        }, overallTimeout);
+      });
+      
+      const all = await Promise.race([fetchPromise, timeoutPromise]);
       return NextResponse.json({ data: all }, { status: 200 });
+    } catch (error: any) {
+      // On timeout, try to return cached data
+      if (error.message?.includes('timeout')) {
+        console.warn(`[Stats API] Overall timeout for player ${playerId}, season ${season}, postseason ${postseason} - checking cache...`);
+        const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
+        const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+        if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+          console.log(`[Stats API] Returning cached data after overall timeout: ${cachedData.data.length} stats`);
+          return NextResponse.json(cachedData, { status: 200 });
+        }
+      }
+      throw error;
     } finally {
       // Remove from in-flight requests when done
       inFlightRequests.delete(requestKey);
