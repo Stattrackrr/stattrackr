@@ -113,62 +113,70 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
     return () => clearTimeout(timeout);
   }, [playerId, opponentTeam]);
 
-  // Fetch enhanced shot data from NBA Stats API
+  // Fetch enhanced shot data from NBA Stats API - LAZY LOAD after 2 seconds
+  // This defers loading until after stats are displayed, improving initial page load
   useEffect(() => {
-    const fetchEnhanced = async () => {
-      if (!playerId) {
-        setEnhancedData(null); // Clear data when no player
-        return;
-      }
-      
-      // Convert BallDontLie ID to NBA Stats ID
-      const nbaPlayerId = getNbaStatsId(playerId);
-      
-      if (!nbaPlayerId) {
-        setEnhancedData(null); // Clear data on conversion failure
-        return;
-      }
-      
-      // Clear old data immediately when player changes
-      setEnhancedData(null);
-      setEnhancedLoading(true);
-      
-      try {
-        const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
-        const response = await fetch(url);
+    if (!playerId) {
+      setEnhancedData(null); // Clear data when no player
+      return;
+    }
+    
+    // Clear old data immediately when player changes
+    setEnhancedData(null);
+    setEnhancedLoading(false);
+    
+    // Delay fetch by 6 seconds to let stats load first (increased to ensure stats are fully loaded)
+    const timeoutId = setTimeout(() => {
+      const fetchEnhanced = async () => {
+        // Convert BallDontLie ID to NBA Stats ID
+        const nbaPlayerId = getNbaStatsId(playerId);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
-          setEnhancedData(data);
-          setEnhancedError(null); // Clear any previous errors
-        } else {
-          // Try to get error message from response
-          let errorMessage = `Failed to load shot chart data (${response.status})`;
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-            console.error('[Shot Chart] API returned error:', response.status, errorData);
-          } catch {
-            const errorText = await response.text().catch(() => '');
-            console.error('[Shot Chart] API returned error:', response.status, errorText);
-            if (errorText) {
-              errorMessage = errorText.substring(0, 200);
-            }
-          }
-          setEnhancedData(null);
-          setEnhancedError(errorMessage);
+        if (!nbaPlayerId) {
+          setEnhancedData(null); // Clear data on conversion failure
+          return;
         }
-      } catch (err: any) {
-        console.error('[Shot Chart] Error fetching enhanced data:', err);
-        setEnhancedData(null);
-        setEnhancedError(err.message || 'Failed to fetch shot chart data. Please try again.');
-      } finally {
-        setEnhancedLoading(false);
-      }
-    };
+        
+        setEnhancedLoading(true);
+        
+        try {
+          const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
+          const response = await fetch(url);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
+            setEnhancedData(data);
+            setEnhancedError(null); // Clear any previous errors
+          } else {
+            // Try to get error message from response
+            let errorMessage = `Failed to load shot chart data (${response.status})`;
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+              console.error('[Shot Chart] API returned error:', response.status, errorData);
+            } catch {
+              const errorText = await response.text().catch(() => '');
+              console.error('[Shot Chart] API returned error:', response.status, errorText);
+              if (errorText) {
+                errorMessage = errorText.substring(0, 200);
+              }
+            }
+            setEnhancedData(null);
+            setEnhancedError(errorMessage);
+          }
+        } catch (err: any) {
+          console.error('[Shot Chart] Error fetching enhanced data:', err);
+          setEnhancedData(null);
+          setEnhancedError(err.message || 'Failed to fetch shot chart data. Please try again.');
+        } finally {
+          setEnhancedLoading(false);
+        }
+      };
 
-    fetchEnhanced();
+      fetchEnhanced();
+    }, 2000); // 2 second delay
+
+    return () => clearTimeout(timeoutId);
   }, [playerId, opponentTeam]);
   
   // Process shot data into zones

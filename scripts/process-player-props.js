@@ -1612,22 +1612,15 @@ async function processPlayerProps() {
       // Always clear checkpoint (safe - it's just a progress tracker)
       await supabase.from('nba_api_cache').delete().eq('cache_key', checkpointKey);
       
-      // Only clear main cache if NOT splitting (single job processing all props)
-      // When splitting, we merge with other jobs' results, so we can't clear
-      if (!propsSplit && finalProps.length > 0) {
-        console.log(`[GitHub Actions] 🧹 Clearing old cache before saving new cache (non-split job)...`);
-        try {
-          await supabase.from('nba_api_cache').delete().eq('cache_key', cacheKey);
-          console.log(`[GitHub Actions] ✅ Cleared old cache for key: ${cacheKey}`);
-        } catch (clearError) {
-          console.warn(`[GitHub Actions] ⚠️ Warning: Could not clear old cache (non-fatal): ${clearError.message}`);
-          // Continue anyway - setCache will overwrite
-        }
-      } else if (propsSplit) {
+      // ATOMIC CACHE REPLACEMENT: Save new cache FIRST, then delete old cache
+      // This ensures old cache stays available until new cache is fully saved
+      // For split jobs, we merge (don't clear) because other parallel jobs might still be writing
+      
+      if (propsSplit) {
         console.log(`[GitHub Actions] 📦 Split job: Merging with existing cache (not clearing - other jobs may be writing)`);
       } else if (finalProps.length === 0) {
-        console.warn(`[GitHub Actions] ⚠️ No props to save - skipping cache clear to preserve existing data`);
-        throw new Error('No props processed - cannot clear cache without replacement data');
+        console.warn(`[GitHub Actions] ⚠️ No props to save - skipping cache update to preserve existing data`);
+        throw new Error('No props processed - cannot update cache without replacement data');
       }
       
       console.log(`[GitHub Actions] 💾 Saving ${propsSplit ? 'merged' : 'new'} cache with key: ${cacheKey}${retry > 0 ? ` (retry ${retry})` : ''}`);
@@ -1640,8 +1633,19 @@ async function processPlayerProps() {
       });
       console.log(`[GitHub Actions] 📊 Stat type breakdown:`, statTypeCounts);
       
-      // Save the new cache (replaces old one if we cleared it, or merges if splitting)
+      // STEP 1: Save the new cache FIRST (this will overwrite/upsert the existing cache atomically)
+      // Supabase upsert is atomic - it will replace the old cache in a single operation
+      // Users will continue seeing old cache until this upsert completes, then they'll see new cache
       await setCache(cacheKey, finalProps, 24 * 60);
+      
+      // STEP 2: Only after successful save, clear old cache (if not splitting)
+      // For non-split jobs, the upsert already replaced it, but we can clean up any stale entries
+      // However, since upsert replaces it, we don't actually need to delete - but we can for cleanup
+      if (!propsSplit) {
+        console.log(`[GitHub Actions] ✅ New cache saved successfully - old cache was atomically replaced by upsert`);
+        // Note: No need to delete - upsert already replaced it atomically
+        // The old cache entry is now the new cache entry (same key, new data)
+      }
       
       // Verify the save by reading it back (with small delay to ensure write completed)
       if (propsSplit) {

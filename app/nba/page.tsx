@@ -2594,7 +2594,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   
                                   const normalizedStat = normalizeStatForDashboard(prop.statType);
                                   // Set timeframe to "thisseason" to show current season data when clicking from player props
-                                  const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=thisseason`;
+                                  const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=last10`;
                                   
                                   console.log('[PropClick] Navigating to dashboard', {
                                     ...clickData,

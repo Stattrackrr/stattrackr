@@ -1,0 +1,54 @@
+name: Trigger Odds Refresh on Tipoff
+
+on:
+  schedule:
+    # Run every 5 minutes to check if latest game has tipped off
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: trigger-odds-on-tipoff
+  cancel-in-progress: false  # Don't cancel - let it complete
+
+jobs:
+  trigger_odds_refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # Allow up to 10 minutes
+    continue-on-error: true  # Don't fail workflow if check fails
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL secret not set; skipping workflow"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check tipoff and trigger odds refresh
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Checking if latest game has tipped off..."
+          node scripts/trigger-odds-on-tipoff.js
+          echo "✅ Tipoff check completed"
+

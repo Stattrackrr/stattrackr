@@ -25,7 +25,7 @@ export function PlayTypeAnalysis({
   isDark = false
 }: PlayTypeAnalysisProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false, only set to true when fetching
   const [error, setError] = useState<string | null>(null);
   const [playTypeData, setPlayTypeData] = useState<PlayTypeData[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -40,9 +40,17 @@ export function PlayTypeAnalysis({
     });
   }, [playerId, opponentTeam, season]);
 
+  // Only fetch data when the component is opened (isOpen is true)
+  // This defers loading until user clicks to expand, improving initial page load
   useEffect(() => {
     const fetchData = async () => {
-      console.log('[PlayTypeAnalysis] useEffect triggered', { playerId, opponentTeam, season });
+      console.log('[PlayTypeAnalysis] useEffect triggered', { playerId, opponentTeam, season, isOpen });
+      
+      // Only fetch when component is opened (user clicked to expand)
+      if (!isOpen) {
+        console.log('[PlayTypeAnalysis] Component is closed, skipping fetch');
+        return;
+      }
       
       if (!playerId) {
         console.log('[PlayTypeAnalysis] No playerId, skipping fetch');
@@ -111,7 +119,7 @@ export function PlayTypeAnalysis({
     };
 
     fetchData();
-  }, [playerId, opponentTeam, season]);
+  }, [playerId, opponentTeam, season, isOpen]);
 
   const getRankColor = (rank: number | null) => {
     if (rank === null) return 'text-gray-500 dark:text-gray-400';
