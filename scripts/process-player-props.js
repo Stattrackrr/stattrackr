@@ -724,13 +724,31 @@ async function processPlayerProps() {
       });
       
       // Merge all bookmakerLines from all props in the group
+      // IMPORTANT: Only include lines that match the prop's line value (within 0.1 tolerance)
+      // This prevents mixing lines from different stat types or different line values
       const allBookmakerLines = [];
       const seenBookmakers = new Set();
+      const propLineValue = bestProp.line;
+      
       for (const prop of propGroup) {
+        // Verify prop matches the group's stat type and line (safety check)
+        if (prop.statType !== bestProp.statType) {
+          console.warn(`[GitHub Actions] ⚠️ Prop statType mismatch in group: ${prop.statType} vs ${bestProp.statType}`);
+          continue;
+        }
+        
         if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines)) {
           for (const line of prop.bookmakerLines) {
+            // Only include lines that match the prop's line value (within 0.1 tolerance)
+            // This ensures we don't mix lines from different stat types or values
+            const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
+            if (isNaN(lineValue) || Math.abs(lineValue - propLineValue) > 0.1) {
+              console.warn(`[GitHub Actions] ⚠️ Skipping bookmaker line ${lineValue} that doesn't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
+              continue;
+            }
+            
             // Deduplicate by bookmaker name (in case same bookmaker appears multiple times)
-            const bookmakerKey = `${line.bookmaker}|${line.line}`;
+            const bookmakerKey = `${line.bookmaker}|${lineValue}`;
             if (!seenBookmakers.has(bookmakerKey)) {
               allBookmakerLines.push(line);
               seenBookmakers.add(bookmakerKey);
@@ -741,6 +759,27 @@ async function processPlayerProps() {
       
       // Update bestProp with merged bookmakerLines
       bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
+      
+      // Safety check: Ensure prop.line matches the bookmakerLines (use most common line if mismatch)
+      if (bestProp.bookmakerLines && bestProp.bookmakerLines.length > 0) {
+        const lineValues = bestProp.bookmakerLines.map(l => typeof l.line === 'number' ? l.line : parseFloat(l.line)).filter(v => !isNaN(v));
+        if (lineValues.length > 0) {
+          // Find most common line value
+          const lineCounts = new Map();
+          lineValues.forEach(v => {
+            const rounded = Math.round(v * 2) / 2;
+            lineCounts.set(rounded, (lineCounts.get(rounded) || 0) + 1);
+          });
+          const mostCommonLine = Array.from(lineCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+          
+          // If prop.line doesn't match most common line, update it
+          if (mostCommonLine !== undefined && Math.abs(mostCommonLine - propLineValue) > 0.1) {
+            console.warn(`[GitHub Actions] ⚠️ Prop line ${propLineValue} doesn't match bookmakerLines (most common: ${mostCommonLine}) for ${bestProp.playerName} ${bestProp.statType} - updating prop.line`);
+            bestProp.line = mostCommonLine;
+            bestProp.bestLine = mostCommonLine;
+          }
+        }
+      }
       
       processedProps.push(bestProp);
     }
@@ -1149,7 +1188,21 @@ async function processPlayerProps() {
               });
             
             if (gamesWithStats.length > 0) {
-              console.log(`[GitHub Actions] ✅ Found ${gamesWithStats.length} games with stats for ${prop.playerName} ${prop.statType}`);
+              console.log(`[GitHub Actions] ✅ Found ${gamesWithStats.length} games with stats for ${prop.playerName} ${prop.statType} (line: ${prop.line})`);
+              
+              // Validation: Log sample stat values to ensure they match the stat type
+              if (gamesWithStats.length > 0) {
+                const sampleValues = gamesWithStats.slice(0, 3).map(g => g.statValue);
+                const avgValue = sampleValues.reduce((sum, v) => sum + v, 0) / sampleValues.length;
+                console.log(`[GitHub Actions] 📊 Sample stat values for ${prop.playerName} ${prop.statType}: ${sampleValues.join(', ')} (avg: ${avgValue.toFixed(1)})`);
+                
+                // Warn if stat values seem wrong for the stat type (e.g., PTS should be > 10, REB should be > 3)
+                if (prop.statType === 'PTS' && avgValue < 5) {
+                  console.warn(`[GitHub Actions] ⚠️ Suspicious: PTS stat values seem low (avg: ${avgValue.toFixed(1)}) for ${prop.playerName} - might be wrong stat type`);
+                } else if (prop.statType === 'REB' && avgValue > 20) {
+                  console.warn(`[GitHub Actions] ⚠️ Suspicious: REB stat values seem high (avg: ${avgValue.toFixed(1)}) for ${prop.playerName} - might be wrong stat type`);
+                }
+              }
               
               // Filter to current season games only (EXACT SAME LOGIC AS DASHBOARD)
               const getSeasonYear = (stats) => {
@@ -1489,12 +1542,35 @@ async function processPlayerProps() {
       // When splitting by props: merge ALL existing props (from other parallel jobs)
       // Only exclude exact duplicates based on player|stat|line
       const uniqueExistingProps = cacheToMerge.filter(existingProp => {
+        // Validate prop structure before merging
+        if (!existingProp.playerName || !existingProp.statType || existingProp.line === undefined || existingProp.line === null) {
+          console.warn(`[GitHub Actions] ⚠️ Skipping invalid prop in cache:`, {
+            hasPlayerName: !!existingProp.playerName,
+            hasStatType: !!existingProp.statType,
+            hasLine: existingProp.line !== undefined && existingProp.line !== null
+          });
+          return false;
+        }
+        
         const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
         return !newPropsKeys.has(key);
       });
       
-      finalProps = [...propsWithStats, ...uniqueExistingProps];
-      console.log(`[GitHub Actions] 🔀 Merging (split mode): ${propsWithStats.length} new props + ${uniqueExistingProps.length} existing props = ${finalProps.length} total`);
+      // Validate new props before merging
+      const validNewProps = propsWithStats.filter(prop => {
+        if (!prop.playerName || !prop.statType || prop.line === undefined || prop.line === null) {
+          console.warn(`[GitHub Actions] ⚠️ Skipping invalid new prop:`, {
+            playerName: prop.playerName,
+            statType: prop.statType,
+            line: prop.line
+          });
+          return false;
+        }
+        return true;
+      });
+      
+      finalProps = [...validNewProps, ...uniqueExistingProps];
+      console.log(`[GitHub Actions] 🔀 Merging (split mode): ${validNewProps.length} new props + ${uniqueExistingProps.length} existing props = ${finalProps.length} total`);
     } else if (allowedStats) {
       // When filtering by stats: only keep existing props that are NOT in the filtered stat list
       const existingPropsToKeep = cacheToMerge.filter(existingProp => {
