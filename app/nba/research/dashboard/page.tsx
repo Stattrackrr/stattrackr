@@ -10043,12 +10043,15 @@ const lineMovementInFlightRef = useRef(false);
           
           // Update player with new data if we got any
           if (jerseyNumber || heightFeetData) {
-            setSelectedPlayer(prev => ({
-              ...prev,
-              jersey: jerseyNumber || prev?.jersey || '',
-              heightFeet: heightFeetData || prev?.heightFeet || null,
-              heightInches: heightInchesData || prev?.heightInches || null,
-            }));
+            setSelectedPlayer(prev => {
+              if (!prev) return prev; // Return null if no previous player
+              return {
+                ...prev,
+                jersey: jerseyNumber || prev.jersey || '',
+                heightFeet: heightFeetData || prev.heightFeet || null,
+                heightInches: heightInchesData || prev.heightInches || null,
+              };
+            });
           }
         }
       }).catch(err => {
