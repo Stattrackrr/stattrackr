@@ -8784,7 +8784,7 @@ const lineMovementInFlightRef = useRef(false);
           // Store in session storage
           if (typeof window !== 'undefined') {
             const saved = sessionStorage.getItem(SESSION_KEY);
-            if (saved) {
+            if (saved !== null) {
               try {
                 const parsed = JSON.parse(saved);
                 parsed.selectedTimeframe = 'last10';
