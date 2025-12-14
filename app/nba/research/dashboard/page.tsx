@@ -10049,8 +10049,8 @@ const lineMovementInFlightRef = useRef(false);
               return {
                 ...prev,
                 jersey: jerseyNumber || currentJersey,
-                heightFeet: heightFeetData || prev.heightFeet || null,
-                heightInches: heightInchesData || prev.heightInches || null,
+                heightFeet: heightFeetData ?? prev.heightFeet ?? undefined,
+                heightInches: heightInchesData ?? prev.heightInches ?? undefined,
               };
             });
           }
