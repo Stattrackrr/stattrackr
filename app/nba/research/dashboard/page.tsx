@@ -10045,9 +10045,10 @@ const lineMovementInFlightRef = useRef(false);
           if (jerseyNumber || heightFeetData) {
             setSelectedPlayer(prev => {
               if (!prev) return prev; // Return null if no previous player
+              const currentJersey = typeof prev.jersey === 'number' ? prev.jersey : (typeof prev.jersey === 'string' ? Number(prev.jersey) || 0 : 0);
               return {
                 ...prev,
-                jersey: jerseyNumber || prev.jersey || '',
+                jersey: jerseyNumber || currentJersey,
                 heightFeet: heightFeetData || prev.heightFeet || null,
                 heightInches: heightInchesData || prev.heightInches || null,
               };
