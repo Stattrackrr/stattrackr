@@ -2894,7 +2894,7 @@ const ChartControls = function ChartControls({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bestLineForStat, selectedStat, oddsLoading, bettingLines]);
+  }, [bestLineForStat, selectedStat, oddsLoading, bettingLine]);
   
   // Reset manual flag when stat changes (allow auto-fetch for new stat)
   useEffect(() => {
