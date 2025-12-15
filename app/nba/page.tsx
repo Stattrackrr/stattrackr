@@ -236,6 +236,7 @@ export default function NBALandingPage() {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [playerProps, setPlayerProps] = useState<PlayerProp[]>([]);
   const [propsLoading, setPropsLoading] = useState(true);
+  const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
   const [mounted, setMounted] = useState(false);
   const [selectedBookmakers, setSelectedBookmakers] = useState<Set<string>>(new Set());
   const [selectedPropTypes, setSelectedPropTypes] = useState<Set<string>>(new Set());
@@ -563,6 +564,7 @@ export default function NBALandingPage() {
           const threesCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'THREES').length;
           console.log(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
             setPlayerProps(cacheData.data);
+            setPropsProcessing(false); // Reset processing state when we have data
             
             // Save to sessionStorage for instant load on back navigation
             if (typeof window !== 'undefined') {
@@ -578,10 +580,19 @@ export default function NBALandingPage() {
             setPropsLoading(false);
             return;
           } else {
-            console.log(`[NBA Landing] ⚠️ No cached data available - cron will populate cache`);
-            console.log(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data });
+            console.log(`[NBA Landing] ⚠️ No cached data available - cache is being populated`);
+            console.log(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data, cached: cacheData.cached, message: cacheData.message });
             setPlayerProps([]);
+            setPropsProcessing(!cacheData.cached); // Show processing state if cache is empty
             setPropsLoading(false);
+            
+            // If cache is empty, trigger processing in the background (non-blocking)
+            if (!cacheData.cached) {
+              console.log(`[NBA Landing] 🔄 Cache is empty - triggering background processing...`);
+              fetch('/api/nba/player-props/process?async=1', { method: 'POST' }).catch(err => {
+                console.warn('[NBA Landing] ⚠️ Failed to trigger background processing:', err);
+              });
+            }
             return;
           }
         } else {
@@ -2285,10 +2296,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                   ) : filteredPlayerProps.length === 0 ? (
                     <div className="text-center py-12">
                       <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {playerProps.length === 0 
-                          ? 'No player props available at this time. Check back later!'
-                          : 'No player props match your filters. Try adjusting your search or filters.'}
+                        {propsProcessing 
+                          ? 'Processing player props... This may take a few minutes. Please check back shortly!'
+                          : playerProps.length === 0 
+                            ? 'No player props available at this time. Check back later!'
+                            : 'No player props match your filters. Try adjusting your search or filters.'}
                       </div>
+                      {propsProcessing && (
+                        <div className="mt-4 flex justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>
