@@ -7172,6 +7172,10 @@ function NBADashboardContent() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
+  // Track auto-set state for betting lines (shared across handlers)
+  const hasManuallySetLineRef = useRef(false);
+  const lastAutoSetStatRef = useRef<string | null>(null);
+  const lastAutoSetLineRef = useRef<number | null>(null);
   
   // Update betting line for current stat
   const setBettingLine = (value: number) => {
@@ -9880,6 +9884,11 @@ const lineMovementInFlightRef = useRef(false);
           heightFeet: heightFeetData || undefined,
           heightInches: heightInchesData || undefined,
         });
+
+        // Reset betting-line auto-set trackers so odds can re-apply for the new player
+        lastAutoSetStatRef.current = null;
+        lastAutoSetLineRef.current = null;
+        hasManuallySetLineRef.current = false;
         
         // Reset betting lines in transition to prevent visible refresh
         setBettingLines({});
@@ -10158,6 +10167,11 @@ const lineMovementInFlightRef = useRef(false);
           heightInches: heightInchesData || null,
           position: playerPosition || undefined,
         });
+
+        // Reset betting-line auto-set trackers so odds can re-apply for the new player
+        lastAutoSetStatRef.current = null;
+        lastAutoSetLineRef.current = null;
+        hasManuallySetLineRef.current = false;
         
         // Reset betting lines in transition to prevent visible refresh
         // This clears old player's lines without causing a render
