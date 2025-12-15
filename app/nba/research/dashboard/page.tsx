@@ -2816,12 +2816,25 @@ const ChartControls = function ChartControls({
   const oddsStabilizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    console.log('[DEBUG bettingLine useEffect] Triggered', {
+      bestLineForStat,
+      oddsLoading,
+      selectedStat,
+      hasManuallySet: hasManuallySetLineRef.current,
+      timestamp: new Date().toISOString()
+    });
+    
     // Don't update betting line if odds are still loading (prevents double refresh on initial load)
     if (oddsLoading) {
+      console.log('[DEBUG bettingLine useEffect] Odds still loading, skipping update');
       return;
     }
     
     if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
+      console.log('[DEBUG bettingLine useEffect] Will update betting line', {
+        bestLineForStat,
+        currentBettingLine: bettingLine
+      });
       // Clear any pending timeout
       if (oddsStabilizeTimeoutRef.current) {
         clearTimeout(oddsStabilizeTimeoutRef.current);
@@ -6704,6 +6717,18 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
 
 function NBADashboardContent() {
   const router = useRouter();
+  
+  // Debug: Track renders
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+  console.log(`[DEBUG Render] NBADashboardContent render #${renderCountRef.current}`, {
+    timestamp: new Date().toISOString(),
+    playerStatsLength: playerStats?.length || 0,
+    selectedPlayer: selectedPlayer?.full,
+    realOddsDataLength: realOddsData?.length || 0,
+    bettingLine,
+    selectedTimeframe
+  });
   const { isDark, theme, setTheme } = useTheme();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -7171,9 +7196,20 @@ function NBADashboardContent() {
   const bettingLine = useMemo(() => {
     // First check if we have a stored line for this stat
     if (selectedStat in bettingLines) {
-      return bettingLines[selectedStat];
+      const line = bettingLines[selectedStat];
+      console.log('[DEBUG bettingLine] useMemo returning stored line', {
+        selectedStat,
+        line,
+        timestamp: new Date().toISOString()
+      });
+      return line;
     }
     // Otherwise default to 0.5 (will be updated by useEffect when bestLineForStat is available)
+    console.log('[DEBUG bettingLine] useMemo returning default 0.5', {
+      selectedStat,
+      bettingLinesKeys: Object.keys(bettingLines),
+      timestamp: new Date().toISOString()
+    });
     return 0.5;
   }, [bettingLines, selectedStat]);
   
@@ -7357,6 +7393,15 @@ const lineMovementInFlightRef = useRef(false);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
   const isHandlingPlayerSelectRef = useRef<boolean>(false);
   const [playerStats, setPlayerStats] = useState<BallDontLieStats[]>([]);
+  
+  // Debug: Track playerStats changes
+  useEffect(() => {
+    console.log('[DEBUG playerStats] State changed', {
+      length: playerStats.length,
+      timestamp: new Date().toISOString(),
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+    });
+  }, [playerStats]);
   const [isLoading, setIsLoading] = useState(false);
   // Track when core data (stats + DvP) is ready to show the screen
   const [coreDataReady, setCoreDataReady] = useState(false);
@@ -10087,15 +10132,23 @@ const lineMovementInFlightRef = useRef(false);
       
       // Batch all state updates together in startTransition to prevent multiple re-renders
       // Set selectedTimeframe FIRST so it's correct when playerStats updates (prevents double baseGameData recalculation)
+      console.log('[DEBUG handlePlayerSelectFromSearch] About to batch state updates', {
+        rowsCount: rows.length,
+        currentTeam,
+        timestamp: new Date().toISOString()
+      });
+      
       startTransition(() => {
         // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
         // Set this FIRST so baseGameData calculates correctly when playerStats updates
-        console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting timeframe to "last10"`);
         setSelectedTimeframe('last10');
         
         // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting playerStats (${rows.length} rows)`);
         setPlayerStats(rows);
         
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting teams and player`);
         setSelectedTeam(currentTeam);
         setOriginalPlayerTeam(currentTeam);
         setDepthChartTeam(currentTeam);
@@ -10112,7 +10165,10 @@ const lineMovementInFlightRef = useRef(false);
         
         // Reset betting lines in transition to prevent visible refresh
         // This clears old player's lines without causing a render
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Resetting bettingLines`);
         setBettingLines({});
+        
+        console.log(`[DEBUG handlePlayerSelectFromSearch] All state updates batched in startTransition`);
       });
       
       // Update URL to reflect the timeframe change (outside transition, doesn't affect rendering)
@@ -10222,6 +10278,14 @@ const lineMovementInFlightRef = useRef(false);
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
+    console.log('[DEBUG baseGameData] Recalculating baseGameData', {
+      playerStatsLength: playerStats.length,
+      selectedTimeframe,
+      selectedPlayer: selectedPlayer?.full,
+      propsMode,
+      timestamp: new Date().toISOString()
+    });
+    
     // Use playerStats directly to prevent double refresh from deferred value
     const statsToUse = playerStats;
     // Team mode: use game data instead of player stats
@@ -11423,6 +11487,15 @@ const lineMovementInFlightRef = useRef(false);
 
   // Real odds data state
   const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
+  
+  // Debug: Track realOddsData changes
+  useEffect(() => {
+    console.log('[DEBUG realOddsData] State changed', {
+      length: realOddsData.length,
+      timestamp: new Date().toISOString(),
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+    });
+  }, [realOddsData]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
 
@@ -12009,6 +12082,11 @@ const lineMovementInFlightRef = useRef(false);
       
       // Update odds in a transition to prevent visible refresh
       // Only update if data has actually changed (check length and first book name)
+      console.log('[DEBUG fetchOddsData] About to set realOddsData', {
+        oddsDataLength: oddsData.length,
+        timestamp: new Date().toISOString()
+      });
+      
       startTransition(() => {
         setRealOddsData(prevOdds => {
           // Quick check: if length is same and first book is same, likely no change
@@ -12020,9 +12098,14 @@ const lineMovementInFlightRef = useRef(false);
             const prevStr = JSON.stringify(prevOdds);
             const newStr = JSON.stringify(oddsData);
             if (prevStr === newStr) {
+              console.log('[DEBUG fetchOddsData] Odds data unchanged, skipping update');
               return prevOdds; // No change, return previous to prevent re-render
             }
           }
+          console.log('[DEBUG fetchOddsData] Updating realOddsData', {
+            prevLength: prevOdds.length,
+            newLength: oddsData.length
+          });
           return oddsData;
         });
       });
