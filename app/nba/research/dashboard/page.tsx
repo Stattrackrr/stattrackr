@@ -11964,7 +11964,8 @@ const lineMovementInFlightRef = useRef(false);
         // In player mode, fetch player's props by player name
         const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
         if (!playerName || !selectedPlayer) {
-          setRealOddsData([]);
+          // Don't clear odds here - let the player ID tracking useEffect handle clearing
+          // This prevents clearing odds when player is temporarily null during state updates
           setOddsLoading(false);
           return;
         }
@@ -12165,11 +12166,26 @@ const lineMovementInFlightRef = useRef(false);
   // Track if odds are currently being fetched to prevent duplicate calls
   const isFetchingOddsRef = useRef(false);
   
+  // Track the last player ID to prevent unnecessary odds fetches
+  const lastOddsPlayerIdRef = useRef<string | null>(null);
+  
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
     // For team mode, add a small delay to ensure gamePropsTeam is set
     if (propsMode === 'team' && !gamePropsTeam) {
       return;
+    }
+    
+    // In player mode, only fetch if player ID actually changed (not just metadata updates)
+    if (propsMode === 'player' && selectedPlayer) {
+      const currentPlayerId = selectedPlayer.id?.toString() || null;
+      if (currentPlayerId === lastOddsPlayerIdRef.current) {
+        // Player ID hasn't changed, skip fetch (just metadata update)
+        return;
+      }
+      lastOddsPlayerIdRef.current = currentPlayerId;
+    } else if (propsMode === 'player' && !selectedPlayer) {
+      lastOddsPlayerIdRef.current = null;
     }
     
     // Skip if already fetching
@@ -12190,7 +12206,8 @@ const lineMovementInFlightRef = useRef(false);
     
     return () => {
       clearTimeout(timeoutId);
-      isFetchingOddsRef.current = false;
+      // Don't reset isFetchingOddsRef here - let it be reset by the finally block
+      // This prevents race conditions where cleanup runs before fetch completes
     };
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
