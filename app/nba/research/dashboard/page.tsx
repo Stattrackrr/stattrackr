@@ -13542,7 +13542,19 @@ const lineMovementInFlightRef = useRef(false);
                       {/* Back button to player props page */}
                       {selectedPlayer && (
                         <button
-                          onClick={() => router.push('/nba')}
+                          onClick={() => {
+                            // Clear dashboard session storage before navigating
+                            try {
+                              sessionStorage.removeItem('nba_dashboard_session_v1');
+                              sessionStorage.removeItem('last_prop_click');
+                              sessionStorage.removeItem('last_prop_url');
+                            } catch (e) {
+                              // Ignore errors
+                            }
+                            
+                            // Navigate to player props page - state will clear naturally on unmount/URL change
+                            router.push('/nba');
+                          }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
                           <svg 
@@ -14114,28 +14126,7 @@ const lineMovementInFlightRef = useRef(false);
                       {selectedPlayer && (
                         <button
                           onClick={() => {
-                            // Clear player state and URL parameters before navigating back
-                            setSelectedPlayer(null);
-                            setResolvedPlayerId(null);
-                            setPlayerStats([]);
-                            setRealOddsData([]);
-                            setOddsSnapshots([]);
-                            setLineMovementData(null);
-                            
-                            // Clear URL parameters
-                            if (typeof window !== 'undefined') {
-                              const url = new URL(window.location.href);
-                              url.searchParams.delete('player');
-                              url.searchParams.delete('pid');
-                              url.searchParams.delete('name');
-                              url.searchParams.delete('stat');
-                              url.searchParams.delete('line');
-                              url.searchParams.delete('tf');
-                              url.searchParams.delete('mode');
-                              window.history.replaceState({}, '', url.toString());
-                            }
-                            
-                            // Clear dashboard session storage
+                            // Clear dashboard session storage before navigating
                             try {
                               sessionStorage.removeItem('nba_dashboard_session_v1');
                               sessionStorage.removeItem('last_prop_click');
@@ -14144,7 +14135,7 @@ const lineMovementInFlightRef = useRef(false);
                               // Ignore errors
                             }
                             
-                            // Navigate to player props page
+                            // Navigate to player props page - state will clear naturally on unmount/URL change
                             router.push('/nba');
                           }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
