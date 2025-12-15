@@ -12080,19 +12080,24 @@ const lineMovementInFlightRef = useRef(false);
         return;
       }
       
-      // If team mode and metadata is missing, trigger a refresh
+      // If team mode and metadata is missing, trigger a single refresh; otherwise proceed without metadata
       if (propsMode === 'team' && (!data.homeTeam || !data.awayTeam) && data.data && data.data.length > 0) {
         console.log('[fetchOddsData] Missing team metadata - triggering cache refresh...');
-        // Trigger a refresh with the refresh parameter
-        const refreshParams = new URLSearchParams();
-        if (gamePropsTeam) refreshParams.set('team', gamePropsTeam);
-        refreshParams.set('refresh', '1');
-        
-        // Retry after a short delay to allow cache to refresh
-        setTimeout(() => {
-          fetchOddsData(retryCount + 1);
-        }, 2000);
-        return;
+        if (!missingTeamMetaRetryRef.current) {
+          missingTeamMetaRetryRef.current = true;
+          // Trigger a refresh with the refresh parameter
+          const refreshParams = new URLSearchParams();
+          if (gamePropsTeam) refreshParams.set('team', gamePropsTeam);
+          refreshParams.set('refresh', '1');
+          
+          // Retry after a short delay to allow cache to refresh
+          setTimeout(() => {
+            fetchOddsData(retryCount + 1);
+          }, 2000);
+          return;
+        } else {
+          console.log('[fetchOddsData] Metadata still missing after retry, proceeding without team metadata');
+        }
       }
       
       const oddsData = data.data || [];
@@ -12200,6 +12205,8 @@ const lineMovementInFlightRef = useRef(false);
   
   // Track if odds are currently being fetched to prevent duplicate calls
   const isFetchingOddsRef = useRef(false);
+  // Track a single retry for missing team metadata (team mode)
+  const missingTeamMetaRetryRef = useRef(false);
   
   // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
   const lastOddsPlayerIdRef = useRef<string | null>(null);
@@ -12216,6 +12223,9 @@ const lineMovementInFlightRef = useRef(false);
       lastOddsPlayerId: lastOddsPlayerIdRef.current,
       isFetching: isFetchingOddsRef.current
     });
+    
+    // Reset missing metadata retry on dependency change
+    missingTeamMetaRetryRef.current = false;
     
     // For team mode, add a small delay to ensure gamePropsTeam is set
     if (propsMode === 'team' && !gamePropsTeam) {
