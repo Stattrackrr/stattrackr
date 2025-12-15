@@ -11495,10 +11495,9 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
 
-  // Set coreDataReady when stats are loaded; wait briefly for odds to avoid a visible refresh
-  // Use a ref to track if we've already set coreDataReady to prevent re-triggering
+  // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
+  // Uses existing lastPlayerStatsLengthRef (defined earlier) to track per-player changes
   const coreDataReadySetRef = useRef(false);
-  const lastPlayerStatsLengthRef = useRef(0);
   
   useEffect(() => {
     // Reset when loading starts or no stats yet
@@ -11510,7 +11509,6 @@ const lineMovementInFlightRef = useRef(false);
     }
 
     // Only run when playerStats length actually changes (new player selected)
-    // Don't re-run when odds load to prevent flicker
     if (playerStats.length === lastPlayerStatsLengthRef.current && coreDataReadySetRef.current) {
       return;
     }
@@ -11523,24 +11521,32 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
 
-    // Wait a fixed 400ms to let odds arrive before revealing UI
-    // This prevents the flicker when odds load after chart displays
-    // The fallback ensures UI shows even if odds are slow
-    const timeoutId = setTimeout(() => {
-      setCoreDataReady(true);
-      coreDataReadySetRef.current = true;
-    }, 400);
+    let pollId: NodeJS.Timeout | undefined;
+    const start = Date.now();
 
-    const fallbackId = setTimeout(() => {
-      setCoreDataReady(true);
-      coreDataReadySetRef.current = true;
-    }, 1800);
+    const poll = () => {
+      const oddsReady =
+        propsMode === 'team' ||
+        realOddsData.length > 0 ||
+        !!oddsError ||
+        !oddsLoading;
+
+      const elapsed = Date.now() - start;
+      if (oddsReady || elapsed >= 2200) {
+        setCoreDataReady(true);
+        coreDataReadySetRef.current = true;
+        return;
+      }
+      pollId = setTimeout(poll, 120);
+    };
+
+    // Start polling so we reveal once odds are likely present; fallback after ~2.2s
+    poll();
 
     return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(fallbackId);
+      if (pollId) clearTimeout(pollId);
     };
-  }, [playerStats.length, isLoading, propsMode]);
+  }, [playerStats.length, isLoading, propsMode, oddsLoading, realOddsData.length, oddsError]);
   
   // Debug: Track component renders (after all state is defined)
   useEffect(() => {
