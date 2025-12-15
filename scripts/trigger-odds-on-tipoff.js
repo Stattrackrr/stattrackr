@@ -400,10 +400,24 @@ async function findLatestTipoff(oddsCache) {
   // First, calculate tipoff times for ALL games using commenceTime (this is our baseline)
   // This ensures we don't miss any games even if BDL API doesn't have them
   const gameTipoffs = new Map(); // Map of gameId -> tipoff Date
+  const gameDetails = new Map(); // Map of gameId -> game info for logging
+  
+  console.log(`[Trigger Odds on Tipoff] 🔍 Calculating tipoff times for ${allGamesFromOdds.length} games...`);
+  
   for (const game of allGamesFromOdds) {
     const tipoffDate = calculateTipoffTime(game);
     if (tipoffDate) {
       gameTipoffs.set(game.gameId, tipoffDate);
+      gameDetails.set(game.gameId, {
+        homeTeam: game.homeTeam,
+        awayTeam: game.awayTeam,
+        commenceTime: game.commenceTime,
+        tipoffISO: tipoffDate.toISOString(),
+        tipoffLocal: tipoffDate.toLocaleString('en-US', { timeZone: 'America/New_York' })
+      });
+      console.log(`[Trigger Odds on Tipoff] ⏰ ${game.awayTeam} @ ${game.homeTeam}: ${tipoffDate.toISOString()} (${tipoffDate.toLocaleString('en-US', { timeZone: 'America/New_York' })} ET)`);
+    } else {
+      console.log(`[Trigger Odds on Tipoff] ⚠️ Could not calculate tipoff for ${game.awayTeam} @ ${game.homeTeam} (commenceTime: ${game.commenceTime})`);
     }
   }
 
@@ -416,6 +430,11 @@ async function findLatestTipoff(oddsCache) {
       latestGameId = gameId;
     }
   }
+  
+  if (latestGameId) {
+    const details = gameDetails.get(latestGameId);
+    console.log(`[Trigger Odds on Tipoff] 🏆 Initial latest tipoff: ${details?.awayTeam} @ ${details?.homeTeam} at ${latestTipoff.toISOString()} (${details?.tipoffLocal} ET)`);
+  }
 
   // Now try to enhance with BDL API data if available (for more accurate times)
   const [bdlGamesToday, bdlGamesTomorrow] = await Promise.all([
@@ -426,6 +445,7 @@ async function findLatestTipoff(oddsCache) {
   const allBdlGames = [...(bdlGamesToday || []), ...(bdlGamesTomorrow || [])];
   
   if (allBdlGames.length > 0) {
+    console.log(`[Trigger Odds on Tipoff] 🔄 Enhancing with BDL API data (${allBdlGames.length} games)...`);
     // Match BDL games with odds cache games and update tipoff times if BDL has better data
     for (const bdlGame of allBdlGames) {
       const homeTeam = bdlGame.home_team?.abbreviation || bdlGame.home_team?.full_name;
@@ -445,16 +465,33 @@ async function findLatestTipoff(oddsCache) {
       if (matchingOddsGame) {
         const bdlTipoff = calculateTipoffTime(bdlGame);
         if (bdlTipoff) {
+          const oldTipoff = gameTipoffs.get(matchingOddsGame.gameId);
           // Update with BDL tipoff time (usually more accurate)
           gameTipoffs.set(matchingOddsGame.gameId, bdlTipoff);
-          // Re-check if this is now the latest
-          if (!latestTipoff || bdlTipoff > latestTipoff) {
-            latestTipoff = bdlTipoff;
-            latestGameId = matchingOddsGame.gameId;
-            console.log(`[Trigger Odds on Tipoff] 📅 Updated tipoff: ${bdlTipoff.toISOString()} for ${homeTeam || 'HOME'} vs ${awayTeam || 'AWAY'}`);
+          const details = gameDetails.get(matchingOddsGame.gameId);
+          if (details) {
+            details.tipoffISO = bdlTipoff.toISOString();
+            details.tipoffLocal = bdlTipoff.toLocaleString('en-US', { timeZone: 'America/New_York' });
           }
+          console.log(`[Trigger Odds on Tipoff] 🔄 Updated ${awayTeam} @ ${homeTeam}: ${oldTipoff?.toISOString()} → ${bdlTipoff.toISOString()} (${bdlTipoff.toLocaleString('en-US', { timeZone: 'America/New_York' })} ET)`);
         }
       }
+    }
+    
+    // After enhancing with BDL data, re-check ALL games to find the latest tipoff
+    console.log(`[Trigger Odds on Tipoff] 🔍 Re-checking all games after BDL enhancement...`);
+    latestTipoff = null;
+    latestGameId = null;
+    for (const [gameId, tipoffDate] of gameTipoffs.entries()) {
+      if (!latestTipoff || tipoffDate > latestTipoff) {
+        latestTipoff = tipoffDate;
+        latestGameId = gameId;
+      }
+    }
+    
+    if (latestGameId) {
+      const details = gameDetails.get(latestGameId);
+      console.log(`[Trigger Odds on Tipoff] 🏆 Latest tipoff after BDL enhancement: ${details?.awayTeam} @ ${details?.homeTeam} at ${latestTipoff.toISOString()} (${details?.tipoffLocal} ET)`);
     }
   } else {
     console.log(`[Trigger Odds on Tipoff] ⚠️ No BDL games found, using commenceTime parsing`);
@@ -468,9 +505,11 @@ async function findLatestTipoff(oddsCache) {
   // Find the game info for logging
   const latestGame = allGamesFromOdds.find(g => g.gameId === latestGameId);
   if (latestGame) {
-    console.log(`[Trigger Odds on Tipoff] 📅 Latest tipoff: ${latestTipoff.toISOString()} for ${latestGame.homeTeam || 'HOME'} vs ${latestGame.awayTeam || 'AWAY'}`);
+    const details = gameDetails.get(latestGameId);
+    console.log(`[Trigger Odds on Tipoff] 📅 FINAL Latest tipoff: ${latestTipoff.toISOString()} (${details?.tipoffLocal || latestTipoff.toLocaleString('en-US', { timeZone: 'America/New_York' })} ET) for ${latestGame.awayTeam} @ ${latestGame.homeTeam}`);
+    console.log(`[Trigger Odds on Tipoff] 📅 Game commenceTime: ${latestGame.commenceTime}`);
   } else {
-    console.log(`[Trigger Odds on Tipoff] 📅 Latest tipoff: ${latestTipoff.toISOString()}`);
+    console.log(`[Trigger Odds on Tipoff] 📅 FINAL Latest tipoff: ${latestTipoff.toISOString()} (${latestTipoff.toLocaleString('en-US', { timeZone: 'America/New_York' })} ET)`);
   }
 
   return latestTipoff;
