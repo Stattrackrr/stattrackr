@@ -12138,3 +12138,271 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Mon 15/12/2025  4:18:40.23] warm-rosters end (exit 0) 
+[Mon 15/12/2025  4:48:37.40] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025  4:48:40.12] warm-rosters end (exit 0) 
+[Mon 15/12/2025  5:18:37.39] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025  5:18:39.66] warm-rosters end (exit 0) 
+[Mon 15/12/2025  5:48:37.39] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025  5:48:39.61] warm-rosters end (exit 0) 
+[Mon 15/12/2025  6:32:36.03] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251215"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251214"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251216"
+}
+No games found for today/Añ1 or requests failed.
+At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
++ ...  $worked) { throw "No games found for today/Añ1 or requests failed."  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (No games found ...equests failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
+ 
+[Mon 15/12/2025  6:32:37.68] warm-rosters end (exit 1) 
+[Mon 15/12/2025 11:34:57.55] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 11:35:10.85] warm-rosters end (exit 0) 
+[Mon 15/12/2025 11:48:37.37] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 11:48:40.10] warm-rosters end (exit 0) 
+[Mon 15/12/2025 12:18:37.47] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 12:18:40.22] warm-rosters end (exit 0) 
+[Mon 15/12/2025 12:58:53.01] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251215"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251214&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251214"
+}
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  false,
+    "error":  "no games for date 20251216"
+}
+No games found for today/Añ1 or requests failed.
+At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
++ ...  $worked) { throw "No games found for today/Añ1 or requests failed."  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (No games found ...equests failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
+ 
+[Mon 15/12/2025 12:58:53.55] warm-rosters end (exit 1) 
+[Mon 15/12/2025 21:13:29.32] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 21:13:41.86] warm-rosters end (exit 0) 
+[Mon 15/12/2025 21:18:37.40] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 21:18:39.88] warm-rosters end (exit 0) 
+[Mon 15/12/2025 21:48:37.44] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 21:48:40.56] warm-rosters end (exit 0) 
+[Mon 15/12/2025 22:18:37.41] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 22:18:40.08] warm-rosters end (exit 0) 
+[Mon 15/12/2025 22:48:37.40] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 22:48:39.59] warm-rosters end (exit 0) 
+[Mon 15/12/2025 23:18:37.41] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 23:18:40.14] warm-rosters end (exit 0) 
+[Mon 15/12/2025 23:48:37.39] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251215&window_min=180
+{
+    "success":  true,
+    "date":  "20251215",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Mon 15/12/2025 23:48:39.99] warm-rosters end (exit 0) 
+[Tue 16/12/2025  0:18:37.40] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  0:18:40.26] warm-rosters end (exit 0) 
+[Tue 16/12/2025  0:48:37.40] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  0:48:40.19] warm-rosters end (exit 0) 
+[Tue 16/12/2025  1:18:37.47] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  1:18:40.97] warm-rosters end (exit 0) 
+[Tue 16/12/2025  1:48:37.10] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  1:48:40.76] warm-rosters end (exit 0) 
+[Tue 16/12/2025  2:18:37.46] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  2:18:40.97] warm-rosters end (exit 0) 
+[Tue 16/12/2025  2:48:37.42] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  2:48:40.17] warm-rosters end (exit 0) 
+[Tue 16/12/2025  3:18:37.42] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251216&window_min=180
+{
+    "success":  true,
+    "date":  "20251216",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Tue 16/12/2025  3:18:40.23] warm-rosters end (exit 0) 

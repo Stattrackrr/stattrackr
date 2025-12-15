@@ -4287,10 +4287,6 @@ const ChartControls = function ChartControls({
             </div>
             {/* Mobile: Filters inline with line input */}
             <div className="sm:hidden flex items-center flex-wrap gap-2.5 ml-2 mt-4">
-              <div className="flex-shrink-0 mr-1">
-                {TimeframeButtons}
-              </div>
-              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
               <div className="mr-1">
                 <OpponentSelector
                   currentOpponent={currentOpponent}
@@ -4301,6 +4297,10 @@ const ChartControls = function ChartControls({
                   currentTeam={currentTeam}
                   selectedTimeframe={selectedTimeframe}
                 />
+              </div>
+              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
+              <div className="flex-shrink-0 mr-1">
+                {TimeframeButtons}
               </div>
               {propsMode === 'player' && (
                 <div className="relative" ref={advancedMobileRef}>
@@ -13637,8 +13637,9 @@ const lineMovementInFlightRef = useRef(false);
                           onClick={() => setIsMobileSearchOpen(false)}
                         />
                         {/* Search panel */}
-                        <div className="sm:hidden fixed inset-x-0 top-16 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
-                        <div className="flex items-end gap-2 px-3 pt-3 pb-4 border-b border-gray-300 dark:border-gray-700">
+                        <div className="sm:hidden fixed left-0 right-0 top-0 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
+                        <div className="pt-16">
+                        <div className="flex items-end gap-2 pt-4 pb-4 border-b border-gray-300 dark:border-gray-700">
                           <input
                             autoFocus={propsMode !== 'player' || isPro}
                             type="text"
@@ -13684,15 +13685,16 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                               }
                             }}
-                            className="flex-1 px-4 py-5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
                           <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                           </button>
                         </div>
+                        </div>
                         
                         {/* Search results */}
-                        <div className="p-2">
+                        <div className="pb-4">
                           {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
                             const query = searchQuery.toLowerCase();
                             const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
@@ -14141,8 +14143,9 @@ const lineMovementInFlightRef = useRef(false);
                           onClick={() => setIsMobileSearchOpen(false)}
                         />
                         {/* Search panel */}
-                        <div className="fixed inset-x-0 top-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-b-lg shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
-                        <div className="flex items-center gap-2 p-3 border-b border-gray-300 dark:border-gray-700">
+                        <div className="fixed left-0 right-0 top-0 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
+                        <div className="pt-16">
+                        <div className="flex items-end gap-2 pt-4 pb-4 border-b border-gray-300 dark:border-gray-700">
                           <input
                             autoFocus={propsMode !== 'player' || isPro}
                             type="text"
@@ -14188,7 +14191,7 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                               }
                             }}
-                            className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
                           <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
@@ -14196,7 +14199,7 @@ const lineMovementInFlightRef = useRef(false);
                         </div>
                         
                         {/* Search results - same as before */}
-                        <div className="p-2">
+                        <div className="pb-4">
                           {propsMode === 'team' && searchQuery && searchQuery.length >= 2 && (() => {
                             const query = searchQuery.toLowerCase();
                             const matchingTeams: Array<{ abbr: string; fullName: string }> = [];
@@ -14291,6 +14294,7 @@ const lineMovementInFlightRef = useRef(false);
                               ))}
                             </>
                           )}
+                        </div>
                         </div>
                         </div>
                       </>

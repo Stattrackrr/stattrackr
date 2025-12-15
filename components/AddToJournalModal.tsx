@@ -63,7 +63,6 @@ const PLAYER_STAT_OPTIONS = [
   { value: 'pts', label: 'Points' },
   { value: 'reb', label: 'Rebounds' },
   { value: 'ast', label: 'Assists' },
-  { value: 'pa', label: 'Points + Assists' },
   { value: 'pr', label: 'Points + Rebounds' },
   { value: 'pra', label: 'Points + Rebounds + Assists' },
   { value: 'ra', label: 'Rebounds + Assists' },
@@ -216,6 +215,44 @@ export default function AddToJournalModal({
     if (!bookmaker) return false;
     return bookmaker.toLowerCase().includes('prizepicks');
   };
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (typeof document !== 'undefined' && isOpen) {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
+      }
+    };
+  }, [isOpen]);
 
   // Set data attribute on body when parlay is active (for button positioning)
   useEffect(() => {
@@ -1244,15 +1281,15 @@ export default function AddToJournalModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4">
-      <div className={`flex gap-4 w-full max-w-7xl mx-4 items-start ${
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-0 lg:py-4">
+      <div className={`flex gap-4 w-full max-w-7xl mx-0 lg:mx-4 items-start h-full lg:h-auto ${
         isParlayMode ? 'flex-col lg:flex-row lg:items-stretch' : ''
       }`}>
-      <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full flex flex-col ${
+      <div className={`bg-white dark:bg-slate-800 rounded-none lg:rounded-lg shadow-xl w-full flex flex-col ${
         isParlayMode 
-          ? 'lg:max-w-5xl lg:min-h-0 max-h-[90vh]' 
-          : 'max-w-md h-[90vh]'
-      }`} style={isParlayMode ? { height: 'calc(100vh - 2rem)', maxHeight: 'calc(100vh - 2rem)' } : undefined}>
+          ? 'lg:max-w-5xl lg:min-h-0 h-full lg:h-[calc(100vh-2rem)] lg:max-h-[90vh]' 
+          : 'max-w-md h-full lg:h-[90vh]'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
           <div>
@@ -1360,10 +1397,268 @@ export default function AddToJournalModal({
           {/* Side-by-side parlay mode - Desktop only, single column on mobile */}
           {isParlayMode ? (
             <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4">
-              {/* Left Side - Game Props */}
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col max-h-[70vh]">
+              {/* Player Props - First */}
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Player Props</h3>
+                <div className="space-y-4">
+                {/* Player Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Search Player
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={playerSearchQuery}
+                      onChange={(e) => setPlayerSearchQuery(e.target.value)}
+                      placeholder="Search by player name..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    {playerSearchQuery && playerSearchResults.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {playerSearchResults.map((player) => (
+                          <button
+                            key={player.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedPlayer(player);
+                              setPlayerSearchQuery(player.full);
+                              setPlayerSearchResults([]);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                          >
+                            {player.full} {player.team ? `(${player.team})` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {playerSearchBusy && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {selectedPlayer && (
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Selected: {selectedPlayer.full} {selectedPlayer.team ? `(${selectedPlayer.team})` : ''}
+                    </div>
+                  )}
+                </div>
+
+                {/* Player Stat Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Stat Type
+                  </label>
+                  <select
+                    value={playerStatType}
+                    onChange={(e) => setPlayerStatType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={!selectedPlayer}
+                  >
+                    {PLAYER_STAT_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                    {/* Player Odds Section - Collapsible in parlay mode */}
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlayerBookmakerExpanded(!playerBookmakerExpanded);
+                          if (!playerBookmakerExpanded) {
+                            setPlayerManualExpanded(false);
+                            setPlayerIsManualMode(false);
+                          }
+                        }}
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          {playerBookmakerExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                          <span className="font-medium text-gray-900 dark:text-white">Live Bookmaker Odds</span>
+                        </div>
+                        {!playerOddsLoading && playerAvailableOdds.length > 0 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {playerAvailableOdds.length} bookmaker{playerAvailableOdds.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                      
+                      {playerBookmakerExpanded && (
+                        <div className="p-3 border-t border-gray-200 dark:border-gray-600">
+                          {playerOddsLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading odds...</span>
+                            </div>
+                          ) : playerOddsError ? (
+                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm">
+                              {playerOddsError}
+                            </div>
+                          ) : playerAvailableOdds.length === 0 && !playerOddsLoading ? (
+                            <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
+                              {selectedPlayer ? 'No live odds available for this prop' : 'Please select a player to see odds'}
+                            </div>
+                          ) : playerAvailableOdds.length > 0 ? (
+                            <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
+                              {playerAvailableOdds.map((odds, idx) => {
+                                const isSelected = !playerIsManualMode && playerSelectedOdds?.bookmaker === odds.bookmaker && playerSelectedOdds?.line === odds.line;
+                                const bookmaker = getBookmakerInfo(odds.bookmaker);
+                                return (
+                                  <button
+                                    key={`${odds.bookmaker}-${odds.line}-${idx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      setPlayerSelectedOdds(odds);
+                                      setPlayerIsManualMode(false);
+                                    }}
+                                    className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                                      isSelected
+                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        {bookmaker.logoUrl ? (
+                                          <BookmakerLogo 
+                                            logoUrl={bookmaker.logoUrl}
+                                            name={bookmaker.name}
+                                            fallbackEmoji={bookmaker.logo}
+                                          />
+                                        ) : (
+                                          <span className="text-2xl">{bookmaker.logo}</span>
+                                        )}
+                                        <div>
+                                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                                            {bookmaker.name}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Line: {odds.line}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                          O {formatOdds(odds.overPrice, oddsFormat)}
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                          U {formatOdds(odds.underPrice, oddsFormat)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Player Manual Entry Section */}
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlayerManualExpanded(!playerManualExpanded);
+                          if (!playerManualExpanded) {
+                            setPlayerIsManualMode(true);
+                            setPlayerSelectedOdds(null);
+                          }
+                        }}
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          {playerManualExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                          <span className="font-medium text-gray-900 dark:text-white">Manual Entry</span>
+                        </div>
+                      </button>
+                      
+                      {playerManualExpanded && (
+                        <div className="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Line
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={playerManualLine}
+                              onChange={(e) => setPlayerManualLine(e.target.value)}
+                              placeholder="e.g., 25.5"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
+                            </label>
+                            <input
+                              type="number"
+                              step={oddsFormat === 'decimal' ? '0.01' : '1'}
+                              value={playerManualOdds}
+                              onChange={(e) => setPlayerManualOdds(e.target.value)}
+                              placeholder={oddsFormat === 'decimal' ? 'e.g., 1.91' : 'e.g., -110'}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Player Direction */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Direction
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPlayerOverUnder('over')}
+                          disabled={!selectedPlayer}
+                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            playerOverUnder === 'over'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          Over
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlayerOverUnder('under')}
+                          disabled={!selectedPlayer}
+                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            playerOverUnder === 'under'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          Under
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Add Player Prop to Parlay Button */}
+                    <button
+                      type="button"
+                      onClick={addPlayerPropToParlay}
+                      className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      disabled={!selectedPlayer || !playerStatType || (!playerSelectedOdds && !playerIsManualMode)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add to Parlay
+                    </button>
+                </div>
+              </div>
+
+              {/* Game Props - Second */}
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Game Props</h3>
-                <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
+                <div className="space-y-4 pb-24 lg:pb-4">
                 {/* Game Search */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1420,109 +1715,125 @@ export default function AddToJournalModal({
                   </select>
                 </div>
 
-                {/* Game Odds Section - Always visible in parlay mode */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Live Bookmaker Odds
+                {/* Game Odds Section - Collapsible in parlay mode */}
+                <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGameBookmakerExpanded(!gameBookmakerExpanded);
+                      if (!gameBookmakerExpanded) {
+                        setGameManualExpanded(false);
+                        setGameIsManualMode(false);
+                      }
+                    }}
+                    className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      {gameBookmakerExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                      <span className="font-medium text-gray-900 dark:text-white">Live Bookmaker Odds</span>
+                    </div>
                     {!gameOddsLoading && gameAvailableOdds.length > 0 && (
-                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                        ({gameAvailableOdds.length} bookmaker{gameAvailableOdds.length !== 1 ? 's' : ''})
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {gameAvailableOdds.length} bookmaker{gameAvailableOdds.length !== 1 ? 's' : ''}
                       </span>
                     )}
-                  </label>
-                  <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                          {gameOddsLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-                              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading odds...</span>
-                            </div>
-                          ) : gameOddsError ? (
-                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm">
-                              {gameOddsError}
-                            </div>
-                          ) : gameAvailableOdds.length === 0 ? (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
-                              No live odds available for this prop
-                            </div>
-                          ) : (
-                            <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
-                              {gameAvailableOdds.map((odds, idx) => {
-                                const isSelected = !gameIsManualMode && gameSelectedOdds?.bookmaker === odds.bookmaker && gameSelectedOdds?.line === odds.line;
-                                const bookmaker = getBookmakerInfo(odds.bookmaker);
-                                return (
-                                  <button
-                                    key={`${odds.bookmaker}-${odds.line}-${idx}`}
-                                    type="button"
-                                    onClick={() => {
-                                      setGameSelectedOdds(odds);
-                                      setGameIsManualMode(false);
-                                    }}
-                                    className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                      isSelected
-                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        {bookmaker.logoUrl ? (
-                                          <BookmakerLogo 
-                                            logoUrl={bookmaker.logoUrl}
-                                            name={bookmaker.name}
-                                            fallbackEmoji={bookmaker.logo}
-                                          />
-                                        ) : (
-                                          <span className="text-2xl">{bookmaker.logo}</span>
-                                        )}
-                                        <div>
-                                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                                            {bookmaker.name}
-                                          </div>
-                                          {gameStatType !== 'moneyline' && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                              Line: {odds.line}
-                                            </div>
-                                          )}
+                  </button>
+                  
+                  {gameBookmakerExpanded && (
+                    <div className="p-3 border-t border-gray-200 dark:border-gray-600">
+                      {gameOddsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading odds...</span>
+                        </div>
+                      ) : gameOddsError ? (
+                        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm">
+                          {gameOddsError}
+                        </div>
+                      ) : gameAvailableOdds.length === 0 ? (
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
+                          No live odds available for this prop
+                        </div>
+                      ) : (
+                        <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
+                          {gameAvailableOdds.map((odds, idx) => {
+                            const isSelected = !gameIsManualMode && gameSelectedOdds?.bookmaker === odds.bookmaker && gameSelectedOdds?.line === odds.line;
+                            const bookmaker = getBookmakerInfo(odds.bookmaker);
+                            return (
+                              <button
+                                key={`${odds.bookmaker}-${odds.line}-${idx}`}
+                                type="button"
+                                onClick={() => {
+                                  setGameSelectedOdds(odds);
+                                  setGameIsManualMode(false);
+                                }}
+                                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                                  isSelected
+                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {bookmaker.logoUrl ? (
+                                      <BookmakerLogo 
+                                        logoUrl={bookmaker.logoUrl}
+                                        name={bookmaker.name}
+                                        fallbackEmoji={bookmaker.logo}
+                                      />
+                                    ) : (
+                                      <span className="text-2xl">{bookmaker.logo}</span>
+                                    )}
+                                    <div>
+                                      <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                                        {bookmaker.name}
+                                      </div>
+                                      {gameStatType !== 'moneyline' && (
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                          Line: {odds.line}
                                         </div>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        {gameStatType === 'moneyline' && odds.homeTeam && odds.awayTeam ? (
-                                          <>
-                                            <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.homeTeam)}</span> {formatOdds(odds.homeOdds || odds.overPrice, oddsFormat)}
-                                            </span>
-                                            <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.awayTeam)}</span> {formatOdds(odds.awayOdds || odds.underPrice, oddsFormat)}
-                                            </span>
-                                          </>
-                                        ) : gameStatType === 'spread' && odds.favoriteTeam && odds.underdogTeam ? (
-                                          <>
-                                            <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.favoriteTeam || '')}</span> {odds.favoriteSpread ?? 0} {formatOdds(odds.favoriteOdds || odds.overPrice || 0, oddsFormat)}
-                                            </span>
-                                            <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                                              <span className="text-sm font-semibold">{getTeamNameOnly(odds.underdogTeam || '')}</span> {odds.underdogSpread ?? 0} {formatOdds(odds.underdogOdds || odds.underPrice || 0, oddsFormat)}
-                                            </span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                                              O {formatOdds(odds.overPrice, oddsFormat)}
-                                            </span>
-                                            <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                                              U {formatOdds(odds.underPrice, oddsFormat)}
-                                            </span>
-                                          </>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                      </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {gameStatType === 'moneyline' && odds.homeTeam && odds.awayTeam ? (
+                                      <>
+                                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                          <span className="text-sm font-semibold">{getTeamNameOnly(odds.homeTeam)}</span> {formatOdds(odds.homeOdds || odds.overPrice, oddsFormat)}
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                          <span className="text-sm font-semibold">{getTeamNameOnly(odds.awayTeam)}</span> {formatOdds(odds.awayOdds || odds.underPrice, oddsFormat)}
+                                        </span>
+                                      </>
+                                    ) : gameStatType === 'spread' && odds.favoriteTeam && odds.underdogTeam ? (
+                                      <>
+                                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                          <span className="text-sm font-semibold">{getTeamNameOnly(odds.favoriteTeam || '')}</span> {odds.favoriteSpread ?? 0} {formatOdds(odds.favoriteOdds || odds.overPrice || 0, oddsFormat)}
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                          <span className="text-sm font-semibold">{getTeamNameOnly(odds.underdogTeam || '')}</span> {odds.underdogSpread ?? 0} {formatOdds(odds.underdogOdds || odds.underPrice || 0, oddsFormat)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
+                                          O {formatOdds(odds.overPrice, oddsFormat)}
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
+                                          U {formatOdds(odds.underPrice, oddsFormat)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
+                  )}
+                </div>
 
                     {/* Game Manual Entry Section */}
                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
@@ -1680,248 +1991,6 @@ export default function AddToJournalModal({
                       onClick={addGamePropToParlay}
                       className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       disabled={!selectedGame || !gameStatType || (!gameSelectedOdds && !gameIsManualMode)}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add to Parlay
-                    </button>
-                </div>
-              </div>
-
-              {/* Right Side - Player Props */}
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col max-h-[70vh]">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Player Props</h3>
-                <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
-                {/* Player Search */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Search Player
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={playerSearchQuery}
-                      onChange={(e) => setPlayerSearchQuery(e.target.value)}
-                      placeholder="Search by player name..."
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    {playerSearchQuery && playerSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {playerSearchResults.map((player) => (
-                          <button
-                            key={player.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedPlayer(player);
-                              setPlayerSearchQuery(player.full);
-                              setPlayerSearchResults([]);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                          >
-                            {player.full} {player.team ? `(${player.team})` : ''}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {playerSearchBusy && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  {selectedPlayer && (
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Selected: {selectedPlayer.full} {selectedPlayer.team ? `(${selectedPlayer.team})` : ''}
-                    </div>
-                  )}
-                </div>
-
-                {/* Player Stat Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Stat Type
-                  </label>
-                  <select
-                    value={playerStatType}
-                    onChange={(e) => setPlayerStatType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    disabled={!selectedPlayer}
-                  >
-                    {PLAYER_STAT_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                    {/* Player Odds Section - Always visible in parlay mode */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Live Bookmaker Odds
-                        {!playerOddsLoading && playerAvailableOdds.length > 0 && (
-                          <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                            ({playerAvailableOdds.length} bookmaker{playerAvailableOdds.length !== 1 ? 's' : ''})
-                          </span>
-                        )}
-                      </label>
-                      <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                          {playerOddsLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-                              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading odds...</span>
-                            </div>
-                          ) : playerOddsError ? (
-                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm">
-                              {playerOddsError}
-                            </div>
-                          ) : playerAvailableOdds.length === 0 && !playerOddsLoading ? (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
-                              {selectedPlayer ? 'No live odds available for this prop' : 'Please select a player to see odds'}
-                            </div>
-                          ) : playerAvailableOdds.length > 0 ? (
-                            <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
-                              {playerAvailableOdds.map((odds, idx) => {
-                                const isSelected = !playerIsManualMode && playerSelectedOdds?.bookmaker === odds.bookmaker && playerSelectedOdds?.line === odds.line;
-                                const bookmaker = getBookmakerInfo(odds.bookmaker);
-                                return (
-                                  <button
-                                    key={`${odds.bookmaker}-${odds.line}-${idx}`}
-                                    type="button"
-                                    onClick={() => {
-                                      setPlayerSelectedOdds(odds);
-                                      setPlayerIsManualMode(false);
-                                    }}
-                                    className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                      isSelected
-                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        {bookmaker.logoUrl ? (
-                                          <BookmakerLogo 
-                                            logoUrl={bookmaker.logoUrl}
-                                            name={bookmaker.name}
-                                            fallbackEmoji={bookmaker.logo}
-                                          />
-                                        ) : (
-                                          <span className="text-2xl">{bookmaker.logo}</span>
-                                        )}
-                                        <div>
-                                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                                            {bookmaker.name}
-                                          </div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            Line: {odds.line}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono">
-                                          O {formatOdds(odds.overPrice, oddsFormat)}
-                                        </span>
-                                        <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono">
-                                          U {formatOdds(odds.underPrice, oddsFormat)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : null}
-                      </div>
-                    </div>
-
-                    {/* Player Manual Entry Section */}
-                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPlayerManualExpanded(!playerManualExpanded);
-                          if (!playerManualExpanded) {
-                            setPlayerIsManualMode(true);
-                            setPlayerSelectedOdds(null);
-                          }
-                        }}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          {playerManualExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                          <span className="font-medium text-gray-900 dark:text-white">Manual Entry</span>
-                        </div>
-                      </button>
-                      
-                      {playerManualExpanded && (
-                        <div className="p-3 border-t border-gray-200 dark:border-gray-600 space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Line
-                            </label>
-                            <input
-                              type="number"
-                              step="0.5"
-                              value={playerManualLine}
-                              onChange={(e) => setPlayerManualLine(e.target.value)}
-                              placeholder="e.g., 25.5"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
-                            </label>
-                            <input
-                              type="number"
-                              step={oddsFormat === 'decimal' ? '0.01' : '1'}
-                              value={playerManualOdds}
-                              onChange={(e) => setPlayerManualOdds(e.target.value)}
-                              placeholder={oddsFormat === 'decimal' ? 'e.g., 1.91' : 'e.g., -110'}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Player Direction */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Direction
-                      </label>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPlayerOverUnder('over')}
-                          disabled={!selectedPlayer}
-                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                            playerOverUnder === 'over'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          Over
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPlayerOverUnder('under')}
-                          disabled={!selectedPlayer}
-                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                            playerOverUnder === 'under'
-                              ? 'bg-red-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          Under
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Add Player Prop to Parlay Button */}
-                    <button
-                      type="button"
-                      onClick={addPlayerPropToParlay}
-                      className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      disabled={!selectedPlayer || !playerStatType || (!playerSelectedOdds && !playerIsManualMode)}
                     >
                       <Plus className="w-4 h-4" />
                       Add to Parlay
