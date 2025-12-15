@@ -9284,36 +9284,19 @@ const lineMovementInFlightRef = useRef(false);
       return [...regular, ...playoffs];
     };
 
-    // For "last10" timeframe, only fetch current season regular stats initially (fastest)
-    // Load last season and playoffs in background if needed
+    // For "last10" timeframe, fetch both current season and last season in parallel
+    // This prevents multiple refreshes and ensures all data is available at once
     if (selectedTimeframe === 'last10') {
-      // Only fetch current season regular stats for "last10" - this is all we need
-      // This reduces from 4 API calls to just 1, making it much faster
-      const url = `/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=1&postseason=false`;
-      const requestId = `stats-${playerId}-${season}-reg-fast`;
-      const r = await queuedFetch(url, {}, requestId);
-      const j = await r.json().catch(() => ({}));
-      const currReg = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+      // Fetch both seasons in parallel - this is faster than sequential and prevents multiple refreshes
+      const [currSeason, prevSeason] = await Promise.all([
+        grabSeason(season),        // Current season (regular + playoffs in parallel)
+        grabSeason(season - 1)     // Last season (regular + playoffs in parallel)
+      ]);
       
-      // Load last season and playoffs in background (non-blocking) - don't wait for it
-      grabSeason(season - 1).then(prev => {
-        console.log('[fetchSortedStatsCore] Background: Last season stats loaded', prev.length);
-      }).catch(err => {
-        console.warn('[fetchSortedStatsCore] Background: Last season fetch failed:', err);
-      });
-      
-      // Load playoffs in background
-      const playoffsUrl = `/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=1&postseason=true`;
-      const playoffsRequestId = `stats-${playerId}-${season}-po-fast`;
-      queuedFetch(playoffsUrl, {}, playoffsRequestId).then(r => r.json().catch(() => ({}))).then(j => {
-        const currPost = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
-        console.log('[fetchSortedStatsCore] Background: Playoffs stats loaded', currPost.length);
-      }).catch(err => {
-        console.warn('[fetchSortedStatsCore] Background: Playoffs fetch failed:', err);
-      });
-      
-      // Return only current season regular stats for immediate display
-      return currReg;
+      // Merge both seasons and return all data at once
+      const rows = [...currSeason, ...prevSeason];
+      console.log(`[fetchSortedStatsCore] Fetched both seasons in parallel for last10: current=${currSeason.length}, last=${prevSeason.length}, total=${rows.length}`);
+      return rows;
     }
     
     // For other timeframes, fetch both seasons in parallel
@@ -9926,82 +9909,17 @@ const lineMovementInFlightRef = useRef(false);
         position: r.pos || '',
       } as any;
       
-      // OPTIMIZATION: Fetch current season stats first (critical), then load last season in background
-      // This reduces initial load time from ~5s to ~2s by only fetching what's needed immediately
-      console.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch (critical path):', { pid, name: r.full });
+      // OPTIMIZATION: Fetch both current season and last season stats in parallel
+      // This prevents multiple refreshes and ensures all data is available at once
+      // fetchSortedStatsCore handles parallel fetching for both seasons
+      console.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
       serverLogger.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch', { data: { pid, name: r.full } });
       
-      // Fetch current season stats immediately (this is what users need to see)
+      // Fetch both seasons in parallel - prevents multiple refreshes
       const rows = await fetchSortedStats(pid).catch(err => {
         console.error('❌ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
         return [];
       });
-      
-      // After current season loads, fetch last season in background and merge it
-      // This ensures stats appear quickly, then get more complete data when last season loads
-      if (rows.length > 0) {
-        const season = currentNbaSeason();
-        const { queuedFetch } = await import('@/lib/requestQueue');
-        
-        // Fetch last season in background (non-blocking)
-        const fetchLastSeason = async () => {
-          try {
-            console.log('🔍 [handlePlayerSelectFromSearch] Fetching last season stats in background...');
-            const lastSeasonRegUrl = `/api/stats?player_id=${pid}&season=${season - 1}&per_page=100&max_pages=1&postseason=false`;
-            const lastSeasonPoUrl = `/api/stats?player_id=${pid}&season=${season - 1}&per_page=100&max_pages=1&postseason=true`;
-            
-            const [regRes, poRes] = await Promise.all([
-              queuedFetch(lastSeasonRegUrl, {}, `stats-${pid}-${season - 1}-reg-bg`).catch(() => null),
-              queuedFetch(lastSeasonPoUrl, {}, `stats-${pid}-${season - 1}-po-bg`).catch(() => null)
-            ]);
-            
-            const lastSeasonStats: BallDontLieStats[] = [];
-            if (regRes) {
-              const regJson = await regRes.json().catch(() => ({}));
-              if (Array.isArray(regJson?.data)) {
-                lastSeasonStats.push(...regJson.data);
-              }
-            }
-            if (poRes) {
-              const poJson = await poRes.json().catch(() => ({}));
-              if (Array.isArray(poJson?.data)) {
-                lastSeasonStats.push(...poJson.data);
-              }
-            }
-            
-            if (lastSeasonStats.length > 0) {
-              console.log(`✅ [handlePlayerSelectFromSearch] Last season stats loaded: ${lastSeasonStats.length} games`);
-              // Merge with current playerStats state (not rows, in case stats have changed)
-              setPlayerStats(prevStats => {
-                // Check if we already have these stats to avoid duplicates
-                const existingGameIds = new Set(prevStats.map(s => s.id));
-                const newStats = lastSeasonStats.filter(s => !existingGameIds.has(s.id));
-                
-                if (newStats.length === 0) {
-                  console.log('⚠️ [handlePlayerSelectFromSearch] No new stats to add (all duplicates)');
-                  return prevStats;
-                }
-                
-                // Merge with existing stats
-                const merged = [...prevStats, ...newStats];
-                // Sort by date (newest first)
-                merged.sort((a, b) => {
-                  const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
-                  const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
-                  return db - da;
-                });
-                console.log(`✅ [handlePlayerSelectFromSearch] Stats updated with last season: ${merged.length} total games (added ${newStats.length} new)`);
-                return merged;
-              });
-            }
-          } catch (err) {
-            console.warn('⚠️ [handlePlayerSelectFromSearch] Failed to fetch last season stats:', err);
-          }
-        };
-        
-        // Start fetching last season in background (don't await)
-        fetchLastSeason();
-      }
       
       // Start BDL and ESPN fetches in background (don't await - they'll update state when ready)
       const bdlPromise = fetchBdlPlayerData(pid).catch(err => {
