@@ -12166,7 +12166,7 @@ const lineMovementInFlightRef = useRef(false);
   // Track if odds are currently being fetched to prevent duplicate calls
   const isFetchingOddsRef = useRef(false);
   
-  // Track the last player ID to prevent unnecessary odds fetches
+  // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
   const lastOddsPlayerIdRef = useRef<string | null>(null);
   
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
@@ -12176,16 +12176,29 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
     
-    // In player mode, only fetch if player ID actually changed (not just metadata updates)
-    if (propsMode === 'player' && selectedPlayer) {
-      const currentPlayerId = selectedPlayer.id?.toString() || null;
-      if (currentPlayerId === lastOddsPlayerIdRef.current) {
-        // Player ID hasn't changed, skip fetch (just metadata update)
-        return;
+    // In player mode, prefer player ID; fall back to name so we still fetch odds.
+    if (propsMode === 'player') {
+      if (selectedPlayer) {
+        const currentPlayerKey =
+          selectedPlayer.id?.toString() ||
+          (selectedPlayer.full ? selectedPlayer.full.toLowerCase() : null);
+        if (currentPlayerKey) {
+          // If same player and we already have odds, skip fetching again
+          if (
+            currentPlayerKey === lastOddsPlayerIdRef.current &&
+            realOddsData.length > 0
+          ) {
+            return;
+          }
+          lastOddsPlayerIdRef.current = currentPlayerKey;
+        } else {
+          // No usable key; ensure ref resets so next valid player triggers fetch
+          lastOddsPlayerIdRef.current = null;
+        }
+      } else {
+        lastOddsPlayerIdRef.current = null;
+        return; // No player selected; skip fetch
       }
-      lastOddsPlayerIdRef.current = currentPlayerId;
-    } else if (propsMode === 'player' && !selectedPlayer) {
-      lastOddsPlayerIdRef.current = null;
     }
     
     // Skip if already fetching
