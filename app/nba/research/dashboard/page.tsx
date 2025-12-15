@@ -12182,6 +12182,27 @@ const lineMovementInFlightRef = useRef(false);
   // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
   const lastOddsPlayerIdRef = useRef<string | null>(null);
   
+  // Track last propsMode to detect mode changes
+  const lastPropsModeRef = useRef<'player' | 'team' | null>(null);
+  
+  // Clear odds and reset fetch refs when propsMode changes
+  useEffect(() => {
+    if (lastPropsModeRef.current !== null && lastPropsModeRef.current !== propsMode) {
+      console.log('[DEBUG propsMode change] Clearing odds and resetting refs', {
+        oldMode: lastPropsModeRef.current,
+        newMode: propsMode
+      });
+      setRealOddsData([]);
+      setOddsLoading(false);
+      setOddsError(null);
+      lastOddsFetchKeyRef.current = null;
+      lastOddsPlayerIdRef.current = null;
+      isFetchingOddsRef.current = false;
+      missingTeamMetaRetryRef.current = false;
+    }
+    lastPropsModeRef.current = propsMode;
+  }, [propsMode]);
+  
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
     console.log('[DEBUG fetchOdds useEffect] Triggered', {
