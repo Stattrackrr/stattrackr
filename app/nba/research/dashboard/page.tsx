@@ -7450,6 +7450,8 @@ const lineMovementInFlightRef = useRef(false);
       setBookOpeningLine(null);
       setBookCurrentLine(null);
       lastPlayerIdRef.current = currentPlayerId;
+      // Reset odds fetch ref so it will fetch again for the new player
+      lastOddsPlayerIdRef.current = null;
     }
     // If player ID is the same, don't clear odds (just metadata update like jersey/height)
   }, [selectedPlayer]);
@@ -12171,8 +12173,20 @@ const lineMovementInFlightRef = useRef(false);
   
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
+    console.log('[DEBUG fetchOdds useEffect] Triggered', {
+      propsMode,
+      hasSelectedPlayer: !!selectedPlayer,
+      selectedPlayerId: selectedPlayer?.id,
+      selectedPlayerName: selectedPlayer?.full,
+      gamePropsTeam,
+      realOddsDataLength: realOddsData.length,
+      lastOddsPlayerId: lastOddsPlayerIdRef.current,
+      isFetching: isFetchingOddsRef.current
+    });
+    
     // For team mode, add a small delay to ensure gamePropsTeam is set
     if (propsMode === 'team' && !gamePropsTeam) {
+      console.log('[DEBUG fetchOdds useEffect] Team mode but no gamePropsTeam, skipping');
       return;
     }
     
@@ -12184,18 +12198,39 @@ const lineMovementInFlightRef = useRef(false);
           (selectedPlayer.full ? selectedPlayer.full.toLowerCase() : null);
         if (currentPlayerKey) {
           // If same player and we already have odds, skip fetching again
+          // BUT: if odds were cleared (length is 0), we need to fetch again
           if (
             currentPlayerKey === lastOddsPlayerIdRef.current &&
             realOddsData.length > 0
           ) {
+            console.log('[DEBUG fetchOdds useEffect] Same player and odds exist, skipping fetch', {
+              currentPlayerKey,
+              lastOddsPlayerId: lastOddsPlayerIdRef.current,
+              realOddsDataLength: realOddsData.length
+            });
             return;
           }
+          // If odds were cleared but player is the same, reset the ref to allow fetching
+          if (currentPlayerKey === lastOddsPlayerIdRef.current && realOddsData.length === 0) {
+            console.log('[DEBUG fetchOdds useEffect] Same player but odds cleared, resetting ref to allow fetch', {
+              currentPlayerKey,
+              realOddsDataLength: realOddsData.length
+            });
+            lastOddsPlayerIdRef.current = null; // Reset to allow fetch
+          }
+          console.log('[DEBUG fetchOdds useEffect] Player key changed or no odds, will fetch', {
+            currentPlayerKey,
+            lastOddsPlayerId: lastOddsPlayerIdRef.current,
+            realOddsDataLength: realOddsData.length
+          });
           lastOddsPlayerIdRef.current = currentPlayerKey;
         } else {
           // No usable key; ensure ref resets so next valid player triggers fetch
+          console.log('[DEBUG fetchOdds useEffect] No usable player key, resetting ref');
           lastOddsPlayerIdRef.current = null;
         }
       } else {
+        console.log('[DEBUG fetchOdds useEffect] No player selected, skipping fetch');
         lastOddsPlayerIdRef.current = null;
         return; // No player selected; skip fetch
       }
@@ -12203,11 +12238,14 @@ const lineMovementInFlightRef = useRef(false);
     
     // Skip if already fetching
     if (isFetchingOddsRef.current) {
+      console.log('[DEBUG fetchOdds useEffect] Already fetching, skipping');
       return;
     }
     
     // Debounce: wait 300ms before fetching to avoid rapid successive calls
+    console.log('[DEBUG fetchOdds useEffect] Setting timeout to fetch odds in 300ms');
     const timeoutId = setTimeout(() => {
+      console.log('[DEBUG fetchOdds useEffect] Timeout fired, starting fetch');
       isFetchingOddsRef.current = true;
       fetchOddsData().finally(() => {
         // Reset flag after a delay to allow for retries
@@ -12218,6 +12256,7 @@ const lineMovementInFlightRef = useRef(false);
     }, 300);
     
     return () => {
+      console.log('[DEBUG fetchOdds useEffect] Cleanup: clearing timeout');
       clearTimeout(timeoutId);
       // Don't reset isFetchingOddsRef here - let it be reset by the finally block
       // This prevents race conditions where cleanup runs before fetch completes
