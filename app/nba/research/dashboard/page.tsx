@@ -11521,32 +11521,10 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
 
-    let pollId: NodeJS.Timeout | undefined;
-    const start = Date.now();
-
-    const poll = () => {
-      const oddsReady =
-        propsMode === 'team' ||
-        realOddsData.length > 0 ||
-        !!oddsError ||
-        !oddsLoading;
-
-      const elapsed = Date.now() - start;
-      if (oddsReady || elapsed >= 2200) {
-        setCoreDataReady(true);
-        coreDataReadySetRef.current = true;
-        return;
-      }
-      pollId = setTimeout(poll, 120);
-    };
-
-    // Start polling so we reveal once odds are likely present; fallback after ~2.2s
-    poll();
-
-    return () => {
-      if (pollId) clearTimeout(pollId);
-    };
-  }, [playerStats.length, isLoading, propsMode, oddsLoading, realOddsData.length, oddsError]);
+    // Set coreDataReady immediately - odds will render inline without causing refresh
+    setCoreDataReady(true);
+    coreDataReadySetRef.current = true;
+  }, [playerStats.length, isLoading]);
   
   // Debug: Track component renders (after all state is defined)
   useEffect(() => {
