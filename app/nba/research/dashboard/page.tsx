@@ -13637,12 +13637,12 @@ const lineMovementInFlightRef = useRef(false);
                           onClick={() => setIsMobileSearchOpen(false)}
                         />
                         {/* Search panel */}
-                        <div className="sm:hidden fixed inset-x-0 top-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-b-lg shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
-                        <div className="flex items-center gap-2 p-3 border-b border-gray-300 dark:border-gray-700">
+                        <div className="sm:hidden fixed inset-x-0 top-16 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-end gap-2 px-3 pt-3 pb-4 border-b border-gray-300 dark:border-gray-700">
                           <input
                             autoFocus={propsMode !== 'player' || isPro}
                             type="text"
-                            placeholder={propsMode === 'player' ? (isPro ? 'Search player...' : 'Upgrade to Pro') : 'Search team...'}
+                            placeholder={propsMode === 'player' ? (isPro ? 'Search for a player...' : 'Upgrade to Pro') : 'Search for a team...'}
                             value={searchQuery}
                             onChange={(e) => {
                               if (propsMode === 'player' && !isPro) {
@@ -13684,7 +13684,7 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                               }
                             }}
-                            className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-4 py-5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
                           <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
