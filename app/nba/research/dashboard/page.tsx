@@ -2815,6 +2815,11 @@ const ChartControls = function ChartControls({
   const oddsStabilizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    // Don't update betting line if odds are still loading (prevents double refresh on initial load)
+    if (oddsLoading) {
+      return;
+    }
+    
     if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
       // Clear any pending timeout
       if (oddsStabilizeTimeoutRef.current) {
@@ -2875,7 +2880,7 @@ const ChartControls = function ChartControls({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bestLineForStat, selectedStat]);
+  }, [bestLineForStat, selectedStat, oddsLoading]);
   
   // Reset manual flag when stat changes (allow auto-fetch for new stat)
   useEffect(() => {
@@ -9769,13 +9774,8 @@ const lineMovementInFlightRef = useRef(false);
         sampleRowKeys: rows[0] ? Object.keys(rows[0]) : [],
       });
       
-      setPlayerStats(rows);
-      
       // Use sample data team directly for default players - NO GAME DATA FALLBACK
       const currentTeam = normalizeAbbr(player.teamAbbr);
-      setSelectedTeam(currentTeam);
-      setOriginalPlayerTeam(currentTeam); // Track the original player's team
-      setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
       
       // Parse BDL height data and merge with sample player data
       const heightData = parseBdlHeight(bdlPlayerData?.height);
@@ -9816,19 +9816,31 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
-      setSelectedPlayer({
-        ...player,
-        jersey: jerseyNumber,
-        heightFeet: heightFeetData || undefined,
-        heightInches: heightInchesData || undefined,
+      // Batch all state updates in startTransition to prevent multiple re-renders
+      // Set selectedTimeframe FIRST so it's correct when playerStats updates
+      startTransition(() => {
+        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
+        // Set this FIRST so baseGameData calculates correctly when playerStats updates
+        console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
+        setSelectedTimeframe('last10');
+        
+        // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
+        setPlayerStats(rows);
+        
+        setSelectedTeam(currentTeam);
+        setOriginalPlayerTeam(currentTeam); // Track the original player's team
+        setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
+        
+        setSelectedPlayer({
+          ...player,
+          jersey: jerseyNumber,
+          heightFeet: heightFeetData || undefined,
+          heightInches: heightInchesData || undefined,
+        });
+        
+        // Reset betting lines in transition to prevent visible refresh
+        setBettingLines({});
       });
-      
-      // Reset betting lines to default for new player
-      setBettingLines({});
-      
-      // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
-      console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
-      setSelectedTimeframe('last10');
       // Update URL to reflect the change
       if (typeof window !== 'undefined') {
         const newUrl = new URL(window.location.href);
@@ -10096,7 +10108,8 @@ const lineMovementInFlightRef = useRef(false);
           position: playerPosition || undefined,
         });
         
-        // Reset betting lines to default for new player
+        // Reset betting lines in transition to prevent visible refresh
+        // This clears old player's lines without causing a render
         setBettingLines({});
       });
       
