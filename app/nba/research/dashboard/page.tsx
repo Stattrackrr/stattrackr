@@ -7440,6 +7440,24 @@ const lineMovementInFlightRef = useRef(false);
     // If player ID is the same, don't clear odds (just metadata update like jersey/height)
   }, [selectedPlayer]);
   
+  // Clear player state when player parameter is removed from URL (e.g., browser back button)
+  useEffect(() => {
+    const player = searchParams.get('player');
+    const pid = searchParams.get('pid');
+    const name = searchParams.get('name');
+    
+    // If there's no player parameter in URL but we have a selected player, clear it
+    if (!player && !pid && !name && selectedPlayer) {
+      console.log('[Dashboard] 🧹 Clearing selectedPlayer - no player parameter in URL');
+      setSelectedPlayer(null);
+      setResolvedPlayerId(null);
+      setPlayerStats([]);
+      setRealOddsData([]);
+      setOddsSnapshots([]);
+      setLineMovementData(null);
+    }
+  }, [searchParams, selectedPlayer]);
+  
   // Advanced stats state
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
   const [advancedStatsLoading, setAdvancedStatsLoading] = useState(false);
@@ -14095,7 +14113,40 @@ const lineMovementInFlightRef = useRef(false);
                       {/* Back button to player props page */}
                       {selectedPlayer && (
                         <button
-                          onClick={() => router.push('/nba')}
+                          onClick={() => {
+                            // Clear player state and URL parameters before navigating back
+                            setSelectedPlayer(null);
+                            setResolvedPlayerId(null);
+                            setPlayerStats([]);
+                            setRealOddsData([]);
+                            setOddsSnapshots([]);
+                            setLineMovementData(null);
+                            
+                            // Clear URL parameters
+                            if (typeof window !== 'undefined') {
+                              const url = new URL(window.location.href);
+                              url.searchParams.delete('player');
+                              url.searchParams.delete('pid');
+                              url.searchParams.delete('name');
+                              url.searchParams.delete('stat');
+                              url.searchParams.delete('line');
+                              url.searchParams.delete('tf');
+                              url.searchParams.delete('mode');
+                              window.history.replaceState({}, '', url.toString());
+                            }
+                            
+                            // Clear dashboard session storage
+                            try {
+                              sessionStorage.removeItem('nba_dashboard_session_v1');
+                              sessionStorage.removeItem('last_prop_click');
+                              sessionStorage.removeItem('last_prop_url');
+                            } catch (e) {
+                              // Ignore errors
+                            }
+                            
+                            // Navigate to player props page
+                            router.push('/nba');
+                          }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
                           <svg 

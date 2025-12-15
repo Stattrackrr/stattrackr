@@ -269,6 +269,41 @@ export default function NBALandingPage() {
     if (savedFormat === 'decimal' || savedFormat === 'american') {
       setOddsFormat(savedFormat);
     }
+    
+    // Clear any player-related URL parameters when landing on player props page
+    // This ensures a clean state when navigating back from dashboard
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const hasPlayerParams = url.searchParams.has('player') || 
+                              url.searchParams.has('pid') || 
+                              url.searchParams.has('name') ||
+                              url.searchParams.has('stat') ||
+                              url.searchParams.has('line');
+      
+      if (hasPlayerParams) {
+        // Clear player-related parameters to ensure clean state
+        url.searchParams.delete('player');
+        url.searchParams.delete('pid');
+        url.searchParams.delete('name');
+        url.searchParams.delete('stat');
+        url.searchParams.delete('line');
+        url.searchParams.delete('tf');
+        url.searchParams.delete('mode');
+        
+        // Update URL without page reload
+        window.history.replaceState({}, '', url.toString());
+        console.log('[NBA Landing] 🧹 Cleared player-related URL parameters');
+      }
+      
+      // Also clear any dashboard session storage to prevent stale state
+      try {
+        sessionStorage.removeItem('nba_dashboard_session_v1');
+        sessionStorage.removeItem('last_prop_click');
+        sessionStorage.removeItem('last_prop_url');
+      } catch (e) {
+        // Ignore errors
+      }
+    }
   }, []);
 
   // Reset to first page and close popups whenever filters or sorting change
