@@ -10050,8 +10050,15 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
-      // Update player immediately with stats and available data (jersey/height will be updated when BDL/ESPN loads)
+      // Batch all state updates together in startTransition to prevent multiple re-renders
+      // Set selectedTimeframe FIRST so it's correct when playerStats updates (prevents double baseGameData recalculation)
       startTransition(() => {
+        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
+        // Set this FIRST so baseGameData calculates correctly when playerStats updates
+        console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
+        setSelectedTimeframe('last10');
+        
+        // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
         setPlayerStats(rows);
         
         setSelectedTeam(currentTeam);
@@ -10070,17 +10077,14 @@ const lineMovementInFlightRef = useRef(false);
         
         // Reset betting lines to default for new player
         setBettingLines({});
-        
-        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
-        console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
-        setSelectedTimeframe('last10');
-        // Update URL to reflect the change
-        if (typeof window !== 'undefined') {
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('tf', 'last10');
-          window.history.replaceState({}, '', newUrl.toString());
-        }
       });
+      
+      // Update URL to reflect the timeframe change (outside transition, doesn't affect rendering)
+      if (typeof window !== 'undefined') {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('tf', 'last10');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
       
       // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
       if (todaysGames.length > 0) {
