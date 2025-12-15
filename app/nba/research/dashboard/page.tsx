@@ -10180,14 +10180,14 @@ const lineMovementInFlightRef = useRef(false);
   
   // Defer heavy baseGameData computation to prevent UI freeze during player selection
   // This allows the UI to remain responsive while stats are being processed
-  const deferredPlayerStats = useDeferredValue(playerStats);
+  // Removed useDeferredValue to prevent double refresh - use playerStats directly
+  // const deferredPlayerStats = useDeferredValue(playerStats);
   
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
-    // Use deferred stats to prevent blocking UI during player selection
-    // Fall back to current stats if deferred hasn't updated yet
-    const statsToUse = deferredPlayerStats.length > 0 ? deferredPlayerStats : playerStats;
+    // Use playerStats directly to prevent double refresh from deferred value
+    const statsToUse = playerStats;
     // Team mode: use game data instead of player stats
     if (propsMode === 'team') {
       if (!gameStats.length) return [];
@@ -10838,7 +10838,7 @@ const lineMovementInFlightRef = useRef(false);
     });
     
     return result;
-  }, [deferredPlayerStats, playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Added isLoading and resolvedPlayerId to prevent race conditions when stats are being fetched
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Removed deferredPlayerStats to prevent double refresh
   
   // Precompute back-to-back games (player mode)
   const backToBackGameIds = useMemo(() => {
