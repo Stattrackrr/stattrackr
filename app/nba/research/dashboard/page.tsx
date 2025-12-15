@@ -12097,6 +12097,7 @@ const lineMovementInFlightRef = useRef(false);
           return;
         } else {
           console.log('[fetchOddsData] Metadata still missing after retry, proceeding without team metadata');
+          // Proceed with oddsData even without team metadata
         }
       }
       
@@ -12207,6 +12208,8 @@ const lineMovementInFlightRef = useRef(false);
   const isFetchingOddsRef = useRef(false);
   // Track a single retry for missing team metadata (team mode)
   const missingTeamMetaRetryRef = useRef(false);
+  // Track last odds fetch key to avoid refetching when data already present
+  const lastOddsFetchKeyRef = useRef<string | null>(null);
   
   // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
   const lastOddsPlayerIdRef = useRef<string | null>(null);
@@ -12279,9 +12282,23 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
+    // Build fetch key (player or team)
+    const fetchKey = propsMode === 'team'
+      ? `team:${gamePropsTeam || 'na'}`
+      : `player:${selectedPlayer?.id || selectedPlayer?.full || 'na'}`;
+
     // Skip if already fetching
     if (isFetchingOddsRef.current) {
       console.log('[DEBUG fetchOdds useEffect] Already fetching, skipping');
+      return;
+    }
+    
+    // If we already have odds for this key and not loading, skip refetch
+    if (fetchKey === lastOddsFetchKeyRef.current && realOddsData.length > 0 && !oddsLoading) {
+      console.log('[DEBUG fetchOdds useEffect] Odds already loaded for key, skipping fetch', {
+        fetchKey,
+        realOddsDataLength: realOddsData.length
+      });
       return;
     }
     
@@ -12290,6 +12307,7 @@ const lineMovementInFlightRef = useRef(false);
     const timeoutId = setTimeout(() => {
       console.log('[DEBUG fetchOdds useEffect] Timeout fired, starting fetch');
       isFetchingOddsRef.current = true;
+      lastOddsFetchKeyRef.current = fetchKey;
       fetchOddsData().finally(() => {
         // Reset flag after a delay to allow for retries
         setTimeout(() => {
