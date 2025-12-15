@@ -11952,34 +11952,19 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       const oddsData = data.data || [];
-      console.log('[fetchOddsData] Setting realOddsData:', {
-        length: oddsData.length,
-        sampleBook: oddsData[0] ? {
-          name: oddsData[0].name,
-          hasPRA: !!oddsData[0].PRA,
-          PRA: oddsData[0].PRA,
-          hasPTS: !!oddsData[0].PTS,
-          hasREB: !!oddsData[0].REB,
-          hasAST: !!oddsData[0].AST,
-        } : null
-      });
-      // Update odds in a transition to prevent visible refresh
-      startTransition(() => {
-        setRealOddsData(oddsData);
-      });
       
-      // Store home/away teams for team mode
+      // Store home/away teams for team mode BEFORE setting state (to avoid multiple updates)
       if (propsMode === 'team' && data.homeTeam && data.awayTeam) {
         // Store these in a way we can access in BestOddsTable
         // We'll add them to each bookmaker as metadata
-        if (data.data && data.data.length > 0) {
+        if (oddsData.length > 0) {
           console.log('[fetchOddsData] Setting game teams:', {
             homeTeam: data.homeTeam,
             awayTeam: data.awayTeam,
             gamePropsTeam,
-            bookCount: data.data.length
+            bookCount: oddsData.length
           });
-          data.data.forEach((book: any) => {
+          oddsData.forEach((book: any) => {
             if (!book.meta) book.meta = {};
             book.meta.gameHomeTeam = data.homeTeam;
             book.meta.gameAwayTeam = data.awayTeam;
@@ -11994,6 +11979,38 @@ const lineMovementInFlightRef = useRef(false);
           hasAwayTeam: !!data.awayTeam
         });
       }
+      
+      console.log('[fetchOddsData] Setting realOddsData:', {
+        length: oddsData.length,
+        sampleBook: oddsData[0] ? {
+          name: oddsData[0].name,
+          hasPRA: !!oddsData[0].PRA,
+          PRA: oddsData[0].PRA,
+          hasPTS: !!oddsData[0].PTS,
+          hasREB: !!oddsData[0].REB,
+          hasAST: !!oddsData[0].AST,
+        } : null
+      });
+      
+      // Update odds in a transition to prevent visible refresh
+      // Only update if data has actually changed (check length and first book name)
+      startTransition(() => {
+        setRealOddsData(prevOdds => {
+          // Quick check: if length is same and first book is same, likely no change
+          if (prevOdds.length === oddsData.length && 
+              prevOdds.length > 0 && oddsData.length > 0 &&
+              prevOdds[0]?.name === oddsData[0]?.name &&
+              prevOdds[0]?.PTS?.line === oddsData[0]?.PTS?.line) {
+            // Likely the same data, but do a full comparison to be sure
+            const prevStr = JSON.stringify(prevOdds);
+            const newStr = JSON.stringify(oddsData);
+            if (prevStr === newStr) {
+              return prevOdds; // No change, return previous to prevent re-render
+            }
+          }
+          return oddsData;
+        });
+      });
       
       const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
       const target = propsMode === 'player' ? playerName : gamePropsTeam;
@@ -12027,6 +12044,9 @@ const lineMovementInFlightRef = useRef(false);
     }
   };
   
+  // Track if odds are currently being fetched to prevent duplicate calls
+  const isFetchingOddsRef = useRef(false);
+  
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
     // For team mode, add a small delay to ensure gamePropsTeam is set
@@ -12034,12 +12054,26 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
     
+    // Skip if already fetching
+    if (isFetchingOddsRef.current) {
+      return;
+    }
+    
     // Debounce: wait 300ms before fetching to avoid rapid successive calls
     const timeoutId = setTimeout(() => {
-      fetchOddsData();
+      isFetchingOddsRef.current = true;
+      fetchOddsData().finally(() => {
+        // Reset flag after a delay to allow for retries
+        setTimeout(() => {
+          isFetchingOddsRef.current = false;
+        }, 1000);
+      });
     }, 300);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      isFetchingOddsRef.current = false;
+    };
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
   const americanToDecimal = (odds: string | undefined | null): string => {
