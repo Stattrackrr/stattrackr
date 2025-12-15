@@ -11942,7 +11942,10 @@ const lineMovementInFlightRef = useRef(false);
           hasAST: !!oddsData[0].AST,
         } : null
       });
-      setRealOddsData(oddsData);
+      // Update odds in a transition to prevent visible refresh
+      startTransition(() => {
+        setRealOddsData(oddsData);
+      });
       
       // Store home/away teams for team mode
       if (propsMode === 'team' && data.homeTeam && data.awayTeam) {
