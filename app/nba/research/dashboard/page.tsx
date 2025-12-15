@@ -7396,37 +7396,6 @@ const lineMovementInFlightRef = useRef(false);
   // Track when core data (stats + DvP) is ready to show the screen
   const [coreDataReady, setCoreDataReady] = useState(false);
   
-  // Set coreDataReady when stats are loaded; wait briefly for odds to avoid a visible refresh
-  useEffect(() => {
-    // Reset when loading starts or no stats yet
-    if (isLoading || playerStats.length === 0) {
-      setCoreDataReady(false);
-      return;
-    }
-
-    const oddsReady =
-      propsMode === 'team' ||
-      realOddsData.length > 0 ||
-      !!oddsError ||
-      !oddsLoading;
-
-    // Slight delay to let odds arrive before revealing UI; fallback to avoid blocking
-    const delay = oddsReady ? 200 : 600;
-    const timeoutId = setTimeout(() => {
-      if (oddsReady || !oddsLoading) {
-        setCoreDataReady(true);
-      }
-    }, delay);
-
-    const fallbackId = setTimeout(() => {
-      setCoreDataReady(true);
-    }, 1800);
-
-    return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(fallbackId);
-    };
-  }, [playerStats.length, isLoading, oddsLoading, realOddsData.length, oddsError, propsMode]);
   const [apiError, setApiError] = useState<string | null>(null);
   
   // Track the last player ID to detect actual player changes (not just metadata updates)
@@ -7454,16 +7423,20 @@ const lineMovementInFlightRef = useRef(false);
       console.log('[Odds Clear] Player ID changed, clearing odds', {
         oldId: lastPlayerIdRef.current,
         newId: currentPlayerId,
-        playerName: selectedPlayer.full
+        playerName: selectedPlayer.full,
+        currentOddsLength: realOddsData.length
       });
-      setRealOddsData([]);
-      setOddsSnapshots([]);
-      setLineMovementData(null);
-      setOddsLoading(false);
-      setOddsError(null);
-      setBettingLines({});
-      setBookOpeningLine(null);
-      setBookCurrentLine(null);
+      // Only clear if we actually have odds to clear (prevent unnecessary state updates)
+      if (realOddsData.length > 0 || oddsLoading || oddsError) {
+        setRealOddsData([]);
+        setOddsSnapshots([]);
+        setLineMovementData(null);
+        setOddsLoading(false);
+        setOddsError(null);
+        setBettingLines({});
+        setBookOpeningLine(null);
+        setBookCurrentLine(null);
+      }
       lastPlayerIdRef.current = currentPlayerId;
       // Reset odds fetch ref so it will fetch again for the new player
       lastOddsPlayerIdRef.current = null;
@@ -11521,6 +11494,53 @@ const lineMovementInFlightRef = useRef(false);
   }, [realOddsData]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
+
+  // Set coreDataReady when stats are loaded; wait briefly for odds to avoid a visible refresh
+  // Use a ref to track if we've already set coreDataReady to prevent re-triggering
+  const coreDataReadySetRef = useRef(false);
+  const lastPlayerStatsLengthRef = useRef(0);
+  
+  useEffect(() => {
+    // Reset when loading starts or no stats yet
+    if (isLoading || playerStats.length === 0) {
+      setCoreDataReady(false);
+      coreDataReadySetRef.current = false;
+      lastPlayerStatsLengthRef.current = 0;
+      return;
+    }
+
+    // Only run when playerStats length actually changes (new player selected)
+    // Don't re-run when odds load to prevent flicker
+    if (playerStats.length === lastPlayerStatsLengthRef.current && coreDataReadySetRef.current) {
+      return;
+    }
+
+    // Update ref to track current stats length
+    lastPlayerStatsLengthRef.current = playerStats.length;
+
+    // If we've already set coreDataReady for this player, don't re-run
+    if (coreDataReadySetRef.current) {
+      return;
+    }
+
+    // Wait a fixed 400ms to let odds arrive before revealing UI
+    // This prevents the flicker when odds load after chart displays
+    // The fallback ensures UI shows even if odds are slow
+    const timeoutId = setTimeout(() => {
+      setCoreDataReady(true);
+      coreDataReadySetRef.current = true;
+    }, 400);
+
+    const fallbackId = setTimeout(() => {
+      setCoreDataReady(true);
+      coreDataReadySetRef.current = true;
+    }, 1800);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(fallbackId);
+    };
+  }, [playerStats.length, isLoading, propsMode]);
   
   // Debug: Track component renders (after all state is defined)
   useEffect(() => {
