@@ -145,6 +145,30 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           if (response.ok) {
             const data = await response.json();
             console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
+            
+            // Check if API returned an error in the response body (even with 200 status)
+            if (data.error) {
+              console.error('[Shot Chart] API returned error in response:', data.error);
+              setEnhancedData(null);
+              setEnhancedError(data.error || 'Failed to load shot chart data');
+              return;
+            }
+            
+            // Validate that we have actual shot data
+            const totalAttempts = (data.shotZones?.restrictedArea?.fga || 0) +
+                               (data.shotZones?.paint?.fga || 0) +
+                               (data.shotZones?.midRange?.fga || 0) +
+                               (data.shotZones?.leftCorner3?.fga || 0) +
+                               (data.shotZones?.rightCorner3?.fga || 0) +
+                               (data.shotZones?.aboveBreak3?.fga || 0);
+            
+            if (totalAttempts === 0 && !data.shotZones) {
+              console.warn('[Shot Chart] No shot data available for player:', nbaPlayerId);
+              setEnhancedData(null);
+              setEnhancedError('No shot chart data available for this player');
+              return;
+            }
+            
             setEnhancedData(data);
             setEnhancedError(null); // Clear any previous errors
           } else {

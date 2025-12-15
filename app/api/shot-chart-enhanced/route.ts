@@ -380,11 +380,17 @@ export async function GET(request: NextRequest) {
     // Log Supabase status for debugging
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.log(`[Shot Chart Enhanced] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
     console.log(`[Shot Chart Enhanced] Supabase config check: URL=${supabaseUrl ? 'SET' : 'MISSING'}, KEY=${supabaseKey ? 'SET' : 'MISSING'}`);
     
     // Try Supabase cache first (persistent, shared across instances)
     let cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
-    console.log(`[Shot Chart Enhanced] Cache check result: ${cached ? 'FOUND in Supabase' : 'NOT FOUND in Supabase'}`);
+    if (cached) {
+      console.log(`[Shot Chart Enhanced] ✅ Cache HIT in Supabase for key: ${cacheKey}`);
+    } else {
+      console.log(`[Shot Chart Enhanced] ❌ Cache MISS in Supabase for key: ${cacheKey}`);
+    }
     
     // Fallback to in-memory cache
     if (!cached && !bypassCache) {
@@ -425,6 +431,8 @@ export async function GET(request: NextRequest) {
     }
     
     if (cached) {
+      console.log(`[Shot Chart Enhanced] ✅ Returning cached data for player ${nbaPlayerId} (original: ${originalPlayerId})`);
+      
       // If opponent team is provided, fetch defensive rankings even on cache hit
       // (rankings are opponent-specific, so they may not be in the cached response)
       if (opponentTeam && opponentTeam !== 'N/A') {
@@ -571,6 +579,20 @@ export async function GET(request: NextRequest) {
           console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
         }
       }
+      
+      // Validate cached data before returning
+      const totalAttempts = (cached.shotZones?.restrictedArea?.fga || 0) +
+                           (cached.shotZones?.paint?.fga || 0) +
+                           (cached.shotZones?.midRange?.fga || 0) +
+                           (cached.shotZones?.leftCorner3?.fga || 0) +
+                           (cached.shotZones?.rightCorner3?.fga || 0) +
+                           (cached.shotZones?.aboveBreak3?.fga || 0);
+      
+      if (totalAttempts === 0) {
+        console.warn(`[Shot Chart Enhanced] ⚠️ Cached data has 0 attempts, but returning anyway (may be valid for new players)`);
+      }
+      
+      console.log(`[Shot Chart Enhanced] ✅ Returning cached response for player ${nbaPlayerId}, total attempts: ${totalAttempts}`);
       
       return NextResponse.json(cached, {
         status: 200,
