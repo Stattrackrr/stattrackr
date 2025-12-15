@@ -98,7 +98,7 @@ function calculateTipoffTime(game) {
   // First, try to use the datetime field from the game object (most reliable)
   if (game.datetime) {
     const gameDateTime = new Date(game.datetime);
-    if (!Number.isNaN(gameDateTime.getTime()) && gameDateTime.getTime() > now) {
+    if (!Number.isNaN(gameDateTime.getTime())) {
       tipoffDate = gameDateTime;
     }
   }
@@ -111,8 +111,8 @@ function calculateTipoffTime(game) {
       // Check if it's at midnight (00:00:00) - if so, it's just a date placeholder, not the actual game time
       const isMidnight = parsedStatus.getUTCHours() === 0 && parsedStatus.getUTCMinutes() === 0 && parsedStatus.getUTCSeconds() === 0;
       
-      // Only use if it's in the future and NOT midnight (midnight means it's just a date, not actual game time)
-      if (parsedStatus.getTime() > now && !isMidnight && parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)) {
+      // Use if NOT midnight and within reasonable range (not midnight means it's just a date, not actual game time)
+      if (!isMidnight && parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)) {
         tipoffDate = parsedStatus;
       }
     }
@@ -192,7 +192,9 @@ function calculateTipoffTime(game) {
     }
   }
   
-  return tipoffDate && tipoffDate.getTime() > now ? tipoffDate : null;
+  // Return the tipoff date if we found one (don't filter by future - we want the latest scheduled game)
+  // The caller will determine if it's the latest among all games
+  return tipoffDate;
 }
 
 /**
@@ -375,97 +377,100 @@ async function findLatestTipoff(oddsCache) {
     return null;
   }
 
-  const todayUSET = getUSEasternDateString(new Date());
+  const now = new Date();
+  const todayUSET = getUSEasternDateString(now);
   
-  // First, get game IDs from odds cache for today
-  const todayGameIds = new Set();
-  const todayGamesFromOdds = oddsCache.games.filter((game) => {
+  // Get tomorrow's date in US ET as well (to catch games that might be scheduled for tomorrow)
+  const [year, month, day] = todayUSET.split('-').map(Number);
+  const tomorrowDate = new Date(year, month - 1, day + 1);
+  const tomorrowUSET = getUSEasternDateString(tomorrowDate);
+  
+  // Get ALL games from odds cache - we'll find the latest tipoff among all of them
+  // This ensures we don't miss games due to timezone differences
+  const allGamesFromOdds = oddsCache.games.filter((game) => {
     if (!game.commenceTime) return false;
-    const commenceStr = String(game.commenceTime).trim();
-    let gameDateUSET;
-    
-    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-      // Date-only string - this is the game date
-      gameDateUSET = commenceStr;
-    } else {
-      // Has time component - parse and convert to US ET
-      const date = new Date(commenceStr);
-      gameDateUSET = getUSEasternDateString(date);
-    }
-    
-    if (gameDateUSET === todayUSET) {
-      todayGameIds.add(game.gameId);
-      return true;
-    }
-    return false;
+    // Include all games - we'll calculate tipoff times and find the latest
+    return true;
   });
 
-  if (todayGamesFromOdds.length === 0) {
+  if (allGamesFromOdds.length === 0) {
     return null;
   }
 
-  // Fetch full game data from BDL API to get accurate tipoff times
-  const bdlGames = await fetchBDLGames(todayUSET);
-  
-  if (!bdlGames || bdlGames.length === 0) {
-    console.log(`[Trigger Odds on Tipoff] ⚠️ No BDL games found, falling back to commenceTime parsing`);
-    // Fallback: use commenceTime from odds cache
-    let latestTipoff = null;
-    for (const game of todayGamesFromOdds) {
-      const tipoffDate = calculateTipoffTime(game);
-      if (tipoffDate && (!latestTipoff || tipoffDate > latestTipoff)) {
-        latestTipoff = tipoffDate;
-      }
-    }
-    return latestTipoff;
-  }
-
-  // Match BDL games with odds cache games by team names
-  const matchedGames = [];
-  for (const bdlGame of bdlGames) {
-    const homeTeam = bdlGame.home_team?.abbreviation || bdlGame.home_team?.full_name;
-    const awayTeam = bdlGame.visitor_team?.abbreviation || bdlGame.visitor_team?.full_name;
-    
-    // Find matching game in odds cache
-    const matchingOddsGame = todayGamesFromOdds.find((oddsGame) => {
-      const oddsHome = oddsGame.homeTeam?.toUpperCase();
-      const oddsAway = oddsGame.awayTeam?.toUpperCase();
-      const bdlHome = homeTeam?.toUpperCase();
-      const bdlAway = awayTeam?.toUpperCase();
-      
-      return (oddsHome === bdlHome && oddsAway === bdlAway) ||
-             (oddsHome === bdlAway && oddsAway === bdlHome);
-    });
-    
-    if (matchingOddsGame) {
-      matchedGames.push({
-        ...bdlGame,
-        oddsGameId: matchingOddsGame.gameId,
-      });
-    }
-  }
-
-  if (matchedGames.length === 0) {
-    console.log(`[Trigger Odds on Tipoff] ⚠️ Could not match BDL games with odds games, falling back to commenceTime`);
-    // Fallback: use commenceTime from odds cache
-    let latestTipoff = null;
-    for (const game of todayGamesFromOdds) {
-      const tipoffDate = calculateTipoffTime(game);
-      if (tipoffDate && (!latestTipoff || tipoffDate > latestTipoff)) {
-        latestTipoff = tipoffDate;
-      }
-    }
-    return latestTipoff;
-  }
-
-  // Calculate tipoff times for matched games (using BDL game data which has date, status, datetime)
-  let latestTipoff = null;
-  for (const game of matchedGames) {
+  // First, calculate tipoff times for ALL games using commenceTime (this is our baseline)
+  // This ensures we don't miss any games even if BDL API doesn't have them
+  const gameTipoffs = new Map(); // Map of gameId -> tipoff Date
+  for (const game of allGamesFromOdds) {
     const tipoffDate = calculateTipoffTime(game);
-    if (tipoffDate && (!latestTipoff || tipoffDate > latestTipoff)) {
-      latestTipoff = tipoffDate;
-      console.log(`[Trigger Odds on Tipoff] 📅 Found tipoff: ${tipoffDate.toISOString()} for ${game.home_team?.abbreviation || 'HOME'} vs ${game.visitor_team?.abbreviation || 'AWAY'}`);
+    if (tipoffDate) {
+      gameTipoffs.set(game.gameId, tipoffDate);
     }
+  }
+
+  // Find the latest tipoff from our baseline calculation
+  let latestTipoff = null;
+  let latestGameId = null;
+  for (const [gameId, tipoffDate] of gameTipoffs.entries()) {
+    if (!latestTipoff || tipoffDate > latestTipoff) {
+      latestTipoff = tipoffDate;
+      latestGameId = gameId;
+    }
+  }
+
+  // Now try to enhance with BDL API data if available (for more accurate times)
+  const [bdlGamesToday, bdlGamesTomorrow] = await Promise.all([
+    fetchBDLGames(todayUSET),
+    fetchBDLGames(tomorrowUSET)
+  ]);
+  
+  const allBdlGames = [...(bdlGamesToday || []), ...(bdlGamesTomorrow || [])];
+  
+  if (allBdlGames.length > 0) {
+    // Match BDL games with odds cache games and update tipoff times if BDL has better data
+    for (const bdlGame of allBdlGames) {
+      const homeTeam = bdlGame.home_team?.abbreviation || bdlGame.home_team?.full_name;
+      const awayTeam = bdlGame.visitor_team?.abbreviation || bdlGame.visitor_team?.full_name;
+      
+      // Find matching game in odds cache
+      const matchingOddsGame = allGamesFromOdds.find((oddsGame) => {
+        const oddsHome = oddsGame.homeTeam?.toUpperCase();
+        const oddsAway = oddsGame.awayTeam?.toUpperCase();
+        const bdlHome = homeTeam?.toUpperCase();
+        const bdlAway = awayTeam?.toUpperCase();
+        
+        return (oddsHome === bdlHome && oddsAway === bdlAway) ||
+               (oddsHome === bdlAway && oddsAway === bdlHome);
+      });
+      
+      if (matchingOddsGame) {
+        const bdlTipoff = calculateTipoffTime(bdlGame);
+        if (bdlTipoff) {
+          // Update with BDL tipoff time (usually more accurate)
+          gameTipoffs.set(matchingOddsGame.gameId, bdlTipoff);
+          // Re-check if this is now the latest
+          if (!latestTipoff || bdlTipoff > latestTipoff) {
+            latestTipoff = bdlTipoff;
+            latestGameId = matchingOddsGame.gameId;
+            console.log(`[Trigger Odds on Tipoff] 📅 Updated tipoff: ${bdlTipoff.toISOString()} for ${homeTeam || 'HOME'} vs ${awayTeam || 'AWAY'}`);
+          }
+        }
+      }
+    }
+  } else {
+    console.log(`[Trigger Odds on Tipoff] ⚠️ No BDL games found, using commenceTime parsing`);
+  }
+
+  if (!latestTipoff) {
+    console.log(`[Trigger Odds on Tipoff] ⚠️ No valid tipoff times found`);
+    return null;
+  }
+
+  // Find the game info for logging
+  const latestGame = allGamesFromOdds.find(g => g.gameId === latestGameId);
+  if (latestGame) {
+    console.log(`[Trigger Odds on Tipoff] 📅 Latest tipoff: ${latestTipoff.toISOString()} for ${latestGame.homeTeam || 'HOME'} vs ${latestGame.awayTeam || 'AWAY'}`);
+  } else {
+    console.log(`[Trigger Odds on Tipoff] 📅 Latest tipoff: ${latestTipoff.toISOString()}`);
   }
 
   return latestTipoff;
