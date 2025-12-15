@@ -6717,19 +6717,10 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
 
 function NBADashboardContent() {
   const router = useRouter();
-  
-  // Debug: Track renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
-  console.log(`[DEBUG Render] NBADashboardContent render #${renderCountRef.current}`, {
-    timestamp: new Date().toISOString(),
-    playerStatsLength: playerStats?.length || 0,
-    selectedPlayer: selectedPlayer?.full,
-    realOddsDataLength: realOddsData?.length || 0,
-    bettingLine,
-    selectedTimeframe
-  });
   const { isDark, theme, setTheme } = useTheme();
+  
+  // Debug: Track renders (will log after state is defined)
+  const renderCountRef = useRef(0);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -7348,8 +7339,7 @@ const lineMovementInFlightRef = useRef(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   
-  // Debug: Track renders and state changes
-  const renderCountRef = useRef(0);
+  // Debug: Track renders and state changes (renderCountRef already defined at top of function)
   const lastUrlRef = useRef<string>('');
   const lastTimeframeRef = useRef<string>('');
   const lastPlayerStatsLengthRef = useRef<number>(0);
@@ -11498,6 +11488,20 @@ const lineMovementInFlightRef = useRef(false);
   }, [realOddsData]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
+  
+  // Debug: Track component renders (after all state is defined)
+  useEffect(() => {
+    renderCountRef.current += 1;
+    console.log(`[DEBUG Render] NBADashboardContent render #${renderCountRef.current}`, {
+      timestamp: new Date().toISOString(),
+      playerStatsLength: playerStats?.length || 0,
+      selectedPlayer: selectedPlayer?.full,
+      realOddsDataLength: realOddsData?.length || 0,
+      bettingLine,
+      selectedTimeframe,
+      oddsLoading
+    });
+  });
 
   // Adjust spread signs based on favorite/underdog status (after realOddsData is available)
   const adjustedChartData = useMemo(() => {
