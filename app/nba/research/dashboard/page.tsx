@@ -7414,28 +7414,44 @@ const lineMovementInFlightRef = useRef(false);
   }, [playerStats.length, isLoading]);
   const [apiError, setApiError] = useState<string | null>(null);
   
-  // Clear odds data when player changes (odds are separate from player stats)
+  // Track the last player ID to detect actual player changes (not just metadata updates)
+  const lastPlayerIdRef = useRef<string | null>(null);
+  
+  // Clear odds data when player ID actually changes (not just metadata updates)
   // Player stats are cleared by handlePlayerSelect functions at the start
   useEffect(() => {
     if (selectedPlayer === null) {
       // Player cleared - reset odds only
-      setRealOddsData([]);
-      setOddsSnapshots([]);
-      setLineMovementData(null);
-      setBettingLines({});
+      if (lastPlayerIdRef.current !== null) {
+        setRealOddsData([]);
+        setOddsSnapshots([]);
+        setLineMovementData(null);
+        setBettingLines({});
+        lastPlayerIdRef.current = null;
+      }
       return;
     }
     
-    // Player changed - clear odds data only
-    // Player stats are managed by handlePlayerSelect functions
-    setRealOddsData([]);
-    setOddsSnapshots([]);
-    setLineMovementData(null);
-    setOddsLoading(false);
-    setOddsError(null);
-    setBettingLines({});
-    setBookOpeningLine(null);
-    setBookCurrentLine(null);
+    // Only clear odds if the player ID actually changed (not just metadata like jersey/height)
+    const currentPlayerId = selectedPlayer.id?.toString() || null;
+    if (currentPlayerId !== lastPlayerIdRef.current) {
+      // Player ID changed - clear odds data
+      console.log('[Odds Clear] Player ID changed, clearing odds', {
+        oldId: lastPlayerIdRef.current,
+        newId: currentPlayerId,
+        playerName: selectedPlayer.full
+      });
+      setRealOddsData([]);
+      setOddsSnapshots([]);
+      setLineMovementData(null);
+      setOddsLoading(false);
+      setOddsError(null);
+      setBettingLines({});
+      setBookOpeningLine(null);
+      setBookCurrentLine(null);
+      lastPlayerIdRef.current = currentPlayerId;
+    }
+    // If player ID is the same, don't clear odds (just metadata update like jersey/height)
   }, [selectedPlayer]);
   
   // Advanced stats state
