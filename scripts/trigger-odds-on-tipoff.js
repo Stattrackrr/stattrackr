@@ -385,13 +385,28 @@ async function findLatestTipoff(oddsCache) {
   const tomorrowDate = new Date(year, month - 1, day + 1);
   const tomorrowUSET = getUSEasternDateString(tomorrowDate);
   
-  // Get ALL games from odds cache - we'll find the latest tipoff among all of them
-  // This ensures we don't miss games due to timezone differences
+  // Get games from odds cache for TODAY or TOMORROW only (in US ET)
+  // We only care about games happening today or tomorrow, not games days away
   const allGamesFromOdds = oddsCache.games.filter((game) => {
     if (!game.commenceTime) return false;
-    // Include all games - we'll calculate tipoff times and find the latest
-    return true;
+    
+    const commenceStr = String(game.commenceTime).trim();
+    let gameDateUSET;
+    
+    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+      // Date-only string - this is the game date
+      gameDateUSET = commenceStr;
+    } else {
+      // Has time component - parse and convert to US ET
+      const date = new Date(commenceStr);
+      gameDateUSET = getUSEasternDateString(date);
+    }
+    
+    // Only include games from today or tomorrow (in US ET)
+    return gameDateUSET === todayUSET || gameDateUSET === tomorrowUSET;
   });
+  
+  console.log(`[Trigger Odds on Tipoff] 📅 Filtering games: ${oddsCache.games.length} total games, ${allGamesFromOdds.length} games for today (${todayUSET}) or tomorrow (${tomorrowUSET})`);
 
   if (allGamesFromOdds.length === 0) {
     return null;
@@ -444,10 +459,21 @@ async function findLatestTipoff(oddsCache) {
   
   const allBdlGames = [...(bdlGamesToday || []), ...(bdlGamesTomorrow || [])];
   
-  if (allBdlGames.length > 0) {
-    console.log(`[Trigger Odds on Tipoff] 🔄 Enhancing with BDL API data (${allBdlGames.length} games)...`);
+  // Filter BDL games to only include those from today or tomorrow (double-check)
+  const filteredBdlGames = allBdlGames.filter((bdlGame) => {
+    if (!bdlGame.date) return false;
+    const gameDateStr = bdlGame.date.split('T')[0]; // Get YYYY-MM-DD part
+    return gameDateStr === todayUSET || gameDateStr === tomorrowUSET;
+  });
+  
+  if (filteredBdlGames.length !== allBdlGames.length) {
+    console.log(`[Trigger Odds on Tipoff] 🔍 Filtered BDL games: ${allBdlGames.length} total, ${filteredBdlGames.length} for today/tomorrow`);
+  }
+  
+  if (filteredBdlGames.length > 0) {
+    console.log(`[Trigger Odds on Tipoff] 🔄 Enhancing with BDL API data (${filteredBdlGames.length} games for today/tomorrow)...`);
     // Match BDL games with odds cache games and update tipoff times if BDL has better data
-    for (const bdlGame of allBdlGames) {
+    for (const bdlGame of filteredBdlGames) {
       const homeTeam = bdlGame.home_team?.abbreviation || bdlGame.home_team?.full_name;
       const awayTeam = bdlGame.visitor_team?.abbreviation || bdlGame.visitor_team?.full_name;
       
