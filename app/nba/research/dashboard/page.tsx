@@ -2811,48 +2811,69 @@ const ChartControls = function ChartControls({
   }, [realOddsData, selectedStat]);
   
   // Auto-set betting line to best available line when odds data loads (only if user hasn't manually set it)
+  // Use a ref to track if we're waiting for odds to stabilize (prevent rapid updates during loading)
+  const oddsStabilizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
     if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
-      // Only auto-set if:
-      // 1. The line hasn't been auto-set for this stat yet, OR
-      // 2. The best line has changed from what we last auto-set, OR
-      // 3. The current line is the default 0.5 (meaning no line was stored for this stat)
-      const currentBettingLine = bettingLine;
-      const isDefaultLine = Math.abs(currentBettingLine - 0.5) < 0.01;
-      
-      const shouldAutoSet = 
-        lastAutoSetStatRef.current !== selectedStat ||
-        lastAutoSetLineRef.current === null ||
-        isDefaultLine ||
-        Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
-      
-      if (shouldAutoSet) {
-        // Only update if the current betting line is different from the best line
-        if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
-          onChangeBettingLine(bestLineForStat);
-          setDisplayLine(bestLineForStat);
-          lastAutoSetLineRef.current = bestLineForStat;
-          lastAutoSetStatRef.current = selectedStat;
-          
-          // Update input field
-          const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-          if (input) {
-            input.value = String(bestLineForStat);
-            transientLineRef.current = bestLineForStat;
-            // Update visual elements
-            if (yAxisConfig) {
-              updateBettingLinePosition(yAxisConfig, bestLineForStat);
-            }
-            recolorBarsFast(bestLineForStat);
-            updateOverRatePillFast(bestLineForStat);
-          }
-        } else {
-          // Line is already set correctly, just update the refs
-          lastAutoSetLineRef.current = bestLineForStat;
-          lastAutoSetStatRef.current = selectedStat;
-        }
+      // Clear any pending timeout
+      if (oddsStabilizeTimeoutRef.current) {
+        clearTimeout(oddsStabilizeTimeoutRef.current);
       }
+      
+      // Wait 100ms for odds to stabilize before updating betting line
+      // This prevents rapid updates when odds are still loading and bestLineForStat is recalculating
+      oddsStabilizeTimeoutRef.current = setTimeout(() => {
+        // Only auto-set if:
+        // 1. The line hasn't been auto-set for this stat yet, OR
+        // 2. The best line has changed from what we last auto-set, OR
+        // 3. The current line is the default 0.5 (meaning no line was stored for this stat)
+        const currentBettingLine = bettingLine;
+        const isDefaultLine = Math.abs(currentBettingLine - 0.5) < 0.01;
+        
+        const shouldAutoSet = 
+          lastAutoSetStatRef.current !== selectedStat ||
+          lastAutoSetLineRef.current === null ||
+          isDefaultLine ||
+          Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
+        
+        if (shouldAutoSet) {
+          // Only update if the current betting line is different from the best line
+          if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
+            // Wrap in startTransition to prevent visible refresh
+            startTransition(() => {
+              onChangeBettingLine(bestLineForStat);
+              setDisplayLine(bestLineForStat);
+            });
+            lastAutoSetLineRef.current = bestLineForStat;
+            lastAutoSetStatRef.current = selectedStat;
+            
+            // Update input field
+            const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+            if (input) {
+              input.value = String(bestLineForStat);
+              transientLineRef.current = bestLineForStat;
+              // Update visual elements
+              if (yAxisConfig) {
+                updateBettingLinePosition(yAxisConfig, bestLineForStat);
+              }
+              recolorBarsFast(bestLineForStat);
+              updateOverRatePillFast(bestLineForStat);
+            }
+          } else {
+            // Line is already set correctly, just update the refs
+            lastAutoSetLineRef.current = bestLineForStat;
+            lastAutoSetStatRef.current = selectedStat;
+          }
+        }
+      }, 100); // 100ms debounce to wait for odds to stabilize
     }
+    
+    return () => {
+      if (oddsStabilizeTimeoutRef.current) {
+        clearTimeout(oddsStabilizeTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bestLineForStat, selectedStat]);
   
