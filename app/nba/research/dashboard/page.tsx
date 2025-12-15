@@ -411,21 +411,13 @@ function getGameStatValue(game: any, key: string, teamAbbr: string): number {
     
     case 'spread':
       // Betting research logic: calculate from selected team's perspective
-      // Favorite (negative spread like -9.5): negative when they win
-      // Underdog (positive spread like +9.5): positive when they win
-      // Calculate the score difference from the selected team's perspective
+      // Show wins as negative (down) and losses as positive (up)
       const selectedTeamScore = isHome ? homeScore : visitorScore;
       const opponentScore = isHome ? visitorScore : homeScore;
       const margin = selectedTeamScore - opponentScore;
-      // The margin is positive when selected team wins, negative when they lose
-      // But we want: favorite shows negative when they win, underdog shows positive when they win
-      // Since we don't know the historical spread, we'll use the convention:
-      // Negative margin = selected team lost (or didn't cover if favorite)
-      // Positive margin = selected team won (or covered if underdog)
-      // To match betting convention: flip the sign so favorites show negative
-      // We'll infer favorite/underdog from typical patterns, but for now just show the margin
-      // Actually, let's just return the margin and let the display handle the sign convention
-      return margin;
+      // Positive margin = win; Negative margin = loss
+      // Invert so wins plot downward (negative) and losses upward (positive)
+      return -margin;
     
     case 'moneyline':
       // 1 = win, 0 = loss
@@ -11554,32 +11546,8 @@ const lineMovementInFlightRef = useRef(false);
     });
   });
 
-  // Adjust spread signs based on favorite/underdog status (after realOddsData is available)
-  const adjustedChartData = useMemo(() => {
-    if (propsMode !== 'team' || selectedStat !== 'spread' || chartData.length === 0 || realOddsData.length === 0) {
-      return chartData;
-    }
-
-    // Check the current spread line to determine if selected team is favorite or underdog
-    const firstBook = realOddsData[0] as any;
-    const spreadLine = firstBook?.Spread?.line;
-    
-    if (!spreadLine || spreadLine === 'N/A') {
-      return chartData;
-    }
-
-    const lineVal = parseFloat(String(spreadLine).replace(/[^0-9.+-]/g, ''));
-    const isFavorite = !Number.isNaN(lineVal) && lineVal < 0;
-    
-    // Favorite: always show negative (absolute value with negative sign)
-    // Underdog: always show positive (absolute value, no negative sign)
-    return chartData.map(game => {
-      if (typeof game.value === 'number') {
-        return { ...game, value: isFavorite ? -Math.abs(game.value) : Math.abs(game.value) };
-      }
-      return game;
-    });
-  }, [chartData, propsMode, selectedStat, realOddsData]);
+  // For spread we now use the signed margin directly (wins down, losses up)
+  const adjustedChartData = useMemo(() => chartData, [chartData]);
   
   // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
   const getBookRowKey = useCallback((stat: string): string | null => {
