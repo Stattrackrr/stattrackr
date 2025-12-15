@@ -2475,6 +2475,7 @@ const ChartControls = function ChartControls({
   onChangeHomeAway,
   yAxisConfig,
   realOddsData,
+  oddsLoading,
   fmtOdds,
   minMinutesFilter,
   maxMinutesFilter,
@@ -4791,6 +4792,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         onChangeHomeAway={onChangeHomeAway}
         yAxisConfig={yAxisConfig}
         realOddsData={realOddsData}
+        oddsLoading={oddsLoading}
         fmtOdds={fmtOdds}
         minMinutesFilter={minMinutesFilter}
         maxMinutesFilter={maxMinutesFilter}
