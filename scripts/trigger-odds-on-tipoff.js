@@ -583,37 +583,33 @@ async function main() {
         process.exit(0);
       }
 
-      // Latest tipoff has passed and we haven't triggered yet - trigger odds refresh
-      console.log(`[Trigger Odds on Tipoff] 🚨 Latest tipoff has passed - triggering odds refresh`);
+      // Latest tipoff has passed and we haven't triggered yet
+      console.log(`[Trigger Odds on Tipoff] 🚨 Latest tipoff has passed - triggering player props workflow`);
       
-      // Call the odds refresh API endpoint
-      const result = await callAPI('/api/odds/refresh');
+      // Trigger the player props workflow immediately (this is the primary goal)
+      console.log(`[Trigger Odds on Tipoff] 🚀 Triggering player props workflow...`);
+      const propsTriggered = await triggerPlayerPropsWorkflow();
       
-      if (result && result.success !== false) {
-        console.log(`[Trigger Odds on Tipoff] ✅ Odds refresh completed`);
-        console.log(`[Trigger Odds on Tipoff] 📊 Result: ${result.gamesCount || 0} games, ${result.apiCalls || 0} API calls`);
+      if (propsTriggered) {
+        // Record that we triggered (24 hour TTL - will auto-expire tomorrow)
+        await setCache(trackingKey, now.toISOString(), 24 * 60);
+        console.log(`[Trigger Odds on Tipoff] ✅ Player props workflow triggered successfully`);
         
-        // Wait a few seconds for odds cache to update
-        console.log(`[Trigger Odds on Tipoff] ⏳ Waiting 10 seconds for odds cache to update...`);
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Also try to refresh odds in the background (non-blocking, don't wait for it)
+        console.log(`[Trigger Odds on Tipoff] 🔄 Triggering odds refresh in background (non-blocking)...`);
+        callAPI('/api/odds/refresh').then(result => {
+          if (result && result.success !== false) {
+            console.log(`[Trigger Odds on Tipoff] ✅ Background odds refresh completed`);
+          } else {
+            console.warn(`[Trigger Odds on Tipoff] ⚠️ Background odds refresh failed (non-critical)`);
+          }
+        }).catch(err => {
+          console.warn(`[Trigger Odds on Tipoff] ⚠️ Background odds refresh error (non-critical):`, err.message);
+        });
         
-        // Now trigger the player props workflow to process tomorrow's props
-        console.log(`[Trigger Odds on Tipoff] 🚀 Triggering player props workflow to process tomorrow's props...`);
-        const propsTriggered = await triggerPlayerPropsWorkflow();
-        
-        if (propsTriggered) {
-          // Record that we triggered (24 hour TTL - will auto-expire tomorrow)
-          await setCache(trackingKey, now.toISOString(), 24 * 60);
-          console.log(`[Trigger Odds on Tipoff] ✅ Odds refresh and player props workflow triggered successfully`);
-          process.exit(0);
-        } else {
-          // Still record odds refresh even if props workflow failed
-          await setCache(trackingKey, now.toISOString(), 24 * 60);
-          console.warn(`[Trigger Odds on Tipoff] ⚠️ Odds refresh completed but player props workflow failed to trigger`);
-          process.exit(0); // Don't fail - odds refresh succeeded
-        }
+        process.exit(0);
       } else {
-        console.error(`[Trigger Odds on Tipoff] ❌ Failed to trigger odds refresh`);
+        console.error(`[Trigger Odds on Tipoff] ❌ Failed to trigger player props workflow`);
         process.exit(1);
       }
     } else {
