@@ -7396,22 +7396,37 @@ const lineMovementInFlightRef = useRef(false);
   // Track when core data (stats + DvP) is ready to show the screen
   const [coreDataReady, setCoreDataReady] = useState(false);
   
-  // Set coreDataReady when stats and DvP are loaded
+  // Set coreDataReady when stats are loaded; wait briefly for odds to avoid a visible refresh
   useEffect(() => {
-    // Check if stats are loaded (playerStats has data) and DvP is ready
-    // DvP is ready when PositionDefenseCard has data (we'll check via a ref or state)
-    // For now, we'll use a simple check: if playerStats has data, consider it ready
-    // DvP loads independently and will show when ready
-    if (playerStats.length > 0 && !isLoading) {
-      // Small delay to ensure DvP has time to render
-      const timeoutId = setTimeout(() => {
-        setCoreDataReady(true);
-      }, 500); // 500ms delay to let DvP render
-      return () => clearTimeout(timeoutId);
-    } else if (playerStats.length === 0) {
+    // Reset when loading starts or no stats yet
+    if (isLoading || playerStats.length === 0) {
       setCoreDataReady(false);
+      return;
     }
-  }, [playerStats.length, isLoading]);
+
+    const oddsReady =
+      propsMode === 'team' ||
+      realOddsData.length > 0 ||
+      !!oddsError ||
+      !oddsLoading;
+
+    // Slight delay to let odds arrive before revealing UI; fallback to avoid blocking
+    const delay = oddsReady ? 200 : 600;
+    const timeoutId = setTimeout(() => {
+      if (oddsReady || !oddsLoading) {
+        setCoreDataReady(true);
+      }
+    }, delay);
+
+    const fallbackId = setTimeout(() => {
+      setCoreDataReady(true);
+    }, 1800);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(fallbackId);
+    };
+  }, [playerStats.length, isLoading, oddsLoading, realOddsData.length, oddsError, propsMode]);
   const [apiError, setApiError] = useState<string | null>(null);
   
   // Track the last player ID to detect actual player changes (not just metadata updates)
