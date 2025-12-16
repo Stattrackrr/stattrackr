@@ -3,7 +3,8 @@
 import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
@@ -238,15 +239,119 @@ export default function NBALandingPage() {
   const [propsLoading, setPropsLoading] = useState(true);
   const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
   const [mounted, setMounted] = useState(false);
-  const [selectedBookmakers, setSelectedBookmakers] = useState<Set<string>>(new Set());
-  const [selectedPropTypes, setSelectedPropTypes] = useState<Set<string>>(new Set());
-  const [selectedGames, setSelectedGames] = useState<Set<number>>(new Set());
+  const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  // Load filter selections from localStorage on mount
+  const loadFiltersFromStorage = () => {
+    if (typeof window === 'undefined') {
+      return {
+        bookmakers: new Set<string>(),
+        propTypes: new Set<string>(),
+        games: new Set<number>()
+      };
+    }
+    
+    try {
+      const savedBookmakers = localStorage.getItem('nba_filters_bookmakers');
+      const savedPropTypes = localStorage.getItem('nba_filters_propTypes');
+      const savedGames = localStorage.getItem('nba_filters_games');
+      
+      return {
+        bookmakers: savedBookmakers ? new Set<string>(JSON.parse(savedBookmakers)) : new Set<string>(),
+        propTypes: savedPropTypes ? new Set<string>(JSON.parse(savedPropTypes)) : new Set<string>(),
+        games: savedGames ? new Set<number>(JSON.parse(savedGames)) : new Set<number>()
+      };
+    } catch (e) {
+      console.warn('[NBA Landing] Failed to load filters from localStorage:', e);
+      return {
+        bookmakers: new Set<string>(),
+        propTypes: new Set<string>(),
+        games: new Set<number>()
+      };
+    }
+  };
+
+  const savedFilters = loadFiltersFromStorage();
+  const [selectedBookmakers, setSelectedBookmakers] = useState<Set<string>>(savedFilters.bookmakers);
+  const [selectedPropTypes, setSelectedPropTypes] = useState<Set<string>>(savedFilters.propTypes);
+  const [selectedGames, setSelectedGames] = useState<Set<number>>(savedFilters.games);
   const [bookmakerDropdownOpen, setBookmakerDropdownOpen] = useState(false);
   const [propTypeDropdownOpen, setPropTypeDropdownOpen] = useState(false);
   const [gamesDropdownOpen, setGamesDropdownOpen] = useState(false);
   const [propLineDropdownOpen, setPropLineDropdownOpen] = useState(false);
   const [propLineSort, setPropLineSort] = useState<'none' | 'high' | 'low'>('none');
   const [currentPage, setCurrentPage] = useState(1);
+  const filtersSectionRef = useRef<HTMLDivElement>(null);
+  const [filterBottom, setFilterBottom] = useState(120);
+  const lockedPositionRef = useRef<number | null>(null);
+
+  // Lock position when dropdown opens - MOBILE ONLY - calculate once and never update
+  useEffect(() => {
+    if (!isMobile) return; // Desktop uses normal positioning
+    
+    const anyDropdownOpen = gamesDropdownOpen || bookmakerDropdownOpen || propTypeDropdownOpen;
+    if (anyDropdownOpen) {
+      if (filtersSectionRef.current && lockedPositionRef.current === null) {
+        // Calculate position once when dropdown first opens
+        const rect = filtersSectionRef.current.getBoundingClientRect();
+        const lockedPosition = rect.bottom + 8;
+        lockedPositionRef.current = lockedPosition;
+        setFilterBottom(lockedPosition);
+      }
+    } else {
+      // Reset when all dropdowns close
+      lockedPositionRef.current = null;
+    }
+  }, [gamesDropdownOpen, bookmakerDropdownOpen, propTypeDropdownOpen, isMobile]);
+
+  // Lock dropdown position on scroll - MOBILE ONLY - prevent any movement
+  useEffect(() => {
+    if (!isMobile) return; // Desktop uses normal positioning
+    
+    if (!gamesDropdownOpen && !bookmakerDropdownOpen && !propTypeDropdownOpen) {
+      return;
+    }
+    
+    if (lockedPositionRef.current === null) {
+      return;
+    }
+
+    const lockPosition = () => {
+      const dropdowns = document.querySelectorAll('[data-dropdown-locked]');
+      dropdowns.forEach((dropdown) => {
+        const el = dropdown as HTMLElement;
+        if (lockedPositionRef.current !== null) {
+          el.style.setProperty('top', `${lockedPositionRef.current}px`, 'important');
+          el.style.setProperty('position', 'fixed', 'important');
+        }
+      });
+    };
+
+    // Lock position immediately
+    lockPosition();
+    
+    // Lock position on scroll
+    window.addEventListener('scroll', lockPosition, { passive: true });
+    // Lock position on resize
+    window.addEventListener('resize', lockPosition, { passive: true });
+    
+    // Also use requestAnimationFrame to continuously lock it
+    let rafId: number;
+    const lockLoop = () => {
+      lockPosition();
+      rafId = requestAnimationFrame(lockLoop);
+    };
+    rafId = requestAnimationFrame(lockLoop);
+
+    return () => {
+      window.removeEventListener('scroll', lockPosition);
+      window.removeEventListener('resize', lockPosition);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [gamesDropdownOpen, bookmakerDropdownOpen, propTypeDropdownOpen, isMobile]);
+
   // Track which popup is open: key is "playerName|statType|lineValue"
   const [openPopup, setOpenPopup] = useState<string | null>(null);
   // Column sorting state: column name -> 'none' | 'asc' | 'desc'
@@ -264,6 +369,10 @@ export default function NBALandingPage() {
 
   useEffect(() => {
     setMounted(true);
+    // Set dropdown container to document.body for portal rendering
+    if (typeof document !== 'undefined') {
+      setDropdownContainer(document.body);
+    }
     // Load odds format from localStorage
     const savedFormat = localStorage.getItem('oddsFormat');
     if (savedFormat === 'decimal' || savedFormat === 'american') {
@@ -1613,28 +1722,58 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return Array.from(types).sort();
   }, [playerProps]);
 
-  // Initialize selected filters when data loads (all selected by default, except Betway)
+  // Save filters to localStorage helper (defined before useEffects)
+  const saveFiltersToStorage = (bookmakers: Set<string>, propTypes: Set<string>, games: Set<number>) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('nba_filters_bookmakers', JSON.stringify(Array.from(bookmakers)));
+      localStorage.setItem('nba_filters_propTypes', JSON.stringify(Array.from(propTypes)));
+      localStorage.setItem('nba_filters_games', JSON.stringify(Array.from(games)));
+    } catch (e) {
+      console.warn('[NBA Landing] Failed to save filters to localStorage:', e);
+    }
+  };
+
+  // Initialize selected filters when data loads (only if localStorage is empty)
   useEffect(() => {
     if (availableBookmakers.length > 0 && selectedBookmakers.size === 0) {
-      // Exclude Betway from default selection (still fetched, just unchecked by default)
-      const defaultBookmakers = availableBookmakers.filter(bm => 
-        bm.toLowerCase() !== 'betway'
-      );
-      setSelectedBookmakers(new Set(defaultBookmakers));
+      // Only set defaults if localStorage was empty (no saved filters)
+      const savedBookmakers = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_bookmakers') : null;
+      if (!savedBookmakers) {
+        // Exclude Betway from default selection (still fetched, just unchecked by default)
+        const defaultBookmakers = availableBookmakers.filter(bm => 
+          bm.toLowerCase() !== 'betway'
+        );
+        const newSet = new Set(defaultBookmakers);
+        setSelectedBookmakers(newSet);
+        saveFiltersToStorage(newSet, selectedPropTypes, selectedGames);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableBookmakers]);
 
   useEffect(() => {
     if (availablePropTypes.length > 0 && selectedPropTypes.size === 0) {
-      setSelectedPropTypes(new Set(availablePropTypes));
+      // Only set defaults if localStorage was empty (no saved filters)
+      const savedPropTypes = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_propTypes') : null;
+      if (!savedPropTypes) {
+        const newSet = new Set(availablePropTypes);
+        setSelectedPropTypes(newSet);
+        saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availablePropTypes]);
 
   useEffect(() => {
     if (todaysGames.length > 0 && selectedGames.size === 0) {
-      setSelectedGames(new Set(todaysGames.map(game => game.id)));
+      // Only set defaults if localStorage was empty (no saved filters)
+      const savedGames = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_games') : null;
+      if (!savedGames) {
+        const newSet = new Set(todaysGames.map(game => game.id));
+        setSelectedGames(newSet);
+        saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todaysGames]);
@@ -1954,6 +2093,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       } else {
         newSet.add(bookmaker);
       }
+      // Save to localStorage
+      saveFiltersToStorage(newSet, selectedPropTypes, selectedGames);
       return newSet;
     });
   };
@@ -1966,6 +2107,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       } else {
         newSet.add(propType);
       }
+      // Save to localStorage
+      saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
       return newSet;
     });
   };
@@ -1978,6 +2121,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       } else {
         newSet.add(gameId);
       }
+      // Save to localStorage
+      saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
       return newSet;
     });
   };
@@ -2026,6 +2171,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           background: #6b7280;
         }
 
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+
         @media (min-width: 1024px) {
           .dashboard-container {
             --sidebar-width: 340px;
@@ -2061,7 +2214,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 2px)))',
         paddingLeft: 0,
       }}>
-        <div className={`mx-auto w-full max-w-[1550px]`} style={{ paddingLeft: 0, paddingRight: 0 }}>
+        <div className={`mx-auto w-full max-w-[1550px]`} style={{ paddingLeft: 0, paddingRight: '0px' }}>
           <div className="pt-4 min-h-0 lg:h-full dashboard-container" style={{ paddingLeft: 0 }}>
             {/* Left Sidebar */}
             <LeftSidebar
@@ -2085,14 +2238,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
             {/* Main Content Area - Top Player Props */}
             <div 
-              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar`}
+              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar`}
               style={{
                 scrollbarGutter: 'stable',
                 paddingLeft: 0,
                 paddingRight: 0,
               }}
             >
-          <div className="h-full pb-12 pr-1 lg:pr-0" style={{ paddingLeft: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className="h-full pb-12 lg:pr-0" style={{ paddingLeft: '8px', paddingRight: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Search Bar */}
             <div className="mb-2">
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
@@ -2121,7 +2274,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
               </form>
 
               {/* Filters Section */}
-              <div className="mt-2 flex gap-2" style={{ width: '100%' }}>
+              <div 
+                ref={filtersSectionRef}
+                className="mt-2 flex gap-1.5" 
+                style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
+              >
                 {/* Games Dropdown */}
                 <div className="relative flex-1">
                   <button
@@ -2130,7 +2287,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       setBookmakerDropdownOpen(false);
                       setPropTypeDropdownOpen(false);
                     }}
-                    className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
+                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
                       gamesDropdownOpen
                         ? mounted && isDark
                           ? 'bg-gray-700 border-gray-600 text-gray-200'
@@ -2154,162 +2311,161 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                   </button>
                   
                   {gamesDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setGamesDropdownOpen(false)}
-                      />
-                      <div className={`absolute top-full left-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto w-full min-w-max ${
-                        mounted && isDark
-                          ? 'bg-gray-800 border-gray-700'
-                          : 'bg-white border-gray-300'
-                      }`}>
-                        <div className="p-2 space-y-1">
-                          {todaysGames.map(game => {
-                            const isSelected = selectedGames.has(game.id);
-                            const homeTeam = game.home_team?.abbreviation || '';
-                            const awayTeam = game.visitor_team?.abbreviation || '';
-                            const homeLogoUrl = getEspnLogoUrl(homeTeam);
-                            const awayLogoUrl = getEspnLogoUrl(awayTeam);
-                            return (
-                              <label
-                                key={game.id}
-                                className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
-                                  isSelected
-                                    ? mounted && isDark
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-purple-100 text-purple-900'
-                                    : mounted && isDark
-                                    ? 'hover:bg-gray-700 text-gray-300'
-                                    : 'hover:bg-gray-50 text-gray-700'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleGame(game.id)}
-                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
-                                />
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  {awayLogoUrl && (
-                                    <img
-                                      src={awayLogoUrl}
-                                      alt={awayTeam}
-                                      className="w-6 h-6 object-contain flex-shrink-0"
-                                    />
-                                  )}
-                                  <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
-                                  <span className="text-sm text-gray-500 flex-shrink-0">@</span>
-                                  {homeLogoUrl && (
-                                    <img
-                                      src={homeLogoUrl}
-                                      alt={homeTeam}
-                                      className="w-6 h-6 object-contain flex-shrink-0"
-                                    />
-                                  )}
-                                  <span className="text-sm font-medium flex-shrink-0">{homeTeam}</span>
-                                </div>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Bookmakers Dropdown */}
-                <div className="relative flex-1">
-                  <button
-                    onClick={() => {
-                      setBookmakerDropdownOpen(!bookmakerDropdownOpen);
-                      setPropTypeDropdownOpen(false);
-                      setGamesDropdownOpen(false);
-                    }}
-                    className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      bookmakerDropdownOpen
-                        ? mounted && isDark
-                          ? 'bg-gray-700 border-gray-600 text-gray-200'
-                          : 'bg-gray-50 border-gray-400 text-gray-800'
-                        : mounted && isDark
-                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="text-sm font-medium whitespace-nowrap">
-                      Bookmakers
-                    </span>
-                    <svg
-                      className={`w-4 h-4 transition-transform flex-shrink-0 ${bookmakerDropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  
-                  {bookmakerDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setBookmakerDropdownOpen(false)}
-                      />
-                      <div className={`absolute top-full left-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto w-full ${
-                        mounted && isDark
-                          ? 'bg-gray-800 border-gray-700'
-                          : 'bg-white border-gray-300'
-                      }`}>
-                        <div className="p-2 space-y-1">
-                          {availableBookmakers.map(bookmaker => {
-                            const bookmakerKey = bookmaker.toLowerCase();
-                            const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
-                            const isSelected = selectedBookmakers.has(bookmaker);
-                            return (
-                              <label
-                                key={bookmaker}
-                                className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
-                                  isSelected
-                                    ? mounted && isDark
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-purple-100 text-purple-900'
-                                    : mounted && isDark
-                                    ? 'hover:bg-gray-700 text-gray-300'
-                                    : 'hover:bg-gray-50 text-gray-700'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleBookmaker(bookmaker)}
-                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                />
-                                {bookmakerInfo?.logoUrl && (
-                                  <img
-                                    src={bookmakerInfo.logoUrl}
-                                    alt={bookmakerInfo.name}
-                                    className="w-4 h-4 object-contain"
+                    isMobile && dropdownContainer ? (
+                      createPortal(
+                        <>
+                          <div
+                            className="fixed inset-0 z-[100]"
+                            onClick={() => setGamesDropdownOpen(false)}
+                          />
+                          <div 
+                            data-dropdown-locked
+                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                              mounted && isDark
+                                ? 'bg-gray-800 border-gray-700'
+                                : 'bg-white border-gray-300'
+                            }`} 
+                            style={{ 
+                              position: 'fixed',
+                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: 'max-content', 
+                              minWidth: '200px', 
+                              maxWidth: '90vw',
+                              pointerEvents: 'auto'
+                            }}
+                          >
+                          <div className="p-2 space-y-1">
+                            {todaysGames.map(game => {
+                              const isSelected = selectedGames.has(game.id);
+                              const homeTeam = game.home_team?.abbreviation || '';
+                              const awayTeam = game.visitor_team?.abbreviation || '';
+                              const homeLogoUrl = getEspnLogoUrl(homeTeam);
+                              const awayLogoUrl = getEspnLogoUrl(awayTeam);
+                              return (
+                                <label
+                                  key={game.id}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                    isSelected
+                                      ? mounted && isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : mounted && isDark
+                                      ? 'hover:bg-gray-700 text-gray-300'
+                                      : 'hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleGame(game.id)}
+                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
                                   />
-                                )}
-                                <span className="text-sm font-medium">{bookmakerInfo?.name || bookmaker}</span>
-                              </label>
-                            );
-                          })}
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {awayLogoUrl && (
+                                      <img
+                                        src={awayLogoUrl}
+                                        alt={awayTeam}
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
+                                    <span className="text-sm text-gray-500 flex-shrink-0">@</span>
+                                    {homeLogoUrl && (
+                                      <img
+                                        src={homeLogoUrl}
+                                        alt={homeTeam}
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium flex-shrink-0">{homeTeam}</span>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    </>
+                        </>,
+                        dropdownContainer
+                      )
+                    ) : (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setGamesDropdownOpen(false)}
+                        />
+                        <div 
+                          className={`absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                            mounted && isDark
+                              ? 'bg-gray-800 border-gray-700'
+                              : 'bg-white border-gray-300'
+                          }`}
+                        >
+                          <div className="p-2 space-y-1">
+                            {todaysGames.map(game => {
+                              const isSelected = selectedGames.has(game.id);
+                              const homeTeam = game.home_team?.abbreviation || '';
+                              const awayTeam = game.visitor_team?.abbreviation || '';
+                              const homeLogoUrl = getEspnLogoUrl(homeTeam);
+                              const awayLogoUrl = getEspnLogoUrl(awayTeam);
+                              return (
+                                <label
+                                  key={game.id}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                    isSelected
+                                      ? mounted && isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : mounted && isDark
+                                      ? 'hover:bg-gray-700 text-gray-300'
+                                      : 'hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleGame(game.id)}
+                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
+                                  />
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {awayLogoUrl && (
+                                      <img
+                                        src={awayLogoUrl}
+                                        alt={awayTeam}
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
+                                    <span className="text-sm text-gray-500 flex-shrink-0">@</span>
+                                    {homeLogoUrl && (
+                                      <img
+                                        src={homeLogoUrl}
+                                        alt={homeTeam}
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium flex-shrink-0">{homeTeam}</span>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )
                   )}
                 </div>
 
                 {/* Prop Types Dropdown */}
-                <div className="relative flex-1">
+                <div className="relative flex-1" style={{ minWidth: 0, maxWidth: '100%' }}>
                   <button
                     onClick={() => {
                       setPropTypeDropdownOpen(!propTypeDropdownOpen);
                       setBookmakerDropdownOpen(false);
                       setGamesDropdownOpen(false);
                     }}
-                    className={`flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
+                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
                       propTypeDropdownOpen
                         ? mounted && isDark
                           ? 'bg-gray-700 border-gray-600 text-gray-200'
@@ -2333,16 +2489,89 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                   </button>
                   
                   {propTypeDropdownOpen && (
+                    isMobile && dropdownContainer ? (
+                      createPortal(
+                        <>
+                          <div
+                            className="fixed inset-0 z-[100]"
+                            onClick={() => setPropTypeDropdownOpen(false)}
+                          />
+                          <div 
+                            data-dropdown-locked
+                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                              mounted && isDark
+                                ? 'bg-gray-800 border-gray-700'
+                                : 'bg-white border-gray-300'
+                            }`} 
+                            style={{ 
+                              position: 'fixed',
+                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: 'max-content', 
+                              minWidth: '200px', 
+                              maxWidth: '90vw',
+                              pointerEvents: 'auto'
+                            }}
+                          >
+                          <div className="p-2 space-y-1">
+                            {availablePropTypes.map(propType => {
+                              const isSelected = selectedPropTypes.has(propType);
+                              return (
+                                <label
+                                  key={propType}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
+                                    isSelected
+                                      ? mounted && isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : mounted && isDark
+                                      ? 'hover:bg-gray-700 text-gray-300'
+                                      : 'hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => togglePropType(propType)}
+                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  />
+                                  <span className="text-sm font-medium">{getStatLabel(propType)}</span>
+                                </label>
+                              );
+                          })}
+                          <button
+                            onClick={() => {
+                              const newSet = new Set<string>();
+                              setSelectedPropTypes(newSet);
+                              saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                            }}
+                            className={`w-full mt-2 px-3 py-2 rounded text-sm font-medium transition-all ${
+                              mounted && isDark
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                      </>,
+                      dropdownContainer
+                    )
+                  ) : (
                     <>
                       <div
                         className="fixed inset-0 z-10"
                         onClick={() => setPropTypeDropdownOpen(false)}
                       />
-                      <div className={`absolute top-full left-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto w-full ${
-                        mounted && isDark
-                          ? 'bg-gray-800 border-gray-700'
-                          : 'bg-white border-gray-300'
-                      }`}>
+                      <div 
+                        className={`absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                          mounted && isDark
+                            ? 'bg-gray-800 border-gray-700'
+                            : 'bg-white border-gray-300'
+                        }`}
+                      >
                         <div className="p-2 space-y-1">
                           {availablePropTypes.map(propType => {
                             const isSelected = selectedPropTypes.has(propType);
@@ -2370,7 +2599,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                             );
                           })}
                           <button
-                            onClick={() => setSelectedPropTypes(new Set())}
+                            onClick={() => {
+                              const newSet = new Set<string>();
+                              setSelectedPropTypes(newSet);
+                              saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                            }}
                             className={`w-full mt-2 px-3 py-2 rounded text-sm font-medium transition-all ${
                               mounted && isDark
                                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -2382,6 +2615,159 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         </div>
                       </div>
                     </>
+                  )
+                )}
+                </div>
+
+                {/* Bookmakers Dropdown */}
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => {
+                      setBookmakerDropdownOpen(!bookmakerDropdownOpen);
+                      setPropTypeDropdownOpen(false);
+                      setGamesDropdownOpen(false);
+                    }}
+                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
+                      bookmakerDropdownOpen
+                        ? mounted && isDark
+                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          : 'bg-gray-50 border-gray-400 text-gray-800'
+                        : mounted && isDark
+                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      Bookmakers
+                    </span>
+                    <svg
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ${bookmakerDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {bookmakerDropdownOpen && (
+                    isMobile && dropdownContainer ? (
+                      createPortal(
+                        <>
+                          <div
+                            className="fixed inset-0 z-[100]"
+                            onClick={() => setBookmakerDropdownOpen(false)}
+                          />
+                          <div 
+                            data-dropdown-locked
+                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                              mounted && isDark
+                                ? 'bg-gray-800 border-gray-700'
+                                : 'bg-white border-gray-300'
+                            }`} 
+                            style={{ 
+                              position: 'fixed',
+                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: 'max-content', 
+                              minWidth: '200px', 
+                              maxWidth: '90vw',
+                              pointerEvents: 'auto'
+                            }}
+                          >
+                            <div className="p-2 space-y-1">
+                              {availableBookmakers.map(bookmaker => {
+                                const bookmakerKey = bookmaker.toLowerCase();
+                                const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                const isSelected = selectedBookmakers.has(bookmaker);
+                                return (
+                                  <label
+                                    key={bookmaker}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
+                                      isSelected
+                                        ? mounted && isDark
+                                          ? 'bg-purple-600 text-white'
+                                          : 'bg-purple-100 text-purple-900'
+                                        : mounted && isDark
+                                        ? 'hover:bg-gray-700 text-gray-300'
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleBookmaker(bookmaker)}
+                                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                    />
+                                    {bookmakerInfo?.logoUrl && (
+                                      <img
+                                        src={bookmakerInfo.logoUrl}
+                                        alt={bookmakerInfo.name}
+                                        className="w-4 h-4 object-contain"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium">{bookmakerInfo?.name || bookmaker}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>,
+                        dropdownContainer
+                      )
+                    ) : (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setBookmakerDropdownOpen(false)}
+                        />
+                        <div 
+                          className={`absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                            mounted && isDark
+                              ? 'bg-gray-800 border-gray-700'
+                              : 'bg-white border-gray-300'
+                          }`}
+                        >
+                          <div className="p-2 space-y-1">
+                            {availableBookmakers.map(bookmaker => {
+                              const bookmakerKey = bookmaker.toLowerCase();
+                              const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                              const isSelected = selectedBookmakers.has(bookmaker);
+                              return (
+                                <label
+                                  key={bookmaker}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
+                                    isSelected
+                                      ? mounted && isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : mounted && isDark
+                                      ? 'hover:bg-gray-700 text-gray-300'
+                                      : 'hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleBookmaker(bookmaker)}
+                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  />
+                                  {bookmakerInfo?.logoUrl && (
+                                    <img
+                                      src={bookmakerInfo.logoUrl}
+                                      alt={bookmakerInfo.name}
+                                      className="w-4 h-4 object-contain"
+                                    />
+                                  )}
+                                  <span className="text-sm font-medium">{bookmakerInfo?.name || bookmaker}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )
                   )}
                 </div>
               </div>
@@ -2389,9 +2775,9 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
             {/* Player Props Section */}
             <div className="h-[calc(100%-160px)]" style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
-              <div className={`rounded-lg w-full pr-0 lg:pr-2 ${
+              <div className={`rounded-lg w-full pr-4 lg:pr-2 ${
                 mounted && isDark ? 'bg-gray-800' : 'bg-white'
-              } shadow-sm`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.5rem' }}>
+              } shadow-sm`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
                 <h2 className={`text-2xl font-bold mb-2 ${
                   mounted && isDark ? 'text-white' : 'text-gray-900'
                 }`} style={{ marginTop: 0, paddingTop: 0 }}>
@@ -3739,7 +4125,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           return (
                             <div
                               key={idx}
-                              className={`rounded-lg border px-2 py-4 ${
+                              className={`rounded-xl border-2 pl-3 pr-4 py-3.5 ${
                                 mounted && isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
@@ -3751,29 +4137,30 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               }}
                             >
                               {/* Header Section */}
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    {headshotUrl && (
-                                      <img
-                                        src={headshotUrl}
-                                        alt={prop.playerName}
-                                        className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2"
-                                        style={{ 
-                                          borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
-                                          imageRendering: 'auto'
-                                        }}
-                                        loading="lazy"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
-                                    )}
-                                    <span className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                              <div className="mb-3">
+                                {/* Player Name and Headshot Row */}
+                                <div className="flex items-center gap-2.5 mb-2">
+                                  {headshotUrl && (
+                                    <img
+                                      src={headshotUrl}
+                                      alt={prop.playerName}
+                                      className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2"
+                                      style={{ 
+                                        borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
+                                        imageRendering: 'auto'
+                                      }}
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`font-bold text-base truncate ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                       {prop.playerName}
-                                    </span>
+                                    </div>
                                     {/* Team Logos */}
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5 mt-0.5">
                                       {teamLogoUrl && (
                                         <img
                                           src={teamLogoUrl}
@@ -3784,7 +4171,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                           }}
                                         />
                                       )}
-                                      <span className={`text-xs ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
+                                      <span className={`text-xs font-medium ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
                                       {opponentLogoUrl && (
                                         <img
                                           src={opponentLogoUrl}
@@ -3796,90 +4183,90 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                         />
                                       )}
                                     </div>
-                                    {/* IP Boxes - Bookmaker */}
-                                    <div className="flex items-center gap-2 ml-auto">
-                                      {/* Bookmaker IP */}
-                                      <div className="flex flex-col items-center justify-center rounded border px-2.5 py-1.5" style={getStatBoxStyle(null)}>
-                                        <div className={`text-[9px] font-medium mb-1 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>Books</div>
-                                        {(() => {
-                                          // Calculate implied probabilities on-the-fly from odds
-                                          const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
-                                          const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? null);
-                                          const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? null);
-                                          return (
-                                            <>
-                                              <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                                {overProb !== null && overProb !== undefined ? `O ${overProb.toFixed(1)}%` : '-'}
-                                              </div>
-                                              <div className={`text-[10px] font-semibold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                                {underProb !== null && underProb !== undefined ? `U ${underProb.toFixed(1)}%` : '-'}
-                                              </div>
-                                            </>
-                                          );
-                                        })()}
-                                      </div>
+                                  </div>
+                                  {/* Bookmaker IP Box */}
+                                  <div className="flex-shrink-0">
+                                    <div className="flex flex-col items-center justify-center rounded-lg border-2 px-3 py-2" style={getStatBoxStyle(null)}>
+                                      <div className={`text-[10px] font-semibold mb-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>Books</div>
+                                      {(() => {
+                                        // Calculate implied probabilities on-the-fly from odds
+                                        const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
+                                        const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? null);
+                                        const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? null);
+                                        return (
+                                          <>
+                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                              {overProb !== null && overProb !== undefined ? `${overProb.toFixed(0)}%` : '-'}
+                                            </div>
+                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                              {underProb !== null && underProb !== undefined ? `${underProb.toFixed(0)}%` : '-'}
+                                            </div>
+                                          </>
+                                        );
+                                      })()}
                                     </div>
                                   </div>
-                                  <div className={`text-sm font-medium mb-1 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                                    {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
-                                  </div>
+                                </div>
+                                {/* Stat Type and Line */}
+                                <div className={`text-sm font-semibold ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                                  {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                 </div>
                               </div>
                               
                               {/* Statistics Grid */}
-                              <div className={`grid grid-cols-7 gap-1.5 p-2 rounded-lg mb-3 w-full ${
-                                mounted && isDark ? 'bg-gray-900' : 'bg-gray-50'
-                              }`} style={{ width: '100%' }}>
+                              <div className={`grid grid-cols-7 gap-2 p-2.5 rounded-xl mb-3 w-full ${
+                                mounted && isDark ? 'bg-gray-900/50' : 'bg-gray-50'
+                              }`}>
                                 {/* L5 */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>L5</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L5</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.last5HitRate)}
                                   </div>
                                 </div>
                                 
                                 {/* L10 */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.last10HitRate)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>L10</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last10HitRate)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L10</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.last10HitRate)}
                                   </div>
                                 </div>
                                 
                                 {/* H2H */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.h2hHitRate)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>H2H</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.h2hHitRate)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>H2H</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.h2hHitRate)}
                                   </div>
                                 </div>
                                 
                                 {/* STRK */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(null, true)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>STRK</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null, true)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>STRK</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.streak ?? '-'}
                                   </div>
                                 </div>
                                 
                                 {/* AVG */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(null)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>AVG</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>AVG</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.seasonAvg !== null && prop.seasonAvg !== undefined ? prop.seasonAvg.toFixed(1) : '-'}
                                   </div>
                                 </div>
                                 
                                 {/* SZN */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={getStatBoxStyle(prop.seasonHitRate)}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>SZN</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.seasonHitRate)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>SZN</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {getHitRatePercent(prop.seasonHitRate)}
                                   </div>
                                 </div>
                                 
                                 {/* DvP */}
-                                <div className="flex flex-col items-center justify-center rounded border py-1.5 w-full" style={(() => {
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
                                   if (prop.dvpRating === null || prop.dvpRating === undefined) {
                                     return { background: mounted && isDark ? '#374151' : '#f9fafb', borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' };
                                   }
@@ -3912,12 +4299,12 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
                                 : bgColor,
                               borderColor: borderColor,
-                              borderWidth: '1px',
+                              borderWidth: '2px',
                               boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
                             };
                                 })()}>
-                                  <div className={`text-[9px] font-medium mb-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>DvP</div>
-                                  <div className={`text-xs font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.dvpRating !== null && prop.dvpRating !== undefined ? `#${prop.dvpRating}` : '-'}
                                   </div>
                                 </div>
@@ -3947,67 +4334,163 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   return b[1].length - a[1].length; // More bookmakers first
                                 });
                                 
+                                // Mobile: Show only first bookmaker + "+ X" button
+                                const allBookmakers = Array.from(linesByValue.values()).flat();
+                                const firstBookmaker = allBookmakers[0];
+                                const remainingCount = allBookmakers.length - 1;
+                                const expandKey = `${prop.playerName}|${prop.statType}|mobile-all`;
+                                const isPopupOpen = openPopup === expandKey;
+                                
                                 return (
-                                  <div className="flex items-center gap-2">
-                                    <div className="overflow-x-auto -mx-2 px-2 lg:-mx-4 lg:px-4 flex-1">
-                                      <div className="flex gap-2 min-w-max">
-                                        {sortedLines.map(([lineValue, lines]) => (
-                                          lines.slice(0, 3).map((line, lineIdx) => {
-                                            const bookmakerKey = line.bookmaker?.toLowerCase() || '';
-                                            const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
-                                            return (
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex gap-2 flex-1">
+                                      {/* First bookmaker */}
+                                      {firstBookmaker && (() => {
+                                        const bookmakerKey = firstBookmaker.bookmaker?.toLowerCase() || '';
+                                        const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                        return (
+                                          <div
+                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 flex-shrink-0 ${
+                                              mounted && isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-100 border-gray-300'
+                                            }`}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {bookmakerInfo?.logoUrl && (
+                                              <img
+                                                src={bookmakerInfo.logoUrl}
+                                                alt={bookmakerInfo.name}
+                                                className="w-6 h-6 object-contain rounded flex-shrink-0"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                              />
+                                            )}
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                              <span className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                                O {formatOddsValue(firstBookmaker.overOdds)}
+                                              </span>
+                                              <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                                U {formatOddsValue(firstBookmaker.underOdds)}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                      
+                                      {/* "+ X" button if there are more bookmakers */}
+                                      {remainingCount > 0 && (
+                                        <div className="relative">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenPopup(openPopup === expandKey ? null : expandKey);
+                                            }}
+                                            className={`flex items-center gap-2 px-1.5 py-2.5 rounded-lg border-2 flex-shrink-0 relative ${
+                                              mounted && isDark ? 'bg-gray-700/50 border-gray-600 hover:bg-gray-700' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                                            }`}
+                                          >
+                                            {/* Placeholder for logo space to match bookmaker container */}
+                                            <div className="w-6 h-6 flex-shrink-0" />
+                                            {/* Centered number - positioned absolutely to center in entire button */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                              <span className={`text-base font-bold ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>
+                                                +{remainingCount}
+                                              </span>
+                                            </div>
+                                            {/* Invisible spacer to match bookmaker container height */}
+                                            <div className="flex flex-col gap-0.5 min-w-0 opacity-0 pointer-events-none">
+                                              <span className="text-xs font-bold">O 2.10</span>
+                                              <span className="text-xs font-bold">U 1.68</span>
+                                            </div>
+                                          </button>
+                                          
+                                          {/* Popup modal for all bookmakers - Mobile */}
+                                          {isPopupOpen && (
+                                            <>
+                                              {/* Backdrop - click to close */}
                                               <div
-                                                key={`${lineValue}-${lineIdx}`}
-                                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border flex-shrink-0 ${
-                                                  mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
-                                                }`}
-                                                onClick={(e) => e.stopPropagation()}
-                                              >
-                                                {bookmakerInfo?.logoUrl && (
-                                                  <img
-                                                    src={bookmakerInfo.logoUrl}
-                                                    alt={bookmakerInfo.name}
-                                                    className="w-5 h-5 object-contain rounded"
-                                                    onError={(e) => {
-                                                      (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                  />
-                                                )}
-                                                <div className="flex flex-col gap-0.5">
-                                                  <span className={`text-xs font-medium ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                                    O {formatOddsValue(line.overOdds)}
-                                                  </span>
-                                                  <span className={`text-xs font-medium ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                                    U {formatOddsValue(line.underOdds)}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            );
-                                          })
-                                        ))}
-                                        {(() => {
-                                          const totalLines = Array.from(linesByValue.values()).flat().length;
-                                          const visibleCount = Math.min(3, totalLines);
-                                          const remainingCount = totalLines - visibleCount;
-                                          if (remainingCount > 0) {
-                                            return (
-                                              <button
+                                                className="fixed inset-0 z-[100]"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  const expandKey = `${prop.playerName}|${prop.statType}|all`;
-                                                  setOpenPopup(openPopup === expandKey ? null : expandKey);
+                                                  setOpenPopup(null);
                                                 }}
-                                                className={`px-3 py-2 rounded-lg border flex-shrink-0 text-xs font-medium ${
-                                                  mounted && isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-300 text-gray-700'
+                                              />
+                                              {/* Popup content - centered on mobile */}
+                                              <div
+                                                className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-lg border shadow-2xl p-4 w-[90vw] max-w-md ${
+                                                  mounted && isDark
+                                                    ? 'bg-gray-800 border-gray-600'
+                                                    : 'bg-white border-gray-300'
                                                 }`}
+                                                style={{
+                                                  maxHeight: '70vh',
+                                                  overflowY: 'auto'
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
                                               >
-                                                +{remainingCount}
-                                              </button>
-                                            );
-                                          }
-                                          return null;
-                                        })()}
-                                      </div>
+                                                {/* Close button */}
+                                                <div className="flex justify-between items-center mb-3">
+                                                  <span className={`text-sm font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                    {allBookmakers.length} bookmakers
+                                                  </span>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setOpenPopup(null);
+                                                    }}
+                                                    className={`${mounted && isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'} transition-colors p-1`}
+                                                    aria-label="Close"
+                                                  >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                  </button>
+                                                </div>
+                                                
+                                                {/* All bookmakers list */}
+                                                <div className="space-y-2">
+                                                  {allBookmakers.map((line, idx) => {
+                                                    const bookmakerKey = line.bookmaker?.toLowerCase() || '';
+                                                    const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                                    return (
+                                                      <div
+                                                        key={idx}
+                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
+                                                          mounted && isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                                                        }`}
+                                                      >
+                                                        {bookmakerInfo?.logoUrl && (
+                                                          <img
+                                                            src={bookmakerInfo.logoUrl}
+                                                            alt={bookmakerInfo.name}
+                                                            className="w-8 h-8 object-contain rounded flex-shrink-0"
+                                                            onError={(e) => {
+                                                              (e.target as HTMLImageElement).style.display = 'none';
+                                                            }}
+                                                          />
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className={`text-sm font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                                            {bookmakerInfo?.name || line.bookmaker}
+                                                          </div>
+                                                          <div className="flex items-center gap-3 mt-1">
+                                                            <span className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                                              O {formatOddsValue(line.overOdds)}
+                                                            </span>
+                                                            <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                                              U {formatOddsValue(line.underOdds)}
+                                                            </span>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
                                     <div className="flex items-center justify-center flex-shrink-0">
@@ -4018,7 +4501,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               })()}
                               {/* Tipoff Countdown - Show if no bookmakers */}
                               {(!prop.bookmakerLines || prop.bookmakerLines.length === 0) && (
-                                <div className="flex items-center justify-start mt-2">
+                                <div className="flex items-center justify-start">
                                   <TipoffCountdown game={game} isDark={mounted && isDark} />
                                 </div>
                               )}

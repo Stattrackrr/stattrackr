@@ -283,6 +283,7 @@ export interface PredictedOutcomeResult {
 }
 
 export interface OfficialOddsCardProps {
+  bettingLine?: number;
   isDark: boolean;
   derivedOdds: DerivedOdds;
   intradayMovements: MovementRow[];
@@ -312,6 +313,7 @@ export interface OfficialOddsCardProps {
   propsMode?: 'player' | 'team';
   selectedPlayer?: any;
   primaryMarketLine?: number | null;
+  bettingLine?: number;
 }
 
 /* ==== Types (BDL) ==== */
@@ -383,8 +385,8 @@ function getStatValue(stats: BallDontLieStats, key: string): number {
     case 'dreb': return stats.dreb;
     case 'turnover': return stats.turnover;
     case 'pf': return stats.pf;
-    case 'stl': return stats.stl;
-    case 'blk': return stats.blk;
+    case 'stl': return stats.stl ?? 0; // Default to 0 if null/undefined
+    case 'blk': return stats.blk ?? 0; // Default to 0 if null/undefined
     // Composite stats
     case 'pra': return (stats.pts || 0) + (stats.reb || 0) + (stats.ast || 0);
     case 'pr': return (stats.pts || 0) + (stats.reb || 0);
@@ -2657,8 +2659,28 @@ const ChartControls = function ChartControls({
   useEffect(() => {
     if (!hasManuallySetLineRef.current) {
       setDisplayLine(bettingLine);
+      
+      // Also update the input field if it exists (for URL-based line changes, especially for steals/blocks)
+      // Use setTimeout to ensure the input element exists after render
+      setTimeout(() => {
+        const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+        if (input) {
+          const currentValue = parseFloat(input.value || '0');
+          if (Math.abs(currentValue - bettingLine) > 0.01) {
+            input.value = String(bettingLine);
+            transientLineRef.current = bettingLine;
+          }
+        }
+        
+        // Update betting line overlay position (important for steals/blocks from URL)
+        if (yAxisConfig && Number.isFinite(bettingLine)) {
+          updateBettingLinePosition(yAxisConfig, bettingLine);
+          recolorBarsFast(bettingLine);
+          updateOverRatePillFast(bettingLine);
+        }
+      }, 0);
     }
-  }, [bettingLine]);
+  }, [bettingLine, yAxisConfig]);
   
   // Helper function to get bookmaker info
   const normalizeBookNameForLookup = (name: string) => {
@@ -5042,6 +5064,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   propsMode = 'player',
   selectedPlayer,
   primaryMarketLine,
+  bettingLine,
 }: OfficialOddsCardProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -5134,7 +5157,7 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                     {selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim()}:
                   </span>
                   <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
-                    {selectedStat.toUpperCase()} {primaryMarketLine !== null && primaryMarketLine !== undefined && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && selectedBookmakerLine !== undefined && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : 'N/A'}
+                    {selectedStat.toUpperCase()} {primaryMarketLine !== null && primaryMarketLine !== undefined && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && selectedBookmakerLine !== undefined && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : (bettingLine !== null && bettingLine !== undefined && Number.isFinite(bettingLine) ? bettingLine.toFixed(1) : 'N/A')}
                   </span>
                 </div>
               )}
@@ -10069,7 +10092,31 @@ const lineMovementInFlightRef = useRef(false);
         hasManuallySetLineRef.current = false;
         
         // Reset betting lines in transition to prevent visible refresh
-        setBettingLines({});
+        // BUT preserve the line from URL if it exists (important for steals/blocks)
+        setBettingLines(prev => {
+          // Check URL for line parameter
+          if (typeof window !== 'undefined') {
+            try {
+              const url = new URL(window.location.href);
+              const urlLine = url.searchParams.get('line');
+              const urlStat = url.searchParams.get('stat');
+              if (urlLine && urlStat) {
+                const lineValue = parseFloat(urlLine);
+                const normalizedStat = urlStat.toLowerCase();
+                if (!isNaN(lineValue) && normalizedStat) {
+                  // Preserve the URL line for the URL stat
+                  return { [normalizedStat]: Math.abs(lineValue) };
+                }
+              }
+            } catch {}
+          }
+          // Also check if current stat has a line that was set from URL
+          const currentStatLine = prev[selectedStat];
+          if (currentStatLine !== undefined && statFromUrlRef.current) {
+            return { [selectedStat]: currentStatLine };
+          }
+          return {};
+        });
       });
       // Update URL to reflect the change
       if (typeof window !== 'undefined') {
@@ -10352,9 +10399,32 @@ const lineMovementInFlightRef = useRef(false);
         hasManuallySetLineRef.current = false;
         
         // Reset betting lines in transition to prevent visible refresh
-        // This clears old player's lines without causing a render
+        // BUT preserve the line from URL if it exists (important for steals/blocks)
         console.log(`[DEBUG handlePlayerSelectFromSearch] Resetting bettingLines`);
-        setBettingLines({});
+        setBettingLines(prev => {
+          // Check URL for line parameter
+          if (typeof window !== 'undefined') {
+            try {
+              const url = new URL(window.location.href);
+              const urlLine = url.searchParams.get('line');
+              const urlStat = url.searchParams.get('stat');
+              if (urlLine && urlStat) {
+                const lineValue = parseFloat(urlLine);
+                const normalizedStat = urlStat.toLowerCase();
+                if (!isNaN(lineValue) && normalizedStat) {
+                  // Preserve the URL line for the URL stat
+                  return { [normalizedStat]: Math.abs(lineValue) };
+                }
+              }
+            } catch {}
+          }
+          // Also check if current stat has a line that was set from URL
+          const currentStatLine = prev[selectedStat];
+          if (currentStatLine !== undefined && statFromUrlRef.current) {
+            return { [selectedStat]: currentStatLine };
+          }
+          return {};
+        });
         
         console.log(`[DEBUG handlePlayerSelectFromSearch] All state updates batched in startTransition`);
       });
@@ -11303,12 +11373,20 @@ const lineMovementInFlightRef = useRef(false);
      Only recalculate values when selectedStat changes */
   const chartData = useMemo(() => {
     const source = propsMode === 'player' ? filteredGameData : baseGameData;
-    const mapped = source.map(game => ({
-      ...game,
-      value: propsMode === 'team' 
+    const mapped = source.map(game => {
+      const statValue = propsMode === 'team' 
         ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam) 
-        : getStatValue((game as any).stats, selectedStat) ?? 0,
-    }));
+        : getStatValue((game as any).stats, selectedStat);
+      
+      // For steals/blocks, ensure we return 0 instead of null/undefined
+      // This is important because these stats can legitimately be 0
+      const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+      
+      return {
+        ...game,
+        value,
+      };
+    });
     
     // Check if the most recent game (last item) is live
     if (mapped.length > 0) {
@@ -11351,15 +11429,39 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
-    // Debug: log chartData computation
-    console.log('[chartData] Computed chartData:', {
-      propsMode,
-      sourceLength: source.length,
-      chartDataLength: mapped.length,
-      selectedStat,
-      sampleChartData: mapped[0],
-      sampleValue: mapped[0]?.value,
-    });
+    // Debug: log chartData computation (especially for steals/blocks)
+    if (selectedStat === 'stl' || selectedStat === 'blk') {
+      const statValues = mapped.map(d => d.value);
+      const nonZeroCount = statValues.filter(v => v > 0).length;
+      console.log(`[chartData] ${selectedStat.toUpperCase()} chartData:`, {
+        propsMode,
+        sourceLength: source.length,
+        chartDataLength: mapped.length,
+        selectedStat,
+        totalValues: statValues.length,
+        nonZeroValues: nonZeroCount,
+        zeroValues: statValues.length - nonZeroCount,
+        minValue: Math.min(...statValues),
+        maxValue: Math.max(...statValues),
+        allValues: statValues, // Show ALL values to debug
+        sampleStats: mapped.slice(0, 5).map(d => ({
+          value: d.value,
+          hasStats: !!(d as any).stats,
+          stl: (d as any).stats?.stl,
+          blk: (d as any).stats?.blk,
+          opponent: (d as any).opponent || (d as any).tickLabel,
+        })),
+      });
+    } else {
+      console.log('[chartData] Computed chartData:', {
+        propsMode,
+        sourceLength: source.length,
+        chartDataLength: mapped.length,
+        selectedStat,
+        sampleChartData: mapped[0],
+        sampleValue: mapped[0]?.value,
+      });
+    }
     
     return mapped;
   }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
@@ -11846,7 +11948,13 @@ const lineMovementInFlightRef = useRef(false);
         maxYAxis = Math.ceil(maxAttempts); // For 3PM, don't add extra increment - top bar should touch Y-axis max
       } else {
         minYAxis = minValue < 0 ? Math.floor(minValue) - 1 : 0;
-        maxYAxis = Math.ceil(maxValue) + 1; // Round up to next 1-increment
+        // For steals/blocks, ensure domain is at least [0, 2] so betting line at 0.5 is visible
+        // This handles cases where all values are 0 but betting line is 0.5
+        if ((selectedStat === 'stl' || selectedStat === 'blk') && maxValue === 0) {
+          maxYAxis = 2; // Ensure domain shows 0-2 so 0.5 line is visible
+        } else {
+          maxYAxis = Math.ceil(maxValue) + 1; // Round up to next 1-increment
+        }
       }
       increment = 1; // Use 1-increment ticks for smaller stats
     } else {
@@ -15380,9 +15488,10 @@ const lineMovementInFlightRef = useRef(false);
                   propsMode={propsMode}
                   selectedPlayer={selectedPlayer}
                   primaryMarketLine={primaryMarketLine}
+                  bettingLine={bettingLine}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
 
             {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
             <BestOddsTable
@@ -15549,12 +15658,13 @@ const lineMovementInFlightRef = useRef(false);
                     calculatedImpliedOdds={calculatedImpliedOdds}
                     selectedBookmakerName={selectedBookmakerName}
                     selectedBookmakerLine={selectedBookmakerLine}
-                    propsMode={propsMode}
-                    selectedPlayer={selectedPlayer}
-                    primaryMarketLine={primaryMarketLine}
-                  />
-                </div>
-              ) : null
+                  propsMode={propsMode}
+                  selectedPlayer={selectedPlayer}
+                  primaryMarketLine={primaryMarketLine}
+                  bettingLine={bettingLine}
+                />
+              </div>
+            ) : null
             ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}

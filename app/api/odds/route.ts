@@ -18,6 +18,14 @@ export interface BookRow {
   PTS: { line: string; over: string; under: string };
   REB: { line: string; over: string; under: string };
   AST: { line: string; over: string; under: string };
+  THREES: { line: string; over: string; under: string };
+  STL: { line: string; over: string; under: string };
+  BLK: { line: string; over: string; under: string };
+  TO: { line: string; over: string; under: string };
+  PRA: { line: string; over: string; under: string };
+  PR: { line: string; over: string; under: string };
+  PA: { line: string; over: string; under: string };
+  RA: { line: string; over: string; under: string };
 }
 
 // Versioned key to avoid stale The Odds API cache
@@ -268,6 +276,9 @@ export async function GET(request: NextRequest) {
                 REB: getPrimaryProp(bookmakerProps.REB),
                 AST: getPrimaryProp(bookmakerProps.AST),
                 THREES: getPrimaryProp(bookmakerProps.THREES),
+                STL: getPrimaryProp(bookmakerProps.STL),
+                BLK: getPrimaryProp(bookmakerProps.BLK),
+                TO: getPrimaryProp(bookmakerProps.TO),
                 PRA: getPrimaryProp(bookmakerProps.PRA),
                 PR: getPrimaryProp(bookmakerProps.PR),
                 PA: getPrimaryProp(bookmakerProps.PA),

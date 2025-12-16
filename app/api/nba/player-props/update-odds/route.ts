@@ -368,6 +368,19 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max (processing can take time with many props)
 
+/**
+ * POST /api/nba/player-props/update-odds
+ * 
+ * Efficiently updates player props with new odds/lines without reprocessing stats.
+ * 
+ * This endpoint:
+ * - Processes ALL props in one batch (not per-player)
+ * - Uses stored stat value arrays (__last5Values, __last10Values, etc.) - NO API calls
+ * - ALWAYS recalculates hit rates when stat arrays exist (ensures hit rates match current line)
+ * - Runs automatically after odds refresh (every 30 mins)
+ * 
+ * Performance: ~2000ms for 144 props (all in-memory calculations)
+ */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   try {
@@ -433,6 +446,7 @@ export async function POST(request: NextRequest) {
     let propsWithMultiple = 0;
     let linesChanged = 0;
     let hitRatesRecalculated = 0;
+    let propsWithStatArrays = 0;
     
     for (const oldProp of cachedProps) {
       const oldLine = oldProp.line;
@@ -467,6 +481,12 @@ export async function POST(request: NextRequest) {
         
         // Check if hit rates were recalculated (they should always be if stat arrays exist)
         const hasStatArrays = !!(oldProp.__last5Values || oldProp.__last10Values || oldProp.__h2hStats || oldProp.__seasonValues);
+        if (hasStatArrays) {
+          propsWithStatArrays++;
+        }
+        
+        // Hit rates are ALWAYS recalculated in updatePropWithNewOdds if stat arrays exist
+        // Check if the values actually changed (which they should if line changed)
         const l5Recalculated = hasStatArrays && 
           (updatedProp.last5HitRate?.hits !== oldL5HitRate?.hits || updatedProp.last5HitRate?.total !== oldL5HitRate?.total);
         const l10Recalculated = hasStatArrays && 
@@ -475,7 +495,7 @@ export async function POST(request: NextRequest) {
         if (l5Recalculated || l10Recalculated) {
           hitRatesRecalculated++;
           if (hitRatesRecalculated <= 5) { // Log first 5 to avoid spam
-            console.log(`[Player Props Update Odds] ✅ Hit rates recalculated for ${oldProp.playerName} ${oldProp.statType} (line ${primaryMatch.line}): L5 ${oldL5HitRate?.hits}/${oldL5HitRate?.total} → ${updatedProp.last5HitRate?.hits}/${updatedProp.last5HitRate?.total}, L10 ${oldL10HitRate?.hits}/${oldL10HitRate?.total} → ${updatedProp.last10HitRate?.hits}/${updatedProp.last10HitRate?.total}`);
+            console.log(`[Player Props Update Odds] ✅ Hit rates recalculated for ${oldProp.playerName} ${oldProp.statType} (line ${oldLine} → ${primaryMatch.line}): L5 ${oldL5HitRate?.hits}/${oldL5HitRate?.total} → ${updatedProp.last5HitRate?.hits}/${updatedProp.last5HitRate?.total}, L10 ${oldL10HitRate?.hits}/${oldL10HitRate?.total} → ${updatedProp.last10HitRate?.hits}/${updatedProp.last10HitRate?.total}`);
           }
         } else if (!hasStatArrays) {
           if (updatedCount <= 5) {
@@ -522,7 +542,8 @@ export async function POST(request: NextRequest) {
     console.log(`[Player Props Update Odds] 📊 Total bookmakers found: ${totalBookmakersFound} (avg ${(totalBookmakersFound / updatedCount).toFixed(2)} per prop)`);
     console.log(`[Player Props Update Odds] 📊 Props with multiple bookmakers: ${propsWithMultiple}/${updatedCount}`);
     console.log(`[Player Props Update Odds] 🔄 Lines changed: ${linesChanged}/${updatedCount}`);
-    console.log(`[Player Props Update Odds] ✅ Hit rates recalculated: ${hitRatesRecalculated}/${linesChanged} (of ${linesChanged} props with line changes)`);
+    console.log(`[Player Props Update Odds] 📈 Props with stat arrays: ${propsWithStatArrays}/${updatedCount} (hit rates recalculated automatically)`);
+    console.log(`[Player Props Update Odds] ✅ Hit rates changed: ${hitRatesRecalculated}/${propsWithStatArrays} (hit rates are ALWAYS recalculated when stat arrays exist, values change when line changes)`);
     
     // Log a sample of props that should have multiple bookmakers
     if (propsWithMultiple === 0 && updatedCount > 0) {
