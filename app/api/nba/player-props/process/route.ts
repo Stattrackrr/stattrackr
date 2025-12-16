@@ -966,6 +966,27 @@ async function processPlayerPropsCore(request: NextRequest) {
           const currentMaxProb = Math.max(current.overProb, current.underProb);
           return currentMaxProb > bestMaxProb ? current : best;
         });
+        
+        // Merge all bookmakers with the same line into bookmakerLines array
+        // This ensures we show all bookmakers on the player props page, not just the best one
+        const allBookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> = [];
+        const seenBookmakers = new Set<string>();
+        
+        for (const prop of propGroup) {
+          if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines)) {
+            for (const lineEntry of prop.bookmakerLines) {
+              const bookmakerKey = `${lineEntry.bookmaker}|${lineEntry.line}`;
+              if (!seenBookmakers.has(bookmakerKey)) {
+                seenBookmakers.add(bookmakerKey);
+                allBookmakerLines.push(lineEntry);
+              }
+            }
+          }
+        }
+        
+        // Update bestProp with merged bookmakerLines
+        bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
+        
         processedProps.push(bestProp);
       }
     }

@@ -1120,10 +1120,39 @@ export async function refreshOddsData(
     // This updates lines/odds while preserving calculated stats (last5, last10, h2h, seasonAvg, streak)
     // In Vercel, we need to use the actual request URL or environment variable
     let baseUrl = 'http://localhost:3000';
-    if (process.env.VERCEL_URL) {
+    
+    // Priority order: production URL env var > production domain check > VERCEL_URL > request URL > NEXT_PUBLIC_BASE_URL
+    if (process.env.PROD_URL) {
+      baseUrl = process.env.PROD_URL;
+    } else if (process.env.NODE_ENV === 'production' && process.env.VERCEL) {
+      // In production on Vercel, use the production domain instead of preview URL
+      // Check if VERCEL_URL is a preview deployment (contains project name) or production
+      const vercelUrl = process.env.VERCEL_URL || '';
+      const isPreviewDeployment = vercelUrl.includes('-') && vercelUrl.includes('.vercel.app');
+      
+      if (isPreviewDeployment) {
+        // Use production domain if available, otherwise skip (preview deployments can't call themselves)
+        if (process.env.NEXT_PUBLIC_BASE_URL) {
+          baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+        } else {
+          // Skip update in preview deployments - they can't authenticate to themselves
+          console.log('[Odds Refresh] ⏭️ Skipping player props update in preview deployment (use production domain)');
+          return {
+            success: true,
+            gamesCount: games.length,
+            lastUpdated: newCache.lastUpdated,
+            nextUpdate: newCache.nextUpdate,
+            apiCalls: oddsRows.length + playerProps.length,
+            elapsed: `${elapsed}ms`
+          };
+        }
+      } else {
+        // Production deployment - use VERCEL_URL
+        baseUrl = `https://${vercelUrl}`;
+      }
+    } else if (process.env.VERCEL_URL && process.env.NODE_ENV !== 'production') {
+      // Development/preview - use VERCEL_URL
       baseUrl = `https://${process.env.VERCEL_URL}`;
-    } else if (process.env.NEXT_PUBLIC_BASE_URL) {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     } else if (options.request) {
       // Try to get URL from request if available
       try {
@@ -1132,10 +1161,12 @@ export async function refreshOddsData(
       } catch (e) {
         // Ignore
       }
+    } else if (process.env.NEXT_PUBLIC_BASE_URL) {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     }
     
     const updateUrl = `${baseUrl}/api/nba/player-props/update-odds`;
-    console.log(`[Odds Refresh] 🔄 Triggering background player props update: ${updateUrl} (baseUrl: ${baseUrl})`);
+    console.log(`[Odds Refresh] 🔄 Triggering background player props update: ${updateUrl} (baseUrl: ${baseUrl}, source: ${options.source})`);
     
     // Trigger update in background (non-blocking)
     fetch(updateUrl, {

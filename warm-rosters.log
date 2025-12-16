@@ -12614,3 +12614,25 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Wed 17/12/2025  0:48:39.31] warm-rosters end (exit 0) 
+[Wed 17/12/2025  1:18:36.71] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251217&window_min=180
+{
+    "success":  true,
+    "date":  "20251217",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 17/12/2025  1:18:39.01] warm-rosters end (exit 0) 
+[Wed 17/12/2025  1:48:36.69] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251217&window_min=180
+{
+    "success":  true,
+    "date":  "20251217",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 17/12/2025  1:48:39.25] warm-rosters end (exit 0) 

@@ -164,8 +164,9 @@ function updatePropWithNewOdds(
     impliedUnderProb: underProb,
     bestLine: newLine,
     confidence: Math.max(overProb, underProb) > 70 ? 'High' : Math.max(overProb, underProb) > 65 ? 'Medium' : 'Low',
-    // Update bookmakerLines array
-    bookmakerLines: [{
+    // Note: bookmakerLines will be updated by the caller with all matching bookmakers
+    // Keep existing bookmakerLines for now (will be replaced)
+    bookmakerLines: oldProp.bookmakerLines || [{
       bookmaker: oldProp.bookmaker,
       line: newLine,
       overOdds: newOverOdds,
@@ -181,13 +182,22 @@ function updatePropWithNewOdds(
 }
 
 /**
- * Find matching prop in odds cache
+ * Find ALL matching bookmakers for a prop in odds cache
+ * Returns array of all bookmakers with the same line (not just one)
  */
-function findMatchingPropInOdds(
+function findAllMatchingBookmakers(
   oldProp: any,
   oddsCache: OddsCache
-): { line: number; overOdds: string; underOdds: string } | null {
+): Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> {
   const games = oddsCache.games || [];
+  const matchingBookmakers: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> = [];
+  const seenBookmakers = new Set<string>();
+  
+  // Target line to match (round to nearest 0.5 for matching)
+  const targetLine = Math.round(oldProp.line * 2) / 2;
+  
+  // Debug: Track what we're looking for (only log first few to avoid spam)
+  let debugLogged = false;
   
   for (const game of games) {
     const homeTeam = game.homeTeam || '';
@@ -208,13 +218,33 @@ function findMatchingPropInOdds(
     
     if (!gameMatches) continue;
     
-    // Look for player props in this game
+    // Look for player props in this game - check ALL bookmakers, not just the one from oldProp
     const playerProps = game.playerPropsByBookmaker || {};
     
+    // Normalize player name for matching (case-insensitive, trim spaces)
+    const normalizePlayerName = (name: string): string => {
+      return name.toLowerCase().trim().replace(/\s+/g, ' ');
+    };
+    const normalizedPropPlayerName = normalizePlayerName(oldProp.playerName);
+    
     for (const [bookmakerName, bookmakerProps] of Object.entries(playerProps)) {
-      if (bookmakerName !== oldProp.bookmaker) continue;
+      // Try exact match first (fast path)
+      let playerData = (bookmakerProps as any)[oldProp.playerName];
       
-      const playerData = (bookmakerProps as any)[oldProp.playerName];
+      // If no exact match, try case-insensitive normalized match
+      if (!playerData) {
+        for (const [cachedPlayerName, cachedPlayerData] of Object.entries(bookmakerProps as any)) {
+          if (normalizePlayerName(cachedPlayerName) === normalizedPropPlayerName) {
+            playerData = cachedPlayerData;
+            if (!debugLogged && matchingBookmakers.length === 0) {
+              console.log(`[findAllMatchingBookmakers] ✅ Found player "${cachedPlayerName}" (normalized match) for "${oldProp.playerName}" in ${bookmakerName}`);
+              debugLogged = true;
+            }
+            break;
+          }
+        }
+      }
+      
       if (!playerData) continue;
       
       const statData = playerData[oldProp.statType];
@@ -222,10 +252,7 @@ function findMatchingPropInOdds(
       
       const entries = Array.isArray(statData) ? statData : [statData];
       
-      // Find best matching line (closest to old line)
-      let bestMatch: { line: number; overOdds: string; underOdds: string } | null = null;
-      let minDiff = Infinity;
-      
+      // Find all matching lines (within 0.5 of target line)
       for (const entry of entries) {
         if (!entry || !entry.line || entry.line === 'N/A') continue;
         if (entry.isPickem === true) continue;
@@ -236,26 +263,46 @@ function findMatchingPropInOdds(
         const line = parseFloat(entry.line);
         if (isNaN(line)) continue;
         
+        // Match if line is within 0.5 of target (same line, rounded)
+        const roundedLine = Math.round(line * 2) / 2;
+        if (Math.abs(roundedLine - targetLine) > 0.1) continue;
+        
         const overOddsStr = entry.over;
         const underOddsStr = entry.under;
         
         if (!overOddsStr || overOddsStr === 'N/A' || !underOddsStr || underOddsStr === 'N/A') continue;
         
-        // Prefer exact match, then closest match
-        const diff = Math.abs(line - oldProp.line);
-        if (diff < minDiff) {
-          minDiff = diff;
-          bestMatch = { line, overOdds: overOddsStr, underOdds: underOddsStr };
+        // Avoid duplicates (same bookmaker + same line)
+        const bookmakerKey = `${bookmakerName}|${roundedLine}`;
+        if (!seenBookmakers.has(bookmakerKey)) {
+          seenBookmakers.add(bookmakerKey);
+          matchingBookmakers.push({
+            bookmaker: bookmakerName,
+            line: roundedLine,
+            overOdds: overOddsStr,
+            underOdds: underOddsStr,
+          });
         }
-      }
-      
-      if (bestMatch) {
-        return bestMatch;
       }
     }
   }
   
-  return null;
+  // Always log when we find multiple bookmakers (this is the key metric we care about)
+  if (matchingBookmakers.length > 1) {
+    console.log(`[findAllMatchingBookmakers] ✅ Found ${matchingBookmakers.length} bookmakers for ${oldProp.playerName} ${oldProp.statType} line ${targetLine}: ${matchingBookmakers.map(m => m.bookmaker).join(', ')}`);
+  } else if (matchingBookmakers.length === 1) {
+    // Log first few single matches to debug
+    if (Math.random() < 0.1) { // Log ~10% of single matches to avoid spam
+      console.log(`[findAllMatchingBookmakers] ⚠️ Only found 1 bookmaker for ${oldProp.playerName} ${oldProp.statType} line ${targetLine}: ${matchingBookmakers[0].bookmaker}`);
+    }
+  } else {
+    // Log first few no-match cases
+    if (Math.random() < 0.05) { // Log ~5% of no-matches
+      console.log(`[findAllMatchingBookmakers] ❌ No bookmakers found for ${oldProp.playerName} ${oldProp.statType} line ${targetLine} (${oldProp.team} vs ${oldProp.opponent})`);
+    }
+  }
+  
+  return matchingBookmakers;
 }
 
 export const runtime = 'nodejs';
@@ -321,17 +368,42 @@ export async function POST(request: NextRequest) {
     let updatedCount = 0;
     let notFoundCount = 0;
     const updatedProps: any[] = [];
+    let totalBookmakersFound = 0;
+    let propsWithMultiple = 0;
     
     for (const oldProp of cachedProps) {
-      const match = findMatchingPropInOdds(oldProp, oddsCache);
+      const matchingBookmakers = findAllMatchingBookmakers(oldProp, oddsCache);
+      totalBookmakersFound += matchingBookmakers.length;
       
-      if (match) {
+      if (matchingBookmakers.length > 1) {
+        propsWithMultiple++;
+      }
+      
+      if (matchingBookmakers.length > 0) {
+        // Use the first match for the main line/odds (best match)
+        const primaryMatch = matchingBookmakers[0];
+        
+        // Update the prop with primary match
         const updatedProp = updatePropWithNewOdds(
           oldProp,
-          match.line,
-          match.overOdds,
-          match.underOdds
+          primaryMatch.line,
+          primaryMatch.overOdds,
+          primaryMatch.underOdds
         );
+        
+        // Update bookmakerLines array with ALL matching bookmakers
+        updatedProp.bookmakerLines = matchingBookmakers.map(m => ({
+          bookmaker: m.bookmaker,
+          line: m.line,
+          overOdds: m.overOdds,
+          underOdds: m.underOdds,
+        }));
+        
+        // Log if we found multiple bookmakers (for debugging)
+        if (matchingBookmakers.length > 1) {
+          console.log(`[Player Props Update Odds] ✅ Found ${matchingBookmakers.length} bookmakers for ${oldProp.playerName} ${oldProp.statType} line ${primaryMatch.line}: ${matchingBookmakers.map(m => m.bookmaker).join(', ')}`);
+        }
+        
         updatedProps.push(updatedProp);
         updatedCount++;
       } else {
@@ -345,8 +417,31 @@ export async function POST(request: NextRequest) {
     await setNBACache(cacheKey, 'player-props', updatedProps, 24 * 60, false);
     cache.set(cacheKey, updatedProps, 24 * 60);
     
+    // Count how many props have multiple bookmakers
+    let propsWithMultipleBookmakers = 0;
+    for (const prop of updatedProps) {
+      if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines) && prop.bookmakerLines.length > 1) {
+        propsWithMultipleBookmakers++;
+      }
+    }
+    
     const elapsed = Date.now() - startTime;
     console.log(`[Player Props Update Odds] ✅ Updated ${updatedCount}/${cachedProps.length} props (${notFoundCount} not found in new odds) in ${elapsed}ms`);
+    console.log(`[Player Props Update Odds] 📊 Total bookmakers found: ${totalBookmakersFound} (avg ${(totalBookmakersFound / updatedCount).toFixed(2)} per prop)`);
+    console.log(`[Player Props Update Odds] 📊 Props with multiple bookmakers: ${propsWithMultiple}/${updatedCount}`);
+    
+    // Log a sample of props that should have multiple bookmakers
+    if (propsWithMultiple === 0 && updatedCount > 0) {
+      console.log(`[Player Props Update Odds] ⚠️ No props with multiple bookmakers found. Sample prop:`, {
+        playerName: updatedProps[0]?.playerName,
+        statType: updatedProps[0]?.statType,
+        line: updatedProps[0]?.line,
+        team: updatedProps[0]?.team,
+        opponent: updatedProps[0]?.opponent,
+        bookmakerLinesCount: updatedProps[0]?.bookmakerLines?.length || 0,
+        bookmakers: updatedProps[0]?.bookmakerLines?.map((b: any) => b.bookmaker).join(', ') || 'none'
+      });
+    }
     
     return NextResponse.json({
       success: true,
@@ -354,6 +449,7 @@ export async function POST(request: NextRequest) {
       updated: updatedCount,
       notFound: notFoundCount,
       total: cachedProps.length,
+      propsWithMultipleBookmakers,
       elapsed: `${elapsed}ms`
     });
     

@@ -545,6 +545,17 @@ export default function NBALandingPage() {
         const urlParams = new URLSearchParams(window.location.search);
         const forceRefresh = urlParams.get('refresh') === '1';
         
+        // If force refresh, clear sessionStorage to ensure fresh data
+        if (forceRefresh && typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem(CACHE_KEY);
+            sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
+            console.log('[NBA Landing] 🧹 Cleared sessionStorage for force refresh');
+          } catch (e) {
+            console.warn('[NBA Landing] Failed to clear sessionStorage:', e);
+          }
+        }
+        
         if (!forceRefresh && typeof window !== 'undefined') {
           const cachedData = sessionStorage.getItem(CACHE_KEY);
           const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
@@ -598,6 +609,24 @@ export default function NBALandingPage() {
           const blkCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'BLK').length;
           const threesCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'THREES').length;
           console.log(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
+          
+          // Debug: Check bookmakerLines counts
+          const propsWithMultipleBookmakers = cacheData.data.filter((p: PlayerProp) => 
+            p.bookmakerLines && Array.isArray(p.bookmakerLines) && p.bookmakerLines.length > 1
+          );
+          const propsWithOneBookmaker = cacheData.data.filter((p: PlayerProp) => 
+            p.bookmakerLines && Array.isArray(p.bookmakerLines) && p.bookmakerLines.length === 1
+          );
+          console.log(`[NBA Landing] 📊 Bookmakers: ${propsWithMultipleBookmakers.length} props with multiple, ${propsWithOneBookmaker.length} props with single`);
+          
+          // Sample a prop to see its bookmakerLines
+          if (cacheData.data.length > 0) {
+            const sampleProp = cacheData.data[0] as PlayerProp;
+            console.log(`[NBA Landing] 📊 Sample prop: ${sampleProp.playerName} ${sampleProp.statType} - bookmakerLines:`, 
+              sampleProp.bookmakerLines?.length || 0, 
+              sampleProp.bookmakerLines?.map(b => b.bookmaker).join(', ') || 'none'
+            );
+          }
             setPlayerProps(cacheData.data);
             setPropsProcessing(false); // Reset processing state when we have data
             
