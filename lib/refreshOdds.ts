@@ -658,7 +658,7 @@ async function fetchPlayerPropsForGames(gameIds: number[], concurrency = 6): Pro
 }
 
 export async function refreshOddsData(
-  options: { source: RefreshSource } = { source: 'scheduler' }
+  options: { source: RefreshSource; request?: Request } = { source: 'scheduler' }
 ) {
   const bdlApiKeyPresent = !!bdlAuthHeader;
   
