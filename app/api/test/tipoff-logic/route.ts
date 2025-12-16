@@ -13,19 +13,72 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const testTimeStr = searchParams.get('time');
     const testTime = testTimeStr ? new Date(testTimeStr) : new Date();
+    const useMockData = searchParams.get('mock') === 'true';
 
-    // Get odds cache
-    const oddsCache = await getNBACache<OddsCache>('all_nba_odds_v2_bdl', {
-      restTimeoutMs: 10000,
-      jsTimeoutMs: 10000,
-      quiet: false,
-    });
+    console.log('[Test Tipoff Logic] useMockData:', useMockData);
 
-    if (!oddsCache) {
-      return NextResponse.json({
-        success: false,
-        error: 'No odds cache available',
-      }, { status: 404 });
+    let oddsCache: OddsCache | null = null;
+
+    if (useMockData) {
+      // Create mock data with multiple games at different times
+      const getUSEasternDateString = (date: Date): string => {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        });
+      };
+
+      const todayUSET = getUSEasternDateString(testTime);
+      const [year, month, day] = todayUSET.split('-').map(Number);
+
+      // Create games at different times: 2pm, 5pm, 7pm, 9pm ET
+      const gameTimes = [
+        { hour: 14, minute: 0, teams: 'BOS @ MIA' },  // 2pm ET
+        { hour: 17, minute: 0, teams: 'LAL @ GSW' },  // 5pm ET
+        { hour: 19, minute: 0, teams: 'PHX @ DEN' },  // 7pm ET
+        { hour: 21, minute: 0, teams: 'SAS @ NYK' },  // 9pm ET (latest)
+      ];
+
+      const mockGames = gameTimes.map(({ hour, minute, teams }) => {
+        const [away, home] = teams.split(' @ ');
+        // Create date in ET timezone (using ISO string format that includes timezone)
+        // Format: YYYY-MM-DDTHH:mm:ss-05:00 (or -04:00 for DST)
+        const isDST = month >= 3 && month <= 11; // Rough DST check (March-November)
+        const tzOffset = isDST ? '-04:00' : '-05:00';
+        const commenceTime = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00${tzOffset}`;
+        
+        return {
+          homeTeam: home,
+          awayTeam: away,
+          commenceTime: commenceTime, // Full datetime with time in ET
+        };
+      });
+
+      oddsCache = {
+        games: mockGames,
+        lastUpdated: new Date().toISOString(),
+      } as OddsCache;
+      
+      console.log('[Test Tipoff Logic] Created mock data with', mockGames.length, 'games');
+      console.log('[Test Tipoff Logic] Mock games:', mockGames.map(g => `${g.awayTeam} @ ${g.homeTeam} at ${g.commenceTime}`));
+    } else {
+      // Get real odds cache
+      oddsCache = await getNBACache<OddsCache>('all_nba_odds_v2_bdl', {
+        restTimeoutMs: 10000,
+        jsTimeoutMs: 10000,
+        quiet: false,
+      });
+
+      if (!oddsCache) {
+        return NextResponse.json({
+          success: false,
+          error: 'No odds cache available. Use ?mock=true to test with mock data',
+        }, { status: 404 });
+      }
     }
 
     // Helper function
@@ -102,9 +155,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      usingMockData: useMockData,
       testTime: testTime.toISOString(),
       testTimeET: testTime.toLocaleString('en-US', { timeZone: 'America/New_York' }),
       todayUSET,
+      totalGamesInCache: oddsCache.games?.length || 0,
       totalGames: todayGames.length,
       gamesWithTimesCount: gamesWithTimes.length,
       gamesWithoutTimesCount: gamesWithoutTimes.length,
