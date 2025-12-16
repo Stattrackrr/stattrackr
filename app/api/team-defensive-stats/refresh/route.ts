@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
     console.log('[Team Defensive Stats Refresh] Starting bulk refresh for all teams');
     
     // Fetch all teams' defensive stats by calling the bballref endpoint with ?all=1
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
+    // Use the request URL to determine the base URL
+    const requestUrl = new URL(request.url);
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
     
     const refreshUrl = `${baseUrl}/api/team-defensive-stats/bballref?all=1`;
     
