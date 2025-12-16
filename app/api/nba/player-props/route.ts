@@ -247,31 +247,31 @@ export async function GET(request: NextRequest) {
         }
       }
       
+      // If 10 minutes have passed since last tipoff, check if tomorrow's props are ready
       if (!lastTipoff) {
         console.log(`[Player Props API] ⚠️ No games with actual tipoff times found - cannot determine when to switch to tomorrow's props`);
-      }
-
-      // If 10 minutes have passed since last tipoff, check if tomorrow's props are ready
-      const now = new Date();
-      const tenMinutesAfterTipoff = lastTipoff.getTime() + (10 * 60 * 1000);
-      
-      if (lastTipoff && now.getTime() >= tenMinutesAfterTipoff) {
-        const [y, m, d] = todayUSETStr.split('-').map(Number);
-        const tomorrowDate = new Date(y, m - 1, d + 1);
-        const tomorrowUSET = getUSEasternDateStringLocal(tomorrowDate);
-        const tomorrowCacheKey = getPlayerPropsCacheKey(tomorrowUSET);
-        const tomorrowProps = await getNBACache<any[]>(tomorrowCacheKey, { quiet: true });
+      } else {
+        const now = new Date();
+        const tenMinutesAfterTipoff = lastTipoff.getTime() + (10 * 60 * 1000);
         
-        if (tomorrowProps && Array.isArray(tomorrowProps) && tomorrowProps.length > 0) {
-          console.log(`[Player Props API] ✅ 10 minutes after last tipoff, switching to TOMORROW's props (${tomorrowProps.length} props ready)`);
-          gameDate = tomorrowUSET;
+        if (now.getTime() >= tenMinutesAfterTipoff) {
+          const [y, m, d] = todayUSETStr.split('-').map(Number);
+          const tomorrowDate = new Date(y, m - 1, d + 1);
+          const tomorrowUSET = getUSEasternDateStringLocal(tomorrowDate);
+          const tomorrowCacheKey = getPlayerPropsCacheKey(tomorrowUSET);
+          const tomorrowProps = await getNBACache<any[]>(tomorrowCacheKey, { quiet: true });
+          
+          if (tomorrowProps && Array.isArray(tomorrowProps) && tomorrowProps.length > 0) {
+            console.log(`[Player Props API] ✅ 10 minutes after last tipoff, switching to TOMORROW's props (${tomorrowProps.length} props ready)`);
+            gameDate = tomorrowUSET;
+          } else {
+            console.log(`[Player Props API] ⏳ 10 minutes after tipoff, but tomorrow's props not ready yet - showing today's props`);
+          }
         } else {
-          console.log(`[Player Props API] ⏳ 10 minutes after tipoff, but tomorrow's props not ready yet - showing today's props`);
+          // Game has started but not 10 minutes yet - still show today's props
+          const minutesUntilSwitch = Math.ceil((tenMinutesAfterTipoff - now.getTime()) / (60 * 1000));
+          console.log(`[Player Props API] ⏰ Last game started, but will switch to tomorrow's props in ${minutesUntilSwitch} minutes`);
         }
-      } else if (lastTipoff && now.getTime() >= lastTipoff.getTime()) {
-        // Game has started but not 10 minutes yet - still show today's props
-        const minutesUntilSwitch = Math.ceil((tenMinutesAfterTipoff - now.getTime()) / (60 * 1000));
-        console.log(`[Player Props API] ⏰ Last game started, but will switch to tomorrow's props in ${minutesUntilSwitch} minutes`);
       }
     }
     
