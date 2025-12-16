@@ -46,31 +46,53 @@ const NBA_TEAM_IDS: Record<string, string> = {
   'UTA': '1610612762', 'WAS': '1610612764'
 };
 
-async function fetchNBAStats(url: string, timeout = 30000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchNBAStats(url: string, timeout = 45000, retries = 2) {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  try {
-    const response = await fetch(url, {
-      headers: NBA_HEADERS,
-      signal: controller.signal,
-      cache: 'no-store'
-    });
+    try {
+      if (attempt > 0) {
+        // Exponential backoff: wait 2s, 4s, 8s between retries
+        const delay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+        console.log(`[Tracking Stats Opponents Refresh] Retry attempt ${attempt}/${retries} after ${delay}ms delay...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
 
-    clearTimeout(timeoutId);
+      const response = await fetch(url, {
+        headers: NBA_HEADERS,
+        signal: controller.signal,
+        cache: 'no-store'
+      });
 
-    if (!response.ok) {
-      throw new Error(`NBA API ${response.status}`);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`NBA API ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      lastError = error;
+      
+      if (error.name === 'AbortError') {
+        lastError = new Error('Request timeout');
+      }
+      
+      // If this was the last attempt, throw the error
+      if (attempt === retries) {
+        throw lastError;
+      }
+      
+      // Otherwise, continue to retry
+      console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed: ${lastError.message}, retrying...`);
     }
-
-    return await response.json();
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
   }
+  
+  throw lastError || new Error('Unknown error');
 }
 
 /**
@@ -106,8 +128,19 @@ export async function GET(request: NextRequest) {
       
       console.log(`[Tracking Stats Opponents Refresh] Processing opponent: ${opponentTeam} (${opponentTeamId})`);
       
+      // Add a small delay between opponents to avoid rate limiting
+      // (delay is only added after the first opponent)
+      if (opponentTeam !== ALL_NBA_TEAMS[0]) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      }
+      
       // Fetch both categories for this opponent
       for (const category of categories) {
+        // Add a small delay between categories to avoid rate limiting
+        if (category === 'rebounding') {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between passing and rebounding
+        }
+        
         const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
         
         try {
@@ -148,7 +181,7 @@ export async function GET(request: NextRequest) {
           console.log(`[Tracking Stats Opponents Refresh] Fetching ${category} data vs ${opponentTeam}...`);
           
           totalApiCalls++;
-          const data = await fetchNBAStats(url);
+          const data = await fetchNBAStats(url, 45000, 2); // 45s timeout, 2 retries
           
           if (!data?.resultSets?.[0]) {
             console.warn(`[Tracking Stats Opponents Refresh] ⚠️ No data for ${category} vs ${opponentTeam}`);
