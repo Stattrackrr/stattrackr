@@ -10,8 +10,6 @@ interface TeamTrackingStatsTableProps {
   selectedPlayerName?: string;
   season?: number;
   isDark?: boolean;
-  opponentTeam?: string;
-  opponentTeamLogoUrl?: string;
 }
 
 type StatCategory = 'passing' | 'rebounding';
@@ -43,9 +41,7 @@ export function TeamTrackingStatsTable({
   selectedPlayerId,
   selectedPlayerName,
   season = 2025,
-  isDark = false,
-  opponentTeam,
-  opponentTeamLogoUrl
+  isDark = false
 }: TeamTrackingStatsTableProps) {
   const [category, setCategory] = useState<StatCategory>('passing');
   const [gameFilter, setGameFilter] = useState<'all' | 'last5'>('all'); // 'all' or 'last5' games
@@ -108,7 +104,7 @@ export function TeamTrackingStatsTable({
     if (teamAbbr && teamAbbr !== 'N/A') {
       fetchBothCategories();
     }
-  }, [teamAbbr, season, gameFilter, opponentTeam]);
+    }, [teamAbbr, season, gameFilter]);
 
   // Sort players based on the selected category
   const sortedPlayers = useMemo(() => {
@@ -376,8 +372,8 @@ export function TeamTrackingStatsTable({
       {!loading && !error && sortedPlayers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {gameFilter === 'vs' && opponentTeam
-              ? `No stats available for ${teamAbbr} vs ${opponentTeam} this season. The teams may not have played yet.`
+            {gameFilter === 'last5'
+              ? `No stats available for ${teamAbbr} (last 5 games) this season.`
               : 'No tracking stats available for this team'}
           </p>
         </div>
