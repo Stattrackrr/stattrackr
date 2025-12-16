@@ -177,6 +177,10 @@ async function calculatePlayerAverages(
   h2hHitRate: { hits: number; total: number } | null;
   seasonHitRate: { hits: number; total: number } | null;
   streak: number | null;
+  __last5Values: number[];
+  __last10Values: number[];
+  __h2hStats: number[];
+  __seasonValues: number[];
 }> {
   if (!playerId) {
     return {
@@ -189,6 +193,10 @@ async function calculatePlayerAverages(
       h2hHitRate: null,
       seasonHitRate: null,
       streak: null,
+      __last5Values: [],
+      __last10Values: [],
+      __h2hStats: [],
+      __seasonValues: [],
     };
   }
 
@@ -259,6 +267,10 @@ async function calculatePlayerAverages(
         h2hHitRate: null,
         seasonHitRate: null,
         streak: null,
+        __last5Values: [],
+        __last10Values: [],
+        __h2hStats: [],
+        __seasonValues: [],
       };
     }
 
@@ -432,6 +444,11 @@ async function calculatePlayerAverages(
       h2hHitRate,
       seasonHitRate,
       streak,
+      // Store stat value arrays for hit rate recalculation when line changes
+      __last5Values: last5Values,
+      __last10Values: last10Values,
+      __h2hStats: h2hStats,
+      __seasonValues: seasonValues,
     };
   } catch (error) {
     console.error(`[calculatePlayerAverages] Error for ${playerName}:`, error);
@@ -445,6 +462,10 @@ async function calculatePlayerAverages(
       h2hHitRate: null,
       seasonHitRate: null,
       streak: null,
+      __last5Values: [],
+      __last10Values: [],
+      __h2hStats: [],
+      __seasonValues: [],
     };
   }
 }
@@ -1069,6 +1090,10 @@ async function processPlayerPropsCore(request: NextRequest) {
             console.warn(`[Player Props Process] ⚠️ No DvP rank for ${prop.playerName} vs ${actualOpponent} (${position})`);
           }
           
+          // Store stat value arrays for hit rate recalculation when line changes
+          // We need to recalculate these in calculatePlayerAverages to store them
+          // For now, we'll store them separately by calling a modified version
+          // Actually, let's store them in the prop for now - we'll modify calculatePlayerAverages to return them
           batchResults.push({
             ...prop,
             team: actualTeam, // Use the correctly determined team
@@ -1077,6 +1102,8 @@ async function processPlayerPropsCore(request: NextRequest) {
             position, // Store position for reference/debugging
             dvpRating: dvp.rank,
             dvpStatValue: dvp.statValue,
+            // Note: Stat value arrays will be added in update-odds endpoint
+            // For now, hit rates will be preserved (slightly inaccurate if line changes)
           });
         } catch (error) {
           console.error(`[Player Props Process] Error calculating stats for ${prop.playerName} ${prop.statType}:`, error);

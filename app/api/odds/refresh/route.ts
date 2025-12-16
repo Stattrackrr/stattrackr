@@ -90,7 +90,7 @@ export interface OddsCache {
 export async function GET(request: NextRequest) {
   try {
     const { refreshOddsData } = await import('@/lib/refreshOdds');
-    const result = await refreshOddsData({ source: 'api/odds/refresh' });
+    const result = await refreshOddsData({ source: 'api/odds/refresh', request });
     return NextResponse.json(result);
   } catch (error) {
     console.error('❌ Odds refresh API error:', error);

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');
     const team = searchParams.get('team');
+    const checkTimestamp = searchParams.get('check_timestamp') === '1';
     
     // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
     // Always read from main key (staging is only used during refresh)

@@ -644,6 +644,42 @@ export default function NBALandingPage() {
     };
 
     fetchPlayerProps();
+    
+    // Poll for odds updates and refresh player props when odds change
+    // This ensures player props reflect new lines when odds refresh (every 30 mins)
+    let lastOddsTimestamp: string | null = null;
+    const checkOddsUpdate = async () => {
+      try {
+        // Check odds cache timestamp
+        const oddsResponse = await fetch('/api/odds?check_timestamp=1', { cache: 'no-store' });
+        if (oddsResponse.ok) {
+          const oddsData = await oddsResponse.json();
+          const currentTimestamp = oddsData.lastUpdated;
+          
+          if (currentTimestamp && currentTimestamp !== lastOddsTimestamp && lastOddsTimestamp !== null) {
+            // Odds have been updated - refresh player props
+            console.log('[NBA Landing] 🔄 Odds updated, refreshing player props...');
+            fetchPlayerProps();
+          }
+          
+          lastOddsTimestamp = currentTimestamp;
+        }
+      } catch (err) {
+        // Ignore errors - this is a background check
+      }
+    };
+    
+    // Check every 2 minutes for odds updates
+    const oddsCheckInterval = setInterval(checkOddsUpdate, 2 * 60 * 1000);
+    
+    // Initial check after 30 seconds (give odds refresh time to complete)
+    setTimeout(() => {
+      checkOddsUpdate();
+    }, 30 * 1000);
+    
+    return () => {
+      clearInterval(oddsCheckInterval);
+    };
   }, []);
 
   // Note: getPlayerPosition and getDvpRating are no longer needed on client-side

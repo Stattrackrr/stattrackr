@@ -1,0 +1,79 @@
+name: Refresh Tracking Stats
+
+on:
+  # Run daily at 3 AM ET (8 AM UTC) - after NBA games are finalized
+  schedule:
+    - cron: '0 8 * * *' # 8 AM UTC = 3 AM ET
+  # Manual trigger (optional)
+  workflow_dispatch: {}
+
+concurrency:
+  group: refresh-tracking-stats
+  cancel-in-progress: false  # Don't cancel - let it complete
+
+jobs:
+  refresh_tracking_stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # Allow up to 15 minutes (refresh takes ~7-8 minutes)
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL secret not set; skipping workflow"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Refresh Tracking Stats
+        if: steps.check_prod_url.outputs.configured == 'true'
+        run: |
+          echo "🔄 Starting tracking stats refresh..."
+          echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh"
+          
+          response=$(curl -s -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Tracking stats refresh successful!"
+            echo "$body" | jq '.'
+            
+            # Extract key metrics
+            last5_cached=$(echo "$body" | jq -r '.last5GamesCached // 0')
+            last5_errors=$(echo "$body" | jq -r '.last5GamesErrors // 0')
+            elapsed=$(echo "$body" | jq -r '.elapsed // "unknown"')
+            
+            echo ""
+            echo "📊 Summary:"
+            echo "  - Last 5 Games cached: $last5_cached/60"
+            echo "  - Errors: $last5_errors"
+            echo "  - Elapsed: $elapsed"
+            
+            if [ "$last5_cached" -lt 60 ] || [ "$last5_errors" -gt 0 ]; then
+              echo "⚠️ Warning: Not all Last 5 Games were cached successfully"
+              exit 1
+            fi
+          else
+            echo "❌ Tracking stats refresh failed with HTTP $http_code"
+            echo "$body"
+            exit 1
+          fi
+

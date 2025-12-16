@@ -1116,6 +1116,51 @@ export async function refreshOddsData(
     const elapsed = Date.now() - startTime;
     console.log(`✅ BDL odds refresh complete in ${elapsed}ms - ${games.length} games cached`);
 
+    // Update player props with new odds (non-blocking, in background)
+    // This updates lines/odds while preserving calculated stats (last5, last10, h2h, seasonAvg, streak)
+    // In Vercel, we need to use the actual request URL or environment variable
+    let baseUrl = 'http://localhost:3000';
+    if (process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    } else if (process.env.NEXT_PUBLIC_BASE_URL) {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    } else if (options.request) {
+      // Try to get URL from request if available
+      try {
+        const url = new URL(options.request.url || '');
+        baseUrl = `${url.protocol}//${url.host}`;
+      } catch (e) {
+        // Ignore
+      }
+    }
+    
+    const updateUrl = `${baseUrl}/api/nba/player-props/update-odds`;
+    console.log(`[Odds Refresh] 🔄 Triggering background player props update: ${updateUrl} (baseUrl: ${baseUrl})`);
+    
+    // Trigger update in background (non-blocking)
+    fetch(updateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    }).then(async (response) => {
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`[Odds Refresh] ✅ Player props updated: ${result.updated}/${result.total} props (${result.notFound || 0} not found)`);
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.warn(`[Odds Refresh] ⚠️ Failed to update player props: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+    }).catch((err) => {
+      if (err.name === 'AbortError') {
+        console.warn(`[Odds Refresh] ⚠️ Player props update timed out after 30s`);
+      } else {
+        console.warn(`[Odds Refresh] ⚠️ Error updating player props:`, err.message || err);
+      }
+    });
+
     return {
       success: true,
       gamesCount: games.length,

@@ -69,6 +69,9 @@
     },
     "app/api/nba/player-props/process/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/tracking-stats/refresh/route.ts": {
+      "maxDuration": 600
     }
   },
   "rewrites": [

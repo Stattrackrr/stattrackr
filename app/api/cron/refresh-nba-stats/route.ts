@@ -497,88 +497,14 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       results.details.push({ team: 'ALL', category: 'team_defensive_stats', status: 'error', error: error.message });
     }
 
-    // Refresh opponent-specific tracking stats (vs data) - fetch all team × opponent combinations
-    try {
-      console.log('[NBA Stats Refresh] Refreshing opponent-specific tracking stats...');
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : 'http://localhost:3000';
-      const opponentTrackingStatsUrl = `${baseUrl}/api/tracking-stats/refresh-opponents`;
-      const opponentTrackingStatsResponse = await fetch(opponentTrackingStatsUrl, {
-        cache: 'no-store',
-        headers: {
-          'User-Agent': 'StatTrackr-Cron/1.0',
-        },
-      });
-      if (opponentTrackingStatsResponse.ok) {
-        const opponentTrackingStatsResult = await opponentTrackingStatsResponse.json();
-        console.log('[NBA Stats Refresh] ✅ Opponent-specific tracking stats refreshed:', opponentTrackingStatsResult);
-        results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'refreshed' });
-      } else {
-        console.warn('[NBA Stats Refresh] ⚠️ Failed to refresh opponent-specific tracking stats:', opponentTrackingStatsResponse.status);
-        results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'error', error: `HTTP ${opponentTrackingStatsResponse.status}` });
-      }
-    } catch (error: any) {
-      console.error('[NBA Stats Refresh] ❌ Error refreshing opponent-specific tracking stats:', error);
-      results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'error', error: error.message });
-    }
-
-    // Refresh all teams' tracking stats (passing and rebounding) in parallel batches
-    // Process in batches of 10 to avoid overwhelming the API
-    const BATCH_SIZE = trackingBatchSize;
-    const refreshPromises: Promise<void>[] = [];
-    
-    for (const team of teamsToProcess) {
-      for (const category of trackingCategories) {
-        results.total++;
-        
-        // Add to batch
-        refreshPromises.push(
-          refreshTeamTrackingStats(team, currentSeason, category, null, {
-            timeoutMs: trackingTimeoutMs,
-            maxAttempts: trackingMaxAttempts
-          }).then((result) => {
-            if (result.success) {
-              if (result.changed) {
-                results.changed++;
-                results.refreshed++;
-                results.details.push({ team, category, status: 'updated' });
-              } else {
-                results.skipped++;
-                results.details.push({ team, category, status: 'skipped (not stale or no changes)' });
-              }
-            } else {
-              results.errors++;
-              results.details.push({ team, category, status: 'error', error: result.error });
-              // Log uncached teams in development/staging only
-              if (process.env.NODE_ENV !== 'production') {
-                console.warn(`[Cache Miss Log] ❌ Team ${team} (${category}) failed to cache: ${result.error || 'Unknown error'}`);
-              }
-            }
-          }).catch((err) => {
-            results.errors++;
-            results.details.push({ team, category, status: 'error', error: err.message });
-            // Log uncached teams in development/staging only
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn(`[Cache Miss Log] ❌ Team ${team} (${category}) failed to cache: ${err.message || 'Unknown error'}`);
-            }
-          })
-        );
-        
-        // Process batches to avoid too many concurrent requests
-        if (refreshPromises.length >= BATCH_SIZE) {
-          await Promise.all(refreshPromises);
-          refreshPromises.length = 0; // Clear array
-          // Small delay between batches
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-      }
-    }
-    
-    // Process remaining promises
-    if (refreshPromises.length > 0) {
-      await Promise.all(refreshPromises);
-    }
+    // Tracking stats refresh moved to GitHub Actions workflow (takes ~7-8 minutes, exceeds Vercel cron 5min limit)
+    // The bulk refresh endpoint (/api/tracking-stats/refresh) is now called by .github/workflows/refresh-tracking-stats.yml
+    console.log('[NBA Stats Refresh] ⏭️ Skipping tracking stats refresh (handled by GitHub Actions workflow)');
+    results.details.push({ 
+      team: 'ALL_TEAMS', 
+      category: 'tracking_stats', 
+      status: 'skipped_moved_to_github_actions' 
+    });
 
     // Always refresh bulk play type cache (bulk only strategy)
     const seasonStr = `${currentSeason}-${String(currentSeason + 1).slice(-2)}`;

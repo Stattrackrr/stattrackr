@@ -18,7 +18,7 @@ const NBA_TEAM_IDS: Record<string, string> = {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // 5 minutes max execution
+export const maxDuration = 600; // 10 minutes max execution (refresh takes ~7-8 minutes)
 
 const NBA_STATS_BASE = 'https://stats.nba.com/stats';
 

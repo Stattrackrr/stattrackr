@@ -70,6 +70,38 @@ export function TeamTrackingStatsTable({
         const baseParams = `team=${encodeURIComponent(teamAbbr)}&season=${season}`;
         const last5Param = gameFilter === 'last5' ? `&lastNGames=5` : '';
         
+        // Check sessionStorage first for "Last 5 Games" data (instant load)
+        if (gameFilter === 'last5') {
+          const cacheKeyPassing = `tracking_stats_${teamAbbr}_${season}_passing_last5`;
+          const cacheKeyRebounding = `tracking_stats_${teamAbbr}_${season}_rebounding_last5`;
+          
+          const cachedPassing = sessionStorage.getItem(cacheKeyPassing);
+          const cachedRebounding = sessionStorage.getItem(cacheKeyRebounding);
+          
+          if (cachedPassing && cachedRebounding) {
+            try {
+              const passingData = JSON.parse(cachedPassing);
+              const reboundingData = JSON.parse(cachedRebounding);
+              
+              // Check if cache is still valid (30 minutes TTL)
+              const cacheTimestamp = passingData.__timestamp || 0;
+              const cacheAge = Date.now() - cacheTimestamp;
+              const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+              
+              if (cacheAge < CACHE_TTL_MS && passingData.players && reboundingData.players) {
+                console.log(`[TeamTrackingStats] ✅ Using cached Last 5 Games data (${Math.round(cacheAge / 1000)}s old)`);
+                setPassingData(passingData.players || []);
+                setReboundingData(reboundingData.players || []);
+                setLoading(false);
+                return; // Use cached data, skip API call
+              }
+            } catch (e) {
+              // Invalid cache, continue to fetch
+              console.warn('[TeamTrackingStats] Invalid cached data, fetching fresh...');
+            }
+          }
+        }
+        
         // Fetch both passing and rebounding data in parallel
         const [passingResponse, reboundingResponse] = await Promise.all([
           fetch(`/api/tracking-stats/team?${baseParams}&category=passing${last5Param}`),
@@ -93,6 +125,26 @@ export function TeamTrackingStatsTable({
         // Success - use the data
         setPassingData(passingResult.players || []);
         setReboundingData(reboundingResult.players || []);
+        
+        // Cache "Last 5 Games" data in sessionStorage for instant future loads
+        if (gameFilter === 'last5') {
+          try {
+            const cacheKeyPassing = `tracking_stats_${teamAbbr}_${season}_passing_last5`;
+            const cacheKeyRebounding = `tracking_stats_${teamAbbr}_${season}_rebounding_last5`;
+            
+            sessionStorage.setItem(cacheKeyPassing, JSON.stringify({
+              players: passingResult.players || [],
+              __timestamp: Date.now()
+            }));
+            sessionStorage.setItem(cacheKeyRebounding, JSON.stringify({
+              players: reboundingResult.players || [],
+              __timestamp: Date.now()
+            }));
+            console.log(`[TeamTrackingStats] 💾 Cached Last 5 Games data to sessionStorage`);
+          } catch (e) {
+            // Ignore storage errors
+          }
+        }
       } catch (err: any) {
         console.error('[TeamTrackingStats] Error:', err);
         setError(err.message);
