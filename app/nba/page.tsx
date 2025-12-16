@@ -540,7 +540,7 @@ export default function NBALandingPage() {
         // Check sessionStorage first for instant load when navigating back
         const CACHE_KEY = 'nba-player-props-cache';
         const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
-        const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+        const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache TTL
         
         const urlParams = new URLSearchParams(window.location.search);
         const forceRefresh = urlParams.get('refresh') === '1';

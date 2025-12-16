@@ -160,7 +160,7 @@ export async function queuedFetch(
     // Add timeout to prevent hanging requests
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        console.error(`[RequestQueue] ⏱️ Request TIMEOUT after ${timeoutMs/1000}s: ${url}`);
+        // Silently reject on timeout - don't log to console
         reject(new Error(`Request timeout: ${url}`));
       }, timeoutMs);
     });

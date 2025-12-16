@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { NBA_TEAMS, normalizeAbbr } from '@/lib/nbaAbbr';
 import { currentNbaSeason } from '@/lib/nbaConstants';
+import { getNBACache, setNBACache } from '@/lib/supabaseCache';
 
 export const runtime = 'nodejs';
 
@@ -57,8 +58,14 @@ export async function GET(req: NextRequest) {
 
   try {
     // Always check the "all" cache first - it contains all teams
+    // Check Supabase cache first (persistent across instances)
     const allCacheKey = 'bballref_defensive_stats_all';
-    let allData = cache.get<any>(allCacheKey);
+    let allData = await getNBACache<any>(allCacheKey, { quiet: true });
+    
+    // Fallback to in-memory cache
+    if (!allData) {
+      allData = cache.get<any>(allCacheKey);
+    }
     
     // If we have cached "all" data, check if rankings are missing/empty and recalculate if needed
     if (allData && allData.success && allData.teamStats) {
@@ -109,6 +116,8 @@ export async function GET(req: NextRequest) {
         // Update the cached data with rankings
         allData.rankings = rankings;
         cache.set(allCacheKey, allData, 24 * 60); // Re-cache with rankings
+        // Also update Supabase cache
+        await setNBACache(allCacheKey, 'team_defensive_stats', allData, 24 * 60);
       }
       
       // If we have cached "all" data, use it
@@ -822,6 +831,8 @@ export async function GET(req: NextRequest) {
 
       // Always cache the "all" data for reuse
       cache.set(allCacheKey, payload, 24 * 60); // Cache for 24 hours (1440 minutes)
+      // Also cache in Supabase for persistent storage across instances
+      await setNBACache(allCacheKey, 'team_defensive_stats', payload, 24 * 60);
       
       // If showRankings is requested, add a formatted rankings list
       if (showRankings) {
@@ -939,6 +950,8 @@ export async function GET(req: NextRequest) {
       rankings,
     };
     cache.set(allCacheKey, allPayload, 24 * 60);
+    // Also cache in Supabase for persistent storage
+    await setNBACache(allCacheKey, 'team_defensive_stats', allPayload, 24 * 60);
 
     const payload = {
       success: true,

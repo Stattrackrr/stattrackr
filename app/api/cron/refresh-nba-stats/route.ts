@@ -471,6 +471,32 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
   try {
     console.log('[NBA Stats Refresh] Starting daily refresh...');
 
+    // Refresh team defensive stats (vs data) - fetch all teams at once
+    try {
+      console.log('[NBA Stats Refresh] Refreshing team defensive stats...');
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000';
+      const defensiveStatsUrl = `${baseUrl}/api/team-defensive-stats/refresh`;
+      const defensiveStatsResponse = await fetch(defensiveStatsUrl, {
+        cache: 'no-store',
+        headers: {
+          'User-Agent': 'StatTrackr-Cron/1.0',
+        },
+      });
+      if (defensiveStatsResponse.ok) {
+        const defensiveStatsResult = await defensiveStatsResponse.json();
+        console.log('[NBA Stats Refresh] ✅ Team defensive stats refreshed:', defensiveStatsResult);
+        results.details.push({ type: 'team_defensive_stats', status: 'refreshed', teamsProcessed: defensiveStatsResult.teamsProcessed });
+      } else {
+        console.warn('[NBA Stats Refresh] ⚠️ Failed to refresh team defensive stats:', defensiveStatsResponse.status);
+        results.details.push({ type: 'team_defensive_stats', status: 'error', error: `HTTP ${defensiveStatsResponse.status}` });
+      }
+    } catch (error: any) {
+      console.error('[NBA Stats Refresh] ❌ Error refreshing team defensive stats:', error);
+      results.details.push({ type: 'team_defensive_stats', status: 'error', error: error.message });
+    }
+
     // Refresh all teams' tracking stats (passing and rebounding) in parallel batches
     // Process in batches of 10 to avoid overwhelming the API
     const BATCH_SIZE = trackingBatchSize;

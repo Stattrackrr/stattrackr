@@ -2481,7 +2481,9 @@ const ChartControls = function ChartControls({
   withWithoutMode,
   setWithWithoutMode,
   teammateFilterId,
+  teammateFilterName,
   setTeammateFilterId,
+  setTeammateFilterName,
   loadingTeammateGames,
   clearTeammateFilter,
   lineMovementEnabled,
@@ -4368,14 +4370,28 @@ const ChartControls = function ChartControls({
                                   setWithWithoutMode('with');
                                   if (!v) {
                                     setTeammateFilterId(null);
+                                    setTeammateFilterName(null);
                                     return;
                                   }
                                   // If option is an encoded id, use it directly, otherwise resolve by name
                                   if (/^\d+$/.test(v)) {
                                     setTeammateFilterId(parseInt(v, 10));
+                                    // Find name from roster
+                                    let foundName: string | null = null;
+                                    if (rosterForSelectedTeam) {
+                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
+                                        const arr = Array.isArray(pos) ? pos : [];
+                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
+                                        if (teammate) {
+                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
+                                        }
+                                      });
+                                    }
+                                    setTeammateFilterName(foundName);
                                     return;
                                   }
                                   const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  setTeammateFilterName(name); // Store the name
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
@@ -4412,13 +4428,27 @@ const ChartControls = function ChartControls({
                                   setWithWithoutMode('without');
                                   if (!v) {
                                     setTeammateFilterId(null);
+                                    setTeammateFilterName(null);
                                     return;
                                   }
                                   if (/^\d+$/.test(v)) {
                                     setTeammateFilterId(parseInt(v, 10));
+                                    // Find name from roster
+                                    let foundName: string | null = null;
+                                    if (rosterForSelectedTeam) {
+                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
+                                        const arr = Array.isArray(pos) ? pos : [];
+                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
+                                        if (teammate) {
+                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
+                                        }
+                                      });
+                                    }
+                                    setTeammateFilterName(foundName);
                                     return;
                                   }
                                   const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  setTeammateFilterName(name); // Store the name
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
@@ -4557,13 +4587,27 @@ const ChartControls = function ChartControls({
                                   setWithWithoutMode('with');
                                   if (!v) {
                                     setTeammateFilterId(null);
+                                    setTeammateFilterName(null);
                                     return;
                                   }
                                   if (/^\d+$/.test(v)) {
                                     setTeammateFilterId(parseInt(v, 10));
+                                    // Find name from roster
+                                    let foundName: string | null = null;
+                                    if (rosterForSelectedTeam) {
+                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
+                                        const arr = Array.isArray(pos) ? pos : [];
+                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
+                                        if (teammate) {
+                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
+                                        }
+                                      });
+                                    }
+                                    setTeammateFilterName(foundName);
                                     return;
                                   }
                                   const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  setTeammateFilterName(name); // Store the name
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
@@ -4600,13 +4644,27 @@ const ChartControls = function ChartControls({
                                   setWithWithoutMode('without');
                                   if (!v) {
                                     setTeammateFilterId(null);
+                                    setTeammateFilterName(null);
                                     return;
                                   }
                                   if (/^\d+$/.test(v)) {
                                     setTeammateFilterId(parseInt(v, 10));
+                                    // Find name from roster
+                                    let foundName: string | null = null;
+                                    if (rosterForSelectedTeam) {
+                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
+                                        const arr = Array.isArray(pos) ? pos : [];
+                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
+                                        if (teammate) {
+                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
+                                        }
+                                      });
+                                    }
+                                    setTeammateFilterName(foundName);
                                     return;
                                   }
                                   const name = v.startsWith('name:') ? v.slice(5) : v;
+                                  setTeammateFilterName(name); // Store the name
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
@@ -4720,7 +4778,9 @@ const ChartContainer = function ChartContainer({
   withWithoutMode,
   setWithWithoutMode,
   teammateFilterId,
+  teammateFilterName,
   setTeammateFilterId,
+  setTeammateFilterName,
   loadingTeammateGames,
   clearTeammateFilter,
   hitRateStats,
@@ -4811,7 +4871,9 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
         withWithoutMode={withWithoutMode}
         setWithWithoutMode={setWithWithoutMode}
         teammateFilterId={teammateFilterId}
+        teammateFilterName={teammateFilterName}
         setTeammateFilterId={setTeammateFilterId}
+        setTeammateFilterName={setTeammateFilterName}
         loadingTeammateGames={loadingTeammateGames}
         clearTeammateFilter={clearTeammateFilter}
         lineMovementEnabled={lineMovementEnabled}
@@ -4836,6 +4898,24 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
                 ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
               </span>
             )}
+            {/* Teammate filter indicator */}
+            {teammateFilterId && teammateFilterName && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] font-medium border border-purple-200 dark:border-purple-700">
+                {withWithoutMode === 'with' ? 'With' : 'Without'}: {teammateFilterName}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearTeammateFilter();
+                  }}
+                  className="ml-0.5 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5 transition-colors"
+                  aria-label="Clear filter"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
           </div>
           {renderAverageChips('text-gray-600 dark:text-gray-300')}
         </div>
@@ -4843,7 +4923,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
       {/* Desktop: Over Rate pill above chart (same logic and placement as mobile) */}
       <div className="hidden sm:block px-3 pb-2 -mt-1 md:-mt-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
             {totalSamples > 0 ? (
               <OverRatePill 
@@ -4860,6 +4940,24 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rou
               </span>
             )}
           </div>
+          {/* Teammate filter indicator - appears in middle space */}
+          {teammateFilterId && teammateFilterName && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] sm:text-xs font-medium border border-purple-200 dark:border-purple-700">
+              {withWithoutMode === 'with' ? 'Playing with' : 'Playing without'}: {teammateFilterName}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearTeammateFilter();
+                }}
+                className="ml-0.5 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5 transition-colors"
+                aria-label="Clear filter"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          )}
           {renderAverageChips('text-gray-600 dark:text-gray-300')}
         </div>
       </div>
@@ -8506,6 +8604,7 @@ const lineMovementInFlightRef = useRef(false);
   // With/Without filters
   const [withWithoutMode, setWithWithoutMode] = useState<'with'|'without'>('with');
   const [teammateFilterId, setTeammateFilterId] = useState<number | null>(null);
+  const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null); // Store name for display
   const [teammatePlayedGameIds, setTeammatePlayedGameIds] = useState<Set<number>>(new Set());
   const [loadingTeammateGames, setLoadingTeammateGames] = useState<boolean>(false);
 
@@ -8513,6 +8612,7 @@ const lineMovementInFlightRef = useRef(false);
   useEffect(() => {
     // Always clear when leaving player mode or switching players
     setTeammateFilterId(null);
+    setTeammateFilterName(null);
     setTeammatePlayedGameIds(new Set());
     setWithWithoutMode('with');
     setLoadingTeammateGames(false);
@@ -8520,6 +8620,7 @@ const lineMovementInFlightRef = useRef(false);
 
   const clearTeammateFilter = useCallback(() => {
     setTeammateFilterId(null);
+    setTeammateFilterName(null);
     setTeammatePlayedGameIds(new Set());
     setLoadingTeammateGames(false);
   }, []);
@@ -10960,6 +11061,93 @@ const lineMovementInFlightRef = useRef(false);
     return result;
   }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Removed deferredPlayerStats to prevent double refresh
   
+  // Prefetch teammate game data in background when roster is available (for faster filtering)
+  useEffect(() => {
+    if (!rosterForSelectedTeam || !baseGameData?.length || propsMode !== 'player') return;
+    
+    const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
+    if (!games.length) return;
+    
+    // Get all teammate IDs from roster
+    const teammateIds: number[] = [];
+    Object.values(rosterForSelectedTeam).forEach((pos: any) => {
+      const arr = Array.isArray(pos) ? pos : [];
+      arr.forEach((p: any) => {
+        const id = p?.id || p?.player_id;
+        if (id && typeof id === 'number' && id !== selectedPlayer?.id) {
+          teammateIds.push(id);
+        }
+      });
+    });
+    
+    if (teammateIds.length === 0) return;
+    
+    // Prefetch in background (low priority, don't block UI)
+    const prefetchTeammateData = async () => {
+      // Only prefetch first 5 teammates to avoid too many requests
+      const teammatesToPrefetch = teammateIds.slice(0, 5);
+      
+      for (const teammateId of teammatesToPrefetch) {
+        // Check if already cached
+        const CACHE_KEY = `teammate-games-${teammateId}`;
+        const cachedData = typeof window !== 'undefined' ? sessionStorage.getItem(CACHE_KEY) : null;
+        
+        if (cachedData) {
+          continue; // Already cached, skip
+        }
+        
+        // Prefetch in background (small delay to not interfere with user actions)
+        setTimeout(async () => {
+          try {
+            const chunks: number[][] = [];
+            const size = 50;
+            for (let i = 0; i < games.length; i += size) chunks.push(games.slice(i, i + size));
+            
+            // Fetch in parallel but with lower priority
+            const fetchPromises = chunks.map(async (chunk) => {
+              const params = new URLSearchParams();
+              params.set('endpoint', '/stats');
+              params.set('per_page', '100');
+              params.set('player_ids[]', String(teammateId));
+              for (const gid of chunk) params.append('game_ids[]', String(gid));
+              const url = `/api/balldontlie?${params.toString()}`;
+              const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
+              const json = await res?.json().catch(() => ({})) as any;
+              return Array.isArray(json?.data) ? json.data : [];
+            });
+            
+            const allResults = await Promise.all(fetchPromises);
+            const played = new Set<number>();
+            
+            allResults.flat().forEach((s: any) => {
+              const minStr = s?.min || '0:00';
+              const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
+              const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
+              const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
+              if (minutes > 0 && gid != null) played.add(gid);
+            });
+            
+            // Cache the prefetched results
+            if (typeof window !== 'undefined') {
+              try {
+                const allPlayedGameIds = Array.from(played);
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(allPlayedGameIds));
+                sessionStorage.setItem(`teammate-games-${teammateId}-timestamp`, Date.now().toString());
+                console.log(`[Teammate Filter] 🔮 Prefetched ${allPlayedGameIds.length} games for teammate ${teammateId}`);
+              } catch (e) {
+                // Ignore cache errors
+              }
+            }
+          } catch (e) {
+            // Silently fail prefetch
+          }
+        }, 2000); // 2 second delay to not interfere with immediate user actions
+      }
+    };
+    
+    prefetchTeammateData();
+  }, [rosterForSelectedTeam, baseGameData, propsMode, selectedPlayer?.id]);
+  
   // Precompute back-to-back games (player mode)
   const backToBackGameIds = useMemo(() => {
     if (propsMode !== 'player' || !playerStats || playerStats.length === 0) return new Set<string | number>();
@@ -11109,6 +11297,10 @@ const lineMovementInFlightRef = useRef(false);
     return mapped;
   }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
 
+  // Track in-flight requests to prevent duplicates
+  const teammateFetchAbortControllerRef = useRef<AbortController | null>(null);
+  const teammateFetchInProgressRef = useRef<Set<number>>(new Set());
+
   // Load teammate participation for current base games when filter is active
   useEffect(() => {
     const run = async () => {
@@ -11116,41 +11308,144 @@ const lineMovementInFlightRef = useRef(false);
         setTeammatePlayedGameIds(new Set());
         return;
       }
+      
+      // Cancel any in-flight request for a different teammate
+      if (teammateFetchAbortControllerRef.current) {
+        teammateFetchAbortControllerRef.current.abort();
+      }
+      
+      // Check if already fetching this teammate
+      if (teammateFetchInProgressRef.current.has(teammateFilterId)) {
+        console.log(`[Teammate Filter] ⏳ Already fetching games for teammate ${teammateFilterId}, skipping duplicate`);
+        return;
+      }
+      
       try {
         const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
         if (!games.length) {
           setTeammatePlayedGameIds(new Set());
           return;
         }
+        
+        // Check cache first (30 min TTL)
+        const CACHE_KEY = `teammate-games-${teammateFilterId}`;
+        const CACHE_TIMESTAMP_KEY = `teammate-games-${teammateFilterId}-timestamp`;
+        const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+        
+        if (typeof window !== 'undefined') {
+          const cachedData = sessionStorage.getItem(CACHE_KEY);
+          const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+          
+          if (cachedData && cachedTimestamp) {
+            const age = Date.now() - parseInt(cachedTimestamp, 10);
+            if (age < CACHE_TTL_MS) {
+              try {
+                const cachedGameIds = JSON.parse(cachedData);
+                if (Array.isArray(cachedGameIds)) {
+                  // Filter to only games we care about (from baseGameData)
+                  const relevantGameIds = new Set(cachedGameIds.filter((id: number) => games.includes(id)));
+                  setTeammatePlayedGameIds(relevantGameIds);
+                  console.log(`[Teammate Filter] ✅ Using cached data (${relevantGameIds.size} games, ${Math.round(age / 1000)}s old)`);
+                  return; // Use cached data, skip API calls
+                }
+              } catch (e) {
+                console.warn('[Teammate Filter] ⚠️ Failed to parse cached data, fetching fresh');
+              }
+            } else {
+              console.log(`[Teammate Filter] ⏰ Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
+            }
+          }
+        }
+        
+        // Mark as in-progress
+        teammateFetchInProgressRef.current.add(teammateFilterId);
         setLoadingTeammateGames(true);
+        
+        // Create abort controller for this request
+        const abortController = new AbortController();
+        teammateFetchAbortControllerRef.current = abortController;
+        
+        // Use larger chunks (50 instead of 25) to reduce number of requests
         const chunks: number[][] = [];
-        const size = 25;
+        const size = 50; // Increased from 25 to reduce requests
         for (let i = 0; i < games.length; i += size) chunks.push(games.slice(i, i + size));
-        const played = new Set<number>();
-        for (const chunk of chunks) {
+        
+        // Fetch all chunks in parallel with abort signal
+        const fetchPromises = chunks.map(async (chunk) => {
+          if (abortController.signal.aborted) return [];
+          
           const params = new URLSearchParams();
           params.set('endpoint', '/stats');
           params.set('per_page', '100');
           params.set('player_ids[]', String(teammateFilterId));
           for (const gid of chunk) params.append('game_ids[]', String(gid));
           const url = `/api/balldontlie?${params.toString()}`;
-          const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
-          const json = await res?.json().catch(() => ({})) as any;
-          const data = Array.isArray(json?.data) ? json.data : [];
-          data.forEach((s: any) => {
-            const minStr = s?.min || '0:00';
-            const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
-            const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
-            const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
-            if (minutes > 0 && gid != null) played.add(gid);
-          });
+          
+          try {
+            const res = await fetch(url, { 
+              cache: 'no-store',
+              signal: abortController.signal 
+            }).catch(() => null);
+            
+            if (abortController.signal.aborted) return [];
+            
+            const json = await res?.json().catch(() => ({})) as any;
+            return Array.isArray(json?.data) ? json.data : [];
+          } catch (e: any) {
+            if (e.name === 'AbortError') return [];
+            return [];
+          }
+        });
+        
+        // Wait for all requests to complete in parallel
+        const allResults = await Promise.all(fetchPromises);
+        
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          return;
         }
+        
+        const played = new Set<number>();
+        
+        // Process all results
+        allResults.flat().forEach((s: any) => {
+          const minStr = s?.min || '0:00';
+          const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
+          const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
+          const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
+          if (minutes > 0 && gid != null) played.add(gid);
+        });
+        
+        // Cache the results
+        if (typeof window !== 'undefined') {
+          try {
+            const allPlayedGameIds = Array.from(played);
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(allPlayedGameIds));
+            sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+            console.log(`[Teammate Filter] 💾 Cached ${allPlayedGameIds.length} games for teammate ${teammateFilterId}`);
+          } catch (e) {
+            console.warn('[Teammate Filter] ⚠️ Failed to cache results', e);
+          }
+        }
+        
         setTeammatePlayedGameIds(played);
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+          console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
+        }
       } finally {
+        teammateFetchInProgressRef.current.delete(teammateFilterId);
         setLoadingTeammateGames(false);
       }
     };
     run();
+    
+    // Cleanup: abort request if component unmounts or dependencies change
+    return () => {
+      if (teammateFetchAbortControllerRef.current) {
+        teammateFetchAbortControllerRef.current.abort();
+      }
+    };
   }, [withWithoutMode, teammateFilterId, baseGameData]);
 
   const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
@@ -14643,7 +14938,9 @@ const lineMovementInFlightRef = useRef(false);
               withWithoutMode={withWithoutMode}
               setWithWithoutMode={setWithWithoutMode}
               teammateFilterId={teammateFilterId}
+              teammateFilterName={teammateFilterName}
               setTeammateFilterId={setTeammateFilterId}
+              setTeammateFilterName={setTeammateFilterName}
               loadingTeammateGames={loadingTeammateGames}
       clearTeammateFilter={clearTeammateFilter}
       hitRateStats={hitRateStats}
