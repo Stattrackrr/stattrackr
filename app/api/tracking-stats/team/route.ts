@@ -253,7 +253,7 @@ async function refreshTrackingStatsInBackground(
       season: seasonStr,
       category,
       players: teamPlayers,
-      opponentTeam: opponentTeam || undefined,
+      lastNGames: lastNGames || undefined,
       cachedAt: new Date().toISOString()
     };
 
@@ -456,20 +456,20 @@ export async function GET(request: NextRequest) {
             }, { status: 200 });
           }
           
-          // Also check for cache without opponent team as fallback
-          if (opponentTeam) {
-            const cacheKeyNoOpponent = `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
-            const { data: staleDataNoOpp } = await supabaseAdmin
+          // Also check for cache without lastNGames filter as fallback
+          if (lastNGames) {
+            const cacheKeyNoFilter = `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
+            const { data: staleDataNoFilter } = await supabaseAdmin
               .from('nba_api_cache')
               .select('data')
-              .eq('cache_key', cacheKeyNoOpponent)
+              .eq('cache_key', cacheKeyNoFilter)
               .single();
             
-            if (staleDataNoOpp?.data && staleDataNoOpp.data.players && Array.isArray(staleDataNoOpp.data.players)) {
-              console.log(`[Team Tracking Stats] ⚠️ Returning stale cached data (without opponent) due to API failure`);
+            if (staleDataNoFilter?.data && staleDataNoFilter.data.players && Array.isArray(staleDataNoFilter.data.players)) {
+              console.log(`[Team Tracking Stats] ⚠️ Returning stale cached data (all games) due to API failure`);
               return NextResponse.json({
-                ...staleDataNoOpp.data,
-                error: 'Using cached data (all games) - opponent-specific data unavailable',
+                ...staleDataNoFilter.data,
+                error: 'Using cached data (all games) - last 5 games data unavailable',
                 stale: true
               }, { status: 200 });
             }
@@ -486,8 +486,8 @@ export async function GET(request: NextRequest) {
         season: seasonStr,
         category,
         players: [],
-        error: opponentTeam 
-          ? `No stats available for ${team} vs ${opponentTeam} this season. The teams may not have played yet, or the data hasn't been cached.`
+        error: lastNGames 
+          ? `No stats available for ${team} (last ${lastNGames} games) this season. The data may not have been cached yet.`
           : 'NBA API unreachable - data will be available once cache is populated',
         cachedAt: new Date().toISOString()
       }, { status: 200 });
