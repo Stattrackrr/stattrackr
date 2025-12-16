@@ -1,9 +1,13 @@
 name: Process Player Props
 
 on:
-  # Only trigger manually or via tipoff workflow - no scheduled runs
-  # The tipoff workflow will trigger this when latest game tips off
-  workflow_dispatch: {}
+  # Only trigger manually or via API from the tipoff-checker workflow
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'What triggered this workflow'
+        required: false
+        default: 'manual'
 
 concurrency:
   group: process-player-props
