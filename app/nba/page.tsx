@@ -686,8 +686,17 @@ export default function NBALandingPage() {
           const currentTimestamp = oddsData.lastUpdated;
           
           if (currentTimestamp && currentTimestamp !== lastOddsTimestamp && lastOddsTimestamp !== null) {
-            // Odds have been updated - refresh player props
-            console.log('[NBA Landing] 🔄 Odds updated, refreshing player props...');
+            // Odds have been updated - clear sessionStorage and refresh player props
+            console.log('[NBA Landing] 🔄 Odds updated, clearing cache and refreshing player props...');
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.removeItem(CACHE_KEY);
+                sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
+                console.log('[NBA Landing] 🧹 Cleared player props sessionStorage due to odds update');
+              } catch (e) {
+                console.warn('[NBA Landing] ⚠️ Failed to clear sessionStorage:', e);
+              }
+            }
             fetchPlayerProps();
           }
           

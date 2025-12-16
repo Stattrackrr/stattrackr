@@ -11573,28 +11573,26 @@ const lineMovementInFlightRef = useRef(false);
     const stdDev = Math.sqrt(variance);
     const adjustedStdDev = Math.max(stdDev, 2); // Minimum stdDev to avoid division issues
     
-    // Calculate probability-based hit rates using normal distribution
-    let overProb = 50; // Default to 50% if we can't calculate
-    let underProb = 50;
-    
-    if (Number.isFinite(bettingLine) && adjustedStdDev > 0) {
-      // Use the same normalCDF function we use for predictions
-      const normalCDF = (z: number): number => {
-        const t = 1 / (1 + 0.2316419 * Math.abs(z));
-        const d = 0.3989423 * Math.exp(-z * z / 2);
-        const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-        return z > 0 ? 1 - p : p;
-      };
-      
-      const zScore = (bettingLine - mean) / adjustedStdDev;
-      underProb = normalCDF(zScore) * 100;
-      overProb = (1 - normalCDF(zScore)) * 100;
-    }
-    
-    // Convert probabilities to counts for display (maintains compatibility with existing UI)
+    // Calculate actual hit rates by counting games where stat > bettingLine
+    // This gives real hit rates, not probability-based estimates
     const total = chartData.length;
-    const overCount = Math.round((overProb / 100) * total);
-    const underCount = total - overCount;
+    let overCount = 0;
+    let underCount = 0;
+    
+    if (Number.isFinite(bettingLine)) {
+      // Count actual hits: how many games had stat > bettingLine
+      validValues.forEach(val => {
+        if (val > bettingLine) {
+          overCount++;
+        } else {
+          underCount++;
+        }
+      });
+    } else {
+      // If no betting line, can't calculate hit rates
+      overCount = 0;
+      underCount = total;
+    }
     
     const safeReduce = (values: number[]): number => {
       if (!values.length) return 0;
