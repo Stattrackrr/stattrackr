@@ -15285,8 +15285,6 @@ const lineMovementInFlightRef = useRef(false);
                     selectedPlayerName={playerName || undefined}
                     season={2025}
                     isDark={isDark}
-                    opponentTeam={opponentTeam}
-                    opponentTeamLogoUrl={opponentTeamLogoUrl || (opponentTeam ? getEspnLogoUrl(opponentTeam) : undefined)}
                   />
                 </div>
               );
@@ -15458,8 +15456,6 @@ const lineMovementInFlightRef = useRef(false);
                     selectedPlayerName={playerName || undefined}
                     season={2025}
                     isDark={isDark}
-                    opponentTeam={opponentTeam}
-                    opponentTeamLogoUrl={opponentTeamLogoUrl || (opponentTeam ? getEspnLogoUrl(opponentTeam) : undefined)}
                   />
                 </div>
               );
