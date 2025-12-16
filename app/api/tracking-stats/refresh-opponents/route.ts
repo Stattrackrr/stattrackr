@@ -85,11 +85,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
+    const categoryParam = searchParams.get('category'); // Optional: 'passing' or 'rebounding'
     
-    console.log(`[Tracking Stats Opponents Refresh] Starting bulk refresh for ${season}-${season + 1} season`);
+    // For now, test with just passing. If it works, we can add rebounding as a separate call
+    const categories = categoryParam ? [categoryParam] : ['passing'];
+    
+    console.log(`[Tracking Stats Opponents Refresh] Starting bulk refresh for ${season}-${season + 1} season (categories: ${categories.join(', ')})`);
     
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-    const categories = ['passing', 'rebounding'];
     
     let totalCached = 0;
     let totalApiCalls = 0;
