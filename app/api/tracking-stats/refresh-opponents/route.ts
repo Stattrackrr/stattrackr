@@ -46,7 +46,7 @@ const NBA_TEAM_IDS: Record<string, string> = {
   'UTA': '1610612762', 'WAS': '1610612764'
 };
 
-async function fetchNBAStats(url: string, timeout = 30000) {
+async function fetchNBAStats(url: string, timeout = 90000) { // 90 seconds for opponent-specific queries
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
           console.log(`[Tracking Stats Opponents Refresh] Fetching ${category} data vs ${opponentTeam}...`);
           
           totalApiCalls++;
-          const data = await fetchNBAStats(url);
+          const data = await fetchNBAStats(url, 90000); // 90 second timeout for opponent queries
           
           if (!data?.resultSets?.[0]) {
             console.warn(`[Tracking Stats Opponents Refresh] No data for ${category} vs ${opponentTeam}`);
@@ -175,7 +175,19 @@ export async function GET(request: NextRequest) {
       }
 
       // Process and cache data by team (similar to normal refresh)
-      const teamAbbrIdx = opponentData.passing?.headers?.indexOf('TEAM_ABBREVIATION') ?? -1;
+      // Check if we have data for at least one category
+      const hasData = categories.some(cat => opponentData[cat]?.headers && opponentData[cat]?.rows);
+      
+      if (!hasData) {
+        console.warn(`[Tracking Stats Opponents Refresh] ⚠️ No data retrieved for ${opponentTeam}, skipping`);
+        continue;
+      }
+      
+      // Use the first available category's headers to find team abbreviation index
+      const firstCategoryWithData = categories.find(cat => opponentData[cat]?.headers);
+      const teamAbbrIdx = firstCategoryWithData 
+        ? opponentData[firstCategoryWithData].headers.indexOf('TEAM_ABBREVIATION')
+        : -1;
       
       if (teamAbbrIdx === -1) {
         console.warn(`[Tracking Stats Opponents Refresh] ⚠️ Missing TEAM_ABBREVIATION for ${opponentTeam}, skipping`);
