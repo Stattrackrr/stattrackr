@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { NBA_TEAMS, normalizeAbbr } from '@/lib/nbaAbbr';
 import { currentNbaSeason } from '@/lib/nbaConstants';
-import { getNBACache, setNBACache } from '@/lib/supabaseCache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
 export const runtime = 'nodejs';
 
