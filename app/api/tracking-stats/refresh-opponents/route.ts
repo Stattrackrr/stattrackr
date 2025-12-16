@@ -1,6 +1,6 @@
 // app/api/tracking-stats/refresh-opponents/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cache, CACHE_TTL } from '@/lib/cache';
+import { cache, CACHE_TTL, getCacheKey } from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { currentNbaSeason } from '@/lib/nbaUtils';
 
@@ -46,57 +46,31 @@ const NBA_TEAM_IDS: Record<string, string> = {
   'UTA': '1610612762', 'WAS': '1610612764'
 };
 
-async function fetchNBAStats(url: string, timeout = 60000, retries = 1) {
-  let lastError: Error | null = null;
-  
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchNBAStats(url: string, timeout = 30000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    try {
-      if (attempt > 0) {
-        // Exponential backoff: wait 2s, 4s, 8s between retries
-        const delay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
-        console.log(`[Tracking Stats Opponents Refresh] Retry attempt ${attempt}/${retries} after ${delay}ms delay...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+  try {
+    const response = await fetch(url, {
+      headers: NBA_HEADERS,
+      signal: controller.signal,
+      cache: 'no-store'
+    });
 
-      const response = await fetch(url, {
-        headers: NBA_HEADERS,
-        signal: controller.signal,
-        cache: 'no-store'
-      });
+    clearTimeout(timeoutId);
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`NBA API ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      lastError = error;
-      
-      if (error.name === 'AbortError') {
-        lastError = new Error('Request timeout');
-      }
-      
-      // If this was the last attempt, throw the error
-      if (attempt === retries) {
-        throw lastError;
-      }
-      
-      // Otherwise, continue to retry
-      if (lastError) {
-        console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed: ${lastError.message}, retrying...`);
-      } else {
-        console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed, retrying...`);
-      }
+    if (!response.ok) {
+      throw new Error(`NBA API ${response.status}`);
     }
+
+    return await response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
   }
-  
-  throw lastError || new Error('Unknown error');
 }
 
 /**
@@ -123,6 +97,7 @@ export async function GET(request: NextRequest) {
     const errors: string[] = [];
     
     // For each opponent team, fetch league-wide data filtered by that opponent
+    // Similar to normal refresh, but with OpponentTeamID set
     for (const opponentTeam of ALL_NBA_TEAMS) {
       const opponentTeamId = NBA_TEAM_IDS[opponentTeam];
       if (!opponentTeamId) {
@@ -132,19 +107,10 @@ export async function GET(request: NextRequest) {
       
       console.log(`[Tracking Stats Opponents Refresh] Processing opponent: ${opponentTeam} (${opponentTeamId})`);
       
-      // Add a delay between opponents to avoid rate limiting
-      // (delay is only added after the first opponent)
-      if (opponentTeam !== ALL_NBA_TEAMS[0]) {
-        await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay to avoid rate limiting
-      }
+      // Fetch league-wide data for both categories filtered by this opponent (2 API calls per opponent)
+      const opponentData: Record<string, any> = {};
       
-      // Fetch both categories for this opponent
       for (const category of categories) {
-        // Add a delay between categories to avoid rate limiting
-        if (category === 'rebounding') {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between passing and rebounding
-        }
-        
         const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
         
         try {
@@ -185,103 +151,108 @@ export async function GET(request: NextRequest) {
           console.log(`[Tracking Stats Opponents Refresh] Fetching ${category} data vs ${opponentTeam}...`);
           
           totalApiCalls++;
-          const data = await fetchNBAStats(url, 60000, 1); // 60s timeout, 1 retry
+          const data = await fetchNBAStats(url);
           
           if (!data?.resultSets?.[0]) {
-            console.warn(`[Tracking Stats Opponents Refresh] ⚠️ No data for ${category} vs ${opponentTeam}`);
-            totalErrors++;
-            errors.push(`${opponentTeam} ${category}: No data`);
+            console.warn(`[Tracking Stats Opponents Refresh] No data for ${category} vs ${opponentTeam}`);
             continue;
           }
 
           const resultSet = data.resultSets[0];
           const headers = resultSet.headers || [];
           const rows = resultSet.rowSet || [];
-          
+
+          opponentData[category] = { headers, rows };
           console.log(`[Tracking Stats Opponents Refresh] Got ${rows.length} players for ${category} vs ${opponentTeam}`);
-
-          // Find column indices
-          const playerIdIdx = headers.indexOf('PLAYER_ID');
-          const playerNameIdx = headers.indexOf('PLAYER_NAME');
-          const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-          const gpIdx = headers.indexOf('GP');
-
-          if (playerIdIdx === -1 || playerNameIdx === -1 || teamAbbrIdx === -1) {
-            console.warn(`[Tracking Stats Opponents Refresh] ⚠️ Missing required columns for ${category} vs ${opponentTeam}`);
-            totalErrors++;
-            errors.push(`${opponentTeam} ${category}: Missing columns`);
-            continue;
-          }
-
-          // Process and cache data for each team
-          for (const team of ALL_NBA_TEAMS) {
-            // Filter rows for this team
-            const teamRows = rows.filter((row: any[]) => row[teamAbbrIdx] === team);
-            
-            if (teamRows.length === 0) {
-              // No players for this team vs this opponent - skip caching
-              continue;
-            }
-
-            // Map to our format
-            const players = teamRows.map((row: any[]) => {
-              const stats: any = {};
-              headers.forEach((header: string, idx: number) => {
-                stats[header] = row[idx];
-              });
-
-              const player: any = {
-                playerId: String(stats.PLAYER_ID),
-                playerName: stats.PLAYER_NAME,
-                gp: stats.GP || 0,
-              };
-
-              if (category === 'passing') {
-                player.potentialAst = stats.POTENTIAL_AST;
-                player.ast = stats.AST_ADJ || stats.AST;
-                player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
-                player.passesMade = stats.PASSES_MADE;
-                player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
-              } else {
-                player.rebChances = stats.REB_CHANCES;
-                player.reb = stats.REB;
-                player.rebChancePct = stats.REB_CHANCE_PCT;
-                player.rebContest = stats.REB_CONTEST;
-                player.rebUncontest = stats.REB_UNCONTEST;
-                player.avgRebDist = stats.AVG_REB_DIST;
-                player.drebChances = stats.DREB_CHANCES;
-                player.drebChancePct = stats.DREB_CHANCE_PCT;
-                player.avgDrebDist = stats.AVG_DREB_DIST;
-              }
-
-              return player;
-            });
-
-            // Cache this team's data for this category vs this opponent
-            const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}_vs_${opponentTeam.toUpperCase()}`;
-            const payload = {
-              team,
-              season: seasonStr,
-              category,
-              players,
-              opponentTeam,
-              cachedAt: new Date().toISOString()
-            };
-            
-            // Cache in both Supabase (persistent) and in-memory
-            await setNBACache(cacheKey, 'team_tracking', payload, CACHE_TTL.TRACKING_STATS);
-            cache.set(cacheKey, payload, CACHE_TTL.TRACKING_STATS);
-            
-            totalCached++;
-            
-            if (totalCached % 100 === 0) {
-              console.log(`[Tracking Stats Opponents Refresh] 💾 Cached ${totalCached} combinations so far...`);
-            }
-          }
         } catch (error: any) {
           console.error(`[Tracking Stats Opponents Refresh] ❌ Error fetching ${category} vs ${opponentTeam}:`, error.message);
           totalErrors++;
           errors.push(`${opponentTeam} ${category}: ${error.message}`);
+        }
+      }
+
+      // Process and cache data by team (similar to normal refresh)
+      const teamAbbrIdx = opponentData.passing?.headers?.indexOf('TEAM_ABBREVIATION') ?? -1;
+      
+      if (teamAbbrIdx === -1) {
+        console.warn(`[Tracking Stats Opponents Refresh] ⚠️ Missing TEAM_ABBREVIATION for ${opponentTeam}, skipping`);
+        continue;
+      }
+
+      for (const team of ALL_NBA_TEAMS) {
+        for (const category of categories) {
+          const { headers, rows } = opponentData[category] || {};
+          if (!headers || !rows) continue;
+
+          // Filter rows for this team
+          const teamRows = rows.filter((row: any[]) => row[teamAbbrIdx] === team);
+          
+          if (teamRows.length === 0) {
+            // No players for this team vs this opponent - skip caching
+            continue;
+          }
+
+          // Find column indices
+          const playerIdIdx = headers.indexOf('PLAYER_ID');
+          const playerNameIdx = headers.indexOf('PLAYER_NAME');
+          const gpIdx = headers.indexOf('GP');
+
+          if (playerIdIdx === -1 || playerNameIdx === -1) continue;
+
+          // Map to our format
+          const players = teamRows.map((row: any[]) => {
+            const stats: any = {};
+            headers.forEach((header: string, idx: number) => {
+              stats[header] = row[idx];
+            });
+
+            const player: any = {
+              playerId: String(stats.PLAYER_ID),
+              playerName: stats.PLAYER_NAME,
+              gp: stats.GP || 0,
+            };
+
+            if (category === 'passing') {
+              player.potentialAst = stats.POTENTIAL_AST;
+              player.ast = stats.AST_ADJ || stats.AST;
+              player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+              player.passesMade = stats.PASSES_MADE;
+              player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+            } else {
+              player.rebChances = stats.REB_CHANCES;
+              player.reb = stats.REB;
+              player.rebChancePct = stats.REB_CHANCE_PCT;
+              player.rebContest = stats.REB_CONTEST;
+              player.rebUncontest = stats.REB_UNCONTEST;
+              player.avgRebDist = stats.AVG_REB_DIST;
+              player.drebChances = stats.DREB_CHANCES;
+              player.drebChancePct = stats.DREB_CHANCE_PCT;
+              player.avgDrebDist = stats.AVG_DREB_DIST;
+            }
+
+            return player;
+          });
+
+          // Cache this team's data for this category vs this opponent
+          const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}_vs_${opponentTeam.toUpperCase()}`;
+          const payload = {
+            team,
+            season: seasonStr,
+            category,
+            players,
+            opponentTeam,
+            cachedAt: new Date().toISOString()
+          };
+          
+          // Cache in both Supabase (persistent) and in-memory (like normal refresh should)
+          await setNBACache(cacheKey, 'team_tracking', payload, CACHE_TTL.TRACKING_STATS);
+          cache.set(cacheKey, payload, CACHE_TTL.TRACKING_STATS);
+          
+          totalCached++;
+          
+          if (totalCached % 100 === 0) {
+            console.log(`[Tracking Stats Opponents Refresh] 💾 Cached ${totalCached} combinations so far...`);
+          }
         }
       }
     }
