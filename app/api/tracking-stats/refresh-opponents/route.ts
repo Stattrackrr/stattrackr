@@ -46,7 +46,7 @@ const NBA_TEAM_IDS: Record<string, string> = {
   'UTA': '1610612762', 'WAS': '1610612764'
 };
 
-async function fetchNBAStats(url: string, timeout = 45000, retries = 2) {
+async function fetchNBAStats(url: string, timeout = 60000, retries = 1) {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -132,17 +132,17 @@ export async function GET(request: NextRequest) {
       
       console.log(`[Tracking Stats Opponents Refresh] Processing opponent: ${opponentTeam} (${opponentTeamId})`);
       
-      // Add a small delay between opponents to avoid rate limiting
+      // Add a delay between opponents to avoid rate limiting
       // (delay is only added after the first opponent)
       if (opponentTeam !== ALL_NBA_TEAMS[0]) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay to avoid rate limiting
       }
       
       // Fetch both categories for this opponent
       for (const category of categories) {
-        // Add a small delay between categories to avoid rate limiting
+        // Add a delay between categories to avoid rate limiting
         if (category === 'rebounding') {
-          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between passing and rebounding
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between passing and rebounding
         }
         
         const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
           console.log(`[Tracking Stats Opponents Refresh] Fetching ${category} data vs ${opponentTeam}...`);
           
           totalApiCalls++;
-          const data = await fetchNBAStats(url, 45000, 2); // 45s timeout, 2 retries
+          const data = await fetchNBAStats(url, 60000, 1); // 60s timeout, 1 retry
           
           if (!data?.resultSets?.[0]) {
             console.warn(`[Tracking Stats Opponents Refresh] ⚠️ No data for ${category} vs ${opponentTeam}`);
