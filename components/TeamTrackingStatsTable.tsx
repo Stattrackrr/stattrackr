@@ -48,7 +48,7 @@ export function TeamTrackingStatsTable({
   opponentTeamLogoUrl
 }: TeamTrackingStatsTableProps) {
   const [category, setCategory] = useState<StatCategory>('passing');
-  const [gameFilter, setGameFilter] = useState<'all' | 'vs'>('all'); // 'all' or 'vs' opponent
+  const [gameFilter, setGameFilter] = useState<'all' | 'last5'>('all'); // 'all' or 'last5' games
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [passingData, setPassingData] = useState<PlayerTrackingData[]>([]);
@@ -70,16 +70,14 @@ export function TeamTrackingStatsTable({
       setError(null);
 
       try {
-        // Build URLs with optional opponent filter
+        // Build URLs with optional last 5 games filter
         const baseParams = `team=${encodeURIComponent(teamAbbr)}&season=${season}`;
-        const opponentParam = (gameFilter === 'vs' && opponentTeam && opponentTeam !== 'N/A') 
-          ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` 
-          : '';
+        const last5Param = gameFilter === 'last5' ? `&lastNGames=5` : '';
         
         // Fetch both passing and rebounding data in parallel
         const [passingResponse, reboundingResponse] = await Promise.all([
-          fetch(`/api/tracking-stats/team?${baseParams}&category=passing${opponentParam}`),
-          fetch(`/api/tracking-stats/team?${baseParams}&category=rebounding${opponentParam}`)
+          fetch(`/api/tracking-stats/team?${baseParams}&category=passing${last5Param}`),
+          fetch(`/api/tracking-stats/team?${baseParams}&category=rebounding${last5Param}`)
         ]);
 
         if (!passingResponse.ok || !reboundingResponse.ok) {
@@ -93,36 +91,12 @@ export function TeamTrackingStatsTable({
 
         // Check if API returned an error (even with 200 status)
         if (passingResult.error || reboundingResult.error) {
-          // If opponent-specific data failed, fall back to "all games" data
-          if (gameFilter === 'vs' && opponentTeam && opponentTeam !== 'N/A') {
-            console.log('[TeamTrackingStats] Opponent-specific data unavailable, falling back to all games data');
-            
-            // Fetch "all games" data as fallback
-            const [allGamesPassingResponse, allGamesReboundingResponse] = await Promise.all([
-              fetch(`/api/tracking-stats/team?${baseParams}&category=passing`),
-              fetch(`/api/tracking-stats/team?${baseParams}&category=rebounding`)
-            ]);
-
-            if (allGamesPassingResponse.ok && allGamesReboundingResponse.ok) {
-              const [allGamesPassingResult, allGamesReboundingResult] = await Promise.all([
-                allGamesPassingResponse.json(),
-                allGamesReboundingResponse.json()
-              ]);
-
-              setPassingData(allGamesPassingResult.players || []);
-              setReboundingData(allGamesReboundingResult.players || []);
-              setError(`Opponent-specific stats for ${opponentTeam} are not available. Showing all games data instead.`);
-            } else {
-              throw new Error(`Failed to fetch team tracking stats`);
-            }
-          } else {
-            throw new Error(passingResult.error || reboundingResult.error || 'Failed to fetch team tracking stats');
-          }
-        } else {
-          // Success - use the data
-          setPassingData(passingResult.players || []);
-          setReboundingData(reboundingResult.players || []);
+          throw new Error(passingResult.error || reboundingResult.error || 'Failed to fetch team tracking stats');
         }
+
+        // Success - use the data
+        setPassingData(passingResult.players || []);
+        setReboundingData(reboundingResult.players || []);
       } catch (err: any) {
         console.error('[TeamTrackingStats] Error:', err);
         setError(err.message);
@@ -203,39 +177,29 @@ export function TeamTrackingStatsTable({
         </div>
       </div>
 
-      {/* Game Filter - Show only if opponent is available */}
-      {opponentTeam && opponentTeam !== 'N/A' && (
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setGameFilter('all')}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-              gameFilter === 'all'
-                ? 'bg-gray-900 dark:bg-gray-700 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            All Games
-          </button>
-          <button
-            onClick={() => setGameFilter('vs')}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              gameFilter === 'vs'
-                ? 'bg-gray-900 dark:bg-gray-700 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            <span>vs</span>
-            {opponentTeamLogoUrl && (
-              <img 
-                src={opponentTeamLogoUrl} 
-                alt={opponentTeam}
-                className="w-5 h-5 object-contain"
-              />
-            )}
-            <span>{opponentTeam}</span>
-          </button>
-        </div>
-      )}
+      {/* Game Filter - All Games vs Last 5 Games */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setGameFilter('all')}
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+            gameFilter === 'all'
+              ? 'bg-gray-900 dark:bg-gray-700 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+          }`}
+        >
+          All Games
+        </button>
+        <button
+          onClick={() => setGameFilter('last5')}
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+            gameFilter === 'last5'
+              ? 'bg-gray-900 dark:bg-gray-700 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+          }`}
+        >
+          Last 5 Games
+        </button>
+      </div>
 
       {/* Loading State */}
       {loading && (

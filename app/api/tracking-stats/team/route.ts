@@ -151,15 +151,13 @@ async function refreshTrackingStatsInBackground(
   team: string,
   season: number,
   category: string,
-  opponentTeam: string | null,
-  cacheKey: string
+  opponentTeam: string | null, // Keep for backward compatibility but not used
+  cacheKey: string,
+  lastNGames?: string | null
 ): Promise<void> {
   try {
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
-    const opponentTeamId = opponentTeam && NBA_TEAM_IDS[opponentTeam] 
-      ? NBA_TEAM_IDS[opponentTeam] 
-      : "0";
     
     const params = new URLSearchParams({
       College: "",
@@ -172,11 +170,11 @@ async function refreshTrackingStatsInBackground(
       DraftYear: "",
       GameScope: "",
       Height: "",
-      LastNGames: "0",
+      LastNGames: lastNGames || "0",
       LeagueID: "00",
       Location: "",
       Month: "0",
-      OpponentTeamID: opponentTeamId,
+      OpponentTeamID: "0", // No opponent filter
       Outcome: "",
       PORound: "0",
       PerMode: "PerGame",
@@ -282,7 +280,7 @@ export async function GET(request: NextRequest) {
     const team = searchParams.get('team');
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     const category = searchParams.get('category') || 'passing';
-    const opponentTeam = searchParams.get('opponentTeam');
+    const lastNGames = searchParams.get('lastNGames'); // e.g., "5" for last 5 games
     const forceRefresh = searchParams.get('refresh') === '1';
 
     if (!team) {
@@ -292,9 +290,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build cache key (include opponent if filtering)
-    const cacheKey = opponentTeam 
-      ? `tracking_stats_${team.toUpperCase()}_${season}_${category}_vs_${opponentTeam.toUpperCase()}`
+    // Build cache key (include lastNGames if filtering)
+    const cacheKey = lastNGames 
+      ? `tracking_stats_${team.toUpperCase()}_${season}_${category}_last${lastNGames}`
       : getCacheKey.trackingStats(team, season, category);
     
     // Try to serve from cache first (for both all games and opponent-specific)
@@ -325,7 +323,7 @@ export async function GET(request: NextRequest) {
           console.log(`[Team Tracking Stats] ⚠️ Cached data has no players (might be legitimate). Fetching fresh data to verify...`);
           cached = null; // Treat as cache miss to verify
         } else {
-          const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+          const filterSuffix = lastNGames ? ` (last ${lastNGames} games)` : '';
           
           // Check if data is stale (older than 24 hours for daily updates)
           const cacheMetadata = (cached as any).__cache_metadata;
@@ -338,7 +336,7 @@ export async function GET(request: NextRequest) {
             console.log(`[Team Tracking Stats] ⚠️ Cache is stale (older than 24h) for ${team} ${category}${filterSuffix}, refreshing in background...`);
             
             // Trigger background refresh (don't await)
-            refreshTrackingStatsInBackground(team, season, category, opponentTeam, cacheKey).catch(err => {
+            refreshTrackingStatsInBackground(team, season, category, null, cacheKey, lastNGames).catch(err => {
               console.error(`[Team Tracking Stats] Background refresh failed:`, err);
             });
           }
@@ -361,7 +359,7 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+      const filterSuffix = lastNGames ? ` (last ${lastNGames} games)` : '';
       console.log(`[Team Tracking Stats] ⚠️ Cache miss for ${team} ${category}${filterSuffix} - falling back to API`);
       
       // If no cache, try to fetch from NBA API (even in production with short timeout)
@@ -374,23 +372,18 @@ export async function GET(request: NextRequest) {
 
       // In development, continue to fetch from NBA API even if cache is empty
       if (!forceRefresh) {
-        const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+        const filterSuffix = lastNGames ? ` (last ${lastNGames} games)` : '';
         console.log(`[Team Tracking Stats] No cache found, fetching from NBA API for ${team} ${category}${filterSuffix}, season ${season}`);
       }
     }
 
-    const filterSuffix = opponentTeam ? ` vs ${opponentTeam}` : '';
+    const filterSuffix = lastNGames ? ` (last ${lastNGames} games)` : '';
     console.log(`[Team Tracking Stats] Fetching ${category} stats for ${team}${filterSuffix}, season ${season}`);
 
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     
     // Determine which endpoint to use based on category
     const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
-    
-    // Get opponent team ID if filtering by opponent
-    const opponentTeamId = opponentTeam && NBA_TEAM_IDS[opponentTeam] 
-      ? NBA_TEAM_IDS[opponentTeam] 
-      : "0";
     
     // Fetch league-wide stats
     const params = new URLSearchParams({
@@ -404,11 +397,11 @@ export async function GET(request: NextRequest) {
       DraftYear: "",
       GameScope: "",
       Height: "",
-      LastNGames: "0",
+      LastNGames: lastNGames || "0", // Use lastNGames parameter if provided
       LeagueID: "00",
       Location: "",
       Month: "0",
-      OpponentTeamID: opponentTeamId,
+      OpponentTeamID: "0", // No opponent filter
       Outcome: "",
       PORound: "0",
       PerMode: "PerGame",
@@ -567,7 +560,7 @@ export async function GET(request: NextRequest) {
       season: seasonStr,
       category,
       players: teamPlayers,
-      opponentTeam: opponentTeam || undefined, // Include opponent in response if filtering
+      lastNGames: lastNGames || undefined, // Include lastNGames in response if filtering
       cachedAt: new Date().toISOString()
     };
 
