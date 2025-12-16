@@ -497,6 +497,32 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       results.details.push({ team: 'ALL', category: 'team_defensive_stats', status: 'error', error: error.message });
     }
 
+    // Refresh opponent-specific tracking stats (vs data) - fetch all team × opponent combinations
+    try {
+      console.log('[NBA Stats Refresh] Refreshing opponent-specific tracking stats...');
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000';
+      const opponentTrackingStatsUrl = `${baseUrl}/api/tracking-stats/refresh-opponents`;
+      const opponentTrackingStatsResponse = await fetch(opponentTrackingStatsUrl, {
+        cache: 'no-store',
+        headers: {
+          'User-Agent': 'StatTrackr-Cron/1.0',
+        },
+      });
+      if (opponentTrackingStatsResponse.ok) {
+        const opponentTrackingStatsResult = await opponentTrackingStatsResponse.json();
+        console.log('[NBA Stats Refresh] ✅ Opponent-specific tracking stats refreshed:', opponentTrackingStatsResult);
+        results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'refreshed' });
+      } else {
+        console.warn('[NBA Stats Refresh] ⚠️ Failed to refresh opponent-specific tracking stats:', opponentTrackingStatsResponse.status);
+        results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'error', error: `HTTP ${opponentTrackingStatsResponse.status}` });
+      }
+    } catch (error: any) {
+      console.error('[NBA Stats Refresh] ❌ Error refreshing opponent-specific tracking stats:', error);
+      results.details.push({ team: 'ALL', category: 'tracking_stats_opponents', status: 'error', error: error.message });
+    }
+
     // Refresh all teams' tracking stats (passing and rebounding) in parallel batches
     // Process in batches of 10 to avoid overwhelming the API
     const BATCH_SIZE = trackingBatchSize;
