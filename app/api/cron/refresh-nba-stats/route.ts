@@ -487,14 +487,14 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       if (defensiveStatsResponse.ok) {
         const defensiveStatsResult = await defensiveStatsResponse.json();
         console.log('[NBA Stats Refresh] ✅ Team defensive stats refreshed:', defensiveStatsResult);
-        results.details.push({ type: 'team_defensive_stats', status: 'refreshed', teamsProcessed: defensiveStatsResult.teamsProcessed });
+        results.details.push({ team: 'ALL', category: 'team_defensive_stats', status: 'refreshed' });
       } else {
         console.warn('[NBA Stats Refresh] ⚠️ Failed to refresh team defensive stats:', defensiveStatsResponse.status);
-        results.details.push({ type: 'team_defensive_stats', status: 'error', error: `HTTP ${defensiveStatsResponse.status}` });
+        results.details.push({ team: 'ALL', category: 'team_defensive_stats', status: 'error', error: `HTTP ${defensiveStatsResponse.status}` });
       }
     } catch (error: any) {
       console.error('[NBA Stats Refresh] ❌ Error refreshing team defensive stats:', error);
-      results.details.push({ type: 'team_defensive_stats', status: 'error', error: error.message });
+      results.details.push({ team: 'ALL', category: 'team_defensive_stats', status: 'error', error: error.message });
     }
 
     // Refresh all teams' tracking stats (passing and rebounding) in parallel batches
