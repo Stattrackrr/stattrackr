@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { cache } from '@/lib/cache';
-import { getGameDateFromOddsCache } from '@/lib/refreshOdds';
 import type { OddsCache } from '@/app/api/odds/refresh/route';
 import { TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 
@@ -15,6 +14,46 @@ const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
 
 function getPlayerPropsCacheKey(gameDate: string): string {
   return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`;
+}
+
+/**
+ * Get the game date from odds cache in US Eastern Time
+ */
+function getGameDateFromOddsCache(oddsCache: OddsCache): string {
+  const getUSEasternDateString = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    });
+  };
+  
+  const todayUSET = getUSEasternDateString(new Date());
+  
+  if (!oddsCache.games || oddsCache.games.length === 0) {
+    return todayUSET;
+  }
+  
+  const gameDates = new Set<string>();
+  for (const game of oddsCache.games) {
+    if (!game.commenceTime) continue;
+    const commenceStr = String(game.commenceTime).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
+      gameDates.add(commenceStr);
+    } else {
+      const date = new Date(commenceStr);
+      gameDates.add(getUSEasternDateString(date));
+    }
+  }
+  
+  if (gameDates.has(todayUSET)) {
+    return todayUSET;
+  }
+  
+  return Array.from(gameDates).sort()[0] || todayUSET;
 }
 
 function parseAmericanOdds(oddsStr: string): number | null {
