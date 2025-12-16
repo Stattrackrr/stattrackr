@@ -11074,7 +11074,7 @@ const lineMovementInFlightRef = useRef(false);
       const arr = Array.isArray(pos) ? pos : [];
       arr.forEach((p: any) => {
         const id = p?.id || p?.player_id;
-        if (id && typeof id === 'number' && id !== selectedPlayer?.id) {
+        if (id && typeof id === 'number' && String(id) !== String(selectedPlayer?.id || '')) {
           teammateIds.push(id);
         }
       });
