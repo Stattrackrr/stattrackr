@@ -313,7 +313,6 @@ export interface OfficialOddsCardProps {
   propsMode?: 'player' | 'team';
   selectedPlayer?: any;
   primaryMarketLine?: number | null;
-  bettingLine?: number;
 }
 
 /* ==== Types (BDL) ==== */
