@@ -91,8 +91,38 @@ export function TeamTrackingStatsTable({
           reboundingResponse.json()
         ]);
 
-        setPassingData(passingResult.players || []);
-        setReboundingData(reboundingResult.players || []);
+        // Check if API returned an error (even with 200 status)
+        if (passingResult.error || reboundingResult.error) {
+          // If opponent-specific data failed, fall back to "all games" data
+          if (gameFilter === 'vs' && opponentTeam && opponentTeam !== 'N/A') {
+            console.log('[TeamTrackingStats] Opponent-specific data unavailable, falling back to all games data');
+            
+            // Fetch "all games" data as fallback
+            const [allGamesPassingResponse, allGamesReboundingResponse] = await Promise.all([
+              fetch(`/api/tracking-stats/team?${baseParams}&category=passing`),
+              fetch(`/api/tracking-stats/team?${baseParams}&category=rebounding`)
+            ]);
+
+            if (allGamesPassingResponse.ok && allGamesReboundingResponse.ok) {
+              const [allGamesPassingResult, allGamesReboundingResult] = await Promise.all([
+                allGamesPassingResponse.json(),
+                allGamesReboundingResponse.json()
+              ]);
+
+              setPassingData(allGamesPassingResult.players || []);
+              setReboundingData(allGamesReboundingResult.players || []);
+              setError(`Opponent-specific stats for ${opponentTeam} are not available. Showing all games data instead.`);
+            } else {
+              throw new Error(`Failed to fetch team tracking stats`);
+            }
+          } else {
+            throw new Error(passingResult.error || reboundingResult.error || 'Failed to fetch team tracking stats');
+          }
+        } else {
+          // Success - use the data
+          setPassingData(passingResult.players || []);
+          setReboundingData(reboundingResult.players || []);
+        }
       } catch (err: any) {
         console.error('[TeamTrackingStats] Error:', err);
         setError(err.message);
