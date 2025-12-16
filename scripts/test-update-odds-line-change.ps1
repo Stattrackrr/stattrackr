@@ -1,8 +1,8 @@
 # PowerShell script to test if update-odds correctly updates lines and recalculates hit rates
 # This tests the scenario where a line changes (e.g., 1.5 → 2.5)
 
-$baseUrl = "https://stattrackr.co"
-# For local testing: $baseUrl = "http://localhost:3000"
+$baseUrl = "http://localhost:3000"
+# For production testing: $baseUrl = "https://stattrackr.co"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Testing Player Props Line Update" -ForegroundColor Yellow
@@ -110,7 +110,7 @@ try {
                 }
             } else {
                 Write-Host ""
-                Write-Host "  ℹ️ Line did not change (still $oldLine) - this is expected if odds haven't changed" -ForegroundColor Yellow
+                Write-Host "  Info: Line did not change (still $oldLine) - this is expected if odds have not changed" -ForegroundColor Yellow
             }
         } else {
             Write-Host "  ⚠️ Could not find the same prop after update" -ForegroundColor Yellow

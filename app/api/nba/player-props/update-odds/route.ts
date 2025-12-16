@@ -132,23 +132,26 @@ function updatePropWithNewOdds(
   const overProb = implied ? implied.overImpliedProb : americanToImpliedProb(parseFloat(newOverOdds.replace(/[^0-9+-]/g, '')));
   const underProb = implied ? implied.underImpliedProb : americanToImpliedProb(parseFloat(newUnderOdds.replace(/[^0-9+-]/g, '')));
   
-  // Recalculate hit rates using stored stat value arrays (if available)
+  // ALWAYS recalculate hit rates using stored stat value arrays (if available)
+  // This ensures hit rates match the current line, even if the line didn't change
+  // (e.g., if hit rates were calculated for 1.5 but line is 2.5, we need to recalculate for 2.5)
   let last5HitRate = oldProp.last5HitRate;
   let last10HitRate = oldProp.last10HitRate;
   let h2hHitRate = oldProp.h2hHitRate;
   let seasonHitRate = oldProp.seasonHitRate;
   
-  // Recalculate hit rates if stat value arrays are stored and line changed
-  if (oldProp.__last5Values && Array.isArray(oldProp.__last5Values)) {
+  // Always recalculate hit rates if stat value arrays are stored
+  // This ensures hit rates always match the current line
+  if (oldProp.__last5Values && Array.isArray(oldProp.__last5Values) && oldProp.__last5Values.length > 0) {
     last5HitRate = recalculateHitRates(oldProp.__last5Values, newLine);
   }
-  if (oldProp.__last10Values && Array.isArray(oldProp.__last10Values)) {
+  if (oldProp.__last10Values && Array.isArray(oldProp.__last10Values) && oldProp.__last10Values.length > 0) {
     last10HitRate = recalculateHitRates(oldProp.__last10Values, newLine);
   }
-  if (oldProp.__h2hStats && Array.isArray(oldProp.__h2hStats)) {
+  if (oldProp.__h2hStats && Array.isArray(oldProp.__h2hStats) && oldProp.__h2hStats.length > 0) {
     h2hHitRate = recalculateHitRates(oldProp.__h2hStats, newLine);
   }
-  if (oldProp.__seasonValues && Array.isArray(oldProp.__seasonValues)) {
+  if (oldProp.__seasonValues && Array.isArray(oldProp.__seasonValues) && oldProp.__seasonValues.length > 0) {
     seasonHitRate = recalculateHitRates(oldProp.__seasonValues, newLine);
   }
   
@@ -462,21 +465,21 @@ export async function POST(request: NextRequest) {
           primaryMatch.underOdds
         );
         
-        // Check if hit rates were recalculated
+        // Check if hit rates were recalculated (they should always be if stat arrays exist)
         const hasStatArrays = !!(oldProp.__last5Values || oldProp.__last10Values || oldProp.__h2hStats || oldProp.__seasonValues);
-        const l5Recalculated = lineChanged && hasStatArrays && 
+        const l5Recalculated = hasStatArrays && 
           (updatedProp.last5HitRate?.hits !== oldL5HitRate?.hits || updatedProp.last5HitRate?.total !== oldL5HitRate?.total);
-        const l10Recalculated = lineChanged && hasStatArrays && 
+        const l10Recalculated = hasStatArrays && 
           (updatedProp.last10HitRate?.hits !== oldL10HitRate?.hits || updatedProp.last10HitRate?.total !== oldL10HitRate?.total);
         
         if (l5Recalculated || l10Recalculated) {
           hitRatesRecalculated++;
-          if (linesChanged <= 5) { // Log first 5 to avoid spam
-            console.log(`[Player Props Update Odds] ✅ Hit rates recalculated for ${oldProp.playerName} ${oldProp.statType}: L5 ${oldL5HitRate?.hits}/${oldL5HitRate?.total} → ${updatedProp.last5HitRate?.hits}/${updatedProp.last5HitRate?.total}, L10 ${oldL10HitRate?.hits}/${oldL10HitRate?.total} → ${updatedProp.last10HitRate?.hits}/${updatedProp.last10HitRate?.total}`);
+          if (hitRatesRecalculated <= 5) { // Log first 5 to avoid spam
+            console.log(`[Player Props Update Odds] ✅ Hit rates recalculated for ${oldProp.playerName} ${oldProp.statType} (line ${primaryMatch.line}): L5 ${oldL5HitRate?.hits}/${oldL5HitRate?.total} → ${updatedProp.last5HitRate?.hits}/${updatedProp.last5HitRate?.total}, L10 ${oldL10HitRate?.hits}/${oldL10HitRate?.total} → ${updatedProp.last10HitRate?.hits}/${updatedProp.last10HitRate?.total}`);
           }
-        } else if (lineChanged && !hasStatArrays) {
-          if (linesChanged <= 5) {
-            console.log(`[Player Props Update Odds] ⚠️ Line changed but no stat arrays stored for ${oldProp.playerName} ${oldProp.statType} - hit rates not recalculated`);
+        } else if (!hasStatArrays) {
+          if (updatedCount <= 5) {
+            console.log(`[Player Props Update Odds] ⚠️ No stat arrays stored for ${oldProp.playerName} ${oldProp.statType} - hit rates not recalculated`);
           }
         }
         
