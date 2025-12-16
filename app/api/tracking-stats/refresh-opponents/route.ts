@@ -88,7 +88,11 @@ async function fetchNBAStats(url: string, timeout = 45000, retries = 2) {
       }
       
       // Otherwise, continue to retry
-      console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed: ${lastError.message}, retrying...`);
+      if (lastError) {
+        console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed: ${lastError.message}, retrying...`);
+      } else {
+        console.log(`[Tracking Stats Opponents Refresh] Attempt ${attempt + 1} failed, retrying...`);
+      }
     }
   }
   
