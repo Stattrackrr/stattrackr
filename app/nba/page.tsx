@@ -535,12 +535,14 @@ export default function NBALandingPage() {
 
   // Fetch player props with good win chances from BDL
   useEffect(() => {
+    // Cache keys (defined outside functions so they're accessible to both fetchPlayerProps and checkOddsUpdate)
+    const CACHE_KEY = 'nba-player-props-cache';
+    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache TTL
+    
     const fetchPlayerProps = async () => {
       try {
         // Check sessionStorage first for instant load when navigating back
-        const CACHE_KEY = 'nba-player-props-cache';
-        const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
-        const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache TTL
         
         const urlParams = new URLSearchParams(window.location.search);
         const forceRefresh = urlParams.get('refresh') === '1';
