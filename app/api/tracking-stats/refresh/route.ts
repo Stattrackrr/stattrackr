@@ -296,8 +296,8 @@ export async function GET(request: NextRequest) {
 
             const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
             
-            // Fetch with shorter timeout since it's per-team (should be faster)
-            const data = await fetchNBAStats(url, 30000);
+            // Fetch with longer timeout for Last 5 (NBA can be slow) and let fetchNBAStats handle retries
+            const data = await fetchNBAStats(url, 60000);
             
             if (!data?.resultSets?.[0]) {
               console.warn(`[Tracking Stats Refresh] No Last 5 Games data for ${team} ${category}`);
@@ -377,7 +377,7 @@ export async function GET(request: NextRequest) {
             }
             
             // Small delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 500));
           } catch (error: any) {
             console.error(`[Tracking Stats Refresh] ❌ Error fetching Last 5 Games for ${team} ${category}: ${error.message}`);
             last5GamesErrors++;
