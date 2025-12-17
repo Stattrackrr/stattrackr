@@ -48,7 +48,8 @@ jobs:
           echo "🔄 Starting tracking stats refresh..."
           echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh"
           
-          response=$(curl -s -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
+          # Follow redirects (some envs return 307/308 from edge → origin)
+          response=$(curl -L -s -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           
