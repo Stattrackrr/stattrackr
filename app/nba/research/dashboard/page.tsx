@@ -1492,7 +1492,6 @@ const StatsBarChart = memo(function StatsBarChart({
 const HomeAwaySelect = memo(function HomeAwaySelect({ value, onChange, isDark }: { value: 'ALL' | 'HOME' | 'AWAY'; onChange: (v: 'ALL' | 'HOME' | 'AWAY') => void; isDark: boolean }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">H/A</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as 'ALL' | 'HOME' | 'AWAY')}
@@ -2322,7 +2321,6 @@ const OpponentSelector = memo(function OpponentSelector({
 
   return (
     <div className="flex items-center gap-1 relative">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">VS</span>
       <div className="relative">
         {/* Custom dropdown trigger */}
         <button
@@ -2998,69 +2996,48 @@ const ChartControls = function ChartControls({
       const selectedOption = timeframeOptions.find(opt => opt.value === selectedTimeframe);
 
       return (
-        <>
-          {/* Desktop Layout - Only show on larger screens */}
-          <div className="hidden xl:flex flex-col gap-1 sm:gap-2">
-            {/* First row: L5, L10, L15, L20, H2H */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {['last5','last10','last15','last20','h2h'].map((k: string) => (
-                <TimeframeBtn key={k} value={k} isSelected={selectedTimeframe === k} onSelect={onSelectTimeframe} />
+        <div className="relative">
+          <button
+            onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
+            className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <span className="truncate">{selectedOption?.label || 'Timeframe'}</span>
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {isTimeframeDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+              {timeframeOptions.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelectTimeframe(option.value);
+                    setIsTimeframeDropdownOpen(false);
+                  }}
+                  className={`w-full px-2 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg ${
+                    selectedTimeframe === option.value
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
               ))}
             </div>
-            {/* Second row: Last Season, This Season */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {['lastseason','thisseason'].map((k: string) => (
-                <TimeframeBtn key={k} value={k} isSelected={selectedTimeframe === k} onSelect={onSelectTimeframe} />
-              ))}
-            </div>
-          </div>
+          )}
 
-          {/* Compact/Mobile Dropdown - Show earlier */}
-          <div className="xl:hidden relative">
-            <button
-              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
-              className="w-16 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
-            >
-              <span className="truncate">{selectedOption?.label || 'Timeframe'}</span>
-              <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {/* Dropdown Menu */}
-            {isTimeframeDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-16 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                {timeframeOptions.map(option => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onSelectTimeframe(option.value);
-                      setIsTimeframeDropdownOpen(false);
-                    }}
-                    className={`w-full px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg ${
-                      selectedTimeframe === option.value
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Overlay to close dropdown when clicking outside */}
-            {isTimeframeDropdownOpen && (
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setIsTimeframeDropdownOpen(false)}
-              />
-            )}
-          </div>
-        </>
+          {isTimeframeDropdownOpen && (
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsTimeframeDropdownOpen(false)}
+            />
+          )}
+        </div>
       );
     }, [selectedTimeframe, onSelectTimeframe, isTimeframeDropdownOpen, setIsTimeframeDropdownOpen]);
 
@@ -4307,6 +4284,10 @@ const ChartControls = function ChartControls({
                   />
                 )}
               </div>
+              {/* Timeframe filter - Desktop only, positioned next to betting line */}
+              <div className="hidden sm:flex flex-shrink-0">
+                {TimeframeButtons}
+              </div>
             </div>
             {/* Mobile: Filters inline with line input */}
             <div className="sm:hidden flex items-center flex-wrap gap-2.5 ml-2 mt-4">
@@ -4742,9 +4723,6 @@ const ChartControls = function ChartControls({
                   )}
                 </div>
               )}
-              <div className="flex-shrink-0 mr-1 sm:mr-0">
-                {TimeframeButtons}
-              </div>
             </div>
           </div>
 
