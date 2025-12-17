@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/refresh-defensive-stats",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-tracking-season",
+      "schedule": "0 8 * * *"
     }
   ],
   "functions": {
@@ -74,6 +78,9 @@
       "maxDuration": 300
     },
     "app/api/tracking-stats/refresh/route.ts": {
+      "maxDuration": 600
+    },
+    "app/api/cron/refresh-tracking-season/route.ts": {
       "maxDuration": 600
     }
   },
