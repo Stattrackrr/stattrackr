@@ -12827,3 +12827,14 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     + FullyQualifiedErrorId : No games found for today/Añ1 or requests failed.
  
 [Wed 17/12/2025 23:27:41.69] warm-rosters end (exit 1) 
+[Wed 17/12/2025 23:48:36.77] warm-rosters start 
+[warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251217&window_min=180
+{
+    "success":  true,
+    "date":  "20251217",
+    "warmed":  [
+
+               ],
+    "source":  "espn"
+}
+[Wed 17/12/2025 23:48:39.77] warm-rosters end (exit 0) 
