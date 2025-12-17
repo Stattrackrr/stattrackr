@@ -3,7 +3,7 @@ param(
 )
 
 Write-Host "== Season-only potentials ==" -ForegroundColor Yellow
-C:\Windows\System32\curl.exe "$BaseUrl/api/cron/refresh-tracking-season"
+C:\Windows\System32\curl.exe "$BaseUrl/api/tracking-stats/refresh?mode=season"
 
 Write-Host "== Full potentials (season + L5) ==" -ForegroundColor Yellow
 C:\Windows\System32\curl.exe "$BaseUrl/api/tracking-stats/refresh"
