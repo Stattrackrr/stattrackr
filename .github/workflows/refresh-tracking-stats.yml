@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   refresh_tracking_stats:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 15  # Allow up to 15 minutes (refresh takes ~7-8 minutes)
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
@@ -46,10 +46,10 @@ jobs:
         if: steps.check_prod_url.outputs.configured == 'true'
         run: |
           echo "🔄 Starting tracking stats refresh..."
-          echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh"
+          echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh?mode=season"
           
           # Follow redirects (some envs return 307/308 from edge → origin)
-          response=$(curl -L -s --max-time 600 -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
+          response=$(curl -L -s --max-time 600 -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh?mode=season" || echo "ERROR")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           
@@ -60,17 +60,21 @@ jobs:
             # Extract key metrics
             last5_cached=$(echo "$body" | jq -r '.last5GamesCached // 0')
             last5_errors=$(echo "$body" | jq -r '.last5GamesErrors // 0')
+            last5_skipped=$(echo "$body" | jq -r '.last5Skipped // false')
             elapsed=$(echo "$body" | jq -r '.elapsed // "unknown"')
             
             echo ""
             echo "📊 Summary:"
             echo "  - Last 5 Games cached: $last5_cached/60"
             echo "  - Errors: $last5_errors"
+            echo "  - Last 5 Skipped: $last5_skipped"
             echo "  - Elapsed: $elapsed"
             
-            if [ "$last5_cached" -lt 60 ] || [ "$last5_errors" -gt 0 ]; then
-              echo "⚠️ Warning: Not all Last 5 Games were cached successfully"
-              exit 1
+            if [ "$last5_skipped" = "false" ]; then
+              if [ "$last5_cached" -lt 60 ] || [ "$last5_errors" -gt 0 ]; then
+                echo "⚠️ Warning: Not all Last 5 Games were cached successfully"
+                exit 1
+              fi
             fi
           else
             echo "❌ Tracking stats refresh failed with HTTP $http_code"

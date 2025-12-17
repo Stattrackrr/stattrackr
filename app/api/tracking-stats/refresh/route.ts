@@ -79,8 +79,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
+    const mode = (searchParams.get('mode') || '').toLowerCase(); // 'season' to skip last5, default = full
+    const includeLast5 = mode !== 'season';
     
-    console.log(`[Tracking Stats Refresh] Starting bulk refresh for ${season}-${season + 1} season`);
+    console.log(`[Tracking Stats Refresh] Starting bulk refresh for ${season}-${season + 1} season (mode=${mode || 'full'})`);
     
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
     const categories = ['passing', 'rebounding'];
@@ -240,149 +242,154 @@ export async function GET(request: NextRequest) {
     
     teamsProcessed = ALL_NBA_TEAMS.length;
     
-    // Fetch and cache "Last 5 Games" data per team (to avoid league-wide timeout)
-    // Fetch each team separately - this is slower but more reliable
-    console.log(`[Tracking Stats Refresh] Fetching Last 5 Games data per team (60 API calls: 30 teams × 2 categories)...`);
     let last5GamesCached = 0;
     let last5GamesErrors = 0;
-    
-    for (const team of ALL_NBA_TEAMS) {
-      for (const category of categories) {
-        const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
-        const teamId = NBA_TEAM_IDS[team];
-        
-        if (!teamId) {
-          console.warn(`[Tracking Stats Refresh] ⚠️ No team ID for ${team}, skipping Last 5 Games`);
-          continue;
-        }
-        
-        try {
-          const params = new URLSearchParams({
-            College: "",
-            Conference: "",
-            Country: "",
-            DateFrom: "",
-            DateTo: "",
-            Division: "",
-            DraftPick: "",
-            DraftYear: "",
-            GameScope: "",
-            Height: "",
-            LastNGames: "5",
-            LeagueID: "00",
-            Location: "",
-            Month: "0",
-            OpponentTeamID: "0",
-            Outcome: "",
-            PORound: "0",
-            PerMode: "PerGame",
-            PlayerExperience: "",
-            PlayerOrTeam: "Player",
-            PlayerPosition: "",
-            PtMeasureType: ptMeasureType,
-            Season: seasonStr,
-            SeasonSegment: "",
-            SeasonType: "Regular Season",
-            StarterBench: "",
-            TeamID: teamId, // Filter by specific team (faster than league-wide)
-            VsConference: "",
-            VsDivision: "",
-            Weight: "",
-          });
 
-          const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
+    if (includeLast5) {
+      // Fetch and cache "Last 5 Games" data per team (to avoid league-wide timeout)
+      // Fetch each team separately - this is slower but more reliable
+      console.log(`[Tracking Stats Refresh] Fetching Last 5 Games data per team (60 API calls: 30 teams × 2 categories)...`);
+      
+      for (const team of ALL_NBA_TEAMS) {
+        for (const category of categories) {
+          const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
+          const teamId = NBA_TEAM_IDS[team];
           
-          // Fetch with shorter timeout since it's per-team (should be faster)
-          const data = await fetchNBAStats(url, 30000);
-          
-          if (!data?.resultSets?.[0]) {
-            console.warn(`[Tracking Stats Refresh] No Last 5 Games data for ${team} ${category}`);
-            last5GamesErrors++;
+          if (!teamId) {
+            console.warn(`[Tracking Stats Refresh] ⚠️ No team ID for ${team}, skipping Last 5 Games`);
             continue;
           }
-
-          const resultSet = data.resultSets[0];
-          const headers = resultSet.headers || [];
-          const rows = resultSet.rowSet || [];
           
-          const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-          if (teamAbbrIdx === -1) continue;
-          
-          // Filter rows for this team (should only be this team since we used TeamID filter)
-          const teamRows = rows.filter((row: any[]) => row[teamAbbrIdx] === team);
-          
-          const playerIdIdx = headers.indexOf('PLAYER_ID');
-          const playerNameIdx = headers.indexOf('PLAYER_NAME');
-          
-          if (playerIdIdx === -1 || playerNameIdx === -1) continue;
-
-          // Map to our format
-          const players = teamRows.map((row: any[]) => {
-            const stats: any = {};
-            headers.forEach((header: string, idx: number) => {
-              stats[header] = row[idx];
+          try {
+            const params = new URLSearchParams({
+              College: "",
+              Conference: "",
+              Country: "",
+              DateFrom: "",
+              DateTo: "",
+              Division: "",
+              DraftPick: "",
+              DraftYear: "",
+              GameScope: "",
+              Height: "",
+              LastNGames: "5",
+              LeagueID: "00",
+              Location: "",
+              Month: "0",
+              OpponentTeamID: "0",
+              Outcome: "",
+              PORound: "0",
+              PerMode: "PerGame",
+              PlayerExperience: "",
+              PlayerOrTeam: "Player",
+              PlayerPosition: "",
+              PtMeasureType: ptMeasureType,
+              Season: seasonStr,
+              SeasonSegment: "",
+              SeasonType: "Regular Season",
+              StarterBench: "",
+              TeamID: teamId, // Filter by specific team (faster than league-wide)
+              VsConference: "",
+              VsDivision: "",
+              Weight: "",
             });
 
-            const player: any = {
-              playerId: String(stats.PLAYER_ID),
-              playerName: stats.PLAYER_NAME,
-              gp: stats.GP || 0,
-            };
-
-            if (category === 'passing') {
-              player.potentialAst = stats.POTENTIAL_AST;
-              player.ast = stats.AST_ADJ || stats.AST;
-              player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
-              player.passesMade = stats.PASSES_MADE;
-              player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
-            } else {
-              player.rebChances = stats.REB_CHANCES;
-              player.reb = stats.REB;
-              player.rebChancePct = stats.REB_CHANCE_PCT;
-              player.rebContest = stats.REB_CONTEST;
-              player.rebUncontest = stats.REB_UNCONTEST;
-              player.avgRebDist = stats.AVG_REB_DIST;
-              player.drebChances = stats.DREB_CHANCES;
-              player.drebChancePct = stats.DREB_CHANCE_PCT;
-              player.avgDrebDist = stats.AVG_DREB_DIST;
+            const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
+            
+            // Fetch with shorter timeout since it's per-team (should be faster)
+            const data = await fetchNBAStats(url, 30000);
+            
+            if (!data?.resultSets?.[0]) {
+              console.warn(`[Tracking Stats Refresh] No Last 5 Games data for ${team} ${category}`);
+              last5GamesErrors++;
+              continue;
             }
 
-            return player;
-          });
+            const resultSet = data.resultSets[0];
+            const headers = resultSet.headers || [];
+            const rows = resultSet.rowSet || [];
+            
+            const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
+            if (teamAbbrIdx === -1) continue;
+            
+            // Filter rows for this team (should only be this team since we used TeamID filter)
+            const teamRows = rows.filter((row: any[]) => row[teamAbbrIdx] === team);
+            
+            const playerIdIdx = headers.indexOf('PLAYER_ID');
+            const playerNameIdx = headers.indexOf('PLAYER_NAME');
+            
+            if (playerIdIdx === -1 || playerNameIdx === -1) continue;
 
-          // Cache Last 5 Games data
-          const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}_last5`;
-          const payload = {
-            team,
-            season: seasonStr,
-            category,
-            players,
-            lastNGames: '5',
-            cachedAt: new Date().toISOString()
-          };
-          
-          await setNBACache(cacheKey, 'team_tracking', payload, CACHE_TTL.TRACKING_STATS).catch(err => {
-            console.warn(`[Tracking Stats Refresh] Failed to cache Last 5 Games in Supabase: ${err.message}`);
-          });
-          cache.set(cacheKey, payload, CACHE_TTL.TRACKING_STATS);
-          
-          last5GamesCached++;
-          
-          if (last5GamesCached % 10 === 0) {
-            console.log(`[Tracking Stats Refresh] 💾 Cached ${last5GamesCached}/60 Last 5 Games combinations...`);
+            // Map to our format
+            const players = teamRows.map((row: any[]) => {
+              const stats: any = {};
+              headers.forEach((header: string, idx: number) => {
+                stats[header] = row[idx];
+              });
+
+              const player: any = {
+                playerId: String(stats.PLAYER_ID),
+                playerName: stats.PLAYER_NAME,
+                gp: stats.GP || 0,
+              };
+
+              if (category === 'passing') {
+                player.potentialAst = stats.POTENTIAL_AST;
+                player.ast = stats.AST_ADJ || stats.AST;
+                player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+                player.passesMade = stats.PASSES_MADE;
+                player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+              } else {
+                player.rebChances = stats.REB_CHANCES;
+                player.reb = stats.REB;
+                player.rebChancePct = stats.REB_CHANCE_PCT;
+                player.rebContest = stats.REB_CONTEST;
+                player.rebUncontest = stats.REB_UNCONTEST;
+                player.avgRebDist = stats.AVG_REB_DIST;
+                player.drebChances = stats.DREB_CHANCES;
+                player.drebChancePct = stats.DREB_CHANCE_PCT;
+                player.avgDrebDist = stats.AVG_DREB_DIST;
+              }
+
+              return player;
+            });
+
+            // Cache Last 5 Games data
+            const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}_last5`;
+            const payload = {
+              team,
+              season: seasonStr,
+              category,
+              players,
+              lastNGames: '5',
+              cachedAt: new Date().toISOString()
+            };
+            
+            await setNBACache(cacheKey, 'team_tracking', payload, CACHE_TTL.TRACKING_STATS).catch(err => {
+              console.warn(`[Tracking Stats Refresh] Failed to cache Last 5 Games in Supabase: ${err.message}`);
+            });
+            cache.set(cacheKey, payload, CACHE_TTL.TRACKING_STATS);
+            
+            last5GamesCached++;
+            
+            if (last5GamesCached % 10 === 0) {
+              console.log(`[Tracking Stats Refresh] 💾 Cached ${last5GamesCached}/60 Last 5 Games combinations...`);
+            }
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (error: any) {
+            console.error(`[Tracking Stats Refresh] ❌ Error fetching Last 5 Games for ${team} ${category}: ${error.message}`);
+            last5GamesErrors++;
+            // Continue with next team/category
           }
-          
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error: any) {
-          console.error(`[Tracking Stats Refresh] ❌ Error fetching Last 5 Games for ${team} ${category}: ${error.message}`);
-          last5GamesErrors++;
-          // Continue with next team/category
         }
       }
+      
+      console.log(`[Tracking Stats Refresh] ✅ Last 5 Games: ${last5GamesCached} cached, ${last5GamesErrors} errors`);
+    } else {
+      console.log(`[Tracking Stats Refresh] Skipping Last 5 Games fetch (mode=season)`);
     }
-    
-    console.log(`[Tracking Stats Refresh] ✅ Last 5 Games: ${last5GamesCached} cached, ${last5GamesErrors} errors`);
 
     // Also cache the full league data for quick access (All Games)
     const allCacheKey = getCacheKey.allTrackingStats(season);
@@ -402,6 +409,8 @@ export async function GET(request: NextRequest) {
       apiCalls: categories.length + (last5GamesCached + last5GamesErrors), // 2 for All Games + Last 5 Games per team
       last5GamesCached,
       last5GamesErrors,
+      mode: includeLast5 ? 'full' : 'season',
+      last5Skipped: !includeLast5,
       elapsed: `${elapsed}ms`,
       cachedAt: new Date().toISOString(),
       ttl: `${CACHE_TTL.TRACKING_STATS} minutes`
