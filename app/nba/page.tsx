@@ -64,6 +64,7 @@ interface PlayerProp {
 function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean }) {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
+  const [isBeyond24h, setIsBeyond24h] = useState(false);
 
   useEffect(() => {
     if (!game) {
@@ -163,6 +164,7 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
       const now = new Date().getTime();
       const tipoff = tipoffDate.getTime();
       const diff = tipoff - now;
+      setIsBeyond24h(diff > 24 * 60 * 60 * 1000);
       
       // Check if game is in progress (started within last 3 hours)
       const threeHoursMs = 3 * 60 * 60 * 1000;
@@ -209,13 +211,15 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
     );
   }
 
+  const tipoffColor = isBeyond24h ? '#ef4444' : '#6366f1';
+
   return (
     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
       style={{
-        background: 'linear-gradient(to top, #6366f1, #6366f100)',
-        borderColor: '#6366f1',
+        background: `linear-gradient(to top, ${tipoffColor}, ${tipoffColor}00)`,
+        borderColor: tipoffColor,
         borderWidth: '1px',
-        boxShadow: '0 0 8px #6366f160, 0 0 4px #6366f140',
+        boxShadow: `0 0 8px ${tipoffColor}60, 0 0 4px ${tipoffColor}40`,
       }}>
       <div className="text-[10px] text-white mb-0.5">Tipoff</div>
       <div className="text-xs font-mono font-semibold text-white">
@@ -583,7 +587,7 @@ export default function NBALandingPage() {
     };
   }, [router]);
 
-  // Fetch today's games
+  // Fetch games (today plus nearby) to keep props-linked games selected across date boundaries
   useEffect(() => {
     const fetchTodaysGames = async () => {
       try {
@@ -591,20 +595,14 @@ export default function NBALandingPage() {
         
         const today = new Date();
         const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
+        // Include a wider window (next 2 days) so future games with props stay selectable
+        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2).toISOString().split('T')[0];
 
         const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
         const data = await response.json();
         const games = Array.isArray(data?.data) ? data.data : [];
         
-        // Filter for today's games
-        const todayStr = today.toISOString().split('T')[0];
-        const todaysGames = games.filter((game: Game) => {
-          const gameDate = game.date?.split('T')[0];
-          return gameDate === todayStr;
-        });
-        
-        console.log('[NBA Landing] Today\'s games found:', todaysGames.length, todaysGames.slice(0, 3).map((g: any) => ({
+        console.log('[NBA Landing] Games found (± window):', games.length, games.slice(0, 3).map((g: any) => ({
           id: g.id,
           date: g.date,
           status: g.status,
@@ -612,7 +610,7 @@ export default function NBALandingPage() {
           away: g.visitor_team?.abbreviation
         })));
         
-        setTodaysGames(todaysGames);
+        setTodaysGames(games);
       } catch (error) {
         console.error('Error fetching games:', error);
         setTodaysGames([]);
@@ -1765,24 +1763,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availablePropTypes]);
 
-  useEffect(() => {
-    if (todaysGames.length > 0 && selectedGames.size === 0) {
-      // Only set defaults if localStorage was empty (no saved filters)
-      const savedGames = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_games') : null;
-      if (!savedGames) {
-        const newSet = new Set(todaysGames.map(game => game.id));
-        setSelectedGames(newSet);
-        saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todaysGames]);
-
-  // Reset pagination when filtered props change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [playerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, propLineSort]);
-
   // Helper to match a prop to a game based on team/opponent
   const getGameForProp = (prop: PlayerProp): Game | null => {
     if (todaysGames.length === 0) {
@@ -1845,6 +1825,49 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     
     return matchedGame || null;
   };
+
+  // Only show games that have at least one player prop
+  const gamesWithProps = useMemo(() => {
+    if (playerProps.length === 0 || todaysGames.length === 0) return [];
+    const idsWithProps = new Set<number>();
+    playerProps.forEach((prop) => {
+      const game = getGameForProp(prop);
+      if (game?.id) {
+        idsWithProps.add(game.id);
+      }
+    });
+    return todaysGames.filter((game) => idsWithProps.has(game.id));
+  }, [playerProps, todaysGames, getGameForProp]);
+
+  useEffect(() => {
+    if (gamesWithProps.length > 0 && selectedGames.size === 0) {
+      // Only set defaults if localStorage was empty (no saved filters)
+      const savedGames = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_games') : null;
+      if (!savedGames) {
+        const newSet = new Set(gamesWithProps.map(game => game.id));
+        setSelectedGames(newSet);
+        saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
+      }
+    }
+  }, [gamesWithProps]);
+
+  // Ensure games with props stay selected even when date shifts (e.g., future games)
+  useEffect(() => {
+    if (gamesWithProps.length === 0) return;
+    const todayIds = new Set(gamesWithProps.map(game => game.id));
+    const hasOverlap = Array.from(selectedGames).some(id => todayIds.has(id));
+    if (!hasOverlap) {
+      const merged = new Set([...Array.from(selectedGames), ...Array.from(todayIds)]);
+      setSelectedGames(merged);
+      saveFiltersToStorage(selectedBookmakers, selectedPropTypes, merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamesWithProps]);
+
+  // Reset pagination when filtered props change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [playerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, propLineSort]);
 
   // Filter player props based on search query and selected filters
   // Filter props based on search, bookmakers, prop types, and games
@@ -2337,7 +2360,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                             }}
                           >
                           <div className="p-2 space-y-1">
-                            {todaysGames.map(game => {
+                            {gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
                               const awayTeam = game.visitor_team?.abbreviation || '';
@@ -2403,7 +2426,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           }`}
                         >
                           <div className="p-2 space-y-1">
-                            {todaysGames.map(game => {
+                            {gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
                               const awayTeam = game.visitor_team?.abbreviation || '';

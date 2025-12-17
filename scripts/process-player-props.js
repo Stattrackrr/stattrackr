@@ -192,7 +192,7 @@ const TEAM_FULL_TO_ABBR = {
   'Sacramento Kings': 'SAC', 'San Antonio Spurs': 'SAS', 'Utah Jazz': 'UTA',
 };
 
-function getGameDateFromOddsCache(oddsCache) {
+function getGameDateFromOddsCache(oddsCache, overrideDate) {
   const getUSEasternDateString = (date) => {
     return new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York',
@@ -203,6 +203,12 @@ function getGameDateFromOddsCache(oddsCache) {
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     });
   };
+
+  // Allow explicit override (e.g., from workflow input)
+  if (overrideDate && /^\d{4}-\d{2}-\d{2}$/.test(overrideDate)) {
+    console.log(`[GitHub Actions] ⏩ Date override provided: ${overrideDate}`);
+    return overrideDate;
+  }
   
   // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
   // STRICT: Only process games that are exactly tomorrow, not any future date
@@ -491,8 +497,27 @@ async function processPlayerProps() {
   }
   
   console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
+
+  // Optional date override (CLI flag or env var)
+  let dateOverride = null;
+  const dateArg = process.argv.find(arg => arg.startsWith('--date='));
+  if (dateArg) {
+    const candidate = dateArg.split('=')[1];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
+      dateOverride = candidate;
+    } else {
+      console.warn(`[GitHub Actions] ⚠️ Invalid --date format (expected YYYY-MM-DD): ${candidate}`);
+    }
+  } else if (process.env.PLAYER_PROPS_DATE_OVERRIDE) {
+    const candidate = process.env.PLAYER_PROPS_DATE_OVERRIDE.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
+      dateOverride = candidate;
+    } else {
+      console.warn(`[GitHub Actions] ⚠️ Invalid PLAYER_PROPS_DATE_OVERRIDE format (expected YYYY-MM-DD): ${candidate}`);
+    }
+  }
   
-  const gameDate = getGameDateFromOddsCache(oddsCache);
+  const gameDate = getGameDateFromOddsCache(oddsCache, dateOverride);
   const cacheKey = getPlayerPropsCacheKey(gameDate);
   const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}`;
   
@@ -550,8 +575,8 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 🔄 Force refresh requested, recalculating all props...`);
   }
   
-  // Extract props from odds cache - FILTER TO ONLY TOMORROW'S GAMES
-  const tomorrowUSET = getGameDateFromOddsCache(oddsCache);
+  // Extract props from odds cache - FILTER TO ONLY THE TARGET GAME DATE
+  const targetGameDate = gameDate;
   const getUSEasternDateString = (date) => {
     return new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York',
@@ -563,7 +588,7 @@ async function processPlayerProps() {
     });
   };
   
-  // Filter games to only tomorrow's games
+  // Filter games to only the target date
   let games = (oddsCache.games || []).filter(game => {
     if (!game.commenceTime) return false;
     const commenceStr = String(game.commenceTime).trim();
@@ -574,7 +599,7 @@ async function processPlayerProps() {
       const date = new Date(commenceStr);
       gameDateUSET = getUSEasternDateString(date);
     }
-    return gameDateUSET === tomorrowUSET;
+    return gameDateUSET === targetGameDate;
   });
   
   // Apply game split if specified (split games into chunks)
