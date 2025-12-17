@@ -166,7 +166,7 @@ jobs:
 
                 const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
                 const now = new Date();
-                const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(); // 24h
+                const expires = '2099-12-31T23:59:59.000Z'; // effectively never expire; will be replaced on next run
                 const payload = {
                   team,
                   season: seasonStr,
