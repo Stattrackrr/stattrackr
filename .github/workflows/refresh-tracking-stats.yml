@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   refresh_tracking_stats:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15  # Allow up to 15 minutes (refresh takes ~7-8 minutes)
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
@@ -49,7 +49,7 @@ jobs:
           echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh"
           
           # Follow redirects (some envs return 307/308 from edge → origin)
-          response=$(curl -L -s -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
+          response=$(curl -L -s --max-time 600 -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh" || echo "ERROR")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           
