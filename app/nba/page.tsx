@@ -1735,13 +1735,20 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
   // Initialize selected filters when data loads (only if localStorage is empty)
   useEffect(() => {
     if (availableBookmakers.length > 0 && selectedBookmakers.size === 0) {
-      // Only set defaults if localStorage was empty (no saved filters)
-      const savedBookmakers = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_bookmakers') : null;
-      if (!savedBookmakers) {
-        // Exclude Betway from default selection (still fetched, just unchecked by default)
-        const defaultBookmakers = availableBookmakers.filter(bm => 
-          bm.toLowerCase() !== 'betway'
-        );
+      let parsed: string[] = [];
+      try {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_bookmakers') : null;
+        parsed = saved ? JSON.parse(saved) : [];
+      } catch {
+        parsed = [];
+      }
+
+      if (parsed.length > 0) {
+        const savedSet = new Set(parsed);
+        setSelectedBookmakers(savedSet);
+      } else {
+        // Default: select all bookmakers except Betway (still available as option)
+        const defaultBookmakers = availableBookmakers.filter(bm => bm.toLowerCase() !== 'betway');
         const newSet = new Set(defaultBookmakers);
         setSelectedBookmakers(newSet);
         saveFiltersToStorage(newSet, selectedPropTypes, selectedGames);
@@ -1752,9 +1759,18 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
   useEffect(() => {
     if (availablePropTypes.length > 0 && selectedPropTypes.size === 0) {
-      // Only set defaults if localStorage was empty (no saved filters)
-      const savedPropTypes = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_propTypes') : null;
-      if (!savedPropTypes) {
+      let parsed: string[] = [];
+      try {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_propTypes') : null;
+        parsed = saved ? JSON.parse(saved) : [];
+      } catch {
+        parsed = [];
+      }
+
+      if (parsed.length > 0) {
+        setSelectedPropTypes(new Set(parsed));
+      } else {
+        // Default: select all prop types
         const newSet = new Set(availablePropTypes);
         setSelectedPropTypes(newSet);
         saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
