@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Allow up to 15 minutes (refresh takes ~7-8 minutes)
     env:
-      PROD_URL: ${{ secrets.PROD_URL }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
@@ -35,50 +34,172 @@ jobs:
       - name: Check if PROD_URL is configured
         id: check_prod_url
         run: |
-          if [ -z "${{ secrets.PROD_URL }}" ]; then
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
-            echo "⚠️ PROD_URL secret not set; skipping workflow"
+            echo "⚠️ Supabase secrets not set; skipping workflow"
           else
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Refresh Tracking Stats
+      - name: Refresh Tracking Stats (Season only, direct to Supabase)
         if: steps.check_prod_url.outputs.configured == 'true'
         run: |
-          echo "🔄 Starting tracking stats refresh..."
-          echo "📡 Calling: ${{ secrets.PROD_URL }}/api/tracking-stats/refresh?mode=season"
-          
-          # Follow redirects (some envs return 307/308 from edge → origin)
-          response=$(curl -L -s --max-time 600 -w "\n%{http_code}" "${{ secrets.PROD_URL }}/api/tracking-stats/refresh?mode=season" || echo "ERROR")
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-          
-          if [ "$http_code" = "200" ]; then
-            echo "✅ Tracking stats refresh successful!"
-            echo "$body" | jq '.'
-            
-            # Extract key metrics
-            last5_cached=$(echo "$body" | jq -r '.last5GamesCached // 0')
-            last5_errors=$(echo "$body" | jq -r '.last5GamesErrors // 0')
-            last5_skipped=$(echo "$body" | jq -r '.last5Skipped // false')
-            elapsed=$(echo "$body" | jq -r '.elapsed // "unknown"')
-            
-            echo ""
-            echo "📊 Summary:"
-            echo "  - Last 5 Games cached: $last5_cached/60"
-            echo "  - Errors: $last5_errors"
-            echo "  - Last 5 Skipped: $last5_skipped"
-            echo "  - Elapsed: $elapsed"
-            
-            if [ "$last5_skipped" = "false" ]; then
-              if [ "$last5_cached" -lt 60 ] || [ "$last5_errors" -gt 0 ]; then
-                echo "⚠️ Warning: Not all Last 5 Games were cached successfully"
-                exit 1
-              fi
-            fi
-          else
-            echo "❌ Tracking stats refresh failed with HTTP $http_code"
-            echo "$body"
-            exit 1
-          fi
+          node <<'NODE'
+          const { createClient } = require('@supabase/supabase-js');
+          const fetch = global.fetch;
+
+          const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+          if (!SUPABASE_URL || !SUPABASE_KEY) {
+            console.error('Supabase env vars missing');
+            process.exit(1);
+          }
+
+          const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+
+          const NBA_STATS_BASE = 'https://stats.nba.com/stats';
+          const NBA_HEADERS = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.nba.com/stats/',
+            'Origin': 'https://www.nba.com',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'x-nba-stats-origin': 'stats',
+            'x-nba-stats-token': 'true',
+          };
+
+          const ALL_NBA_TEAMS = [
+            'ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+            'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+            'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'
+          ];
+
+          function currentNbaSeason() {
+            const now = new Date();
+            const m = now.getMonth();
+            const d = now.getDate();
+            if (m === 9 && d >= 15) return now.getFullYear();
+            return m >= 10 ? now.getFullYear() : now.getFullYear() - 1;
+          }
+
+          async function fetchNBA(url, timeout = 60000) {
+            const controller = new AbortController();
+            const to = setTimeout(() => controller.abort(), timeout);
+            try {
+              const res = await fetch(url, { headers: NBA_HEADERS, signal: controller.signal });
+              clearTimeout(to);
+              if (!res.ok) throw new Error(`NBA API ${res.status}`);
+              return await res.json();
+            } catch (err) {
+              clearTimeout(to);
+              throw err;
+            }
+          }
+
+          async function main() {
+            const start = Date.now();
+            const season = currentNbaSeason();
+            const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
+            const categories = ['passing', 'rebounding'];
+
+            console.log(`Season tracking refresh (GitHub runner) for ${seasonStr}`);
+
+            for (const category of categories) {
+              const ptMeasureType = category === 'passing' ? 'Passing' : 'Rebounding';
+              const params = new URLSearchParams({
+                College: "", Conference: "", Country: "", DateFrom: "", DateTo: "", Division: "",
+                DraftPick: "", DraftYear: "", GameScope: "", Height: "", LastNGames: "0", LeagueID: "00",
+                Location: "", Month: "0", OpponentTeamID: "0", Outcome: "", PORound: "0", PerMode: "PerGame",
+                PlayerExperience: "", PlayerOrTeam: "Player", PlayerPosition: "", PtMeasureType: ptMeasureType,
+                Season: seasonStr, SeasonSegment: "", SeasonType: "Regular Season", StarterBench: "",
+                TeamID: "0", VsConference: "", VsDivision: "", Weight: "",
+              });
+
+              const url = `${NBA_STATS_BASE}/leaguedashptstats?${params.toString()}`;
+              console.log(`Fetching ${category} (season, all teams) ...`);
+
+              const data = await fetchNBA(url);
+              const resultSet = data?.resultSets?.[0];
+              if (!resultSet) throw new Error(`No data for ${category}`);
+
+              const headers = resultSet.headers || [];
+              const rows = resultSet.rowSet || [];
+              const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
+              const playerIdIdx = headers.indexOf('PLAYER_ID');
+              const playerNameIdx = headers.indexOf('PLAYER_NAME');
+              if (teamAbbrIdx === -1 || playerIdIdx === -1 || playerNameIdx === -1) {
+                throw new Error(`Missing columns for ${category}`);
+              }
+
+              for (const team of ALL_NBA_TEAMS) {
+                const teamRows = rows.filter((r) => r[teamAbbrIdx] === team);
+                const players = teamRows.map((row) => {
+                  const stats = {};
+                  headers.forEach((h, idx) => { stats[h] = row[idx]; });
+                  const player = {
+                    playerId: String(stats.PLAYER_ID),
+                    playerName: stats.PLAYER_NAME,
+                    gp: stats.GP || 0,
+                  };
+                  if (category === 'passing') {
+                    player.potentialAst = stats.POTENTIAL_AST;
+                    player.ast = stats.AST_ADJ || stats.AST;
+                    player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
+                    player.passesMade = stats.PASSES_MADE;
+                    player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
+                  } else {
+                    player.rebChances = stats.REB_CHANCES;
+                    player.reb = stats.REB;
+                    player.rebChancePct = stats.REB_CHANCE_PCT;
+                    player.rebContest = stats.REB_CONTEST;
+                    player.rebUncontest = stats.REB_UNCONTEST;
+                    player.avgRebDist = stats.AVG_REB_DIST;
+                    player.drebChances = stats.DREB_CHANCES;
+                    player.drebChancePct = stats.DREB_CHANCE_PCT;
+                    player.avgDrebDist = stats.AVG_DREB_DIST;
+                  }
+                  return player;
+                });
+
+                const cacheKey = `tracking_stats_${team.toUpperCase()}_${season}_${category}`;
+                const now = new Date();
+                const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(); // 24h
+                const payload = {
+                  team,
+                  season: seasonStr,
+                  category,
+                  players,
+                  cachedAt: now.toISOString(),
+                };
+
+                const { error } = await supabase
+                  .from('nba_api_cache')
+                  .upsert({
+                    cache_key: cacheKey,
+                    cache_type: 'team_tracking',
+                    data: payload,
+                    expires_at: expires,
+                    updated_at: now.toISOString(),
+                    created_at: now.toISOString(),
+                  }, { onConflict: 'cache_key' });
+
+                if (error) {
+                  throw new Error(`Supabase upsert failed for ${cacheKey}: ${error.message}`);
+                }
+              }
+
+              console.log(`Cached ${category} for ${ALL_NBA_TEAMS.length} teams`);
+            }
+
+            console.log(`✅ Season tracking refresh complete in ${Date.now() - start}ms`);
+          }
+
+          main().catch((err) => {
+            console.error('❌ Season tracking refresh failed:', err.message || err);
+            process.exit(1);
+          });
+          NODE
 
