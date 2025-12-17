@@ -117,25 +117,45 @@ async function getPlayersWhoPlayed() {
     const gameIds = completedGames.map(g => g.id);
     const playerIds = new Set();
     
-    // Fetch stats in batches (BDL API limit)
+    // Fetch stats in batches (BDL API limit) with pagination to include all players
     for (let i = 0; i < gameIds.length; i += 10) {
       const batch = gameIds.slice(i, i + 10);
-      const statsUrl = `https://api.balldontlie.io/v1/stats?game_ids[]=${batch.join('&game_ids[]=')}&per_page=100`;
-      
-      try {
-        const statsData = await fetchAPI(statsUrl);
-        if (statsData?.data) {
-          statsData.data.forEach(stat => {
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const statsUrl = `https://api.balldontlie.io/v1/stats?game_ids[]=${batch.join('&game_ids[]=')}&per_page=100&page=${page}`;
+        
+        try {
+          const statsData = await fetchAPI(statsUrl);
+          const rows = statsData?.data || [];
+
+          if (rows.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          rows.forEach(stat => {
             if (stat.player?.id) {
               playerIds.add(stat.player.id);
             }
           });
+
+          const nextPage = statsData?.meta?.next_page;
+          if (!nextPage) {
+            hasMore = false;
+          } else {
+            page = nextPage;
+            // Small delay between pages to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch stats for batch (page ${page}): ${error.message}`);
+          hasMore = false;
         }
-      } catch (error) {
-        console.warn(`Failed to fetch stats for batch: ${error.message}`);
       }
-      
-      // Small delay to avoid rate limiting
+
+      // Small delay to avoid rate limiting between batches
       if (i + 10 < gameIds.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
