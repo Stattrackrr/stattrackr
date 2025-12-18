@@ -46,14 +46,62 @@ const NBA_TEAM_MAP: { [key: string]: string } = {
  * Results are cached to avoid repeated API calls
  */
 async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, seasonStr: string, season: number) {
-  // Check cache first
+  const isProduction = process.env.NODE_ENV === 'production';
   const cacheKey = `team_defense_stats_${teamAbbr}_${season}`;
-  const cached = cache.get<any>(cacheKey);
+  
+  // Check cache first (in-memory)
+  let cached = cache.get<any>(cacheKey);
   if (cached) {
     console.log(`[Shot Chart Enhanced] ✅ Using cached defensive stats for ${teamAbbr}`);
     return cached;
   }
+  
+  // Check Supabase cache (persistent, shared across instances)
+  try {
+    const { getNBACache } = await import('@/lib/nbaCache');
+    cached = await getNBACache<any>(cacheKey);
+    if (cached) {
+      console.log(`[Shot Chart Enhanced] ✅ Using Supabase cached defensive stats for ${teamAbbr}`);
+      // Also store in in-memory cache for faster access
+      cache.set(cacheKey, cached, 1440); // 24 hours
+      return cached;
+    }
+    
+    // Check for stale cache (even expired) - important for development/production where NBA API is unreachable
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (supabaseUrl && supabaseServiceKey) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      
+      const { data: staleData } = await supabaseAdmin
+        .from('nba_api_cache')
+        .select('data, expires_at')
+        .eq('cache_key', cacheKey)
+        .maybeSingle();
+      
+      if (staleData?.data) {
+        const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
+        console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr}`);
+        // Store in in-memory cache
+        cache.set(cacheKey, staleData.data, 1440);
+        return staleData.data;
+      }
+    }
+  } catch (cacheError: any) {
+    console.warn(`[Shot Chart Enhanced] ⚠️ Error checking Supabase cache for ${teamAbbr}:`, cacheError.message);
+  }
 
+  // In production/development, don't try NBA API - everything should be cached
+  if (isProduction) {
+    console.log(`[Shot Chart Enhanced] ⚠️ No cache found for ${teamAbbr} in production. Cache should be populated from external service.`);
+    return null;
+  }
+
+  // Only try NBA API in local development
   try {
     const defenseParams = new URLSearchParams({
       LeagueID: '00',
@@ -160,9 +208,18 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
         }
       };
 
-      // Cache the result for 24 hours (1440 minutes)
+      // Cache the result for 24 hours (1440 minutes) in both in-memory and Supabase
       cache.set(cacheKey, stats, 1440);
-      console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr}`);
+      
+      // Also save to Supabase for persistence across instances
+      try {
+        const { setNBACache } = await import('@/lib/nbaCache');
+        await setNBACache(cacheKey, stats, 1440, 'team_defense');
+        console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory + Supabase)`);
+      } catch (cacheError: any) {
+        console.warn(`[Shot Chart Enhanced] ⚠️ Failed to save to Supabase cache:`, cacheError.message);
+        console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory only)`);
+      }
       
       return stats;
     }
@@ -170,6 +227,36 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
     return null;
   } catch (error: any) {
     console.warn(`[Shot Chart Enhanced] Error fetching defensive stats for ${teamAbbr}:`, error.message);
+    
+    // If NBA API fails, try to get stale cache from Supabase as last resort
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+        
+        const { data: staleData } = await supabaseAdmin
+          .from('nba_api_cache')
+          .select('data, expires_at')
+          .eq('cache_key', cacheKey)
+          .maybeSingle();
+        
+        if (staleData?.data) {
+          const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
+          console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr} (NBA API failed)`);
+          // Store in in-memory cache for faster access
+          cache.set(cacheKey, staleData.data, 1440);
+          return staleData.data;
+        }
+      }
+    } catch (staleError: any) {
+      console.warn(`[Shot Chart Enhanced] ⚠️ Error checking stale cache for ${teamAbbr}:`, staleError.message);
+    }
+    
     return null;
   }
 }
@@ -600,11 +687,31 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // No cache found - try to fetch from NBA API
-    // In production, we'll try with aggressive timeouts, and if it fails, trigger background cache population
-    console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season}`);
+    // No cache found - check if we should try NBA API
+    // In production/development, everything should be cached - don't try NBA API
+    if (isProduction) {
+      console.log(`[Shot Chart Enhanced] ⚠️ No cache found for player ${nbaPlayerId} in production. Cache should be populated from external service.`);
+      
+      // Return empty data - cache should be populated by external service
+      return NextResponse.json({
+        playerId: nbaPlayerId,
+        season: seasonStr,
+        shotZones: {
+          restrictedArea: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          paint: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          midRange: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          leftCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          rightCorner3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+          aboveBreak3: { fgm: 0, fga: 0, fgPct: 0, pts: 0 },
+        },
+        opponentTeam,
+        opponentDefense: null,
+        cachedAt: new Date().toISOString()
+      }, { status: 200 });
+    }
 
-    console.log(`[Shot Chart Enhanced] Fetching for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (bypassCache=true)`);
+    // Only try NBA API in local development
+    console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (local dev only)`);
 
     // Fetch player shot chart detail (has actual zone data)
     const playerParams = new URLSearchParams({
@@ -662,23 +769,79 @@ export async function GET(request: NextRequest) {
           console.log(`[Shot Chart Enhanced] Querying Supabase for stale cache key: ${cacheKey}`);
           
           // Get cache even if expired (use .maybeSingle() to handle 0 rows gracefully)
-          const { data: staleData, error: staleError } = await supabaseAdmin
+          let { data: staleData, error: staleError } = await supabaseAdmin
             .from('nba_api_cache')
-            .select('data')
+            .select('data, expires_at')
             .eq('cache_key', cacheKey)
             .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows
+          
+          // If no cache with opponent, check without opponent (like we do for fresh cache)
+          if (!staleData?.data && opponentTeam && opponentTeam !== 'N/A') {
+            const cacheKeyNoOpponent = `shot_enhanced_${nbaPlayerId}_none_${season}`;
+            console.log(`[Shot Chart Enhanced] Checking for stale cache without opponent: ${cacheKeyNoOpponent}`);
+            const result = await supabaseAdmin
+              .from('nba_api_cache')
+              .select('data, expires_at')
+              .eq('cache_key', cacheKeyNoOpponent)
+              .maybeSingle();
+            staleData = result.data;
+            staleError = result.error;
+          }
           
           if (staleError) {
             console.warn(`[Shot Chart Enhanced] Supabase query error for stale cache:`, staleError.message || staleError);
           } else if (staleData?.data && staleData.data.shotZones) {
-            console.log(`[Shot Chart Enhanced] ⚠️ Returning stale cached data due to API failure`);
-            return NextResponse.json({
-              ...staleData.data,
-              error: 'Using cached data - fresh data unavailable',
-              stale: true
-            }, { status: 200 });
+            // Validate that we have actual shot data
+            const totalAttempts = (staleData.data.shotZones?.restrictedArea?.fga || 0) +
+                               (staleData.data.shotZones?.paint?.fga || 0) +
+                               (staleData.data.shotZones?.midRange?.fga || 0) +
+                               (staleData.data.shotZones?.leftCorner3?.fga || 0) +
+                               (staleData.data.shotZones?.rightCorner3?.fga || 0) +
+                               (staleData.data.shotZones?.aboveBreak3?.fga || 0);
+            
+            if (totalAttempts > 0) {
+              const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
+              console.log(`[Shot Chart Enhanced] ✅ Found cached data (${isExpired ? 'expired' : 'valid'}) with ${totalAttempts} attempts, returning it`);
+              
+              // Add opponent rankings if needed (same logic as cache hit)
+              if (opponentTeam && opponentTeam !== 'N/A') {
+                try {
+                  const rankingsCacheKey = `team_defense_rankings_${season}`;
+                  let cachedRankings = await getNBACache<any>(rankingsCacheKey);
+                  if (!cachedRankings) {
+                    cachedRankings = cache.get<any>(rankingsCacheKey);
+                  }
+                  const rankings = cachedRankings?.rankings || cachedRankings;
+                  
+                  if (rankings && rankings[opponentTeam]) {
+                    staleData.data.opponentRankings = rankings[opponentTeam];
+                    staleData.data.opponentRankingsSource = 'team';
+                  } else {
+                    const leagueAverageRankings = computeLeagueAverageRankings(rankings || {});
+                    if (leagueAverageRankings) {
+                      staleData.data.opponentRankings = leagueAverageRankings;
+                      staleData.data.opponentRankingsSource = 'league_average';
+                    }
+                  }
+                } catch (err) {
+                  console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
+                }
+              }
+              
+              return NextResponse.json({
+                ...staleData.data,
+                opponentTeam,
+                cachedAt: staleData.expires_at || new Date().toISOString(),
+                stale: isExpired
+              }, { 
+                status: 200,
+                headers: { 'X-Cache-Status': isExpired ? 'STALE' : 'HIT' }
+              });
+            } else {
+              console.log(`[Shot Chart Enhanced] Stale cache found but has 0 attempts, ignoring`);
+            }
           } else {
-            console.log(`[Shot Chart Enhanced] No stale cache found in Supabase for key: ${cacheKey}`);
+            console.log(`[Shot Chart Enhanced] No stale cache found in Supabase`);
           }
         } else {
           console.error(`[Shot Chart Enhanced] ❌ Cannot check stale cache - Supabase credentials missing!`);
@@ -723,9 +886,8 @@ export async function GET(request: NextRequest) {
         opponentTeam,
         opponentDefense: null,
         opponentRankings: null,
-        error: process.env.NODE_ENV === 'production' 
-          ? 'NBA API unreachable from production. Data will be available once the daily cache refresh runs.'
-          : error.message,
+        // Don't include error message - return empty data silently like play-type-analysis does
+        // The component will handle empty data gracefully
         loading: false,
         cachedAt: new Date().toISOString()
       }, { status: 200 });

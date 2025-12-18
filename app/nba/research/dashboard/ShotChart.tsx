@@ -170,11 +170,17 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             });
             
             // Check if API returned an error in the response body (even with 200 status)
-            if (data.error) {
+            // But if we have shotZones data (even if empty), use it - don't treat as error
+            if (data.error && !data.shotZones) {
               console.error('[Shot Chart] API returned error in response:', data.error);
               setEnhancedData(null);
               setEnhancedError(data.error || 'Failed to load shot chart data');
               return;
+            }
+            
+            // If we have stale data, log it but still use it
+            if (data.stale) {
+              console.log('[Shot Chart] Using stale cached data (expired but still valid)');
             }
             
             // Validate that we have actual shot data
