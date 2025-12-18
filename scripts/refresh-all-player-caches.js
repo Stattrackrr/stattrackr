@@ -417,33 +417,28 @@ async function main() {
     return;
   }
   
-  console.log(`Processing ${players.length} players...`);
+  console.log(`Processing ${players.length} players (one at a time)...`);
   console.log('');
   
   let shotChartSuccess = 0;
   let shotChartFail = 0;
   
-  // Process in batches
-  const batchSize = 10;
-  for (let i = 0; i < players.length; i += batchSize) {
-    const batch = players.slice(i, i + batchSize);
-    console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(players.length / batchSize)} (players ${i + 1}-${Math.min(i + batchSize, players.length)})...`);
+  // Process one player at a time to avoid overwhelming NBA API
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    console.log(`[${i + 1}/${players.length}] Processing player ${player.id} (${player.first_name} ${player.last_name})...`);
     
-    const batchPromises = batch.map(async (player) => {
-      const success = await cachePlayerShotChart(player.id, season, seasonStr);
-      return { playerId: player.id, success };
-    });
+    const success = await cachePlayerShotChart(player.id, season, seasonStr);
     
-    const batchResults = await Promise.all(batchPromises);
-    
-    for (const result of batchResults) {
-      if (result.success) shotChartSuccess++;
-      else shotChartFail++;
+    if (success) {
+      shotChartSuccess++;
+    } else {
+      shotChartFail++;
     }
     
-    // Delay between batches
-    if (i + batchSize < players.length) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    // Delay between players to avoid rate limiting
+    if (i < players.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay between players
     }
   }
   
