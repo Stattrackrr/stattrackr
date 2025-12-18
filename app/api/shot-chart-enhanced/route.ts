@@ -689,7 +689,9 @@ export async function GET(request: NextRequest) {
 
     // No cache found - check if we should try NBA API
     // In production/development, everything should be cached - don't try NBA API
-    if (isProduction) {
+    // UNLESS X-Allow-NBA-API header is set (indicates caller can reach NBA API, e.g., from GitHub Actions)
+    const allowNbaApi = request.headers.get('x-allow-nba-api') === 'true';
+    if (isProduction && !allowNbaApi) {
       console.log(`[Shot Chart Enhanced] ⚠️ No cache found for player ${nbaPlayerId} in production. Cache should be populated from external service.`);
       
       // Return empty data - cache should be populated by external service
@@ -1149,6 +1151,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache the result in both Supabase (persistent) and in-memory
+    // TTL is 365 days - cache is refreshed by cron job, not by expiration
     await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
     

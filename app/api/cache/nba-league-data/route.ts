@@ -351,6 +351,7 @@ export async function GET(request: NextRequest) {
     // Cache player play type data (bulk - all players for all play types)
     const playerPlayTypesCacheKey = `player_playtypes_bulk_${seasonStr}`;
     // Store in Supabase (persistent, shared across instances)
+    // TTL is 365 days - cache is refreshed by cron job, not by expiration
     await setNBACache(playerPlayTypesCacheKey, 'play_type_bulk', playerPlayTypesData, CACHE_TTL.TRACKING_STATS);
     // Also store in-memory for faster access
     cache.set(playerPlayTypesCacheKey, playerPlayTypesData, CACHE_TTL.TRACKING_STATS);

@@ -430,7 +430,9 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // In production, skip API calls entirely if no cache
-      if (process.env.NODE_ENV === 'production' && !bypassCache) {
+      // UNLESS X-Allow-NBA-API header is set (indicates caller can reach NBA API, e.g., from GitHub Actions)
+      const allowNbaApi = request.headers.get('x-allow-nba-api') === 'true';
+      if (process.env.NODE_ENV === 'production' && !bypassCache && !allowNbaApi) {
         console.log(`[Play Type Analysis] ⚠️ Production mode: No bulk cache available. Skipping NBA API calls.`);
         // Return empty results for missing play types
         playTypesToFetch.forEach((key) => {
@@ -1085,6 +1087,7 @@ export async function GET(request: NextRequest) {
       console.warn(`[Cache Miss Log] ❌ Player ${playerId} (play type analysis) not cached: All play types have 0 points for season ${seasonStr}`);
     }
     
+    // TTL is 365 days - cache is refreshed by cron job, not by expiration
     await setNBACache(cacheKey, 'play_type', cachedResponse, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, cachedResponse, CACHE_TTL.TRACKING_STATS);
     console.log(`[Play Type Analysis] 💾 Cached ${playTypesToCache.length} play types with values > 0 (${zeroCount} with 0.0 will be retried next time)`);

@@ -67,6 +67,9 @@
     "app/api/cron/refresh-defensive-stats/route.ts": {
       "maxDuration": 60
     },
+    "app/api/cron/refresh-all-player-caches/route.ts": {
+      "maxDuration": 600
+    },
     "app/api/nba/player-props/process/route.ts": {
       "maxDuration": 300
     },

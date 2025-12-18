@@ -46,6 +46,16 @@ jobs:
           CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
         run: node scripts/cache-refresh.js || echo "Cache refresh failed but continuing"
 
+      - name: Refresh All Player Shot Charts & Play Types (5:30 AM ET run)
+        if: github.event.schedule == '30 10 * * *' && steps.check_secrets.outputs.configured == 'true'
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "🔄 Refreshing all player shot charts and play type analysis..."
+          node scripts/refresh-all-player-caches.js || echo "Player cache refresh failed but continuing"
+
       - name: Manual Refresh (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch' && steps.check_secrets.outputs.configured == 'true'
         continue-on-error: true

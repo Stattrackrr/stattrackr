@@ -580,12 +580,28 @@ const trackingBatchParam = requestUrl.searchParams.get('trackingBatch');
       status: oddsStatus 
     });
 
-    // Skip individual player cache refreshes - we only use bulk cache now
-    console.log('[NBA Stats Refresh] Skipping individual player cache refresh (using bulk cache only)');
+    // Trigger full NBA-wide refresh for all player shot charts and play type analysis
+    console.log('[NBA Stats Refresh] Triggering full NBA-wide player cache refresh (shot charts + play types)...');
+    const playerCacheUrl = `${protocol}://${host}/api/cron/refresh-all-player-caches`;
+    fetch(playerCacheUrl, {
+      headers: {
+        'Authorization': process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : '',
+      },
+    }).then(async (response) => {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[NBA Stats Refresh] ✅ All player caches refreshed:', data.results ? `${data.results.totalPlayers} players` : 'success');
+      } else {
+        console.warn('[NBA Stats Refresh] ⚠️ Player cache refresh failed:', response.status);
+      }
+    }).catch((err) => {
+      console.warn('[NBA Stats Refresh] ⚠️ Player cache refresh error:', err.message);
+    });
+    
     results.details.push({ 
-      team: 'PLAYER_CACHES', 
+      team: 'ALL_PLAYERS', 
       category: 'shot_charts_and_play_types', 
-      status: 'skipped_using_bulk_only' 
+      status: 'triggered_in_background' 
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
