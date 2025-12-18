@@ -22,15 +22,24 @@ interface BDLPlayer {
 }
 
 async function fetchBDL(url: string): Promise<any> {
+  const headers: HeadersInit = {
+    'Accept': 'application/json',
+  };
+  
+  // Add API key if available (BDL API may require it for higher rate limits)
+  const apiKey = process.env.BALLDONTLIE_API_KEY;
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+  
   const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-    },
+    headers,
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    throw new Error(`BDL API ${response.status}: ${response.statusText}`);
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`BDL API ${response.status}: ${response.statusText}${errorText ? ` - ${errorText.slice(0, 200)}` : ''}`);
   }
 
   return response.json();

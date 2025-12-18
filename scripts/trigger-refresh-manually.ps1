@@ -11,7 +11,7 @@ $host = "stattrackr.vercel.app"  # Change to your production domain
 # $protocol = "http"
 # $host = "localhost:3000"
 
-$url = "$protocol://$host/api/cron/refresh-all-player-caches"
+$url = "${protocol}://${host}/api/cron/refresh-all-player-caches"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Manual Player Cache Refresh Trigger" -ForegroundColor Yellow
