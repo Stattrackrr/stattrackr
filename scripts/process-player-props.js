@@ -612,10 +612,10 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 🔀 Split games: ${startIndex}-${endIndex} of ${totalGames} (part ${gameSplit.part}/${gameSplit.total})`);
   }
   
-  console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${tomorrowUSET}) out of ${oddsCache.games?.length || 0} total games`);
+  console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${gameDate}) out of ${oddsCache.games?.length || 0} total games`);
   
   if (games.length === 0) {
-    console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${tomorrowUSET}) - nothing to process`);
+    console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${gameDate}) - nothing to process`);
     console.log(`[GitHub Actions] 💡 This is normal if tomorrow's games aren't in the odds cache yet`);
     return;
   }
