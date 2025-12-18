@@ -5,13 +5,13 @@
 #   .\scripts\trigger-refresh-manually.ps1
 
 $protocol = "https"
-$host = "stattrackr.vercel.app"  # Change to your production domain
+$apiHost = "stattrackr.vercel.app"  # Change to your production domain
 
 # Or use localhost for local testing
 # $protocol = "http"
-# $host = "localhost:3000"
+# $apiHost = "localhost:3000"
 
-$url = "${protocol}://${host}/api/cron/refresh-all-player-caches"
+$url = "${protocol}://${apiHost}/api/cron/refresh-all-player-caches"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Manual Player Cache Refresh Trigger" -ForegroundColor Yellow
