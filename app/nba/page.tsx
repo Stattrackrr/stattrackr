@@ -2017,48 +2017,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return filteredPlayerProps;
   }, [playerProps, propLineSort, filteredPlayerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel, getGameForProp]);
 
-  // Deduplicate: only one prop per player/statType on the main list
-  const uniquePlayerProps = useMemo(() => {
-    const seen = new Set<string>();
-    const result: PlayerProp[] = [];
-    for (const prop of sortedPlayerProps) {
-      const key = `${prop.playerName}|${prop.statType}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      result.push(prop);
-    }
-    return result;
-  }, [sortedPlayerProps]);
-
-  // Limit to 2 props per player on the main screen
-  // This ensures balanced distribution and prevents one player from dominating
-  const balancedPlayerProps = useMemo(() => {
-    const MAX_PROPS_PER_PLAYER = 2; // Maximum props to show per player
-    
-    // Group props by player name
-    const propsByPlayer = new Map<string, PlayerProp[]>();
-    
-    for (const prop of uniquePlayerProps) {
-      const playerName = prop.playerName.toLowerCase().trim();
-      if (!propsByPlayer.has(playerName)) {
-        propsByPlayer.set(playerName, []);
-      }
-      propsByPlayer.get(playerName)!.push(prop);
-    }
-    
-    // Limit props per player, keeping the first N (already sorted by quality)
-    const limitedProps: PlayerProp[] = [];
-    for (const [playerName, props] of propsByPlayer.entries()) {
-      // Take only the first MAX_PROPS_PER_PLAYER props for this player
-      // Props are already sorted by quality (L10%, L5%, etc.) so we keep the best ones
-      limitedProps.push(...props.slice(0, MAX_PROPS_PER_PLAYER));
-    }
-    
-    console.log(`[NBA Landing] Balanced props: ${uniquePlayerProps.length} total → ${limitedProps.length} after limiting to ${MAX_PROPS_PER_PLAYER} per player`);
-    console.log(`[NBA Landing] Players represented: ${propsByPlayer.size} players`);
-    
-    return limitedProps;
-  }, [uniquePlayerProps]);
+  // No deduplication or per-player limits - show ALL props
+  // All filtered props are available for display
 
   // Sort for display
   // - If prop line sort is active, keep the line-based order (already applied)
@@ -2069,10 +2029,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     const percent = (hitRate?: { hits: number; total: number } | null) =>
       hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
 
-    // Use limited props (2 per player) only on page 1, otherwise use all filtered props
-    // Page 1: balanced view with 2 props per player
-    // Pages 2+: all remaining props without any per-player limit
-    const propsToSort = currentPage === 1 ? balancedPlayerProps : filteredPlayerProps;
+    // Use all filtered props - no per-player limits, show everything
+    const propsToSort = filteredPlayerProps;
 
     // Check if any column sort is active
     const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
@@ -2162,7 +2120,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       const bProb = Math.max(b.overProb, b.underProb);
       return bProb - aProb;
     });
-  }, [balancedPlayerProps, filteredPlayerProps, currentPage, propLineSort, columnSort]);
+  }, [filteredPlayerProps, propLineSort, columnSort]);
 
   // Pagination
   const pageSize = 20;
