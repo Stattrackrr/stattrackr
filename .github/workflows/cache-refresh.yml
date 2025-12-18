@@ -33,6 +33,16 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check if Supabase secrets are configured
+        id: check_supabase_secrets
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Supabase secrets not configured - skipping player cache refresh"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Refresh Player Stats (3:30 AM ET run)
         if: github.event.schedule == '30 8 * * *' && steps.check_secrets.outputs.configured == 'true'
         continue-on-error: true
@@ -50,7 +60,7 @@ jobs:
         run: node scripts/cache-refresh.js || echo "Cache refresh failed but continuing"
 
       - name: Refresh All Player Shot Charts & Play Types (5:30 AM ET run)
-        if: github.event.schedule == '30 10 * * *' && steps.check_secrets.outputs.configured == 'true'
+        if: github.event.schedule == '30 10 * * *' && steps.check_supabase_secrets.outputs.configured == 'true'
         continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
