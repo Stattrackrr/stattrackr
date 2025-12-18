@@ -388,12 +388,335 @@ async function cachePlayerShotChart(playerId, season, seasonStr) {
   }
 }
 
-// Cache play type analysis for a player (simplified - just trigger the endpoint logic)
-// For now, we'll call the production endpoint with bypassCache and X-Allow-NBA-API header
-async function cachePlayerPlayType(playerId, season, seasonStr) {
-  // This is complex - for now, we'll skip it and let the bulk cache handle it
-  // The bulk cache refresh already handles play types
-  return true;
+// Cache play type analysis for a player
+async function cachePlayerPlayTypeAnalysis(playerId, season, seasonStr) {
+  try {
+    const nbaPlayerId = getNbaStatsId(playerId);
+    
+    const PLAY_TYPES = [
+      { key: 'PRBallHandler', displayName: 'PNR Ball Handler' },
+      { key: 'Transition', displayName: 'Transition' },
+      { key: 'Spotup', displayName: 'Spot Up' },
+      { key: 'OffScreen', displayName: 'Off Screen' },
+      { key: 'Isolation', displayName: 'Isolation' },
+      { key: 'Postup', displayName: 'Post Up' },
+      { key: 'Cut', displayName: 'Cut' },
+      { key: 'Handoff', displayName: 'Handoff' },
+      { key: 'Misc', displayName: 'Misc' },
+      { key: 'PRRollman', displayName: 'PNR Roll Man' },
+      { key: 'OffRebound', displayName: 'Putbacks' },
+      { key: 'FreeThrows', displayName: 'Free Throws' },
+    ];
+
+    const playerPlayTypesData = [];
+    let totalPoints = 0;
+
+    for (const { key, displayName } of PLAY_TYPES) {
+      const params = new URLSearchParams({
+        LeagueID: '00',
+        PerMode: 'PerGame',
+        PlayerOrTeam: 'P',
+        SeasonType: 'Regular Season',
+        SeasonYear: seasonStr,
+        PlayType: key,
+        TypeGrouping: 'offensive',
+        PlayerID: nbaPlayerId,
+      });
+
+      const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
+      const data = await fetchNBAStats(url, 20000, 2);
+      const resultSet = data?.resultSets?.[0];
+
+      if (resultSet) {
+        const headers = resultSet.headers || [];
+        const rows = resultSet.rowSet || [];
+        
+        if (rows.length > 0) {
+          const row = rows[0];
+          const pointsIdx = headers.indexOf('PTS');
+          const possessionsIdx = headers.indexOf('POSS');
+          const pppIdx = headers.indexOf('PPP');
+          const ftPossPctIdx = headers.indexOf('FT_POSS_PCT');
+
+          const points = pointsIdx >= 0 ? row[pointsIdx] : 0;
+          const possessions = possessionsIdx >= 0 ? row[possessionsIdx] : 0;
+          const ppp = pppIdx >= 0 ? row[pppIdx] : 0;
+          const ftPossPct = ftPossPctIdx >= 0 ? row[ftPossPctIdx] : 0;
+
+          playerPlayTypesData.push({
+            playType: key,
+            displayName,
+            points,
+            possessions,
+            ppp,
+            ftPossPct,
+          });
+          totalPoints += points;
+        } else {
+          playerPlayTypesData.push({
+            playType: key,
+            displayName,
+            points: 0,
+            possessions: 0,
+            ppp: 0,
+            ftPossPct: 0,
+          });
+        }
+      } else {
+        playerPlayTypesData.push({
+          playType: key,
+          displayName,
+          points: 0,
+          possessions: 0,
+          ppp: 0,
+          ftPossPct: 0,
+        });
+      }
+      await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between play types
+    }
+
+    if (playerPlayTypesData.length > 0) {
+      const playTypeCacheData = {
+        playerId: nbaPlayerId,
+        season: seasonStr,
+        playTypes: playerPlayTypesData,
+        totalPoints,
+        cachedAt: new Date().toISOString(),
+      };
+      
+      const cacheKey = `playtype_analysis_${nbaPlayerId}_${season}`;
+      const ttlMinutes = 365 * 24 * 60;
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
+
+      const { error: cacheError } = await supabase
+        .from('nba_api_cache')
+        .upsert({
+          cache_key: cacheKey,
+          cache_type: 'play_type',
+          data: playTypeCacheData,
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'cache_key'
+        });
+
+      if (cacheError) {
+        console.error(`  ❌ Failed to cache play type: ${cacheError.message}`);
+        return false;
+      }
+
+      console.log(`  ✅ Cached play type analysis for player ${playerId} (NBA: ${nbaPlayerId})`);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`  ❌ Error caching play type analysis for player ${playerId}:`, error.message);
+    return false;
+  }
+}
+
+// Cache team defense rankings (all 30 teams)
+async function cacheTeamDefenseRankings(season, seasonStr) {
+  try {
+    const NBA_TEAM_MAP = {
+      'ATL': '1610612737', 'BOS': '1610612738', 'BKN': '1610612751', 'CHA': '1610612766',
+      'CHI': '1610612741', 'CLE': '1610612739', 'DAL': '1610612742', 'DEN': '1610612743',
+      'DET': '1610612765', 'GSW': '1610612744', 'HOU': '1610612745', 'IND': '1610612754',
+      'LAC': '1610612746', 'LAL': '1610612747', 'MEM': '1610612763', 'MIA': '1610612748',
+      'MIL': '1610612749', 'MIN': '1610612750', 'NOP': '1610612740', 'NYK': '1610612752',
+      'OKC': '1610612760', 'ORL': '1610612753', 'PHI': '1610612755', 'PHX': '1610612756',
+      'POR': '1610612757', 'SAC': '1610612758', 'SAS': '1610612759', 'TOR': '1610612761',
+      'UTA': '1610612762', 'WAS': '1610612764'
+    };
+
+    console.log(`  🔄 Fetching team defense rankings for all 30 teams...`);
+    
+    const allTeamsData = [];
+    const teams = Object.keys(NBA_TEAM_MAP);
+    
+    // Process teams in batches of 5
+    const batchSize = 5;
+    for (let i = 0; i < teams.length; i += batchSize) {
+      const batch = teams.slice(i, i + batchSize);
+      console.log(`  Processing teams ${i + 1}-${Math.min(i + batchSize, teams.length)}/${teams.length}...`);
+      
+      const batchPromises = batch.map(async (teamAbbr) => {
+        const teamId = NBA_TEAM_MAP[teamAbbr];
+        const defenseParams = new URLSearchParams({
+          LeagueID: '00',
+          Season: seasonStr,
+          SeasonType: 'Regular Season',
+          TeamID: '0',
+          PlayerID: '0',
+          Outcome: '',
+          Location: '',
+          Month: '0',
+          SeasonSegment: '',
+          DateFrom: '',
+          DateTo: '',
+          OpponentTeamID: teamId,
+          VsConference: '',
+          VsDivision: '',
+          GameSegment: '',
+          Period: '0',
+          LastNGames: '0',
+          ContextMeasure: 'FGA',
+          RookieYear: '',
+          Position: '',
+        });
+
+        const defenseUrl = `${NBA_STATS_BASE}/shotchartdetail?${defenseParams.toString()}`;
+        const defenseData = await fetchNBAStats(defenseUrl, 60000, 2); // 60s timeout
+
+        if (defenseData?.resultSets?.[0]) {
+          const resultSet = defenseData.resultSets[0];
+          const headers = resultSet.headers || [];
+          const rows = resultSet.rowSet || [];
+
+          const shotMadeIdx = headers.indexOf('SHOT_MADE_FLAG');
+          const shotZoneBasicIdx = headers.indexOf('SHOT_ZONE_BASIC');
+
+          const zoneStats = {
+            restrictedArea: { made: 0, attempted: 0 },
+            paint: { made: 0, attempted: 0 },
+            midRange: { made: 0, attempted: 0 },
+            leftCorner3: { made: 0, attempted: 0 },
+            rightCorner3: { made: 0, attempted: 0 },
+            aboveBreak3: { made: 0, attempted: 0 },
+          };
+
+          for (const row of rows) {
+            const made = row[shotMadeIdx] === 1;
+            const zone = row[shotZoneBasicIdx];
+
+            if (zone === 'Restricted Area') {
+              zoneStats.restrictedArea.attempted++;
+              if (made) zoneStats.restrictedArea.made++;
+            } else if (zone === 'In The Paint (Non-RA)') {
+              zoneStats.paint.attempted++;
+              if (made) zoneStats.paint.made++;
+            } else if (zone === 'Mid-Range') {
+              zoneStats.midRange.attempted++;
+              if (made) zoneStats.midRange.made++;
+            } else if (zone === 'Left Corner 3') {
+              zoneStats.leftCorner3.attempted++;
+              if (made) zoneStats.leftCorner3.made++;
+            } else if (zone === 'Right Corner 3') {
+              zoneStats.rightCorner3.attempted++;
+              if (made) zoneStats.rightCorner3.made++;
+            } else if (zone === 'Above the Break 3') {
+              zoneStats.aboveBreak3.attempted++;
+              if (made) zoneStats.aboveBreak3.made++;
+            }
+          }
+
+          return {
+            team: teamAbbr,
+            restrictedArea: {
+              fgPct: zoneStats.restrictedArea.attempted > 0 ? (zoneStats.restrictedArea.made / zoneStats.restrictedArea.attempted) * 100 : 0,
+              fga: zoneStats.restrictedArea.attempted,
+              fgm: zoneStats.restrictedArea.made
+            },
+            paint: {
+              fgPct: zoneStats.paint.attempted > 0 ? (zoneStats.paint.made / zoneStats.paint.attempted) * 100 : 0,
+              fga: zoneStats.paint.attempted,
+              fgm: zoneStats.paint.made
+            },
+            midRange: {
+              fgPct: zoneStats.midRange.attempted > 0 ? (zoneStats.midRange.made / zoneStats.midRange.attempted) * 100 : 0,
+              fga: zoneStats.midRange.attempted,
+              fgm: zoneStats.midRange.made
+            },
+            leftCorner3: {
+              fgPct: zoneStats.leftCorner3.attempted > 0 ? (zoneStats.leftCorner3.made / zoneStats.leftCorner3.attempted) * 100 : 0,
+              fga: zoneStats.leftCorner3.attempted,
+              fgm: zoneStats.leftCorner3.made
+            },
+            rightCorner3: {
+              fgPct: zoneStats.rightCorner3.attempted > 0 ? (zoneStats.rightCorner3.made / zoneStats.rightCorner3.attempted) * 100 : 0,
+              fga: zoneStats.rightCorner3.attempted,
+              fgm: zoneStats.rightCorner3.made
+            },
+            aboveBreak3: {
+              fgPct: zoneStats.aboveBreak3.attempted > 0 ? (zoneStats.aboveBreak3.made / zoneStats.aboveBreak3.attempted) * 100 : 0,
+              fga: zoneStats.aboveBreak3.attempted,
+              fgm: zoneStats.aboveBreak3.made
+            },
+          };
+        }
+        return null;
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      allTeamsData.push(...batchResults.filter(r => r !== null));
+      
+      // Small delay between batches
+      if (i + batchSize < teams.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    if (allTeamsData.length > 0) {
+      // Calculate rankings
+      const zones = ['restrictedArea', 'paint', 'midRange', 'leftCorner3', 'rightCorner3', 'aboveBreak3'];
+      const rankings = {};
+      
+      zones.forEach(zone => {
+        const sorted = [...allTeamsData].sort((a, b) => b[zone].fgPct - a[zone].fgPct);
+        sorted.forEach((team, index) => {
+          if (!rankings[team.team]) {
+            rankings[team.team] = {};
+          }
+          rankings[team.team][zone] = {
+            rank: index + 1,
+            fgPct: team[zone].fgPct,
+            fga: team[zone].fga,
+            fgm: team[zone].fgm,
+            totalTeams: allTeamsData.length
+          };
+        });
+      });
+
+      const rankingsData = {
+        season: seasonStr,
+        rankings,
+        teams: allTeamsData,
+        cachedAt: new Date().toISOString()
+      };
+
+      const cacheKey = `team_defense_rankings_${season}`;
+      const ttlMinutes = 365 * 24 * 60;
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
+
+      const { error: cacheError } = await supabase
+        .from('nba_api_cache')
+        .upsert({
+          cache_key: cacheKey,
+          cache_type: 'team_defense',
+          data: rankingsData,
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'cache_key'
+        });
+
+      if (cacheError) {
+        console.error(`  ❌ Failed to cache team defense rankings: ${cacheError.message}`);
+        return false;
+      }
+
+      console.log(`  ✅ Cached team defense rankings for ${allTeamsData.length} teams`);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`  ❌ Error caching team defense rankings:`, error.message);
+    return false;
+  }
 }
 
 // Main function
@@ -417,28 +740,71 @@ async function main() {
     return;
   }
   
-  console.log(`Processing ${players.length} players (one at a time)...`);
+  console.log(`Processing ${players.length} players in parallel batches...`);
   console.log('');
   
+  // First, cache team defense rankings (once for all teams)
+  console.log('Step 1: Caching team defense rankings...');
+  await cacheTeamDefenseRankings(season, seasonStr);
+  console.log('');
+  
+  // Process players in small batches (3 at a time) for speed
+  const batchSize = 3;
   let shotChartSuccess = 0;
   let shotChartFail = 0;
+  let playTypeSuccess = 0;
+  let playTypeFail = 0;
   
-  // Process one player at a time to avoid overwhelming NBA API
-  for (let i = 0; i < players.length; i++) {
-    const player = players[i];
-    console.log(`[${i + 1}/${players.length}] Processing player ${player.id} (${player.first_name} ${player.last_name})...`);
+  console.log(`Step 2: Processing ${players.length} players in batches of ${batchSize}...`);
+  console.log('');
+  
+  for (let i = 0; i < players.length; i += batchSize) {
+    const batch = players.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(players.length / batchSize);
     
-    const success = await cachePlayerShotChart(player.id, season, seasonStr);
+    console.log(`[Batch ${batchNum}/${totalBatches}] Processing players ${i + 1}-${Math.min(i + batchSize, players.length)}...`);
     
-    if (success) {
-      shotChartSuccess++;
-    } else {
-      shotChartFail++;
+    // Process batch in parallel
+    const batchPromises = batch.map(async (player) => {
+      const results = {
+        playerId: player.id,
+        playerName: `${player.first_name} ${player.last_name}`,
+        shotChart: false,
+        playType: false
+      };
+      
+      // Cache shot chart
+      try {
+        results.shotChart = await cachePlayerShotChart(player.id, season, seasonStr);
+      } catch (error) {
+        console.error(`  ❌ Shot chart error for ${results.playerName}:`, error.message);
+      }
+      
+      // Cache play type analysis
+      try {
+        results.playType = await cachePlayerPlayTypeAnalysis(player.id, season, seasonStr);
+      } catch (error) {
+        console.error(`  ❌ Play type error for ${results.playerName}:`, error.message);
+      }
+      
+      return results;
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Count successes and failures
+    for (const result of batchResults) {
+      if (result.shotChart) shotChartSuccess++;
+      else shotChartFail++;
+      
+      if (result.playType) playTypeSuccess++;
+      else playTypeFail++;
     }
     
-    // Delay between players to avoid rate limiting
-    if (i < players.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay between players
+    // Shorter delay between batches (1 second instead of 3)
+    if (i + batchSize < players.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
   
@@ -447,10 +813,10 @@ async function main() {
   console.log('Summary');
   console.log('========================================');
   console.log(`Shot Charts: ${shotChartSuccess} success, ${shotChartFail} failed`);
+  console.log(`Play Type Analysis: ${playTypeSuccess} success, ${playTypeFail} failed`);
   console.log('');
   console.log('✅ Refresh complete!');
   console.log('');
-  console.log('Note: Play type analysis is handled by bulk cache refresh.');
 }
 
 // Run if called directly
