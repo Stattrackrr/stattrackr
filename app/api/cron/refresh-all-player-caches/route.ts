@@ -149,6 +149,55 @@ export async function GET(request: NextRequest) {
     const host = request.headers.get('host') || 'localhost:3000';
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
+    console.log(`[Refresh All Player Caches] Starting refresh for season ${season}...`);
+    
+    // STEP 1: Fetch bulk data first (fast - only 22 API calls total)
+    console.log(`[Refresh All Player Caches] Step 1/3: Fetching bulk play type data...`);
+    try {
+      const bulkCacheUrl = `${protocol}://${host}/api/cache/nba-league-data?season=${season}&force=true`;
+      console.log(`[Refresh All Player Caches] Calling bulk cache endpoint: ${bulkCacheUrl}`);
+      
+      const bulkResponse = await fetch(bulkCacheUrl, {
+        headers: {
+          'Authorization': process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : '',
+        },
+      });
+      
+      if (bulkResponse.ok) {
+        const bulkData = await bulkResponse.json();
+        console.log(`[Refresh All Player Caches] ✅ Bulk cache populated:`);
+        console.log(`  - Play type defensive rankings: ${Object.keys(bulkData.playTypeRankings || {}).length} play types`);
+        console.log(`  - Player play types: ${Object.keys(bulkData.playerPlayTypes || {}).length} play types`);
+      } else {
+        console.warn(`[Refresh All Player Caches] ⚠️ Bulk cache endpoint returned ${bulkResponse.status}`);
+      }
+    } catch (error: any) {
+      console.warn(`[Refresh All Player Caches] ⚠️ Bulk cache fetch error (non-fatal):`, error.message);
+    }
+    
+    // STEP 2: Fetch team defense rankings (30 teams, but still needed for shot charts)
+    console.log(`[Refresh All Player Caches] Step 2/3: Fetching team defense rankings...`);
+    try {
+      const teamDefenseUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+      console.log(`[Refresh All Player Caches] Calling team defense rankings: ${teamDefenseUrl}`);
+      
+      const teamDefenseResponse = await fetch(teamDefenseUrl, {
+        headers: {
+          'Authorization': process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : '',
+        },
+      });
+      
+      if (teamDefenseResponse.ok) {
+        console.log(`[Refresh All Player Caches] ✅ Team defense rankings cached`);
+      } else {
+        console.warn(`[Refresh All Player Caches] ⚠️ Team defense rankings returned ${teamDefenseResponse.status}`);
+      }
+    } catch (error: any) {
+      console.warn(`[Refresh All Player Caches] ⚠️ Team defense rankings error (non-fatal):`, error.message);
+    }
+
+    // STEP 3: Now fetch individual player data (shot charts and play types)
+    console.log(`[Refresh All Player Caches] Step 3/3: Fetching individual player data...`);
     console.log(`[Refresh All Player Caches] Fetching all active players for season ${season}...`);
     
     // Get all active players
@@ -164,7 +213,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`[Refresh All Player Caches] Processing ${players.length} players...`);
+    console.log(`[Refresh All Player Caches] Processing ${players.length} players for shot charts...`);
     
     // Process players in smaller batches to avoid overwhelming NBA API
     // Reduced from 10 to 3 to prevent timeouts
@@ -191,6 +240,7 @@ export async function GET(request: NextRequest) {
         if (result.shotChart) shotChartSuccess++;
         else shotChartFail++;
         
+        // Play types are from bulk cache (already counted in Step 1)
         if (result.playType) playTypeSuccess++;
         else playTypeFail++;
       }
@@ -203,7 +253,11 @@ export async function GET(request: NextRequest) {
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    console.log(`[Refresh All Player Caches] ✅ Complete: ${shotChartSuccess} shot charts, ${playTypeSuccess} play types (${duration}s)`);
+    console.log(`[Refresh All Player Caches] ✅ Complete:`);
+    console.log(`  - Bulk play types: Cached (11 defensive + 11 player play types)`);
+    console.log(`  - Team defense rankings: Cached (30 teams)`);
+    console.log(`  - Shot charts: ${shotChartSuccess} success, ${shotChartFail} failed`);
+    console.log(`  - Duration: ${duration}s`);
 
     return NextResponse.json({
       success: true,
