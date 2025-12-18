@@ -166,8 +166,9 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Refresh All Player Caches] Processing ${players.length} players...`);
     
-    // Process players in batches to avoid overwhelming the system
-    const batchSize = 10;
+    // Process players in smaller batches to avoid overwhelming NBA API
+    // Reduced from 10 to 3 to prevent timeouts
+    const batchSize = 3;
     let shotChartSuccess = 0;
     let shotChartFail = 0;
     let playTypeSuccess = 0;
@@ -194,9 +195,9 @@ export async function GET(request: NextRequest) {
         else playTypeFail++;
       }
 
-      // Small delay between batches to avoid rate limiting
+      // Longer delay between batches to avoid rate limiting and timeouts
       if (i + batchSize < players.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2s delay between batches
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5s delay between batches
       }
     }
 
