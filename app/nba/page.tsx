@@ -387,11 +387,11 @@ export default function NBALandingPage() {
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    
     // Load odds format from localStorage
     const savedFormat = localStorage.getItem('oddsFormat');
     if (savedFormat === 'decimal' || savedFormat === 'american') {
-      setOddsFormat(savedFormat);
+      setOddsFormat(savedFormat as 'american' | 'decimal');
     }
     
     // Clear any player-related URL parameters when landing on player props page
@@ -428,6 +428,8 @@ export default function NBALandingPage() {
         // Ignore errors
       }
     }
+    
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Reset to first page and close popups whenever filters or sorting change
