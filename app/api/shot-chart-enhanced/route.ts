@@ -214,7 +214,7 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
       // Also save to Supabase for persistence across instances
       try {
         const { setNBACache } = await import('@/lib/nbaCache');
-        await setNBACache(cacheKey, stats, 1440, 'team_defense');
+        await setNBACache(cacheKey, 'team_defense', stats, 1440);
         console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory + Supabase)`);
       } catch (cacheError: any) {
         console.warn(`[Shot Chart Enhanced] ⚠️ Failed to save to Supabase cache:`, cacheError.message);
