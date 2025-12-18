@@ -36,9 +36,9 @@ jobs:
       - name: Check if Supabase secrets are configured
         id: check_supabase_secrets
         run: |
-          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ] || [ -z "${{ secrets.BALLDONTLIE_API_KEY }}" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Supabase secrets not configured - skipping player cache refresh"
+            echo "⚠️ Supabase/BDL secrets not configured - skipping player cache refresh"
           else
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
@@ -65,6 +65,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
         run: |
           echo "🔄 Refreshing all player shot charts and play type analysis..."
           node scripts/refresh-all-player-caches.js || echo "Player cache refresh failed but continuing"

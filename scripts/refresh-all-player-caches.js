@@ -133,11 +133,16 @@ function fetchNBAStats(url, timeout = 20000, retries = 2) {
 
 // Fetch from BDL API
 async function fetchBDL(url) {
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+  const apiKey = process.env.BALLDONTLIE_API_KEY;
+  const headers = {
+    'Accept': 'application/json',
+  };
+  
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(url, { headers });
 
   if (!response.ok) {
     throw new Error(`BDL API ${response.status}: ${response.statusText}`);
