@@ -13,7 +13,12 @@
 const https = require('https');
 const { URL } = require('url');
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: '.env.local' });
+// Try to load .env.local, but don't fail if it doesn't exist (GitHub Actions uses secrets)
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch (e) {
+  // Ignore - environment variables will come from GitHub Actions secrets
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
