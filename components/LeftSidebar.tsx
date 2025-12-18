@@ -97,7 +97,7 @@ export default function LeftSidebar({
   return (
     <>
     <div 
-      className="hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl"
+      className="hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-[#0a1929] border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl"
       style={{
         marginLeft: '0px',
         width: 'var(--sidebar-width, 360px)',
@@ -328,7 +328,7 @@ export default function LeftSidebar({
           
           {/* Modal content - positioned like sidebar */}
           <div 
-            className="fixed left-0 top-4 h-[calc(100vh-1rem)] w-80 bg-gray-300 dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-[110] flex flex-col"
+            className="fixed left-0 top-4 h-[calc(100vh-1rem)] w-80 bg-gray-300 dark:bg-[#0a1929] border-r border-gray-200 dark:border-gray-700 rounded-r-2xl shadow-xl z-[110] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">

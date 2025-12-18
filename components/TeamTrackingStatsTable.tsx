@@ -190,7 +190,7 @@ export function TeamTrackingStatsTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6">
+    <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow p-4 md:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -207,7 +207,7 @@ export function TeamTrackingStatsTable({
             className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
               category === 'passing'
                 ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             Passing
@@ -217,7 +217,7 @@ export function TeamTrackingStatsTable({
             className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
               category === 'rebounding'
                 ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             Rebounding
@@ -231,8 +231,8 @@ export function TeamTrackingStatsTable({
           onClick={() => setGameFilter('all')}
           className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
             gameFilter === 'all'
-              ? 'bg-gray-900 dark:bg-gray-700 text-white'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              ? 'bg-gray-900 dark:bg-[#0a1929] text-white'
+              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#0d1f35]'
           }`}
         >
           All Games
@@ -241,8 +241,8 @@ export function TeamTrackingStatsTable({
           onClick={() => setGameFilter('last5')}
           className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
             gameFilter === 'last5'
-              ? 'bg-gray-900 dark:bg-gray-700 text-white'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              ? 'bg-gray-900 dark:bg-[#0a1929] text-white'
+              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#0d1f35]'
           }`}
         >
           Last 5 Games
@@ -270,7 +270,7 @@ export function TeamTrackingStatsTable({
         <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
           <div className="max-h-[380px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg scroll-smooth">
           <table className="min-w-[600px] md:min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 shadow-md border-b-2 border-gray-200 dark:border-gray-700">
+            <thead className="bg-gray-50 dark:bg-[#0a1929] sticky top-0 z-10 shadow-md border-b-2 border-gray-200 dark:border-gray-700">
               <tr>
                 <th className="px-2 sm:px-3 md:px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 sm:w-auto">
                   Rank
@@ -320,7 +320,7 @@ export function TeamTrackingStatsTable({
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-[#0a1929] divide-y divide-gray-200 dark:divide-gray-700">
               {sortedPlayers.map((player, index) => {
                 // Try ID matching first, then fall back to name matching
                 let isSelected = false;
@@ -340,7 +340,7 @@ export function TeamTrackingStatsTable({
                     className={`transition-all ${
                       isSelected 
                         ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-600 shadow-md' 
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                        : 'hover:bg-gray-50 dark:hover:bg-[#0d1f35]/50'
                     }`}
                   >
                     <td className="px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-12 sm:w-auto">

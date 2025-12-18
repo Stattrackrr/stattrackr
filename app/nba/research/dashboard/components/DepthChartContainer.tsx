@@ -346,7 +346,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   
   if (!selectedTeam || selectedTeam === 'N/A') {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
         <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">Select a player/team to load depth chart.</div>
       </div>
@@ -355,7 +355,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
 
   if (depthLoading) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
           {lineupAvailable && (
@@ -380,7 +380,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
 
   if (depthError) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
           {lineupAvailable && (
@@ -405,7 +405,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
 
   if (!mappedDepthChart) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
           {lineupAvailable && (
@@ -468,7 +468,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
     : false;
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+    <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
         
@@ -792,7 +792,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
                           cardClasses += 'bg-orange-50 dark:bg-orange-900/20 text-orange-900 dark:text-orange-300 border-orange-300 dark:border-orange-600 ring-1 ring-orange-400';
                         }
                       } else {
-                        cardClasses += 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
+                        cardClasses += 'bg-white dark:bg-[#0a1929] text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
                       }
                       
                       return (

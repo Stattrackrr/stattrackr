@@ -152,7 +152,7 @@ export default function InjuryContainer({
     if (lowerStatus.includes('questionable')) return 'bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700';
     if (lowerStatus.includes('probable')) return 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700';
     if (lowerStatus.includes('day-to-day') || lowerStatus.includes('day to day')) return 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-600';
-    return 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+    return 'bg-gray-100 dark:bg-[#0a1929] border-gray-200 dark:border-gray-700';
   };
 
   // Format return date
@@ -204,7 +204,7 @@ export default function InjuryContainer({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Injury Report
@@ -214,7 +214,7 @@ export default function InjuryContainer({
         {availableTeams.length > 1 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 dark:text-gray-400">Team:</span>
-            <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+            <div className="flex rounded-lg bg-gray-100 dark:bg-[#0a1929] p-1">
               {availableTeams.map((team) => (
                 <button
                   key={team}

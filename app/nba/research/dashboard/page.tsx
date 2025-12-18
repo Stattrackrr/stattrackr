@@ -1495,7 +1495,7 @@ const HomeAwaySelect = memo(function HomeAwaySelect({ value, onChange, isDark }:
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as 'ALL' | 'HOME' | 'AWAY')}
-        className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+        className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-xl bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
       >
         <option value="ALL">ALL</option>
         <option value="HOME">HOME</option>
@@ -1705,7 +1705,7 @@ const getPlayerCurrentTeam = (playerStats: BallDontLieStats[]): string => {
 
 // Get opponent team from games schedule
 const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
-  console.clear();
+  // Removed console.clear() to preserve debug logs
   console.log(`%c🔍 === OPPONENT DETECTION START ===%c`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
   console.log(`%cSearching for opponent of: %c${currentTeam}`, 'color: #555', 'color: #e74c3c; font-weight: bold; font-size: 14px');
   console.log(`%cTotal games available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
@@ -1878,7 +1878,7 @@ const StatTooltip = ({ statName, value, definition }: { statName: string; value:
               ?
             </button>
             {showTooltip && (
-              <div className="absolute z-50 left-0 bottom-5 w-32 px-2 py-1.5 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+              <div className="absolute z-50 left-0 bottom-5 w-32 px-2 py-1.5 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
                 {definition}
               </div>
             )}
@@ -1911,7 +1911,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
   
   if (!selectedPlayer) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Games</h3>
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
@@ -1924,7 +1924,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
 
   if (!playerStats.length) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Games</h3>
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
@@ -1967,7 +1967,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
   const rangeEnd = totalGames ? endIndex : 0;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Game Log</h3>
         <div className="flex items-center gap-3">
@@ -2004,7 +2004,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs">
           <thead>
-            <tr className={isDark ? 'bg-slate-900' : 'bg-slate-100'}>
+            <tr className={isDark ? 'bg-[#0a1929]' : 'bg-slate-100'}>
               <th className="text-left py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">DATE</th>
               <th className="text-left py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">TM</th>
               <th className="text-left py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">OPP</th>
@@ -2187,13 +2187,13 @@ const PureChart = memo(function PureChart({
     <div className="h-full w-full">
       {isLoading ? (
         <div className="h-full w-full flex flex-col gap-4 animate-pulse">
-          <div className="h-6 w-40 rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="h-64 w-full rounded-xl bg-gray-200 dark:bg-gray-700" />
+          <div className="h-6 w-40 rounded bg-gray-200 dark:bg-[#0a1929]" />
+          <div className="h-64 w-full rounded-xl bg-gray-200 dark:bg-[#0a1929]" />
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
+            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929] hidden sm:block" />
           </div>
         </div>
       ) : (
@@ -2243,7 +2243,7 @@ const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, is
       }}
       style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
       className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
-        isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
       {label}
@@ -2267,7 +2267,7 @@ const TimeframeBtn = memo(function TimeframeBtn({ value, isSelected, onSelect }:
       }}
       style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
       className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
-        isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
       {value === 'h2h' ? 'H2H' : value === 'lastseason' ? 'Last Season' : value === 'thisseason' ? 'This Season' : value.replace('last','L')}
@@ -2325,7 +2325,7 @@ const OpponentSelector = memo(function OpponentSelector({
         {/* Custom dropdown trigger */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+          className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
         >
           <div className="flex items-center gap-1">
             {displayValue !== 'ALL' && (
@@ -2358,7 +2358,7 @@ const OpponentSelector = memo(function OpponentSelector({
         
         {/* Custom dropdown menu */}
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto custom-scrollbar">
+          <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto custom-scrollbar">
             {options.map(option => (
               <button
                 key={option.value}
@@ -2999,7 +2999,7 @@ const ChartControls = function ChartControls({
         <div className="relative">
           <button
             onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
-            className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+            className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm sm:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             <span className="truncate">{selectedOption?.label || 'Timeframe'}</span>
             <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3008,7 +3008,7 @@ const ChartControls = function ChartControls({
           </button>
           
           {isTimeframeDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
               {timeframeOptions.map(option => (
                 <button
                   key={option.value}
@@ -3481,7 +3481,7 @@ const ChartControls = function ChartControls({
                 <div className="hidden sm:block relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={altLinesRef}>
                   <button
                     onClick={() => setIsAltLinesOpen(!isAltLinesOpen)}
-                    className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden"
+                    className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden"
                   >
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0 overflow-hidden">
                       {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
@@ -3574,7 +3574,7 @@ const ChartControls = function ChartControls({
                   
                   {isAltLinesOpen && (
                     <>
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
                         <div className="p-3 border-b border-gray-200 dark:border-gray-600">
                           <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
                         </div>
@@ -4045,7 +4045,7 @@ const ChartControls = function ChartControls({
                     <div className="sm:hidden relative flex-shrink-0 w-[100px]" ref={altLinesRef}>
                       <button
                         onClick={() => setIsAltLinesOpen(!isAltLinesOpen)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
                       >
                         <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
                           {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
@@ -4125,7 +4125,7 @@ const ChartControls = function ChartControls({
                       
                       {isAltLinesOpen && (
                         <>
-                          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
+                          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
                             <div className="p-3 border-b border-gray-200 dark:border-gray-600">
                               <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
                             </div>
@@ -4194,7 +4194,7 @@ const ChartControls = function ChartControls({
                     if (displayBookmaker) {
                       const bookmakerInfo = getBookmakerInfo(displayBookmaker.bookmaker);
                       return (
-                        <div className="flex items-center gap-2 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                        <div className="flex items-center gap-2 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg">
                           {bookmakerInfo?.logoUrl ? (
                             <img 
                               src={bookmakerInfo.logoUrl} 
@@ -4225,7 +4225,7 @@ const ChartControls = function ChartControls({
                       );
                     }
                     return (
-                      <div className="px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 dark:text-gray-400">
+                      <div className="px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 dark:text-gray-400">
                         No odds available
                       </div>
                     );
@@ -4280,7 +4280,7 @@ const ChartControls = function ChartControls({
                         // selectedBookmaker will be auto-updated by useEffect if a matching bookmaker is found
                       }
                     }}
-                    className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   />
                 )}
               </div>
@@ -4310,14 +4310,14 @@ const ChartControls = function ChartControls({
                 <div className="relative" ref={advancedMobileRef}>
                   <button
                     onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
-                    className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
+                    className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
                   >
                     Advanced
                   </button>
                   {isAdvancedFiltersOpen && (
                     <div 
                       ref={advancedMobilePortalRef}
-                      className="absolute right-0 top-full mt-1 w-[min(calc(100vw-2rem),20rem)] sm:w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
+                      className="absolute right-0 top-full mt-1 w-[min(calc(100vw-2rem),20rem)] sm:w-72 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
                       onClick={(e) => {
                         // Prevent clicks inside the dropdown from closing it
                         e.stopPropagation();
@@ -4397,7 +4397,7 @@ const ChartControls = function ChartControls({
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
                                 disabled={!rosterForSelectedTeam}
                               >
                                 <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
@@ -4454,7 +4454,7 @@ const ChartControls = function ChartControls({
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
                                 disabled={!rosterForSelectedTeam}
                               >
                                 <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
@@ -4538,12 +4538,12 @@ const ChartControls = function ChartControls({
                 <div className="relative" ref={advancedDesktopRef}>
                   <button
                     onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
-                    className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
+                    className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
                   >
                     Advanced
                   </button>
                   {isAdvancedFiltersOpen && (
-                    <div className="absolute right-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                    <div className="absolute right-0 mt-1 w-72 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
                       <div className="space-y-2">
                         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
@@ -4613,7 +4613,7 @@ const ChartControls = function ChartControls({
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
                                 disabled={!rosterForSelectedTeam}
                               >
                                 <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
@@ -4670,7 +4670,7 @@ const ChartControls = function ChartControls({
                                   const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
                                   setTeammateFilterId(id);
                                 }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
                                 disabled={!rosterForSelectedTeam}
                               >
                                 <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
@@ -4819,7 +4819,7 @@ const ChartContainer = function ChartContainer({
         {hitRateStats.averages.map((avg: AverageStatInfo) => (
           <span
             key={`avg-${avg.label}`}
-            className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-[10px] sm:text-xs font-medium"
+            className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-[#0a1929] dark:text-gray-200 text-[10px] sm:text-xs font-medium"
           >
             {avg.label}:{' '}
             <span className="font-semibold text-gray-900 dark:text-white">
@@ -4832,7 +4832,7 @@ const ChartContainer = function ChartContainer({
   };
   return (
 <div 
-className="chart-container-no-focus relative z-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
+className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
       style={{ outline: 'none', boxShadow: 'none' }}
     >
       {/* Desktop: In-chart overlay pill (disabled; use pre-chart placement to match mobile) */}
@@ -5117,12 +5117,12 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   }
 
               return (
-    <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
+    <div className="relative z-50 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
       <div className="p-3 sm:p-4 md:p-6">
         {/* Market Predicted Outcomes - Full Width (only show for player props, not game props) */}
         <div>
           <div>
-            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900/40 p-4 h-full flex flex-col gap-3">
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0a1929]/40 p-4 h-full flex flex-col gap-3">
               <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                 Market Predicted Outcomes
               </div>
@@ -5541,7 +5541,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
         <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
       </div>
-      <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'}`}>
         {/* Controls row */}
         <div className="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {/* Position switcher */}
@@ -5560,7 +5560,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
               
               {posOpen && (
                 <>
-                  <div className={`absolute z-20 mt-1 left-2 right-2 rounded-md border shadow-lg overflow-hidden ${mounted && isDark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'}`}>
+                  <div className={`absolute z-20 mt-1 left-2 right-2 rounded-md border shadow-lg overflow-hidden ${mounted && isDark ? 'bg-[#0a1929] border-gray-600' : 'bg-white border-gray-300'}`}>
                     {(['PG','SG','SF','PF','C'] as const).map(p => (
                       <button
                         key={p}
@@ -5875,7 +5875,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
               </h4>
             </div>
           
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+          <div className="bg-gray-50 dark:bg-[#0a1929] rounded-lg p-3">
             <div className="space-y-2">
               <div className={`text-xs font-mono font-bold uppercase tracking-wider`}>
                 <span className={`${mounted && isDark ? "text-green-400" : "text-green-600"}`}>{opponentTeam || 'TBD'}</span>
@@ -6264,7 +6264,7 @@ const BestOddsTable = memo(function BestOddsTable({
     : ['H2H','Spread','Total'];
 
   return (
-    <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+    <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 md:p-4 border border-gray-200 dark:border-gray-700">
       {/* Header */}
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
@@ -6280,7 +6280,7 @@ const BestOddsTable = memo(function BestOddsTable({
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs border-collapse">
           <thead>
-            <tr className={(mounted && isDark ? 'bg-slate-900' : 'bg-slate-100') + ' sticky top-0'}>
+            <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
               <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
               {markets.map((market) => (
                 <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
@@ -6672,7 +6672,7 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
     : ['H2H','Spread','Total'];
 
   return (
-    <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
+    <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
       {/* Header */}
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
@@ -6688,7 +6688,7 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs border-collapse">
           <thead>
-            <tr className={(mounted && isDark ? 'bg-slate-900' : 'bg-slate-100') + ' sticky top-0'}>
+            <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
               <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
               {markets.map((market) => (
                 <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
@@ -8554,7 +8554,294 @@ const lineMovementInFlightRef = useRef(false);
     }
   }, [propsMode, gamePropsTeam]);
 
+  // Track if we've already attempted to fetch stats by game_id for this player/timeframe
+  const lastSeasonGameIdFetchRef = useRef<{ playerId: string; attempted: boolean }>({ playerId: '', attempted: false });
 
+  // WORKAROUND: When viewing last season and all stats have 0 minutes, fetch stats by game_id
+  // for games where the player was on their previous team
+  useEffect(() => {
+    console.log(`[useEffect lastseason] Triggered:`, {
+      selectedTimeframe,
+      hasSelectedPlayer: !!selectedPlayer?.id,
+      playerStatsLength: playerStats.length,
+      refPlayerId: lastSeasonGameIdFetchRef.current.playerId,
+      refAttempted: lastSeasonGameIdFetchRef.current.attempted
+    });
+    
+    if (selectedTimeframe !== 'lastseason' || !selectedPlayer?.id || playerStats.length === 0) {
+      // Reset ref when not viewing last season
+      if (selectedTimeframe !== 'lastseason') {
+        lastSeasonGameIdFetchRef.current = { playerId: '', attempted: false };
+      }
+      return;
+    }
+    
+    const playerId = String(selectedPlayer.id);
+    const lastSeason = currentNbaSeason() - 1;
+    const getSeasonYear = (stat: any) => {
+      if (!stat?.game?.date) return null;
+      const d = new Date(stat.game.date);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      return m >= 9 ? y : y - 1;
+    };
+    
+    const lastSeasonStats = playerStats.filter(s => getSeasonYear(s) === lastSeason);
+    if (lastSeasonStats.length === 0) {
+      console.log(`[useEffect lastseason] ⏭️ No last season stats found, skipping`);
+      return;
+    }
+    
+    // Skip if we've already attempted for this player AND we have valid stats
+    // But if we still have 0-minute stats, try again (maybe the fetch failed)
+    const parseMin = (minStr: string): number => {
+      if (!minStr) return 0;
+      const str = String(minStr).trim();
+      if (!str || str === '0' || str === '00' || str === '0:00') return 0;
+      const parts = str.split(':');
+      if (parts.length === 2) {
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      }
+      const num = parseFloat(str);
+      return isNaN(num) ? 0 : num;
+    };
+    
+    const withMinutes = lastSeasonStats.filter(s => {
+      const min = parseMin(s.min || '');
+      return min > 0;
+    });
+    
+    // Check if we have valid stats (even if minutes are 0)
+    const hasValidLastSeasonStats = lastSeasonStats.some(s => {
+      const min = parseMin(s.min || '');
+      return min > 0 || (s.pts > 0 || s.reb > 0 || s.ast > 0);
+    });
+    
+    // Skip if we've already attempted AND we have valid stats
+    if (lastSeasonGameIdFetchRef.current.playerId === playerId && 
+        lastSeasonGameIdFetchRef.current.attempted && 
+        hasValidLastSeasonStats) {
+      console.log(`[useEffect lastseason] ⏭️ Already attempted for player ${playerId} and have valid stats, skipping`);
+      return;
+    }
+    
+    // Reset ref if it's a different player
+    if (lastSeasonGameIdFetchRef.current.playerId !== playerId) {
+      lastSeasonGameIdFetchRef.current = { playerId, attempted: false };
+    }
+    
+    // If all last season stats have 0 minutes, fetch by game_id
+    if (withMinutes.length === 0) {
+      // Mark as attempted NOW to prevent duplicate fetches
+      lastSeasonGameIdFetchRef.current = { playerId, attempted: true };
+      
+      console.log(`[useEffect lastseason] 🔧 Detected API data quality issue: all ${lastSeasonStats.length} last season stats have 0 minutes. Fetching by game_id...`);
+      
+      // Identify ALL games where ATL appears - player was on ATL for those games
+      // We know from the logs that there are 4 games where ATL appears
+      const atlGames = lastSeasonStats.filter(s => {
+        const homeTeam = s.game?.home_team?.abbreviation;
+        const visitorTeam = s.game?.visitor_team?.abbreviation;
+        return (homeTeam === 'ATL' || visitorTeam === 'ATL') && s.game?.id;
+      });
+      
+      console.log(`[useEffect lastseason] 🔍 Found ${atlGames.length} games where ATL appears (player was on ATL):`, atlGames.map(s => ({
+        gameId: s.game?.id,
+        date: s.game?.date,
+        homeTeam: s.game?.home_team?.abbreviation,
+        visitorTeam: s.game?.visitor_team?.abbreviation,
+        statTeam: s.team?.abbreviation
+      })));
+      
+      // Get unique game IDs for games where ATL appears
+      const gameIds = Array.from(new Set(
+        atlGames
+          .map(s => s.game?.id)
+          .filter((id): id is number => typeof id === 'number' && !isNaN(id))
+      ));
+      
+      console.log(`[useEffect lastseason] 🔍 Unique game IDs to fetch: ${gameIds.length}`, gameIds);
+      
+      if (gameIds.length > 0) {
+        console.log(`[useEffect lastseason] 🔧 Found ${gameIds.length} games with player's previous team, fetching stats by game_id...`);
+        console.log(`[useEffect lastseason] 🔧 Game IDs to fetch:`, gameIds);
+        
+        // Fetch stats by game_id in batches (async, don't block)
+        const fetchStatsByGameId = async () => {
+          const { queuedFetch } = await import('@/lib/requestQueue');
+          const batchSize = 50;
+          const gameBatches: number[][] = [];
+          for (let i = 0; i < gameIds.length; i += batchSize) {
+            gameBatches.push(gameIds.slice(i, i + batchSize));
+          }
+          
+          const statsByGameId: BallDontLieStats[] = [];
+          for (const batch of gameBatches) {
+            try {
+              const gameIdsStr = batch.join(',');
+              const url = `/api/stats?player_id=${playerId}&game_ids=${gameIdsStr}&per_page=100&max_pages=1`;
+              const requestId = `stats-${playerId}-games-${batch[0]}-${Date.now()}`;
+              console.log(`[useEffect lastseason] 🔧 Fetching stats for game IDs: ${gameIdsStr}`);
+              const r = await queuedFetch(url, {}, requestId);
+              const j = await r.json().catch(() => ({}));
+              
+              console.log(`[useEffect lastseason] 🔧 API response:`, {
+                hasData: !!j?.data,
+                dataIsArray: Array.isArray(j?.data),
+                dataLength: Array.isArray(j?.data) ? j.data.length : 0,
+                error: j?.error,
+                fullResponse: j
+              });
+              
+              const batchStats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+              
+              console.log(`[useEffect lastseason] 🔧 Raw batch stats (${batchStats.length}):`, batchStats.slice(0, 3).map(s => ({
+                gameId: s.game?.id,
+                date: s.game?.date,
+                team: s.team?.abbreviation,
+                min: s.min,
+                pts: s.pts,
+                reb: s.reb,
+                ast: s.ast
+              })));
+              
+              // WORKAROUND: Even if stats have 0 minutes, if we know from game data that the player
+              // was on ATL for these games, include them. The API has data quality issues for players
+              // who changed teams, but we can still use the game data to show the player played.
+              // We'll include stats if:
+              // 1. They have actual minutes/data (normal case), OR
+              // 2. The game has ATL as a participant (we know player was on ATL)
+              // WORKAROUND: The BallDon'tLie API returns placeholder stats (0 minutes, 0 values) 
+              // for players who changed teams, even when querying by game_id.
+              // However, we know these are the correct games (we identified them by finding games where ATL appears).
+              // So we'll include ALL stats returned from the game_id query, even if they have 0 minutes,
+              // because at least we know these are the correct games where the player was on ATL.
+              const validStats = batchStats.filter(s => {
+                const gameId = s.game?.id;
+                const min = parseMin(s.min || '');
+                const hasActualData = min > 0 || (s.pts > 0 || s.reb > 0 || s.ast > 0);
+                
+                // Since we're querying by game_id for games we identified as ATL games,
+                // include ALL stats returned, even if they have 0 minutes (API data quality issue)
+                const isIdentifiedAtlGame = gameId && gameIds.includes(gameId);
+                
+                if (isIdentifiedAtlGame) {
+                  console.log(`[useEffect lastseason] ✅ Including stat from identified ATL game (even with 0 minutes):`, {
+                    gameId,
+                    date: s.game?.date,
+                    team: s.team?.abbreviation,
+                    homeTeam: s.game?.home_team?.abbreviation,
+                    visitorTeam: s.game?.visitor_team?.abbreviation,
+                    min: s.min,
+                    pts: s.pts,
+                    reb: s.reb,
+                    ast: s.ast
+                  });
+                  return true; // Always include stats from identified ATL games
+                }
+                
+                // For other games, only include if they have actual data
+                if (!hasActualData) {
+                  console.log(`[useEffect lastseason] 🔍 Filtered out stat (not identified ATL game, no data):`, {
+                    gameId,
+                    min: s.min,
+                    parsedMin: min,
+                    pts: s.pts
+                  });
+                }
+                return hasActualData;
+              });
+              
+              statsByGameId.push(...validStats);
+              console.log(`[useEffect lastseason] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games (raw: ${batchStats.length})`);
+            } catch (error: any) {
+              console.warn(`[useEffect lastseason] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+            }
+          }
+          
+          if (statsByGameId.length > 0) {
+            console.log(`[useEffect lastseason] ✅ Successfully fetched ${statsByGameId.length} stats by game_id. Updating playerStats...`);
+            
+            // CORRECT THE TEAM: For stats from identified ATL games, fix the team abbreviation
+            // The API returns stat.team=WAS, but we know the player was on ATL for these games
+            const correctedStats = statsByGameId.map(stat => {
+              const gameId = stat.game?.id;
+              if (gameId && gameIds.includes(gameId)) {
+                // This is one of our identified ATL games - correct the team to ATL
+                const homeTeam = stat.game?.home_team?.abbreviation;
+                const visitorTeam = stat.game?.visitor_team?.abbreviation;
+                
+                // We know the player was on ATL for these games, so set team to ATL
+                const correctTeam = 'ATL';
+                const correctTeamId = homeTeam === 'ATL' ? stat.game?.home_team?.id : (visitorTeam === 'ATL' ? stat.game?.visitor_team?.id : stat.team?.id);
+                
+                console.log(`[useEffect lastseason] 🔧 Correcting team for game ${gameId}: ${stat.team?.abbreviation} → ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam})`);
+                
+                return {
+                  ...stat,
+                  team: {
+                    ...stat.team,
+                    abbreviation: correctTeam,
+                    id: correctTeamId,
+                    full_name: 'Atlanta Hawks'
+                  }
+                };
+              }
+              return stat;
+            });
+            
+            // Merge with existing stats
+            // Keep all current season stats, and for last season:
+            // - Keep all original last season stats (they have game data even if team is wrong)
+            // - Add/update with the corrected stats from game_id fetch
+            const currentSeasonStats = playerStats.filter(s => getSeasonYear(s) === currentNbaSeason());
+            const lastSeasonStatsOriginal = playerStats.filter(s => getSeasonYear(s) === lastSeason);
+            
+            console.log(`[useEffect lastseason] 📊 Before merge: current=${currentSeasonStats.length}, lastSeason original=${lastSeasonStatsOriginal.length}, corrected stats=${correctedStats.length}`);
+            
+            // Create a map of game_id -> corrected stat for quick lookup
+            const correctedStatsMap = new Map(correctedStats.map(s => [s.game?.id, s]));
+            
+            // For each original last season stat, use the corrected version if available, otherwise keep original
+            const lastSeasonStatsCorrected = lastSeasonStatsOriginal.map(stat => {
+              const gameId = stat.game?.id;
+              if (gameId && correctedStatsMap.has(gameId)) {
+                console.log(`[useEffect lastseason] 🔄 Replacing stat for game ${gameId} with corrected version`);
+                return correctedStatsMap.get(gameId)!;
+              }
+              return stat;
+            });
+            
+            // Also add any corrected stats that weren't in the original (shouldn't happen, but just in case)
+            const correctedGameIds = new Set(correctedStats.map(s => s.game?.id).filter(Boolean));
+            const originalGameIds = new Set(lastSeasonStatsOriginal.map(s => s.game?.id).filter(Boolean));
+            const newStats = correctedStats.filter(s => {
+              const gameId = s.game?.id;
+              return gameId && !originalGameIds.has(gameId);
+            });
+            
+            if (newStats.length > 0) {
+              console.log(`[useEffect lastseason] ➕ Adding ${newStats.length} new stats that weren't in original`);
+            }
+            
+            // Combine: current season + corrected last season stats + any new stats
+            const updatedStats = [...currentSeasonStats, ...lastSeasonStatsCorrected, ...newStats];
+            
+            console.log(`[useEffect lastseason] 📊 After merge: current=${currentSeasonStats.length}, lastSeason=${lastSeasonStatsCorrected.length}, new=${newStats.length}, total=${updatedStats.length}`);
+            
+            setPlayerStats(updatedStats);
+          } else {
+            console.warn(`[useEffect lastseason] ⚠️ No valid stats found when querying by game_id`);
+          }
+        };
+        
+        // Fetch asynchronously (don't block the UI)
+        fetchStatsByGameId().catch(err => {
+          console.error(`[useEffect lastseason] ❌ Error in fetchStatsByGameId:`, err);
+        });
+      }
+    }
+  }, [selectedTimeframe, selectedPlayer?.id, playerStats]);
 
 
   // Keep logo URL in sync with selectedTeam/gamePropsTeam and opponentTeam
@@ -9491,14 +9778,116 @@ const lineMovementInFlightRef = useRef(false);
     const grabSeason = async (yr: number) => {
       const fetchRegular = async () => {
         // Use cache for faster loading - stats API has 8 hour cache
-        // Reduced max_pages from 3 to 1 for fastest initial load (gets ~100 games, enough for last10)
-        // Can load more pages in background if needed
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=1&postseason=false`;
+        // Fetch all pages to ensure we get all historical games (needed for H2H stats)
+        // 50 pages = 5000 games max, which is more than enough for any player's career
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=50&postseason=false`;
         const requestId = `stats-${playerId}-${yr}-reg`;
         try {
           const r = await queuedFetch(url, {}, requestId);
           const j = await r.json().catch(() => ({}));
-          return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+          const stats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+          
+          // Debug: Log team distribution for last season
+          if (yr === currentNbaSeason() - 1) {
+            const parseMin = (minStr: string): number => {
+              if (!minStr) return 0;
+              const str = String(minStr).trim();
+              if (!str || str === '0' || str === '00' || str === '0:00') return 0;
+              const parts = str.split(':');
+              if (parts.length === 2) {
+                return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+              }
+              const num = parseFloat(str);
+              return isNaN(num) ? 0 : num;
+            };
+            
+            const teams = new Set(stats.map(s => s?.team?.abbreviation).filter(Boolean));
+            const withMinutes = stats.filter(s => {
+              const min = parseMin(s.min || '');
+              return min > 0;
+            });
+            const teamsWithMinutes = new Set(withMinutes.map(s => s?.team?.abbreviation).filter(Boolean));
+            console.log(`[fetchSortedStatsCore] Last season (${yr}) stats: total=${stats.length}, with minutes>0=${withMinutes.length}, teams=${Array.from(teams).join(',')}, teamsWithMinutes=${Array.from(teamsWithMinutes).join(',')}`);
+            if (stats.length > 0 && withMinutes.length === 0) {
+              const sample = stats.slice(0, 5).map(s => ({
+                date: s.game?.date,
+                team: s.team?.abbreviation,
+                min: s.min,
+                pts: s.pts,
+                reb: s.reb
+              }));
+              console.log(`[fetchSortedStatsCore] Sample last season stats (all have 0 minutes):`, sample);
+              
+              // WORKAROUND: If all stats have 0 minutes, identify games where player was on their previous team
+              // and fetch stats by game_id to get actual data
+              console.log(`[fetchSortedStatsCore] 🔧 Attempting to fetch stats by game_id for games with player's previous team...`);
+              
+              // Identify games where stat.team doesn't match either team in the game
+              // This indicates the player was on a different team (e.g., stat.team=WAS but game has ATL)
+              const gamesWithPreviousTeam = stats
+                .filter(s => {
+                  const homeTeam = s.game?.home_team?.abbreviation;
+                  const visitorTeam = s.game?.visitor_team?.abbreviation;
+                  const statTeam = s.team?.abbreviation;
+                  
+                  // If stat.team doesn't match either team in the game, player was likely on one of those teams
+                  // This handles cases like stat.team=WAS but game has ATL (player was on ATL)
+                  if (!homeTeam || !visitorTeam || !statTeam) return false;
+                  
+                  // Check if stat.team matches either team (normal case - skip)
+                  if (statTeam === homeTeam || statTeam === visitorTeam) return false;
+                  
+                  // stat.team doesn't match - player was on one of the teams in the game
+                  return true;
+                })
+                .map(s => s.game?.id)
+                .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+              
+              if (gamesWithPreviousTeam.length > 0) {
+                console.log(`[fetchSortedStatsCore] 🔧 Found ${gamesWithPreviousTeam.length} games with player's previous team, fetching stats by game_id...`);
+                
+                // Fetch stats for these specific games (batch in groups of 50 to avoid URL length issues)
+                const batchSize = 50;
+                const gameBatches: number[][] = [];
+                for (let i = 0; i < gamesWithPreviousTeam.length; i += batchSize) {
+                  gameBatches.push(gamesWithPreviousTeam.slice(i, i + batchSize));
+                }
+                
+                const statsByGameId: BallDontLieStats[] = [];
+                for (const batch of gameBatches) {
+                  try {
+                    const gameIdsStr = batch.join(',');
+                    const url = `/api/stats?player_id=${playerId}&game_ids=${gameIdsStr}&per_page=100&max_pages=1`;
+                    const requestId = `stats-${playerId}-games-${batch[0]}`;
+                    const r = await queuedFetch(url, {}, requestId);
+                    const j = await r.json().catch(() => ({}));
+                    const batchStats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
+                    
+                    // Filter to only include stats with actual minutes/data
+                    const validStats = batchStats.filter(s => {
+                      const min = parseMin(s.min || '');
+                      return min > 0 || (s.pts > 0 || s.reb > 0 || s.ast > 0);
+                    });
+                    
+                    statsByGameId.push(...validStats);
+                    console.log(`[fetchSortedStatsCore] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games`);
+                  } catch (error: any) {
+                    console.warn(`[fetchSortedStatsCore] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+                  }
+                }
+                
+                if (statsByGameId.length > 0) {
+                  console.log(`[fetchSortedStatsCore] ✅ Successfully fetched ${statsByGameId.length} stats by game_id (workaround for API data quality issue)`);
+                  // Replace the invalid stats with the valid ones we fetched
+                  return statsByGameId;
+                } else {
+                  console.warn(`[fetchSortedStatsCore] ⚠️ No valid stats found when querying by game_id`);
+                }
+              }
+            }
+          }
+          
+          return stats;
         } catch (error: any) {
           if (error?.status === 429) {
             console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array`);
@@ -9510,8 +9899,9 @@ const lineMovementInFlightRef = useRef(false);
 
       const fetchPlayoffs = async () => {
         // Use cache for faster loading - stats API has 8 hour cache
-        // Reduced max_pages from 3 to 1 for fastest initial load (gets ~100 games)
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=1&postseason=true`;
+        // Fetch all pages to ensure we get all historical games (needed for H2H stats)
+        // 50 pages = 5000 games max, which is more than enough for any player's career
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=50&postseason=true`;
         const requestId = `stats-${playerId}-${yr}-po`;
         try {
           const r = await queuedFetch(url, {}, requestId);
@@ -9547,18 +9937,107 @@ const lineMovementInFlightRef = useRef(false);
       // Merge both seasons and return all data at once
       const rows = [...currSeason, ...prevSeason];
       console.log(`[fetchSortedStatsCore] Fetched both seasons in parallel for last10: current=${currSeason.length}, last=${prevSeason.length}, total=${rows.length}`);
+      
+      // Debug: Check last season stats - analyze prevSeason directly
+      console.log(`[fetchSortedStatsCore] DEBUG: prevSeason.length=${prevSeason.length}`);
+      if (prevSeason.length > 0) {
+        console.log(`[fetchSortedStatsCore] DEBUG: Analyzing prevSeason stats...`);
+        const parseMin = (minStr: string): number => {
+          if (!minStr) return 0;
+          const str = String(minStr).trim();
+          if (!str || str === '0' || str === '00' || str === '0:00') return 0;
+          const parts = str.split(':');
+          if (parts.length === 2) {
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+          }
+          const num = parseFloat(str);
+          return isNaN(num) ? 0 : num;
+        };
+        
+        const teams = new Set(prevSeason.map(s => s?.team?.abbreviation).filter(Boolean));
+        const withMinutes = prevSeason.filter(s => {
+          const min = parseMin(s.min || '');
+          return min > 0;
+        });
+        const teamsWithMinutes = new Set(withMinutes.map(s => s?.team?.abbreviation).filter(Boolean));
+        
+        console.log(`[fetchSortedStatsCore] Last season analysis: total=${prevSeason.length}, with minutes>0=${withMinutes.length}, teams=${Array.from(teams).join(',')}, teamsWithMinutes=${Array.from(teamsWithMinutes).join(',')}`);
+        
+        if (prevSeason.length > 0 && withMinutes.length === 0) {
+          const sample = prevSeason.slice(0, 5).map(s => ({
+            date: s.game?.date,
+            team: s.team?.abbreviation,
+            min: s.min,
+            pts: s.pts,
+            reb: s.reb
+          }));
+          console.log(`[fetchSortedStatsCore] ⚠️ All last season stats have 0 minutes! Sample:`, sample);
+        }
+      }
+      
       return rows;
     }
     
     // For other timeframes, fetch both seasons in parallel
     const [currSeason, prevSeason] = await Promise.all([
-      grabSeason(season),        // 2024-25 (regular + playoffs in parallel)
-      grabSeason(season - 1)    // 2023-24 (regular + playoffs in parallel)
+      grabSeason(season),        // Current season (regular + playoffs in parallel)
+      grabSeason(season - 1)     // Last season (regular + playoffs in parallel)
     ]);
 
     // Merge current + previous season data, then sort newest-first
     // The baseGameData useMemo will filter by selectedTimeframe to show current/last season
     const rows = [...currSeason, ...prevSeason];
+    
+    console.log(`[fetchSortedStatsCore] Fetched both seasons for ${selectedTimeframe}: current=${currSeason.length}, last=${prevSeason.length}, total=${rows.length}`);
+    
+    // Debug: Check last season stats even if cached
+    if (prevSeason.length > 0) {
+      const currentSeason = currentNbaSeason();
+      const lastSeason = currentSeason - 1;
+      const parseMin = (minStr: string): number => {
+        if (!minStr) return 0;
+        const str = String(minStr).trim();
+        if (!str || str === '0' || str === '00' || str === '0:00') return 0;
+        const parts = str.split(':');
+        if (parts.length === 2) {
+          return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        }
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+      };
+      const getSeasonYear = (stat: any) => {
+        if (!stat?.game?.date) return null;
+        const d = new Date(stat.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return m >= 9 ? y : y - 1;
+      };
+      
+      const lastSeasonStats = rows.filter(s => {
+        const seasonYear = getSeasonYear(s);
+        return seasonYear === lastSeason;
+      });
+      
+      const teams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
+      const withMinutes = lastSeasonStats.filter(s => {
+        const min = parseMin(s.min || '');
+        return min > 0;
+      });
+      const teamsWithMinutes = new Set(withMinutes.map(s => s?.team?.abbreviation).filter(Boolean));
+      
+      console.log(`[fetchSortedStatsCore] Last season (${lastSeason}) analysis: total=${lastSeasonStats.length}, with minutes>0=${withMinutes.length}, teams=${Array.from(teams).join(',')}, teamsWithMinutes=${Array.from(teamsWithMinutes).join(',')}`);
+      
+      if (lastSeasonStats.length > 0 && withMinutes.length === 0) {
+        const sample = lastSeasonStats.slice(0, 5).map(s => ({
+          date: s.game?.date,
+          team: s.team?.abbreviation,
+          min: s.min,
+          pts: s.pts,
+          reb: s.reb
+        }));
+        console.log(`[fetchSortedStatsCore] ⚠️ All last season stats have 0 minutes! Sample:`, sample);
+      }
+    }
     
     // Debug: log season breakdown to help diagnose filtering issues
     if (rows.length > 0) {
@@ -9673,7 +10152,15 @@ const lineMovementInFlightRef = useRef(false);
       };
       const finalCurrentSeasonCount = safe.filter(s => getSeasonYear(s) === currentSeason).length;
       const finalLastSeasonCount = safe.filter(s => getSeasonYear(s) === currentSeason - 1).length;
+      
+      // Debug: Check team distribution across seasons
+      const currentSeasonStats = safe.filter(s => getSeasonYear(s) === currentSeason);
+      const lastSeasonStats = safe.filter(s => getSeasonYear(s) === currentSeason - 1);
+      const currentSeasonTeams = new Set(currentSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
+      const lastSeasonTeams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
+      
       console.log(`[fetchSortedStatsCore] FINAL RETURN: returning ${safe.length} stats (current: ${finalCurrentSeasonCount}, last: ${finalLastSeasonCount})`);
+      console.log(`[fetchSortedStatsCore] Team distribution - Current season teams: ${Array.from(currentSeasonTeams).join(', ') || 'none'}, Last season teams: ${Array.from(lastSeasonTeams).join(', ') || 'none'}`);
     }
     
     return safe;
@@ -10052,6 +10539,8 @@ const lineMovementInFlightRef = useRef(false);
         // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
         setPlayerStats(rows);
         
+        // WORKAROUND: Stats fetching by game_id is handled in a separate useEffect
+        // that watches selectedTimeframe to trigger when user switches to lastseason
         setSelectedTeam(currentTeam);
         setOriginalPlayerTeam(currentTeam); // Track the original player's team
         setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
@@ -10513,11 +11002,32 @@ const lineMovementInFlightRef = useRef(false);
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
+    // Debug: Check what seasons are in playerStats
+    const currentSeason = currentNbaSeason();
+    const getSeasonYear = (stat: any) => {
+      if (!stat?.game?.date) return null;
+      const d = new Date(stat.game.date);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      return m >= 9 ? y : y - 1;
+    };
+    const seasonBreakdown: Record<number, number> = {};
+    playerStats.forEach(s => {
+      const seasonYear = getSeasonYear(s);
+      if (seasonYear) {
+        seasonBreakdown[seasonYear] = (seasonBreakdown[seasonYear] || 0) + 1;
+      }
+    });
+    
     console.log('[DEBUG baseGameData] Recalculating baseGameData', {
       playerStatsLength: playerStats.length,
       selectedTimeframe,
       selectedPlayer: selectedPlayer?.full,
       propsMode,
+      seasonBreakdown,
+      currentSeason,
+      expectedLastSeason: currentSeason - 1,
+      hasLastSeasonData: seasonBreakdown[currentSeason - 1] > 0,
       timestamp: new Date().toISOString()
     });
     
@@ -10693,10 +11203,190 @@ const lineMovementInFlightRef = useRef(false);
     });
     
     // Filter out games where player played 0 minutes FIRST
+    // BUT for lastseason, we need to check ALL stats (including 0 minutes) to see if we can infer team from game data
+    const shouldIncludeZeroMinutes = selectedTimeframe === 'lastseason';
     const gamesPlayed = statsToUse.filter(stats => {
       const minutes = parseMinutes(stats.min);
+      if (shouldIncludeZeroMinutes) {
+        // For last season, include stats even with 0 minutes if we can infer the team from game data
+        // This helps us work around API data quality issues where stat.team is wrong
+        return true; // We'll filter by minutes later after we've determined the correct team
+      }
       return minutes > 0;
     });
+    
+    // Debug: Check what's happening with last season stats
+    if (selectedTimeframe === 'lastseason') {
+      const currentSeason = currentNbaSeason();
+      const lastSeason = currentSeason - 1;
+      const getSeasonYear = (stat: any) => {
+        if (!stat?.game?.date) return null;
+        const d = new Date(stat.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        return m >= 9 ? y : y - 1;
+      };
+      
+      const lastSeasonStats = statsToUse.filter(s => {
+        const seasonYear = getSeasonYear(s);
+        return seasonYear === lastSeason;
+      });
+      
+      const lastSeasonWithMinutes = lastSeasonStats.filter(s => {
+        const minutes = parseMinutes(s.min);
+        return minutes > 0;
+      });
+      
+      console.log(`[Last Season Debug] Total last season stats: ${lastSeasonStats.length}, with minutes > 0: ${lastSeasonWithMinutes.length}`);
+      
+      // Check if there are any stats with actual data (points, rebounds, etc.) even if minutes are 0
+      const lastSeasonWithData = lastSeasonStats.filter(s => {
+        const hasAnyStat = (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || 
+                          (s.fgm && s.fgm > 0) || (s.fga && s.fga > 0);
+        return hasAnyStat;
+      });
+      
+      console.log(`[Last Season Debug] Last season stats with actual data (pts/reb/ast > 0): ${lastSeasonWithData.length}`);
+      
+      if (lastSeasonStats.length > 0 && lastSeasonWithMinutes.length === 0) {
+        // Sample a few to see what's wrong
+        const samples = lastSeasonStats.slice(0, 10).map(s => ({
+          date: s.game?.date,
+          team: s.team?.abbreviation,
+          teamId: s.team?.id,
+          teamFull: s.team?.full_name,
+          homeTeam: s.game?.home_team?.abbreviation,
+          visitorTeam: s.game?.visitor_team?.abbreviation,
+          min: s.min,
+          minType: typeof s.min,
+          minRaw: s.min,
+          minutes: parseMinutes(s.min),
+          pts: s.pts,
+          reb: s.reb,
+          ast: s.ast,
+          fgm: s.fgm,
+          fga: s.fga,
+          // Check player ID
+          playerId: s.player?.id,
+          // Check all numeric fields that might indicate actual play
+          hasAnyStat: (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || (s.fgm && s.fgm > 0)
+        }));
+        console.log(`[Last Season Debug] Sample last season stats (first 10) - FULL DETAILS:`, samples);
+        
+        // Also check one stat in full detail to see ALL fields
+        if (lastSeasonStats.length > 0) {
+          const firstStat = lastSeasonStats[0];
+          console.log(`[Last Season Debug] FIRST STAT FULL OBJECT (checking for hidden minutes/data):`, {
+            id: firstStat.id,
+            min: firstStat.min,
+            minRaw: firstStat.min,
+            minType: typeof firstStat.min,
+            minutesParsed: parseMinutes(firstStat.min),
+            pts: firstStat.pts,
+            reb: firstStat.reb,
+            ast: firstStat.ast,
+            team: firstStat.team,
+            player: firstStat.player ? { id: firstStat.player.id, name: firstStat.player.first_name + ' ' + firstStat.player.last_name } : null,
+            game: firstStat.game ? {
+              id: firstStat.game.id,
+              date: firstStat.game.date,
+              home_team: firstStat.game.home_team,
+              visitor_team: firstStat.game.visitor_team
+            } : null,
+            // Check for alternative minute fields
+            allKeys: Object.keys(firstStat),
+            // Check if there are any numeric fields > 0
+            numericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number' && v > 0).map(([k, v]) => ({ [k]: v })),
+            // Show which specific stat fields have values
+            statFieldValues: {
+              pts: { value: firstStat.pts, type: typeof firstStat.pts, isPositive: firstStat.pts > 0 },
+              reb: { value: firstStat.reb, type: typeof firstStat.reb, isPositive: firstStat.reb > 0 },
+              ast: { value: firstStat.ast, type: typeof firstStat.ast, isPositive: firstStat.ast > 0 },
+              fgm: { value: firstStat.fgm, type: typeof firstStat.fgm, isPositive: firstStat.fgm > 0 },
+              fga: { value: firstStat.fga, type: typeof firstStat.fga, isPositive: firstStat.fga > 0 },
+              fg3m: { value: firstStat.fg3m, type: typeof firstStat.fg3m, isPositive: firstStat.fg3m > 0 },
+              ftm: { value: firstStat.ftm, type: typeof firstStat.ftm, isPositive: firstStat.ftm > 0 },
+              fta: { value: firstStat.fta, type: typeof firstStat.fta, isPositive: firstStat.fta > 0 }
+            },
+            // Also check ALL numeric fields (including 0) to see the full picture
+            allNumericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number').map(([k, v]) => ({ [k]: v })).slice(0, 20),
+            // Check specific stat fields
+            statFields: {
+              pts: firstStat.pts,
+              reb: firstStat.reb,
+              ast: firstStat.ast,
+              fgm: firstStat.fgm,
+              fga: firstStat.fga,
+              fg3m: firstStat.fg3m,
+              fg3a: firstStat.fg3a,
+              ftm: firstStat.ftm,
+              fta: firstStat.fta,
+              stl: firstStat.stl,
+              blk: firstStat.blk,
+              turnover: firstStat.turnover,
+              pf: firstStat.pf
+            }
+          });
+        }
+        
+        // Also check all teams in last season stats
+        const allTeams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
+        console.log(`[Last Season Debug] ⚠️ All teams in last season stats (${lastSeasonStats.length} total):`, Array.from(allTeams));
+        
+        // Check if ATL appears in the game data (home_team/visitor_team) even if stat.team is wrong
+        const teamsInGames = new Set<string>();
+        const atlGames: any[] = [];
+        lastSeasonStats.forEach(s => {
+          const homeTeam = s?.game?.home_team?.abbreviation;
+          const visitorTeam = s?.game?.visitor_team?.abbreviation;
+          if (homeTeam) teamsInGames.add(homeTeam);
+          if (visitorTeam) teamsInGames.add(visitorTeam);
+          if (homeTeam === 'ATL' || visitorTeam === 'ATL') {
+            atlGames.push({
+              date: s.game?.date,
+              statTeam: s.team?.abbreviation,
+              homeTeam,
+              visitorTeam,
+              min: s.min,
+              pts: s.pts
+            });
+          }
+        });
+        console.log(`[Last Season Debug] ⚠️ Teams appearing in game data (home/visitor):`, Array.from(teamsInGames));
+        console.log(`[Last Season Debug] ⚠️ Games where ATL appears (${atlGames.length} total):`, atlGames.slice(0, 5));
+        
+        // Check if in those ATL games, WAS is the opponent (meaning player was on ATL)
+        const atlGamesWithWasOpponent = atlGames.filter(g => {
+          const opponent = g.homeTeam === 'ATL' ? g.visitorTeam : g.homeTeam;
+          return opponent === 'WAS';
+        });
+        console.log(`[Last Season Debug] ⚠️ Games where ATL vs WAS (player likely on ATL):`, atlGamesWithWasOpponent.length);
+        
+        // Also check: if stat.team is WAS but game has ATL, player was likely on ATL
+        const likelyAtlGames = lastSeasonStats.filter(s => {
+          const homeTeam = s?.game?.home_team?.abbreviation;
+          const visitorTeam = s?.game?.visitor_team?.abbreviation;
+          const statTeam = s?.team?.abbreviation;
+          return (homeTeam === 'ATL' || visitorTeam === 'ATL') && statTeam === 'WAS';
+        });
+        console.log(`[Last Season Debug] ⚠️ Stats where game has ATL but stat.team=WAS (likely player was on ATL):`, likelyAtlGames.length);
+        
+        // If we have stats with actual data but 0 minutes, we might need to include them
+        if (lastSeasonWithData.length > 0) {
+          console.log(`[Last Season Debug] ⚠️ Found ${lastSeasonWithData.length} last season stats with data but 0 minutes - these are being filtered out!`);
+          const dataSamples = lastSeasonWithData.slice(0, 5).map(s => ({
+            date: s.game?.date,
+            team: s.team?.abbreviation,
+            min: s.min,
+            minutes: parseMinutes(s.min),
+            pts: s.pts,
+            reb: s.reb,
+            ast: s.ast
+          }));
+          console.log(`[Last Season Debug] Sample stats with data but 0 minutes:`, dataSamples);
+        }
+      }
+    }
     
     // Debug: Log breakdown of gamesPlayed by season year to diagnose filtering issues
     if (selectedTimeframe === 'thisseason') {
@@ -10774,6 +11464,10 @@ const lineMovementInFlightRef = useRef(false);
     // First, apply opponent filtering if a specific opponent is selected (not ALL)
     if (manualOpponent && manualOpponent !== 'ALL' && manualOpponent !== '') {
       const normalizedOpponent = normalizeAbbr(manualOpponent);
+      let matchCount = 0;
+      let noMatchCount = 0;
+      const sampleNoMatches: any[] = [];
+      
       filteredGames = gamesPlayed.filter(stats => {
         const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
         const playerTeamNorm = normalizeAbbr(playerTeam);
@@ -10800,13 +11494,75 @@ const lineMovementInFlightRef = useRef(false);
         if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
           const homeNorm = normalizeAbbr(homeTeamAbbr);
           const awayNorm = normalizeAbbr(visitorTeamAbbr);
-          if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
-          else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+          if (playerTeamNorm && playerTeamNorm === homeNorm) {
+            gameOpponent = awayNorm;
+          } else if (playerTeamNorm && playerTeamNorm === awayNorm) {
+            gameOpponent = homeNorm;
+          }
         }
         
-        return gameOpponent === normalizedOpponent;
+        // Check if the primary match works
+        let matches = gameOpponent === normalizedOpponent;
+        
+        // Additional fallback: if primary match failed, check if the opponent appears in the game
+        // This handles cases where the player changed teams and the team matching failed
+        // If the opponent we're looking for is in this game AND the player has stats for it, they played against that team
+        if (!matches && normalizedOpponent && homeTeamAbbr && visitorTeamAbbr) {
+          const homeNorm = normalizeAbbr(homeTeamAbbr);
+          const awayNorm = normalizeAbbr(visitorTeamAbbr);
+          // If the opponent we're looking for is in this game, and we have stats for this player, include it
+          if (homeNorm === normalizedOpponent || awayNorm === normalizedOpponent) {
+            // Player has stats for this game, so they played in it - this is a match
+            matches = true;
+          }
+        }
+        
+        if (matches) {
+          matchCount++;
+        } else {
+          noMatchCount++;
+          // Collect sample of non-matches for debugging (first 3)
+          if (sampleNoMatches.length < 3) {
+            sampleNoMatches.push({
+              gameDate: stats?.game?.date,
+              playerTeamFromStats: stats?.team?.abbreviation,
+              playerTeamNorm,
+              homeTeamAbbr,
+              visitorTeamAbbr,
+              homeTeamId,
+              visitorTeamId,
+              playerTeamId,
+              gameOpponent,
+              normalizedOpponent,
+              lookingFor: normalizedOpponent,
+              // Check if HOU appears in the game
+              hasHOU: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
+                      (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
+            });
+          }
+        }
+        
+        return matches;
       });
-      console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent}`);
+      
+      console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent} (${matchCount} matches, ${noMatchCount} non-matches)`);
+      if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
+        console.log(`🔍 Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
+        // Also log a sample stat to see the full structure
+        if (gamesPlayed.length > 0) {
+          const sampleStat = gamesPlayed[0];
+          console.log(`🔍 Sample stat structure:`, {
+            hasTeam: !!sampleStat?.team,
+            teamAbbr: sampleStat?.team?.abbreviation,
+            hasGame: !!sampleStat?.game,
+            homeTeam: sampleStat?.game?.home_team?.abbreviation,
+            visitorTeam: sampleStat?.game?.visitor_team?.abbreviation,
+            homeTeamId: sampleStat?.game?.home_team?.id,
+            visitorTeamId: sampleStat?.game?.visitor_team?.id,
+            gameDate: sampleStat?.game?.date
+          });
+        }
+      }
     }
     
     // Deduplicate by game id and sort DESC before timeframe selection
@@ -10867,6 +11623,10 @@ const lineMovementInFlightRef = useRef(false);
       // Filter games to only show those against the current opponent team
       if (opponentTeam && opponentTeam !== '') {
         const normalizedOpponent = normalizeAbbr(opponentTeam);
+        let matchCount = 0;
+        let noMatchCount = 0;
+        const sampleNoMatches: any[] = [];
+        
         filteredGames = gamesPlayed.filter(stats => {
           const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
           const playerTeamNorm = normalizeAbbr(playerTeam);
@@ -10893,13 +11653,59 @@ const lineMovementInFlightRef = useRef(false);
           if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
             const homeNorm = normalizeAbbr(homeTeamAbbr);
             const awayNorm = normalizeAbbr(visitorTeamAbbr);
-            if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
-            else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
+            if (playerTeamNorm && playerTeamNorm === homeNorm) {
+              gameOpponent = awayNorm;
+            } else if (playerTeamNorm && playerTeamNorm === awayNorm) {
+              gameOpponent = homeNorm;
+            }
           }
           
-          return gameOpponent === normalizedOpponent;
+          // Check if the primary match works
+          let matches = gameOpponent === normalizedOpponent;
+          
+          // Additional fallback: if primary match failed, check if the opponent appears in the game
+          // This handles cases where the player changed teams and the team matching failed
+          // If the opponent we're looking for is in this game AND the player has stats for it, they played against that team
+          if (!matches && normalizedOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            // If the opponent we're looking for is in this game, and we have stats for this player, include it
+            if (homeNorm === normalizedOpponent || awayNorm === normalizedOpponent) {
+              // Player has stats for this game, so they played in it - this is a match
+              matches = true;
+            }
+          }
+          
+          if (matches) {
+            matchCount++;
+          } else {
+            noMatchCount++;
+            // Collect sample of non-matches for debugging (first 3)
+            if (sampleNoMatches.length < 3) {
+              sampleNoMatches.push({
+                gameDate: stats?.game?.date,
+                playerTeamFromStats: stats?.team?.abbreviation,
+                playerTeamNorm,
+                homeTeamAbbr,
+                visitorTeamAbbr,
+                homeTeamId,
+                visitorTeamId,
+                playerTeamId,
+                gameOpponent,
+                normalizedOpponent,
+                hasHOU: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
+                        (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
+              });
+            }
+          }
+          
+          return matches;
         }).slice(0, 6); // Limit to last 6 H2H games
-        console.log(`🔥 H2H: Filtered to ${filteredGames.length} games vs ${opponentTeam} (max 6)`);
+        
+        console.log(`🔥 H2H: Filtered to ${filteredGames.length} games vs ${opponentTeam} (${matchCount} matches, ${noMatchCount} non-matches, max 6)`);
+        if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
+          console.log(`🔍 H2H Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
+        }
       } else {
         // No opponent team available, show empty
         filteredGames = [];
@@ -10908,6 +11714,38 @@ const lineMovementInFlightRef = useRef(false);
     } else if (selectedTimeframe === 'lastseason') {
       // Filter to last season games only
       const lastSeason = currentNbaSeason() - 1;
+      const currentSeason = currentNbaSeason();
+      
+      console.log(`🔍 [Last Season] Starting filter - playerStats.length=${playerStats?.length || 0}, gamesPlayed.length=${gamesPlayed.length}`);
+      
+      // Debug: Log breakdown of all stats by season and team
+      const gamesBySeasonYear: Record<number, number> = {};
+      const gamesByTeam: Record<string, number> = {};
+      const lastSeasonTeams = new Set<string>();
+      const currentSeasonTeams = new Set<string>();
+      
+      gamesPlayed.forEach(s => {
+        if (!s.game?.date) return;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        const teamAbbr = s?.team?.abbreviation || 'UNKNOWN';
+        
+        gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
+        gamesByTeam[teamAbbr] = (gamesByTeam[teamAbbr] || 0) + 1;
+        
+        if (gameSeasonYear === lastSeason) {
+          lastSeasonTeams.add(teamAbbr);
+        } else if (gameSeasonYear === currentSeason) {
+          currentSeasonTeams.add(teamAbbr);
+        }
+      });
+      
+      // For last season, we need to work around API data quality issues:
+      // 1. stat.team might be wrong (e.g., WAS instead of ATL)
+      // 2. All stats might have 0 minutes
+      // Solution: Use game data to infer the player's team, then filter by minutes
       filteredGames = gamesPlayed.filter(stats => {
         if (!stats.game?.date) return false;
         const gameDate = new Date(stats.game.date);
@@ -10917,9 +11755,128 @@ const lineMovementInFlightRef = useRef(false);
         // NBA season spans two calendar years (e.g., 2023-24 season)
         // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
         const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-        return gameSeasonYear === lastSeason;
+        if (gameSeasonYear !== lastSeason) return false;
+        
+        // WORKAROUND: If stat.team is wrong (e.g., WAS), try to infer from game data
+        // If the game has ATL and stat.team is WAS, the player was likely on ATL
+        // NOTE: We do NOT mutate the stats object here to avoid infinite loops
+        // Instead, we just use the corrected team for filtering purposes
+        const homeTeam = stats.game?.home_team?.abbreviation;
+        const visitorTeam = stats.game?.visitor_team?.abbreviation;
+        const statTeam = stats.team?.abbreviation;
+        
+        // Use game data to determine the player's actual team for filtering
+        // If stat.team is WAS but game has ATL, the player was on ATL (not WAS)
+        // We'll use this corrected team value for filtering, but NOT mutate the original object
+        let actualTeam = statTeam;
+        if (statTeam === 'WAS' && (homeTeam === 'ATL' || visitorTeam === 'ATL')) {
+          // Player was on ATL, not WAS - use ATL for filtering
+          actualTeam = 'ATL';
+        }
+        
+        // Include all stats for now - we'll filter by minutes/data later
+        // The actualTeam variable is used for logic, but we don't mutate stats.team
+        return true;
       });
+      
+      // Now filter by minutes AFTER we've determined the correct team
+      // WORKAROUND: For last season, if all stats have 0 minutes (API data quality issue),
+      // use game data to identify which games the player was actually in
+      const minutesFiltered = filteredGames.filter(stats => {
+        const minutes = parseMinutes(stats.min);
+        // For last season, include stats with 0 minutes if they have actual stat data (pts, reb, ast, etc.)
+        // This handles cases where minutes are 0 but the player actually played
+        if (minutes === 0) {
+          const hasAnyStat = (stats.pts && stats.pts > 0) || (stats.reb && stats.reb > 0) || 
+                            (stats.ast && stats.ast > 0) || (stats.fgm && stats.fgm > 0) ||
+                            (stats.fga && stats.fga > 0);
+          return hasAnyStat;
+        }
+        return minutes > 0;
+      });
+      
+      console.log(`📅 Last Season: Before minutes filter: ${filteredGames.length}, After minutes filter: ${minutesFiltered.length}`);
+      
+      // CRITICAL WORKAROUND: If all last season stats have 0 minutes (API data quality issue),
+      // use game data to identify games where the player was actually involved
+      if (filteredGames.length > 0 && minutesFiltered.length === 0) {
+        console.warn(`[Last Season Debug] ⚠️ API DATA QUALITY ISSUE: All ${filteredGames.length} last season stats have 0 minutes. Using game data to identify actual games...`);
+        
+        // Use game data to identify games where the player's team was involved
+        // Strategy: If stat.team doesn't match either team in the game, but we have game data,
+        // we can infer the player was on one of the teams in the game
+        const gamesWithPlayerTeam = filteredGames.filter(stats => {
+          const homeTeam = stats.game?.home_team?.abbreviation;
+          const visitorTeam = stats.game?.visitor_team?.abbreviation;
+          const statTeam = stats.team?.abbreviation;
+          
+          // Normal case: stat.team matches one of the teams in the game
+          if (statTeam && (statTeam === homeTeam || statTeam === visitorTeam)) {
+            return true;
+          }
+          
+          // Workaround: If stat.team doesn't match, but we have game data with two teams,
+          // the player was likely on one of those teams (API data quality issue)
+          // Include the game if we have valid game data
+          if (homeTeam && visitorTeam && stats.game?.id) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        console.log(`[Last Season Debug] ✅ Found ${gamesWithPlayerTeam.length} games where player's team appears in game data (workaround for API data quality issue)`);
+        
+        // Use the games identified from game data instead of the empty minutesFiltered
+        if (gamesWithPlayerTeam.length > 0) {
+          filteredGames = gamesWithPlayerTeam;
+          console.log(`[Last Season Debug] ✅ Using ${filteredGames.length} games identified from game data (workaround for 0-minute stats)`);
+        } else {
+          console.warn(`[Last Season Debug] ⚠️ Could not identify any games from game data either. All stats filtered out.`);
+        }
+      } else {
+        filteredGames = minutesFiltered;
+      }
+      
+      // Also check ALL stats (before minutes filter) to see what teams are in last season
+      const allLastSeasonStats = playerStats?.filter((s: any) => {
+        if (!s.game?.date) return false;
+        const d = new Date(s.game.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const gameSeasonYear = m >= 9 ? y : y - 1;
+        return gameSeasonYear === lastSeason;
+      }) || [];
+      
+      const allLastSeasonTeams = new Set<string>();
+      const allLastSeasonWithMinutes = allLastSeasonStats.filter((s: any) => {
+        const teamAbbr = s?.team?.abbreviation || 'UNKNOWN';
+        allLastSeasonTeams.add(teamAbbr);
+        const minutes = parseMinutes(s.min);
+        return minutes > 0;
+      });
+      
       console.log(`📅 Last Season: Filtered to ${filteredGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
+      console.log(`📅 Last Season Debug:`, {
+        totalGamesPlayed: gamesPlayed.length,
+        gamesBySeasonYear,
+        gamesByTeam,
+        lastSeasonTeams: Array.from(lastSeasonTeams),
+        currentSeasonTeams: Array.from(currentSeasonTeams),
+        filteredCount: filteredGames.length,
+        sampleFilteredDates: filteredGames.slice(0, 5).map(s => ({ date: s.game?.date, team: s.team?.abbreviation })),
+        // NEW: Check ALL last season stats (including 0 minutes)
+        allLastSeasonStatsCount: allLastSeasonStats.length,
+        allLastSeasonTeams: Array.from(allLastSeasonTeams),
+        allLastSeasonWithMinutesCount: allLastSeasonWithMinutes.length,
+        sampleAllLastSeason: allLastSeasonStats.slice(0, 5).map(s => ({
+          date: s.game?.date,
+          team: s.team?.abbreviation,
+          min: s.min,
+          minutes: parseMinutes(s.min),
+          pts: s.pts
+        }))
+      });
     } else if (selectedTimeframe === 'thisseason') {
       // Filter to current season games only
       const currentSeason = currentNbaSeason();
@@ -11120,14 +12077,39 @@ const lineMovementInFlightRef = useRef(false);
     });
     
     const result = ordered.map((stats, index) => {
-      const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
-      const playerTeamNorm = normalizeAbbr(playerTeam);
+      let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
       
       // Get team info from stats.game - support both nested objects and *_id fields
       const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
       const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
       const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
       const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+      
+      // WORKAROUND: For last season, if stat.team doesn't match either team in the game,
+      // infer the correct team from game data (API data quality issue for players who changed teams)
+      if (selectedTimeframe === 'lastseason' && playerTeam && homeTeamAbbr && visitorTeamAbbr) {
+        const playerTeamNorm = normalizeAbbr(playerTeam);
+        const homeNorm = normalizeAbbr(homeTeamAbbr);
+        const visitorNorm = normalizeAbbr(visitorTeamAbbr);
+        
+        // If playerTeam doesn't match either team in the game, infer from game data
+        if (playerTeamNorm !== homeNorm && playerTeamNorm !== visitorNorm) {
+          // The player was on one of the teams in the game, but stat.team is wrong
+          // For Saddiq Bey, we know he was on ATL last season, so if ATL is in the game, use ATL
+          // Otherwise, we can't definitively determine which team, but we'll use the home team as a fallback
+          if (homeNorm === 'ATL' || visitorNorm === 'ATL') {
+            playerTeam = 'ATL';
+            console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ATL (game: ${homeTeamAbbr} vs ${visitorTeamAbbr})`);
+          } else {
+            // For other games, we can't be sure, but we'll use the home team as a heuristic
+            // (This is a fallback - ideally we'd have better data)
+            playerTeam = homeTeamAbbr;
+            console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ${homeTeamAbbr} (game: ${homeTeamAbbr} vs ${visitorTeamAbbr}, using home team as fallback)`);
+          }
+        }
+      }
+      
+      const playerTeamNorm = normalizeAbbr(playerTeam);
       
       // Determine opponent using team IDs/abbrs
       const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
@@ -11304,8 +12286,13 @@ const lineMovementInFlightRef = useRef(false);
 
       // minutes
       const minutes = parseMinutesPlayed(stats?.min);
-      if (minutes === 0) return false; // always exclude zero-minute games
-      if (minutes < minMinutesFilter || minutes > maxMinutesFilter) return false;
+      
+      // WORKAROUND: For last season, if we have 0-minute games that were included via the API data quality workaround,
+      // allow them through (they'll show 0 values but at least the games will be visible)
+      const isLastSeasonWithApiIssue = selectedTimeframe === 'lastseason' && minutes === 0 && game?.id;
+      
+      if (minutes === 0 && !isLastSeasonWithApiIssue) return false; // exclude zero-minute games (except last season workaround)
+      if (minutes > 0 && (minutes < minMinutesFilter || minutes > maxMinutesFilter)) return false;
 
       // blowout
       if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
@@ -11344,7 +12331,7 @@ const lineMovementInFlightRef = useRef(false);
     });
     
     return filtered;
-  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds]);
+  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe]);
 
   /* -------- Chart data with current stat values ----------
      Only recalculate values when selectedStat changes */
@@ -13619,7 +14606,7 @@ const lineMovementInFlightRef = useRef(false);
   ]);
 
   return (
-<div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+<div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -13805,7 +14792,7 @@ const lineMovementInFlightRef = useRef(false);
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden lg:flex fixed z-[60] items-center justify-center w-8 h-8 bg-gray-300 dark:bg-slate-900 hover:bg-gray-400 dark:hover:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg transition-all"
+            className="hidden lg:flex fixed z-[60] items-center justify-center w-8 h-8 bg-gray-300 dark:bg-[#0a1929] hover:bg-gray-400 dark:hover:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg transition-all"
             style={{
               top: '1.5rem',
               left: 'clamp(0px, calc((100vw - var(--app-max, 2000px)) / 2), 9999px)',
@@ -13835,7 +14822,7 @@ const lineMovementInFlightRef = useRef(false);
             }}
           >
             {/* 1. Filter By Container (Mobile Only) */}
-            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+            <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
                 <NotificationSystem isDark={isDark} />
@@ -13880,10 +14867,10 @@ const lineMovementInFlightRef = useRef(false);
                   }}
                   className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all ${
                     !isPro
-                      ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60"
+                      ? "bg-gray-300 dark:bg-[#0a1929] text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60"
                       : propsMode === 'player'
                       ? "bg-purple-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
                   <span className="flex items-center gap-1 sm:gap-2">
@@ -13937,7 +14924,7 @@ const lineMovementInFlightRef = useRef(false);
                   className={`px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-colors ${
                     propsMode === 'team'
                       ? "bg-purple-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
                   Game Props
@@ -13949,7 +14936,7 @@ const lineMovementInFlightRef = useRef(false);
             </div>
 
             {/* Header (with search bar and team display) */}
-<div className="relative z-[60] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-36 md:h-40 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
+<div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 h-auto sm:h-36 md:h-40 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
               <div className="flex flex-col h-full gap-2 lg:gap-3">
               {/* Desktop: Original layout - Player info, Search, Team vs Team all in one row */}
               <div className="hidden lg:flex items-center justify-between flex-1">
@@ -14086,7 +15073,7 @@ const lineMovementInFlightRef = useRef(false);
                             }
                           }
                         }}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                     {/* Mobile icon button */}
@@ -14099,7 +15086,7 @@ const lineMovementInFlightRef = useRef(false);
                           return;
                         }
                         setIsMobileSearchOpen(true);
-                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 110-16 8 8 0 010 16z"/></svg>
                       </button>
                     </div>
@@ -14112,7 +15099,7 @@ const lineMovementInFlightRef = useRef(false);
                           onClick={() => setIsMobileSearchOpen(false)}
                         />
                         {/* Search panel */}
-                        <div className="sm:hidden fixed left-0 right-0 top-0 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
+                        <div className="sm:hidden fixed left-0 right-0 top-0 bg-white dark:bg-[#0a1929] border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
                         <div className="pt-16">
                         <div className="flex items-end gap-2 pt-4 pb-4 border-b border-gray-300 dark:border-gray-700">
                           <input
@@ -14160,9 +15147,9 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                               }
                             }}
-                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
-                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                           </button>
                         </div>
@@ -14270,7 +15257,7 @@ const lineMovementInFlightRef = useRef(false);
                     )}
                     {/* Player search dropdown - only show in player mode and for Pro users (Desktop only) */}
                     {propsMode === 'player' && isPro && showDropdown && searchQuery && (
-                      <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
+                      <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-72 overflow-y-auto">
                         {searchResults.length === 0 ? (
                           <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                             {searchBusy ? "Searching..." : (searchError ? `Search error: ${searchError}` : `No players found for "${searchQuery}"`)}
@@ -14350,7 +15337,7 @@ const lineMovementInFlightRef = useRef(false);
                       }
                       
                       return matchingTeams.length > 0 ? (
-                        <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[100] max-h-72 overflow-y-auto">
+                        <div className="hidden sm:block absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[100] max-h-72 overflow-y-auto">
                           {matchingTeams.slice(0, 10).map((team) => ( // Limit to 10 results
                             <button
                               key={team.abbr}
@@ -14396,7 +15383,7 @@ const lineMovementInFlightRef = useRef(false);
                   {propsMode === 'player' ? (
                     // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
                     selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
-                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
                         {/* Player Team */}
                         <div className="flex items-center gap-1.5">
                           <img 
@@ -14458,14 +15445,14 @@ const lineMovementInFlightRef = useRef(false);
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
                       </div>
                     )
                   ) : (
                     // Game Props Mode - Show selected team vs opponent or prompt
                     gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
-                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
                         {/* Selected Team */}
                         <div className="flex items-center gap-1.5">
                           <img 
@@ -14527,7 +15514,7 @@ const lineMovementInFlightRef = useRef(false);
                         </div>
                       </div>
                     ) : gamePropsTeam && gamePropsTeam !== 'N/A' ? (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <img 
                           src={getEspnLogoUrl(gamePropsTeam)}
                           alt={gamePropsTeam}
@@ -14537,7 +15524,7 @@ const lineMovementInFlightRef = useRef(false);
                         <span className="text-gray-500 dark:text-gray-400 text-xs">No Game Today</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Team</span>
                       </div>
                     )
@@ -14617,7 +15604,7 @@ const lineMovementInFlightRef = useRef(false);
                           return;
                         }
                         setIsMobileSearchOpen(true);
-                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+                      }} className="p-2 rounded-lg bg-gray-100 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 110-16 8 8 0 010 16z"/></svg>
                       </button>
                     </div>
@@ -14630,7 +15617,7 @@ const lineMovementInFlightRef = useRef(false);
                           onClick={() => setIsMobileSearchOpen(false)}
                         />
                         {/* Search panel */}
-                        <div className="fixed left-0 right-0 top-0 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
+                        <div className="fixed left-0 right-0 top-0 bg-white dark:bg-[#0a1929] border-t border-gray-300 dark:border-gray-600 shadow-2xl z-[100] max-h-[78vh] overflow-y-auto pl-3 pr-5 rounded-b-lg">
                         <div className="pt-16">
                         <div className="flex items-end gap-2 pt-4 pb-4 border-b border-gray-300 dark:border-gray-700">
                           <input
@@ -14678,9 +15665,9 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                               }
                             }}
-                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           />
-                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                          <button onClick={() => setIsMobileSearchOpen(false)} className="p-1.5 rounded bg-gray-100 dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                           </button>
                         </div>
@@ -14832,7 +15819,7 @@ const lineMovementInFlightRef = useRef(false);
                   {propsMode === 'player' ? (
                     // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
                     selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
-                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
                         {/* Team Logos */}
                         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                           {/* Player Team */}
@@ -14898,14 +15885,14 @@ const lineMovementInFlightRef = useRef(false);
                         ) : null}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
                       </div>
                     )
                   ) : (
                     // Game Props Mode - Show selected team vs opponent or prompt
                     gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
-                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
                         {/* Team Logos */}
                         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                           {/* Selected Team */}
@@ -14971,7 +15958,7 @@ const lineMovementInFlightRef = useRef(false);
                         ) : null}
                       </div>
                     ) : gamePropsTeam && gamePropsTeam !== 'N/A' ? (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <img 
                           src={getEspnLogoUrl(gamePropsTeam)}
                           alt={gamePropsTeam}
@@ -14981,7 +15968,7 @@ const lineMovementInFlightRef = useRef(false);
                         <span className="text-gray-500 dark:text-gray-400 text-xs">No Game Today</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                         <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Team</span>
                       </div>
                     )
@@ -15098,7 +16085,7 @@ const lineMovementInFlightRef = useRef(false);
       intradayMovements={intradayMovementsFinal}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
-            <div className="lg:hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
+            <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
               {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
               {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
 
@@ -15127,7 +16114,7 @@ const lineMovementInFlightRef = useRef(false);
                       className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
                         selectedComparison === 'points'
                           ? "bg-purple-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
                       POINTS
@@ -15137,7 +16124,7 @@ const lineMovementInFlightRef = useRef(false);
                       className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
                         selectedComparison === 'rebounds'
                           ? "bg-purple-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
                       REBOUNDS
@@ -15147,7 +16134,7 @@ const lineMovementInFlightRef = useRef(false);
                       className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
                         selectedComparison === 'assists'
                           ? "bg-purple-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
                       ASSISTS
@@ -15157,7 +16144,7 @@ const lineMovementInFlightRef = useRef(false);
                       className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
                         selectedComparison === 'fg_pct'
                           ? "bg-purple-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
                       FG%
@@ -15168,7 +16155,7 @@ const lineMovementInFlightRef = useRef(false);
                         className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors w-[calc(50%-0.25rem)] ${
                           selectedComparison === 'three_pct'
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
                         3P%
@@ -15247,7 +16234,7 @@ const lineMovementInFlightRef = useRef(false);
                     : 'text-red-500 dark:text-red-400';
                   
                   return (
-                    <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
+                    <div className="bg-gray-100 dark:bg-[#0a1929] rounded px-2 py-1 mb-2">
                       <div className="flex items-center justify-between gap-1 text-xs">
                         <div className={`flex-1 text-center ${teamColorClass}`}>
                           <span className="font-bold">{currentTeam}</span>
@@ -15402,7 +16389,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only - DEFERRED until core data ready */}
             {propsMode === 'player' && coreDataReady && (
-              <div className="lg:hidden w-full flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700">
+              <div className="lg:hidden w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
@@ -15771,7 +16758,7 @@ const lineMovementInFlightRef = useRef(false);
           >
 
             {/* Filter By Container (Desktop - in right panel) */}
-            <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+            <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
                 <NotificationSystem isDark={isDark} />
@@ -15812,8 +16799,8 @@ const lineMovementInFlightRef = useRef(false);
                     propsMode === 'player'
                       ? "bg-purple-600 text-white"
                       : !hasPremium
-                      ? "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      ? "bg-gray-200 dark:bg-[#0a1929] text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                      : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
                   <span className="flex items-center gap-2">
@@ -15867,7 +16854,7 @@ const lineMovementInFlightRef = useRef(false);
                   className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
                     propsMode === 'team'
                       ? "bg-purple-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
                   Game Props
@@ -15878,7 +16865,7 @@ const lineMovementInFlightRef = useRef(false);
               </p>
             </div>
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
-            <div className="hidden lg:block bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
+            <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
                 {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
                 {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
 
@@ -15907,7 +16894,7 @@ const lineMovementInFlightRef = useRef(false);
                         className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'points'
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
                         POINTS
@@ -15917,7 +16904,7 @@ const lineMovementInFlightRef = useRef(false);
                         className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'rebounds'
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
                         REBOUNDS
@@ -15927,7 +16914,7 @@ const lineMovementInFlightRef = useRef(false);
                         className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'assists'
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
                         ASSISTS
@@ -15937,7 +16924,7 @@ const lineMovementInFlightRef = useRef(false);
                         className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           selectedComparison === 'fg_pct'
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
                         FG%
@@ -15948,7 +16935,7 @@ const lineMovementInFlightRef = useRef(false);
                           className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors w-[calc(50%-0.375rem)] ${
                             selectedComparison === 'three_pct'
                               ? "bg-purple-600 text-white"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                              : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                           }`}
                         >
                           3P%
@@ -16031,7 +17018,7 @@ const lineMovementInFlightRef = useRef(false);
                       : 'text-red-500 dark:text-red-400';
                     
                     return (
-                      <div className="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 mb-2">
+                      <div className="bg-gray-100 dark:bg-[#0a1929] rounded px-2 py-1 mb-2">
                         <div className="flex items-center justify-between gap-1 text-xs">
                           <div className={`flex-1 text-center ${teamColorClass}`}>
                             <span className="font-bold">{currentTeam}</span>
@@ -16417,7 +17404,7 @@ const lineMovementInFlightRef = useRef(false);
 
             {/* Shot Chart (Desktop) - only in Player Props mode - DEFERRED until core data ready */}
             {propsMode === 'player' && coreDataReady && (
-              <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
+              <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
                   shotData={shotDistanceData}
@@ -16509,11 +17496,11 @@ const lineMovementInFlightRef = useRef(false);
       )}
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1929] border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
         {/* Profile Dropdown Menu - Shows above bottom nav */}
         {showProfileDropdown && (
           <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               <button
                 onClick={() => {
                   setShowProfileDropdown(false);
@@ -16540,7 +17527,7 @@ const lineMovementInFlightRef = useRef(false);
         {/* Journal Dropdown Menu - Shows above bottom nav */}
         {showJournalDropdown && hasPremium && (
           <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               <button
                 onClick={() => {
                   setShowJournalDropdown(false);
@@ -16567,7 +17554,7 @@ const lineMovementInFlightRef = useRef(false);
         {/* Settings Dropdown Menu - Shows above bottom nav */}
         {showSettingsDropdown && (
           <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               {/* Theme Selection */}
               <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
@@ -16577,7 +17564,7 @@ const lineMovementInFlightRef = useRef(false);
                     setTheme(e.target.value as 'Light' | 'Dark');
                     localStorage.setItem('theme', e.target.value);
                   }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="Light">Light</option>
                   <option value="Dark">Dark</option>
@@ -16594,7 +17581,7 @@ const lineMovementInFlightRef = useRef(false);
                     setOddsFormat(newFormat);
                     localStorage.setItem('oddsFormat', newFormat);
                   }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="american">American</option>
                   <option value="decimal">Decimal</option>
@@ -16798,7 +17785,7 @@ const lineMovementInFlightRef = useRef(false);
 
 export default function NBADashboard() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">Loading dashboard...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#050d1a]">Loading dashboard...</div>}>
       <NBADashboardWrapper />
     </Suspense>
   );

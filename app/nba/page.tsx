@@ -2064,21 +2064,27 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
   // - If prop line sort is active, keep the line-based order (already applied)
   // - If column sort is active, sort by that column
   // - Otherwise, sort by L10% (fallback to L5% then overall prob)
+  // - Only apply 2-per-player limit on page 1; show all props on subsequent pages
   const displaySortedProps = useMemo(() => {
     const percent = (hitRate?: { hits: number; total: number } | null) =>
       hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
+
+    // Use limited props (2 per player) only on page 1, otherwise use all filtered props
+    // Page 1: balanced view with 2 props per player
+    // Pages 2+: all remaining props without any per-player limit
+    const propsToSort = currentPage === 1 ? balancedPlayerProps : filteredPlayerProps;
 
     // Check if any column sort is active
     const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
     
     if (propLineSort !== 'none') {
       // Prop line sort takes precedence
-      return [...balancedPlayerProps];
+      return [...propsToSort];
     }
 
     if (activeColumnSort) {
       const [column, direction] = activeColumnSort;
-      const sorted = [...balancedPlayerProps].sort((a, b) => {
+      const sorted = [...propsToSort].sort((a, b) => {
         let aValue: number | null = null;
         let bValue: number | null = null;
 
@@ -2140,7 +2146,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     }
 
     // Default: sort by L10% (fallback to L5% then overall prob)
-    return [...balancedPlayerProps].sort((a, b) => {
+    return [...propsToSort].sort((a, b) => {
       const aL10 = percent(a.last10HitRate);
       const bL10 = percent(b.last10HitRate);
       if (aL10 !== null || bL10 !== null) {
@@ -2156,11 +2162,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       const bProb = Math.max(b.overProb, b.underProb);
       return bProb - aProb;
     });
-  }, [balancedPlayerProps, propLineSort, columnSort]);
+  }, [balancedPlayerProps, filteredPlayerProps, currentPage, propLineSort, columnSort]);
 
   // Pagination
   const pageSize = 20;
-  const totalPages = Math.max(1, Math.ceil(displaySortedProps.length / pageSize));
+  // Total count should always use the full filtered props (not limited by page)
+  const totalPropsCount = filteredPlayerProps.length;
+  // Total pages based on the full count
+  const totalPages = Math.max(1, Math.ceil(totalPropsCount / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const paginatedPlayerProps = useMemo(() => {
     const start = (currentPageSafe - 1) * pageSize;
@@ -4580,7 +4589,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       {/* Pagination controls - Shared for desktop and mobile */}
                       <div className="flex items-center justify-between mt-6 px-2 pb-4">
                         <div className={`text-sm ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          Showing {(currentPageSafe - 1) * pageSize + 1} - {Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of {displaySortedProps.length}
+                          Showing {(currentPageSafe - 1) * pageSize + 1} - {Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of {totalPropsCount}
                         </div>
                         <div className="flex items-center gap-2">
                           <button
