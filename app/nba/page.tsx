@@ -288,6 +288,9 @@ export default function NBALandingPage() {
   const filtersSectionRef = useRef<HTMLDivElement>(null);
   const [filterBottom, setFilterBottom] = useState(120);
   const lockedPositionRef = useRef<number | null>(null);
+  const gamesButtonRef = useRef<HTMLButtonElement>(null);
+  const propTypeButtonRef = useRef<HTMLButtonElement>(null);
+  const bookmakerButtonRef = useRef<HTMLButtonElement>(null);
 
   // Lock position when dropdown opens - MOBILE ONLY - calculate once and never update
   useEffect(() => {
@@ -377,6 +380,14 @@ export default function NBALandingPage() {
     if (typeof document !== 'undefined') {
       setDropdownContainer(document.body);
     }
+    
+    // Detect mobile viewport
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
     // Load odds format from localStorage
     const savedFormat = localStorage.getItem('oddsFormat');
     if (savedFormat === 'decimal' || savedFormat === 'american') {
@@ -2017,6 +2028,36 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return result;
   }, [sortedPlayerProps]);
 
+  // Limit to 2 props per player on the main screen
+  // This ensures balanced distribution and prevents one player from dominating
+  const balancedPlayerProps = useMemo(() => {
+    const MAX_PROPS_PER_PLAYER = 2; // Maximum props to show per player
+    
+    // Group props by player name
+    const propsByPlayer = new Map<string, PlayerProp[]>();
+    
+    for (const prop of uniquePlayerProps) {
+      const playerName = prop.playerName.toLowerCase().trim();
+      if (!propsByPlayer.has(playerName)) {
+        propsByPlayer.set(playerName, []);
+      }
+      propsByPlayer.get(playerName)!.push(prop);
+    }
+    
+    // Limit props per player, keeping the first N (already sorted by quality)
+    const limitedProps: PlayerProp[] = [];
+    for (const [playerName, props] of propsByPlayer.entries()) {
+      // Take only the first MAX_PROPS_PER_PLAYER props for this player
+      // Props are already sorted by quality (L10%, L5%, etc.) so we keep the best ones
+      limitedProps.push(...props.slice(0, MAX_PROPS_PER_PLAYER));
+    }
+    
+    console.log(`[NBA Landing] Balanced props: ${uniquePlayerProps.length} total → ${limitedProps.length} after limiting to ${MAX_PROPS_PER_PLAYER} per player`);
+    console.log(`[NBA Landing] Players represented: ${propsByPlayer.size} players`);
+    
+    return limitedProps;
+  }, [uniquePlayerProps]);
+
   // Sort for display
   // - If prop line sort is active, keep the line-based order (already applied)
   // - If column sort is active, sort by that column
@@ -2030,12 +2071,12 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     
     if (propLineSort !== 'none') {
       // Prop line sort takes precedence
-      return [...uniquePlayerProps];
+      return [...balancedPlayerProps];
     }
 
     if (activeColumnSort) {
       const [column, direction] = activeColumnSort;
-      const sorted = [...uniquePlayerProps].sort((a, b) => {
+      const sorted = [...balancedPlayerProps].sort((a, b) => {
         let aValue: number | null = null;
         let bValue: number | null = null;
 
@@ -2097,7 +2138,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     }
 
     // Default: sort by L10% (fallback to L5% then overall prob)
-    return [...uniquePlayerProps].sort((a, b) => {
+    return [...balancedPlayerProps].sort((a, b) => {
       const aL10 = percent(a.last10HitRate);
       const bL10 = percent(b.last10HitRate);
       if (aL10 !== null || bL10 !== null) {
@@ -2113,7 +2154,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       const bProb = Math.max(b.overProb, b.underProb);
       return bProb - aProb;
     });
-  }, [uniquePlayerProps, propLineSort, columnSort]);
+  }, [balancedPlayerProps, propLineSort, columnSort]);
 
   // Pagination
   const pageSize = 20;
@@ -2173,7 +2214,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
   };
 
   return (
-    <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-gray-900 transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+    <div className={`min-h-screen lg:h-screen ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'} transition-colors lg:overflow-x-auto lg:overflow-y-hidden`}>
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -2248,13 +2289,13 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         }
       `}</style>
       
-      <div className="px-0 dashboard-container" style={{ 
+      <div className={`px-0 dashboard-container ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ 
         marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 2px))',
         width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 2px)))',
         paddingLeft: 0,
       }}>
-        <div className={`mx-auto w-full max-w-[1550px]`} style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div className="pt-4 min-h-0 lg:h-full dashboard-container" style={{ paddingLeft: 0 }}>
+        <div className={`mx-auto w-full max-w-[1550px] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0, paddingRight: '0px' }}>
+          <div className={`pt-4 min-h-0 lg:h-full dashboard-container ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0 }}>
             {/* Left Sidebar */}
             <LeftSidebar
               oddsFormat={oddsFormat}
@@ -2277,16 +2318,16 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
             {/* Main Content Area - Top Player Props */}
             <div 
-              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar`}
+              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
               style={{
                 scrollbarGutter: 'stable',
                 paddingLeft: 0,
                 paddingRight: 0,
               }}
             >
-          <div className="h-full pb-12 lg:pr-0" style={{ paddingLeft: '8px', paddingRight: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className={`h-full pb-12 lg:pr-0 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: '8px', paddingRight: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Search Bar */}
-            <div className="mb-2">
+            <div className={`mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
                 <div className="relative" style={{ width: '100%', boxSizing: 'border-box' }}>
                   <input
@@ -2296,7 +2337,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                     placeholder="Search for a player..."
                     className={`px-4 py-3 pl-12 rounded-lg border ${
                       mounted && isDark 
-                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
+                        ? 'bg-[#0a1929] border-gray-700 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     style={{ boxSizing: 'border-box', width: '100%' }}
@@ -2315,12 +2356,13 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
               {/* Filters Section */}
               <div 
                 ref={filtersSectionRef}
-                className="mt-2 flex gap-1.5" 
+                className={`mt-2 flex gap-1.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} 
                 style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               >
                 {/* Games Dropdown */}
                 <div className="relative flex-1">
                   <button
+                    ref={gamesButtonRef}
                     onClick={() => {
                       setGamesDropdownOpen(!gamesDropdownOpen);
                       setBookmakerDropdownOpen(false);
@@ -2329,10 +2371,10 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                     className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
                       gamesDropdownOpen
                         ? mounted && isDark
-                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
                           : 'bg-gray-50 border-gray-400 text-gray-800'
                         : mounted && isDark
-                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -2359,23 +2401,23 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           />
                           <div 
                             data-dropdown-locked
-                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                            className={`fixed z-[101] rounded-lg border shadow-lg overflow-y-auto ${
                               mounted && isDark
-                                ? 'bg-gray-800 border-gray-700'
+                                ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
                             }`} 
                             style={{ 
                               position: 'fixed',
                               top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 'max-content', 
-                              minWidth: '200px', 
-                              maxWidth: '90vw',
-                              pointerEvents: 'auto'
+                              left: gamesButtonRef.current ? `${gamesButtonRef.current.getBoundingClientRect().left}px` : '1rem',
+                              right: gamesButtonRef.current ? 'auto' : '1rem',
+                              width: gamesButtonRef.current ? `${gamesButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
+                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
+                              pointerEvents: 'auto',
+                              boxSizing: 'border-box'
                             }}
                           >
-                          <div className="p-2 space-y-1">
+                          <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                             {gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
@@ -2385,7 +2427,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               return (
                                 <label
                                   key={game.id}
-                                  className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                  className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
                                     isSelected
                                       ? mounted && isDark
                                         ? 'bg-purple-600 text-white'
@@ -2399,9 +2441,9 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => toggleGame(game.id)}
-                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
+                                    className="hidden"
                                   />
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
                                     {awayLogoUrl && (
                                       <img
                                         src={awayLogoUrl}
@@ -2409,8 +2451,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                         className="w-6 h-6 object-contain flex-shrink-0"
                                       />
                                     )}
-                                    <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
-                                    <span className="text-sm text-gray-500 flex-shrink-0">@</span>
+                                    <span className={`text-xs font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
                                     {homeLogoUrl && (
                                       <img
                                         src={homeLogoUrl}
@@ -2418,7 +2459,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                         className="w-6 h-6 object-contain flex-shrink-0"
                                       />
                                     )}
-                                    <span className="text-sm font-medium flex-shrink-0">{homeTeam}</span>
                                   </div>
                                 </label>
                               );
@@ -2437,7 +2477,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         <div 
                           className={`absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
                             mounted && isDark
-                              ? 'bg-gray-800 border-gray-700'
+                              ? 'bg-gray-900 border-gray-700'
                               : 'bg-white border-gray-300'
                           }`}
                         >
@@ -2451,7 +2491,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               return (
                                 <label
                                   key={game.id}
-                                  className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                  className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
                                     isSelected
                                       ? mounted && isDark
                                         ? 'bg-purple-600 text-white'
@@ -2465,7 +2505,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => toggleGame(game.id)}
-                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
+                                    className="hidden"
                                   />
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {awayLogoUrl && (
@@ -2476,7 +2516,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       />
                                     )}
                                     <span className="text-sm font-medium flex-shrink-0">{awayTeam}</span>
-                                    <span className="text-sm text-gray-500 flex-shrink-0">@</span>
+                                    <span className={`text-sm flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
                                     {homeLogoUrl && (
                                       <img
                                         src={homeLogoUrl}
@@ -2507,10 +2547,10 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                     className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
                       propTypeDropdownOpen
                         ? mounted && isDark
-                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
                           : 'bg-gray-50 border-gray-400 text-gray-800'
                         : mounted && isDark
-                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -2537,23 +2577,23 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           />
                           <div 
                             data-dropdown-locked
-                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                            className={`fixed z-[101] rounded-lg border shadow-lg overflow-y-auto ${
                               mounted && isDark
-                                ? 'bg-gray-800 border-gray-700'
+                                ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
                             }`} 
                             style={{ 
                               position: 'fixed',
                               top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 'max-content', 
-                              minWidth: '200px', 
-                              maxWidth: '90vw',
-                              pointerEvents: 'auto'
+                              left: propTypeButtonRef.current ? `${propTypeButtonRef.current.getBoundingClientRect().left}px` : '1rem',
+                              right: propTypeButtonRef.current ? 'auto' : '1rem',
+                              width: propTypeButtonRef.current ? `${propTypeButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
+                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
+                              pointerEvents: 'auto',
+                              boxSizing: 'border-box'
                             }}
                           >
-                          <div className="p-2 space-y-1">
+                          <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                             {availablePropTypes.map(propType => {
                               const isSelected = selectedPropTypes.has(propType);
                               return (
@@ -2573,7 +2613,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => togglePropType(propType)}
-                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                    className="hidden"
                                   />
                                   <span className="text-sm font-medium">{getStatLabel(propType)}</span>
                                 </label>
@@ -2631,7 +2671,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => togglePropType(propType)}
-                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  className="hidden"
                                 />
                                 <span className="text-sm font-medium">{getStatLabel(propType)}</span>
                               </label>
@@ -2666,13 +2706,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       setPropTypeDropdownOpen(false);
                       setGamesDropdownOpen(false);
                     }}
+                    ref={bookmakerButtonRef}
                     className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
                       bookmakerDropdownOpen
                         ? mounted && isDark
-                          ? 'bg-gray-700 border-gray-600 text-gray-200'
+                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
                           : 'bg-gray-50 border-gray-400 text-gray-800'
                         : mounted && isDark
-                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -2699,23 +2740,23 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           />
                           <div 
                             data-dropdown-locked
-                            className={`fixed left-1/2 -translate-x-1/2 z-[101] rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
+                            className={`fixed z-[101] rounded-lg border shadow-lg overflow-y-auto ${
                               mounted && isDark
-                                ? 'bg-gray-800 border-gray-700'
+                                ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
                             }`} 
                             style={{ 
                               position: 'fixed',
                               top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 'max-content', 
-                              minWidth: '200px', 
-                              maxWidth: '90vw',
-                              pointerEvents: 'auto'
+                              left: bookmakerButtonRef.current ? `${bookmakerButtonRef.current.getBoundingClientRect().left}px` : '1rem',
+                              right: bookmakerButtonRef.current ? 'auto' : '1rem',
+                              width: bookmakerButtonRef.current ? `${bookmakerButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
+                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
+                              pointerEvents: 'auto',
+                              boxSizing: 'border-box'
                             }}
                           >
-                            <div className="p-2 space-y-1">
+                            <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                               {availableBookmakers.map(bookmaker => {
                                 const bookmakerKey = bookmaker.toLowerCase();
                                 const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
@@ -2737,7 +2778,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       type="checkbox"
                                       checked={isSelected}
                                       onChange={() => toggleBookmaker(bookmaker)}
-                                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                      className="hidden"
                                     />
                                     {bookmakerInfo?.logoUrl && (
                                       <img
@@ -2764,7 +2805,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         <div 
                           className={`absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border shadow-lg max-h-96 overflow-y-auto ${
                             mounted && isDark
-                              ? 'bg-gray-800 border-gray-700'
+                              ? 'bg-gray-900 border-gray-700'
                               : 'bg-white border-gray-300'
                           }`}
                         >
@@ -2790,7 +2831,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => toggleBookmaker(bookmaker)}
-                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                    className="hidden"
                                   />
                                   {bookmakerInfo?.logoUrl && (
                                     <img
@@ -2813,9 +2854,9 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
             </div>
 
             {/* Player Props Section */}
-            <div className="h-[calc(100%-160px)]" style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
+            <div className={`h-[calc(100%-160px)] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
               <div className={`rounded-lg w-full pr-4 lg:pr-2 ${
-                mounted && isDark ? 'bg-gray-800' : 'bg-white'
+                mounted && isDark ? 'bg-[#050d1a]' : 'bg-white'
               } shadow-sm`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
                 <h2 className={`text-2xl font-bold mb-2 ${
                   mounted && isDark ? 'text-white' : 'text-gray-900'
@@ -2850,7 +2891,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full">
                         <thead>
-                          <tr className={`border-b ${mounted && isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                          <tr className={`border-b ${mounted && isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                             {/* Prop Line Sorter (replaces Player text) */}
                             <th className="py-3 px-4 text-left">
                               <div className="relative inline-flex">
@@ -3125,7 +3166,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                             return (
                               <tr
                                 key={idx}
-                                className={`border-b ${mounted && isDark ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
+                                className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -3207,7 +3248,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                             (e.target as HTMLImageElement).style.display = 'none';
                                           }}
                                         />
-                                        <span className="text-gray-400 dark:text-gray-500 text-xs">vs</span>
                                         <img
                                           src={opponentLogoUrl}
                                           alt={prop.opponent}
@@ -3307,7 +3347,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                                     
                                                     {/* Separator line between bookmakers */}
                                                     {lineIdx < visibleLines.length - 1 && (
-                                                      <div className={`w-px h-8 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                                                      <div className={`w-px h-8 ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-300'}`} />
                                                     )}
                                                   </div>
                                                 );
@@ -4061,7 +4101,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                       </div>
                       
                       {/* Mobile Card View - Hidden on desktop */}
-                      <div className="lg:hidden space-y-4">
+                      <div className={`lg:hidden space-y-4 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
                         {paginatedPlayerProps.map((prop, idx) => {
                           const bdlId = getPlayerIdFromName(prop.playerName);
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
@@ -4165,7 +4205,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                             <div
                               key={idx}
                               className={`rounded-xl border-2 pl-3 pr-4 py-3.5 ${
-                                mounted && isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                                mounted && isDark ? 'bg-[#0a1929] border-gray-900' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
                                 const params = new URLSearchParams();
@@ -4176,7 +4216,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                               }}
                             >
                               {/* Header Section */}
-                              <div className="mb-3">
+                              <div className="mb-1.5">
                                 {/* Player Name and Headshot Row */}
                                 <div className="flex items-center gap-2.5 mb-2">
                                   {headshotUrl && (
@@ -4195,32 +4235,37 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     />
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <div className={`font-bold text-base truncate ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                      {prop.playerName}
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className={`font-bold text-base truncate ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                        {prop.playerName}
+                                      </div>
+                                      {/* Team Logos */}
+                                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {teamLogoUrl && (
+                                          <img
+                                            src={teamLogoUrl}
+                                            alt={prop.team}
+                                            className="w-5 h-5 object-contain"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        )}
+                                        {opponentLogoUrl && (
+                                          <img
+                                            src={opponentLogoUrl}
+                                            alt={prop.opponent}
+                                            className="w-5 h-5 object-contain"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        )}
+                                      </div>
                                     </div>
-                                    {/* Team Logos */}
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                      {teamLogoUrl && (
-                                        <img
-                                          src={teamLogoUrl}
-                                          alt={prop.team}
-                                          className="w-5 h-5 object-contain"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
-                                      )}
-                                      <span className={`text-xs font-medium ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
-                                      {opponentLogoUrl && (
-                                        <img
-                                          src={opponentLogoUrl}
-                                          alt={prop.opponent}
-                                          className="w-5 h-5 object-contain"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
-                                      )}
+                                    {/* Stat Type and Line */}
+                                    <div className={`text-sm font-semibold mt-0.5 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                                      {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                     </div>
                                   </div>
                                   {/* Bookmaker IP Box */}
@@ -4246,14 +4291,10 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                     </div>
                                   </div>
                                 </div>
-                                {/* Stat Type and Line */}
-                                <div className={`text-sm font-semibold ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                                  {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
-                                </div>
                               </div>
                               
                               {/* Statistics Grid */}
-                              <div className={`grid grid-cols-7 gap-2 p-2.5 rounded-xl mb-3 w-full ${
+                              <div className={`grid grid-cols-6 gap-0.5 px-0 py-2.5 rounded-xl mb-3 w-full ${
                                 mounted && isDark ? 'bg-gray-900/50' : 'bg-gray-50'
                               }`}>
                                 {/* L5 */}
@@ -4285,14 +4326,6 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>STRK</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.streak ?? '-'}
-                                  </div>
-                                </div>
-                                
-                                {/* AVG */}
-                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null)}>
-                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>AVG</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.seasonAvg !== null && prop.seasonAvg !== undefined ? prop.seasonAvg.toFixed(1) : '-'}
                                   </div>
                                 </div>
                                 
@@ -4373,23 +4406,24 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   return b[1].length - a[1].length; // More bookmakers first
                                 });
                                 
-                                // Mobile: Show only first bookmaker + "+ X" button
+                                // Mobile: Show first 2 bookmakers + "+ X" button
                                 const allBookmakers = Array.from(linesByValue.values()).flat();
-                                const firstBookmaker = allBookmakers[0];
-                                const remainingCount = allBookmakers.length - 1;
+                                const firstTwoBookmakers = allBookmakers.slice(0, 2);
+                                const remainingCount = allBookmakers.length - 2;
                                 const expandKey = `${prop.playerName}|${prop.statType}|mobile-all`;
                                 const isPopupOpen = openPopup === expandKey;
                                 
                                 return (
                                   <div className="flex items-center gap-2.5">
                                     <div className="flex gap-2 flex-1">
-                                      {/* First bookmaker */}
-                                      {firstBookmaker && (() => {
-                                        const bookmakerKey = firstBookmaker.bookmaker?.toLowerCase() || '';
+                                      {/* First 2 bookmakers */}
+                                      {firstTwoBookmakers.map((bookmaker, idx) => {
+                                        const bookmakerKey = bookmaker.bookmaker?.toLowerCase() || '';
                                         const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
                                         return (
                                           <div
-                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 flex-shrink-0 ${
+                                            key={idx}
+                                            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 flex-shrink-0 ${
                                               mounted && isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
@@ -4398,23 +4432,24 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                               <img
                                                 src={bookmakerInfo.logoUrl}
                                                 alt={bookmakerInfo.name}
-                                                className="w-6 h-6 object-contain rounded flex-shrink-0"
+                                                className="object-contain rounded flex-shrink-0"
+                                                style={{ width: '20px', height: '20px' }}
                                                 onError={(e) => {
                                                   (e.target as HTMLImageElement).style.display = 'none';
                                                 }}
                                               />
                                             )}
                                             <div className="flex flex-col gap-0.5 min-w-0">
-                                              <span className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                                O {formatOddsValue(firstBookmaker.overOdds)}
+                                              <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '11px' }}>
+                                                O {formatOddsValue(bookmaker.overOdds)}
                                               </span>
-                                              <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                                U {formatOddsValue(firstBookmaker.underOdds)}
+                                              <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '11px' }}>
+                                                U {formatOddsValue(bookmaker.underOdds)}
                                               </span>
                                             </div>
                                           </div>
                                         );
-                                      })()}
+                                      })}
                                       
                                       {/* "+ X" button if there are more bookmakers */}
                                       {remainingCount > 0 && (
@@ -4424,23 +4459,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                               e.stopPropagation();
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
-                                            className={`flex items-center gap-2 px-1.5 py-2.5 rounded-lg border-2 flex-shrink-0 relative ${
+                                            className={`flex items-center justify-center px-1 py-1.5 rounded-lg border-2 flex-shrink-0 relative ${
                                               mounted && isDark ? 'bg-gray-700/50 border-gray-600 hover:bg-gray-700' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                                             }`}
+                                            style={{ minWidth: '40px' }}
                                           >
-                                            {/* Placeholder for logo space to match bookmaker container */}
-                                            <div className="w-6 h-6 flex-shrink-0" />
-                                            {/* Centered number - positioned absolutely to center in entire button */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                              <span className={`text-base font-bold ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>
-                                                +{remainingCount}
-                                              </span>
-                                            </div>
-                                            {/* Invisible spacer to match bookmaker container height */}
-                                            <div className="flex flex-col gap-0.5 min-w-0 opacity-0 pointer-events-none">
-                                              <span className="text-xs font-bold">O 2.10</span>
-                                              <span className="text-xs font-bold">U 1.68</span>
-                                            </div>
+                                            <span className={`text-xs font-bold ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>
+                                              +{remainingCount}
+                                            </span>
                                           </button>
                                           
                                           {/* Popup modal for all bookmakers - Mobile */}
