@@ -59,8 +59,8 @@ jobs:
           CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
         run: node scripts/cache-refresh.js || echo "Cache refresh failed but continuing"
 
-      - name: Refresh All Player Shot Charts & Play Types (5:30 AM ET run)
-        if: github.event.schedule == '30 10 * * *' && steps.check_supabase_secrets.outputs.configured == 'true'
+      - name: Refresh All Player Shot Charts & Play Types
+        if: steps.check_supabase_secrets.outputs.configured == 'true'
         continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
