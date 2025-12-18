@@ -8773,17 +8773,26 @@ const lineMovementInFlightRef = useRef(false);
                 
                 // We know the player was on ATL for these games, so set team to ATL
                 const correctTeam = 'ATL';
-                const correctTeamId = homeTeam === 'ATL' ? stat.game?.home_team?.id : (visitorTeam === 'ATL' ? stat.game?.visitor_team?.id : stat.team?.id);
+                const correctTeamId = homeTeam === 'ATL' 
+                  ? stat.game?.home_team?.id 
+                  : (visitorTeam === 'ATL' 
+                    ? stat.game?.visitor_team?.id 
+                    : stat.team?.id);
                 
-                console.log(`[useEffect lastseason] 🔧 Correcting team for game ${gameId}: ${stat.team?.abbreviation} → ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam})`);
+                // Ensure team.id is always a number (required by BallDontLieStats type)
+                // Use the team ID from game data if available, otherwise fall back to original or 0
+                const teamId: number = correctTeamId ?? stat.team?.id ?? 0;
+                
+                console.log(`[useEffect lastseason] 🔧 Correcting team for game ${gameId}: ${stat.team?.abbreviation} → ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam}, teamId: ${teamId})`);
                 
                 return {
                   ...stat,
                   team: {
-                    ...stat.team,
+                    ...(stat.team || {}),
                     abbreviation: correctTeam,
-                    id: correctTeamId,
-                    full_name: 'Atlanta Hawks'
+                    id: teamId,
+                    full_name: 'Atlanta Hawks',
+                    name: 'Hawks'
                   }
                 };
               }
