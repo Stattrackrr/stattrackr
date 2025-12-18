@@ -2017,20 +2017,57 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return filteredPlayerProps;
   }, [playerProps, propLineSort, filteredPlayerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel, getGameForProp]);
 
-  // No deduplication or per-player limits - show ALL props
-  // All filtered props are available for display
+  // Deduplicate props: same player + stat + line + opponent should only appear once
+  // Keep the one with the most bookmakers or best odds
+  const uniquePlayerProps = useMemo(() => {
+    const seen = new Map<string, PlayerProp>();
+    
+    filteredPlayerProps.forEach(prop => {
+      // Create unique key: playerName + statType + line + opponent
+      const key = `${prop.playerName}|${prop.statType}|${prop.line}|${prop.opponent}`;
+      
+      const existing = seen.get(key);
+      if (!existing) {
+        seen.set(key, prop);
+      } else {
+        // If duplicate found, keep the one with more bookmakers or better odds
+        const existingBookmakers = (existing.bookmakerLines?.length || 0) + (existing.bookmaker ? 1 : 0);
+        const newBookmakers = (prop.bookmakerLines?.length || 0) + (prop.bookmaker ? 1 : 0);
+        
+        if (newBookmakers > existingBookmakers) {
+          seen.set(key, prop);
+        } else if (newBookmakers === existingBookmakers && prop.bookmakerLines && existing.bookmakerLines) {
+          // If same number of bookmakers, merge them
+          const mergedBookmakers = new Map<string, { bookmaker: string; line: number; overOdds: string; underOdds: string }>();
+          
+          existing.bookmakerLines.forEach(line => {
+            mergedBookmakers.set(line.bookmaker, line);
+          });
+          prop.bookmakerLines.forEach(line => {
+            mergedBookmakers.set(line.bookmaker, line);
+          });
+          
+          seen.set(key, {
+            ...existing,
+            bookmakerLines: Array.from(mergedBookmakers.values())
+          });
+        }
+      }
+    });
+    
+    return Array.from(seen.values());
+  }, [filteredPlayerProps]);
 
   // Sort for display
   // - If prop line sort is active, keep the line-based order (already applied)
   // - If column sort is active, sort by that column
   // - Otherwise, sort by L10% (fallback to L5% then overall prob)
-  // - Only apply 2-per-player limit on page 1; show all props on subsequent pages
   const displaySortedProps = useMemo(() => {
     const percent = (hitRate?: { hits: number; total: number } | null) =>
       hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
 
-    // Use all filtered props - no per-player limits, show everything
-    const propsToSort = filteredPlayerProps;
+    // Use deduplicated props
+    const propsToSort = uniquePlayerProps;
 
     // Check if any column sort is active
     const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
@@ -2120,12 +2157,12 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       const bProb = Math.max(b.overProb, b.underProb);
       return bProb - aProb;
     });
-  }, [filteredPlayerProps, propLineSort, columnSort]);
+  }, [uniquePlayerProps, propLineSort, columnSort]);
 
   // Pagination
   const pageSize = 20;
-  // Total count should always use the full filtered props (not limited by page)
-  const totalPropsCount = filteredPlayerProps.length;
+  // Total count should use deduplicated props
+  const totalPropsCount = uniquePlayerProps.length;
   // Total pages based on the full count
   const totalPages = Math.max(1, Math.ceil(totalPropsCount / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
