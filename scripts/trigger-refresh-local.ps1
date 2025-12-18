@@ -1,30 +1,25 @@
-# PowerShell script to manually trigger the player cache refresh API endpoint
-# This calls the same endpoint that runs automatically at 12am
+# PowerShell script to manually trigger the player cache refresh API endpoint locally
+# This calls localhost:3000
 #
 # Usage:
-#   .\scripts\trigger-refresh-manually.ps1
+#   .\scripts\trigger-refresh-local.ps1
+#
+# Make sure your local dev server is running first:
+#   npm run dev
 
-# For local testing, use these:
-$protocol = "http"
-$apiHost = "localhost:3000"
-
-# For production, use these instead:
-# $protocol = "https"
-# $apiHost = "stattrackr.vercel.app"
-
-$url = "${protocol}://${apiHost}/api/cron/refresh-all-player-caches"
+$url = "http://localhost:3000/api/cron/refresh-all-player-caches"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Manual Player Cache Refresh Trigger" -ForegroundColor Yellow
+Write-Host "Manual Player Cache Refresh (Local)" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Calling: $url" -ForegroundColor Gray
 Write-Host ""
+Write-Host "⚠️  Make sure your dev server is running (npm run dev)" -ForegroundColor Yellow
+Write-Host ""
 
 try {
-    $response = Invoke-RestMethod -Uri $url -Method Get -Headers @{
-        "Authorization" = "Bearer $env:CRON_SECRET"
-    } -ErrorAction Stop
+    $response = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop
     
     Write-Host "✅ Success!" -ForegroundColor Green
     Write-Host ""
@@ -41,6 +36,11 @@ try {
         $responseBody = $reader.ReadToEnd()
         Write-Host "Response: $responseBody" -ForegroundColor Red
     }
+    Write-Host ""
+    Write-Host "💡 Make sure:" -ForegroundColor Yellow
+    Write-Host "   1. Your dev server is running (npm run dev)" -ForegroundColor Gray
+    Write-Host "   2. Your .env.local has BALLDONTLIE_API_KEY set (if needed)" -ForegroundColor Gray
+    Write-Host "   3. Your .env.local has Supabase credentials set" -ForegroundColor Gray
     exit 1
 }
 
