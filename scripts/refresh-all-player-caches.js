@@ -424,7 +424,43 @@ async function cachePlayerPlayTypeAnalysis(playerId, season, seasonStr) {
       });
 
       const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-      const data = await fetchNBAStats(url, 20000, 2);
+      
+      // Skip if no valid NBA Player ID
+      if (!nbaPlayerId || nbaPlayerId === 'undefined' || nbaPlayerId === 'null') {
+        console.log(`  ⚠️  Skipping play type ${key} - invalid NBA Player ID: ${nbaPlayerId}`);
+        playerPlayTypesData.push({
+          playType: key,
+          displayName,
+          points: 0,
+          possessions: 0,
+          ppp: 0,
+          ftPossPct: 0,
+        });
+        continue;
+      }
+      
+      let data;
+      try {
+        data = await fetchNBAStats(url, 20000, 2);
+      } catch (error) {
+        // If 400 error (bad request), player probably doesn't have data for this play type
+        // Just add zeros and continue
+        if (error.message && error.message.includes('400')) {
+          console.log(`  ⚠️  Play type ${key} returned 400 (no data), using zeros`);
+          playerPlayTypesData.push({
+            playType: key,
+            displayName,
+            points: 0,
+            possessions: 0,
+            ppp: 0,
+            ftPossPct: 0,
+          });
+          await new Promise(resolve => setTimeout(resolve, 300));
+          continue;
+        }
+        throw error; // Re-throw if not a 400 error
+      }
+      
       const resultSet = data?.resultSets?.[0];
 
       if (resultSet) {
