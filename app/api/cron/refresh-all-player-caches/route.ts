@@ -178,12 +178,13 @@ export async function GET(request: NextRequest) {
     // STEP 2: Fetch team defense rankings (30 teams, but still needed for shot charts)
     console.log(`[Refresh All Player Caches] Step 2/3: Fetching team defense rankings...`);
     try {
-      const teamDefenseUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
+      const teamDefenseUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}&bypassCache=true`;
       console.log(`[Refresh All Player Caches] Calling team defense rankings: ${teamDefenseUrl}`);
       
       const teamDefenseResponse = await fetch(teamDefenseUrl, {
         headers: {
           'Authorization': process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : '',
+          'X-Allow-NBA-API': 'true', // Signal that caller can reach NBA API
         },
       });
       

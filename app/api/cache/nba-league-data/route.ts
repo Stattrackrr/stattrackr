@@ -148,7 +148,8 @@ export async function GET(request: NextRequest) {
       : PLAY_TYPES;
     let playTypesToFetch = defensivePlayTypes;
     
-    if (retry) {
+    // If force=true, skip cache check and fetch fresh data from NBA API
+    if (!forceRefresh && retry) {
       // Retry mode: check cache and only fetch missing play types
       const playTypeCacheKey = `playtype_defensive_rankings_${seasonStr}`;
       // Check Supabase cache first (persistent, shared across instances)
@@ -169,6 +170,8 @@ export async function GET(request: NextRequest) {
       } else {
         console.log(`[NBA League Data Cache] Retry mode: No cache found, fetching ${playTypesToFetch.length} play types (filtered=${defensiveFilter ? defensiveFilter.join(',') : 'all'})`);
       }
+    } else if (forceRefresh) {
+      console.log(`[NBA League Data Cache] Force refresh: Fetching all ${playTypesToFetch.length} play types from NBA API (ignoring cache)`);
     }
     
     console.log(`[NBA League Data Cache] Fetching ${playTypesToFetch.length} play type defensive rankings (filtered=${defensiveFilter ? defensiveFilter.join(',') : 'all'})...`);
