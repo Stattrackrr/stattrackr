@@ -34,7 +34,9 @@ try {
         Write-Host "⚠️  No auth token provided (may fail in production)" -ForegroundColor Yellow
     }
     
-    $response = Invoke-RestMethod -Uri $Url -Method Get -Headers $headers -ErrorAction Stop
+    # Set timeout to prevent hanging (10 minutes max for the refresh)
+    $timeoutSeconds = 600
+    $response = Invoke-RestMethod -Uri $Url -Method Get -Headers $headers -TimeoutSec $timeoutSeconds -ErrorAction Stop
     
     Write-Host "✅ Success!" -ForegroundColor Green
     Write-Host ""
