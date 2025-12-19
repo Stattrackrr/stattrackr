@@ -443,7 +443,8 @@ async function cachePlayerPlayTypeAnalysis(playerId, season, seasonStr) {
       
       let data;
       try {
-        data = await fetchNBAStats(url, 20000, 2);
+        // Increased timeout to 120s - NBA API is very slow
+        data = await fetchNBAStats(url, 120000, 3);
       } catch (error) {
         // If 400 error (bad request), player probably doesn't have data for this play type
         // Just add zeros and continue
