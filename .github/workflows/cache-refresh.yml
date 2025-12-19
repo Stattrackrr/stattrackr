@@ -67,20 +67,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          VERCEL_URL: ${{ secrets.VERCEL_URL }}
-        shell: pwsh
         run: |
-          Write-Host "🔄 Refreshing all player shot charts and play type analysis..."
-          $apiUrl = if ($env:VERCEL_URL) { "https://$env:VERCEL_URL/api/cron/refresh-all-player-caches" } else { "https://stattrackr.vercel.app/api/cron/refresh-all-player-caches" }
-          Write-Host "API URL: $apiUrl"
-          Write-Host "Auth token present: $($null -ne $env:CRON_SECRET)"
-          Write-Host "Auth token length: $(if ($env:CRON_SECRET) { $env:CRON_SECRET.Length } else { 0 })"
-          & pwsh scripts/trigger-refresh-local.ps1 -Url $apiUrl -AuthToken $env:CRON_SECRET
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Player cache refresh failed but continuing"
-            exit 0
-          }
+          echo "🔄 Refreshing all player shot charts and play type analysis..."
+          echo "This script runs directly in GitHub Actions (not via Vercel API) to avoid timeout limits"
+          node scripts/refresh-all-player-caches.js || echo "Player cache refresh failed but continuing"
 
       - name: Manual Refresh (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch' && steps.check_secrets.outputs.configured == 'true'
