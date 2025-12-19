@@ -105,7 +105,7 @@ try {
     Write-Log "Calling refresh endpoint: $apiUrl"
     Write-Log ""
     
-    $response = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 1800 -ErrorAction Stop # 30 min timeout
+    $response = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 2700 -ErrorAction Stop # 45 min timeout
     
     Write-Log "✅ Refresh completed successfully!"
     Write-Log ""

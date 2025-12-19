@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       const mockData = PLAY_TYPES.map((pt, idx) => ({
         playType: pt.key,
         displayName: pt.displayName,
-        ppp: 0.95 + (Math.random() * 0.3),
+        points: 10 + (Math.random() * 5),
         fgPct: 42 + (Math.random() * 8),
         rank: Math.floor(Math.random() * 30) + 1,
         frequency: 8 + (Math.random() * 12)
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
     // Find column indices
     const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
     const playTypeIdx = headers.indexOf('PLAY_TYPE');
-    const pppIdx = headers.indexOf('PPP'); // Points Per Possession
+    const ptsIdx = headers.indexOf('PTS'); // Points
     const fgPctIdx = headers.indexOf('FG_PCT');
     const freqIdx = headers.indexOf('POSS_PCT'); // Possession frequency
 
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     rows.forEach((row: any[]) => {
       const teamAbbr = row[teamAbbrIdx];
       const playType = row[playTypeIdx];
-      const ppp = row[pppIdx] || 0;
+      const points = row[ptsIdx] || 0;
       const fgPct = row[fgPctIdx] || 0;
       const freq = row[freqIdx] || 0;
 
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
 
       teamData[teamAbbr].push({
         playType,
-        ppp,
+        points,
         fgPct: fgPct * 100, // Convert to percentage
         frequency: freq * 100
       });
@@ -176,12 +176,12 @@ export async function GET(request: NextRequest) {
           const pt = playTypes.find(p => p.playType === key);
           return {
             team: teamAbbr,
-            ppp: pt?.ppp || 999,
+            points: pt?.points || 999,
             fgPct: pt?.fgPct || 0,
             frequency: pt?.frequency || 0
           };
         })
-        .sort((a, b) => a.ppp - b.ppp); // Sort by PPP (lower is better defense)
+        .sort((a, b) => a.points - b.points); // Sort by points (lower is better defense)
 
       playTypeRankings[key] = allTeamsForPlayType.map((item, idx) => ({
         ...item,
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
       return {
         playType: key,
         displayName,
-        ppp: ranking?.ppp || 1.0,
+        points: ranking?.points || 0.0,
         fgPct: ranking?.fgPct || 45.0,
         rank: ranking?.rank || 15,
         frequency: ranking?.frequency || 10.0

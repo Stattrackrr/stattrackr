@@ -137,6 +137,8 @@ export async function GET(request: NextRequest) {
       playTypeRankings: {},
       zoneRankings: {},
       playerPlayTypes: {},
+      playerFreeThrows: {},
+      opponentFreeThrows: {},
       errors: [],
     };
 
@@ -201,21 +203,21 @@ export async function GET(request: NextRequest) {
           const rows = resultSet.rowSet || [];
           
           const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-          const pppIdx = headers.indexOf('PPP');
+          const ptsIdx = headers.indexOf('PTS');
           
-          if (teamAbbrIdx >= 0 && pppIdx >= 0) {
-            const rankings: Array<{ team: string; ppp: number }> = [];
+          if (teamAbbrIdx >= 0 && ptsIdx >= 0) {
+            const rankings: Array<{ team: string; points: number }> = [];
             
             rows.forEach((row: any[]) => {
               const team = row[teamAbbrIdx]?.toUpperCase() || '';
-              const ppp = parseFloat(row[pppIdx]) || 0;
+              const points = parseFloat(row[ptsIdx]) || 0;
               if (team) {
-                rankings.push({ team, ppp });
+                rankings.push({ team, points });
               }
             });
             
-            // Sort by PPP (ascending - lower PPP = better defense = rank 1)
-            rankings.sort((a, b) => a.ppp - b.ppp);
+            // Sort by points (ascending - lower points = better defense = rank 1)
+            rankings.sort((a, b) => a.points - b.points);
             playTypeRankings[key] = rankings;
             console.log(`[NBA League Data Cache] ✅ ${key}: ${rankings.length} teams`);
           }
@@ -361,6 +363,161 @@ export async function GET(request: NextRequest) {
     results.playerPlayTypes = { playTypesCached: Object.keys(playerPlayTypesData).length, totalPlayers: Object.values(playerPlayTypesData).reduce((sum: number, pt: any) => sum + (pt.rows?.length || 0), 0) };
     console.log(`[NBA League Data Cache] ✅ Cached player play type data for ${Object.keys(playerPlayTypesData).length} play types (Supabase + in-memory)`);
 
+    // 4. Fetch player free throw stats (FTM per game) in bulk
+    console.log(`[NBA League Data Cache] Fetching player free throw stats (bulk)...`);
+    let playerFreeThrows: Record<string, number> = {};
+    
+    try {
+      const traditionalStatsParams = new URLSearchParams({
+        LeagueID: '00',
+        Season: seasonStr,
+        SeasonType: 'Regular Season',
+        PerMode: 'PerGame',
+        MeasureType: 'Base',
+        PlayerID: '0', // 0 = all players
+        TeamID: '0',
+        PaceAdjust: 'N',
+        PlusMinus: 'N',
+        Rank: 'N',
+        Outcome: '',
+        Location: '',
+        Month: '0',
+        SeasonSegment: '',
+        DateFrom: '',
+        DateTo: '',
+        OpponentTeamID: '0',
+        VsConference: '',
+        VsDivision: '',
+        GameSegment: '',
+        Period: '0',
+        LastNGames: '0',
+        GameScope: '',
+        PlayerExperience: '',
+        PlayerPosition: '',
+        StarterBench: '',
+      });
+      
+      const traditionalStatsUrl = `${NBA_STATS_BASE}/leaguedashplayerstats?${traditionalStatsParams.toString()}`;
+      console.log(`[NBA League Data Cache] Fetching player traditional stats for FTM...`);
+      
+      const traditionalStatsData = await fetchNBAStats(traditionalStatsUrl, 120000, 3, true);
+      
+      if (traditionalStatsData?.resultSets?.[0]) {
+        const resultSet = traditionalStatsData.resultSets[0];
+        const headers = resultSet.headers || [];
+        const rows = resultSet.rowSet || [];
+        
+        const playerIdIdx = headers.indexOf('PLAYER_ID');
+        const ftmIdx = headers.indexOf('FTM');
+        
+        if (playerIdIdx >= 0 && ftmIdx >= 0) {
+          rows.forEach((row: any[]) => {
+            const playerId = String(row[playerIdIdx] || '');
+            const ftm = parseFloat(row[ftmIdx]) || 0;
+            if (playerId) {
+              playerFreeThrows[playerId] = ftm;
+            }
+          });
+          
+          console.log(`[NBA League Data Cache] ✅ Player free throws: ${Object.keys(playerFreeThrows).length} players`);
+        }
+      }
+    } catch (err: any) {
+      console.error(`[NBA League Data Cache] ❌ Error fetching player free throws:`, err.message);
+      results.errors.push({ type: 'playerFreeThrows', error: err.message });
+    }
+    
+    // Cache player free throw data
+    const playerFreeThrowsCacheKey = `player_freethrows_bulk_${seasonStr}`;
+    await setNBACache(playerFreeThrowsCacheKey, 'player_freethrows', playerFreeThrows, CACHE_TTL.TRACKING_STATS);
+    cache.set(playerFreeThrowsCacheKey, playerFreeThrows, CACHE_TTL.TRACKING_STATS);
+    results.playerFreeThrows = { playersCached: Object.keys(playerFreeThrows).length };
+    console.log(`[NBA League Data Cache] ✅ Cached player free throw data for ${Object.keys(playerFreeThrows).length} players (Supabase + in-memory)`);
+
+    // 5. Fetch opponent free throw rankings (OPP FTM) in bulk
+    console.log(`[NBA League Data Cache] Fetching opponent free throw rankings (OPP FTM)...`);
+    let opponentFreeThrowRankings: Array<{ team: string; oppFtm: number }> = [];
+    
+    try {
+      const opponentStatsParams = new URLSearchParams({
+        LeagueID: '00',
+        Season: seasonStr,
+        SeasonType: 'Regular Season',
+        PerMode: 'PerGame',
+        MeasureType: 'Opponent',
+        TeamID: '0',
+        PaceAdjust: 'N',
+        PlusMinus: 'N',
+        Rank: 'N',
+        Outcome: '',
+        Location: '',
+        Month: '0',
+        SeasonSegment: '',
+        DateFrom: '',
+        DateTo: '',
+        OpponentTeamID: '0',
+        VsConference: '',
+        VsDivision: '',
+        GameSegment: '',
+        Period: '0',
+        LastNGames: '0',
+        GameScope: '',
+      });
+      
+      const opponentStatsUrl = `${NBA_STATS_BASE}/leaguedashteamstats?${opponentStatsParams.toString()}`;
+      console.log(`[NBA League Data Cache] Fetching team opponent stats for OPP FTM...`);
+      
+      const opponentStatsData = await fetchNBAStats(opponentStatsUrl, 120000, 3, true);
+      
+      if (opponentStatsData?.resultSets?.[0]) {
+        const resultSet = opponentStatsData.resultSets[0];
+        const headers = resultSet.headers || [];
+        const rows = resultSet.rowSet || [];
+        
+        const teamIdIdx = headers.indexOf('TEAM_ID');
+        const oppFtmIdx = headers.indexOf('OPP_FTM');
+        
+        if (teamIdIdx >= 0 && oppFtmIdx >= 0) {
+          // NBA Stats API team ID to abbreviation mapping (different from BDL IDs)
+          const TEAM_ID_TO_ABBR_NBA: Record<number, string> = {
+            1610612737: 'ATL', 1610612738: 'BOS', 1610612751: 'BKN', 1610612766: 'CHA',
+            1610612741: 'CHI', 1610612739: 'CLE', 1610612742: 'DAL', 1610612743: 'DEN',
+            1610612765: 'DET', 1610612744: 'GSW', 1610612745: 'HOU', 1610612754: 'IND',
+            1610612746: 'LAC', 1610612747: 'LAL', 1610612763: 'MEM', 1610612748: 'MIA',
+            1610612749: 'MIL', 1610612750: 'MIN', 1610612740: 'NOP', 1610612752: 'NYK',
+            1610612760: 'OKC', 1610612753: 'ORL', 1610612755: 'PHI', 1610612756: 'PHX',
+            1610612757: 'POR', 1610612758: 'SAC', 1610612759: 'SAS', 1610612761: 'TOR',
+            1610612762: 'UTA', 1610612764: 'WAS'
+          };
+          
+          rows.forEach((row: any[]) => {
+            const teamId = parseInt(row[teamIdIdx]) || 0;
+            const oppFtm = parseFloat(row[oppFtmIdx]) || 0;
+            const teamAbbr = TEAM_ID_TO_ABBR_NBA[teamId];
+            
+            if (teamAbbr) {
+              opponentFreeThrowRankings.push({ team: teamAbbr.toUpperCase(), oppFtm });
+            }
+          });
+          
+          // Sort by OPP_FTM (ascending - lower OPP_FTM = better defense = rank 1)
+          opponentFreeThrowRankings.sort((a, b) => a.oppFtm - b.oppFtm);
+          
+          console.log(`[NBA League Data Cache] ✅ Opponent free throw rankings: ${opponentFreeThrowRankings.length} teams`);
+        }
+      }
+    } catch (err: any) {
+      console.error(`[NBA League Data Cache] ❌ Error fetching opponent free throw rankings:`, err.message);
+      results.errors.push({ type: 'opponentFreeThrows', error: err.message });
+    }
+    
+    // Cache opponent free throw rankings
+    const opponentFreeThrowsCacheKey = `opponent_freethrows_rankings_${seasonStr}`;
+    await setNBACache(opponentFreeThrowsCacheKey, 'opponent_freethrows_rankings', opponentFreeThrowRankings, CACHE_TTL.TRACKING_STATS);
+    cache.set(opponentFreeThrowsCacheKey, opponentFreeThrowRankings, CACHE_TTL.TRACKING_STATS);
+    results.opponentFreeThrows = { teamsCached: opponentFreeThrowRankings.length };
+    console.log(`[NBA League Data Cache] ✅ Cached opponent free throw rankings for ${opponentFreeThrowRankings.length} teams (Supabase + in-memory)`);
+
     console.log(`[NBA League Data Cache] ✅ Background job completed for season ${seasonStr}`);
     
     return NextResponse.json({
@@ -371,6 +528,8 @@ export async function GET(request: NextRequest) {
         zonesCached: Object.keys(zoneRankings).length,
         playerPlayTypesCached: Object.keys(results.playerPlayTypes || {}).length > 0 ? results.playerPlayTypes.playTypesCached : 0,
         totalPlayersCached: Object.keys(results.playerPlayTypes || {}).length > 0 ? results.playerPlayTypes.totalPlayers : 0,
+        playerFreeThrowsCached: Object.keys(results.playerFreeThrows || {}).length > 0 ? results.playerFreeThrows.playersCached : 0,
+        opponentFreeThrowsCached: Object.keys(results.opponentFreeThrows || {}).length > 0 ? results.opponentFreeThrows.teamsCached : 0,
         errors: results.errors.length,
       }
     });

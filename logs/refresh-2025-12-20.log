@@ -1,0 +1,40 @@
+[2025-12-20 03:31:36] [INFO] ========================================
+[2025-12-20 03:31:36] [INFO] Daily Player Cache Refresh
+[2025-12-20 03:31:36] [INFO] ========================================
+[2025-12-20 03:31:36] [INFO] 
+[2025-12-20 03:33:36] [INFO] ========================================
+[2025-12-20 03:33:36] [INFO] Daily Player Cache Refresh
+[2025-12-20 03:33:36] [INFO] ========================================
+[2025-12-20 03:33:36] [INFO] 
+[2025-12-20 03:33:36] [INFO] Dev server is already running
+[2025-12-20 03:33:36] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2025-12-20 03:33:36] [INFO] 
+[2025-12-20 03:57:16] [INFO] ✅ Refresh completed successfully!
+[2025-12-20 03:57:16] [INFO] 
+[2025-12-20 03:57:16] [INFO] Results:
+[2025-12-20 03:57:16] [INFO]   Total Players: 525
+[2025-12-20 03:57:16] [INFO]   Shot Charts: 525 success, 0 failed
+[2025-12-20 03:57:16] [INFO]   Play Types: 525 success, 0 failed
+[2025-12-20 03:57:16] [INFO]   Duration: 1419.45s
+[2025-12-20 03:57:16] [INFO] 
+[2025-12-20 03:57:16] [INFO] ========================================
+[2025-12-20 03:57:16] [INFO] Refresh completed successfully
+[2025-12-20 03:57:16] [INFO] ========================================
+[2025-12-20 04:41:22] [INFO] ========================================
+[2025-12-20 04:41:22] [INFO] Daily Player Cache Refresh
+[2025-12-20 04:41:22] [INFO] ========================================
+[2025-12-20 04:41:22] [INFO] 
+[2025-12-20 04:41:22] [INFO] Dev server is already running
+[2025-12-20 04:41:22] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2025-12-20 04:41:22] [INFO] 
+[2025-12-20 05:03:45] [INFO] ✅ Refresh completed successfully!
+[2025-12-20 05:03:45] [INFO] 
+[2025-12-20 05:03:45] [INFO] Results:
+[2025-12-20 05:03:45] [INFO]   Total Players: 525
+[2025-12-20 05:03:45] [INFO]   Shot Charts: 525 success, 0 failed
+[2025-12-20 05:03:45] [INFO]   Play Types: 525 success, 0 failed
+[2025-12-20 05:03:45] [INFO]   Duration: 1343.09s
+[2025-12-20 05:03:45] [INFO] 
+[2025-12-20 05:03:45] [INFO] ========================================
+[2025-12-20 05:03:45] [INFO] Refresh completed successfully
+[2025-12-20 05:03:45] [INFO] ========================================

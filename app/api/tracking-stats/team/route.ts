@@ -229,7 +229,9 @@ async function refreshTrackingStatsInBackground(
 
         if (category === 'passing') {
           player.potentialAst = stats.POTENTIAL_AST;
-          player.ast = stats.AST_ADJ || stats.AST;
+          // Use AST (not AST_ADJ) to match other dashboards - AST_ADJ is adjusted assists which may differ
+          // Check both fields but prefer AST if available
+          player.ast = stats.AST !== undefined && stats.AST !== null ? stats.AST : (stats.AST_ADJ || 0);
           player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
           player.passesMade = stats.PASSES_MADE;
           player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
@@ -534,7 +536,9 @@ export async function GET(request: NextRequest) {
 
         if (category === 'passing') {
           player.potentialAst = stats.POTENTIAL_AST;
-          player.ast = stats.AST_ADJ || stats.AST;
+          // Use AST (not AST_ADJ) to match other dashboards - AST_ADJ is adjusted assists which may differ
+          // Check both fields but prefer AST if available
+          player.ast = stats.AST !== undefined && stats.AST !== null ? stats.AST : (stats.AST_ADJ || 0);
           player.astPtsCreated = stats.AST_POINTS_CREATED || stats.AST_PTS_CREATED;
           player.passesMade = stats.PASSES_MADE;
           player.astToPct = stats.AST_TO_PASS_PCT_ADJ || stats.AST_TO_PASS_PCT;
@@ -554,6 +558,16 @@ export async function GET(request: NextRequest) {
       });
 
     console.log(`[Team Tracking Stats] Found ${teamPlayers.length} players for ${team}`);
+    
+    // Debug: Log sample player data to verify field names
+    if (teamPlayers.length > 0 && category === 'passing') {
+      const samplePlayer = teamPlayers[0];
+      console.log(`[Team Tracking Stats] Sample passing stats for ${samplePlayer.playerName}:`, {
+        potentialAst: samplePlayer.potentialAst,
+        ast: samplePlayer.ast,
+        playerId: samplePlayer.playerId
+      });
+    }
 
     const responsePayload = { 
       team,

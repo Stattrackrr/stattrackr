@@ -121,9 +121,14 @@ export async function GET(request: NextRequest) {
     let opponentTeam = searchParams.get('opponentTeam');
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
     
+    console.log(`[Play Type Analysis] Request received: playerId=${playerId}, opponentTeam=${opponentTeam}, season=${season}`);
+    
     // Normalize opponent team abbreviation (ensure uppercase)
     if (opponentTeam && opponentTeam !== 'N/A') {
       opponentTeam = opponentTeam.toUpperCase();
+      console.log(`[Play Type Analysis] Normalized opponentTeam to: ${opponentTeam}`);
+    } else {
+      console.log(`[Play Type Analysis] No opponent team specified (opponentTeam=${opponentTeam})`);
     }
 
     if (!playerId) {
@@ -174,12 +179,12 @@ export async function GET(request: NextRequest) {
             const defensiveRankingsCacheKey = `playtype_defensive_rankings_${seasonStr}`;
             
             // Check in-memory cache first (fastest)
-            let rankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+            let rankings = cache.get<Record<string, Array<{ team: string; points: number }>>>(defensiveRankingsCacheKey);
             
             // If not in-memory, check Supabase (with shorter timeout for fast response)
             if (!rankings) {
               console.log(`[Play Type Analysis] Rankings not in-memory, checking Supabase...`);
-              rankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
+              rankings = await getNBACache<Record<string, Array<{ team: string; points: number }>>>(defensiveRankingsCacheKey, {
                 restTimeoutMs: 15000, // 15s timeout for defensive rankings
                 jsTimeoutMs: 15000,
               });
@@ -194,7 +199,7 @@ export async function GET(request: NextRequest) {
             if (rankings) {
               // Add opponent ranks to cached response
               const normalizedOpponent = opponentTeam.toUpperCase();
-              const updatedPlayTypes = cachedData.playTypes.map((pt: any) => {
+              let updatedPlayTypes = cachedData.playTypes.map((pt: any) => {
                 const playTypeKey = pt.playType === 'Free Throws' ? 'FreeThrows' : pt.playType;
                 if (rankings![playTypeKey]) {
                   const ranking = rankings![playTypeKey].findIndex((r: any) => r.team.toUpperCase() === normalizedOpponent);
@@ -205,6 +210,43 @@ export async function GET(request: NextRequest) {
                 }
                 return pt;
               });
+              
+              // Check if Free Throws needs opponent rank (it's stored separately)
+              const freeThrowsEntry = updatedPlayTypes.find((pt: any) => pt.playType === 'FreeThrows' || pt.playType === 'Free Throws');
+              if (freeThrowsEntry && (!freeThrowsEntry.oppRank || freeThrowsEntry.oppRank === null)) {
+                try {
+                  const opponentFreeThrowsCacheKey = `opponent_freethrows_rankings_${seasonStr}`;
+                  console.log(`[Play Type Analysis] Fetching opponent free throw rankings for ${opponentTeam}...`);
+                  const opponentFreeThrowRankings = await getNBACache<Array<{ team: string; oppFtm: number; rank?: number }>>(opponentFreeThrowsCacheKey, {
+                    restTimeoutMs: 10000,
+                    jsTimeoutMs: 10000,
+                  });
+                  
+                  if (opponentFreeThrowRankings && Array.isArray(opponentFreeThrowRankings)) {
+                    const ranking = opponentFreeThrowRankings.findIndex((r: any) => {
+                      const teamAbbr = typeof r.team === 'string' ? r.team.toUpperCase() : r.team;
+                      return teamAbbr === normalizedOpponent;
+                    });
+                    
+                    if (ranking >= 0) {
+                      const freeThrowOppRank = ranking + 1; // rank 1 = best defense (lowest OPP_FTM)
+                      console.log(`[Play Type Analysis] ✅ Free Throws: ${opponentTeam} opponent rank = ${freeThrowOppRank} (out of ${opponentFreeThrowRankings.length} teams)`);
+                      
+                      // Update the Free Throws entry with the opponent rank
+                      updatedPlayTypes = updatedPlayTypes.map((pt: any) => {
+                        if (pt.playType === 'FreeThrows' || pt.playType === 'Free Throws') {
+                          return { ...pt, oppRank: freeThrowOppRank };
+                        }
+                        return pt;
+                      });
+                    } else {
+                      console.log(`[Play Type Analysis] ⚠️ ${opponentTeam} not found in opponent free throw rankings`);
+                    }
+                  }
+                } catch (error) {
+                  console.error(`[Play Type Analysis] Error fetching opponent free throw rankings:`, error);
+                }
+              }
               
               console.log(`[Play Type Analysis] ✅ Added defensive rankings for ${opponentTeam}`);
               
@@ -755,7 +797,7 @@ export async function GET(request: NextRequest) {
 
     // Step 2: Fetch team defensive stats for rankings (optional - don't fail if this times out)
     // Fetch each play type's defensive data individually (similar to player data)
-    const playTypeRankings: Record<string, Array<{ team: string; ppp: number }>> = {};
+    const playTypeRankings: Record<string, Array<{ team: string; points: number }>> = {};
     
     if (opponentTeam && opponentTeam !== 'N/A') {
       console.log(`[Play Type Analysis] 🔍 Checking for defensive rankings (opponent: ${opponentTeam}, season: ${seasonStr})...`);
@@ -765,7 +807,7 @@ export async function GET(request: NextRequest) {
       console.log(`[Play Type Analysis] Cache key: ${defensiveRankingsCacheKey}`);
       
       // Try Supabase cache first (persistent, shared across instances)
-      let cachedRankings = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey, {
+      let cachedRankings = await getNBACache<Record<string, Array<{ team: string; points: number }>>>(defensiveRankingsCacheKey, {
         restTimeoutMs: 20000,
         jsTimeoutMs: 20000,
       });
@@ -773,7 +815,7 @@ export async function GET(request: NextRequest) {
       
       // Fallback to in-memory cache
       if (!cachedRankings) {
-        cachedRankings = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(defensiveRankingsCacheKey);
+        cachedRankings = cache.get<Record<string, Array<{ team: string; points: number }>>>(defensiveRankingsCacheKey);
         console.log(`[Play Type Analysis] In-memory cache result: ${cachedRankings ? `found (${Object.keys(cachedRankings || {}).length} play types)` : 'not found'}`);
       }
       
@@ -878,83 +920,134 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Fetch free throw data from BDL API (or use cached value)
+    // Fetch free throw data from bulk cache (or use cached value)
     let freeThrowPoints = 0;
+    let freeThrowOppRank: number | null = null;
     
-    // Check if FreeThrows is cached
+    // Check if FreeThrows is cached in play type cache
     const cachedFreeThrows = cachedPlayTypesMap.get('FreeThrows');
     if (cachedFreeThrows && cachedFreeThrows.points > 0) {
       freeThrowPoints = cachedFreeThrows.points;
-      console.log(`[Play Type Analysis] Using cached Free Throws: ${freeThrowPoints} points`);
-    } else if (nbaPlayerId) {
+      freeThrowOppRank = cachedFreeThrows.oppRank || null;
+      console.log(`[Play Type Analysis] Using cached Free Throws: ${freeThrowPoints} points, oppRank: ${freeThrowOppRank}`);
+    }
+    
+    // Always fetch opponent free throw rankings if opponent team is specified (even if free throws are cached)
+    if (opponentTeam && opponentTeam !== 'N/A' && freeThrowOppRank === null) {
       try {
-        const bdlPlayerId = convertNbaToBdlId(nbaPlayerId);
-        if (bdlPlayerId) {
-          console.log(`[Play Type Analysis] Fetching free throw data from BDL API for player ${bdlPlayerId} (NBA ID: ${nbaPlayerId})...`);
-          
-          // Convert season string (e.g., "2025-26") to BDL season format (e.g., 2025)
-          const bdlSeason = parseInt(seasonStr.split('-')[0]);
-          
-          // Build BDL API URL
-          const bdlUrl = new URL('https://api.balldontlie.io/v1/stats');
-          bdlUrl.searchParams.set('player_ids[]', bdlPlayerId);
-          bdlUrl.searchParams.set('seasons[]', String(bdlSeason));
-          bdlUrl.searchParams.set('per_page', '100'); // Get up to 100 games per page
-          
-          const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
-          const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';
-          
-          let totalFtm = 0;
-          let gameCount = 0;
-          let currentPage = 1;
-          let hasMorePages = true;
-          
-          // Paginate through all games
-          while (hasMorePages && currentPage <= 10) { // Limit to 10 pages (1000 games max, should be enough)
-            bdlUrl.searchParams.set('page', String(currentPage));
-            
-            const response = await fetch(bdlUrl.toString(), {
-              headers: {
-                'Authorization': authHeader,
-              },
-            });
-            
-            if (!response.ok) {
-              throw new Error(`BDL API error: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            const stats = data.data || [];
-            
-            if (stats.length === 0) {
-              hasMorePages = false;
+        const opponentFreeThrowsCacheKey = `opponent_freethrows_rankings_${seasonStr}`;
+        console.log(`[Play Type Analysis] Fetching opponent free throw rankings for ${opponentTeam}...`);
+        const opponentFreeThrowRankings = await getNBACache<Array<{ team: string; oppFtm: number }>>(opponentFreeThrowsCacheKey);
+        
+        // Check if data is wrapped in metadata (Supabase cache format)
+        let rankings: Array<{ team: string; oppFtm: number }> | null = null;
+        if (opponentFreeThrowRankings) {
+          if (Array.isArray(opponentFreeThrowRankings)) {
+            rankings = opponentFreeThrowRankings;
+          } else if (opponentFreeThrowRankings && typeof opponentFreeThrowRankings === 'object' && '__cache_metadata' in opponentFreeThrowRankings) {
+            // Data is wrapped in metadata, extract it
+            const { __cache_metadata, ...data } = opponentFreeThrowRankings as any;
+            if (Array.isArray(data) && data.length > 0) {
+              rankings = data as Array<{ team: string; oppFtm: number }>;
             } else {
-              stats.forEach((stat: any) => {
-                const ftm = stat.ftm || 0;
-                totalFtm += ftm;
-                gameCount++;
-              });
-              
-              // Check if there are more pages
-              const meta = data.meta || {};
-              const totalPages = meta.total_pages || 1;
-              hasMorePages = currentPage < totalPages;
-              currentPage++;
+              // Try to find the actual data in the object
+              const dataKeys = Object.keys(data).filter(k => k !== '__cache_metadata');
+              if (dataKeys.length > 0 && Array.isArray((data as any)[dataKeys[0]])) {
+                rankings = (data as any)[dataKeys[0]];
+              }
             }
           }
+        }
+        
+        if (rankings && Array.isArray(rankings) && rankings.length > 0) {
+          console.log(`[Play Type Analysis] Found ${rankings.length} teams in opponent rankings cache`);
+          const normalizedOpponent = opponentTeam.toUpperCase();
+          const ranking = rankings.findIndex(r => r.team && r.team.toUpperCase() === normalizedOpponent);
+          freeThrowOppRank = ranking >= 0 ? ranking + 1 : null; // rank 1 = best defense (lowest OPP_FTM)
           
-          // Calculate per-game average
-          if (gameCount > 0) {
-            freeThrowPoints = totalFtm / gameCount;
-            console.log(`[Play Type Analysis] ✅ Free throws from BDL: ${totalFtm} total FTM in ${gameCount} games = ${freeThrowPoints.toFixed(2)} per game`);
+          if (freeThrowOppRank) {
+            console.log(`[Play Type Analysis] ✅ Free Throws: ${opponentTeam} opponent rank = ${freeThrowOppRank} (out of ${rankings.length} teams)`);
           } else {
-            console.log(`[Play Type Analysis] ⚠️ No games found in BDL API for player ${bdlPlayerId}`);
+            console.log(`[Play Type Analysis] ⚠️ Free Throws: ${opponentTeam} not found in opponent rankings`);
+            console.log(`[Play Type Analysis] Available teams: ${rankings.slice(0, 5).map(r => r.team).join(', ')}...`);
           }
         } else {
-          console.log(`[Play Type Analysis] ⚠️ Could not convert NBA ID ${nbaPlayerId} to BDL ID`);
+          console.log(`[Play Type Analysis] ⚠️ Opponent free throw rankings not available in bulk cache (cacheKey: ${opponentFreeThrowsCacheKey})`);
+          console.log(`[Play Type Analysis] Cache data type: ${typeof opponentFreeThrowRankings}, isArray: ${Array.isArray(opponentFreeThrowRankings)}`);
         }
       } catch (err: any) {
-        console.warn(`[Play Type Analysis] Could not fetch free throw data from BDL API:`, err.message);
+        console.warn(`[Play Type Analysis] Could not fetch opponent free throw rankings:`, err.message);
+      }
+    }
+    
+    // Fetch player free throw data if not cached
+    if (freeThrowPoints === 0 && nbaPlayerId) {
+      try {
+        // First, try to get from bulk cache
+        const playerFreeThrowsCacheKey = `player_freethrows_bulk_${seasonStr}`;
+        const bulkPlayerFreeThrows = await getNBACache<Record<string, number>>(playerFreeThrowsCacheKey);
+        
+        if (bulkPlayerFreeThrows && bulkPlayerFreeThrows[nbaPlayerId] !== undefined) {
+          freeThrowPoints = bulkPlayerFreeThrows[nbaPlayerId];
+          console.log(`[Play Type Analysis] ✅ Free throws from bulk cache: ${freeThrowPoints.toFixed(2)} FTM per game`);
+        } else {
+          // Fallback to individual API call if bulk cache not available
+          console.log(`[Play Type Analysis] Bulk cache not available, fetching free throw data from NBA API traditional stats for player ${nbaPlayerId}...`);
+          
+          const traditionalStatsParams = new URLSearchParams({
+            LeagueID: '00',
+            Season: seasonStr,
+            SeasonType: 'Regular Season',
+            PerMode: 'PerGame',
+            MeasureType: 'Base',
+            PlayerID: String(nbaPlayerId),
+            TeamID: '0',
+            PaceAdjust: 'N',
+            PlusMinus: 'N',
+            Rank: 'N',
+            Outcome: '',
+            Location: '',
+            Month: '0',
+            SeasonSegment: '',
+            DateFrom: '',
+            DateTo: '',
+            OpponentTeamID: '0',
+            VsConference: '',
+            VsDivision: '',
+            GameSegment: '',
+            Period: '0',
+            LastNGames: '0',
+            GameScope: '',
+            PlayerExperience: '',
+            PlayerPosition: '',
+            StarterBench: '',
+          });
+          
+          const traditionalStatsUrl = `${NBA_STATS_BASE}/leaguedashplayerstats?${traditionalStatsParams.toString()}`;
+          console.log(`[Play Type Analysis] Calling NBA API: leaguedashplayerstats for FTM`);
+          
+          const traditionalStatsData = await fetchNBAStats(traditionalStatsUrl, 20000, 2);
+          
+          if (traditionalStatsData?.resultSets?.[0]) {
+            const resultSet = traditionalStatsData.resultSets[0];
+            const headers = resultSet.headers || [];
+            const rows = resultSet.rowSet || [];
+            
+            const ftmIndex = headers.findIndex((h: string) => h === 'FTM');
+            
+            if (ftmIndex >= 0 && rows.length > 0) {
+              const ftmPerGame = parseFloat(rows[0][ftmIndex]) || 0;
+              freeThrowPoints = ftmPerGame;
+              console.log(`[Play Type Analysis] ✅ Free throws from NBA API: ${freeThrowPoints.toFixed(2)} FTM per game`);
+            } else {
+              console.log(`[Play Type Analysis] ⚠️ FTM data not found in NBA API response for player ${nbaPlayerId}`);
+            }
+          } else {
+            console.log(`[Play Type Analysis] ⚠️ No data returned from NBA API for player ${nbaPlayerId}`);
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[Play Type Analysis] Could not fetch free throw data:`, err.message);
       }
     }
     
@@ -1010,20 +1103,20 @@ export async function GET(request: NextRequest) {
       return result;
     });
 
-    // Add Free Throws entry (from BDL API)
+    // Add Free Throws entry (from NBA API bulk cache)
     const freeThrowPointsRounded = parseFloat(freeThrowPoints.toFixed(1));
     const freeThrowPct = recalculatedTotalPoints > 0 ? parseFloat(((freeThrowPoints / recalculatedTotalPoints) * 100).toFixed(0)) : 0;
     
-    // Free throws don't have opponent rank (not a play type in NBA synergy system)
+    // Free throws have opponent rank based on OPP_FTM (rank 1 = best defense = lowest OPP_FTM)
     playTypeAnalysis.push({
       playType: 'FreeThrows',
       displayName: 'Free Throws',
       points: freeThrowPointsRounded,
       pointsPct: freeThrowPct,
-      oppRank: null, // Free throws don't have defensive rankings
+      oppRank: freeThrowOppRank, // Rank based on opponent FTM allowed (1 = best defense)
     });
     
-    console.log(`[Play Type Analysis] Added Free Throws: ${freeThrowPointsRounded} points (${freeThrowPct}%)`);
+    console.log(`[Play Type Analysis] Added Free Throws: ${freeThrowPointsRounded} points (${freeThrowPct}%), oppRank: ${freeThrowOppRank} (opponentTeam: ${opponentTeam || 'none'})`);
 
     // Sort by points (descending)
     playTypeAnalysis.sort((a, b) => b.points - a.points);

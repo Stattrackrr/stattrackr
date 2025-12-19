@@ -653,6 +653,50 @@ export default function NBALandingPage() {
     return mapping?.bdlId || null;
   };
 
+  // Pre-load team data in background (non-blocking)
+  const preloadTeamData = async (teams: string[], season: number) => {
+    if (!teams || teams.length === 0) return;
+    
+    console.log(`[NBA Landing] 🚀 Starting background pre-load for ${teams.length} teams...`);
+    
+    // Pre-load league-wide data first (only need to fetch once)
+    const leagueWidePromises = [
+      // Team defensive rankings (shot chart) - returns all teams
+      fetch(`/api/team-defense-rankings?season=${season}`, { cache: 'default' }).catch(() => {}),
+    ];
+    await Promise.all(leagueWidePromises);
+    
+    // Pre-load team-specific data in batches
+    const batchSize = 3;
+    for (let i = 0; i < teams.length; i += batchSize) {
+      const batch = teams.slice(i, i + batchSize);
+      
+      // Pre-load all team data in parallel for this batch
+      const promises = batch.flatMap(team => [
+        // Team tracking stats (passing)
+        fetch(`/api/tracking-stats/team?team=${team}&season=${season}&category=passing`, { cache: 'default' }).catch(() => {}),
+        // Team tracking stats (rebounding)
+        fetch(`/api/tracking-stats/team?team=${team}&season=${season}&category=rebounding`, { cache: 'default' }).catch(() => {}),
+        // Team tracking stats (last 5 games - passing)
+        fetch(`/api/tracking-stats/team?team=${team}&season=${season}&category=passing&lastNGames=5`, { cache: 'default' }).catch(() => {}),
+        // Team tracking stats (last 5 games - rebounding)
+        fetch(`/api/tracking-stats/team?team=${team}&season=${season}&category=rebounding&lastNGames=5`, { cache: 'default' }).catch(() => {}),
+      ]);
+      
+      await Promise.all(promises);
+      
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < teams.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    console.log(`[NBA Landing] ✅ Finished pre-loading team data for ${teams.length} teams`);
+  };
+
+  // Track if props are loaded (to prevent clearing on refresh)
+  const propsLoadedRef = useRef(false);
+  
   // Fetch player props with good win chances from BDL
   useEffect(() => {
     // Cache keys (defined outside functions so they're accessible to both fetchPlayerProps and checkOddsUpdate)
@@ -690,8 +734,20 @@ export default function NBALandingPage() {
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   console.log(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
                   setPlayerProps(parsed);
+                  propsLoadedRef.current = true; // Mark as loaded
                   setPropsLoading(false);
-                  return; // Use cached data, skip API call
+                  // Still fetch in background to update if needed (non-blocking)
+                  fetch(cacheUrl, { cache: 'default' }).then(async (response) => {
+                    if (response.ok) {
+                      const data = await response.json();
+                      if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                        setPlayerProps(data.data);
+                        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+                        sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                      }
+                    }
+                  }).catch(() => {});
+                  return; // Use cached data immediately, update in background
                 }
               } catch (e) {
                 console.warn('[NBA Landing] ⚠️ Failed to parse cached data, fetching fresh');
@@ -702,7 +758,10 @@ export default function NBALandingPage() {
           }
         }
         
-        setPropsLoading(true);
+        // Only set loading if we don't have props already (don't clear existing props)
+        if (!propsLoadedRef.current) {
+          setPropsLoading(true);
+        }
         
         // Only read from cache - no processing on client side
         // Processing is done server-side by cron job
@@ -750,6 +809,7 @@ export default function NBALandingPage() {
             );
           }
             setPlayerProps(cacheData.data);
+            propsLoadedRef.current = true; // Mark as loaded
             setPropsProcessing(false); // Reset processing state when we have data
             
             // Save to sessionStorage for instant load on back navigation
@@ -763,12 +823,29 @@ export default function NBALandingPage() {
               }
             }
             
+            // Pre-load team data in background for teams with games today
+            const uniqueTeams = new Set<string>();
+            cacheData.data.forEach((prop: PlayerProp) => {
+              if (prop.team) uniqueTeams.add(prop.team);
+              if (prop.opponent) uniqueTeams.add(prop.opponent);
+            });
+            
+            if (uniqueTeams.size > 0) {
+              console.log(`[NBA Landing] 🚀 Pre-loading team data for ${uniqueTeams.size} teams in background...`);
+              preloadTeamData(Array.from(uniqueTeams), currentNbaSeason()).catch(err => {
+                console.warn('[NBA Landing] ⚠️ Error pre-loading team data:', err);
+              });
+            }
+            
             setPropsLoading(false);
             return;
           } else {
             console.log(`[NBA Landing] ⚠️ No cached data available - cache is being populated`);
             console.log(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data, cached: cacheData.cached, message: cacheData.message });
-            setPlayerProps([]);
+            // Don't clear existing props - keep them visible
+            if (!propsLoadedRef.current) {
+              setPlayerProps([]);
+            }
             setPropsProcessing(!cacheData.cached); // Show processing state if cache is empty
             setPropsLoading(false);
             
@@ -783,13 +860,19 @@ export default function NBALandingPage() {
           }
         } else {
           console.warn(`[NBA Landing] Cache API error: ${cacheResponse.status} ${cacheResponse.statusText}`);
-          setPlayerProps([]);
+          // Don't clear existing props on error - keep them visible
+          if (!propsLoadedRef.current) {
+            setPlayerProps([]);
+          }
           setPropsLoading(false);
           return;
         }
       } catch (error) {
         console.error('[NBA Landing] Error fetching player props:', error);
-        setPlayerProps([]);
+        // Don't clear existing props on error - keep them visible
+        if (!propsLoadedRef.current) {
+          setPlayerProps([]);
+        }
         setPropsLoading(false);
       }
     };
@@ -808,18 +891,25 @@ export default function NBALandingPage() {
           const currentTimestamp = oddsData.lastUpdated;
           
           if (currentTimestamp && currentTimestamp !== lastOddsTimestamp && lastOddsTimestamp !== null) {
-            // Odds have been updated - clear sessionStorage and refresh player props
-            console.log('[NBA Landing] 🔄 Odds updated, clearing cache and refreshing player props...');
-            if (typeof window !== 'undefined') {
-              try {
-                sessionStorage.removeItem(CACHE_KEY);
-                sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-                console.log('[NBA Landing] 🧹 Cleared player props sessionStorage due to odds update');
-              } catch (e) {
-                console.warn('[NBA Landing] ⚠️ Failed to clear sessionStorage:', e);
+            // Odds have been updated - refresh player props in background (don't clear existing)
+            console.log('[NBA Landing] 🔄 Odds updated, refreshing player props in background...');
+            // Fetch new props in background and update when ready
+            fetch('/api/nba/player-props', { cache: 'default' }).then(async (response) => {
+              if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                  setPlayerProps(data.data);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+                      sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                    } catch (e) {
+                      console.warn('[NBA Landing] ⚠️ Failed to update sessionStorage:', e);
+                    }
+                  }
+                }
               }
-            }
-            fetchPlayerProps();
+            }).catch(() => {});
           }
           
           lastOddsTimestamp = currentTimestamp;
@@ -829,8 +919,8 @@ export default function NBALandingPage() {
       }
     };
     
-    // Check every 2 minutes for odds updates
-    const oddsCheckInterval = setInterval(checkOddsUpdate, 2 * 60 * 1000);
+    // Check every 10 minutes for odds updates (reduced from 2 minutes)
+    const oddsCheckInterval = setInterval(checkOddsUpdate, 10 * 60 * 1000);
     
     // Initial check after 30 seconds (give odds refresh time to complete)
     setTimeout(() => {

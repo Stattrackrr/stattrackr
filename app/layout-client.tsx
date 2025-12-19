@@ -8,7 +8,7 @@ import NavigationLoader from "@/components/NavigationLoader";
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   // Prefetch player props cache on app load so it's ready when user navigates to player props page
-  // Always fetches from API to warm up server cache, regardless of sessionStorage
+  // Always fetches from API to warm up server cache (Supabase + in-memory), regardless of sessionStorage
   useEffect(() => {
     const prefetchPlayerPropsCache = async () => {
       // Only run in browser
@@ -18,11 +18,28 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
 
       try {
-        // Always fetch from API to warm up server-side cache (in-memory and Supabase)
+        // Check if we already have fresh data in sessionStorage (less than 5 minutes old)
+        const cachedData = sessionStorage.getItem(CACHE_KEY);
+        const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+        const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+        
+        if (cachedData && cachedTimestamp) {
+          const age = Date.now() - parseInt(cachedTimestamp, 10);
+          if (age < CACHE_TTL_MS) {
+            console.log(`[Prefetch] ✅ Already have fresh cache (${Math.round(age / 1000)}s old), skipping prefetch`);
+            return; // Already have fresh data, no need to prefetch
+          }
+        }
+
+        // Always fetch from API to warm up server-side cache (Supabase + in-memory)
         // This ensures the cache is ready no matter what screen the user is on
-        console.log('[Prefetch] 🔄 Prefetching player props cache from API (warming server cache)...');
+        // Use 'no-cache' to ensure we hit the server and warm up Supabase cache
+        console.log('[Prefetch] 🔄 Prefetching player props cache from API (warming Supabase cache)...');
         const response = await fetch('/api/nba/player-props', {
-          cache: 'default',
+          cache: 'no-store', // Force server fetch to warm up Supabase cache
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
         });
 
         if (response.ok) {
@@ -31,7 +48,7 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
             // Store in sessionStorage for instant access when navigating to player props page
             sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
             sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-            console.log(`[Prefetch] ✅ Prefetched ${data.data.length} player props (server cache warmed, client cache updated)`);
+            console.log(`[Prefetch] ✅ Prefetched ${data.data.length} player props (Supabase cache warmed, client cache updated)`);
           } else {
             console.log('[Prefetch] ⚠️ Cache not yet populated, will be available after processing');
           }
@@ -45,10 +62,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       }
     };
 
-    // Prefetch after a short delay to not block initial render
-    const timeoutId = setTimeout(prefetchPlayerPropsCache, 500);
-    
-    return () => clearTimeout(timeoutId);
+    // Start prefetch immediately (no delay) - runs in background, doesn't block render
+    prefetchPlayerPropsCache();
   }, []);
 
   return (

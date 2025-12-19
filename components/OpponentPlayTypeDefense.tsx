@@ -13,7 +13,7 @@ interface OpponentPlayTypeDefenseProps {
 interface PlayTypeDefense {
   playType: string;
   displayName: string;
-  ppp: number; // Points Per Possession allowed
+  points: number; // Points allowed
   fgPct: number; // FG% allowed
   rank: number; // 1-30 ranking (1 = best defense, 30 = worst defense)
   frequency: number; // % of opponent possessions
@@ -135,9 +135,9 @@ export function OpponentPlayTypeDefense({
 
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400 text-xs">PPP Allowed</span>
+                  <span className="text-gray-600 dark:text-gray-400 text-xs">Points Allowed</span>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {playType.ppp.toFixed(2)}
+                    {playType.points.toFixed(1)}
                   </p>
                 </div>
                 <div>
