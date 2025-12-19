@@ -59,6 +59,9 @@ jobs:
           CACHE_REFRESH_URL: ${{ secrets.CACHE_REFRESH_URL }}
         run: node scripts/cache-refresh.js || echo "Cache refresh failed but continuing"
 
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+
       - name: Refresh All Player Shot Charts & Play Types
         if: steps.check_supabase_secrets.outputs.configured == 'true'
         continue-on-error: true
@@ -66,9 +69,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
         run: |
           echo "🔄 Refreshing all player shot charts and play type analysis..."
-          node scripts/refresh-all-player-caches.js || echo "Player cache refresh failed but continuing"
+          $apiUrl = if ($env:VERCEL_URL) { "https://$env:VERCEL_URL/api/cron/refresh-all-player-caches" } else { "https://stattrackr.vercel.app/api/cron/refresh-all-player-caches" }
+          pwsh scripts/trigger-refresh-local.ps1 -Url $apiUrl -AuthToken $env:CRON_SECRET || echo "Player cache refresh failed but continuing"
 
       - name: Manual Refresh (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch' && steps.check_secrets.outputs.configured == 'true'

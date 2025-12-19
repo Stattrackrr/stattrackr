@@ -1,25 +1,37 @@
-# PowerShell script to manually trigger the player cache refresh API endpoint locally
-# This calls localhost:3000
+# PowerShell script to manually trigger the player cache refresh API endpoint
+# This can be used locally or in CI/CD (GitHub Actions)
 #
-# Usage:
+# Usage (local):
 #   .\scripts\trigger-refresh-local.ps1
+#   .\scripts\trigger-refresh-local.ps1 -Url "http://localhost:3000/api/cron/refresh-all-player-caches"
+#
+# Usage (production/CI):
+#   .\scripts\trigger-refresh-local.ps1 -Url "https://stattrackr.vercel.app/api/cron/refresh-all-player-caches" -AuthToken $env:CRON_SECRET
 #
 # Make sure your local dev server is running first:
 #   npm run dev
 
-$url = "http://localhost:3000/api/cron/refresh-all-player-caches"
+param(
+    [string]$Url = "http://localhost:3000/api/cron/refresh-all-player-caches",
+    [string]$AuthToken = $null
+)
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Manual Player Cache Refresh (Local)" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Calling: $url" -ForegroundColor Gray
+Write-Host "Calling: $Url" -ForegroundColor Gray
 Write-Host ""
 Write-Host "⚠️  Make sure your dev server is running (npm run dev)" -ForegroundColor Yellow
 Write-Host ""
 
 try {
-    $response = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop
+    $headers = @{}
+    if ($AuthToken) {
+        $headers["Authorization"] = "Bearer $AuthToken"
+    }
+    
+    $response = Invoke-RestMethod -Uri $Url -Method Get -Headers $headers -ErrorAction Stop
     
     Write-Host "✅ Success!" -ForegroundColor Green
     Write-Host ""
