@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 
     // 1. Fetch all play type defensive rankings
     // If retry mode, only fetch missing play types from cache
-    const playTypeRankings: Record<string, Array<{ team: string; ppp: number }>> = {};
+    const playTypeRankings: Record<string, Array<{ team: string; points: number }>> = {};
     const defensivePlayTypes = defensiveFilter
       ? PLAY_TYPES.filter(pt => defensiveFilter.includes(pt.key))
       : PLAY_TYPES;
@@ -156,11 +156,11 @@ export async function GET(request: NextRequest) {
       const playTypeCacheKey = `playtype_defensive_rankings_${seasonStr}`;
       // Check Supabase cache first (persistent, shared across instances)
       const { getNBACache } = await import('@/lib/nbaCache');
-      let existingCache = await getNBACache<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+      let existingCache = await getNBACache<Record<string, Array<{ team: string; points: number }>>>(playTypeCacheKey);
       
       // Fallback to in-memory cache
       if (!existingCache) {
-        existingCache = cache.get<Record<string, Array<{ team: string; ppp: number }>>>(playTypeCacheKey);
+        existingCache = cache.get<Record<string, Array<{ team: string; points: number }>>>(playTypeCacheKey);
       }
       
       if (existingCache) {
