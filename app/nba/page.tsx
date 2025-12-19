@@ -722,6 +722,9 @@ export default function NBALandingPage() {
           }
         }
         
+        // Define cacheUrl early so it's available in all code paths
+        const cacheUrl = '/api/nba/player-props';
+        
         if (!forceRefresh && typeof window !== 'undefined') {
           const cachedData = sessionStorage.getItem(CACHE_KEY);
           const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
@@ -766,8 +769,6 @@ export default function NBALandingPage() {
         // Only read from cache - no processing on client side
         // Processing is done server-side by cron job
         // Always read from cache - refresh=1 just forces a fresh fetch (no cache headers)
-        const cacheUrl = '/api/nba/player-props';
-        
         const cacheResponse = await fetch(cacheUrl, {
           cache: forceRefresh ? 'no-store' : 'default'
         });
