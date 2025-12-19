@@ -46,9 +46,20 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
           const data = await response.json();
           if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
             // Store in sessionStorage for instant access when navigating to player props page
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
-            sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-            console.log(`[Prefetch] ✅ Prefetched ${data.data.length} player props (Supabase cache warmed, client cache updated)`);
+            try {
+              sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+              sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+              console.log(`[Prefetch] ✅ Prefetched ${data.data.length} player props (Supabase cache warmed, client cache updated)`);
+              
+              // Verify it was stored correctly
+              const verify = sessionStorage.getItem(CACHE_KEY);
+              if (verify) {
+                const verifyParsed = JSON.parse(verify);
+                console.log(`[Prefetch] ✅ Verified: ${verifyParsed.length} props stored in sessionStorage`);
+              }
+            } catch (e) {
+              console.error('[Prefetch] ❌ Failed to store in sessionStorage:', e);
+            }
           } else {
             console.log('[Prefetch] ⚠️ Cache not yet populated, will be available after processing');
           }

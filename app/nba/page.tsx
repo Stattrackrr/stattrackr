@@ -758,6 +758,29 @@ export default function NBALandingPage() {
         // Define cacheUrl early so it's available in all code paths
         const cacheUrl = '/api/nba/player-props';
         
+        // If we already have props from initialization, just refresh in background
+        if (propsLoadedRef.current && playerProps.length > 0) {
+          console.log(`[NBA Landing] ✅ Props already loaded from initialization (${playerProps.length} props), refreshing in background...`);
+          // Refresh in background without showing loading state
+          fetch(cacheUrl, { cache: forceRefresh ? 'no-store' : 'default' }).then(async (response) => {
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                setPlayerProps(data.data);
+                if (typeof window !== 'undefined') {
+                  try {
+                    sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+                    sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                  } catch (e) {
+                    // Ignore storage errors
+                  }
+                }
+              }
+            }
+          }).catch(() => {});
+          return; // Skip the main fetch, props are already displayed
+        }
+        
         if (!forceRefresh && typeof window !== 'undefined') {
           const cachedData = sessionStorage.getItem(CACHE_KEY);
           const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
