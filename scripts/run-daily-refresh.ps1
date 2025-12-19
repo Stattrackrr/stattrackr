@@ -35,7 +35,7 @@ function Write-Log {
 
 function Test-ServerRunning {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:3000/api/cache/health" -Method Get -TimeoutSec 5 -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "http://localhost:3000/api/cache/health" -Method Get -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
         return $true
     } catch {
         return $false
