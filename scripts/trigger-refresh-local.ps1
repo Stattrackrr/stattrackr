@@ -29,6 +29,9 @@ try {
     $headers = @{}
     if ($AuthToken) {
         $headers["Authorization"] = "Bearer $AuthToken"
+        Write-Host "Using authentication token" -ForegroundColor Gray
+    } else {
+        Write-Host "⚠️  No auth token provided (may fail in production)" -ForegroundColor Yellow
     }
     
     $response = Invoke-RestMethod -Uri $Url -Method Get -Headers $headers -ErrorAction Stop
@@ -43,16 +46,32 @@ try {
     Write-Host ""
 } catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+    
+    # Try to get response body if available
     if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $responseBody = $reader.ReadToEnd()
-        Write-Host "Response: $responseBody" -ForegroundColor Red
+        try {
+            $stream = $_.Exception.Response.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($stream)
+            $responseBody = $reader.ReadToEnd()
+            $reader.Close()
+            $stream.Close()
+            Write-Host "Response: $responseBody" -ForegroundColor Red
+        } catch {
+            Write-Host "Could not read response body: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
+    
     Write-Host ""
-    Write-Host "💡 Make sure:" -ForegroundColor Yellow
-    Write-Host "   1. Your dev server is running (npm run dev)" -ForegroundColor Gray
-    Write-Host "   2. Your .env.local has BALLDONTLIE_API_KEY set (if needed)" -ForegroundColor Gray
-    Write-Host "   3. Your .env.local has Supabase credentials set" -ForegroundColor Gray
+    if ($Url -like "*localhost*") {
+        Write-Host "💡 Make sure:" -ForegroundColor Yellow
+        Write-Host "   1. Your dev server is running (npm run dev)" -ForegroundColor Gray
+        Write-Host "   2. Your .env.local has BALLDONTLIE_API_KEY set (if needed)" -ForegroundColor Gray
+        Write-Host "   3. Your .env.local has Supabase credentials set" -ForegroundColor Gray
+    } else {
+        Write-Host "💡 Make sure:" -ForegroundColor Yellow
+        Write-Host "   1. CRON_SECRET is set correctly in GitHub Secrets" -ForegroundColor Gray
+        Write-Host "   2. The API endpoint is accessible" -ForegroundColor Gray
+    }
     exit 1
 }
 

@@ -72,7 +72,9 @@ jobs:
         run: |
           Write-Host "🔄 Refreshing all player shot charts and play type analysis..."
           $apiUrl = if ($env:VERCEL_URL) { "https://$env:VERCEL_URL/api/cron/refresh-all-player-caches" } else { "https://stattrackr.vercel.app/api/cron/refresh-all-player-caches" }
-          pwsh scripts/trigger-refresh-local.ps1 -Url $apiUrl -AuthToken $env:CRON_SECRET
+          Write-Host "API URL: $apiUrl"
+          Write-Host "Auth token present: $($null -ne $env:CRON_SECRET)"
+          & pwsh scripts/trigger-refresh-local.ps1 -Url $apiUrl -AuthToken $env:CRON_SECRET
           if ($LASTEXITCODE -ne 0) {
             Write-Host "Player cache refresh failed but continuing"
             exit 0
