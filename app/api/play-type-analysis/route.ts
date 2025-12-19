@@ -383,30 +383,29 @@ export async function GET(request: NextRequest) {
       console.log(`[Play Type Analysis] Fetching ${playTypesToFetch.length} play types (${cachedData ? 'retrying 0.0 values' : 'all'})`);
       
     // Check for bulk cached player play type data first
-    // Try Supabase cache first (persistent, shared across instances)
+    // NOTE: We ALWAYS check bulk cache, even if bypassCache=true, because bulk cache is the source of truth
+    // bypassCache only bypasses the individual player cache, not the bulk cache
     const bulkPlayerDataCacheKey = `player_playtypes_bulk_${seasonStr}`;
-    let bulkPlayerData = !bypassCache
-      ? await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey, {
-          restTimeoutMs: 20000,
-          jsTimeoutMs: 20000,
-        })
-      : null;
+    let bulkPlayerData = await getNBACache<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey, {
+      restTimeoutMs: 20000,
+      jsTimeoutMs: 20000,
+    });
     
     // Fallback to in-memory cache
     if (!bulkPlayerData) {
-      bulkPlayerData = !bypassCache ? cache.get<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey) : null;
+      bulkPlayerData = cache.get<Record<string, { headers: string[]; rows: any[] }>>(bulkPlayerDataCacheKey);
     }
     
     const allResults: Array<{ status: 'fulfilled' | 'rejected', value?: any, reason?: any }> = [];
     
-    // Only use bulk cache if it exists and has substantial data, and we're not bypassing cache
+    // Only use bulk cache if it exists and has substantial data
     // Check if bulk cache has at least some play types with data
     const hasValidBulkCache = bulkPlayerData && Object.keys(bulkPlayerData || {}).length > 0 && 
       Object.values(bulkPlayerData).some((pt: any) => pt && pt.rows && Array.isArray(pt.rows) && pt.rows.length > 0);
     
     console.log(`[Play Type Analysis] Bulk cache check: exists=${!!bulkPlayerData}, keys=${bulkPlayerData ? Object.keys(bulkPlayerData).length : 0}, hasValidData=${hasValidBulkCache}, bypassCache=${bypassCache}`);
     
-    if (hasValidBulkCache && !bypassCache) {
+    if (hasValidBulkCache) {
       console.log(`[Play Type Analysis] ✅ Using bulk cached player play type data (${bulkPlayerData ? Object.keys(bulkPlayerData).length : 0} play types cached)`);
       // Use cached bulk data - filter by play types we need
       playTypesToFetch.forEach((key) => {
@@ -433,7 +432,9 @@ export async function GET(request: NextRequest) {
       // UNLESS X-Allow-NBA-API header is set (indicates caller can reach NBA API, e.g., from GitHub Actions)
       const allowNbaApi = request.headers.get('x-allow-nba-api') === 'true';
       if (process.env.NODE_ENV === 'production' && !bypassCache && !allowNbaApi) {
-        console.log(`[Play Type Analysis] ⚠️ Production mode: No bulk cache available. Skipping NBA API calls.`);
+        // In production without bulk cache, we can't fetch from NBA API
+        // Return empty data structure
+        console.log(`[Play Type Analysis] ⚠️ Production mode: No bulk cache available. Returning empty data.`);
         // Return empty results for missing play types
         playTypesToFetch.forEach((key) => {
           allResults.push({ status: 'fulfilled', value: { key, success: false, rows: [], headers: [] } });
