@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
     
     // STEP 2: Fetch team defense rankings (30 teams, but still needed for shot charts)
-    console.log(`[Refresh All Player Caches] Step 2/3: Fetching team defense rankings...`);
+    console.log(`[Refresh All Player Caches] Step 2/5: Fetching team defense rankings...`);
     try {
       const teamDefenseUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}&bypassCache=true`;
       console.log(`[Refresh All Player Caches] Calling team defense rankings: ${teamDefenseUrl}`);
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       });
       
       if (teamDefenseResponse.ok) {
-        console.log(`[Refresh All Player Caches] ✅ Team defense rankings cached`);
+        console.log(`[Refresh All Player Caches] ✅ Team defense rankings refreshed from NBA API`);
       } else {
         console.warn(`[Refresh All Player Caches] ⚠️ Team defense rankings returned ${teamDefenseResponse.status}`);
       }
@@ -197,8 +197,34 @@ export async function GET(request: NextRequest) {
       console.warn(`[Refresh All Player Caches] ⚠️ Team defense rankings error (non-fatal):`, error.message);
     }
 
-    // STEP 3: Now fetch individual player data (shot charts and play types)
-    console.log(`[Refresh All Player Caches] Step 3/3: Fetching individual player data...`);
+    // STEP 3: Fetch tracking stats (passing and rebounding potentials)
+    console.log(`[Refresh All Player Caches] Step 3/5: Fetching tracking stats (passing/rebounding)...`);
+    try {
+      const trackingStatsUrl = `${protocol}://${host}/api/tracking-stats/refresh?season=${season}`;
+      console.log(`[Refresh All Player Caches] Calling tracking stats refresh: ${trackingStatsUrl}`);
+      
+      // Don't await - this can take 7-8 minutes, let it run in background
+      // But we'll wait a bit to ensure it starts
+      const trackingPromise = fetch(trackingStatsUrl, {
+        headers: {
+          'Authorization': process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : '',
+          'X-Allow-NBA-API': 'true',
+        },
+      });
+      
+      // Wait 2 seconds to ensure request started, then continue
+      await Promise.race([
+        trackingPromise,
+        new Promise(resolve => setTimeout(resolve, 2000))
+      ]);
+      
+      console.log(`[Refresh All Player Caches] ✅ Tracking stats refresh initiated (running in background)`);
+    } catch (error: any) {
+      console.warn(`[Refresh All Player Caches] ⚠️ Tracking stats refresh error (non-fatal):`, error.message);
+    }
+
+    // STEP 4: Now fetch individual player data (shot charts and play types)
+    console.log(`[Refresh All Player Caches] Step 4/5: Fetching individual player shot charts...`);
     console.log(`[Refresh All Player Caches] Fetching all active players for season ${season}...`);
     
     // Get all active players
@@ -254,9 +280,12 @@ export async function GET(request: NextRequest) {
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
+    // STEP 5: Summary
+    console.log(`[Refresh All Player Caches] Step 5/5: Refresh complete!`);
     console.log(`[Refresh All Player Caches] ✅ Complete:`);
-    console.log(`  - Bulk play types: Cached (11 defensive + 11 player play types)`);
-    console.log(`  - Team defense rankings: Cached (30 teams)`);
+    console.log(`  - Bulk play types: Refreshed from NBA API (11 defensive + 11 player play types)`);
+    console.log(`  - Team defense rankings: Refreshed from NBA API (30 teams)`);
+    console.log(`  - Tracking stats: Refreshing in background (passing + rebounding)`);
     console.log(`  - Shot charts: ${shotChartSuccess} success, ${shotChartFail} failed`);
     console.log(`  - Duration: ${duration}s`);
 
