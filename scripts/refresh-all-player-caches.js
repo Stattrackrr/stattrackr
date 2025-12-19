@@ -67,7 +67,8 @@ function formatSeason(season) {
 }
 
 // Fetch from NBA Stats API
-function fetchNBAStats(url, timeout = 20000, retries = 2) {
+// Increased default timeout to 120s (NBA API is very slow)
+function fetchNBAStats(url, timeout = 120000, retries = 3) {
   return new Promise((resolve, reject) => {
     let attempt = 0;
     
@@ -253,7 +254,8 @@ async function cachePlayerShotChart(playerId, season, seasonStr) {
     });
 
     const url = `${NBA_STATS_BASE}/shotchartdetail?${params.toString()}`;
-    const data = await fetchNBAStats(url, 20000, 2);
+    // Increased timeout to 120s - NBA API is very slow, especially for shot charts
+    const data = await fetchNBAStats(url, 120000, 3);
 
     if (data?.resultSets?.[0]) {
       const resultSet = data.resultSets[0];
