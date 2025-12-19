@@ -239,8 +239,40 @@ export default function NBALandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [todaysGames, setTodaysGames] = useState<Game[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
-  const [playerProps, setPlayerProps] = useState<PlayerProp[]>([]);
-  const [propsLoading, setPropsLoading] = useState(true);
+  
+  // Initialize player props and loading state from sessionStorage if available (prevents blank screen on back navigation)
+  const initializePropsState = () => {
+    if (typeof window === 'undefined') {
+      return { props: [] as PlayerProp[], loading: true };
+    }
+    
+    const CACHE_KEY = 'nba-player-props-cache';
+    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+    
+    try {
+      const cachedData = sessionStorage.getItem(CACHE_KEY);
+      const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+      
+      if (cachedData && cachedTimestamp) {
+        const age = Date.now() - parseInt(cachedTimestamp, 10);
+        if (age < CACHE_TTL_MS) {
+          const parsed = JSON.parse(cachedData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return { props: parsed, loading: false };
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore errors, will fetch fresh
+    }
+    
+    return { props: [] as PlayerProp[], loading: true };
+  };
+  
+  const initialState = initializePropsState();
+  const [playerProps, setPlayerProps] = useState<PlayerProp[]>(initialState.props);
+  const [propsLoading, setPropsLoading] = useState(initialState.loading);
   const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
   const [mounted, setMounted] = useState(false);
   const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
@@ -695,7 +727,8 @@ export default function NBALandingPage() {
   };
 
   // Track if props are loaded (to prevent clearing on refresh)
-  const propsLoadedRef = useRef(false);
+  // Initialize to true if we already have props from sessionStorage
+  const propsLoadedRef = useRef(initialState.props.length > 0);
   
   // Fetch player props with good win chances from BDL
   useEffect(() => {
