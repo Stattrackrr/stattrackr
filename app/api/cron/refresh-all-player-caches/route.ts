@@ -252,12 +252,16 @@ export async function GET(request: NextRequest) {
 
     for (let i = 0; i < players.length; i += batchSize) {
       const batch = players.slice(i, i + batchSize);
-      console.log(`[Refresh All Player Caches] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(players.length / batchSize)} (players ${i + 1}-${Math.min(i + batchSize, players.length)})...`);
+      const playerNames = batch.map(p => `${p.first_name} ${p.last_name}`).join(', ');
+      console.log(`[Refresh All Player Caches] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(players.length / batchSize)} (players ${i + 1}-${Math.min(i + batchSize, players.length)}): ${playerNames}...`);
 
       // Process batch in parallel
       const batchPromises = batch.map(async (player) => {
+        const playerName = `${player.first_name} ${player.last_name}`;
+        console.log(`[Refresh All Player Caches] 🔄 Processing ${playerName} (ID: ${player.id})...`);
         const results = await refreshPlayerCache(player.id, season, host, protocol);
-        return { playerId: player.id, playerName: `${player.first_name} ${player.last_name}`, ...results };
+        console.log(`[Refresh All Player Caches] ✅ Completed ${playerName} (ID: ${player.id}) - Shot Chart: ${results.shotChart ? '✅' : '❌'}, Play Type: ${results.playType ? '✅' : '❌'}`);
+        return { playerId: player.id, playerName, ...results };
       });
 
       const batchResults = await Promise.all(batchPromises);
