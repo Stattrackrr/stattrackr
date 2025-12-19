@@ -64,6 +64,41 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
 
     // Start prefetch immediately (no delay) - runs in background, doesn't block render
     prefetchPlayerPropsCache();
+    
+    // Prefetch dashboard games data on app load
+    const prefetchDashboardGames = async () => {
+      // Only run in browser
+      if (typeof window === 'undefined') return;
+
+      try {
+        // Fetch games data for today ± 7 days (what dashboard needs)
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+        
+        console.log('[Prefetch] 🔄 Prefetching dashboard games data...');
+        const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, {
+          cache: 'default', // Use cache if available
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+            // Store in sessionStorage for instant access when navigating to dashboard
+            const cacheKey = `dashboard-games-${start}-${end}`;
+            sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
+            sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
+            console.log(`[Prefetch] ✅ Prefetched ${data.data.length} games for dashboard (cached)`);
+          }
+        }
+      } catch (error) {
+        // Silently fail - this is just a prefetch, not critical
+        console.log('[Prefetch] ⚠️ Dashboard games prefetch failed (non-critical):', error instanceof Error ? error.message : 'Unknown error');
+      }
+    };
+    
+    // Prefetch dashboard games after a short delay (don't block player props prefetch)
+    setTimeout(prefetchDashboardGames, 1000);
   }, []);
 
   return (
