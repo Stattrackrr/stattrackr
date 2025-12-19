@@ -15044,8 +15044,8 @@ const lineMovementInFlightRef = useRef(false);
                               // Ignore errors
                             }
                             
-                            // Use browser back for fast navigation (uses cached state)
-                            router.back();
+                            // Use native browser back for instant navigation (same as browser back button)
+                            window.history.back();
                           }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
@@ -15627,8 +15627,8 @@ const lineMovementInFlightRef = useRef(false);
                               // Ignore errors
                             }
                             
-                            // Use browser back for fast navigation (uses cached state)
-                            router.back();
+                            // Use native browser back for instant navigation (same as browser back button)
+                            window.history.back();
                           }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
