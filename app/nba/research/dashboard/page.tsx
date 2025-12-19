@@ -14993,8 +14993,8 @@ const lineMovementInFlightRef = useRef(false);
                               // Ignore errors
                             }
                             
-                            // Navigate to player props page - state will clear naturally on unmount/URL change
-                            router.push('/nba');
+                            // Use browser back for fast navigation (uses cached state)
+                            router.back();
                           }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
@@ -15576,8 +15576,8 @@ const lineMovementInFlightRef = useRef(false);
                               // Ignore errors
                             }
                             
-                            // Navigate to player props page - state will clear naturally on unmount/URL change
-                            router.push('/nba');
+                            // Use browser back for fast navigation (uses cached state)
+                            router.back();
                           }}
                           className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                         >
