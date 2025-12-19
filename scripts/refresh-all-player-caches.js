@@ -606,7 +606,7 @@ async function cacheTeamDefenseRankings(season, seasonStr) {
         });
 
         const defenseUrl = `${NBA_STATS_BASE}/shotchartdetail?${defenseParams.toString()}`;
-        const defenseData = await fetchNBAStats(defenseUrl, 60000, 2); // 60s timeout
+        const defenseData = await fetchNBAStats(defenseUrl, 120000, 3); // 120s timeout, 3 retries
 
         if (defenseData?.resultSets?.[0]) {
           const resultSet = defenseData.resultSets[0];
@@ -690,9 +690,9 @@ async function cacheTeamDefenseRankings(season, seasonStr) {
       const batchResults = await Promise.all(batchPromises);
       allTeamsData.push(...batchResults.filter(r => r !== null));
       
-      // Small delay between batches
+      // Longer delay between batches to avoid rate limiting
       if (i + batchSize < teams.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 3000)); // 3s delay between team batches
       }
     }
 
@@ -840,9 +840,9 @@ async function main() {
       else playTypeFail++;
     }
     
-    // Shorter delay between batches (1 second instead of 3)
+    // Longer delay between batches to avoid rate limiting (NBA API is slow)
     if (i + batchSize < players.length) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5s delay between player batches
     }
   }
   
