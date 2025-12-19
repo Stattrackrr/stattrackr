@@ -3,8 +3,14 @@
 #
 # Usage:
 #   .\scripts\setup-scheduled-task.ps1
+#   .\scripts\setup-scheduled-task.ps1 -Time "6:00AM"
 #
-# This will create a scheduled task that runs daily at 5:30 AM
+# This will create a scheduled task that runs daily at the specified time
+# Default: 12:00 AM (midnight, in your PC's local timezone)
+
+param(
+    [string]$Time = "12:00AM"
+)
 
 # Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -43,11 +49,12 @@ if ($existingTask) {
 Write-Host "Creating scheduled task..." -ForegroundColor Yellow
 Write-Host "  Task Name: $taskName" -ForegroundColor Gray
 Write-Host "  Script: $refreshScript" -ForegroundColor Gray
-Write-Host "  Schedule: Daily at 5:30 AM" -ForegroundColor Gray
+$timezone = [System.TimeZoneInfo]::Local.DisplayName
+Write-Host "  Schedule: Daily at $Time ($timezone)" -ForegroundColor Gray
 Write-Host ""
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$refreshScript`"" -WorkingDirectory $projectRoot
-$trigger = New-ScheduledTaskTrigger -Daily -At "5:30AM"
+$trigger = New-ScheduledTaskTrigger -Daily -At $Time
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Highest
 
@@ -58,7 +65,7 @@ try {
     Write-Host ""
     Write-Host "Task Details:" -ForegroundColor Yellow
     Write-Host "  Name: $taskName" -ForegroundColor White
-    Write-Host "  Schedule: Daily at 5:30 AM" -ForegroundColor White
+    Write-Host "  Schedule: Daily at $Time ($timezone)" -ForegroundColor White
     Write-Host "  Script: $refreshScript" -ForegroundColor White
     Write-Host ""
     Write-Host "To view/manage the task:" -ForegroundColor Yellow
