@@ -20,7 +20,10 @@ Write-Host ""
 
 $tasksToRemove = @(
     "Potentials stattrackr-shot",
-    "StatTrackr-Refresh-Changed-Players"
+    "StatTrackr-Refresh-Changed-Players",
+    "StatTrackr Warm Rosters",
+    "StatTrackr-Check-Changed-Players",
+    "StatTrackr-Standalone-NBA-Cache"
 )
 
 $removed = 0
