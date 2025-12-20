@@ -189,8 +189,16 @@ export function PlayTypeAnalysis({
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="space-y-3 py-4">
+          {[...Array(6)].map((_, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 flex-1">
+                <div className={`h-4 w-24 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+              </div>
+              <div className={`h-6 w-12 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.1}s` }}></div>
+            </div>
+          ))}
         </div>
       )}
 

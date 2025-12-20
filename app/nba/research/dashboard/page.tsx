@@ -2185,15 +2185,35 @@ const PureChart = memo(function PureChart({
 
   return (
     <div className="h-full w-full">
-      {isLoading ? (
-        <div className="h-full w-full flex flex-col gap-4 animate-pulse">
-          <div className="h-6 w-40 rounded bg-gray-200 dark:bg-[#0a1929]" />
-          <div className="h-64 w-full rounded-xl bg-gray-200 dark:bg-[#0a1929]" />
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929]" />
-            <div className="h-4 rounded bg-gray-200 dark:bg-[#0a1929] hidden sm:block" />
+      {isLoading || !chartData || chartData.length === 0 ? (
+        <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+          {/* Chart bars skeleton - vertical bars like the actual chart */}
+          <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+            {[...Array(20)].map((_, idx) => {
+              // Create varied heights like a real chart
+              const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+              const height = heights[idx] || (Math.random() * 40 + 30);
+              
+              return (
+                <div
+                  key={idx}
+                  className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                  style={{ height: '100%' }}
+                >
+                  {/* Vertical bar - matches chart bar structure, thicker */}
+                  <div
+                    className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                    style={{
+                      height: `${height}%`,
+                      animationDelay: `${idx * 0.08}s`,
+                      minHeight: '30px',
+                      transition: 'height 0.3s ease',
+                      minWidth: '28px'
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -3581,7 +3601,13 @@ const ChartControls = function ChartControls({
                         <div className="p-2">
                           {altLines.length === 0 ? (
                             <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                              {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
+                              {(!realOddsData || realOddsData.length === 0) && oddsLoading ? (
+                                <div className="space-y-2">
+                                  {[...Array(3)].map((_, idx) => (
+                                    <div key={idx} className={`h-8 w-full rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  ))}
+                                </div>
+                              ) : 'No alternative lines available'}
                             </div>
                           ) : (
                             <>
@@ -4132,7 +4158,13 @@ const ChartControls = function ChartControls({
                             <div className="p-2">
                               {altLines.length === 0 ? (
                                 <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                                  {!realOddsData || realOddsData.length === 0 ? 'Loading odds data...' : 'No alternative lines available'}
+                                  {(!realOddsData || realOddsData.length === 0) && oddsLoading ? (
+                                    <div className="space-y-2">
+                                      {[...Array(3)].map((_, idx) => (
+                                        <div key={idx} className={`h-8 w-full rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                      ))}
+                                    </div>
+                                  ) : 'No alternative lines available'}
                                 </div>
                               ) : (
                                 <>
@@ -4890,7 +4922,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
                 isDark={isDark} 
               />
             ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
-              <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
+              <div className="h-6 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-800"></div>
             ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
               <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -4931,7 +4963,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
                 isDark={isDark} 
               />
             ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
-              <span className="text-xs text-gray-500 dark:text-gray-400">Loading...</span>
+              <div className="h-6 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-800"></div>
             ) : null}
             {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
               <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -6270,24 +6302,49 @@ const BestOddsTable = memo(function BestOddsTable({
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
       </div>
       
-      {oddsLoading && (
-        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
-      )}
       {oddsError && (
         <div className="text-xs text-red-500 mb-2">Error: {oddsError}</div>
       )}
       
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs border-collapse">
-          <thead>
-            <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
-              <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
-              {markets.map((market) => (
-                <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+      {oddsLoading ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs border-collapse">
+            <thead>
+              <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
+                <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
+                {markets.map((market) => (
+                  <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(4)].map((_, idx) => (
+                <tr key={idx} className={(mounted && isDark ? 'border-slate-700' : 'border-slate-200') + ' border-b'}>
+                  <td className="py-2 pr-3">
+                    <div className={`h-4 w-20 rounded animate-pulse ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                  </td>
+                  {markets.map((market, marketIdx) => (
+                    <td key={market} className="py-2 px-3">
+                      <div className={`h-4 w-16 rounded animate-pulse ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + marketIdx * 0.05}s` }}></div>
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs border-collapse">
+            <thead>
+              <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
+                <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
+                {markets.map((market) => (
+                  <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
           {books.map((row: any, i: number) => (
             <tr key={`${row.name}-${i}`} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
               <td className="py-2 pr-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.name}</td>
@@ -6381,6 +6438,7 @@ const BestOddsTable = memo(function BestOddsTable({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }, (prev, next) => (
@@ -6678,24 +6736,49 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Best Odds</h3>
       </div>
       
-      {oddsLoading && (
-        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading odds data...</div>
-      )}
       {oddsError && (
         <div className="text-xs text-red-500 mb-2">Error: {oddsError}</div>
       )}
       
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs border-collapse">
-          <thead>
-            <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
-              <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
-              {markets.map((market) => (
-                <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+      {oddsLoading ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs border-collapse">
+            <thead>
+              <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
+                <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
+                {markets.map((market) => (
+                  <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(4)].map((_, idx) => (
+                <tr key={idx} className={(mounted && isDark ? 'border-slate-700' : 'border-slate-200') + ' border-b'}>
+                  <td className="py-2 pr-3">
+                    <div className={`h-4 w-20 rounded animate-pulse ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                  </td>
+                  {markets.map((market, marketIdx) => (
+                    <td key={market} className="py-2 px-3">
+                      <div className={`h-4 w-16 rounded animate-pulse ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + marketIdx * 0.05}s` }}></div>
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs border-collapse">
+            <thead>
+              <tr className={(mounted && isDark ? 'bg-[#0a1929]' : 'bg-slate-100') + ' sticky top-0'}>
+                <th className="text-left py-2 pr-3 font-semibold text-gray-700 dark:text-gray-300">Bookmaker</th>
+                {markets.map((market) => (
+                  <th key={market} className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{market}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
           {books.map((row: any, i: number) => (
             <tr key={`${row.name}-${i}`} className={mounted && isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}>
               <td className="py-2 pr-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.name}</td>
@@ -6789,6 +6872,7 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }, (prev, next) => (
@@ -16321,7 +16405,19 @@ const lineMovementInFlightRef = useRef(false);
                     if (!currentTeam || currentTeam === 'N/A') return null;
                     
                     if (teamMatchupLoading) {
-                      return <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">Loading matchup data...</div>;
+                      return (
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                          <div className="relative w-48 h-48">
+                            <div className="absolute inset-0 rounded-full border-8 border-gray-200 dark:border-gray-800 animate-pulse"></div>
+                            <div className="absolute inset-4 rounded-full border-8 border-gray-300 dark:border-gray-700 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="absolute inset-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                          <div className="space-y-2 w-full max-w-xs">
+                            <div className="h-4 w-full rounded animate-pulse bg-gray-200 dark:bg-gray-800"></div>
+                            <div className="h-4 w-3/4 mx-auto rounded animate-pulse bg-gray-200 dark:bg-gray-800" style={{ animationDelay: '0.1s' }}></div>
+                          </div>
+                        </div>
+                      );
                     }
                     
                     const currentStats = teamMatchupStats.currentTeam;

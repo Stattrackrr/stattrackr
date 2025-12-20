@@ -240,41 +240,14 @@ export default function NBALandingPage() {
   const [todaysGames, setTodaysGames] = useState<Game[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   
-  // Initialize player props and loading state from sessionStorage if available (prevents blank screen on back navigation)
-  const initializePropsState = () => {
-    if (typeof window === 'undefined') {
-      return { props: [] as PlayerProp[], loading: true };
-    }
-    
-    const CACHE_KEY = 'nba-player-props-cache';
-    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
-    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-    
-    try {
-      const cachedData = sessionStorage.getItem(CACHE_KEY);
-      const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
-      
-      if (cachedData && cachedTimestamp) {
-        const age = Date.now() - parseInt(cachedTimestamp, 10);
-        if (age < CACHE_TTL_MS) {
-          const parsed = JSON.parse(cachedData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return { props: parsed, loading: false };
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore errors, will fetch fresh
-    }
-    
-    return { props: [] as PlayerProp[], loading: true };
-  };
-  
-  const initialState = initializePropsState();
-  const [playerProps, setPlayerProps] = useState<PlayerProp[]>(initialState.props);
-  const [propsLoading, setPropsLoading] = useState(initialState.loading);
+  // Initialize player props and loading state - always start with loading true to prevent hydration mismatch
+  // We'll check sessionStorage in useEffect after mount
+  const [playerProps, setPlayerProps] = useState<PlayerProp[]>([]);
+  const [propsLoading, setPropsLoading] = useState(true);
   const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
   const [mounted, setMounted] = useState(false);
+  const propsLoadedRef = useRef(false); // Track if props are already loaded to prevent redundant fetches
+  const initialFetchCompletedRef = useRef(false); // Track if initial fetch has completed
   const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   // Load filter selections from localStorage on mount
@@ -727,8 +700,8 @@ export default function NBALandingPage() {
   };
 
   // Track if props are loaded (to prevent clearing on refresh)
-  // Initialize to true if we already have props from sessionStorage
-  const propsLoadedRef = useRef(initialState.props.length > 0);
+  // Initialize to false - will be set to true when props are loaded
+  // Note: We removed initialState check to prevent hydration mismatch
   
   // Fetch player props with good win chances from BDL
   useEffect(() => {
@@ -794,6 +767,7 @@ export default function NBALandingPage() {
                   console.log(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
                   setPlayerProps(parsed);
                   propsLoadedRef.current = true; // Mark as loaded
+                  initialFetchCompletedRef.current = true; // Mark initial fetch as completed
                   setPropsLoading(false);
                   // Still fetch in background to update if needed (non-blocking)
                   fetch(cacheUrl, { cache: 'default' }).then(async (response) => {
@@ -867,6 +841,7 @@ export default function NBALandingPage() {
           }
             setPlayerProps(cacheData.data);
             propsLoadedRef.current = true; // Mark as loaded
+            initialFetchCompletedRef.current = true; // Mark initial fetch as completed
             setPropsProcessing(false); // Reset processing state when we have data
             
             // Save to sessionStorage for instant load on back navigation
@@ -904,6 +879,7 @@ export default function NBALandingPage() {
               setPlayerProps([]);
             }
             setPropsProcessing(!cacheData.cached); // Show processing state if cache is empty
+            initialFetchCompletedRef.current = true; // Mark initial fetch as completed
             setPropsLoading(false);
             
             // If cache is empty, trigger processing in the background (non-blocking)
@@ -921,6 +897,7 @@ export default function NBALandingPage() {
           if (!propsLoadedRef.current) {
             setPlayerProps([]);
           }
+          initialFetchCompletedRef.current = true; // Mark initial fetch as completed even on error
           setPropsLoading(false);
           return;
         }
@@ -930,6 +907,7 @@ export default function NBALandingPage() {
         if (!propsLoadedRef.current) {
           setPlayerProps([]);
         }
+        initialFetchCompletedRef.current = true; // Mark initial fetch as completed even on error
         setPropsLoading(false);
       }
     };
@@ -3017,28 +2995,123 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                   Top Player Props
                 </h2>
                 
-                {propsLoading ? (
-                    <div className="text-center py-12">
-                      <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        Loading player props...
+                {filteredPlayerProps.length === 0 ? (
+                    <>
+                      {/* Desktop Skeleton - Hidden on mobile */}
+                      <div className="hidden lg:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
+                              <th className="py-3 px-4 text-left">
+                                <div className={`h-8 w-32 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                              </th>
+                              <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
+                              <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L5</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L10</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Tipoff</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...Array(10)].map((_, idx) => (
+                              <tr key={idx} className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                                      <div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="space-y-1.5">
+                                    <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                    <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className={`h-4 w-12 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-4 w-16 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    </div>
-                  ) : filteredPlayerProps.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {propsProcessing 
-                          ? 'Processing player props... This may take a few minutes. Please check back shortly!'
-                          : playerProps.length === 0 
-                            ? 'No player props available at this time. Check back later!'
-                            : 'No player props match your filters. Try adjusting your search or filters.'}
+                      
+                      {/* Mobile Skeleton - Hidden on desktop */}
+                      <div className={`lg:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
+                        {[...Array(5)].map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={`rounded-xl border-2 pl-3 pr-4 py-3.5 ${
+                              isDark ? 'bg-[#0a1929] border-gray-900' : 'bg-white border-gray-200'
+                            }`}
+                          >
+                            {/* Header Section */}
+                            <div className="mb-1.5">
+                              <div className="flex items-center gap-2.5 mb-2">
+                                <div className={`w-10 h-10 rounded-full animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                <div className="flex-1 space-y-2">
+                                  <div className={`h-5 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  <div className={`h-4 w-24 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-6 h-6 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  <div className={`w-6 h-6 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-4 gap-2 mb-2">
+                              {[...Array(4)].map((_, statIdx) => (
+                                <div
+                                  key={statIdx}
+                                  className={`rounded-lg border p-2 animate-pulse ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'}`}
+                                  style={{ animationDelay: `${idx * 0.1 + statIdx * 0.05}s` }}
+                                >
+                                  <div className={`h-3 w-12 mb-1 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                                  <div className={`h-4 w-8 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Bottom Row */}
+                            <div className="flex items-center justify-between">
+                              <div className={`h-4 w-20 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                              <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      {propsProcessing && (
-                        <div className="mt-4 flex justify-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                    </>
+                  ) : filteredPlayerProps.length > 0 ? (
                     <>
                       {/* Desktop Table View - Hidden on mobile */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -4762,7 +4835,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                         </div>
                       </div>
                     </>
-                  )}
+                  ) : null}
                   
                   {/* Mobile Games Section - Hidden */}
                   <div className="hidden mt-6">
