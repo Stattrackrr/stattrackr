@@ -30,9 +30,9 @@ export default memo(function StaticBarsChart({
   selectedStat: string;
   compactMobile?: boolean;
   selectedTimeframe?: string;
-  onChartTouchStart?: () => void;
-  onChartTouchMove?: () => void;
-  onChartTouchEnd?: () => void;
+  onChartTouchStart?: (e: any) => void;
+  onChartTouchMove?: (e: any) => void;
+  onChartTouchEnd?: (e: any) => void;
   onChartMouseLeave?: () => void;
 }) {
   const colorMap = useMemo(() => {
