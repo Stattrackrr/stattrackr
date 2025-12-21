@@ -22,6 +22,7 @@ export default function PricingPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const isLoggedIn = Boolean(user);
 
   useEffect(() => {
@@ -33,6 +34,8 @@ export default function PricingPage() {
         setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
         setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
         checkPremiumStatus(session.user.id);
+      } else {
+        setIsCheckingSubscription(false);
       }
     });
 
@@ -122,10 +125,14 @@ export default function PricingPage() {
       // Redirect pro users to props page immediately after checking
       if (premiumStatus) {
         router.replace('/nba');
+        return; // Don't set isCheckingSubscription to false, let redirect happen
       }
+      
+      setIsCheckingSubscription(false);
     } catch (error) {
       console.error('Error in checkPremiumStatus:', error);
       setHasPremium(false);
+      setIsCheckingSubscription(false);
     }
   };
 
@@ -217,6 +224,15 @@ export default function PricingPage() {
       alert(error.message || 'Failed to start checkout. Please try again.');
     }
   };
+
+  // Don't render page content while checking subscription status
+  if (isCheckingSubscription) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden">
