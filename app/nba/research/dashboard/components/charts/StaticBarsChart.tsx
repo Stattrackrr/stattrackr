@@ -145,7 +145,7 @@ export default memo(function StaticBarsChart({
           animationDuration={0}
           wrapperStyle={{ zIndex: 9999 }}
           cursor={compactMobile ? false : { fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
-          trigger={compactMobile ? 'none' : 'hover'}
+          trigger={compactMobile ? undefined : 'hover'}
           active={compactMobile ? false : undefined}
         />
         <Bar 
