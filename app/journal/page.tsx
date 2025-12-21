@@ -3419,7 +3419,7 @@ function JournalContent() {
                           .update({
                             preferred_journal_input: mobilePreferredJournalInput,
                             preferred_currency: mobilePreferredCurrency,
-                          })
+                          } as any)
                           .eq('id', user.id);
                         
                         if (updateError) {
@@ -3430,7 +3430,7 @@ function JournalContent() {
                               id: user.id,
                               preferred_journal_input: mobilePreferredJournalInput,
                               preferred_currency: mobilePreferredCurrency,
-                            });
+                            } as any);
                           
                           if (insertError) {
                             console.error('Error saving journal preferences:', {
@@ -3629,7 +3629,7 @@ function JournalContent() {
                           // Try to update first, if profile doesn't exist, insert it
                           const { error: updateError } = await supabase
                             .from('profiles')
-                            .update(updates)
+                            .update(updates as any)
                             .eq('id', user.id);
                           
                           if (updateError) {
@@ -3640,7 +3640,7 @@ function JournalContent() {
                                 .insert({
                                   id: user.id,
                                   ...updates
-                                });
+                                } as any);
                               
                               if (insertError) throw insertError;
                             } else {
