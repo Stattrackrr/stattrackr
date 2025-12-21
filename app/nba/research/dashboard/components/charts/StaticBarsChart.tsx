@@ -110,27 +110,14 @@ export default memo(function StaticBarsChart({
         maxBarSize={data.length <= 5 ? 250 : data.length <= 10 ? 250 : computedMaxBarSize}
         barCategoryGap={computedBarCategoryGap}
         barGap={selectedStat === 'fg3m' ? -40 : (compactMobile ? 2 : 2)}
-        onTouchStart={(e) => {
+        onTouchStart={(e: any) => {
           onChartTouchStart?.(e);
-          // Prevent Recharts from handling touch events on mobile during scroll
-          if (compactMobile && e) {
-            e.stopPropagation();
-          }
         }}
-        onTouchMove={(e) => {
+        onTouchMove={(e: any) => {
           onChartTouchMove?.(e);
-          // Always prevent Recharts tooltip during movement (scrolling)
-          if (compactMobile && e) {
-            e.stopPropagation();
-            e.preventDefault();
-          }
         }}
-        onTouchEnd={(e) => {
+        onTouchEnd={(e: any) => {
           onChartTouchEnd?.(e);
-          // Prevent Recharts from handling touch events
-          if (compactMobile && e) {
-            e.stopPropagation();
-          }
         }}
         onMouseLeave={onChartMouseLeave}
       >
