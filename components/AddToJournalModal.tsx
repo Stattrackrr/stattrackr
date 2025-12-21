@@ -205,24 +205,32 @@ export default function AddToJournalModal({
           .single();
         
         if (profile) {
-          if (profile.preferred_journal_input) {
-            setPreferredJournalInput(profile.preferred_journal_input as 'money' | 'units');
+          const profileData = profile as {
+            preferred_journal_input?: string | null;
+            preferred_currency?: string | null;
+            unit_size?: number | null;
+            bankroll?: number | null;
+            unit_type?: string | null;
+            bankroll_currency?: string | null;
+          };
+          if (profileData.preferred_journal_input) {
+            setPreferredJournalInput(profileData.preferred_journal_input as 'money' | 'units');
           }
-          if (profile.preferred_currency) {
-            setPreferredCurrency(profile.preferred_currency as typeof CURRENCIES[number]);
-            setCurrency(profile.preferred_currency as typeof CURRENCIES[number]);
+          if (profileData.preferred_currency) {
+            setPreferredCurrency(profileData.preferred_currency as typeof CURRENCIES[number]);
+            setCurrency(profileData.preferred_currency as typeof CURRENCIES[number]);
           }
-          if (profile.unit_size !== null && profile.unit_size !== undefined) {
-            setUnitSize(parseFloat(profile.unit_size.toString()));
+          if (profileData.unit_size !== null && profileData.unit_size !== undefined) {
+            setUnitSize(parseFloat(profileData.unit_size.toString()));
           }
-          if (profile.bankroll !== null && profile.bankroll !== undefined) {
-            setBankroll(parseFloat(profile.bankroll.toString()));
+          if (profileData.bankroll !== null && profileData.bankroll !== undefined) {
+            setBankroll(parseFloat(profileData.bankroll.toString()));
           }
-          if (profile.unit_type) {
-            setUnitType(profile.unit_type as 'value' | 'percent');
+          if (profileData.unit_type) {
+            setUnitType(profileData.unit_type as 'value' | 'percent');
           }
-          if (profile.bankroll_currency) {
-            setBankrollCurrency(profile.bankroll_currency as typeof CURRENCIES[number]);
+          if (profileData.bankroll_currency) {
+            setBankrollCurrency(profileData.bankroll_currency as typeof CURRENCIES[number]);
           }
         }
       } catch (error) {
