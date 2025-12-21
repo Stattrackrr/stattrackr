@@ -3657,20 +3657,25 @@ function JournalContent() {
                             .single();
                           console.log('[SAVE] Refreshed profile data:', refreshedProfile);
                           if (refreshedProfile) {
-                            if (refreshedProfile.unit_size) {
-                              const unitSizeValue = parseFloat(refreshedProfile.unit_size.toString());
+                            const profile = refreshedProfile as {
+                              unit_size?: number | null;
+                              bankroll?: number | null;
+                              bankroll_set_date?: string | null;
+                            };
+                            if (profile.unit_size) {
+                              const unitSizeValue = parseFloat(profile.unit_size.toString());
                               console.log('[SAVE] Setting unitSize to:', unitSizeValue);
                               setUnitSize(unitSizeValue);
                             } else {
                               console.log('[SAVE] No unit_size in refreshed profile');
                             }
-                            if (refreshedProfile.bankroll) {
-                              const bankrollValue = parseFloat(refreshedProfile.bankroll.toString());
+                            if (profile.bankroll) {
+                              const bankrollValue = parseFloat(profile.bankroll.toString());
                               console.log('[SAVE] Setting bankroll to:', bankrollValue);
                               setBankroll(bankrollValue);
                             }
-                            if (refreshedProfile.bankroll_set_date) {
-                              setBankrollSetDate(refreshedProfile.bankroll_set_date);
+                            if (profile.bankroll_set_date) {
+                              setBankrollSetDate(profile.bankroll_set_date);
                             }
                           } else {
                             console.log('[SAVE] No refreshed profile data returned');
