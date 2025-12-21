@@ -614,8 +614,17 @@ function JournalContent() {
           
           if (unitProfile) {
             console.log('[INITIAL LOAD] Profile data loaded:', unitProfile);
-            if (unitProfile.unit_size !== null && unitProfile.unit_size !== undefined) {
-              const unitSizeValue = parseFloat(unitProfile.unit_size.toString());
+            const profile = unitProfile as {
+              unit_size?: number | null;
+              bankroll?: number | null;
+              unit_type?: string | null;
+              bankroll_currency?: string | null;
+              preferred_journal_input?: string | null;
+              preferred_currency?: string | null;
+              bankroll_set_date?: string | null;
+            };
+            if (profile.unit_size !== null && profile.unit_size !== undefined) {
+              const unitSizeValue = parseFloat(profile.unit_size.toString());
               console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
               setUnitSize(unitSizeValue);
               if (!mobileUnitSize) {
@@ -624,30 +633,30 @@ function JournalContent() {
             } else {
               console.log('[INITIAL LOAD] No unit_size found in profile');
             }
-            if (unitProfile.bankroll !== null && unitProfile.bankroll !== undefined) {
-              const bankrollValue = parseFloat(unitProfile.bankroll.toString());
+            if (profile.bankroll !== null && profile.bankroll !== undefined) {
+              const bankrollValue = parseFloat(profile.bankroll.toString());
               console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
               setBankroll(bankrollValue);
               if (!mobileBankroll) {
-                setMobileBankroll(unitProfile.bankroll.toString());
+                setMobileBankroll(profile.bankroll.toString());
               }
             } else {
               console.log('[INITIAL LOAD] No bankroll found in profile');
             }
-            if (unitProfile.bankroll_set_date) {
-              setBankrollSetDate(unitProfile.bankroll_set_date);
+            if (profile.bankroll_set_date) {
+              setBankrollSetDate(profile.bankroll_set_date);
             }
-            if (unitProfile.bankroll_currency) {
-              setMobileBankrollCurrency(unitProfile.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+            if (profile.bankroll_currency) {
+              setMobileBankrollCurrency(profile.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
             }
-            if (unitProfile.unit_type) {
-              setMobileUnitType(unitProfile.unit_type as 'value' | 'percent');
+            if (profile.unit_type) {
+              setMobileUnitType(profile.unit_type as 'value' | 'percent');
             }
-            if (unitProfile.preferred_journal_input) {
-              setMobilePreferredJournalInput(unitProfile.preferred_journal_input as 'money' | 'units');
+            if (profile.preferred_journal_input) {
+              setMobilePreferredJournalInput(profile.preferred_journal_input as 'money' | 'units');
             }
-            if (unitProfile.preferred_currency) {
-              setMobilePreferredCurrency(unitProfile.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+            if (profile.preferred_currency) {
+              setMobilePreferredCurrency(profile.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
             }
           }
         } catch (unitError) {
@@ -838,18 +847,23 @@ function JournalContent() {
             
             console.log('Refreshed profile data:', unitProfile);
             if (unitProfile) {
-              if (unitProfile.unit_size !== null && unitProfile.unit_size !== undefined) {
-                const unitSizeValue = parseFloat(unitProfile.unit_size.toString());
+              const profile = unitProfile as {
+                unit_size?: number | null;
+                bankroll?: number | null;
+                bankroll_set_date?: string | null;
+              };
+              if (profile.unit_size !== null && profile.unit_size !== undefined) {
+                const unitSizeValue = parseFloat(profile.unit_size.toString());
                 console.log('Refreshing unitSize to:', unitSizeValue);
                 setUnitSize(unitSizeValue);
               }
-              if (unitProfile.bankroll !== null && unitProfile.bankroll !== undefined) {
-                const bankrollValue = parseFloat(unitProfile.bankroll.toString());
+              if (profile.bankroll !== null && profile.bankroll !== undefined) {
+                const bankrollValue = parseFloat(profile.bankroll.toString());
                 console.log('Refreshing bankroll to:', bankrollValue);
                 setBankroll(bankrollValue);
               }
-              if (unitProfile.bankroll_set_date) {
-                setBankrollSetDate(unitProfile.bankroll_set_date);
+              if (profile.bankroll_set_date) {
+                setBankrollSetDate(profile.bankroll_set_date);
               }
             }
           }
