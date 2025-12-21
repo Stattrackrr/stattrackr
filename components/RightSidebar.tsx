@@ -76,7 +76,7 @@ export default function RightSidebar({
   const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
   const { isDark } = useTheme();
   const { trackedBets, removeTrackedBet, clearAllTrackedBets, refreshTrackedBets } = useTrackedBets();
-  const [activeTab, setActiveTab] = useState<TabType>('tracked');
+  const [activeTab, setActiveTab] = useState<TabType>('journal');
   const [journalBets, setJournalBets] = useState<JournalBet[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -176,11 +176,8 @@ export default function RightSidebar({
   // Prevent hydration mismatch by waiting for client mount
   useEffect(() => {
     setIsMounted(true);
-    // Load saved tab preference
-    const savedTab = localStorage.getItem('rightSidebar.activeTab');
-    if (savedTab === 'journal' || savedTab === 'tracked') {
-      setActiveTab(savedTab);
-    }
+    // Always show journal tab
+    setActiveTab('journal');
     // Load tracked bets from Supabase on mount
     handleRefresh();
   }, []);
@@ -739,228 +736,25 @@ export default function RightSidebar({
                     Clear Filters
                   </button>
                 )}
-                <button
-                  onClick={() => setShowAdvanced(false)}
-                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                >
-                  Back to Tracking
-                </button>
               </div>
             </div>
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-medium">
+                Last 15 bets
+              </div>
               <button
-                onClick={() => setActiveTab('journal')}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'journal'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                onClick={fetchJournalBets}
+                disabled={isRefreshing}
+                className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 hover:bg-purple-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
+                title="Refresh journal"
               >
-                <History className="w-4 h-4" />
-                Journal
-              </button>
-              <button
-                onClick={() => setActiveTab('tracked')}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'tracked'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <Target className="w-4 h-4" />
-                Tracking
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
               </button>
             </div>
-            
-            {activeTab === 'tracked' && (
-          <>
-            {/* Stats and Actions */}
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {isMounted ? trackedBets.length : 0} prop{(isMounted ? trackedBets.length : 0) !== 1 ? 's' : ''} tracked
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {isMounted ? resultedBets : 0} resulted
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-xs px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                )}
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 hover:bg-purple-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
-                  title="Refresh tracked bets"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-              {isMounted && trackedBets.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => setConfirmClearAll(true)}
-                    className="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-500/20 transition-colors"
-                  >
-                    Clear All
-                  </button>
-                  {confirmClearAll && (
-                    <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50 min-w-[200px]">
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                        Remove all {trackedBets.length} bets?
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={clearAll}
-                          className="flex-1 text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        >
-                          Remove
-                        </button>
-                        <button
-                          onClick={() => setConfirmClearAll(false)}
-                          className="flex-1 text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              </div>
-            </div>
-            
-            {/* Search Bar */}
-            {isMounted && trackedBets.length > 0 && (
-              <>
-                <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search players..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                
-                {/* Filters - Horizontal Layout - All 3 in one row */}
-                <div className="flex items-start gap-2 mb-3">
-                  {/* Team Filter with Counts */}
-                  <div className="flex-[1.3] min-w-[100px] relative z-50">
-                    <button
-                      onClick={() => setTeamDropdownOpen(!teamDropdownOpen)}
-                      className="w-full h-[38px] flex items-center justify-between gap-2 px-3 rounded-lg border text-sm bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-black dark:text-white"
-                    >
-                      <span className="flex items-center gap-2">
-                        {selectedTeam !== 'all' && !imageErrors.has(selectedTeam) && (
-                          <img 
-                            src={getEspnLogoUrl(selectedTeam)} 
-                            alt={selectedTeam} 
-                            className="w-5 h-5 object-contain" 
-                            onError={(e) => handleImageError(e, selectedTeam)}
-                          />
-                        )}
-                        <span className="font-semibold">
-                          {selectedTeam === 'all' ? `All Opp (${timeframeFilteredBets.length})` : selectedTeam}
-                        </span>
-                      </span>
-                      <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {teamDropdownOpen && (
-                      <>
-                        <div className="absolute z-[100] mt-1 left-0 right-0 rounded-md border shadow-lg overflow-hidden bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-gray-600">
-                          <div className="max-h-56 overflow-y-auto custom-scrollbar overscroll-contain">
-                            <button
-                              onClick={() => { setSelectedTeam('all'); setTeamDropdownOpen(false); }}
-                              className="w-full flex items-center gap-2 px-2 py-2 text-sm text-left hover:bg-gray-200 dark:hover:bg-gray-600 text-black dark:text-white"
-                            >
-                              <span className="font-medium">All Opp ({timeframeFilteredBets.length})</span>
-                            </button>
-                            {allTeamsWithCounts.map(({ team, count }) => (
-                              <button
-                                key={team}
-                                onClick={() => { setSelectedTeam(team); setTeamDropdownOpen(false); }}
-                                className="w-full flex items-center gap-2 px-2 py-2 text-sm text-left hover:bg-gray-200 dark:hover:bg-gray-600 text-black dark:text-white"
-                              >
-                                {!imageErrors.has(team) && (
-                                  <img 
-                                    src={getEspnLogoUrl(team)} 
-                                    alt={team} 
-                                    className="w-5 h-5 object-contain" 
-                                    onError={(e) => handleImageError(e, team)}
-                                  />
-                                )}
-                                <span className="font-medium">{count > 0 ? `${team} (${count})` : team}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="fixed inset-0 z-[90]" onClick={() => setTeamDropdownOpen(false)} />
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Bookmaker Filter with Counts */}
-                  <select
-                    value={selectedBookmaker}
-                    onChange={(e) => setSelectedBookmaker(e.target.value)}
-                    className="flex-[1.35] min-w-[125px] h-[38px] px-3 text-sm bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="all">All Bookmakers ({timeframeFilteredBets.length})</option>
-                    {BOOKMAKER_OPTIONS.map(bookmaker => {
-                      const count = bookmakerPropCounts.get(bookmaker) || 0;
-                      return (
-                        <option key={bookmaker} value={bookmaker}>
-                          {count > 0 ? `${bookmaker} (${count})` : bookmaker}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  
-                  {/* Timeframe Filter */}
-                  <select
-                    value={selectedTimeframe}
-                    onChange={(e) => setSelectedTimeframe(e.target.value)}
-                    className="flex-[0.8] min-w-[90px] h-[38px] px-3 text-sm bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {TIMEFRAME_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-          </>
-        )}
-            
-            {activeTab === 'journal' && (
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">
-                  Last 15 bets
-                </div>
-                <button
-                  onClick={fetchJournalBets}
-                  disabled={isRefreshing}
-                  className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 hover:bg-purple-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
-                  title="Refresh journal"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -1131,170 +925,6 @@ export default function RightSidebar({
             </div>
           </div>
         ) : (
-          activeTab === 'tracked' ? (
-            !isMounted || trackedBets.length === 0 ? (
-          <div className="p-4 text-center text-black dark:text-white opacity-70">
-            <div className="text-sm">No bets tracked yet</div>
-            <div className="text-xs mt-2">Add bets from the research pages to track them here</div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {paginatedBets.map((bet) => (
-              <div
-                key={bet.id}
-                className={`bg-white dark:bg-slate-800 rounded-lg p-3 border-2 relative group ${
-                  bet.result === 'win' 
-                    ? 'border-green-500 dark:border-green-400' 
-                    : bet.result === 'loss' 
-                    ? 'border-red-500 dark:border-red-400' 
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                
-                {/* Player Name + Date */}
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-sm font-bold text-black dark:text-white">{bet.playerName}</div>
-                  {bet.gameDate && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(bet.gameDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Prop Line */}
-                <div className="text-xs text-black dark:text-white mb-2">
-                  {bet.selection.replace('FG3M', '3PM')}
-                </div>
-                
-                {/* Team vs Opponent */}
-                {bet.team && bet.opponent && (
-                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                    {bet.team} vs {bet.opponent}
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <div className="text-gray-600 dark:text-gray-400">
-                    {bet.odds > 0 ? (
-                      <>Odds: <span className="font-semibold text-black dark:text-white">{formatOdds(bet.odds, oddsFormat)}</span></>
-                    ) : (
-                      <span>&nbsp;</span>
-                    )}
-                  </div>
-                  <div>
-                    {bet.isCustom ? (
-                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-xs font-medium">CUSTOM</span>
-                    ) : bet.bookmaker ? (
-                      <span className="font-semibold text-purple-600 dark:text-purple-400">{bet.bookmaker}</span>
-                    ) : null}
-                  </div>
-                </div>
-                
-                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs flex items-center justify-between">
-                  {bet.gameStatus === 'completed' && !bet.result ? (
-                    <span className="px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded font-medium">
-                      VOID
-                    </span>
-                  ) : bet.gameStatus === 'scheduled' ? (
-                    <span className="px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded font-medium">
-                      SCHEDULED
-                    </span>
-                  ) : bet.gameStatus === 'live' && bet.result === 'pending' ? (
-                    <span className="px-2 py-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded font-medium">
-                      TRACKING
-                    </span>
-                  ) : bet.result === 'win' ? (
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded font-medium">
-                        W
-                      </span>
-                      {formatStatBreakdown(bet) && (
-                        <span className="text-black dark:text-white">
-                          {formatStatBreakdown(bet)}
-                        </span>
-                      )}
-                    </div>
-                  ) : bet.result === 'loss' ? (
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 bg-red-500/10 text-red-600 dark:text-red-400 rounded font-medium">
-                        L
-                      </span>
-                      {formatStatBreakdown(bet) && (
-                        <span className="text-black dark:text-white">
-                          {formatStatBreakdown(bet)}
-                        </span>
-                      )}
-                    </div>
-                  ) : null}
-                  
-                  <button
-                    onClick={() => setConfirmRemoveId(bet.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
-                    title="Remove bet"
-                  >
-                    <X className="w-4 h-4 text-red-500" />
-                  </button>
-                  {confirmRemoveId === bet.id && (
-                    <div className="absolute bottom-2 right-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Remove bet?</p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => removeBet(bet.id)}
-                          className="flex-1 text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={() => setConfirmRemoveId(null)}
-                          className="flex-1 text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          No
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              ))}
-            </div>
-            
-            {/* Pagination Controls */}
-            {filteredBets.length > PROPS_PER_PAGE && (
-              <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between text-xs">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    ← Prev
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-600 dark:text-gray-400">Page</span>
-                    <span className="font-bold text-purple-600 dark:text-purple-400">{currentPage}</span>
-                    <span className="text-gray-600 dark:text-gray-400">of</span>
-                    <span className="font-bold text-purple-600 dark:text-purple-400">{totalPages}</span>
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next →
-                  </button>
-                </div>
-                
-                <div className="text-center mt-2 text-xs text-gray-600 dark:text-gray-400">
-                  Showing {startIndex + 1}-{Math.min(endIndex, filteredBets.length)} of {filteredBets.length} props
-                </div>
-              </div>
-            )}
-          </div>
-            )
-          ) : activeTab === 'journal' ? (
           journalBets.length === 0 ? (
             <div className="p-4 text-center text-black dark:text-white opacity-70">
               <div className="text-sm">No bets in journal yet</div>
@@ -1435,40 +1065,9 @@ export default function RightSidebar({
               )}
             </div>
           )
-          ) : null
         )}
       </div>
       
-      {/* Tracking Record Footer */}
-      {!showAdvanced && activeTab === 'tracked' && isMounted && resultedBets > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-800/50">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Tracking Record</span>
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded hover:bg-purple-500/20 transition-colors"
-                >
-                  {showAdvanced ? 'Hide' : 'Advanced'}
-                </button>
-              </div>
-              <span className="text-xs font-semibold text-black dark:text-white">{winRate}%</span>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600 dark:text-gray-400">Total Wins:</span>
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">{wins}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600 dark:text-gray-400">Total Losses:</span>
-                <span className="text-sm font-bold text-red-600 dark:text-red-400">{losses}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

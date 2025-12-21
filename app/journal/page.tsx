@@ -267,7 +267,6 @@ function JournalContent() {
   const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
-  const [showMobileTracking, setShowMobileTracking] = useState(false);
   const [dateRange, setDateRange] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('journal-dateRange') as 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly') || 'all';
@@ -280,6 +279,15 @@ function JournalContent() {
     }
     return 'USD';
   });
+  const [viewMode, setViewMode] = useState<'money' | 'units'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('journal-viewMode') as 'money' | 'units') || 'money';
+    }
+    return 'money';
+  });
+  const [unitSize, setUnitSize] = useState<number | null>(null);
+  const [bankroll, setBankroll] = useState<number | null>(null);
+  const [bankrollSetDate, setBankrollSetDate] = useState<string | null>(null);
   
   const currencySymbols: Record<typeof currency, string> = {
     USD: '$',
@@ -298,6 +306,31 @@ function JournalContent() {
          : ''
      : '';
    return `${signPrefix}${symbol}${Math.abs(value).toFixed(2)}`;
+ };
+ 
+ // Convert money to units if in units mode
+ const convertToUnits = (moneyValue: number): number => {
+   if (viewMode === 'money' || !unitSize || unitSize <= 0) {
+     return moneyValue;
+   }
+   return moneyValue / unitSize;
+ };
+ 
+ // Format value based on view mode
+ const formatValue = (value: number, options?: { showSign?: boolean }) => {
+   if (viewMode === 'units') {
+     const units = convertToUnits(value);
+     const showSign = options?.showSign ?? false;
+     const signPrefix = showSign
+       ? units > 0
+         ? '+'
+         : units < 0
+           ? '-'
+           : ''
+       : '';
+     return `${signPrefix}${Math.abs(units).toFixed(2)} units`;
+   }
+   return formatCurrency(value, options);
  };
   const [sport, setSport] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -338,12 +371,22 @@ function JournalContent() {
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
+  const prevModalStateRef = useRef(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [showMobileUnitSettingsModal, setShowMobileUnitSettingsModal] = useState(false);
+  const [mobileBankroll, setMobileBankroll] = useState<string>('');
+  const [mobileBankrollCurrency, setMobileBankrollCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
+  const [mobileUnitSize, setMobileUnitSize] = useState<string>('');
+  const [mobileUnitType, setMobileUnitType] = useState<'value' | 'percent'>('value');
+  const [mobilePreferredJournalInput, setMobilePreferredJournalInput] = useState<'money' | 'units'>('money');
+  const [mobilePreferredCurrency, setMobilePreferredCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
+  const [savingMobileUnitSize, setSavingMobileUnitSize] = useState(false);
+  const [showMobileSuccessMessage, setShowMobileSuccessMessage] = useState(false);
+  const [showUnitSizeModal, setShowUnitSizeModal] = useState(false);
+  const { theme, setTheme } = useTheme();
   
-  const handleViewTrackingClick = () => {
-    router.push('/journal?tab=tracking');
-    setShowMobileTracking(true);
-  };
-
   const handleSubscriptionClick = async () => {
     if (isPro) {
       try {
@@ -396,6 +439,10 @@ function JournalContent() {
   }, [currency]);
   
   useEffect(() => {
+    localStorage.setItem('journal-viewMode', viewMode);
+  }, [viewMode]);
+  
+  useEffect(() => {
     localStorage.setItem('journal-sport', sport);
   }, [sport]);
   
@@ -407,14 +454,6 @@ function JournalContent() {
     localStorage.setItem('journal-bookmaker', bookmaker);
   }, [bookmaker]);
   
-  // Check URL params for tab selection
-  useEffect(() => {
-    if (!searchParams) return;
-    const tab = searchParams.get('tab');
-    if (tab === 'tracking') {
-      setShowMobileTracking(true);
-    }
-  }, [searchParams]);
   
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -436,6 +475,10 @@ function JournalContent() {
           !target.closest('[data-profile-button]')) {
         setShowProfileDropdown(false);
       }
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(target) &&
+          !target.closest('[data-settings-button]')) {
+        setShowSettingsDropdown(false);
+      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
@@ -450,9 +493,6 @@ function JournalContent() {
       const hasSidebar = width >= 1024; // lg breakpoint
       setIsLargeScreen(isLarge);
       setHasDesktopSidebar(hasSidebar);
-      if (isLarge) {
-        setShowMobileTracking(false);
-      }
     };
     
     // Initial check
@@ -485,12 +525,14 @@ function JournalContent() {
       }
 
       try {
-        // Check Pro access - query database directly
+        // Check Pro access - query database directly (matching dashboard approach)
         const { data: profile } = await (supabase
           .from('profiles') as any)
           .select('subscription_status, subscription_tier')
           .eq('id', session.user.id)
           .single();
+        
+        if (!isMounted) return;
         
         let isActive = false;
         let isPro = false;
@@ -507,25 +549,126 @@ function JournalContent() {
           isPro = metadata.subscription_plan === 'pro';
         }
         
+        // Fetch unit size, bankroll, and unit type from profile separately (non-blocking)
+        try {
+          const { data: unitProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('unit_size, bankroll, unit_type, bankroll_currency, preferred_journal_input, preferred_currency, bankroll_set_date')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.log('[INITIAL LOAD] Profile query error:', profileError);
+            // Try without bankroll_set_date in case column doesn't exist yet
+            const { data: unitProfileFallback } = await supabase
+              .from('profiles')
+              .select('unit_size, bankroll, unit_type, bankroll_currency, preferred_journal_input, preferred_currency')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (unitProfileFallback) {
+              console.log('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
+              if (unitProfileFallback.unit_size !== null && unitProfileFallback.unit_size !== undefined) {
+                const unitSizeValue = parseFloat(unitProfileFallback.unit_size.toString());
+                console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+                setUnitSize(unitSizeValue);
+                if (!mobileUnitSize) {
+                  setMobileUnitSize(unitSizeValue.toString());
+                }
+              } else {
+                console.log('[INITIAL LOAD] No unit_size in profile');
+              }
+              if (unitProfileFallback.bankroll !== null && unitProfileFallback.bankroll !== undefined) {
+                const bankrollValue = parseFloat(unitProfileFallback.bankroll.toString());
+                console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+                setBankroll(bankrollValue);
+                if (!mobileBankroll) {
+                  setMobileBankroll(unitProfileFallback.bankroll.toString());
+                }
+              } else {
+                console.log('[INITIAL LOAD] No bankroll in profile');
+              }
+              if (unitProfileFallback.bankroll_currency) {
+                setMobileBankrollCurrency(unitProfileFallback.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+              }
+              if (unitProfileFallback.unit_type) {
+                setMobileUnitType(unitProfileFallback.unit_type as 'value' | 'percent');
+              }
+              if (unitProfileFallback.preferred_journal_input) {
+                setMobilePreferredJournalInput(unitProfileFallback.preferred_journal_input as 'money' | 'units');
+              }
+              if (unitProfileFallback.preferred_currency) {
+                setMobilePreferredCurrency(unitProfileFallback.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+              }
+            }
+            return; // Exit early if we used fallback
+          }
+          
+          if (unitProfile) {
+            console.log('[INITIAL LOAD] Profile data loaded:', unitProfile);
+            if (unitProfile.unit_size !== null && unitProfile.unit_size !== undefined) {
+              const unitSizeValue = parseFloat(unitProfile.unit_size.toString());
+              console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+              setUnitSize(unitSizeValue);
+              if (!mobileUnitSize) {
+                setMobileUnitSize(unitSizeValue.toString());
+              }
+            } else {
+              console.log('[INITIAL LOAD] No unit_size found in profile');
+            }
+            if (unitProfile.bankroll !== null && unitProfile.bankroll !== undefined) {
+              const bankrollValue = parseFloat(unitProfile.bankroll.toString());
+              console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+              setBankroll(bankrollValue);
+              if (!mobileBankroll) {
+                setMobileBankroll(unitProfile.bankroll.toString());
+              }
+            } else {
+              console.log('[INITIAL LOAD] No bankroll found in profile');
+            }
+            if (unitProfile.bankroll_set_date) {
+              setBankrollSetDate(unitProfile.bankroll_set_date);
+            }
+            if (unitProfile.bankroll_currency) {
+              setMobileBankrollCurrency(unitProfile.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+            }
+            if (unitProfile.unit_type) {
+              setMobileUnitType(unitProfile.unit_type as 'value' | 'percent');
+            }
+            if (unitProfile.preferred_journal_input) {
+              setMobilePreferredJournalInput(unitProfile.preferred_journal_input as 'money' | 'units');
+            }
+            if (unitProfile.preferred_currency) {
+              setMobilePreferredCurrency(unitProfile.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+            }
+          }
+        } catch (unitError) {
+          // Silently fail - unit settings are optional and shouldn't block subscription check
+          console.log('Could not load unit settings (optional):', unitError);
+        }
+        
+        const proStatus = isActive && isPro;
+        
         // Cache active subscription status (to prevent logouts on errors)
         // But always update if subscription expires (isActive becomes false)
         if (isActive) {
-          lastSubscriptionStatus = { isActive: true, isPro };
+          lastSubscriptionStatus = { isActive: true, isPro: proStatus };
         } else {
           // Subscription expired - clear cache and update immediately
           lastSubscriptionStatus = null;
         }
         
-        if (!isMounted) return;
-        
         // Always update if status changed, subscription expired, or if this is the first check
-        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== isPro || !isActive || skipCache) {
-          console.log('🔐 Journal Pro Status Check:', { isActive, isPro, hasProAccess: isActive && isPro, profile, metadata: session.user.user_metadata });
-          setHasProAccess(isActive && isPro);
-          setIsPro(isActive && isPro);
+        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
+          console.log('🔐 Journal Pro Status Check:', { isActive, isPro, proStatus, profile, metadata: session.user.user_metadata });
+          
+          if (isMounted) {
+            setHasProAccess(proStatus);
+            setIsPro(proStatus);
+          }
           
           if (isActive) {
-            lastSubscriptionStatus = { isActive, isPro };
+            lastSubscriptionStatus = { isActive, isPro: proStatus };
           }
         }
         
@@ -669,6 +812,53 @@ function JournalContent() {
     };
   }, [router]);
 
+  // Refresh profile data when settings modal closes to ensure state is updated
+  useEffect(() => {
+    console.log('Settings modal state changed:', showMobileUnitSettingsModal, 'previous:', prevModalStateRef.current);
+    // Only refresh if modal just closed (was open, now closed)
+    if (prevModalStateRef.current && !showMobileUnitSettingsModal) {
+      console.log('Modal just closed, refreshing profile data');
+      const refreshProfileData = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const { data: unitProfile } = await supabase
+              .from('profiles')
+              .select('unit_size, bankroll, bankroll_set_date')
+              .eq('id', session.user.id)
+              .single();
+            
+            console.log('Refreshed profile data:', unitProfile);
+            if (unitProfile) {
+              if (unitProfile.unit_size !== null && unitProfile.unit_size !== undefined) {
+                const unitSizeValue = parseFloat(unitProfile.unit_size.toString());
+                console.log('Refreshing unitSize to:', unitSizeValue);
+                setUnitSize(unitSizeValue);
+              }
+              if (unitProfile.bankroll !== null && unitProfile.bankroll !== undefined) {
+                const bankrollValue = parseFloat(unitProfile.bankroll.toString());
+                console.log('Refreshing bankroll to:', bankrollValue);
+                setBankroll(bankrollValue);
+              }
+              if (unitProfile.bankroll_set_date) {
+                setBankrollSetDate(unitProfile.bankroll_set_date);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Could not refresh profile data:', error);
+        }
+      };
+      refreshProfileData();
+    }
+    prevModalStateRef.current = showMobileUnitSettingsModal;
+  }, [showMobileUnitSettingsModal]);
+
+  // Debug: Log state values when they change
+  useEffect(() => {
+    console.log('[STATE UPDATE] unitSize:', unitSize, 'bankroll:', bankroll, 'showUnitSizeModal:', showUnitSizeModal);
+  }, [unitSize, bankroll, showUnitSizeModal]);
+
   // Currency conversion rates (base: USD)
   const conversionRates: Record<string, Record<string, number>> = {
     USD: { USD: 1, AUD: 1.52, GBP: 0.79, EUR: 0.92 },
@@ -681,42 +871,6 @@ function JournalContent() {
   const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
     if (fromCurrency === toCurrency) return amount;
     return amount * (conversionRates[fromCurrency]?.[toCurrency] || 1);
-  };
-
-  // Delete bet from journal
-  const handleDeleteBet = async (betId: string) => {
-    if (!confirm('Are you sure you want to delete this bet?')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('bets')
-        .delete()
-        .eq('id', betId);
-
-      if (error) {
-        console.error('Failed to delete bet:', error);
-        alert('Failed to delete bet. Please try again.');
-        return;
-      }
-
-      // Refresh bets list
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data, error: fetchError } = await supabase
-          .from('bets')
-          .select('*')
-          .order('date', { ascending: false });
-        
-        if (!fetchError && data) {
-          setBets(data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error deleting bet:', error);
-      alert('An error occurred while deleting the bet. Please try again.');
-    }
   };
 
   // Filter bets based on current filters (no currency filter)
@@ -876,6 +1030,45 @@ function JournalContent() {
       voids: voids.length,
     };
   }, [filteredBets, currency]);
+
+  // Calculate current bankroll in money (only when in units mode and bankroll is set)
+  const currentBankroll = useMemo(() => {
+    if (viewMode !== 'units' || !bankroll || !unitSize) {
+      return null;
+    }
+    
+    // Convert initial bankroll from bankroll_currency to current currency
+    const bankrollCurrency = mobileBankrollCurrency || 'USD';
+    let initialBankrollInCurrency = convertCurrency(bankroll, bankrollCurrency, currency);
+    
+    // If bankroll_set_date is not set, just show the initial bankroll
+    if (!bankrollSetDate) {
+      return initialBankrollInCurrency;
+    }
+    
+    // Get bets after bankroll_set_date
+    const bankrollDate = new Date(bankrollSetDate);
+    const betsAfterBankroll = filteredBets.filter(bet => {
+      const betDate = new Date(bet.date);
+      return betDate >= bankrollDate;
+    });
+    
+    // Calculate P&L from bets after bankroll was set (in current currency)
+    const settledBetsAfterBankroll = betsAfterBankroll.filter(bet => bet.result !== 'pending' && bet.result !== 'void');
+    
+    let totalPLAfterBankroll = 0;
+    settledBetsAfterBankroll.forEach(bet => {
+      const convertedStake = convertCurrency(bet.stake, bet.currency, currency);
+      if (bet.result === 'win') {
+        totalPLAfterBankroll += convertedStake * (bet.odds - 1);
+      } else if (bet.result === 'loss') {
+        totalPLAfterBankroll -= convertedStake;
+      }
+    });
+    
+    // Current bankroll = initial bankroll (in current currency) + P&L (in current currency)
+    return initialBankrollInCurrency + totalPLAfterBankroll;
+  }, [viewMode, bankroll, bankrollSetDate, filteredBets, currency, unitSize, mobileBankrollCurrency, convertCurrency]);
 
   // Calculate profit by bookmaker with real data
   const profitByBookmaker = useMemo(() => {
@@ -1188,7 +1381,7 @@ function JournalContent() {
     );
   }
 
-  // Paywall for non-Pro users
+  // Paywall for non-Pro users (only show if explicitly false, not if null/loading)
   if (hasProAccess === false) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -1228,7 +1421,7 @@ function JournalContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-slate-900 dark:text-white overflow-x-hidden pt-safe pb-safe">
+    <div className="min-h-screen bg-white dark:bg-[#050d1a] text-slate-900 dark:text-white overflow-x-hidden pt-safe pb-safe">
       <style jsx global>{`
         :root {
           --sidebar-width: 360px;
@@ -1312,8 +1505,6 @@ function JournalContent() {
             isPro={isPro}
             onSubscriptionClick={handleSubscriptionClick}
             onSignOutClick={handleSignOutClick}
-            showViewTrackingButton={hasDesktopSidebar && !isLargeScreen}
-            onViewTrackingClick={handleViewTrackingClick}
           />
         </div>
       )}
@@ -1340,7 +1531,7 @@ function JournalContent() {
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
-            <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden relative z-10">
+            <div className="w-full bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden relative z-10">
              {/* Top half - StatTrackr logo and filters */}
              <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4">
                <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4">
@@ -1353,12 +1544,13 @@ function JournalContent() {
                  </div>
                  
                  {/* Currency */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white">Currency</span>
                    <select
                      value={currency}
                      onChange={(e) => setCurrency(e.target.value as typeof currency)}
                      className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
+                     disabled={viewMode === 'units'}
                    >
                      <option value="USD">USD</option>
                      <option value="AUD">AUD</option>
@@ -1367,13 +1559,49 @@ function JournalContent() {
                    </select>
                  </div>
                  
+                 {/* View Mode Toggle (Money/Units) */}
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1">
+                   <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white">View</span>
+                   <div className="flex rounded-lg overflow-hidden border border-slate-300 dark:border-gray-600">
+                     <button
+                       onClick={() => setViewMode('money')}
+                       className={`px-2 md:px-3 py-1 text-xs md:text-sm font-medium transition-colors ${
+                         viewMode === 'money'
+                           ? 'bg-emerald-600 text-white'
+                           : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
+                       }`}
+                     >
+                       Money
+                     </button>
+                     <button
+                       onClick={() => {
+                         console.log('Units button clicked - unitSize:', unitSize, 'bankroll:', bankroll);
+                         if (!unitSize || unitSize <= 0) {
+                           console.log('Unit size not set, showing modal');
+                           setShowUnitSizeModal(true);
+                           return;
+                         }
+                         console.log('Unit size is set, switching to units mode');
+                         setViewMode('units');
+                       }}
+                       className={`px-2 md:px-3 py-1 text-xs md:text-sm font-medium transition-colors ${
+                         viewMode === 'units'
+                           ? 'bg-emerald-600 text-white'
+                           : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
+                       }`}
+                     >
+                       Units
+                     </button>
+                   </div>
+                 </div>
+                 
                  {/* Filters */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1 flex-1 relative z-30">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1 flex-1 relative z-30">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white whitespace-nowrap">Filters</span>
                    <select
                      value={sport}
                      onChange={(e) => setSport(e.target.value)}
-                     className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                     className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                    >
                      <option value="All">All Sports</option>
                      <option value="NBA">NBA</option>
@@ -1381,7 +1609,7 @@ function JournalContent() {
                   <select
                     value={betTypeFilter}
                     onChange={(e) => setBetTypeFilter(e.target.value as 'All' | 'Straight' | 'Parlay')}
-                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   >
                     <option value="All">All Bet Types</option>
                     <option value="Straight">Straight Bets</option>
@@ -1390,7 +1618,7 @@ function JournalContent() {
                   <select
                     value={bookmaker}
                     onChange={(e) => setBookmaker(e.target.value)}
-                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   >
                     <option value="All">All Bookmakers ({nonVoidBetsCount})</option>
                     {bookmakerOptions.map((option) => (
@@ -1403,7 +1631,7 @@ function JournalContent() {
                      <button
                        data-timeframe-button
                        onClick={() => setShowTimeframeDropdown((prev) => !prev)}
-                      className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-transparent bg-white dark:bg-gray-800 px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                      className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-transparent bg-white dark:bg-[#0a1929] px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-[#0f1f35] transition-colors"
                      >
                        <span className="hidden sm:inline">Timeframe</span>
                        <span className="capitalize">{dateRange}</span>
@@ -1413,7 +1641,7 @@ function JournalContent() {
                      </button>
                      
                      {showTimeframeDropdown && (
-                       <div className="absolute right-0 mt-2 w-40 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-hidden">
+                       <div className="absolute right-0 mt-2 w-40 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#0a1929] shadow-lg z-50 overflow-hidden">
                          {(['all', 'daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => (
                            <button
                              key={range}
@@ -1435,29 +1663,25 @@ function JournalContent() {
                    </div>
                  </div>
                  
-                {!isLargeScreen && (
-                  <button
-                    onClick={() => {
-                      router.push('/journal?tab=tracking');
-                      setShowMobileTracking(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 dark:border-purple-500/40 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs md:text-sm font-medium text-purple-600 dark:text-purple-300 shadow-sm hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a2 2 0 10-4 0v1.083A6 6 0 004 11v3.159c0 .538-.214 1.055-.595 1.436L2 17h5m4 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    View Tracking
-                  </button>
-                )}
                </div>
              </div>
               
               {/* Bottom half - 6 stat containers */}
               <div className="h-1/2 flex border-t border-slate-200 dark:border-gray-700/50 gap-1.5 md:gap-2 lg:gap-3 pb-2 md:pb-2.5 lg:pb-3 px-2 md:px-2.5 lg:px-3 py-1">
+                {/* Bankroll - Only show in units mode, placed first */}
+                {viewMode === 'units' && currentBankroll !== null && (
+                  <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                    <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Bankroll</span>
+                    <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center break-words text-center">
+                      {formatCurrency(currentBankroll)}
+                    </span>
+                  </div>
+                )}
+                
                 {/* Total P&L */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">
-                    Total P&L ({currency})
+                    Total P&L {viewMode === 'units' ? '(units)' : `(${currency})`}
                   </span>
                   <span
                     className={`text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex-1 flex items-center justify-center ${
@@ -1466,38 +1690,38 @@ function JournalContent() {
                       'text-slate-900 dark:text-white'
                     }`}
                   >
-                    {formatCurrency(stats.totalPL, { showSign: true })}
+                    {formatValue(stats.totalPL, { showSign: true })}
                   </span>
                 </div>
                 
                 {/* Total Staked */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">
-                    Total Staked ({currency})
+                    Total Staked {viewMode === 'units' ? '(units)' : `(${currency})`}
                   </span>
                   <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center break-words text-center">
-                    {formatCurrency(stats.totalStaked)}
+                    {formatValue(stats.totalStaked)}
                   </span>
                 </div>
                 
                 {/* Average Stake */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">
-                    Avg Stake ({currency})
+                    Avg Stake {viewMode === 'units' ? '(units)' : `(${currency})`}
                   </span>
                   <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center break-words text-center">
-                    {formatCurrency(stats.avgStake)}
+                    {formatValue(stats.avgStake)}
                   </span>
                 </div>
                 
                 {/* WIN % */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">WIN %</span>
                   <span className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold text-slate-900 dark:text-white flex-1 flex items-center justify-center">{stats.winRate.toFixed(1)}%</span>
                 </div>
                 
                 {/* ROI */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">ROI</span>
                   <span className={`text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex-1 flex items-center justify-center ${
                     stats.roi > 0 ? 'text-green-600 dark:text-green-400' :
@@ -1509,7 +1733,7 @@ function JournalContent() {
                 </div>
                 
                 {/* Record */}
-                <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
+                <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
                   <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-white">Record</span>
                   <div className="text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold flex items-center gap-0.5 md:gap-1 flex-1 justify-center">
                     <span className="text-green-600 dark:text-green-400">{stats.wins}</span>
@@ -1527,7 +1751,7 @@ function JournalContent() {
               {/* Left Column: Chart, Calendar, Profit sections */}
               <div className="flex flex-col gap-2 min-w-0 overflow-hidden lg:flex-[2.1]">
                 {/* Profit/Loss Chart */}
-                <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 overflow-hidden min-w-0">
+                <div className="chart-container-no-focus bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 overflow-hidden min-w-0">
                   <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white mb-2 md:mb-3 lg:mb-4">Profit/Loss Over Time</h3>
                   <div className="w-full h-48 md:h-64 lg:h-72 xl:h-80 relative min-w-0">
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -1582,14 +1806,14 @@ function JournalContent() {
                 {/* Calendar + Profit by Bookmaker row */}
                 <div className="flex gap-1.5 md:gap-2 min-w-0 overflow-hidden flex-shrink-0" style={{ height: 'clamp(400px, 50vh, 550px)' }}>
                   {/* Betting Calendar */}
-                  <div className="flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0">
+                  <div className="flex-1 bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0">
                     <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4 gap-2">
                       <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Betting Calendar</h3>
                       <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2">
                         <select
                           value={calendarView}
                           onChange={(e) => setCalendarView(e.target.value as 'day' | 'week' | 'month' | 'year')}
-                          className="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                           aria-label="Select calendar timeframe"
                         >
                           <option value="day">Day</option>
@@ -1608,7 +1832,7 @@ function JournalContent() {
                             className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
                               weekRange === range
                                 ? 'bg-purple-600 text-white'
-                                : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
+                                : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600'
                             }`}
                           >
                             {range === '1-26' ? 'Weeks 1-26' : 'Weeks 27-52'}
@@ -1627,7 +1851,7 @@ function JournalContent() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
-                        <div className="text-center text-xs md:text-sm font-semibold text-slate-900 dark:text-white">{calendarData.monthName}</div>
+                        <div className="text-center text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white">{calendarData.monthName}</div>
                         <button
                           onClick={navigateNext}
                           className="p-0.5 md:p-1 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white rounded transition-colors"
@@ -1641,7 +1865,7 @@ function JournalContent() {
                       {calendarView === 'day' && (
                         <div className="grid grid-cols-7 gap-1 md:gap-1.5 lg:gap-2 mb-1 md:mb-2 flex-shrink-0">
                           {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => (
-                            <div key={day} className="text-center text-[10px] md:text-xs font-medium text-slate-600 dark:text-slate-400">{day}</div>
+                            <div key={day} className="text-center text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{day}</div>
                           ))}
                         </div>
                       )}
@@ -1684,9 +1908,9 @@ function JournalContent() {
                             <div
                               key={idx}
                               onClick={handleClick}
-                              className={`flex flex-col items-center justify-center rounded-lg text-[10px] md:text-xs font-medium cursor-pointer transition-all hover:scale-105 overflow-hidden p-0.5 min-w-0 w-full h-full ${
+                              className={`flex flex-col items-center justify-center rounded-lg text-[9px] md:text-[10px] font-medium cursor-pointer transition-all hover:scale-105 overflow-hidden p-0.5 min-w-0 w-full h-full border border-slate-300/40 dark:border-gray-600/40 ${
                                 !item.day ? 'invisible' :
-                                item.profit === 0 ? 'bg-slate-200 dark:bg-gray-700 text-slate-600 dark:text-slate-400' :
+                                item.profit === 0 ? 'bg-slate-200 dark:bg-[#0a1929] text-slate-600 dark:text-slate-400' :
                                 item.profit > 100 ? 'bg-green-600 dark:bg-green-500 text-white' :
                                 item.profit > 0 ? 'bg-green-400 dark:bg-green-600 text-white' :
                                 item.profit < -50 ? 'bg-red-600 dark:bg-red-500 text-white' :
@@ -1694,16 +1918,16 @@ function JournalContent() {
                               }`}
                             >
                               <span className={`truncate w-full text-center leading-tight ${
-                                calendarView === 'month' ? 'text-xs md:text-sm lg:text-base font-bold' :
-                                calendarView === 'year' ? 'text-xs md:text-sm lg:text-base font-bold' :
-                                'text-xs md:text-sm'
+                                calendarView === 'month' ? 'text-[10px] md:text-xs lg:text-sm font-bold' :
+                                calendarView === 'year' ? 'text-[10px] md:text-xs lg:text-sm font-bold' :
+                                'text-[10px] md:text-xs'
                               }`}>{item.day}</span>
                               {item.day && item.profit !== 0 && (
                                 <span className={`truncate w-full text-center leading-tight ${
-                                  calendarView === 'month' ? 'text-xs md:text-sm lg:text-base xl:text-xl font-bold' :
-                                  calendarView === 'year' ? 'text-xs md:text-sm lg:text-base xl:text-xl font-bold' :
-                                  calendarView === 'week' ? 'text-[8px] md:text-[10px]' :
-                                  'text-[8px] md:text-[10px]'
+                                  calendarView === 'month' ? 'text-[9px] md:text-xs lg:text-sm xl:text-base font-bold' :
+                                  calendarView === 'year' ? 'text-[9px] md:text-xs lg:text-sm xl:text-base font-bold' :
+                                  calendarView === 'week' ? 'text-[7px] md:text-[9px]' :
+                                  'text-[7px] md:text-[9px]'
                                 } mt-0.5`}>{currencySymbols[currency]}{
                                   (calendarView === 'day' || calendarView === 'week') && Math.abs(item.profit) >= 1000
                                     ? (Math.abs(item.profit) / 1000).toFixed(1) + 'K'
@@ -1715,7 +1939,7 @@ function JournalContent() {
                         })}
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 text-[10px] md:text-xs mt-auto pt-1 md:pt-2">
+                    <div className="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 text-[9px] md:text-[10px] mt-auto pt-1 md:pt-2">
                       <div className="flex items-center gap-1">
                         <div className="w-4 h-4 rounded bg-green-600" />
                         <span className="text-slate-600 dark:text-slate-400">Profit</span>
@@ -1725,14 +1949,14 @@ function JournalContent() {
                         <span className="text-slate-600 dark:text-slate-400">Loss</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 rounded bg-slate-200 dark:bg-gray-700" />
+                        <div className="w-4 h-4 rounded bg-slate-200 dark:bg-[#0a1929]" />
                         <span className="text-slate-600 dark:text-slate-400">No Bets</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Profit by Bookmaker */}
-                  <div className="chart-container-no-focus flex-1 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col min-w-0 overflow-hidden">
+                  <div className="chart-container-no-focus flex-1 bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col min-w-0 overflow-hidden">
                     <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
                       <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -1799,7 +2023,7 @@ function JournalContent() {
                 </div>
 
                 {/* Profit by Market */}
-                <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0 h-[500px]">
+                <div className="chart-container-no-focus bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-3 md:p-4 lg:p-6 flex flex-col overflow-hidden min-w-0 h-[500px]">
                   <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
                     <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Market</h3>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -1866,7 +2090,7 @@ function JournalContent() {
               </div>
 
               {/* Right Column: Bet History */}
-              <div className="bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-2 md:p-3 lg:p-4 flex flex-col min-w-0 max-w-sm lg:flex-[0.9]">
+              <div className="bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-2 md:p-3 lg:p-4 flex flex-col min-w-0 max-w-sm lg:flex-[0.9]">
                 <div className="flex items-center justify-between mb-1.5 md:mb-2 flex-shrink-0">
                   <h3 className="text-xs md:text-sm lg:text-base font-semibold text-slate-900 dark:text-white">Bet History</h3>
                   <div className="flex items-center gap-1 md:gap-2">
@@ -1909,6 +2133,12 @@ function JournalContent() {
                         : bet.result === 'loss' 
                         ? -convertedStake 
                         : 0;
+                      // Calculate return amount: win = stake * odds, loss = 0, void = stake
+                      const returnAmount = bet.result === 'win' 
+                        ? convertedStake * bet.odds 
+                        : bet.result === 'void' 
+                        ? convertedStake 
+                        : 0;
                       const betDate = new Date(bet.date);
                       const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                       
@@ -1938,48 +2168,34 @@ function JournalContent() {
                             : bet.result === 'win' 
                             ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400'
                             : bet.result === 'void'
-                            ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-500 dark:border-gray-400'
+                            ? 'bg-gray-50 dark:bg-[#050d1a]/20 border-gray-500 dark:border-gray-400'
                             : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
                         }`}>
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                            <div className="flex items-center gap-1.5">
-                              {(isFinal || isLiveButDetermined) && (
-                                <span className={`text-[9px] md:text-[10px] font-bold ${
-                                  bet.result === 'win' 
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : bet.result === 'void'
-                                    ? 'text-gray-600 dark:text-gray-400'
-                                    : 'text-red-600 dark:text-red-400'
-                                }`}>
-                                  {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
+                            {(isFinal || isLiveButDetermined) && (
+                              <span className={`text-[9px] md:text-[10px] font-bold ${
+                                bet.result === 'win' 
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : bet.result === 'void'
+                                  ? 'text-gray-600 dark:text-gray-400'
+                                  : 'text-red-600 dark:text-red-400'
+                              }`}>
+                                {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
+                              </span>
+                            )}
+                            {isPending && (
+                              <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                            )}
+                            {isLive && !isDetermined && (
+                              <span className="text-[9px] md:text-[10px] font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                                 </span>
-                              )}
-                              {isPending && (
-                                <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
-                              )}
-                              {isLive && !isDetermined && (
-                                <span className="text-[9px] md:text-[10px] font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                                  <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                  </span>
-                                  LIVE
-                                </span>
-                              )}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteBet(bet.id);
-                                }}
-                                className="p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                                title="Delete bet"
-                              >
-                                <svg className="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
+                                LIVE
+                              </span>
+                            )}
                           </div>
                           {isParlay && parlayLegs.length > 0 ? (
                             <>
@@ -2013,7 +2229,12 @@ function JournalContent() {
                             <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
                           )}
                           <div className="flex items-center justify-between text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 flex-wrap gap-1">
-                            <span className="break-words">Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
+                            <span className="break-words">
+                              Stake: {viewMode === 'units' 
+                                ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
+                                : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`
+                              }
+                            </span>
                             <div className="flex flex-col items-end">
                               <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
                             </div>
@@ -2044,6 +2265,20 @@ function JournalContent() {
                               result={bet.result}
                             />
                           )}
+                          {isPending && (
+                            <div className="mt-0.5 flex justify-end">
+                              <span className="text-[9px] md:text-[10px] text-white dark:text-white font-semibold">
+                                Potential Return: {formatValue(convertedStake * bet.odds)}
+                              </span>
+                            </div>
+                          )}
+                          {!isPending && (bet.result === 'win' || bet.result === 'loss' || bet.result === 'void') && (
+                            <div className="mt-0.5 flex justify-end">
+                              <span className="text-[9px] md:text-[10px] text-white dark:text-white font-semibold">
+                                Returned: {formatValue(returnAmount)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -2053,11 +2288,11 @@ function JournalContent() {
             </div>
       </div>
       
-      {/* Mobile Content - Hidden when tracking is shown */}
-      {!showMobileTracking && (
+      {/* Mobile Content */}
+      {(
       <div className="lg:hidden w-full px-3 py-4 pb-20 space-y-2 overflow-y-auto">
         {/* 1. Top Stats Container */}
-        <div className="w-full bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col overflow-hidden">
+        <div className="w-full bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col overflow-hidden">
           {/* Top half - StatTrackr logo and filters */}
           <div className="flex flex-col items-center px-4 pt-4 pb-3 space-y-3">
             {/* Logo and Profile Icon Row */}
@@ -2076,12 +2311,46 @@ function JournalContent() {
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as typeof currency)}
                 className="h-8 px-3 rounded-lg text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
+                disabled={viewMode === 'units'}
               >
                 <option value="USD">USD</option>
                 <option value="AUD">AUD</option>
                 <option value="GBP">GBP</option>
                 <option value="EUR">EUR</option>
               </select>
+            </div>
+            
+            {/* View Mode Toggle (Money/Units) */}
+            <div className="flex items-center gap-2 w-full justify-center">
+              <span className="text-sm font-medium text-slate-600 dark:text-white">View</span>
+              <div className="flex rounded-lg overflow-hidden border border-slate-300 dark:border-gray-600">
+                <button
+                  onClick={() => setViewMode('money')}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'money'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
+                  }`}
+                >
+                  Money
+                </button>
+                <button
+                  onClick={() => {
+                    if (!unitSize || unitSize <= 0) {
+                      setShowUnitSizeModal(true);
+                      return;
+                    }
+                    setViewMode('units');
+                  }}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === 'units'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
+                  }`}
+                >
+                  Units
+                </button>
+              </div>
             </div>
             
             {/* Filters Section */}
@@ -2093,7 +2362,7 @@ function JournalContent() {
                 <select
                   value={sport}
                   onChange={(e) => setSport(e.target.value)}
-                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 >
                   <option value="All">All Sports</option>
                   <option value="NBA">NBA</option>
@@ -2103,7 +2372,7 @@ function JournalContent() {
                 <select
                   value={betTypeFilter}
                   onChange={(e) => setBetTypeFilter(e.target.value as 'All' | 'Straight' | 'Parlay')}
-                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 >
                   <option value="All">All Bet Types</option>
                   <option value="Straight">Straight Bets</option>
@@ -2116,7 +2385,7 @@ function JournalContent() {
                 <select
                   value={bookmaker}
                   onChange={(e) => setBookmaker(e.target.value)}
-                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-gray-700 text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  className="flex-1 h-8 px-3 rounded-lg text-sm bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 >
                   <option value="All">All Bookmakers ({bets.length})</option>
                   {bookmakerOptions.map((option) => (
@@ -2151,29 +2420,38 @@ function JournalContent() {
           
           {/* Bottom half - 6 stat containers */}
           <div className="grid grid-cols-2 gap-2 border-t border-slate-200 dark:border-gray-700/50 p-3">
+            {/* Bankroll - Only show in units mode, placed first */}
+            {viewMode === 'units' && currentBankroll !== null && (
+              <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+                <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Bankroll</span>
+                <span className="text-base font-semibold text-slate-900 dark:text-white">
+                  {formatCurrency(currentBankroll)}
+                </span>
+              </div>
+            )}
+            
             {/* Total P&L */}
             <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
-              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total P&L</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total P&L {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
               <div className={`text-base font-semibold ${
                 stats.totalPL > 0 ? 'text-green-600 dark:text-green-400' :
                 stats.totalPL < 0 ? 'text-red-600 dark:text-red-400' :
                 'text-slate-900 dark:text-white'
-              } flex flex-col items-center leading-tight`}>
-                <span>{currency}</span>
-                <span className="text-lg">{stats.totalPL >= 0 ? '+' : ''}{currencySymbols[currency]}{Math.abs(stats.totalPL).toFixed(2)}</span>
+              }`}>
+                {formatValue(stats.totalPL, { showSign: true })}
               </div>
             </div>
             
             {/* Total Staked */}
             <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
-              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total Staked</span>
-              <span className="text-base font-semibold text-slate-900 dark:text-white">{currency} ${stats.totalStaked.toFixed(2)}</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total Staked {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white">{formatValue(stats.totalStaked)}</span>
             </div>
             
             {/* Average Stake */}
             <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
-              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Avg Stake</span>
-              <span className="text-base font-semibold text-slate-900 dark:text-white">{currency} ${stats.avgStake.toFixed(2)}</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Avg Stake {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white">{formatValue(stats.avgStake)}</span>
             </div>
             
             {/* WIN % */}
@@ -2416,9 +2694,9 @@ function JournalContent() {
                 <div
                   key={idx}
                   onClick={handleClick}
-                  className={`flex flex-col items-center justify-center rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-105 ${
+                  className={`flex flex-col items-center justify-center rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-105 border border-slate-300/40 dark:border-gray-600/40 ${
                     !item.day ? 'invisible' :
-                    item.profit === 0 ? 'bg-slate-200 dark:bg-gray-700 text-slate-600 dark:text-slate-400' :
+                    item.profit === 0 ? 'bg-slate-200 dark:bg-[#0a1929] text-slate-600 dark:text-slate-400' :
                     item.profit > 100 ? 'bg-green-600 dark:bg-green-500 text-white' :
                     item.profit > 0 ? 'bg-green-400 dark:bg-green-600 text-white' :
                     item.profit < -50 ? 'bg-red-600 dark:bg-red-500 text-white' :
@@ -2466,7 +2744,7 @@ function JournalContent() {
         </div>
 
         {/* 4. Profit by Bookmaker */}
-        <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 flex flex-col h-96">
+        <div className="chart-container-no-focus bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-4 flex flex-col h-96">
           <div className="flex items-center justify-between mb-2 md:mb-3 lg:mb-4">
             <h3 className="text-sm md:text-base lg:text-lg font-semibold text-slate-900 dark:text-white">Profit by Bookmaker</h3>
             <label className="flex items-center gap-2 cursor-pointer">
@@ -2535,7 +2813,7 @@ function JournalContent() {
         </div>
 
         {/* 5. Profit by Market */}
-        <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4">
+        <div className="chart-container-no-focus bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Profit by Market</h3>
             <label className="flex items-center gap-1.5 cursor-pointer">
@@ -2649,6 +2927,12 @@ function JournalContent() {
                   : bet.result === 'loss' 
                   ? -convertedStake 
                   : 0;
+                // Calculate return amount: win = stake * odds, loss = 0, void = stake
+                const returnAmount = bet.result === 'win' 
+                  ? convertedStake * bet.odds 
+                  : bet.result === 'void' 
+                  ? convertedStake 
+                  : 0;
                 
                 // Check if this is a parlay
                 const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
@@ -2684,45 +2968,31 @@ function JournalContent() {
                   }`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                      <div className="flex items-center gap-2">
-                        {(isFinal || isLiveButDetermined) && (
-                          <span className={`text-xs font-bold ${
-                            bet.result === 'win' 
-                              ? 'text-green-600 dark:text-green-400'
-                              : bet.result === 'void'
-                              ? 'text-gray-600 dark:text-gray-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}>
-                            {bet.result === 'void' ? 'VOID' : 
-                              `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
-                            }
+                      {(isFinal || isLiveButDetermined) && (
+                        <span className={`text-xs font-bold ${
+                          bet.result === 'win' 
+                            ? 'text-green-600 dark:text-green-400'
+                            : bet.result === 'void'
+                            ? 'text-gray-600 dark:text-gray-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {bet.result === 'void' ? 'VOID' : 
+                            `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
+                          }
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
+                      )}
+                      {isLive && !isDetermined && (
+                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
                           </span>
-                        )}
-                        {isPending && (
-                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
-                        )}
-                        {isLive && !isDetermined && (
-                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
-                            </span>
-                            LIVE
-                          </span>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteBet(bet.id);
-                          }}
-                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                          title="Delete bet"
-                        >
-                          <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
+                          LIVE
+                        </span>
+                      )}
                     </div>
                     {isParlay && parlayLegs.length > 0 ? (
                       <>
@@ -2756,7 +3026,12 @@ function JournalContent() {
                       <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
                     )}
                     <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                      <span>Stake: {currency} ${convertedStake.toFixed(2)} {bet.currency !== currency && `(${bet.currency} $${bet.stake.toFixed(2)})`}</span>
+                      <span>
+                        Stake: {viewMode === 'units' 
+                          ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
+                          : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`
+                        }
+                      </span>
                       <div className="flex flex-col items-end">
                         <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
                       </div>
@@ -2784,6 +3059,20 @@ function JournalContent() {
                         result={bet.result}
                       />
                     )}
+                    {isPending && (
+                      <div className="mt-1 flex justify-end">
+                        <span className="text-xs text-white dark:text-white font-semibold">
+                          Potential Return: {formatValue(convertedStake * bet.odds)}
+                        </span>
+                      </div>
+                    )}
+                    {!isPending && (bet.result === 'win' || bet.result === 'loss' || bet.result === 'void') && (
+                      <div className="mt-1 flex justify-end">
+                        <span className="text-xs text-white dark:text-white font-semibold">
+                          Returned: {formatValue(returnAmount)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -2794,32 +3083,6 @@ function JournalContent() {
       )}
       
       {/* Right Sidebar */}
-      {showMobileTracking && !isLargeScreen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Tracking</span>
-              <button
-                onClick={() => {
-                  setShowMobileTracking(false);
-                  router.push('/journal');
-                }}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Close
-              </button>
-            </div>
-            <div className="px-6 md:px-8 lg:px-10 pt-6 pb-8">
-              <div className="h-[680px] overflow-y-auto custom-scrollbar rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 px-4 md:px-6 py-5">
-                <RightSidebar oddsFormat={oddsFormat} isMobileView={true} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {isLargeScreen && (
         <div className="hidden 2xl:block">
           <RightSidebar 
@@ -2904,36 +3167,35 @@ function JournalContent() {
             <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               <button
                 onClick={() => {
-                  setShowMobileTracking(false);
                   setShowJournalDropdown(false);
+                  router.push('/journal');
                 }}
-                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
-                  !showMobileTracking
-                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 View Journal
-              </button>
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-              <button
-                onClick={() => {
-                  setShowMobileTracking(true);
-                  setShowJournalDropdown(false);
-                }}
-                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
-                  showMobileTracking
-                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                View Tracking
               </button>
             </div>
           </div>
         )}
         
-        <div className="grid grid-cols-3 h-16">
+        {/* Settings Dropdown Menu - Shows above bottom nav */}
+        {showSettingsDropdown && (
+          <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
+            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowSettingsDropdown(false);
+                  setShowMobileSettings(true);
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Open Settings
+              </button>
+            </div>
+          </div>
+        )}
+        
+        <div className="grid grid-cols-4 h-16">
           {/* Dashboard */}
           <button
             data-dashboard-button
@@ -2958,6 +3220,19 @@ function JournalContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
             <span className="text-xs font-medium">Journal</span>
+          </button>
+          
+          {/* Settings */}
+          <button
+            data-settings-button
+            onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-xs font-medium">Settings</span>
           </button>
           
           {/* Profile */}
@@ -2997,6 +3272,502 @@ function JournalContent() {
           </button>
         </div>
       </div>
+      
+      {/* Mobile Settings Modal */}
+      {showMobileSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div 
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
+                <button
+                  onClick={() => setShowMobileSettings(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Theme</label>
+                  <select 
+                    value={theme}
+                    onChange={(e) => {
+                      setTheme(e.target.value as 'Light' | 'Dark');
+                      localStorage.setItem('theme', e.target.value);
+                    }}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="Light">Light</option>
+                    <option value="Dark">Dark</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preferred Odds</label>
+                  <select 
+                    value={oddsFormat}
+                    onChange={(e) => {
+                      const newFormat = e.target.value as 'american' | 'decimal';
+                      setOddsFormat(newFormat);
+                      localStorage.setItem('oddsFormat', newFormat);
+                    }}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="american">American</option>
+                    <option value="decimal">Decimal</option>
+                  </select>
+                </div>
+                
+                {/* Journal Settings Section */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Journal Settings</h3>
+                  
+                  {/* Preferred Input Method */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preferred Input</label>
+                    <select 
+                      value={mobilePreferredJournalInput}
+                      onChange={(e) => setMobilePreferredJournalInput(e.target.value as 'money' | 'units')}
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="money">Money (Currency)</option>
+                      <option value="units">Units</option>
+                    </select>
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose how to input stakes when adding bets from dashboard</p>
+                  </div>
+                  
+                  {/* Preferred Currency */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preferred Currency</label>
+                    <select 
+                      value={mobilePreferredCurrency}
+                      onChange={(e) => setMobilePreferredCurrency(e.target.value as 'USD' | 'AUD' | 'GBP' | 'EUR')}
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="USD">USD ($)</option>
+                      <option value="AUD">AUD (A$)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="EUR">EUR (€)</option>
+                    </select>
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Default currency for journal entries</p>
+                  </div>
+                  
+                  {/* Unit Settings Button - styled like other dropdowns */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Unit Settings</label>
+                    <button
+                      onClick={() => setShowMobileUnitSettingsModal(true)}
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-left flex items-center justify-between focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <span>Configure Unit Size</span>
+                      <svg 
+                        className="w-4 h-4" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button 
+                  onClick={async () => {
+                    try {
+                      // Save to localStorage
+                      localStorage.setItem('theme', theme);
+                      localStorage.setItem('oddsFormat', oddsFormat);
+                      
+                      // Save journal preferences to database
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        // Try UPDATE first
+                        const { error: updateError } = await supabase
+                          .from('profiles')
+                          .update({
+                            preferred_journal_input: mobilePreferredJournalInput,
+                            preferred_currency: mobilePreferredCurrency,
+                          })
+                          .eq('id', user.id);
+                        
+                        if (updateError) {
+                          // If UPDATE fails, try INSERT (in case profile row doesn't exist)
+                          const { error: insertError } = await supabase
+                            .from('profiles')
+                            .insert({
+                              id: user.id,
+                              preferred_journal_input: mobilePreferredJournalInput,
+                              preferred_currency: mobilePreferredCurrency,
+                            });
+                          
+                          if (insertError) {
+                            console.error('Error saving journal preferences:', {
+                              updateError: updateError.message || updateError,
+                              insertError: insertError.message || insertError,
+                              code: updateError.code || insertError.code,
+                              details: updateError.details || insertError.details,
+                              hint: updateError.hint || insertError.hint,
+                            });
+                          }
+                        }
+                      }
+                      
+                      setShowMobileSettings(false);
+                    } catch (error) {
+                      console.error('Error saving settings:', error);
+                    }
+                  }}
+                  className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Unit Settings Modal - Centered */}
+      {showMobileUnitSettingsModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div 
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 md:p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6 md:mb-8 pb-4 md:pb-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Unit Settings</h2>
+                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Configure your betting units</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowMobileUnitSettingsModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="space-y-5 md:space-y-6">
+                {/* Bankroll Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Bankroll
+                  </label>
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">{currencySymbols[mobileBankrollCurrency]}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={mobileBankroll}
+                        onChange={(e) => setMobileBankroll(e.target.value)}
+                        placeholder="10000.00"
+                        className="w-full pl-8 pr-4 py-3 md:py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
+                      />
+                    </div>
+                    <select
+                      value={mobileBankrollCurrency}
+                      onChange={(e) => setMobileBankrollCurrency(e.target.value as 'USD' | 'AUD' | 'GBP' | 'EUR')}
+                      className="px-3 md:px-4 py-3 md:py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium cursor-pointer appearance-none bg-no-repeat bg-right pr-10 text-sm md:text-base"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.5em 1.5em' }}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="AUD">AUD</option>
+                      <option value="GBP">GBP</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Your total betting bankroll</p>
+                </div>
+                
+                {/* Unit Size Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 md:p-5 border border-gray-200 dark:border-gray-700">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    Unit Size
+                  </label>
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="relative flex-1">
+                      {mobileUnitType === 'value' && (
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">{currencySymbols[mobileBankrollCurrency]}</span>
+                      )}
+                      <input
+                        type="number"
+                        step={mobileUnitType === 'percent' ? '0.1' : '0.01'}
+                        min="0"
+                        max={mobileUnitType === 'percent' ? '100' : undefined}
+                        value={mobileUnitSize}
+                        onChange={(e) => setMobileUnitSize(e.target.value)}
+                        placeholder={mobileUnitType === 'percent' ? '1.0' : '100.00'}
+                        className={`w-full ${mobileUnitType === 'value' ? 'pl-8' : 'pl-4'} pr-4 py-3 md:py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium`}
+                      />
+                      {mobileUnitType === 'percent' && (
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">%</span>
+                      )}
+                    </div>
+                    <select
+                      value={mobileUnitType}
+                      onChange={(e) => setMobileUnitType(e.target.value as 'value' | 'percent')}
+                      className="px-3 md:px-4 py-3 md:py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium cursor-pointer appearance-none bg-no-repeat bg-right pr-10 text-sm md:text-base"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.5em 1.5em' }}
+                    >
+                      <option value="value">Unit Value</option>
+                      <option value="percent">Unit %</option>
+                    </select>
+                  </div>
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                      {mobileUnitType === 'percent' 
+                        ? '💡 Set your unit size as a percentage of bankroll. For example, 1% means 1 unit equals 1% of your bankroll.'
+                        : '💡 Set your unit size as a fixed dollar amount. For example, $100 means 1 unit equals $100.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="mt-6 md:mt-8 pt-5 md:pt-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+                <button
+                  onClick={() => setShowMobileUnitSettingsModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    setSavingMobileUnitSize(true);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        const updates: any = {};
+                        
+                        if (mobileBankroll) {
+                          const bankrollValue = parseFloat(mobileBankroll);
+                          if (isNaN(bankrollValue) || bankrollValue < 0) {
+                            alert('Bankroll must be a positive number');
+                            setSavingMobileUnitSize(false);
+                            return;
+                          }
+                          updates.bankroll = bankrollValue;
+                          updates.bankroll_currency = mobileBankrollCurrency;
+                          // Set bankroll_set_date if it's not already set (first time setting bankroll)
+                          if (!bankrollSetDate) {
+                            const setDate = new Date().toISOString();
+                            updates.bankroll_set_date = setDate;
+                            setBankrollSetDate(setDate);
+                          }
+                          setBankroll(bankrollValue);
+                        }
+                        
+                        if (mobileUnitSize) {
+                          const unitSizeValue = parseFloat(mobileUnitSize);
+                          if (isNaN(unitSizeValue) || unitSizeValue <= 0) {
+                            alert('Unit size must be a positive number');
+                            setSavingMobileUnitSize(false);
+                            return;
+                          }
+                          if (mobileUnitType === 'percent' && unitSizeValue > 100) {
+                            alert('Unit percentage cannot exceed 100%');
+                            setSavingMobileUnitSize(false);
+                            return;
+                          }
+                          updates.unit_size = unitSizeValue;
+                          updates.unit_type = mobileUnitType;
+                        }
+                        
+                        if (Object.keys(updates).length > 0) {
+                          // Try to update first, if profile doesn't exist, insert it
+                          const { error: updateError } = await supabase
+                            .from('profiles')
+                            .update(updates)
+                            .eq('id', user.id);
+                          
+                          if (updateError) {
+                            // If update fails because profile doesn't exist, try to insert
+                            if (updateError.code === 'PGRST116' || updateError.message?.includes('No rows')) {
+                              const { error: insertError } = await supabase
+                                .from('profiles')
+                                .insert({
+                                  id: user.id,
+                                  ...updates
+                                });
+                              
+                              if (insertError) throw insertError;
+                            } else {
+                              throw updateError;
+                            }
+                          }
+                          
+                          // Refresh profile data to ensure state is up to date
+                          console.log('[SAVE] Refreshing profile after save, updates:', updates);
+                          const { data: refreshedProfile } = await supabase
+                            .from('profiles')
+                            .select('unit_size, bankroll, bankroll_set_date')
+                            .eq('id', user.id)
+                            .single();
+                          console.log('[SAVE] Refreshed profile data:', refreshedProfile);
+                          if (refreshedProfile) {
+                            if (refreshedProfile.unit_size) {
+                              const unitSizeValue = parseFloat(refreshedProfile.unit_size.toString());
+                              console.log('[SAVE] Setting unitSize to:', unitSizeValue);
+                              setUnitSize(unitSizeValue);
+                            } else {
+                              console.log('[SAVE] No unit_size in refreshed profile');
+                            }
+                            if (refreshedProfile.bankroll) {
+                              const bankrollValue = parseFloat(refreshedProfile.bankroll.toString());
+                              console.log('[SAVE] Setting bankroll to:', bankrollValue);
+                              setBankroll(bankrollValue);
+                            }
+                            if (refreshedProfile.bankroll_set_date) {
+                              setBankrollSetDate(refreshedProfile.bankroll_set_date);
+                            }
+                          } else {
+                            console.log('[SAVE] No refreshed profile data returned');
+                          }
+                          
+                          // Show success message
+                          setSavingMobileUnitSize(false);
+                          setShowMobileSuccessMessage(true);
+                          setTimeout(() => {
+                            setShowMobileSuccessMessage(false);
+                            setShowMobileUnitSettingsModal(false);
+                          }, 2000);
+                        } else {
+                          // No updates to save, just close
+                          setShowMobileUnitSettingsModal(false);
+                        }
+                      }
+                    } catch (error: any) {
+                      console.error('Error saving unit settings:', error);
+                      const errorMessage = error?.message || error?.details || 'Unknown error';
+                      alert(`Failed to save unit settings: ${errorMessage}. Please try again.`);
+                      setSavingMobileUnitSize(false);
+                      setShowMobileSuccessMessage(false);
+                    }
+                  }}
+                  disabled={savingMobileUnitSize || showMobileSuccessMessage}
+                  className={`flex-1 px-4 py-3 rounded-lg transition-all font-semibold flex items-center justify-center gap-2 ${
+                    showMobileSuccessMessage 
+                      ? 'bg-green-600 text-white shadow-lg shadow-green-500/30' 
+                      : savingMobileUnitSize
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 opacity-50 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-lg shadow-purple-500/30'
+                  }`}
+                >
+                  {showMobileSuccessMessage ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Saved!
+                    </>
+                  ) : savingMobileUnitSize ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Unit Size Configuration Modal */}
+      {showUnitSizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div 
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Unit Size Not Configured
+                </h2>
+                <button
+                  onClick={() => setShowUnitSizeModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Your unit size is not set up. Please configure it in Settings to view your journal in units.
+                </p>
+                
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-purple-900 dark:text-purple-200 mb-2">
+                    {isLargeScreen ? (
+                      <>Configure in Left Sidebar Settings</>
+                    ) : (
+                      <>Configure in Navigation Settings</>
+                    )}
+                  </p>
+                  <p className="text-xs text-purple-700 dark:text-purple-300">
+                    {isLargeScreen ? (
+                      <>Open the Settings button in the left sidebar to set your unit size.</>
+                    ) : (
+                      <>Open Settings from the navigation menu to set your unit size.</>
+                    )}
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => setShowUnitSizeModal(false)}
+                  className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

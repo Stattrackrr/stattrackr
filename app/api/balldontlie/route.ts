@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   // Get the endpoint from query params
   const endpoint = searchParams.get('endpoint');
   if (!endpoint) {
-    return NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
+did you rn NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
   }
 
   // Remove the endpoint param and forward the rest

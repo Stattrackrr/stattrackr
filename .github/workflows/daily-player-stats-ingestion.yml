@@ -1,0 +1,136 @@
+name: Daily Player Stats Ingestion
+
+on:
+  schedule:
+    # Run at 5:30pm AEST (7:30am UTC) - AEST is UTC+10
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'What triggered this workflow'
+        required: false
+        default: 'manual'
+
+concurrency:
+  group: daily-player-stats-ingestion
+  cancel-in-progress: false  # Don't cancel - let it complete
+
+env:
+  TZ: Australia/Sydney  # AEST timezone
+
+jobs:
+  ingest_stats_part1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL secret not set; skipping workflow"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process All Players Stats Part 1/3
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Starting daily stats ingestion for all NBA players (part 1/3)..."
+          node scripts/process-all-player-stats.js --split=1/3
+          echo "✅ Daily stats ingestion part 1/3 completed"
+
+  ingest_stats_part2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process All Players Stats Part 2/3
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Starting daily stats ingestion for all NBA players (part 2/3)..."
+          node scripts/process-all-player-stats.js --split=2/3
+          echo "✅ Daily stats ingestion part 2/3 completed"
+
+  ingest_stats_part3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if PROD_URL is configured
+        id: check_prod_url
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process All Players Stats Part 3/3
+        if: steps.check_prod_url.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Starting daily stats ingestion for all NBA players (part 3/3)..."
+          node scripts/process-all-player-stats.js --split=3/3
+          echo "✅ Daily stats ingestion part 3/3 completed"
+

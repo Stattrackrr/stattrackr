@@ -118,6 +118,11 @@ export default function PricingPage() {
       const premiumStatus = isActive && isProTier;
       console.log('🔐 Premium Status Check (Pricing):', { isActive, isProTier, premiumStatus, profile });
       setHasPremium(premiumStatus);
+      
+      // Redirect pro users to props page immediately after checking
+      if (premiumStatus) {
+        router.replace('/nba');
+      }
     } catch (error) {
       console.error('Error in checkPremiumStatus:', error);
       setHasPremium(false);

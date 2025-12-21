@@ -40,7 +40,7 @@ export default memo(function StatsBarChart({
   const [mobileTooltipActive, setMobileTooltipActive] = useState(false);
   const mobileTooltipTimerRef = useRef<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   const clearMobileTooltipTimer = useCallback(() => {
     if (mobileTooltipTimerRef.current !== null && typeof window !== 'undefined') {
@@ -136,9 +136,16 @@ export default memo(function StatsBarChart({
     if (!isMobile) return;
     clearMobileTooltipTimer();
     setIsDragging(false);
+    setMobileTooltipActive(false); // Always hide tooltip on touch start
+    
+    // Prevent Recharts from handling the touch event
+    if (event && 'preventDefault' in event) {
+      event.preventDefault();
+    }
+    
     if (event && 'touches' in event && event.touches.length > 0) {
       const touch = event.touches[0];
-      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     } else {
       touchStartRef.current = null;
     }
@@ -146,30 +153,43 @@ export default memo(function StatsBarChart({
 
   const handleChartTouchMove = useCallback((event?: React.TouchEvent | TouchEvent) => {
     if (!isMobile) return;
+    
+    // Always hide tooltip during any movement (scrolling)
+    setMobileTooltipActive(false);
+    clearMobileTooltipTimer();
+    
     if (touchStartRef.current && event && 'touches' in event && event.touches.length > 0) {
       const touch = event.touches[0];
       const dx = touch.clientX - touchStartRef.current.x;
       const dy = touch.clientY - touchStartRef.current.y;
       const distanceSquared = dx * dx + dy * dy;
-      if (distanceSquared > 16) {
+      // Reduced threshold to detect scrolling more easily (from 16 to 5 pixels)
+      if (distanceSquared > 25) {
         setIsDragging(true);
-        clearMobileTooltipTimer();
-        setMobileTooltipActive(false);
       }
     }
   }, [isMobile, clearMobileTooltipTimer]);
 
-  const handleChartTouchEnd = useCallback(() => {
+  const handleChartTouchEnd = useCallback((event?: React.TouchEvent | TouchEvent) => {
     if (!isMobile) return;
     clearMobileTooltipTimer();
+    
+    // Check if this was a tap (no movement and quick)
+    const wasTap = touchStartRef.current && !isDragging && 
+                   (Date.now() - (touchStartRef.current.time || 0)) < 300;
+    
     touchStartRef.current = null;
-    if (isDragging) {
+    
+    if (isDragging || !wasTap) {
+      // Was a scroll/drag, don't show tooltip
       setMobileTooltipActive(false);
       setIsDragging(false);
       return;
     }
+    
+    // Was a tap, show tooltip (tap again elsewhere to close)
     setIsDragging(false);
-    setMobileTooltipActive(prev => !prev);
+    setMobileTooltipActive(true);
   }, [isMobile, clearMobileTooltipTimer, isDragging]);
 
   const handleChartMouseLeave = useCallback(() => {
@@ -179,14 +199,49 @@ export default memo(function StatsBarChart({
   }, [isMobile, clearMobileTooltipTimer]);
 
   const adjustedTooltip = useCallback((tooltipProps: any) => {
-    if (isMobile && !mobileTooltipActive) {
-      return null;
+    // On mobile, only show tooltip if explicitly activated by tap and not dragging
+    if (isMobile) {
+      if (!mobileTooltipActive || isDragging) {
+        return null;
+      }
     }
     return customTooltip(tooltipProps);
-  }, [isMobile, mobileTooltipActive, customTooltip]);
+  }, [isMobile, mobileTooltipActive, isDragging, customTooltip]);
 
   return (
-    <div className="relative w-full h-full chart-mobile-optimized" key={layoutKey}>
+    <div 
+      className="relative w-full h-full chart-mobile-optimized" 
+      key={layoutKey}
+      style={isMobile ? { touchAction: 'pan-y' } : undefined}
+      onTouchStart={(e) => {
+        if (isMobile) {
+          // Don't handle touch events if they're on interactive elements (buttons)
+          const target = e.target as HTMLElement;
+          if (target.closest('button, a, input, select, textarea')) {
+            return; // Let buttons handle their own touch events
+          }
+          handleChartTouchStart(e);
+        }
+      }}
+      onTouchMove={(e) => {
+        if (isMobile) {
+          const target = e.target as HTMLElement;
+          if (target.closest('button, a, input, select, textarea')) {
+            return;
+          }
+          handleChartTouchMove(e);
+        }
+      }}
+      onTouchEnd={(e) => {
+        if (isMobile) {
+          const target = e.target as HTMLElement;
+          if (target.closest('button, a, input, select, textarea')) {
+            return;
+          }
+          handleChartTouchEnd(e);
+        }
+      }}
+    >
       {backgroundGradient && (
         <div 
           key={`glow-${activeLine}-${overPercent.toFixed(0)}`}
@@ -203,7 +258,7 @@ export default memo(function StatsBarChart({
         />
       )}
       <StaticBarsChart
-        key={`${selectedStat}-${yAxisConfig?.domain?.join?.(',') || ''}`}
+        key={`${selectedStat}-${selectedTimeframe || ''}-${yAxisConfig?.domain?.join?.(',') || ''}`}
         data={data}
         yAxisConfig={yAxisConfig}
         isDark={isDark}

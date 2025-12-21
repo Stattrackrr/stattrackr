@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { X, Loader2, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { getBookmakerInfo } from "@/lib/bookmakers";
@@ -158,8 +159,16 @@ export default function AddToJournalModal({
   const [overUnder, setOverUnder] = useState<'over' | 'under'>('over');
   const [stake, setStake] = useState('');
   const [currency, setCurrency] = useState<typeof CURRENCIES[number]>('USD');
+  const [preferredJournalInput, setPreferredJournalInput] = useState<'money' | 'units'>('money');
+  const [preferredCurrency, setPreferredCurrency] = useState<typeof CURRENCIES[number]>('USD');
+  const [unitSize, setUnitSize] = useState<number | null>(null);
+  const [bankroll, setBankroll] = useState<number | null>(null);
+  const [unitType, setUnitType] = useState<'value' | 'percent'>('value');
+  const [bankrollCurrency, setBankrollCurrency] = useState<typeof CURRENCIES[number]>('USD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
   // Odds fetching
   const [oddsLoading, setOddsLoading] = useState(false);
@@ -174,6 +183,55 @@ export default function AddToJournalModal({
   const [manualLine, setManualLine] = useState('');
   const [manualOdds, setManualOdds] = useState('');
   const [isManualMode, setIsManualMode] = useState(false);
+  
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Load user preferences when modal opens
+  useEffect(() => {
+    if (!isOpen) return; // Only load when modal is open
+    
+    const loadPreferences = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preferred_journal_input, preferred_currency, unit_size, bankroll, unit_type, bankroll_currency')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          if (profile.preferred_journal_input) {
+            setPreferredJournalInput(profile.preferred_journal_input as 'money' | 'units');
+          }
+          if (profile.preferred_currency) {
+            setPreferredCurrency(profile.preferred_currency as typeof CURRENCIES[number]);
+            setCurrency(profile.preferred_currency as typeof CURRENCIES[number]);
+          }
+          if (profile.unit_size !== null && profile.unit_size !== undefined) {
+            setUnitSize(parseFloat(profile.unit_size.toString()));
+          }
+          if (profile.bankroll !== null && profile.bankroll !== undefined) {
+            setBankroll(parseFloat(profile.bankroll.toString()));
+          }
+          if (profile.unit_type) {
+            setUnitType(profile.unit_type as 'value' | 'percent');
+          }
+          if (profile.bankroll_currency) {
+            setBankrollCurrency(profile.bankroll_currency as typeof CURRENCIES[number]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    };
+    
+    loadPreferences();
+  }, [isOpen]);
   
   // Side-by-side parlay mode states
   // Left side (Game Props)
@@ -1203,7 +1261,20 @@ export default function AddToJournalModal({
             sport: 'NBA',
             market,
             selection,
-            stake: parseFloat(stake),
+            stake: (() => {
+              // Convert units to money if preferred input is units
+              let finalStake = parseFloat(stake);
+              if (preferredJournalInput === 'units' && unitSize && unitSize > 0) {
+                if (unitType === 'percent' && bankroll && bankroll > 0) {
+                  // Percentage-based: units * (bankroll * unitSize / 100)
+                  finalStake = finalStake * (bankroll * unitSize / 100);
+                } else if (unitType === 'value') {
+                  // Value-based: units * unitSize
+                  finalStake = finalStake * unitSize;
+                }
+              }
+              return finalStake;
+            })(),
             currency,
             odds: combinedOdds,
             result: 'pending',
@@ -1230,6 +1301,18 @@ export default function AddToJournalModal({
         // Get bookmaker name if odds were selected from a bookmaker
         const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
 
+        // Convert units to money if preferred input is units
+        let finalStake = parseFloat(stake);
+        if (preferredJournalInput === 'units' && unitSize && unitSize > 0) {
+          if (unitType === 'percent' && bankroll && bankroll > 0) {
+            // Percentage-based: units * (bankroll * unitSize / 100)
+            finalStake = finalStake * (bankroll * unitSize / 100);
+          } else if (unitType === 'value') {
+            // Value-based: units * unitSize
+            finalStake = finalStake * unitSize;
+          }
+        }
+
         const { error: insertError } = await (supabase
           .from('bets') as any)
           .insert({
@@ -1238,7 +1321,7 @@ export default function AddToJournalModal({
             sport: 'NBA',
             market,
             selection,
-            stake: parseFloat(stake),
+            stake: finalStake,
             currency,
             odds: finalOdds,
             result: 'pending',
@@ -1257,9 +1340,14 @@ export default function AddToJournalModal({
         if (insertError) throw insertError;
       }
 
-      // Success!
-      onClose();
-      // Reset form
+      // Show success message
+      setShowSuccessMessage(true);
+      
+      // Close modal and reset form after showing success message
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        onClose();
+        // Reset form
       setStatType(isGameProp ? 'moneyline' : 'pts');
       setSelectedOdds(null);
       setOverUnder('over');
@@ -1267,10 +1355,11 @@ export default function AddToJournalModal({
       setManualLine('');
       setManualOdds('');
       setIsManualMode(false);
-      setBookmakerExpanded(false);
-      setManualExpanded(false);
-      setIsParlayMode(false);
-      setParlaySelections([]);
+        setBookmakerExpanded(false);
+        setManualExpanded(false);
+        setIsParlayMode(false);
+        setParlaySelections([]);
+      }, 2000); // Show success for 2 seconds before closing
     } catch (err: any) {
       setError(err.message || 'Failed to add to journal');
     } finally {
@@ -1281,6 +1370,19 @@ export default function AddToJournalModal({
   if (!isOpen) return null;
 
   return (
+    <>
+      {/* Success Toast Notification */}
+      {showSuccessMessage && mounted && createPortal(
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-2">
+          <div className="bg-green-600 text-white px-4 py-3 rounded-lg flex items-center gap-2 shadow-lg shadow-green-500/30">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">Bet added to journal successfully!</span>
+          </div>
+        </div>,
+        document.body
+      )}
     <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-0 lg:py-4">
       <div className={`flex gap-4 w-full max-w-7xl mx-0 lg:mx-4 items-start h-full lg:h-auto ${
         isParlayMode ? 'flex-col lg:flex-row lg:items-stretch' : ''
@@ -2437,46 +2539,91 @@ export default function AddToJournalModal({
           </div>
           )}
 
-          {/* Stake with Currency - Only show in single bet mode */}
+          {/* Stake with Currency/Units - Only show in single bet mode */}
           {!isParlayMode && (
             <div className="grid grid-cols-[auto_1fr] gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Currency
-                </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                >
-                  {CURRENCIES.map(curr => (
-                    <option key={curr} value={curr}>{curr}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Stake
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 font-medium pointer-events-none text-base text-gray-500 dark:text-gray-400" style={{ 
-                    top: '0.5rem',
-                    lineHeight: '1.5rem'
-                  }}>
-                    {getCurrencySymbol(currency)}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={stake}
-                    onChange={(e) => setStake(e.target.value)}
-                    placeholder="100"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
-                    required
-                  />
-                </div>
-              </div>
+              {preferredJournalInput === 'money' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Currency
+                    </label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      {CURRENCIES.map(curr => (
+                        <option key={curr} value={curr}>{curr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Stake
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 font-medium pointer-events-none text-base text-gray-500 dark:text-gray-400" style={{ 
+                        top: '0.5rem',
+                        lineHeight: '1.5rem'
+                      }}>
+                        {getCurrencySymbol(currency)}
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={stake}
+                        onChange={(e) => setStake(e.target.value)}
+                        placeholder="100"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Currency
+                    </label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                      disabled
+                    >
+                      {CURRENCIES.map(curr => (
+                        <option key={curr} value={curr}>{curr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Units
+                    </label>
+                    <div className="relative">
+                      <span className="absolute right-3 font-medium pointer-events-none text-base text-gray-500 dark:text-gray-400" style={{ 
+                        top: '0.5rem',
+                        lineHeight: '1.5rem'
+                      }}>
+                        units
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={stake}
+                        onChange={(e) => setStake(e.target.value)}
+                        placeholder="1.0"
+                        className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -2689,29 +2836,56 @@ export default function AddToJournalModal({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Stake
+                        {preferredJournalInput === 'units' ? 'Units' : 'Stake'}
                       </label>
                       <div className="relative">
-                        <span className={`absolute left-3 font-medium pointer-events-none text-base ${
-                          parlaySelections.length < 2
-                            ? 'text-gray-400 dark:text-gray-600'
-                            : 'text-gray-500 dark:text-gray-400'
-                        }`} style={{ 
-                          top: '0.5rem',
-                          lineHeight: '1.5rem'
-                        }}>
-                          {getCurrencySymbol(currency)}
-                        </span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={stake}
-                          onChange={(e) => setStake(e.target.value)}
-                          placeholder="100"
-                          className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
-                          required
-                          disabled={parlaySelections.length < 2}
-                        />
+                        {preferredJournalInput === 'money' ? (
+                          <>
+                            <span className={`absolute left-3 font-medium pointer-events-none text-base ${
+                              parlaySelections.length < 2
+                                ? 'text-gray-400 dark:text-gray-600'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`} style={{ 
+                              top: '0.5rem',
+                              lineHeight: '1.5rem'
+                            }}>
+                              {getCurrencySymbol(currency)}
+                            </span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={stake}
+                              onChange={(e) => setStake(e.target.value)}
+                              placeholder="100"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              required
+                              disabled={parlaySelections.length < 2}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <span className={`absolute right-3 font-medium pointer-events-none text-base ${
+                              parlaySelections.length < 2
+                                ? 'text-gray-400 dark:text-gray-600'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`} style={{ 
+                              top: '0.5rem',
+                              lineHeight: '1.5rem'
+                            }}>
+                              units
+                            </span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={stake}
+                              onChange={(e) => setStake(e.target.value)}
+                              placeholder="1.0"
+                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              required
+                              disabled={parlaySelections.length < 2}
+                            />
+                          </>
+                        )}
                       </div>
                       {parlaySelections.length < 2 && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -2862,46 +3036,73 @@ export default function AddToJournalModal({
                   onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
-                  disabled={parlaySelections.length < 2}
-                >
-                  {CURRENCIES.map(curr => (
-                    <option key={curr} value={curr}>{curr}</option>
-                  ))}
-                </select>
+                        disabled={parlaySelections.length < 2 || preferredJournalInput === 'units'}
+                      >
+                        {CURRENCIES.map(curr => (
+                          <option key={curr} value={curr}>{curr}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {preferredJournalInput === 'units' ? 'Units' : 'Stake'}
+                      </label>
+                      <div className="relative">
+                        {preferredJournalInput === 'money' ? (
+                          <>
+                            <span className={`absolute left-3 font-medium pointer-events-none text-base ${
+                              parlaySelections.length < 2
+                                ? 'text-gray-400 dark:text-gray-600'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`} style={{ 
+                              top: '0.5rem',
+                              lineHeight: '1.5rem'
+                            }}>
+                              {getCurrencySymbol(currency)}
+                            </span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={stake}
+                              onChange={(e) => setStake(e.target.value)}
+                              placeholder="100"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              required
+                              disabled={parlaySelections.length < 2}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <span className={`absolute right-3 font-medium pointer-events-none text-base ${
+                              parlaySelections.length < 2
+                                ? 'text-gray-400 dark:text-gray-600'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`} style={{ 
+                              top: '0.5rem',
+                              lineHeight: '1.5rem'
+                            }}>
+                              units
+                            </span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={stake}
+                              onChange={(e) => setStake(e.target.value)}
+                              placeholder="1.0"
+                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              required
+                              disabled={parlaySelections.length < 2}
+                            />
+                          </>
+                        )}
+                      </div>
+                      {parlaySelections.length < 2 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Add at least 2 selections
+                        </p>
+                      )}
+                    </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Stake
-                </label>
-                <div className="relative">
-                  <span className={`absolute left-3 font-medium pointer-events-none text-base ${
-                    parlaySelections.length < 2
-                      ? 'text-gray-400 dark:text-gray-600'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`} style={{ 
-                    top: '0.5rem',
-                    lineHeight: '1.5rem'
-                  }}>
-                    {getCurrencySymbol(currency)}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={stake}
-                    onChange={(e) => setStake(e.target.value)}
-                    placeholder="100"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
-                    required
-                    disabled={parlaySelections.length < 2}
-                  />
-                </div>
-                {parlaySelections.length < 2 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Add at least 2 selections
-                  </p>
-                )}
-              </div>
-            </div>
 
             {/* Submit Button */}
             <button
@@ -2918,5 +3119,6 @@ export default function AddToJournalModal({
       )}
       </div>
     </div>
+    </>
   );
 }

@@ -1332,7 +1332,7 @@ async function processPlayerProps() {
                         gameOpponent = awayNorm;
                       } else if (playerTeamNorm && playerTeamNorm === awayNorm) {
                         gameOpponent = homeNorm;
-                      }
+                    }
                     }
                     
                     // Check if the primary match works

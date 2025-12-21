@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect, useMemo } from 'react';
+import { memo, useState, useEffect, useMemo, useRef } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { CHART_CONFIG } from '../../constants';
 import CustomXAxisTick from './CustomXAxisTick';
@@ -110,9 +110,28 @@ export default memo(function StaticBarsChart({
         maxBarSize={data.length <= 5 ? 250 : data.length <= 10 ? 250 : computedMaxBarSize}
         barCategoryGap={computedBarCategoryGap}
         barGap={selectedStat === 'fg3m' ? -40 : (compactMobile ? 2 : 2)}
-        onTouchStart={onChartTouchStart}
-        onTouchMove={onChartTouchMove}
-        onTouchEnd={onChartTouchEnd}
+        onTouchStart={(e) => {
+          onChartTouchStart?.(e);
+          // Prevent Recharts from handling touch events on mobile during scroll
+          if (compactMobile && e) {
+            e.stopPropagation();
+          }
+        }}
+        onTouchMove={(e) => {
+          onChartTouchMove?.(e);
+          // Always prevent Recharts tooltip during movement (scrolling)
+          if (compactMobile && e) {
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        }}
+        onTouchEnd={(e) => {
+          onChartTouchEnd?.(e);
+          // Prevent Recharts from handling touch events
+          if (compactMobile && e) {
+            e.stopPropagation();
+          }
+        }}
         onMouseLeave={onChartMouseLeave}
       >
         <XAxis
@@ -138,7 +157,9 @@ export default memo(function StaticBarsChart({
           content={customTooltip}
           animationDuration={0}
           wrapperStyle={{ zIndex: 9999 }}
-          cursor={{ fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
+          cursor={compactMobile ? false : { fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
+          trigger={compactMobile ? 'none' : 'hover'}
+          active={compactMobile ? false : undefined}
         />
         <Bar 
           dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"} 
@@ -207,6 +228,10 @@ export default memo(function StaticBarsChart({
                     ry={CHART_CONFIG.bar.radius[0]}
                     stroke={isMostRecent ? '#9333ea' : 'none'}
                     strokeWidth={isMostRecent ? 3 : 0}
+                    data-fg3m-makes="true"
+                    data-bar-index={String(barIndex)}
+                    data-makes-value={String(makes)}
+                    data-state={makes > bettingLine ? 'over' : makes === bettingLine ? 'push' : 'under'}
                   />
                 )}
                 
@@ -236,9 +261,6 @@ export default memo(function StaticBarsChart({
                 data-value={typeof e.value === 'number' ? e.value : ''}
                 stroke={isLive ? '#9333ea' : 'none'} // Purple border for live game
                 strokeWidth={isLive ? 3 : 0}
-                style={{ 
-                  transition: 'all 0.3s ease'
-                }}
               />
             );
           })}
@@ -254,6 +276,7 @@ export default memo(function StaticBarsChart({
   prev.yAxisConfig === next.yAxisConfig &&
   prev.isDark === next.isDark &&
   prev.selectedStat === next.selectedStat &&
+  prev.selectedTimeframe === next.selectedTimeframe &&
   prev.customTooltip === next.customTooltip &&
   prev.formatChartLabel === next.formatChartLabel
 ));

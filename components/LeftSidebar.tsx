@@ -6,6 +6,7 @@ import { useState, Dispatch, SetStateAction, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
+import { supabase } from "@/lib/supabaseClient";
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -43,12 +44,67 @@ export default function LeftSidebar({
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(false);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
+  const [showUnitSettingsModal, setShowUnitSettingsModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [bankroll, setBankroll] = useState<string>('');
+  const [bankrollCurrency, setBankrollCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
+  const [unitSize, setUnitSize] = useState<string>('');
+  const [unitType, setUnitType] = useState<'value' | 'percent'>('value');
+  const [savingUnitSize, setSavingUnitSize] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showMainSaveSuccess, setShowMainSaveSuccess] = useState(false);
+  const [preferredJournalInput, setPreferredJournalInput] = useState<'money' | 'units'>('money');
+  const [preferredCurrency, setPreferredCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
+  
+  const currencySymbols: Record<'USD' | 'AUD' | 'GBP' | 'EUR', string> = {
+    USD: '$',
+    AUD: 'A$',
+    GBP: '£',
+    EUR: '€'
+  };
 
   useEffect(() => {
     setMounted(true);
+    // Load unit size from profile
+    loadUnitSize();
   }, []);
   const { theme, setTheme, isDark } = useTheme();
+  
+  const loadUnitSize = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('unit_size, bankroll, unit_type, bankroll_currency, preferred_journal_input, preferred_currency')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        if (profile.unit_size) {
+          setUnitSize(profile.unit_size.toString());
+        }
+        if (profile.bankroll) {
+          setBankroll(profile.bankroll.toString());
+        }
+        if (profile.unit_type) {
+          setUnitType(profile.unit_type as 'value' | 'percent');
+        }
+        if (profile.bankroll_currency) {
+          setBankrollCurrency(profile.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+        }
+        if (profile.preferred_journal_input) {
+          setPreferredJournalInput(profile.preferred_journal_input as 'money' | 'units');
+        }
+        if (profile.preferred_currency) {
+          setPreferredCurrency(profile.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading unit size:', error);
+    }
+  };
 
   const displayName = username || userEmail || 'Profile';
   const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
@@ -73,16 +129,65 @@ export default function LeftSidebar({
   
   const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
 
-  const handleSaveSettings = () => {
-    // Save to localStorage for persistence
-    localStorage.setItem('theme', theme);
-    localStorage.setItem('oddsFormat', oddsFormat);
-    
-    // Close the settings modal
-    setShowSettings(false);
-    
-    // You can add more logic here like updating global state, API calls, etc.
-    console.log('Settings saved:', { theme, oddsFormat });
+  const handleSaveSettings = async () => {
+    try {
+      // Save to localStorage for persistence
+      localStorage.setItem('theme', theme);
+      localStorage.setItem('oddsFormat', oddsFormat);
+      
+      // Save journal preferences to database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Try UPDATE first
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            preferred_journal_input: preferredJournalInput,
+            preferred_currency: preferredCurrency,
+          })
+          .eq('id', user.id);
+        
+        if (updateError) {
+          // If UPDATE fails, try INSERT (in case profile row doesn't exist)
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              preferred_journal_input: preferredJournalInput,
+              preferred_currency: preferredCurrency,
+            });
+          
+          if (insertError) {
+            console.error('Error saving journal preferences:', {
+              updateError: updateError.message || updateError,
+              insertError: insertError.message || insertError,
+              code: updateError.code || insertError.code,
+              details: updateError.details || insertError.details,
+              hint: updateError.hint || insertError.hint,
+            });
+          } else {
+            // Show success message
+            setShowMainSaveSuccess(true);
+            setTimeout(() => {
+              setShowMainSaveSuccess(false);
+            }, 3000);
+          }
+        } else {
+          // Show success message
+          setShowMainSaveSuccess(true);
+          setTimeout(() => {
+            setShowMainSaveSuccess(false);
+          }, 3000);
+        }
+      }
+      
+      // Close the settings modal
+      setShowSettings(false);
+      
+      console.log('Settings saved:', { theme, oddsFormat, preferredJournalInput, preferredCurrency });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
   };
 
   const sports = [
@@ -96,6 +201,18 @@ export default function LeftSidebar({
 
   return (
     <>
+      {/* Success Toast Notification - Outside Settings Panel */}
+      {showMainSaveSuccess && mounted && createPortal(
+        <div className="fixed top-4 left-[calc(var(--sidebar-width,360px)+1rem)] z-[200] animate-in slide-in-from-top-2">
+          <div className="bg-green-600 text-white px-4 py-3 rounded-lg flex items-center gap-2 shadow-lg shadow-green-500/30">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">Settings saved successfully!</span>
+          </div>
+        </div>,
+        document.body
+      )}
     <div 
       className="hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-[#0a1929] border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl"
       style={{
@@ -343,7 +460,7 @@ export default function LeftSidebar({
               </button>
             </div>
             
-            <div className="flex-1 p-6 space-y-6">
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Theme</label>
                 <select 
@@ -373,13 +490,301 @@ export default function LeftSidebar({
               </div>
             </div>
             
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-6">
+              {/* Journal Settings Section */}
+              <div>
+                <h3 className="text-base font-semibold text-black dark:text-white mb-4">Journal Settings</h3>
+                
+                {/* Preferred Input Method */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Input</label>
+                  <select 
+                    value={preferredJournalInput}
+                    onChange={(e) => setPreferredJournalInput(e.target.value as 'money' | 'units')}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="money">Money (Currency)</option>
+                    <option value="units">Units</option>
+                  </select>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose how to input stakes when adding bets from dashboard</p>
+                </div>
+                
+                {/* Preferred Currency */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Currency</label>
+                  <select 
+                    value={preferredCurrency}
+                    onChange={(e) => setPreferredCurrency(e.target.value as 'USD' | 'AUD' | 'GBP' | 'EUR')}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="EUR">EUR (€)</option>
+                  </select>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Default currency for journal entries</p>
+                </div>
+                
+                {/* Unit Settings Button - styled like other dropdowns */}
+                <div>
+                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Unit Settings</label>
+                  <button
+                    onClick={() => setShowUnitSettingsModal(true)}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left flex items-center justify-between focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <span>Configure Unit Size</span>
+                    <svg 
+                      className="w-4 h-4" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
               <button 
                 onClick={handleSaveSettings}
-                className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl hover:bg-purple-700 transition-colors font-medium"
+                disabled={savingUnitSize}
+                className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Save Changes
+                {savingUnitSize ? 'Saving...' : 'Save Changes'}
               </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+      
+      {/* Unit Settings Modal - Centered */}
+      {showUnitSettingsModal && mounted && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-[120] bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowUnitSettingsModal(false)}
+          />
+          
+          {/* Modal content - centered */}
+          <div 
+            className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+              <div className="p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Unit Settings</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Configure your betting units</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowUnitSettingsModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Content */}
+                <div className="space-y-6">
+                  {/* Bankroll Section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                    <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Bankroll
+                    </label>
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">{currencySymbols[bankrollCurrency]}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={bankroll}
+                          onChange={(e) => setBankroll(e.target.value)}
+                          placeholder="10000.00"
+                          className="w-full pl-8 pr-4 py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
+                        />
+                      </div>
+                      <select
+                        value={bankrollCurrency}
+                        onChange={(e) => setBankrollCurrency(e.target.value as 'USD' | 'AUD' | 'GBP' | 'EUR')}
+                        className="px-4 py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium cursor-pointer appearance-none bg-no-repeat bg-right pr-10"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.5em 1.5em' }}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="AUD">AUD</option>
+                        <option value="GBP">GBP</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Your total betting bankroll</p>
+                  </div>
+                  
+                  {/* Unit Size Section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                    <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                      </svg>
+                      Unit Size
+                    </label>
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        {unitType === 'value' && (
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">{currencySymbols[bankrollCurrency]}</span>
+                        )}
+                        <input
+                          type="number"
+                          step={unitType === 'percent' ? '0.1' : '0.01'}
+                          min="0"
+                          max={unitType === 'percent' ? '100' : undefined}
+                          value={unitSize}
+                          onChange={(e) => setUnitSize(e.target.value)}
+                          placeholder={unitType === 'percent' ? '1.0' : '100.00'}
+                          className={`w-full ${unitType === 'value' ? 'pl-8' : 'pl-4'} pr-4 py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium`}
+                        />
+                        {unitType === 'percent' && (
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">%</span>
+                        )}
+                      </div>
+                      <select
+                        value={unitType}
+                        onChange={(e) => setUnitType(e.target.value as 'value' | 'percent')}
+                        className="px-4 py-3.5 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium cursor-pointer appearance-none bg-no-repeat bg-right pr-10"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.5em 1.5em' }}
+                      >
+                        <option value="value">Unit Value</option>
+                        <option value="percent">Unit %</option>
+                      </select>
+                    </div>
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                        {unitType === 'percent' 
+                          ? '💡 Set your unit size as a percentage of bankroll. For example, 1% means 1 unit equals 1% of your bankroll.'
+                          : '💡 Set your unit size as a fixed dollar amount. For example, $100 means 1 unit equals $100.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Footer */}
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+                  <button
+                    onClick={() => setShowUnitSettingsModal(false)}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      setSavingUnitSize(true);
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          const updates: any = {};
+                          
+                          if (bankroll) {
+                            const bankrollValue = parseFloat(bankroll);
+                            if (isNaN(bankrollValue) || bankrollValue < 0) {
+                              alert('Bankroll must be a positive number');
+                              setSavingUnitSize(false);
+                              return;
+                            }
+                            updates.bankroll = bankrollValue;
+                            updates.bankroll_currency = bankrollCurrency;
+                          }
+                          
+                          if (unitSize) {
+                            const unitSizeValue = parseFloat(unitSize);
+                            if (isNaN(unitSizeValue) || unitSizeValue <= 0) {
+                              alert('Unit size must be a positive number');
+                              setSavingUnitSize(false);
+                              return;
+                            }
+                            if (unitType === 'percent' && unitSizeValue > 100) {
+                              alert('Unit percentage cannot exceed 100%');
+                              setSavingUnitSize(false);
+                              return;
+                            }
+                            updates.unit_size = unitSizeValue;
+                            updates.unit_type = unitType;
+                          }
+                          
+                          if (Object.keys(updates).length > 0) {
+                            // Try to update first, if profile doesn't exist, insert it
+                            const { error: updateError } = await supabase
+                              .from('profiles')
+                              .update(updates)
+                              .eq('id', user.id);
+                            
+                            if (updateError) {
+                              // If update fails because profile doesn't exist, try to insert
+                              if (updateError.code === 'PGRST116' || updateError.message?.includes('No rows')) {
+                                const { error: insertError } = await supabase
+                                  .from('profiles')
+                                  .insert({
+                                    id: user.id,
+                                    ...updates
+                                  });
+                                
+                                if (insertError) throw insertError;
+                              } else {
+                                throw updateError;
+                              }
+                            }
+                            
+                            // Close unit settings modal and show success on main button
+                            setSavingUnitSize(false);
+                            setShowUnitSettingsModal(false);
+                            setShowMainSaveSuccess(true);
+                            setTimeout(() => {
+                              setShowMainSaveSuccess(false);
+                            }, 2000);
+                          } else {
+                            // No updates to save, just close
+                            setShowUnitSettingsModal(false);
+                          }
+                        }
+                      } catch (error: any) {
+                        console.error('Error saving unit settings:', error);
+                        const errorMessage = error?.message || error?.details || 'Unknown error';
+                        alert(`Failed to save unit settings: ${errorMessage}. Please try again.`);
+                        setSavingUnitSize(false);
+                        setShowSuccessMessage(false);
+                      }
+                    }}
+                    disabled={savingUnitSize}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-semibold shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:to-purple-700 flex items-center justify-center gap-2"
+                  >
+                    {savingUnitSize ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </>,

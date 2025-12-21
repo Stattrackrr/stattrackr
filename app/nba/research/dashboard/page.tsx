@@ -22,7 +22,6 @@ import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
 import ShotChart from './ShotChart';
-import TrackPlayerModal from '@/components/TrackPlayerModal';
 import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
@@ -2248,20 +2247,22 @@ const PureChart = memo(function PureChart({
 
 // Per-button memoized components to prevent unrelated re-renders
 const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, isDark }: { label: string; value: string; isSelected: boolean; onSelect: (v: string) => void; isDark: boolean }) {
-  const onClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleInteraction = useCallback((e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     onSelect(value);
   }, [onSelect, value]);
+  
   return (
     <button
       type="button"
-      onClick={onClick}
-      onMouseDown={(e) => {
+      onClick={handleInteraction}
+      onTouchEnd={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        onSelect(value);
       }}
-      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
+      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto', touchAction: 'manipulation' }}
       className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
@@ -2272,20 +2273,22 @@ const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, is
 }, (prev, next) => prev.isSelected === next.isSelected && prev.label === next.label && prev.value === next.value && prev.isDark === next.isDark);
 
 const TimeframeBtn = memo(function TimeframeBtn({ value, isSelected, onSelect }: { value: string; isSelected: boolean; onSelect: (v: string) => void }) {
-  const onClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleInteraction = useCallback((e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     onSelect(value);
   }, [onSelect, value]);
+  
   return (
     <button
       type="button"
-      onClick={onClick}
-      onMouseDown={(e) => {
+      onClick={handleInteraction}
+      onTouchEnd={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        onSelect(value);
       }}
-      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
+      style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto', touchAction: 'manipulation' }}
       className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
@@ -2581,19 +2584,53 @@ const ChartControls = function ChartControls({
 
   // Fast recolor (no React) when the transient input value changes while holding +/-
   const recolorBarsFast = (value: number) => {
-    const rects = document.querySelectorAll('[data-bar-index]');
-    rects.forEach((el: any) => {
-      const idxAttr = el.getAttribute('data-bar-index');
-      const i = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
-      if (!Number.isFinite(i) || !chartData[i]) return;
-      const barValue = chartData[i].value;
-      const isOver = selectedStat === 'spread' ? (barValue < value) : (barValue > value);
-      const isPush = barValue === value;
-      const newState = isOver ? 'over' : isPush ? 'push' : 'under';
-      if (el.getAttribute('data-state') === newState) return;
-      el.setAttribute('data-state', newState);
-      el.setAttribute('fill', newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444');
-    });
+    // Handle fg3m (3PM) bars specially - they have a separate makes rect
+    if (selectedStat === 'fg3m') {
+      // Query all rects in the chart container and filter for fg3m makes
+      const chartContainer = document.querySelector('.recharts-wrapper, [class*="chart"]');
+      const allRects = chartContainer ? chartContainer.querySelectorAll('rect') : document.querySelectorAll('svg rect');
+      
+      allRects.forEach((el: any) => {
+        // Check if this is an fg3m makes rect
+        if (!el.hasAttribute('data-fg3m-makes')) return;
+        
+        const makesValueAttr = el.getAttribute('data-makes-value');
+        const makesValue = makesValueAttr != null ? parseFloat(makesValueAttr) : NaN;
+        if (!Number.isFinite(makesValue)) return;
+        
+        const isOver = makesValue > value;
+        const isPush = makesValue === value;
+        const newState = isOver ? 'over' : isPush ? 'push' : 'under';
+        const currentState = el.getAttribute('data-state');
+        if (currentState === newState) return;
+        
+        const newColor = newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444';
+        
+        // Update in multiple ways to ensure it sticks
+        el.setAttribute('data-state', newState);
+        el.setAttribute('fill', newColor);
+        if (el.style) {
+          el.style.setProperty('fill', newColor, 'important');
+        }
+      });
+    } else {
+      // Handle regular bars
+      const rects = document.querySelectorAll('[data-bar-index]');
+      rects.forEach((el: any) => {
+        // Skip fg3m makes rects
+        if (el.hasAttribute('data-fg3m-makes')) return;
+        const idxAttr = el.getAttribute('data-bar-index');
+        const i = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
+        if (!Number.isFinite(i) || !chartData[i]) return;
+        const barValue = chartData[i].value;
+        const isOver = selectedStat === 'spread' ? (barValue < value) : (barValue > value);
+        const isPush = barValue === value;
+        const newState = isOver ? 'over' : isPush ? 'push' : 'under';
+        if (el.getAttribute('data-state') === newState) return;
+        el.setAttribute('data-state', newState);
+        el.setAttribute('fill', newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444');
+      });
+    }
   };
 
   // Update Over Rate pill instantly for a given line value (no React rerender)
@@ -4342,6 +4379,12 @@ const ChartControls = function ChartControls({
                 <div className="relative" ref={advancedMobileRef}>
                   <button
                     onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsAdvancedFiltersOpen((v: boolean) => !v);
+                    }}
+                    style={{ touchAction: 'manipulation' }}
                     className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
                   >
                     Advanced
@@ -7828,8 +7871,7 @@ const lineMovementInFlightRef = useRef(false);
   // Pie chart display order (only affects visual display, not underlying data)
   const [pieChartSwapped, setPieChartSwapped] = useState(false);
   
-  // Tracking modals state
-  const [showTrackModal, setShowTrackModal] = useState(false);
+  // Journal modal state
   const [showJournalModal, setShowJournalModal] = useState(false);
   
   // Sidebar toggle state for tablets/Macs
@@ -16120,26 +16162,10 @@ const lineMovementInFlightRef = useRef(false);
                 </div>
               </div>
               
-              {/* Tracking Buttons - Show for both Player Props and Game Props modes */}
+              {/* Journal Button - Show for both Player Props and Game Props modes */}
               {((propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A') ||
                 (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
                 <div className="flex gap-2 px-0">
-                  <button
-                    onClick={() => !isGameInProgress && setShowTrackModal(true)}
-                    disabled={isGameInProgress}
-                    className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
-                      isGameInProgress 
-                        ? 'bg-gray-400 cursor-not-allowed opacity-50' 
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                    title={isGameInProgress ? 'Game in progress - tracking disabled' : `Track ${propsMode === 'team' ? 'team' : 'player'} prop`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Track
-                  </button>
                   <button
                     onClick={() => {
                       if (!hasPremium) {
@@ -17597,58 +17623,33 @@ const lineMovementInFlightRef = useRef(false);
         </div>
       </div>
       
-      {/* Tracking Modals */}
+      {/* Journal Modals */}
       {propsMode === 'player' && selectedPlayer && opponentTeam && (
-        <>
-          <TrackPlayerModal
-            isOpen={showTrackModal}
-            onClose={() => setShowTrackModal(false)}
-            playerName={selectedPlayer.full}
-            playerId={String(selectedPlayer.id)}
-            team={selectedTeam}
-            opponent={nextGameOpponent}
-            gameDate={nextGameDate}
-            oddsFormat={oddsFormat}
-          />
-          <AddToJournalModal
-            isOpen={showJournalModal}
-            onClose={() => setShowJournalModal(false)}
-            playerName={selectedPlayer.full}
-            playerId={String(selectedPlayer.id)}
-            team={selectedTeam}
-            opponent={nextGameOpponent}
-            gameDate={nextGameDate}
-            oddsFormat={oddsFormat}
-          />
-        </>
+        <AddToJournalModal
+          isOpen={showJournalModal}
+          onClose={() => setShowJournalModal(false)}
+          playerName={selectedPlayer.full}
+          playerId={String(selectedPlayer.id)}
+          team={selectedTeam}
+          opponent={nextGameOpponent}
+          gameDate={nextGameDate}
+          oddsFormat={oddsFormat}
+        />
       )}
       
-      {/* Game Props Tracking Modals */}
+      {/* Game Props Journal Modals */}
       {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && (
-        <>
-          <TrackPlayerModal
-            isOpen={showTrackModal}
-            onClose={() => setShowTrackModal(false)}
-            playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
-            playerId={gamePropsTeam}
-            team={gamePropsTeam}
-            opponent={opponentTeam}
-            gameDate={nextGameDate}
-            oddsFormat={oddsFormat}
-            isGameProp={true}
-          />
-          <AddToJournalModal
-            isOpen={showJournalModal}
-            onClose={() => setShowJournalModal(false)}
-            playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
-            playerId={gamePropsTeam}
-            team={gamePropsTeam}
-            opponent={opponentTeam}
-            gameDate={nextGameDate}
-            oddsFormat={oddsFormat}
-            isGameProp={true}
-          />
-        </>
+        <AddToJournalModal
+          isOpen={showJournalModal}
+          onClose={() => setShowJournalModal(false)}
+          playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
+          playerId={gamePropsTeam}
+          team={gamePropsTeam}
+          opponent={opponentTeam}
+          gameDate={nextGameDate}
+          oddsFormat={oddsFormat}
+          isGameProp={true}
+        />
       )}
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
@@ -17692,16 +17693,6 @@ const lineMovementInFlightRef = useRef(false);
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 View Journal
-              </button>
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-              <button
-                onClick={() => {
-                  setShowJournalDropdown(false);
-                  router.push('/journal?tab=tracking');
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                View Tracking
               </button>
             </div>
           </div>
