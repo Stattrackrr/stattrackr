@@ -568,8 +568,16 @@ function JournalContent() {
             
             if (unitProfileFallback) {
               console.log('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
-              if (unitProfileFallback.unit_size !== null && unitProfileFallback.unit_size !== undefined) {
-                const unitSizeValue = parseFloat(unitProfileFallback.unit_size.toString());
+              const fallback = unitProfileFallback as {
+                unit_size?: number | null;
+                bankroll?: number | null;
+                unit_type?: string | null;
+                bankroll_currency?: string | null;
+                preferred_journal_input?: string | null;
+                preferred_currency?: string | null;
+              };
+              if (fallback.unit_size !== null && fallback.unit_size !== undefined) {
+                const unitSizeValue = parseFloat(fallback.unit_size.toString());
                 console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
                 setUnitSize(unitSizeValue);
                 if (!mobileUnitSize) {
@@ -578,27 +586,27 @@ function JournalContent() {
               } else {
                 console.log('[INITIAL LOAD] No unit_size in profile');
               }
-              if (unitProfileFallback.bankroll !== null && unitProfileFallback.bankroll !== undefined) {
-                const bankrollValue = parseFloat(unitProfileFallback.bankroll.toString());
+              if (fallback.bankroll !== null && fallback.bankroll !== undefined) {
+                const bankrollValue = parseFloat(fallback.bankroll.toString());
                 console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
                 setBankroll(bankrollValue);
                 if (!mobileBankroll) {
-                  setMobileBankroll(unitProfileFallback.bankroll.toString());
+                  setMobileBankroll(fallback.bankroll.toString());
                 }
               } else {
                 console.log('[INITIAL LOAD] No bankroll in profile');
               }
-              if (unitProfileFallback.bankroll_currency) {
-                setMobileBankrollCurrency(unitProfileFallback.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+              if (fallback.bankroll_currency) {
+                setMobileBankrollCurrency(fallback.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
               }
-              if (unitProfileFallback.unit_type) {
-                setMobileUnitType(unitProfileFallback.unit_type as 'value' | 'percent');
+              if (fallback.unit_type) {
+                setMobileUnitType(fallback.unit_type as 'value' | 'percent');
               }
-              if (unitProfileFallback.preferred_journal_input) {
-                setMobilePreferredJournalInput(unitProfileFallback.preferred_journal_input as 'money' | 'units');
+              if (fallback.preferred_journal_input) {
+                setMobilePreferredJournalInput(fallback.preferred_journal_input as 'money' | 'units');
               }
-              if (unitProfileFallback.preferred_currency) {
-                setMobilePreferredCurrency(unitProfileFallback.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+              if (fallback.preferred_currency) {
+                setMobilePreferredCurrency(fallback.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
               }
             }
             return; // Exit early if we used fallback
