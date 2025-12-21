@@ -82,23 +82,31 @@ export default function LeftSidebar({
         .single();
       
       if (profile) {
-        if (profile.unit_size) {
-          setUnitSize(profile.unit_size.toString());
+        const profileData = profile as {
+          unit_size?: number | null;
+          bankroll?: number | null;
+          unit_type?: string | null;
+          bankroll_currency?: string | null;
+          preferred_journal_input?: string | null;
+          preferred_currency?: string | null;
+        };
+        if (profileData.unit_size) {
+          setUnitSize(profileData.unit_size.toString());
         }
-        if (profile.bankroll) {
-          setBankroll(profile.bankroll.toString());
+        if (profileData.bankroll) {
+          setBankroll(profileData.bankroll.toString());
         }
-        if (profile.unit_type) {
-          setUnitType(profile.unit_type as 'value' | 'percent');
+        if (profileData.unit_type) {
+          setUnitType(profileData.unit_type as 'value' | 'percent');
         }
-        if (profile.bankroll_currency) {
-          setBankrollCurrency(profile.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+        if (profileData.bankroll_currency) {
+          setBankrollCurrency(profileData.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
         }
-        if (profile.preferred_journal_input) {
-          setPreferredJournalInput(profile.preferred_journal_input as 'money' | 'units');
+        if (profileData.preferred_journal_input) {
+          setPreferredJournalInput(profileData.preferred_journal_input as 'money' | 'units');
         }
-        if (profile.preferred_currency) {
-          setPreferredCurrency(profile.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
+        if (profileData.preferred_currency) {
+          setPreferredCurrency(profileData.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
         }
       }
     } catch (error) {
