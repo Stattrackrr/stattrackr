@@ -3414,23 +3414,23 @@ function JournalContent() {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (user) {
                         // Try UPDATE first
-                        const { error: updateError } = await supabase
-                          .from('profiles')
+                        const { error: updateError } = await (supabase
+                          .from('profiles') as any)
                           .update({
                             preferred_journal_input: mobilePreferredJournalInput,
                             preferred_currency: mobilePreferredCurrency,
-                          } as any)
+                          })
                           .eq('id', user.id);
                         
                         if (updateError) {
                           // If UPDATE fails, try INSERT (in case profile row doesn't exist)
-                          const { error: insertError } = await supabase
-                            .from('profiles')
+                          const { error: insertError } = await (supabase
+                            .from('profiles') as any)
                             .insert({
                               id: user.id,
                               preferred_journal_input: mobilePreferredJournalInput,
                               preferred_currency: mobilePreferredCurrency,
-                            } as any);
+                            });
                           
                           if (insertError) {
                             console.error('Error saving journal preferences:', {
@@ -3627,20 +3627,20 @@ function JournalContent() {
                         
                         if (Object.keys(updates).length > 0) {
                           // Try to update first, if profile doesn't exist, insert it
-                          const { error: updateError } = await supabase
-                            .from('profiles')
-                            .update(updates as any)
+                          const { error: updateError } = await (supabase
+                            .from('profiles') as any)
+                            .update(updates)
                             .eq('id', user.id);
                           
                           if (updateError) {
                             // If update fails because profile doesn't exist, try to insert
                             if (updateError.code === 'PGRST116' || updateError.message?.includes('No rows')) {
-                              const { error: insertError } = await supabase
-                                .from('profiles')
+                              const { error: insertError } = await (supabase
+                                .from('profiles') as any)
                                 .insert({
                                   id: user.id,
                                   ...updates
-                                } as any);
+                                });
                               
                               if (insertError) throw insertError;
                             } else {
