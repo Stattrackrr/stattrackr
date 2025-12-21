@@ -147,8 +147,8 @@ export default function LeftSidebar({
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // Try UPDATE first
-        const { error: updateError } = await supabase
-          .from('profiles')
+        const { error: updateError } = await (supabase
+          .from('profiles') as any)
           .update({
             preferred_journal_input: preferredJournalInput,
             preferred_currency: preferredCurrency,
@@ -157,8 +157,8 @@ export default function LeftSidebar({
         
         if (updateError) {
           // If UPDATE fails, try INSERT (in case profile row doesn't exist)
-          const { error: insertError } = await supabase
-            .from('profiles')
+          const { error: insertError } = await (supabase
+            .from('profiles') as any)
             .insert({
               id: user.id,
               preferred_journal_input: preferredJournalInput,
@@ -735,16 +735,16 @@ export default function LeftSidebar({
                           
                           if (Object.keys(updates).length > 0) {
                             // Try to update first, if profile doesn't exist, insert it
-                            const { error: updateError } = await supabase
-                              .from('profiles')
+                            const { error: updateError } = await (supabase
+                              .from('profiles') as any)
                               .update(updates)
                               .eq('id', user.id);
                             
                             if (updateError) {
                               // If update fails because profile doesn't exist, try to insert
                               if (updateError.code === 'PGRST116' || updateError.message?.includes('No rows')) {
-                                const { error: insertError } = await supabase
-                                  .from('profiles')
+                                const { error: insertError } = await (supabase
+                                  .from('profiles') as any)
                                   .insert({
                                     id: user.id,
                                     ...updates
