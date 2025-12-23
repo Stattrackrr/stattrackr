@@ -13409,9 +13409,14 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
 
-    // Get player ID
-    const playerId = selectedPlayer?.id;
-    if (!playerId) {
+    // Get player ID (convert to number if string)
+    const playerIdRaw = selectedPlayer?.id;
+    if (!playerIdRaw) {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
+    if (isNaN(playerId)) {
       setAdvancedStatsPerGame({});
       return;
     }
