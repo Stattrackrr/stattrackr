@@ -4749,7 +4749,6 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
         hitRateStats={hitRateStats}
         selectedPlayer={selectedPlayer}
         isLoading={isLoading}
-        oddsLoading={oddsLoading}
         showAdvancedFilters={showAdvancedFilters}
         setShowAdvancedFilters={setShowAdvancedFilters}
       />
