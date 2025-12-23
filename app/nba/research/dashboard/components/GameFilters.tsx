@@ -134,7 +134,7 @@ export default function GameFilters({
       // Calculate FG% from FGM and FGA if needed, or use cached value
       // For now, we'll need to get FGA from game stats - this is a placeholder
       return null; // TODO: Calculate from game stats
-    }).filter((p): p is number => p !== null),
+    }).filter((p: number | null): p is number => p !== null),
   } : {
     paceRanks: [],
     usageRates: [],
