@@ -296,12 +296,16 @@ export default function GameFilters({
                 paceRankMax: null,
                 dvpRankMin: null,
                 dvpRankMax: null,
-                dvpPosition: playerPosition,
+                dvpPosition: playerPosition || '',
                 dvpMetric: 'pts',
                 usageRateMin: null,
                 usageRateMax: null,
                 fgPctMin: null,
                 fgPctMax: null,
+                playTypes: [],
+                shotZones: [],
+                minutesMin: null,
+                minutesMax: null,
               });
             }}
             className={`w-full py-2 px-4 rounded text-sm font-medium ${
