@@ -17,6 +17,8 @@ export default memo(function PureChart({
   gamePropsTeam,
   customTooltip,
   selectedTimeframe,
+  secondAxisData,
+  selectedFilterForAxis,
 }: any) {
   const formatChartLabel = useCallback((value: any): string => {
     const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
@@ -44,6 +46,8 @@ export default memo(function PureChart({
           formatChartLabel={formatChartLabel}
           selectedStat={selectedStat}
           selectedTimeframe={selectedTimeframe}
+          secondAxisData={secondAxisData}
+          selectedFilterForAxis={selectedFilterForAxis}
         />
       )}
     </div>
@@ -61,7 +65,9 @@ export default memo(function PureChart({
   prev.propsMode === next.propsMode &&
   prev.gamePropsTeam === next.gamePropsTeam &&
   prev.customTooltip === next.customTooltip &&
-  prev.selectedTimeframe === next.selectedTimeframe
+  prev.selectedTimeframe === next.selectedTimeframe &&
+  prev.secondAxisData === next.secondAxisData &&
+  prev.selectedFilterForAxis === next.selectedFilterForAxis
 ));
 
 

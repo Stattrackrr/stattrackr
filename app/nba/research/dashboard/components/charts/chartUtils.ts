@@ -1,29 +1,26 @@
 // Chart utility functions
 
-export const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
+export const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number, hasSecondAxis?: boolean) => {
   const doUpdate = (el: HTMLElement) => {
     if (!yAxisConfig?.domain) return;
 
     const [minY, maxY] = yAxisConfig.domain;
 
-    // Mobile-only: fit overlay to actual bar bounds for exact alignment
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      const container = document.getElementById('betting-line-container') as HTMLElement | null;
-      const parent = container?.parentElement as HTMLElement | null;
-      const bars = Array.from(document.querySelectorAll('[data-bar-index]')) as HTMLElement[];
-      if (container && parent && bars.length) {
-        const parentRect = parent.getBoundingClientRect();
-        let minLeft = Infinity;
-        let maxRight = -Infinity;
-
-        for (const b of bars) {
-          const r = b.getBoundingClientRect();
-          minLeft = Math.min(minLeft, r.left - parentRect.left);
-          maxRight = Math.max(maxRight, r.right - parentRect.left);
-        }
-
-        if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, minLeft)}px`;
-        if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, parentRect.width - maxRight)}px`;
+    // Update container positioning
+    const container = document.getElementById('betting-line-container') as HTMLElement | null;
+    if (container && typeof window !== 'undefined') {
+      // Mobile: always use full width (y-axis is hidden on mobile)
+      if (window.innerWidth < 640) {
+        // On mobile, use small margins for full width
+        container.style.left = '2px';
+        container.style.right = '2px';
+      } else {
+        // Desktop: adjust right margin based on second axis
+        // Import CHART_CONFIG margin values inline since this is a utility function
+        const defaultRightMargin = 14;
+        const secondAxisRightMargin = 70; // Extra space beyond chart's 10px margin to stop before y-axis numbers
+        const rightMargin = hasSecondAxis ? secondAxisRightMargin : defaultRightMargin;
+        container.style.right = `${rightMargin}px`;
       }
     }
 

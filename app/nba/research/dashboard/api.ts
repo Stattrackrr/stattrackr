@@ -65,6 +65,41 @@ export class BallDontLieAPI {
     return Array.isArray(response.data) ? response.data : [];
   }
 
+  /**
+   * Get advanced stats for specific games using internal API route
+   * @param gameIds Array of game IDs to fetch stats for
+   * @param playerId Optional player ID to filter results (if provided)
+   */
+  static async getAdvancedStatsByGames(
+    gameIds: number[],
+    playerId?: number
+  ): Promise<any[]> {
+    const params = new URLSearchParams();
+    
+    // Add game IDs as comma-separated string
+    params.set('game_ids', gameIds.join(','));
+    
+    // Add player ID if provided
+    if (playerId) {
+      params.set('player_ids', String(playerId));
+    }
+    
+    // Use our internal API route
+    const url = `/api/advanced-stats?${params.toString()}`;
+    
+    const response = await this.fetchWithErrorHandling(url);
+    
+    // Handle the response format - our API route returns the Ball Don't Lie response directly
+    if (response.error) {
+      throw new ApiError({
+        message: response.error,
+        status: 500,
+      });
+    }
+    
+    return Array.isArray(response.data) ? response.data : [];
+  }
+
 }
 
 // Error class for API errors

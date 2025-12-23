@@ -22,6 +22,7 @@ import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
 import ShotChart from './ShotChart';
+import StaticBarsChart from './components/charts/StaticBarsChart';
 import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
@@ -818,8 +819,10 @@ const CustomXAxisTick = memo(function CustomXAxisTick({ x, y, payload, data }: a
     </g>
   );
 }, (prev, next) => prev.x === next.x && prev.y === next.y && prev.payload?.value === next.payload?.value);
-// Static bars chart - never re-renders for betting line changes
-const StaticBarsChart = memo(function StaticBarsChart({
+// Static bars chart - now imported from components/charts/StaticBarsChart.tsx for second axis support
+// INLINE VERSION COMMENTED OUT - using imported version instead
+/*
+const StaticBarsChartInline_OLD = memo(function StaticBarsChart({
   data,
   yAxisConfig,
   isDark,
@@ -833,6 +836,8 @@ const StaticBarsChart = memo(function StaticBarsChart({
   onChartTouchMove,
   onChartTouchEnd,
   onChartMouseLeave,
+  secondAxisData,
+  selectedFilterForAxis,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -847,6 +852,8 @@ const StaticBarsChart = memo(function StaticBarsChart({
   onChartTouchMove?: () => void;
   onChartTouchEnd?: () => void;
   onChartMouseLeave?: () => void;
+  secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
+  selectedFilterForAxis?: string | null;
 }) {
   const colorMap = useMemo(() => {
     return data.map(d => {
@@ -1057,7 +1064,6 @@ const StaticBarsChart = memo(function StaticBarsChart({
             <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} />
           )}
         </Bar>
-        {/* NO ReferenceLine here - handled by separate chart */}
       </BarChart>
     </ResponsiveContainer>
   );
@@ -1070,6 +1076,7 @@ const StaticBarsChart = memo(function StaticBarsChart({
   prev.customTooltip === next.customTooltip &&
   prev.formatChartLabel === next.formatChartLabel
 ));
+*/ // End of commented out inline StaticBarsChart - now using imported version
 
 // Dynamic reference line chart - re-renders freely for betting line changes
 const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
@@ -1131,7 +1138,7 @@ const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
           ticks={yAxisConfig.ticks}   // Same ticks as static chart
           hide // Hidden - only for coordinate system
         />
-        <ReferenceLine y={clampedRefLine} stroke={refLineColor} strokeDasharray="6 6" strokeWidth={3} ifOverflow="extendDomain" />
+        <ReferenceLine y={clampedRefLine} stroke={refLineColor} strokeWidth={2} ifOverflow="extendDomain" />
         <Bar 
           dataKey="value" 
           fill="transparent" 
@@ -1143,16 +1150,20 @@ const DynamicReferenceLineChart = memo(function DynamicReferenceLineChart({
 });
 
 // Static betting line overlay (never re-renders, updated via DOM)
-const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark, isMobile }: { isDark: boolean; isMobile?: boolean }) {
+const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark, isMobile, hasSecondAxis }: { isDark: boolean; isMobile?: boolean; hasSecondAxis?: boolean }) {
   const lineColor = isDark ? '#ffffff' : '#000000';
+  
+  // Adjust right margin when there's a second axis - extra space beyond chart's 10px to stop before y-axis
+  // On mobile, always use full width (2px) since y-axis is hidden
+  const rightMargin = isMobile ? 2 : (hasSecondAxis ? 70 : (CHART_CONFIG.margin.right + 10));
   
   return (
     <div 
       id="betting-line-container"
       className="absolute pointer-events-none"
       style={{
-        left: isMobile ? 8 : CHART_CONFIG.yAxis.width,
-        right: isMobile ? 8 : (CHART_CONFIG.margin.right + 10),
+        left: isMobile ? 2 : CHART_CONFIG.yAxis.width,
+        right: rightMargin,
         top: CHART_CONFIG.margin.top,
         bottom: isMobile ? CHART_CONFIG.margin.bottom : CHART_CONFIG.margin.bottom + 40,
         zIndex: 5 // above bars but below tooltips
@@ -1163,47 +1174,37 @@ const StaticBettingLineOverlay = memo(function StaticBettingLineOverlay({ isDark
         className="absolute w-full"
         style={{
           bottom: '50%', // Initial position
-          opacity: 0.8,
-          height: '3px',
-          background: `repeating-linear-gradient(to right, ${lineColor} 0px, ${lineColor} 12px, transparent 12px, transparent 18px)`
+          opacity: 1,
+          height: '2px',
+          background: lineColor
         }}
       />
     </div>
   );
-}, (prev, next) => prev.isDark === next.isDark);
+}, (prev, next) => prev.isDark === next.isDark && prev.hasSecondAxis === next.hasSecondAxis && prev.isMobile === next.isMobile);
 
 // Direct DOM updater (no React re-renders)
-const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number) => {
+const updateBettingLinePosition = (yAxisConfig: any, bettingLine: number, hasSecondAxis?: boolean) => {
   const doUpdate = (el: HTMLElement) => {
     if (!yAxisConfig?.domain) return;
 
     const [minY, maxY] = yAxisConfig.domain;
     const range = maxY - minY;
 
-    // Mobile-only: fit overlay to actual bar bounds for exact alignment
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      const container = document.getElementById('betting-line-container') as HTMLElement | null;
-      const parent = container?.parentElement as HTMLElement | null;
-      const bars = Array.from(document.querySelectorAll('[data-bar-index]')) as HTMLElement[];
-      if (container && parent && bars.length) {
-        const parentRect = parent.getBoundingClientRect();
-        let minLeft = Infinity;
-        let maxRight = -Infinity;
-        let minTop = Infinity;
-        let maxBottom = -Infinity;
-        const barValues: number[] = [];
-
-        for (const b of bars) {
-          const r = b.getBoundingClientRect();
-          minLeft = Math.min(minLeft, r.left - parentRect.left);
-          maxRight = Math.max(maxRight, r.right - parentRect.left);
-          const valueAttr = b.getAttribute('data-value');
-          const parsed = valueAttr != null ? parseFloat(valueAttr) : NaN;
-          if (!Number.isNaN(parsed)) barValues.push(parsed);
-        }
-
-        if (Number.isFinite(minLeft)) container.style.left = `${Math.max(0, minLeft)}px`;
-        if (Number.isFinite(maxRight)) container.style.right = `${Math.max(0, parentRect.width - maxRight)}px`;
+    // Update container positioning
+    const container = document.getElementById('betting-line-container') as HTMLElement | null;
+    if (container && typeof window !== 'undefined') {
+      // Mobile: always use full width (y-axis is hidden on mobile)
+      if (window.innerWidth < 640) {
+        // On mobile, use small margins for full width
+        container.style.left = '2px';
+        container.style.right = '2px';
+      } else {
+        // Desktop: adjust right margin based on second axis
+        const defaultRightMargin = CHART_CONFIG.margin.right + 10;
+        const secondAxisRightMargin = 70; // Extra space beyond chart's 10px margin to stop before y-axis numbers
+        const rightMargin = hasSecondAxis ? secondAxisRightMargin : defaultRightMargin;
+        container.style.right = `${rightMargin}px`;
       }
     }
 
@@ -1258,6 +1259,8 @@ const StatsBarChart = memo(function StatsBarChart({
   formatChartLabel,
   selectedStat,
   selectedTimeframe,
+  secondAxisData,
+  selectedFilterForAxis,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -1267,11 +1270,13 @@ const StatsBarChart = memo(function StatsBarChart({
   formatChartLabel: (v: any) => string;
   selectedStat: string;
   selectedTimeframe?: string;
+  secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
+  selectedFilterForAxis?: string | null;
 }) {
   // Keep overlay in sync only with committed line (reduces updates during hold).
   useEffect(() => {
-    updateBettingLinePosition(yAxisConfig, bettingLine);
-  }, [bettingLine, yAxisConfig]);
+    updateBettingLinePosition(yAxisConfig, bettingLine, !!selectedFilterForAxis);
+  }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
 
   // Detect mobile only on client to avoid affecting desktop SSR
   const [isMobile, setIsMobile] = useState(false);
@@ -1454,7 +1459,7 @@ const StatsBarChart = memo(function StatsBarChart({
       )}
       {/* Static bars layer */}
       <StaticBarsChart
-        key={`${selectedStat}-${yAxisConfig?.domain?.join?.(',') || ''}`}
+        key={`${selectedStat}-${selectedTimeframe || ''}-${yAxisConfig?.domain?.join?.(',') || ''}-${selectedFilterForAxis || 'none'}`}
         data={data}
         yAxisConfig={yAxisConfig}
         isDark={isDark}
@@ -1468,6 +1473,8 @@ const StatsBarChart = memo(function StatsBarChart({
         onChartTouchMove={handleChartTouchMove}
         onChartTouchEnd={handleChartTouchEnd}
         onChartMouseLeave={handleChartMouseLeave}
+        secondAxisData={secondAxisData}
+        selectedFilterForAxis={selectedFilterForAxis}
       />
       {/* Mobile-only: Reference line layer (SVG) for perfect alignment */}
       {isMobile && (
@@ -1482,7 +1489,7 @@ const StatsBarChart = memo(function StatsBarChart({
         </div>
       )}
       {/* Desktop-only: CSS overlay line */}
-      {!isMobile && <StaticBettingLineOverlay isDark={isDark} />}
+      {!isMobile && <StaticBettingLineOverlay key={`betting-line-${!!selectedFilterForAxis}`} isDark={isDark} hasSecondAxis={!!selectedFilterForAxis} />}
     </div>
   );
 });
@@ -1812,6 +1819,16 @@ const TEAM_STAT_OPTIONS = [
   { key: "q3_total", label: "Q3 TOTAL" },
   { key: "q4_moneyline", label: "Q4 ML" },
   { key: "q4_total", label: "Q4 TOTAL" }
+];
+
+// Second axis filter options (only available in player mode)
+const SECOND_AXIS_FILTER_OPTIONS = [
+  { key: null, label: 'None' },
+  { key: 'minutes', label: 'Player Minutes' },
+  { key: 'fg_pct', label: 'Player FG%' },
+  { key: 'pace', label: 'Game Pace' },
+  { key: 'usage_rate', label: 'Usage Rate' },
+  { key: 'dvp_rank', label: 'Opp DvP Rank' },
 ];
 
 // Static chart configuration - never recreated
@@ -2172,6 +2189,8 @@ const PureChart = memo(function PureChart({
   gamePropsTeam,
   customTooltip,
   selectedTimeframe,
+  secondAxisData,
+  selectedFilterForAxis,
 }: any) {
   // Use the main tooltip instead - this old one is removed
 
@@ -2225,6 +2244,8 @@ const PureChart = memo(function PureChart({
           formatChartLabel={formatChartLabel}
           selectedStat={selectedStat}
           selectedTimeframe={selectedTimeframe}
+          secondAxisData={secondAxisData}
+          selectedFilterForAxis={selectedFilterForAxis}
         />
       )}
     </div>
@@ -2242,7 +2263,9 @@ const PureChart = memo(function PureChart({
   prev.propsMode === next.propsMode &&
   prev.gamePropsTeam === next.gamePropsTeam &&
   prev.customTooltip === next.customTooltip &&
-  prev.selectedTimeframe === next.selectedTimeframe
+  prev.selectedTimeframe === next.selectedTimeframe &&
+  prev.secondAxisData === next.secondAxisData &&
+  prev.selectedFilterForAxis === next.selectedFilterForAxis
 ));
 
 // Per-button memoized components to prevent unrelated re-renders
@@ -2510,8 +2533,21 @@ const ChartControls = function ChartControls({
   clearTeammateFilter,
   lineMovementEnabled,
   intradayMovements,
+  selectedFilterForAxis,
+  onSelectFilterForAxis,
+  hitRateStats,
+  selectedPlayer,
+  isLoading,
+  showAdvancedFilters,
+  setShowAdvancedFilters,
 }: any) {
+  // Fallback state if props aren't provided
+  const [localShowAdvancedFilters, setLocalShowAdvancedFilters] = useState(false);
+  const effectiveShowAdvancedFilters = showAdvancedFilters !== undefined ? showAdvancedFilters : localShowAdvancedFilters;
+  const effectiveSetShowAdvancedFilters = setShowAdvancedFilters || setLocalShowAdvancedFilters;
+  
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [isSplitsOpen, setIsSplitsOpen] = useState(false);
   const latestMovement = lineMovementEnabled && intradayMovements && intradayMovements.length > 0
     ? intradayMovements[0]
     : null;
@@ -2579,8 +2615,8 @@ const ChartControls = function ChartControls({
     if (!input) return;
     const val = Number.isFinite(bettingLine) ? bettingLine : 0;
     input.value = String(val);
-    updateBettingLinePosition(yAxisConfig, val);
-  }, [bettingLine, yAxisConfig]);
+    updateBettingLinePosition(yAxisConfig, val, !!selectedFilterForAxis);
+  }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
 
   // Fast recolor (no React) when the transient input value changes while holding +/-
   const recolorBarsFast = (value: number) => {
@@ -2665,9 +2701,9 @@ const ChartControls = function ChartControls({
     }
     // Always reposition overlay after the chart finishes its layout for new timeframe
     if (typeof window !== 'undefined') {
-      requestAnimationFrame(() => updateBettingLinePosition(yAxisConfig, commit ?? bettingLine));
+      requestAnimationFrame(() => updateBettingLinePosition(yAxisConfig, commit ?? bettingLine, !!selectedFilterForAxis));
     }
-  }, [selectedTimeframe]);
+  }, [selectedTimeframe, selectedFilterForAxis]);
   // Dropdown state for timeframe selector (moved outside useMemo to follow hooks rules)
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   // Local accordion state for minutes filter
@@ -2728,13 +2764,13 @@ const ChartControls = function ChartControls({
         
         // Update betting line overlay position (important for steals/blocks from URL)
         if (yAxisConfig && Number.isFinite(bettingLine)) {
-          updateBettingLinePosition(yAxisConfig, bettingLine);
+          updateBettingLinePosition(yAxisConfig, bettingLine, !!selectedFilterForAxis);
           recolorBarsFast(bettingLine);
           updateOverRatePillFast(bettingLine);
         }
       }, 0);
     }
-  }, [bettingLine, yAxisConfig]);
+  }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
   
   // Helper function to get bookmaker info
   const normalizeBookNameForLookup = (name: string) => {
@@ -2944,7 +2980,7 @@ const ChartControls = function ChartControls({
               transientLineRef.current = bestLineForStat;
               // Update visual elements
               if (yAxisConfig) {
-                updateBettingLinePosition(yAxisConfig, bestLineForStat);
+                updateBettingLinePosition(yAxisConfig, bestLineForStat, !!selectedFilterForAxis);
               }
               recolorBarsFast(bestLineForStat);
               updateOverRatePillFast(bestLineForStat);
@@ -3026,9 +3062,10 @@ const ChartControls = function ChartControls({
   }, [displayLine, realOddsData, selectedStat]);
   
    const StatPills = useMemo(() => (
-      <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0">
+      <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0 w-full max-w-full">
         <div
-          className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar"
+          className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar"
+          style={{ scrollbarWidth: 'thin' }}
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
             {currentStatOptions.map((s: any) => (
@@ -3097,6 +3134,40 @@ const ChartControls = function ChartControls({
         </div>
       );
     }, [selectedTimeframe, onSelectTimeframe, isTimeframeDropdownOpen, setIsTimeframeDropdownOpen]);
+
+    const SecondAxisFilterPills = useMemo(() => {
+      // Only show in player mode
+      if (propsMode !== 'player') return null;
+
+      // Filter out the "None" option and only show the actual filter options
+      const filterOptions = SECOND_AXIS_FILTER_OPTIONS.filter(opt => opt.key !== null);
+
+      return (
+        <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0">
+          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar">
+            <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
+              {filterOptions.map((option) => (
+                <button
+                  key={option.key || 'none'}
+                  onClick={() => {
+                    // Toggle: if already selected, deselect (set to null), otherwise select
+                    onSelectFilterForAxis(selectedFilterForAxis === option.key ? null : option.key);
+                  }}
+                  className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
+                    selectedFilterForAxis === option.key
+                      ? 'bg-purple-600 text-white border-purple-400/30'
+                      : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }, [propsMode, selectedFilterForAxis, onSelectFilterForAxis]);
+
 
     // Always show controls, even when no data, so users can adjust filters/timeframes
 
@@ -3213,7 +3284,7 @@ const ChartControls = function ChartControls({
                       if (input) {
                         input.value = String(altLine.line);
                         transientLineRef.current = altLine.line;
-                        updateBettingLinePosition(yAxisConfig, altLine.line);
+                        updateBettingLinePosition(yAxisConfig, altLine.line, !!selectedFilterForAxis);
                         recolorBarsFast(altLine.line);
                         updateOverRatePillFast(altLine.line);
                       }
@@ -3776,7 +3847,7 @@ const ChartControls = function ChartControls({
                       if (input) {
                         input.value = String(altLine.line);
                         transientLineRef.current = altLine.line;
-                        updateBettingLinePosition(yAxisConfig, altLine.line);
+                        updateBettingLinePosition(yAxisConfig, altLine.line, !!selectedFilterForAxis);
                         recolorBarsFast(altLine.line);
                         updateOverRatePillFast(altLine.line);
                       }
@@ -4317,7 +4388,7 @@ const ChartControls = function ChartControls({
                       setDisplayLine(v);
                       
                       // Update visual elements immediately (no lag)
-                      updateBettingLinePosition(yAxisConfig, v);
+                      updateBettingLinePosition(yAxisConfig, v, !!selectedFilterForAxis);
                       recolorBarsFast(v);
                       updateOverRatePillFast(v);
                       try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
@@ -4354,8 +4425,55 @@ const ChartControls = function ChartControls({
                 )}
               </div>
               {/* Timeframe filter - Desktop only, positioned next to betting line */}
-              <div className="hidden sm:flex flex-shrink-0">
+              <div className="hidden sm:flex flex-shrink-0 gap-2 items-center">
                 {TimeframeButtons}
+                {/* Splits Container - Desktop */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsSplitsOpen((v: boolean) => !v)}
+                    className="w-20 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
+                  >
+                    Splits
+                  </button>
+                  {isSplitsOpen && (
+                    <div className="absolute right-0 mt-1 w-64 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Splits</div>
+                      <div className="space-y-2">
+                        {/* Home/Away */}
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                          <div className="mb-1 text-[10px] text-gray-500 dark:text-gray-400">Home/Away</div>
+                          <HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} />
+                        </div>
+                        {/* Exclude Blowouts */}
+                        <button
+                          onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                        {/* Back-to-Back */}
+                        <button
+                          onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
+                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {isSplitsOpen && (
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsSplitsOpen(false)}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             {/* Mobile: Filters inline with line input */}
@@ -4376,211 +4494,18 @@ const ChartControls = function ChartControls({
                 {TimeframeButtons}
               </div>
               {propsMode === 'player' && (
-                <div className="relative" ref={advancedMobileRef}>
-                  <button
-                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsAdvancedFiltersOpen((v: boolean) => !v);
-                    }}
-                    style={{ touchAction: 'manipulation' }}
-                    className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center"
-                  >
-                    Advanced
-                  </button>
-                  {isAdvancedFiltersOpen && (
-                    <div 
-                      ref={advancedMobilePortalRef}
-                      className="absolute right-0 top-full mt-1 w-[min(calc(100vw-2rem),20rem)] sm:w-72 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50"
-                      onClick={(e) => {
-                        // Prevent clicks inside the dropdown from closing it
-                        e.stopPropagation();
-                      }}
-                      onTouchStart={(e) => {
-                        // Prevent touch events inside the dropdown from closing it
-                        e.stopPropagation();
-                      }}
-                    >
-                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
-                      <div className="space-y-2">
-                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsMinutesFilterOpen((v: boolean) => !v)}
-                            className="w-full flex items-center justify-between"
-                          >
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Minutes Played</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                              {minMinutesFilter} - {maxMinutesFilter} min
-                              <svg className={`w-3 h-3 transition-transform ${isMinutesFilterOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/></svg>
-                            </span>
-                          </button>
-                          {isMinutesFilterOpen && (
-                            <div className="mt-2">
-                              <div className="relative">
-                                <input type="range" min="0" max="48" step="1" value={minMinutesFilter} onChange={(e) => onMinMinutesChange(Number(e.target.value))} className="w-full" style={{ accentColor: '#7c3aed' }} />
-                                <input type="range" min="0" max="48" step="1" value={maxMinutesFilter} onChange={(e) => onMaxMinutesChange(Number(e.target.value))} className="w-full -mt-3" style={{ accentColor: '#7c3aed' }} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
-                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
-                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
-                          </span>
-                        </button>
-                        {/* With / Without teammate */}
-                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
-                          <div className="flex items-center gap-2">
-                            {/* Playing with */}
-                            <div className="flex-1">
-                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing with</div>
-                              <select
-                                value={withWithoutMode === 'with' ? String(teammateFilterId ?? '') : ''}
-                                onChange={async (e) => {
-                                  const v = e.target.value;
-                                  setWithWithoutMode('with');
-                                  if (!v) {
-                                    setTeammateFilterId(null);
-                                    setTeammateFilterName(null);
-                                    return;
-                                  }
-                                  // If option is an encoded id, use it directly, otherwise resolve by name
-                                  if (/^\d+$/.test(v)) {
-                                    setTeammateFilterId(parseInt(v, 10));
-                                    // Find name from roster
-                                    let foundName: string | null = null;
-                                    if (rosterForSelectedTeam) {
-                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
-                                        const arr = Array.isArray(pos) ? pos : [];
-                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
-                                        if (teammate) {
-                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
-                                        }
-                                      });
-                                    }
-                                    setTeammateFilterName(foundName);
-                                    return;
-                                  }
-                                  const name = v.startsWith('name:') ? v.slice(5) : v;
-                                  setTeammateFilterName(name); // Store the name
-                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
-                                  setTeammateFilterId(id);
-                                }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
-                                disabled={!rosterForSelectedTeam}
-                              >
-                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
-                                {rosterForSelectedTeam && (
-                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
-                                    const arr = Array.isArray(pos) ? pos : [];
-                                    arr.forEach((p: any) => {
-                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
-                                      if (!name) return;
-                                      const key = `name:${name}`;
-                                      if (acc.some((x: any) => x.key === key)) return;
-                                      acc.push({ key, name });
-                                    });
-                                    return acc;
-                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
-                                    <option key={`tm-with-${p.key}`} value={p.key}>
-                                      {p.name}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                            </div>
-                            {/* Playing without */}
-                            <div className="flex-1">
-                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing without</div>
-                              <select
-                                value={withWithoutMode === 'without' ? String(teammateFilterId ?? '') : ''}
-                                onChange={async (e) => {
-                                  const v = e.target.value;
-                                  setWithWithoutMode('without');
-                                  if (!v) {
-                                    setTeammateFilterId(null);
-                                    setTeammateFilterName(null);
-                                    return;
-                                  }
-                                  if (/^\d+$/.test(v)) {
-                                    setTeammateFilterId(parseInt(v, 10));
-                                    // Find name from roster
-                                    let foundName: string | null = null;
-                                    if (rosterForSelectedTeam) {
-                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
-                                        const arr = Array.isArray(pos) ? pos : [];
-                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
-                                        if (teammate) {
-                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
-                                        }
-                                      });
-                                    }
-                                    setTeammateFilterName(foundName);
-                                    return;
-                                  }
-                                  const name = v.startsWith('name:') ? v.slice(5) : v;
-                                  setTeammateFilterName(name); // Store the name
-                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
-                                  setTeammateFilterId(id);
-                                }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
-                                disabled={!rosterForSelectedTeam}
-                              >
-                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
-                                {rosterForSelectedTeam && (
-                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
-                                    const arr = Array.isArray(pos) ? pos : [];
-                                    arr.forEach((p: any) => {
-                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
-                                      if (!name) return;
-                                      const key = `name:${name}`;
-                                      if (acc.some((x: any) => x.key === key)) return;
-                                      acc.push({ key, name });
-                                    });
-                                    return acc;
-                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
-                                    <option key={`tm-without-${p.key}`} value={p.key}>
-                                      {p.name}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                            </div>
-                          </div>
-                          {teammateFilterId != null && (
-                            <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                              <span>
-                                {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={clearTeammateFilter}
-                                className="text-purple-600 dark:text-purple-300 font-semibold hover:underline"
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
-                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
-                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => effectiveSetShowAdvancedFilters((v: boolean) => !v)}
+                  className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center relative ${effectiveShowAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
+                >
+                  {/* Glow effect around button */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-purple-500/30 blur-md -z-10 animate-pulse"></div>
+                  Advanced
+                  {/* NEW badge sticker on top-left of button */}
+                  <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border-2 border-white dark:border-[#0a1929]">
+                    NEW
+                  </div>
+                </button>
               )}
             </div>
             {/* Middle: Over Rate pill in header - Hidden on desktop to use in-chart placement */}
@@ -4608,195 +4533,19 @@ const ChartControls = function ChartControls({
                   selectedTimeframe={selectedTimeframe}
                 />
               </div>
-              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
               {propsMode === 'player' && (
-                <div className="relative" ref={advancedDesktopRef}>
-                  <button
-                    onClick={() => setIsAdvancedFiltersOpen((v: boolean) => !v)}
-                    className="w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
-                  >
-                    Advanced
-                  </button>
-                  {isAdvancedFiltersOpen && (
-                    <div className="absolute right-0 mt-1 w-72 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
-                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Advanced Filters</div>
-                      <div className="space-y-2">
-                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsMinutesFilterOpen((v: boolean) => !v)}
-                            className="w-full flex items-center justify-between"
-                          >
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Minutes Played</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                              {minMinutesFilter} - {maxMinutesFilter} min
-                              <svg className={`w-3 h-3 transition-transform ${isMinutesFilterOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/></svg>
-                            </span>
-                          </button>
-                          {isMinutesFilterOpen && (
-                            <div className="mt-2">
-                              <div className="relative">
-                                <input type="range" min="0" max="48" step="1" value={minMinutesFilter} onChange={(e) => onMinMinutesChange(Number(e.target.value))} className="w-full" style={{ accentColor: '#7c3aed' }} />
-                                <input type="range" min="0" max="48" step="1" value={maxMinutesFilter} onChange={(e) => onMaxMinutesChange(Number(e.target.value))} className="w-full -mt-3" style={{ accentColor: '#7c3aed' }} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
-                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
-                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
-                          </span>
-                        </button>
-                        {/* With / Without teammate (desktop) */}
-                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
-                          <div className="flex items-center gap-2">
-                            {/* Playing with */}
-                            <div className="flex-1">
-                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing with</div>
-                              <select
-                                value={withWithoutMode === 'with' ? String(teammateFilterId ?? '') : ''}
-                                onChange={async (e) => {
-                                  const v = e.target.value;
-                                  setWithWithoutMode('with');
-                                  if (!v) {
-                                    setTeammateFilterId(null);
-                                    setTeammateFilterName(null);
-                                    return;
-                                  }
-                                  if (/^\d+$/.test(v)) {
-                                    setTeammateFilterId(parseInt(v, 10));
-                                    // Find name from roster
-                                    let foundName: string | null = null;
-                                    if (rosterForSelectedTeam) {
-                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
-                                        const arr = Array.isArray(pos) ? pos : [];
-                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
-                                        if (teammate) {
-                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
-                                        }
-                                      });
-                                    }
-                                    setTeammateFilterName(foundName);
-                                    return;
-                                  }
-                                  const name = v.startsWith('name:') ? v.slice(5) : v;
-                                  setTeammateFilterName(name); // Store the name
-                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
-                                  setTeammateFilterId(id);
-                                }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
-                                disabled={!rosterForSelectedTeam}
-                              >
-                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
-                                {rosterForSelectedTeam && (
-                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
-                                    const arr = Array.isArray(pos) ? pos : [];
-                                    arr.forEach((p: any) => {
-                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
-                                      if (!name) return;
-                                      const key = `name:${name}`;
-                                      if (acc.some((x: any) => x.key === key)) return;
-                                      acc.push({ key, name });
-                                    });
-                                    return acc;
-                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
-                                    <option key={`tm-with-d-${p.key}`} value={p.key}>
-                                      {p.name}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                            </div>
-                            {/* Playing without */}
-                            <div className="flex-1">
-                              <div className="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Playing without</div>
-                              <select
-                                value={withWithoutMode === 'without' ? String(teammateFilterId ?? '') : ''}
-                                onChange={async (e) => {
-                                  const v = e.target.value;
-                                  setWithWithoutMode('without');
-                                  if (!v) {
-                                    setTeammateFilterId(null);
-                                    setTeammateFilterName(null);
-                                    return;
-                                  }
-                                  if (/^\d+$/.test(v)) {
-                                    setTeammateFilterId(parseInt(v, 10));
-                                    // Find name from roster
-                                    let foundName: string | null = null;
-                                    if (rosterForSelectedTeam) {
-                                      Object.values(rosterForSelectedTeam).forEach((pos: any) => {
-                                        const arr = Array.isArray(pos) ? pos : [];
-                                        const teammate = arr.find((p: any) => (p?.id || p?.player_id) === parseInt(v, 10));
-                                        if (teammate) {
-                                          foundName = teammate?.full_name || teammate?.name || `${teammate?.first_name || ''} ${teammate?.last_name || ''}`.trim();
-                                        }
-                                      });
-                                    }
-                                    setTeammateFilterName(foundName);
-                                    return;
-                                  }
-                                  const name = v.startsWith('name:') ? v.slice(5) : v;
-                                  setTeammateFilterName(name); // Store the name
-                                  const id = await resolveTeammateIdFromNameLocal(name, currentTeam);
-                                  setTeammateFilterId(id);
-                                }}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 text-xs text-gray-900 dark:text-white"
-                                disabled={!rosterForSelectedTeam}
-                              >
-                                <option value="">{rosterForSelectedTeam ? 'All' : 'Loading roster…'}</option>
-                                {rosterForSelectedTeam && (
-                                  Object.values(rosterForSelectedTeam).reduce((acc: any[], pos: any) => {
-                                    const arr = Array.isArray(pos) ? pos : [];
-                                    arr.forEach((p: any) => {
-                                      const name = p?.full_name || p?.name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
-                                      if (!name) return;
-                                      const key = `name:${name}`;
-                                      if (acc.some((x: any) => x.key === key)) return;
-                                      acc.push({ key, name });
-                                    });
-                                    return acc;
-                                  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)).map((p: any) => (
-                                    <option key={`tm-without-d-${p.key}`} value={p.key}>
-                                      {p.name}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                            </div>
-                          </div>
-                          {teammateFilterId != null && (
-                            <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                              <span>
-                                {loadingTeammateGames ? 'Loading teammate games…' : `Filtering ${withWithoutMode} selected teammate`}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={clearTeammateFilter}
-                                className="text-purple-600 dark:text-purple-300 font-semibold hover:underline"
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
-                          className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
-                          <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                            <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => effectiveSetShowAdvancedFilters((v: boolean) => !v)}
+                  className={`w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center relative ${effectiveShowAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
+                >
+                  {/* Glow effect around button */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-purple-500/30 blur-md -z-10 animate-pulse"></div>
+                  Advanced
+                  {/* NEW badge sticker on top-left of button */}
+                  <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border-2 border-white dark:border-[#0a1929]">
+                    NEW
+                  </div>
+                </button>
               )}
             </div>
           </div>
@@ -4860,7 +4609,17 @@ const ChartContainer = function ChartContainer({
   hitRateStats,
   lineMovementEnabled,
   intradayMovements,
+  secondAxisData,
+      selectedFilterForAxis,
+      onSelectFilterForAxis,
+  sliderConfig,
+  sliderRange,
+  setSliderRange,
 }: any) {
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [activeHandle, setActiveHandle] = useState<'min' | 'max' | null>(null);
+  const sliderContainerRef = useRef<HTMLDivElement>(null);
+  const intendedHandleRef = useRef<'min' | 'max' | null>(null);
   const totalSamples = hitRateStats?.total ?? chartData.length;
   const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
   
@@ -4905,6 +4664,39 @@ const ChartContainer = function ChartContainer({
       </div>
     );
   };
+
+  // Second Axis Filter Pills (styled like StatPills) - inside chart container
+  const SecondAxisFilterPills = useMemo(() => {
+    // Only show in player mode
+    if (propsMode !== 'player') return null;
+
+    // Filter out the "None" option and only show the actual filter options
+    const filterOptions = SECOND_AXIS_FILTER_OPTIONS.filter(opt => opt.key !== null);
+
+    return (
+      <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar">
+        <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
+          {filterOptions.map((option) => (
+            <button
+              key={option.key || 'none'}
+              onClick={() => {
+                // Toggle: if already selected, deselect (set to null), otherwise select
+                onSelectFilterForAxis(selectedFilterForAxis === option.key ? null : option.key);
+              }}
+              className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
+                selectedFilterForAxis === option.key
+                  ? 'bg-purple-600 text-white border-purple-400/30'
+                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }, [propsMode, selectedFilterForAxis, onSelectFilterForAxis]);
+
   return (
 <div 
 className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
@@ -4942,6 +4734,8 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
         onExcludeBlowoutsChange={onExcludeBlowoutsChange}
         onExcludeBackToBackChange={onExcludeBackToBackChange}
         rosterForSelectedTeam={rosterForSelectedTeam}
+        selectedFilterForAxis={selectedFilterForAxis}
+        onSelectFilterForAxis={onSelectFilterForAxis}
         withWithoutMode={withWithoutMode}
         setWithWithoutMode={setWithWithoutMode}
         teammateFilterId={teammateFilterId}
@@ -4952,90 +4746,228 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
         clearTeammateFilter={clearTeammateFilter}
         lineMovementEnabled={lineMovementEnabled}
         intradayMovements={intradayMovements}
+        hitRateStats={hitRateStats}
+        selectedPlayer={selectedPlayer}
+        isLoading={isLoading}
+        oddsLoading={oddsLoading}
+        showAdvancedFilters={showAdvancedFilters}
+        setShowAdvancedFilters={setShowAdvancedFilters}
       />
-      {/* Mobile: Over Rate pill above chart */}
-      <div className="sm:hidden px-2 pb-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-            {totalSamples > 0 ? (
-              <OverRatePill 
-                overCount={overSamples} 
-                total={totalSamples} 
-                isDark={isDark} 
-              />
-            ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
-              <div className="h-6 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-800"></div>
-            ) : null}
-            {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
-              </span>
-            )}
-            {/* Teammate filter indicator */}
-            {teammateFilterId && teammateFilterName && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] font-medium border border-purple-200 dark:border-purple-700">
-                {withWithoutMode === 'with' ? 'With' : 'Without'}: {teammateFilterName}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearTeammateFilter();
+      {/* Second Axis Filter Pills and Slider - Inside chart container */}
+      {showAdvancedFilters && (
+        <div className="mb-2 sm:mb-3 flex items-center gap-3">
+          {showAdvancedFilters && SecondAxisFilterPills}
+          {/* Horizontal Range Slider on the right */}
+          {showAdvancedFilters && selectedFilterForAxis && sliderConfig && sliderRange && (
+            <div className="flex-shrink-0 ml-2 pr-12">
+              <div ref={sliderContainerRef} className="relative w-48 h-8">
+                {/* Purple track line - thicker - non-interactive */}
+                <div className="absolute top-1/2 left-0 right-0 h-1 bg-purple-500 -translate-y-1/2 rounded-full pointer-events-none"></div>
+                
+                {/* Filled portion between min and max - non-interactive */}
+                <div 
+                  className="absolute top-1/2 h-1 bg-purple-600 -translate-y-1/2 rounded-full pointer-events-none"
+                  style={{
+                    left: `${((sliderRange.min - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
+                    width: `${((sliderRange.max - sliderRange.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
                   }}
-                  className="ml-0.5 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5 transition-colors"
-                  aria-label="Clear filter"
+                ></div>
+                
+                {/* Min slider input */}
+                <input
+                  type="range"
+                  min={sliderConfig.min}
+                  max={sliderRange.max}
+                  step={selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 0.1 : selectedFilterForAxis === 'dvp_rank' ? 1 : 0.5}
+                  value={sliderRange.min}
+                  onChange={(e) => {
+                    // Only update if this is the intended handle
+                    if (intendedHandleRef.current !== 'min' && intendedHandleRef.current !== null) {
+                      return;
+                    }
+                    const newMin = Number(e.target.value);
+                    // Ensure min doesn't exceed max
+                    const constrainedMin = Math.min(newMin, sliderRange.max);
+                    setSliderRange({ min: constrainedMin, max: sliderRange.max });
+                  }}
+                  onPointerDown={(e) => {
+                    if (!sliderContainerRef.current) {
+                      intendedHandleRef.current = 'min';
+                      setActiveHandle('min');
+                      return;
+                    }
+                    // Calculate click position relative to slider
+                    const rect = sliderContainerRef.current.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const sliderWidth = rect.width;
+                    const clickPercent = clickX / sliderWidth;
+                    
+                    // Calculate handle positions
+                    const range = sliderConfig.max - sliderConfig.min;
+                    const minPercent = (sliderRange.min - sliderConfig.min) / range;
+                    const maxPercent = (sliderRange.max - sliderConfig.min) / range;
+                    
+                    // Determine which handle is closer to click position
+                    const distToMin = Math.abs(clickPercent - minPercent);
+                    const distToMax = Math.abs(clickPercent - maxPercent);
+                    
+                    // Only activate min if it's closer or if click is clearly on the left side
+                    if (distToMin <= distToMax || clickPercent < (minPercent + maxPercent) / 2) {
+                      intendedHandleRef.current = 'min';
+                      setActiveHandle('min');
+                    } else {
+                      intendedHandleRef.current = null;
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                  onPointerUp={() => {
+                    setActiveHandle(null);
+                    intendedHandleRef.current = null;
+                  }}
+                  onPointerCancel={() => {
+                    setActiveHandle(null);
+                    intendedHandleRef.current = null;
+                  }}
+                  style={{ 
+                    zIndex: activeHandle === 'min' ? 50 : 20
+                  }}
+                  className="absolute top-1/2 left-0 right-0 w-full h-2 -translate-y-1/2 appearance-none cursor-grab active:cursor-grabbing bg-transparent"
+                />
+                
+                {/* Max slider input */}
+                <input
+                  type="range"
+                  min={sliderRange.min}
+                  max={sliderConfig.max}
+                  step={selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 0.1 : selectedFilterForAxis === 'dvp_rank' ? 1 : 0.5}
+                  value={sliderRange.max}
+                  onChange={(e) => {
+                    // Only update if this is the intended handle
+                    if (intendedHandleRef.current !== 'max' && intendedHandleRef.current !== null) {
+                      return;
+                    }
+                    const newMax = Number(e.target.value);
+                    // Ensure max doesn't go below min
+                    const constrainedMax = Math.max(newMax, sliderRange.min);
+                    setSliderRange({ min: sliderRange.min, max: constrainedMax });
+                  }}
+                  onPointerDown={(e) => {
+                    if (!sliderContainerRef.current) {
+                      intendedHandleRef.current = 'max';
+                      setActiveHandle('max');
+                      return;
+                    }
+                    // Calculate click position relative to slider
+                    const rect = sliderContainerRef.current.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const sliderWidth = rect.width;
+                    const clickPercent = clickX / sliderWidth;
+                    
+                    // Calculate handle positions
+                    const range = sliderConfig.max - sliderConfig.min;
+                    const minPercent = (sliderRange.min - sliderConfig.min) / range;
+                    const maxPercent = (sliderRange.max - sliderConfig.min) / range;
+                    
+                    // Determine which handle is closer to click position
+                    const distToMin = Math.abs(clickPercent - minPercent);
+                    const distToMax = Math.abs(clickPercent - maxPercent);
+                    
+                    // Only activate max if it's closer or if click is clearly on the right side
+                    if (distToMax <= distToMin || clickPercent > (minPercent + maxPercent) / 2) {
+                      intendedHandleRef.current = 'max';
+                      setActiveHandle('max');
+                    } else {
+                      intendedHandleRef.current = null;
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                  onPointerUp={() => {
+                    setActiveHandle(null);
+                    intendedHandleRef.current = null;
+                  }}
+                  onPointerCancel={() => {
+                    setActiveHandle(null);
+                    intendedHandleRef.current = null;
+                  }}
+                  style={{ 
+                    zIndex: activeHandle === 'max' ? 50 : 30
+                  }}
+                  className="absolute top-1/2 left-0 right-0 w-full h-2 -translate-y-1/2 appearance-none cursor-grab active:cursor-grabbing bg-transparent"
+                />
+                
+                <style jsx>{`
+                  input[type="range"] {
+                    -webkit-appearance: none;
+                    appearance: none;
+                  }
+                  input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: transparent;
+                    cursor: grab;
+                    opacity: 0;
+                  }
+                  input[type="range"]::-moz-range-thumb {
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: transparent;
+                    cursor: grab;
+                    border: none;
+                    opacity: 0;
+                  }
+                  input[type="range"]::-webkit-slider-runnable-track {
+                    height: 0;
+                    background: transparent;
+                    pointer-events: none;
+                  }
+                  input[type="range"]::-moz-range-track {
+                    height: 0;
+                    background: transparent;
+                    pointer-events: none;
+                  }
+                `}</style>
+                
+                {/* Min value circle and label */}
+                <div 
+                  className="absolute top-1/2 -translate-y-1/2 flex items-center flex-row-reverse gap-1.5 pointer-events-none"
+                  style={{
+                    left: `${((sliderRange.min - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </span>
-            )}
-          </div>
-          {renderAverageChips('text-gray-600 dark:text-gray-300')}
-        </div>
-      </div>
-      {/* Desktop: Over Rate pill above chart (same logic and placement as mobile) */}
-      <div className="hidden sm:block px-3 pb-2 -mt-1 md:-mt-1.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Over Rate:</span>
-            {totalSamples > 0 ? (
-              <OverRatePill 
-                overCount={overSamples} 
-                total={totalSamples} 
-                isDark={isDark} 
-              />
-            ) : ((selectedPlayer || hasUrlPlayer) && (isLoading || (oddsLoading ?? false))) ? (
-              <div className="h-6 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-800"></div>
-            ) : null}
-            {hitRateStats?.totalBeforeFilters && hitRateStats.totalBeforeFilters !== totalSamples && (
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                ({totalSamples}/{hitRateStats.totalBeforeFilters} games)
-              </span>
-            )}
-          </div>
-          {/* Teammate filter indicator - appears in middle space */}
-          {teammateFilterId && teammateFilterName && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] sm:text-xs font-medium border border-purple-200 dark:border-purple-700">
-              {withWithoutMode === 'with' ? 'Playing with' : 'Playing without'}: {teammateFilterName}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearTeammateFilter();
-                }}
-                className="ml-0.5 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5 transition-colors"
-                aria-label="Clear filter"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
+                  <div className="w-4 h-4 rounded-full bg-purple-600 border-2 border-white shadow-md"></div>
+                  <span className="text-xs text-gray-300 dark:text-gray-400 font-medium whitespace-nowrap">
+                    {sliderRange.min.toFixed(selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 1 : 0)}
+                    {selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? '%' : ''}
+                  </span>
+                </div>
+                
+                {/* Max value circle and label */}
+                <div 
+                  className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none"
+                  style={{
+                    left: `${((sliderRange.max - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  <div className="w-4 h-4 rounded-full bg-purple-600 border-2 border-white shadow-md"></div>
+                  <span className="text-xs text-gray-300 dark:text-gray-400 font-medium whitespace-nowrap">
+                    {sliderRange.max.toFixed(selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 1 : 0)}
+                    {selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? '%' : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
-          {renderAverageChips('text-gray-600 dark:text-gray-300')}
         </div>
-      </div>
-      <div className="flex-1 min-h-0">
+      )}
+      <div className="flex-1 min-h-0 relative">
         <PureChart
           isLoading={isLoading || (oddsLoading ?? false)}
           chartData={chartData}
@@ -5050,6 +4982,8 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
           gamePropsTeam={gamePropsTeam}
           customTooltip={customTooltip}
           selectedTimeframe={selectedTimeframe}
+          secondAxisData={showAdvancedFilters ? secondAxisData : null}
+          selectedFilterForAxis={showAdvancedFilters ? selectedFilterForAxis : null}
         />
       </div>
       
@@ -7158,6 +7092,14 @@ function NBADashboardContent() {
 
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
+  const [selectedFilterForAxis, setSelectedFilterForAxis] = useState<string | null>(null); // Second axis filter: 'minutes', 'dvp_rank', 'pace', 'usage_rate', 'fg_pct', null
+  const [sliderRange, setSliderRange] = useState<{ min: number; max: number } | null>(null); // Slider range for filtering
+  
+  const handleSelectFilterForAxis = useCallback((filter: string | null) => {
+    setSelectedFilterForAxis(filter);
+    // Reset slider when filter changes
+    setSliderRange(null);
+  }, []);
   
   // Track if stat was set from URL to prevent default stat logic from overriding it
   const statFromUrlRef = useRef(false);
@@ -7687,6 +7629,12 @@ const lineMovementInFlightRef = useRef(false);
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
   const [advancedStatsLoading, setAdvancedStatsLoading] = useState(false);
   const [advancedStatsError, setAdvancedStatsError] = useState<string | null>(null);
+  
+  // Advanced stats per game (for second axis - pace and usage_rate)
+  const [advancedStatsPerGame, setAdvancedStatsPerGame] = useState<Record<number, { pace?: number; usage_percentage?: number }>>({});
+  
+  // DvP ranks per game (for second axis - dvp_rank)
+  const [dvpRanksPerGame, setDvpRanksPerGame] = useState<Record<string, number | null>>({});
   
   // Shot distance stats state
   const [shotDistanceData, setShotDistanceData] = useState<any | null>(null);
@@ -12343,6 +12291,67 @@ const lineMovementInFlightRef = useRef(false);
     return result;
   }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Removed deferredPlayerStats to prevent double refresh
   
+  // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
+  // This allows us to filter from ALL games, then apply timeframe
+  const allGamesSecondAxisData = useMemo(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !playerStats.length) {
+      return null;
+    }
+
+    // Calculate from ALL playerStats (before any timeframe filtering)
+    const result = playerStats
+      .filter(stats => {
+        // Only include games where player played (same filter as baseGameData)
+        const minutes = parseMinutes(stats.min);
+        const shouldIncludeZeroMinutes = selectedTimeframe === 'lastseason';
+        if (shouldIncludeZeroMinutes) return true;
+        return minutes > 0;
+      })
+      .map((stats: any) => {
+        const numericGameId = typeof stats?.game?.id === 'number' ? stats.game.id : null;
+        const gameIdStr = String(numericGameId || '');
+        const gameDate = stats?.game?.date || '';
+        let value: number | null = null;
+
+        switch (selectedFilterForAxis) {
+          case 'minutes':
+            if (stats?.min) {
+              value = parseMinutes(stats.min);
+            }
+            break;
+          case 'fg_pct':
+            if (stats?.fg_pct !== null && stats?.fg_pct !== undefined) {
+              value = stats.fg_pct * 100;
+            }
+            break;
+          case 'pace':
+            if (numericGameId && advancedStatsPerGame[numericGameId]?.pace !== undefined) {
+              value = advancedStatsPerGame[numericGameId].pace!;
+            }
+            break;
+          case 'usage_rate':
+            if (numericGameId && advancedStatsPerGame[numericGameId]?.usage_percentage !== undefined) {
+              value = advancedStatsPerGame[numericGameId].usage_percentage! * 100;
+            }
+            break;
+          case 'dvp_rank':
+            value = dvpRanksPerGame[gameIdStr] ?? null;
+            break;
+          default:
+            value = null;
+        }
+
+        return {
+          gameId: gameIdStr,
+          gameDate: String(gameDate),
+          value,
+          stats: stats, // Store stats reference for mapping later
+        };
+      });
+    
+    return result;
+  }, [selectedFilterForAxis, playerStats, propsMode, advancedStatsPerGame, dvpRanksPerGame, selectedTimeframe]);
+  
   // Prefetch teammate game data in background when roster is available (for faster filtering)
   useEffect(() => {
     if (!rosterForSelectedTeam || !baseGameData?.length || propsMode !== 'player') return;
@@ -13184,7 +13193,423 @@ const lineMovementInFlightRef = useRef(false);
 
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
-  
+
+  // Calculate second axis data for display (from adjustedChartData for chart rendering)
+  const secondAxisData = useMemo(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
+      return null;
+    }
+
+    const result = adjustedChartData.map((game: any) => {
+      const numericGameId = typeof game.game?.id === 'number' ? game.game.id : 
+                            typeof game.stats?.game?.id === 'number' ? game.stats.game.id : null;
+      const gameIdStr = game.xKey || String(numericGameId || '');
+      const gameDate = game.date || game.stats?.game?.date || '';
+      let value: number | null = null;
+      const stats = game.stats;
+
+      switch (selectedFilterForAxis) {
+        case 'minutes':
+          if (stats?.min) {
+            value = parseMinutes(stats.min);
+          }
+          break;
+        case 'fg_pct':
+          if (stats?.fg_pct !== null && stats?.fg_pct !== undefined) {
+            value = stats.fg_pct * 100;
+          }
+          break;
+        case 'pace':
+          if (numericGameId && advancedStatsPerGame[numericGameId]?.pace !== undefined) {
+            value = advancedStatsPerGame[numericGameId].pace!;
+          }
+          break;
+        case 'usage_rate':
+          if (numericGameId && advancedStatsPerGame[numericGameId]?.usage_percentage !== undefined) {
+            value = advancedStatsPerGame[numericGameId].usage_percentage! * 100;
+          }
+          break;
+        case 'dvp_rank':
+          value = dvpRanksPerGame[gameIdStr] ?? null;
+          break;
+        default:
+          value = null;
+      }
+
+      return {
+        gameId: gameIdStr,
+        gameDate: String(gameDate),
+        value,
+      };
+    });
+    
+    return result;
+  }, [selectedFilterForAxis, adjustedChartData, propsMode, advancedStatsPerGame, dvpRanksPerGame]);
+
+  // Calculate slider min/max based on selected filter (use all games for accurate min/max)
+  const sliderConfig = useMemo(() => {
+    if (!selectedFilterForAxis || !allGamesSecondAxisData) {
+      return null;
+    }
+
+    const values = allGamesSecondAxisData
+      .map(item => item.value)
+      .filter((v): v is number => v !== null && Number.isFinite(v));
+
+    if (values.length === 0) {
+      return null;
+    }
+
+    let min: number;
+    let max: number;
+
+    switch (selectedFilterForAxis) {
+      case 'minutes':
+        min = 0;
+        max = 50;
+        break;
+      case 'fg_pct':
+        min = 0;
+        max = 100;
+        break;
+      case 'pace':
+        min = Math.floor(Math.min(...values));
+        max = Math.ceil(Math.max(...values));
+        break;
+      case 'usage_rate':
+        min = Math.floor(Math.min(...values));
+        max = Math.ceil(Math.max(...values));
+        break;
+      case 'dvp_rank':
+        min = 1;
+        max = 30;
+        break;
+      default:
+        return null;
+    }
+
+    return { min, max, values };
+  }, [selectedFilterForAxis, secondAxisData]);
+
+  // Filter chart data based on slider range
+  // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
+  const filteredChartData = useMemo(() => {
+    if (!selectedFilterForAxis || !allGamesSecondAxisData || !sliderRange || propsMode !== 'player') {
+      return adjustedChartData;
+    }
+
+    // Filter ALL games by slider range using allGamesSecondAxisData (calculated from playerStats directly)
+    const filteredStats = allGamesSecondAxisData
+      .filter(item => {
+        if (item.value === null || !Number.isFinite(item.value)) {
+          return false; // Exclude games without filter data
+        }
+        // Filter games within the range [min, max]
+        return item.value >= sliderRange.min && item.value <= sliderRange.max;
+      })
+      .map(item => item.stats); // Get the original stats objects
+
+    // Now we need to recreate baseGameData format from these filtered stats
+    // Then apply timeframe to get the final result
+    // Sort by date (newest first) to match baseGameData logic
+    const sortedFilteredStats = [...filteredStats].sort((a: any, b: any) => {
+      const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
+      const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
+
+    // Apply timeframe to the filtered games
+    const n = parseInt(selectedTimeframe.replace('last', ''));
+    let timeframeFilteredStats = sortedFilteredStats;
+    
+    if (!Number.isNaN(n) && selectedTimeframe.startsWith('last')) {
+      // Take the first N games (newest first, so these are the most recent N)
+      timeframeFilteredStats = sortedFilteredStats.slice(0, n);
+    } else if (selectedTimeframe === 'h2h' || selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') {
+      // For these timeframes, baseGameData already applied the filter, so we keep all filtered games
+      timeframeFilteredStats = sortedFilteredStats;
+    }
+
+    // Reverse for chronological order (oldest→newest, left→right)
+    const ordered = timeframeFilteredStats.slice().reverse();
+
+    // Map to baseGameData format, then to chartData format
+    const mapped = ordered.map((stats: any, index: number) => {
+      // Recreate baseGameData structure
+      let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+      const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+      const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+      const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+      const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+      
+      const playerTeamNorm = normalizeAbbr(playerTeam);
+      const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+      let opponent = "";
+      
+      if (playerTeamId && homeTeamId && visitorTeamId) {
+        if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+          opponent = visitorTeamAbbr;
+        } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+          opponent = homeTeamAbbr;
+        }
+      }
+      if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+        const homeNorm = normalizeAbbr(homeTeamAbbr);
+        const awayNorm = normalizeAbbr(visitorTeamAbbr);
+        if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
+        else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
+      }
+      
+      const iso = stats?.game?.date;
+      const d = iso ? new Date(iso) : null;
+      const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+      const gameId = stats?.game?.id ?? `${opponent}-${index}`;
+      
+      // Create baseGameData format
+      const gameData = {
+        stats,
+        opponent,
+        gameNumber: index + 1,
+        game: opponent ? `vs ${opponent}` : "—",
+        date: shortDate,
+        xKey: String(gameId),
+        tickLabel: opponent || "",
+      };
+
+      // Map to chartData format
+      const statValue = getStatValue(stats, selectedStat);
+      const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+      
+      return {
+        ...gameData,
+        value,
+      };
+    });
+
+    return mapped;
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer]);
+
+  // Set initial slider range when filter is selected
+  useEffect(() => {
+    if (selectedFilterForAxis && sliderConfig && sliderRange === null) {
+      // Initialize with full range
+      setSliderRange({ min: sliderConfig.min, max: sliderConfig.max });
+    }
+  }, [selectedFilterForAxis, sliderConfig, sliderRange]);
+
+  // Fetch advanced stats per game when pace or usage_rate is selected
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+
+    // Only fetch if pace or usage_rate is selected
+    if (selectedFilterForAxis !== 'pace' && selectedFilterForAxis !== 'usage_rate') {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+
+    // Get player ID
+    const playerId = selectedPlayer?.id;
+    if (!playerId) {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+
+    // Extract game IDs from chart data (need numeric IDs, not xKey strings)
+    const gameIds: number[] = [];
+    adjustedChartData.forEach((game: any) => {
+      const gameId = game.game?.id || game.stats?.game?.id;
+      if (gameId && typeof gameId === 'number') {
+        gameIds.push(gameId);
+      }
+    });
+
+    if (gameIds.length === 0) {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+
+    // Fetch advanced stats for all games
+    let isMounted = true;
+    const fetchAdvancedStats = async () => {
+      try {
+        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
+        
+        if (!isMounted) return;
+        
+        // Map stats by game ID
+        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
+        stats.forEach((stat: any) => {
+          const gameId = stat.game?.id;
+          if (gameId && typeof gameId === 'number') {
+            statsByGame[gameId] = {
+              pace: stat.pace ?? undefined,
+              usage_percentage: stat.usage_percentage ?? undefined,
+            };
+          }
+        });
+        
+        setAdvancedStatsPerGame(statsByGame);
+      } catch (error) {
+        console.error('[Second Axis] Error fetching advanced stats:', error);
+        if (isMounted) {
+          setAdvancedStatsPerGame({});
+        }
+      }
+    };
+
+    fetchAdvancedStats();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPlayer?.id]);
+
+  // Fetch DvP ranks when dvp_rank is selected for second axis
+  useEffect(() => {
+    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !adjustedChartData.length) {
+      setDvpRanksPerGame({});
+      return;
+    }
+
+    // Need player position and selected stat to fetch DvP ranks
+    if (!selectedPosition || !selectedStat) {
+      setDvpRanksPerGame({});
+      return;
+    }
+
+    // Map selected stat to DvP metric
+    const statToDvpMetric: Record<string, string> = {
+      'pts': 'pts',
+      'reb': 'reb',
+      'ast': 'ast',
+      'fg3m': 'fg3m',
+      'stl': 'stl',
+      'blk': 'blk',
+      'to': 'to',
+      'fg_pct': 'fg_pct',
+      'pra': 'pra',
+      'pr': 'pr',
+      'pa': 'pa',
+      'ra': 'ra',
+    };
+    
+    const dvpMetric = statToDvpMetric[selectedStat];
+    if (!dvpMetric) {
+      setDvpRanksPerGame({});
+      return;
+    }
+
+    let isMounted = true;
+    const fetchDvpRanks = async () => {
+      try {
+        // Map ranks to game IDs based on opponent team and game date
+        const ranksByGame: Record<string, number | null> = {};
+        
+        // Fetch historical ranks for each game
+        const rankPromises = adjustedChartData.map(async (game: any) => {
+          const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
+          const opponent = game.opponent || game.tickLabel || '';
+          const gameDate = game.date || game.stats?.game?.date || '';
+          
+          if (!opponent || opponent === 'N/A' || opponent === 'ALL' || opponent === '') {
+            return { gameIdStr, rank: null };
+          }
+          
+          if (!gameDate) {
+            // If no game date, fallback to current ranks
+            return { gameIdStr, rank: null, useCurrent: true };
+          }
+          
+          // Try to fetch historical rank for this game date
+          try {
+            const dateStr = new Date(gameDate).toISOString().split('T')[0];
+            const historicalResponse = await fetch(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            );
+            
+            if (historicalResponse.ok) {
+              const historicalData = await historicalResponse.json();
+              if (historicalData.success && historicalData.ranks) {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = historicalData.ranks[normalizedOpp] ?? 
+                            historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
+                // Only return rank if it's not 0 (0 means no data)
+                return { gameIdStr, rank: rank && rank > 0 ? rank : null };
+              }
+            }
+          } catch (historicalError) {
+            console.warn(`[Second Axis] Failed to fetch historical rank for game ${gameIdStr}:`, historicalError);
+          }
+          
+          // Fallback: use current ranks if historical lookup fails
+          return { gameIdStr, rank: null, useCurrent: true };
+        });
+        
+        const rankResults = await Promise.all(rankPromises);
+        
+        // Check if we need to fetch current ranks for any games
+        const needsCurrentRanks = rankResults.some(r => r.useCurrent);
+        let currentRanks: Record<string, number> = {};
+        
+        if (needsCurrentRanks) {
+          // Fetch current DvP ranks as fallback
+          const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
+          
+          if (currentResponse.ok) {
+            const currentData = await currentResponse.json();
+            currentRanks = currentData.metrics?.[dvpMetric] || {};
+          }
+        }
+        
+        if (!isMounted) return;
+        
+        // Map ranks to games
+        rankResults.forEach((result) => {
+          if (result.rank !== null) {
+            ranksByGame[result.gameIdStr] = result.rank;
+          } else if (result.useCurrent) {
+            // Use current rank as fallback
+            const game = adjustedChartData.find((g: any) => {
+              const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
+              return gameIdStr === result.gameIdStr;
+            });
+            
+            if (game) {
+              const opponent = game.opponent || game.tickLabel || '';
+              if (opponent && opponent !== 'N/A' && opponent !== 'ALL' && opponent !== '') {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = currentRanks[normalizedOpp] ?? currentRanks[normalizedOpp.toUpperCase()] ?? null;
+                ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
+              } else {
+                ranksByGame[result.gameIdStr] = null;
+              }
+            } else {
+              ranksByGame[result.gameIdStr] = null;
+            }
+          } else {
+            ranksByGame[result.gameIdStr] = null;
+          }
+        });
+        
+        setDvpRanksPerGame(ranksByGame);
+      } catch (error) {
+        console.error('[Second Axis] Error fetching DvP ranks:', error);
+        if (isMounted) {
+          setDvpRanksPerGame({});
+        }
+      }
+    };
+
+    fetchDvpRanks();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPosition, selectedStat]);
+
   // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
   const getBookRowKey = useCallback((stat: string): string | null => {
     const statToBookKey: Record<string, string> = {
@@ -16216,7 +16641,7 @@ const lineMovementInFlightRef = useRef(false);
               onChangeBettingLine={setBettingLine}
               selectedTimeframe={selectedTimeframe}
               onSelectTimeframe={setSelectedTimeframe}
-              chartData={adjustedChartData}
+              chartData={filteredChartData}
               yAxisConfig={yAxisConfig}
               isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
               oddsLoading={propsMode === 'player' ? oddsLoading : false}
@@ -16253,6 +16678,12 @@ const lineMovementInFlightRef = useRef(false);
       hitRateStats={hitRateStats}
       lineMovementEnabled={LINE_MOVEMENT_ENABLED}
       intradayMovements={intradayMovementsFinal}
+      secondAxisData={secondAxisData}
+      selectedFilterForAxis={selectedFilterForAxis}
+      onSelectFilterForAxis={handleSelectFilterForAxis}
+      sliderConfig={sliderConfig}
+      sliderRange={sliderRange}
+      setSliderRange={setSliderRange}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">

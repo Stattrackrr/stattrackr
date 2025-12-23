@@ -203,9 +203,10 @@ export const CACHE_TTL = {
   // Rationale: Player profiles (height, weight, college) rarely change
   ESPN_PLAYER: 24 * 60,
   
-  // Advanced stats - 1 hour
-  // Rationale: Advanced metrics are computationally expensive but need regular updates
-  ADVANCED_STATS: 60,
+  // Advanced stats - 12 hours
+  // Rationale: Advanced metrics are computationally expensive but don't change after games complete
+  // 12 hours balances freshness with API quota conservation
+  ADVANCED_STATS: 12 * 60,
   
   // Odds data - 60 minutes
   // Rationale: Balance freshness with BDL quota; refreshed every 30 minutes

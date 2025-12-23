@@ -527,15 +527,19 @@ export async function GET(request: NextRequest) {
         let leagueAverageRankings = null;
         try {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
-          // Try Supabase cache first (persistent, shared across instances)
+          // Always try Supabase cache first (persistent, shared across instances) - this has the latest FGM-based rankings
           let cachedRankings = await getNBACache<any>(rankingsCacheKey, {
             restTimeoutMs: 15000,
             jsTimeoutMs: 15000,
           });
           
-          // Fallback to in-memory cache
+          // Only fallback to in-memory cache if Supabase cache is not available
+          // (Supabase cache is the source of truth after refresh)
           if (!cachedRankings) {
             cachedRankings = cache.get<any>(rankingsCacheKey);
+          } else {
+            // If we got fresh data from Supabase, update in-memory cache too
+            cache.set(rankingsCacheKey, cachedRankings, 1440);
           }
           
           // Handle both formats: direct rankings object or wrapped in rankings property
@@ -655,6 +659,11 @@ export async function GET(request: NextRequest) {
             cached.opponentRankingsSource = 'team';
             cached.opponentTeam = opponentTeam; // Ensure opponentTeam is set
             console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam} to cached response`);
+            // Debug: Log aboveBreak3 ranking specifically
+            if (cached.opponentRankings?.aboveBreak3) {
+              const ab3 = cached.opponentRankings.aboveBreak3;
+              console.log(`[Shot Chart Enhanced] 🔍 ${opponentTeam} Above Break 3: Rank #${ab3.rank}, FGM: ${ab3.fgm?.toFixed(1) || 'N/A'}, FG%: ${ab3.fgPct?.toFixed(1) || 'N/A'}%`);
+            }
           } else if (leagueAverageRankings) {
             cached.opponentRankings = leagueAverageRankings;
             cached.opponentRankingsSource = 'league_average';
@@ -1132,6 +1141,11 @@ export async function GET(request: NextRequest) {
       opponentRankings = defenseRankings[opponentTeam];
       opponentRankingsSource = 'team';
       console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam}:`, opponentRankings);
+      // Debug: Log aboveBreak3 ranking specifically
+      if (opponentRankings?.aboveBreak3) {
+        const ab3 = opponentRankings.aboveBreak3;
+        console.log(`[Shot Chart Enhanced] 🔍 ${opponentTeam} Above Break 3: Rank #${ab3.rank}, FGM: ${ab3.fgm?.toFixed(1) || 'N/A'}, FG%: ${ab3.fgPct?.toFixed(1) || 'N/A'}%`);
+      }
     } else if (leagueAverageRankings) {
       opponentRankings = leagueAverageRankings;
       opponentRankingsSource = 'league_average';

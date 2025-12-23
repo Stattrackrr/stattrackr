@@ -5,23 +5,29 @@ import { CHART_CONFIG } from '../../constants';
 
 export default memo(function StaticBettingLineOverlay({ 
   isDark, 
-  isMobile 
+  isMobile,
+  hasSecondAxis 
 }: { 
   isDark: boolean; 
-  isMobile?: boolean 
+  isMobile?: boolean;
+  hasSecondAxis?: boolean;
 }) {
   const lineColor = isDark ? '#ffffff' : '#000000';
+  
+  // Adjust right margin when there's a second axis - extra space beyond chart's 10px to stop before y-axis
+  // On mobile, always use full width (2px) since y-axis is hidden
+  const rightMargin = isMobile ? 2 : (hasSecondAxis ? 70 : CHART_CONFIG.margin.right);
   
   return (
     <div 
       id="betting-line-container"
       className="absolute pointer-events-none"
       style={{
-        left: isMobile ? 8 : CHART_CONFIG.yAxis.width,
-        right: isMobile ? 8 : (CHART_CONFIG.margin.right + 10),
+        left: isMobile ? 2 : CHART_CONFIG.yAxis.width,
+        right: rightMargin,
         top: CHART_CONFIG.margin.top,
         bottom: isMobile ? CHART_CONFIG.margin.bottom : CHART_CONFIG.margin.bottom + 30,
-        zIndex: 5
+        zIndex: 0
       }}
     >
       <div
@@ -29,14 +35,14 @@ export default memo(function StaticBettingLineOverlay({
         className="absolute w-full"
         style={{
           bottom: '50%',
-          opacity: 0.8,
-          height: '3px',
-          background: `repeating-linear-gradient(to right, ${lineColor} 0px, ${lineColor} 12px, transparent 12px, transparent 18px)`
+          opacity: 1,
+          height: '2px',
+          background: lineColor
         }}
       />
     </div>
   );
-}, (prev, next) => prev.isDark === next.isDark);
+}, (prev, next) => prev.isDark === next.isDark && prev.hasSecondAxis === next.hasSecondAxis && prev.isMobile === next.isMobile);
 
 
 

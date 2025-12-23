@@ -7,3 +7,6 @@ ALTER TABLE profiles
 -- Add comment
 COMMENT ON COLUMN profiles.unit_size IS 'The dollar amount that represents 1 unit for this user (e.g., 100.00 means 1 unit = $100)';
 
+
+
+

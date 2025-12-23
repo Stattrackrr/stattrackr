@@ -63,7 +63,7 @@ export default memo(function DynamicReferenceLineChart({
           ticks={yAxisConfig.ticks}
           hide
         />
-        <ReferenceLine y={clampedRefLine} stroke={refLineColor} strokeDasharray="6 6" strokeWidth={3} ifOverflow="extendDomain" />
+        <ReferenceLine y={clampedRefLine} stroke={refLineColor} strokeWidth={2} ifOverflow="extendDomain" />
         <Bar 
           dataKey="value" 
           fill="transparent" 

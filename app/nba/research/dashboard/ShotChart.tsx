@@ -116,7 +116,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   // Fetch enhanced shot data from NBA Stats API - LAZY LOAD after 2 seconds
   // This defers loading until after stats are displayed, improving initial page load
   useEffect(() => {
-    console.log('[Shot Chart] useEffect triggered:', { playerId, opponentTeam, hasShotData: !!shotData });
+    // Removed excessive logging
+    // console.log('[Shot Chart] useEffect triggered:', { playerId, opponentTeam, hasShotData: !!shotData });
     
     if (!playerId) {
       console.warn('[Shot Chart] No playerId provided, clearing data');
@@ -135,10 +136,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         // Convert BallDontLie ID to NBA Stats ID
         const nbaPlayerId = getNbaStatsId(playerId);
         
-        console.log('[Shot Chart] Converting player ID:', { original: playerId, converted: nbaPlayerId });
+        // Removed excessive logging
+        // console.log('[Shot Chart] Converting player ID:', { original: playerId, converted: nbaPlayerId });
         
         if (!nbaPlayerId) {
-          console.warn('[Shot Chart] Failed to convert player ID:', playerId);
+          // console.warn('[Shot Chart] Failed to convert player ID:', playerId);
           setEnhancedData(null); // Clear data on conversion failure
           setEnhancedError(`Failed to convert player ID: ${playerId}`);
           setEnhancedLoading(false);
@@ -150,24 +152,26 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         
         try {
           const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
-          console.log('[Shot Chart] Fetching from:', url);
+          // Removed excessive logging
+          // console.log('[Shot Chart] Fetching from:', url);
           const response = await fetch(url);
           
           if (response.ok) {
             const data = await response.json();
-            console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
-            console.log('[Shot Chart] Data validation:', {
-              hasShotZones: !!data.shotZones,
-              shotZonesKeys: data.shotZones ? Object.keys(data.shotZones) : [],
-              totalAttempts: data.shotZones ? (
-                (data.shotZones.restrictedArea?.fga || 0) +
-                (data.shotZones.paint?.fga || 0) +
-                (data.shotZones.midRange?.fga || 0) +
-                (data.shotZones.leftCorner3?.fga || 0) +
-                (data.shotZones.rightCorner3?.fga || 0) +
-                (data.shotZones.aboveBreak3?.fga || 0)
-              ) : 0
-            });
+            // Removed excessive logging
+            // console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
+            // console.log('[Shot Chart] Data validation:', {
+            //   hasShotZones: !!data.shotZones,
+            //   shotZonesKeys: data.shotZones ? Object.keys(data.shotZones) : [],
+            //   totalAttempts: data.shotZones ? (
+            //     (data.shotZones.restrictedArea?.fga || 0) +
+            //     (data.shotZones.paint?.fga || 0) +
+            //     (data.shotZones.midRange?.fga || 0) +
+            //     (data.shotZones.leftCorner3?.fga || 0) +
+            //     (data.shotZones.rightCorner3?.fga || 0) +
+            //     (data.shotZones.aboveBreak3?.fga || 0)
+            //   ) : 0
+            // });
             
             // Check if API returned an error in the response body (even with 200 status)
             // But if we have shotZones data (even if empty), use it - don't treat as error
@@ -180,7 +184,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             
             // If we have stale data, log it but still use it
             if (data.stale) {
-              console.log('[Shot Chart] Using stale cached data (expired but still valid)');
+              // Removed excessive logging
+              // console.log('[Shot Chart] Using stale cached data (expired but still valid)');
             }
             
             // Validate that we have actual shot data
@@ -191,11 +196,12 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                                (data.shotZones?.rightCorner3?.fga || 0) +
                                (data.shotZones?.aboveBreak3?.fga || 0);
             
-            console.log('[Shot Chart] Validation check:', {
-              totalAttempts,
-              hasShotZones: !!data.shotZones,
-              shotZonesStructure: data.shotZones ? Object.keys(data.shotZones) : []
-            });
+            // Removed excessive logging
+            // console.log('[Shot Chart] Validation check:', {
+            //   totalAttempts,
+            //   hasShotZones: !!data.shotZones,
+            //   shotZonesStructure: data.shotZones ? Object.keys(data.shotZones) : []
+            // });
             
             // Only reject if we have no shot zones object at all
             // Allow data through if shotZones exists, even if totalAttempts is 0 (might be a calculation issue or empty season)
@@ -217,7 +223,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               console.warn('[Shot Chart] Warning: Total attempts is 0 for player:', nbaPlayerId, 'but shotZones exists');
             }
             
-            console.log('[Shot Chart] ✅ Setting enhanced data for player:', nbaPlayerId, 'with', totalAttempts, 'total attempts');
+            // Removed excessive logging
+            // console.log('[Shot Chart] ✅ Setting enhanced data for player:', nbaPlayerId, 'with', totalAttempts, 'total attempts');
             setEnhancedData(data);
             setEnhancedError(null); // Clear any previous errors
           } else {
@@ -369,13 +376,14 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   // Show loading/error state only if we don't have data AND we're not in fallback mode with shotData
   // Also show loading state if we're actively loading
   if (!enhancedData && (!allowFallback || !shotData)) {
-    console.log('[Shot Chart] Rendering loading/error state:', {
-      hasEnhancedData: !!enhancedData,
-      allowFallback,
-      hasShotData: !!shotData,
-      enhancedLoading,
-      enhancedError
-    });
+    // Removed excessive logging
+    // console.log('[Shot Chart] Rendering loading/error state:', {
+    //   hasEnhancedData: !!enhancedData,
+    //   allowFallback,
+    //   hasShotData: !!shotData,
+    //   enhancedLoading,
+    //   enhancedError
+    // });
     return (
       <div className="w-full h-full flex items-center justify-center p-6" style={{ minHeight: '200px' }}>
         {enhancedError ? (
@@ -392,14 +400,14 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
     );
   }
   
-  // Log when we have data and are rendering the chart
-  if (enhancedData) {
-    console.log('[Shot Chart] ✅ Rendering chart with enhanced data:', {
-      playerId,
-      hasShotZones: !!enhancedData.shotZones,
-      zonesCount: enhancedData.shotZones ? Object.keys(enhancedData.shotZones).length : 0
-    });
-  }
+  // Removed excessive logging - was causing performance issues
+  // if (enhancedData) {
+  //   console.log('[Shot Chart] ✅ Rendering chart with enhanced data:', {
+  //     playerId,
+  //     hasShotZones: !!enhancedData.shotZones,
+  //     zonesCount: enhancedData.shotZones ? Object.keys(enhancedData.shotZones).length : 0
+  //   });
+  // }
 
   // NBA court dimensions (in feet, scaled to fit viewBox)
   // Court is 50ft wide × 47ft half-court

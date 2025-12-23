@@ -31,31 +31,66 @@ const PLAY_TYPES = [
   { key: 'Transition', displayName: 'Transition' },
 ];
 
-async function fetchNBAStats(url: string, timeout = 20000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
+  let lastError: Error | null = null;
+  
+  const actualTimeout = Math.max(4000, Math.min(timeout, 120000)); // 120s max
+  const actualRetries = Math.max(0, Math.min(retries, 3)); // 3 retries = 4 total attempts
+  const maxAttempts = actualRetries + 1;
+  
+  for (let attempt = 0; attempt <= actualRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
-  try {
-    const response = await fetch(url, {
-      headers: NBA_HEADERS,
-      signal: controller.signal,
-      cache: 'no-store'
-    });
+    try {
+      console.log(`[Play Type Defense] Fetching NBA API (attempt ${attempt + 1}/${maxAttempts})...`);
+      
+      const response = await fetch(url, {
+        headers: NBA_HEADERS,
+        signal: controller.signal,
+        cache: 'no-store',
+        redirect: 'follow'
+      });
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`NBA API ${response.status}`);
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
+        console.error(`[Play Type Defense] NBA API error ${response.status} (attempt ${attempt + 1}/${maxAttempts}):`, text.slice(0, 500));
+        
+        // Retry on 5xx errors or 429 (rate limit)
+        if ((response.status >= 500 || response.status === 429) && attempt < actualRetries) {
+          const delay = 1000 * (attempt + 1);
+          console.log(`[Play Type Defense] Retrying after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          lastError = new Error(errorMsg);
+          continue;
+        }
+        
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      console.log(`[Play Type Defense] ✅ Successfully fetched NBA API data`);
+      return data;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        lastError = new Error('Request timeout');
+        if (attempt < actualRetries) {
+          console.log(`[Play Type Defense] Timeout on attempt ${attempt + 1}/${maxAttempts}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+      } else {
+        lastError = error;
+      }
     }
-
-    return await response.json();
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
   }
+  
+  throw lastError || new Error('Failed to fetch NBA API data after retries');
 }
 
 export async function GET(request: NextRequest) {
@@ -63,6 +98,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const team = searchParams.get('team');
     const season = parseInt(searchParams.get('season') || currentNbaSeason().toString());
+    const bypassCache = searchParams.get('bypassCache') === 'true';
 
     if (!team) {
       return NextResponse.json(
@@ -71,11 +107,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check cache first
+    // Check cache first (unless bypassing)
     const cacheKey = `playtype_defense_${team}_${season}`;
+    
+    if (bypassCache) {
+      console.log(`[Play Type Defense] 🗑️ Bypassing cache for ${team}`);
+      cache.delete(cacheKey);
+    }
+    
     const cached = cache.get<any>(cacheKey);
     
-    if (cached) {
+    if (cached && !bypassCache) {
       console.log(`[Play Type Defense] ✅ Cache hit for ${team}`);
       return NextResponse.json(cached, {
         status: 200,
@@ -86,24 +128,100 @@ export async function GET(request: NextRequest) {
     console.log(`[Play Type Defense] Fetching data for ${team}, season ${season}`);
 
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
-    const playTypeResults: any[] = [];
 
-    // Fetch synergy play type defense data for all teams
-    // This uses the synergyplaytypes endpoint which tracks defensive efficiency by play type
-    const params = new URLSearchParams({
-      LeagueID: '00',
-      PerMode: 'PerGame',
-      Season: seasonStr,
-      SeasonType: 'Regular Season',
-      TypeGrouping: 'defensive', // Defensive play types
-    });
+    // Fetch each play type individually (defensive endpoint requires PlayType parameter)
+    // This matches how the cache endpoint fetches defensive rankings
+    const teamData: Record<string, any[]> = {};
+    let headers: string[] = [];
+    let hasFGM = false;
+    let fgmIdx = -1;
+    let fgaIdx = -1;
 
-    const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
-    
-    const data = await fetchNBAStats(url);
+    for (let i = 0; i < PLAY_TYPES.length; i++) {
+      const { key } = PLAY_TYPES[i];
+      console.log(`[Play Type Defense] Fetching ${key} (${i + 1}/${PLAY_TYPES.length})...`);
+      
+      try {
+        const params = new URLSearchParams({
+          LeagueID: '00',
+          PerMode: 'PerGame',
+          PlayerOrTeam: 'T', // Team data
+          SeasonType: 'Regular Season',
+          SeasonYear: seasonStr,
+          PlayType: key,
+          TypeGrouping: 'defensive',
+        });
 
-    if (!data?.resultSets?.[0]) {
-      console.warn(`[Play Type Defense] No data available`);
+        const url = `${NBA_STATS_BASE}/synergyplaytypes?${params.toString()}`;
+        const data = await fetchNBAStats(url, 20000, 2);
+        const resultSet = data?.resultSets?.[0];
+        
+        if (!resultSet) {
+          console.warn(`[Play Type Defense] No data for ${key}`);
+          continue;
+        }
+
+        // Get headers from first successful response
+        if (headers.length === 0) {
+          headers = resultSet.headers || [];
+          console.log(`[Play Type Defense] Available columns:`, headers);
+          
+          // Find column indices
+          fgmIdx = headers.indexOf('FGM');
+          fgaIdx = headers.indexOf('FGA');
+          hasFGM = fgmIdx !== -1;
+          console.log(`[Play Type Defense] FGM available: ${hasFGM}, FGA available: ${fgaIdx !== -1}`);
+        }
+
+        const rows = resultSet.rowSet || [];
+        const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
+        const ptsIdx = headers.indexOf('PTS');
+        const fgPctIdx = headers.indexOf('FG_PCT');
+        const freqIdx = headers.indexOf('POSS_PCT');
+
+        if (teamAbbrIdx === -1) {
+          console.warn(`[Play Type Defense] Missing TEAM_ABBREVIATION column for ${key}`);
+          continue;
+        }
+
+        rows.forEach((row: any[]) => {
+          const teamAbbr = (row[teamAbbrIdx] || '').toUpperCase();
+          if (!teamAbbr) return;
+
+          const points = row[ptsIdx] || 0;
+          const fgPct = row[fgPctIdx] || 0;
+          const freq = row[freqIdx] || 0;
+          const fgm = hasFGM ? (row[fgmIdx] || 0) : null;
+          const fga = fgaIdx !== -1 ? (row[fgaIdx] || 0) : null;
+
+          if (!teamData[teamAbbr]) {
+            teamData[teamAbbr] = [];
+          }
+
+          teamData[teamAbbr].push({
+            playType: key,
+            points,
+            fgPct: fgPct * 100, // Convert to percentage
+            frequency: freq * 100,
+            fgm: fgm, // FGM per game (if available)
+            fga: fga  // FGA per game (if available)
+          });
+        });
+
+        console.log(`[Play Type Defense] ✅ ${key}: ${rows.length} teams`);
+        
+        // Small delay between requests to avoid rate limiting
+        if (i < PLAY_TYPES.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err: any) {
+        console.warn(`[Play Type Defense] ❌ Error fetching ${key}:`, err.message);
+        // Continue with other play types even if one fails
+      }
+    }
+
+    if (Object.keys(teamData).length === 0) {
+      console.warn(`[Play Type Defense] No data available for any play type`);
       
       // Return mock data for development
       const mockData = PLAY_TYPES.map((pt, idx) => ({
@@ -130,44 +248,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const resultSet = data.resultSets[0];
-    const headers = resultSet.headers || [];
-    const rows = resultSet.rowSet || [];
-
-    // Find column indices
-    const teamAbbrIdx = headers.indexOf('TEAM_ABBREVIATION');
-    const playTypeIdx = headers.indexOf('PLAY_TYPE');
-    const ptsIdx = headers.indexOf('PTS'); // Points
-    const fgPctIdx = headers.indexOf('FG_PCT');
-    const freqIdx = headers.indexOf('POSS_PCT'); // Possession frequency
-
-    if (teamAbbrIdx === -1 || playTypeIdx === -1) {
-      throw new Error('Missing required columns in API response');
-    }
-
-    // Process data for all teams to calculate rankings
-    const teamData: Record<string, any[]> = {};
-    
-    rows.forEach((row: any[]) => {
-      const teamAbbr = row[teamAbbrIdx];
-      const playType = row[playTypeIdx];
-      const points = row[ptsIdx] || 0;
-      const fgPct = row[fgPctIdx] || 0;
-      const freq = row[freqIdx] || 0;
-
-      if (!teamData[teamAbbr]) {
-        teamData[teamAbbr] = [];
-      }
-
-      teamData[teamAbbr].push({
-        playType,
-        points,
-        fgPct: fgPct * 100, // Convert to percentage
-        frequency: freq * 100
-      });
-    });
-
     // Calculate rankings for each play type
+    // Use FGM per game if available, otherwise fall back to points
     const playTypeRankings: Record<string, any[]> = {};
     
     PLAY_TYPES.forEach(({ key }) => {
@@ -178,15 +260,35 @@ export async function GET(request: NextRequest) {
             team: teamAbbr,
             points: pt?.points || 999,
             fgPct: pt?.fgPct || 0,
-            frequency: pt?.frequency || 0
+            frequency: pt?.frequency || 0,
+            fgm: pt?.fgm || (hasFGM ? 999 : null), // Use FGM per game if available
+            fga: pt?.fga || null
           };
         })
-        .sort((a, b) => a.points - b.points); // Sort by points (lower is better defense)
+        .sort((a, b) => {
+          // Sort by FGM per game if available (lower = better defense), otherwise by points
+          if (hasFGM && a.fgm !== null && b.fgm !== null) {
+            return a.fgm - b.fgm;
+          }
+          return a.points - b.points;
+        });
 
       playTypeRankings[key] = allTeamsForPlayType.map((item, idx) => ({
         ...item,
         rank: idx + 1
       }));
+      
+      // Log sample data for first play type
+      if (key === PLAY_TYPES[0].key && allTeamsForPlayType.length > 0) {
+        console.log(`[Play Type Defense] Sample ${key} rankings (top 3):`, 
+          allTeamsForPlayType.slice(0, 3).map(t => ({
+            team: t.team,
+            rank: allTeamsForPlayType.indexOf(t) + 1,
+            fgm: t.fgm,
+            points: t.points
+          }))
+        );
+      }
     });
 
     // Get data for requested team
@@ -199,7 +301,9 @@ export async function GET(request: NextRequest) {
         points: ranking?.points || 0.0,
         fgPct: ranking?.fgPct || 45.0,
         rank: ranking?.rank || 15,
-        frequency: ranking?.frequency || 10.0
+        frequency: ranking?.frequency || 10.0,
+        fgm: ranking?.fgm || null, // FGM per game (if available)
+        fga: ranking?.fga || null  // FGA per game (if available)
       };
     }).sort((a, b) => b.frequency - a.frequency); // Sort by frequency (most common first)
 

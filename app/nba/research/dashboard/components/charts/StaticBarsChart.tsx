@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState, useEffect, useMemo, useRef } from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Line, ComposedChart, ReferenceLine, CartesianGrid } from 'recharts';
 import { CHART_CONFIG } from '../../constants';
 import CustomXAxisTick from './CustomXAxisTick';
 import StaticLabelList from './StaticLabelList';
@@ -20,6 +20,8 @@ export default memo(function StaticBarsChart({
   onChartTouchMove,
   onChartTouchEnd,
   onChartMouseLeave,
+  secondAxisData,
+  selectedFilterForAxis,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -34,6 +36,8 @@ export default memo(function StaticBarsChart({
   onChartTouchMove?: (e: any) => void;
   onChartTouchEnd?: (e: any) => void;
   onChartMouseLeave?: () => void;
+  secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
+  selectedFilterForAxis?: string | null;
 }) {
   const colorMap = useMemo(() => {
     return data.map(d => {
@@ -75,6 +79,12 @@ export default memo(function StaticBarsChart({
 
   const xAxisTickStyle = useMemo(() => ({ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }), [isDark]);
   const yAxisTickStyle = useMemo(() => ({ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }), [isDark]);
+  // Right y-axis tick style - purple color to match the purple line
+  const rightAxisTickStyle = useMemo(() => ({ 
+    fill: '#8b5cf6', // Purple color (matches CHART_CONFIG.colors.purple)
+    fontSize: compactMobile ? 11 : 12,
+    fontWeight: 'normal'
+  }), [compactMobile]);
   const xAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
   const yAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
 
@@ -89,6 +99,7 @@ export default memo(function StaticBarsChart({
     if (compactMobile || isMobileSB) {
       margin.bottom = 0;
       margin.left = 2;
+      // On mobile, always use full width (no right margin for y-axis - we'll hide it)
       margin.right = 2;
     }
     return margin;
@@ -96,16 +107,132 @@ export default memo(function StaticBarsChart({
   
   const hideLogosAndLabels = selectedTimeframe === 'lastseason';
 
+  // Merge second axis data with main data
+  const mergedData = useMemo(() => {
+    if (!secondAxisData || !selectedFilterForAxis) {
+      return data;
+    }
+    
+    // Create a map of second axis values by gameId
+    const secondAxisMap = new Map<string, number | null>();
+    secondAxisData.forEach(item => {
+      secondAxisMap.set(item.gameId, item.value);
+    });
+    
+    // Merge into main data
+    return data.map((item: any) => {
+      const lookupKey = item.xKey || String(item.game?.id || '');
+      const secondValue = secondAxisMap.get(lookupKey) ?? null;
+      
+      return {
+        ...item,
+        secondAxisValue: secondValue,
+      };
+    });
+  }, [data, secondAxisData, selectedFilterForAxis]);
+
+  // Calculate Y-axis config for second axis
+  const secondAxisConfig = useMemo(() => {
+    if (!selectedFilterForAxis || !secondAxisData) return null;
+    
+    const values = secondAxisData
+      .map(item => item.value)
+      .filter((v): v is number => v !== null && Number.isFinite(v));
+    
+    if (values.length === 0) return null;
+    
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    
+    // Special handling for DvP ranks: always use 0-30 domain (30 teams in NBA)
+    if (selectedFilterForAxis === 'dvp_rank') {
+      const min = 0;
+      const max = 30;
+      // Generate ticks: 0, 5, 10, 15, 20, 25, 30
+      const ticks = [0, 5, 10, 15, 20, 25, 30];
+      
+      return {
+        domain: [min, max] as [number, number],
+        ticks,
+        dataMin,
+        dataMax,
+      };
+    }
+    
+    // Special handling for game pace: more aggressive ticks (start below min, end above max)
+    if (selectedFilterForAxis === 'pace') {
+      // Start a little less than the lowest pace stat (subtract about 3-5%)
+      const paddedMin = dataMin * 0.97;
+      const min = Math.floor(paddedMin / 5) * 5; // Round down to nearest 5
+      
+      // End a bit more than the highest stat (add about 3-5%)
+      const paddedMax = dataMax * 1.05;
+      const max = Math.ceil(paddedMax / 5) * 5; // Round up to nearest 5
+      
+      // Generate evenly spaced ticks (about 6-7 ticks)
+      const range = max - min;
+      const tickCount = Math.max(6, Math.min(7, Math.floor(range / 10) + 1)); // 6-7 ticks depending on range
+      const step = range / (tickCount - 1);
+      const ticks = Array.from({ length: tickCount }, (_, i) => {
+        return Math.round(min + step * i);
+      });
+      
+      return {
+        domain: [min, max] as [number, number],
+        ticks,
+        dataMin,
+        dataMax,
+      };
+    }
+    
+    // Always start at 0 for other stats
+    const min = 0;
+    
+    // Make max slightly higher than the best stat (add small padding, about 5%)
+    const paddedMax = dataMax * 1.05;
+    const roughMax = Math.ceil(paddedMax);
+    
+    // Round to nearest multiple of 5 for clean, evenly spaced ticks
+    const max = Math.ceil(roughMax / 5) * 5;
+    
+    // Generate 6 ticks (0 plus 5 more) - evenly spaced whole numbers
+    const tickCount = 6;
+    const step = max / (tickCount - 1); // This will be a clean number like 10, 15, etc.
+    const ticks = Array.from({ length: tickCount }, (_, i) => {
+      return Math.round(min + step * i); // Step is already a clean number, so this gives even spacing
+    });
+    
+    return {
+      domain: [min, max] as [number, number],
+      ticks,
+      dataMin,
+      dataMax,
+    };
+  }, [secondAxisData, selectedFilterForAxis]);
+
+  const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
+  const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;
+  
+  // On mobile, use mobile margins (which already account for second axis)
+  // On desktop, use larger right margin when second axis is present to give y-axis more space
+  const finalMargin = useMemo(() => {
+    if (compactMobile || isMobileSB) {
+      return chartMargin; // Mobile margins already set (right: 2)
+    }
+    return hasSecondAxis ? { ...chartMargin, right: 10 } : chartMargin; // 10px right margin for second axis
+  }, [chartMargin, hasSecondAxis, compactMobile, isMobileSB]);
+
   return (
     <ResponsiveContainer 
       key={viewportWidth}
       width="100%" 
       height="100%" 
       debounce={CHART_CONFIG.performance.debounceMs}
+      style={{ overflow: 'visible' }} // Ensure right y-axis isn't clipped
     >
-      <BarChart 
-        data={data} 
-        margin={chartMargin}
+      <ChartComponent 
+        data={mergedData} 
+        margin={finalMargin}
         syncMethod="value"
         maxBarSize={data.length <= 5 ? 250 : data.length <= 10 ? 250 : computedMaxBarSize}
         barCategoryGap={computedBarCategoryGap}
@@ -132,13 +259,33 @@ export default memo(function StaticBarsChart({
           padding={compactMobile ? { left: 8, right: 8 } : undefined as any}
         />
         <YAxis 
+          yAxisId="left"
           domain={yAxisConfig.domain}
           ticks={yAxisConfig.ticks}
           tick={yAxisTickStyle}
-          axisLine={yAxisLineStyle}
+          axisLine={false} // Hide the vertical line
+          tickLine={false} // Hide the tick marks (dashes)
           hide={!!compactMobile}
           width={!isMobileSB ? CHART_CONFIG.yAxis.width : undefined}
         />
+        {hasSecondAxis && secondAxisConfig && (
+          <YAxis 
+            yAxisId="right"
+            orientation="right"
+            domain={secondAxisConfig.domain}
+            ticks={secondAxisConfig.ticks}
+            tick={rightAxisTickStyle}
+            axisLine={false} // Hide the vertical line
+            tickLine={false} // Hide the tick marks (dashes)
+            hide={!!compactMobile || !!isMobileSB} // Hide on mobile, show on desktop
+            width={compactMobile || isMobileSB ? CHART_CONFIG.yAxis.width : 60} // Wider on desktop to accommodate larger numbers
+            tickCount={secondAxisConfig.ticks.length} // Explicitly set tick count to ensure labels render
+            allowDecimals={false} // Ensure whole numbers are shown
+            tickFormatter={(value) => String(value)} // Explicit formatter to ensure labels render
+            mirror={false} // Don't mirror - show on right side
+            padding={{ right: 0 }} // Ensure no padding that might hide labels
+          />
+        )}
         <Tooltip 
           isAnimationActive={false} 
           content={customTooltip}
@@ -149,6 +296,7 @@ export default memo(function StaticBarsChart({
           active={compactMobile ? false : undefined}
         />
         <Bar 
+          yAxisId="left"
           dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"} 
           radius={CHART_CONFIG.bar.radius} 
           isAnimationActive={false} 
@@ -238,7 +386,7 @@ export default memo(function StaticBarsChart({
             );
           } : undefined}
         >
-          {data.map((e, i) => {
+          {mergedData.map((e, i) => {
             const isLive = (e as any).isLive && i === data.length - 1; // Most recent game (last item)
             return (
               <Cell 
@@ -255,7 +403,28 @@ export default memo(function StaticBarsChart({
             <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} />
           )}
         </Bar>
-      </BarChart>
+        {/* Only show ReferenceLine on mobile - desktop uses CSS overlay */}
+        {compactMobile && (
+          <ReferenceLine 
+            y={bettingLine} 
+            stroke={isDark ? '#ffffff' : '#000000'} 
+            strokeWidth={2}
+          />
+        )}
+        {hasSecondAxis && (
+          <Line 
+            yAxisId="right"
+            type="linear"
+            dataKey="secondAxisValue"
+            stroke={isDark ? '#a855f7' : '#9333ea'}
+            strokeWidth={3}
+            dot={false}
+            isAnimationActive={false}
+            animationDuration={0}
+            name="Second Axis"
+          />
+        )}
+      </ChartComponent>
     </ResponsiveContainer>
   );
 }, (prev, next) => (
@@ -265,7 +434,9 @@ export default memo(function StaticBarsChart({
   prev.selectedStat === next.selectedStat &&
   prev.selectedTimeframe === next.selectedTimeframe &&
   prev.customTooltip === next.customTooltip &&
-  prev.formatChartLabel === next.formatChartLabel
+  prev.formatChartLabel === next.formatChartLabel &&
+  prev.secondAxisData === next.secondAxisData &&
+  prev.selectedFilterForAxis === next.selectedFilterForAxis
 ));
 
 

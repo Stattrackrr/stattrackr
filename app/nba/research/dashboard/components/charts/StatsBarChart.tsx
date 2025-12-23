@@ -21,6 +21,8 @@ export default memo(function StatsBarChart({
   formatChartLabel,
   selectedStat,
   selectedTimeframe,
+  secondAxisData,
+  selectedFilterForAxis,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -30,10 +32,28 @@ export default memo(function StatsBarChart({
   formatChartLabel: (v: any) => string;
   selectedStat: string;
   selectedTimeframe?: string;
+  secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }>;
+  selectedFilterForAxis?: string | null;
 }) {
   useEffect(() => {
-    updateBettingLinePosition(yAxisConfig, bettingLine);
-  }, [bettingLine, yAxisConfig]);
+    // Update betting line position with retries to ensure it's positioned correctly
+    const updatePosition = () => {
+      updateBettingLinePosition(yAxisConfig, bettingLine, !!selectedFilterForAxis);
+    };
+    
+    updatePosition();
+    
+    // Retry after a short delay to ensure DOM is ready
+    const timeout1 = setTimeout(updatePosition, 50);
+    const timeout2 = setTimeout(updatePosition, 200);
+    const timeout3 = setTimeout(updatePosition, 500);
+    
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      clearTimeout(timeout3);
+    };
+  }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
 
   const [isMobile, setIsMobile] = useState(false);
   const [layoutKey, setLayoutKey] = useState(0);
@@ -257,24 +277,32 @@ export default memo(function StatsBarChart({
           }}
         />
       )}
-      <StaticBarsChart
-        key={`${selectedStat}-${selectedTimeframe || ''}-${yAxisConfig?.domain?.join?.(',') || ''}`}
-        data={data}
-        yAxisConfig={yAxisConfig}
-        isDark={isDark}
-        bettingLine={bettingLine}
-        customTooltip={adjustedTooltip}
-        formatChartLabel={formatChartLabel}
-        selectedStat={selectedStat}
-        compactMobile={isMobile}
-        selectedTimeframe={selectedTimeframe}
-        onChartTouchStart={handleChartTouchStart}
-        onChartTouchMove={handleChartTouchMove}
-        onChartTouchEnd={handleChartTouchEnd}
-        onChartMouseLeave={handleChartMouseLeave}
-      />
+      {/* Betting line overlay - render first */}
+      {!isMobile && <StaticBettingLineOverlay key={`betting-line-${!!selectedFilterForAxis}`} isDark={isDark} hasSecondAxis={!!selectedFilterForAxis} />}
+      {/* Chart with bars and purple line */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <StaticBarsChart
+          key={`${selectedStat}-${selectedTimeframe || ''}-${yAxisConfig?.domain?.join?.(',') || ''}-${selectedFilterForAxis || 'none'}`}
+          data={data}
+          yAxisConfig={yAxisConfig}
+          isDark={isDark}
+          bettingLine={bettingLine}
+          customTooltip={adjustedTooltip}
+          formatChartLabel={formatChartLabel}
+          selectedStat={selectedStat}
+          compactMobile={isMobile}
+          selectedTimeframe={selectedTimeframe}
+          onChartTouchStart={handleChartTouchStart}
+          onChartTouchMove={handleChartTouchMove}
+          onChartTouchEnd={handleChartTouchEnd}
+          onChartMouseLeave={handleChartMouseLeave}
+          secondAxisData={secondAxisData}
+          selectedFilterForAxis={selectedFilterForAxis}
+        />
+      </div>
+      {/* Mobile betting line - separate component for mobile-specific logic */}
       {isMobile && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }}>
           <DynamicReferenceLineChart
             yAxisConfig={yAxisConfig}
             isDark={isDark}
@@ -284,8 +312,18 @@ export default memo(function StatsBarChart({
           />
         </div>
       )}
-      {!isMobile && <StaticBettingLineOverlay isDark={isDark} />}
     </div>
   );
-});
+}, (prev, next) => (
+  prev.data === next.data &&
+  prev.yAxisConfig === next.yAxisConfig &&
+  prev.isDark === next.isDark &&
+  prev.bettingLine === next.bettingLine &&
+  prev.selectedStat === next.selectedStat &&
+  prev.selectedTimeframe === next.selectedTimeframe &&
+  prev.customTooltip === next.customTooltip &&
+  prev.formatChartLabel === next.formatChartLabel &&
+  prev.secondAxisData === next.secondAxisData &&
+  prev.selectedFilterForAxis === next.selectedFilterForAxis
+));
 

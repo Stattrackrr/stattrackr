@@ -698,12 +698,102 @@ async function cacheTeamDefenseRankings(season, seasonStr) {
     }
 
     if (allTeamsData.length > 0) {
-      // Calculate rankings
+      // Fetch games played for all teams from BDL API to calculate per-game FGM
+      console.log(`  🔄 Fetching games played from BDL for all teams...`);
+      let gamesPlayed = {};
+      
+      const ABBR_TO_TEAM_ID_BDL = {
+        ATL: 1, BOS: 2, BKN: 3, CHA: 4, CHI: 5, CLE: 6, DAL: 7, DEN: 8, DET: 9, GSW: 10,
+        HOU: 11, IND: 12, LAC: 13, LAL: 14, MEM: 15, MIA: 16, MIL: 17, MIN: 18, NOP: 19, NYK: 20,
+        OKC: 21, ORL: 22, PHI: 23, PHX: 24, POR: 25, SAC: 26, SAS: 27, TOR: 28, UTA: 29, WAS: 30,
+      };
+      
+      try {
+        // Fetch games for all teams in batches
+        const teamAbbrs = Object.keys(ABBR_TO_TEAM_ID_BDL);
+        const batchSize = 5;
+        
+        for (let i = 0; i < teamAbbrs.length; i += batchSize) {
+          const batch = teamAbbrs.slice(i, i + batchSize);
+          
+          await Promise.all(batch.map(async (teamAbbr) => {
+            try {
+              const teamId = ABBR_TO_TEAM_ID_BDL[teamAbbr];
+              if (!teamId) return;
+              
+              // Fetch all games for this team in the season (handle pagination)
+              let allGames = [];
+              let currentPage = 1;
+              let hasMorePages = true;
+              const perPage = 100;
+              
+              while (hasMorePages) {
+                const gamesUrl = new URL(`${BDL_BASE}/games`);
+                gamesUrl.searchParams.set('per_page', String(perPage));
+                gamesUrl.searchParams.set('page', String(currentPage));
+                gamesUrl.searchParams.append('seasons[]', String(season));
+                gamesUrl.searchParams.append('team_ids[]', String(teamId));
+                
+                const gamesData = await fetchBDL(gamesUrl.toString());
+                const games = Array.isArray(gamesData?.data) ? gamesData.data : [];
+                allGames = allGames.concat(games);
+                
+                // Check if there are more pages
+                const meta = gamesData?.meta || {};
+                const totalPages = meta.total_pages || 1;
+                hasMorePages = currentPage < totalPages && games.length === perPage;
+                currentPage++;
+                
+                // Safety limit
+                if (currentPage > 10) break;
+              }
+              
+              // Count completed games (status includes 'Final')
+              const completedGames = allGames.filter((g) => 
+                String(g?.status || '').toLowerCase().includes('final')
+              );
+              
+              gamesPlayed[teamAbbr] = completedGames.length;
+              
+              // Small delay to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (err) {
+              console.warn(`  ⚠️ Error fetching games for ${teamAbbr}: ${err.message}`);
+              gamesPlayed[teamAbbr] = 0;
+            }
+          }));
+          
+          // Delay between batches
+          if (i + batchSize < teamAbbrs.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+        
+        const teamsWithGames = Object.entries(gamesPlayed).filter(([_, gp]) => gp > 0);
+        console.log(`  ✅ Fetched games played for ${teamsWithGames.length}/${teamAbbrs.length} teams from BDL`);
+        
+        if (teamsWithGames.length > 0) {
+          const sample = teamsWithGames.slice(0, 3).map(([team, gp]) => `${team}: ${gp}`).join(', ');
+          console.log(`  Sample games played: ${sample}`);
+        }
+      } catch (err) {
+        console.warn(`  ⚠️ Error fetching games played from BDL: ${err.message} - using totals instead`);
+      }
+
+      // Calculate rankings using per-game FGM
       const zones = ['restrictedArea', 'paint', 'midRange', 'leftCorner3', 'rightCorner3', 'aboveBreak3'];
       const rankings = {};
       
       zones.forEach(zone => {
-        const sorted = [...allTeamsData].sort((a, b) => b[zone].fgPct - a[zone].fgPct);
+        // Calculate per-game FGM and sort by it (ascending = lowest per-game FGM = best defense)
+        const sorted = [...allTeamsData]
+          .map(team => {
+            const gp = gamesPlayed[team.team] || 1;
+            const fgmPerGame = gp > 0 ? team[zone].fgm / gp : team[zone].fgm;
+            return { ...team, fgmPerGame, gamesPlayed: gp };
+          })
+          .sort((a, b) => a.fgmPerGame - b.fgmPerGame);
+        
         sorted.forEach((team, index) => {
           if (!rankings[team.team]) {
             rankings[team.team] = {};
@@ -712,8 +802,10 @@ async function cacheTeamDefenseRankings(season, seasonStr) {
             rank: index + 1,
             fgPct: team[zone].fgPct,
             fga: team[zone].fga,
-            fgm: team[zone].fgm,
-            totalTeams: allTeamsData.length
+            fgm: team[zone].fgm, // Total FGM (for reference)
+            fgmPerGame: team.fgmPerGame, // Per-game FGM (used for ranking)
+            gamesPlayed: team.gamesPlayed,
+            totalTeams: sorted.length
           };
         });
       });
