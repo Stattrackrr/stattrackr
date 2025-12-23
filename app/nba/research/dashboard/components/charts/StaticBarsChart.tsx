@@ -283,7 +283,6 @@ export default memo(function StaticBarsChart({
             allowDecimals={false} // Ensure whole numbers are shown
             tickFormatter={(value) => String(value)} // Explicit formatter to ensure labels render
             mirror={false} // Don't mirror - show on right side
-            padding={{ right: 0 }} // Ensure no padding that might hide labels
           />
         )}
         <Tooltip 
