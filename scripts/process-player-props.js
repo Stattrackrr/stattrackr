@@ -706,7 +706,7 @@ async function processPlayerProps() {
                 const otherStatData = propsData[otherStat];
                 if (otherStatData) {
                   const otherEntries = Array.isArray(otherStatData) ? otherStatData : [otherStatData];
-                  const matchingLine = otherEntries.find((e: any) => e && parseFloat(e.line) === line);
+                  const matchingLine = otherEntries.find((e) => e && parseFloat(e.line) === line);
                   if (matchingLine) {
                     console.warn(`[GitHub Actions] 🔍 Found same line (${line}) in ${otherStat.toUpperCase()} for ${playerName} - possible mix-up!`);
                   }
