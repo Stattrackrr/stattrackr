@@ -277,19 +277,15 @@ export async function GET(request: NextRequest) {
     
     // Get cache key based on game date only (simplified)
     // First check for all-dates cache (new unified cache)
+    // ONLY use all-dates cache - no date-specific fallback
     const allDatesCacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
-    const dateSpecificCacheKey = getPlayerPropsCacheKey(gameDate);
     
-    console.log(`[Player Props API] 🔑 GET: Checking cache keys:`);
-    console.log(`[Player Props API]   1. All-dates key: ${allDatesCacheKey}`);
-    console.log(`[Player Props API]   2. Date-specific key: ${dateSpecificCacheKey}`);
-    console.log(`[Player Props API] 📊 GET: Cache lookup details: gameDate=${gameDate}`);
+    console.log(`[Player Props API] 🔑 GET: Using all-dates cache only: ${allDatesCacheKey}`);
     
-    // Check if we have cached processed player props for this odds version
+    // Check if we have cached processed player props
     // If refresh=1, only check Supabase (bypass in-memory cache to get latest)
     let cachedProps: any = null;
     
-    // Try all-dates cache first (new unified approach)
     if (forceRefresh) {
       cachedProps = await getNBACache<any>(allDatesCacheKey, {
         restTimeoutMs: 30000,
@@ -308,44 +304,10 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // If all-dates cache found and valid, use it
     if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
       console.log(`[Player Props API] ✅ Using all-dates cache (${cachedProps.length} props from all games)`);
     } else {
-      // Fall back to date-specific cache (for backwards compatibility)
-      console.log(`[Player Props API] ⚠️ All-dates cache not found or empty, trying date-specific cache...`);
-      const cacheKey = dateSpecificCacheKey;
-      
-      if (forceRefresh) {
-        cachedProps = await getNBACache<any>(cacheKey, {
-          restTimeoutMs: 30000,
-          jsTimeoutMs: 30000,
-          quiet: false,
-        });
-        if (cachedProps) {
-          console.log(`[Player Props API] ✅ Cache HIT (Supabase, refresh=1) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
-        } else {
-          console.log(`[Player Props API] ⚠️ Cache MISS (Supabase, refresh=1) for key: ${cacheKey}`);
-        }
-      } else {
-        cachedProps = await getNBACache<any>(cacheKey, {
-          restTimeoutMs: 30000,
-          jsTimeoutMs: 30000,
-          quiet: false,
-        });
-        
-        if (cachedProps) {
-          console.log(`[Player Props API] ✅ Cache HIT (Supabase) for key: ${cacheKey} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
-        } else {
-          console.log(`[Player Props API] ⚠️ Cache MISS (Supabase) for key: ${cacheKey} - checking in-memory cache...`);
-          cachedProps = cache.get<any>(cacheKey);
-          if (cachedProps) {
-            console.log(`[Player Props API] ✅ Cache HIT (in-memory) for game date: ${gameDate} (${Array.isArray(cachedProps) ? cachedProps.length : 'non-array'} items)`);
-          } else {
-            console.log(`[Player Props API] ⚠️ Cache MISS (in-memory) for key: ${cacheKey}`);
-          }
-        }
-      }
+      console.log(`[Player Props API] ⚠️ All-dates cache not found or empty`);
     }
     
     if (cachedProps) {
@@ -354,7 +316,7 @@ export async function GET(request: NextRequest) {
       if (!isValid) {
         console.warn(`[Player Props API] ⚠️ Cached data invalid (not array or empty), treating as cache miss`);
         // Delete invalid cache entry
-        const cacheKeyToDelete = cachedProps ? allDatesCacheKey : dateSpecificCacheKey;
+        const cacheKeyToDelete = allDatesCacheKey;
         try {
           const { deleteNBACache } = await import('@/lib/nbaCache');
           await deleteNBACache(cacheKeyToDelete);
