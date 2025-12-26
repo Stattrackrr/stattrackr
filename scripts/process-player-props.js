@@ -1572,11 +1572,18 @@ async function processPlayerProps() {
   const shouldMerge = propsSplit || gameSplit || (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
   
   // When splitting (by props OR by games), read cache again right before saving to get latest from parallel jobs
-  // Add a small delay to ensure other parallel jobs have time to write
+  // Add staggered delays - later parts wait longer for earlier parts to finish
   let cacheToMerge = existingCache;
   if (propsSplit || gameSplit) {
-    // Small delay to allow other parallel jobs to finish writing
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+    // Calculate delay based on part number - later parts wait longer for earlier parts
+    const partNumber = (propsSplit?.part || gameSplit?.part || 1);
+    const delaySeconds = partNumber === 1 ? 0 : partNumber === 2 ? 5 : 10; // Part 2 waits 5s, Part 3 waits 10s
+    
+    if (delaySeconds > 0) {
+      console.log(`[GitHub Actions] ⏳ Waiting ${delaySeconds}s for earlier parts to finish writing...`);
+      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+    }
+    
     console.log(`[GitHub Actions] 🔄 Re-reading cache before merge to get latest from parallel jobs...`);
     const latestCache = await getCache(cacheKey);
     if (latestCache && Array.isArray(latestCache) && latestCache.length > 0) {
@@ -1585,6 +1592,8 @@ async function processPlayerProps() {
     } else if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
       cacheToMerge = existingCache;
       console.log(`[GitHub Actions] 📦 Using initial cache (${cacheToMerge.length} props) - no updates from parallel jobs yet`);
+    } else {
+      console.log(`[GitHub Actions] ⚠️ No cache found yet - earlier parts may still be processing`);
     }
   }
   
