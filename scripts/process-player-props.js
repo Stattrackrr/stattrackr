@@ -1216,13 +1216,10 @@ async function processPlayerProps() {
               });
             
             if (gamesWithStats.length > 0) {
-              console.log(`[GitHub Actions] ✅ Found ${gamesWithStats.length} games with stats for ${prop.playerName} ${prop.statType} (line: ${prop.line})`);
-              
-              // Validation: Log sample stat values to ensure they match the stat type
+              // Validation: Check sample stat values to ensure they match the stat type (only log warnings)
               if (gamesWithStats.length > 0) {
                 const sampleValues = gamesWithStats.slice(0, 3).map(g => g.statValue);
                 const avgValue = sampleValues.reduce((sum, v) => sum + v, 0) / sampleValues.length;
-                console.log(`[GitHub Actions] 📊 Sample stat values for ${prop.playerName} ${prop.statType}: ${sampleValues.join(', ')} (avg: ${avgValue.toFixed(1)})`);
                 
                 // Warn if stat values seem wrong for the stat type (e.g., PTS should be > 10, REB should be > 3)
                 if (prop.statType === 'PTS' && avgValue < 5) {
@@ -1247,8 +1244,6 @@ async function processPlayerProps() {
                 const gameSeasonYear = getSeasonYear(stats);
                 return gameSeasonYear === currentSeason;
               });
-              
-              console.log(`[GitHub Actions] 📅 Current season (${currentSeason}): ${currentSeasonGames.length} games, Total: ${gamesWithStats.length} games`);
               
               // Calculate season average from CURRENT SEASON ONLY
               const seasonValues = currentSeasonGames.map((g) => g.statValue);
@@ -1367,21 +1362,7 @@ async function processPlayerProps() {
                     }
                     
                     // Debug logging for H2H matching (only log first few mismatches to avoid spam)
-                    if (!matches && normalizedOpponent && (playerTeamNorm === 'NOP' || playerTeamNorm === 'ATL' || normalizedOpponent === 'HOU')) {
-                      const gameDate = stats?.game?.date || 'unknown';
-                      console.log(`[GitHub Actions] 🔍 H2H match check for ${prop.playerName}:`, {
-                        gameDate,
-                        playerTeamFromStats,
-                        playerTeamNorm,
-                        homeTeamAbbr,
-                        visitorTeamAbbr,
-                        gameOpponent,
-                        normalizedOpponent,
-                        matches,
-                        lookingForOpponent: normalizedOpponent
-                      });
-                    }
-                    
+                    // H2H matching logic (debug logging removed to reduce log spam)
                     return matches;
                   })
                   .slice(0, 6) // Limit to last 6 H2H games
@@ -1410,10 +1391,7 @@ async function processPlayerProps() {
                     .map((s) => s.statValue);
                   
                   if (fallbackStats.length > 0) {
-                    console.log(`[GitHub Actions] ✅ H2H fallback found ${fallbackStats.length} games for ${prop.playerName} vs ${normalizedOpponent}`);
                     h2hStats = fallbackStats;
-                  } else {
-                    console.log(`[GitHub Actions] ⚠️ H2H: No games found for ${prop.playerName} vs ${normalizedOpponent} (checked ${gamesWithStats.length} games)`);
                   }
                 }
                 
