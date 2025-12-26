@@ -1,9 +1,9 @@
 name: Process Player Props
 
 on:
-  # Run once daily at 1:30 PM ET (5:30 PM Australian time)
+  # Run once daily at 5:30 PM Sydney time (Australia)
   schedule:
-    - cron: '30 17 * * *'  # 1:30 PM EDT / 12:30 PM EST (5:30 PM UTC)
+    - cron: '30 7 * * *'  # 5:30 PM AEST / 6:30 PM AEDT (7:30 AM UTC)
   # Also allow manual trigger
   workflow_dispatch:
     inputs:
