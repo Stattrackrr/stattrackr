@@ -564,6 +564,12 @@ async function processPlayerProps() {
     }
   }
   
+  // Use per-part checkpoint key when splitting (each part processes different props)
+  // Must be defined AFTER propsSplit and gameSplit are set
+  const checkpointKey = propsSplit || gameSplit 
+    ? `${CHECKPOINT_CACHE_PREFIX}-all-dates-part${propsSplit?.part || gameSplit?.part || 1}`
+    : `${CHECKPOINT_CACHE_PREFIX}-all-dates`;
+  
   // Clear cache if requested
   if (clearCache) {
     console.log(`[GitHub Actions] 🗑️ Clearing existing cache: ${cacheKey}`);
