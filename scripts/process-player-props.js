@@ -699,7 +699,19 @@ async function processPlayerProps() {
             
             // Debug: Log suspiciously low lines for PTS to catch data issues
             if (statType === 'PTS' && line < 10) {
-              console.warn(`[GitHub Actions] ⚠️ Suspiciously low PTS line (${line}) for ${playerName} - statType: ${statType}, entry.line: ${entry.line}`);
+              console.warn(`[GitHub Actions] ⚠️ Suspiciously low PTS line (${line}) for ${playerName} - statTypeKey: ${statTypeKey}, statType: ${statType}, entry.line: ${entry.line}, entry keys: ${Object.keys(entry).join(', ')}`);
+              // Also check if other stat types have this same line value (might be a mix-up)
+              const otherStats = Object.keys(propsData).filter(k => k.toUpperCase() !== 'PTS');
+              for (const otherStat of otherStats) {
+                const otherStatData = propsData[otherStat];
+                if (otherStatData) {
+                  const otherEntries = Array.isArray(otherStatData) ? otherStatData : [otherStatData];
+                  const matchingLine = otherEntries.find((e: any) => e && parseFloat(e.line) === line);
+                  if (matchingLine) {
+                    console.warn(`[GitHub Actions] 🔍 Found same line (${line}) in ${otherStat.toUpperCase()} for ${playerName} - possible mix-up!`);
+                  }
+                }
+              }
             }
             
             allProps.push({
