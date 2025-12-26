@@ -3,7 +3,7 @@ name: Process Player Props
 on:
   # Run once daily at 5:30 PM Sydney time (Australia)
   schedule:
-    - cron: '30 7 * * *'  # 5:30 PM AEST / 6:30 PM AEDT (7:30 AM UTC)
+    - cron: '30 6 * * *'  # 5:30 PM AEDT (6:30 AM UTC) / 4:30 PM AEST
   # Also allow manual trigger
   workflow_dispatch:
     inputs:
