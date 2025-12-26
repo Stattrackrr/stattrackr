@@ -13293,8 +13293,133 @@ const lineMovementInFlightRef = useRef(false);
   // Filter chart data based on slider range
   // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
   const filteredChartData = useMemo(() => {
-    if (!selectedFilterForAxis || !allGamesSecondAxisData || !sliderRange || propsMode !== 'player') {
+    // If no filter axis selected, use adjustedChartData (which already has timeframe filter from baseGameData)
+    if (!selectedFilterForAxis || !allGamesSecondAxisData || propsMode !== 'player') {
       return adjustedChartData;
+    }
+    
+    // If sliderRange is not set yet, still need to apply timeframe filter to allGamesSecondAxisData
+    // This ensures timeframe is always respected even before slider is initialized
+    if (!sliderRange) {
+      // Apply timeframe filter directly to allGamesSecondAxisData
+      let timeframeFiltered = allGamesSecondAxisData;
+      
+      if (selectedTimeframe === 'h2h' && opponentTeam && opponentTeam !== '') {
+        const normalizedOpponent = normalizeAbbr(opponentTeam);
+        timeframeFiltered = allGamesSecondAxisData.filter((item: any) => {
+          const stats = item.stats;
+          const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+          const playerTeamNorm = normalizeAbbr(playerTeam);
+          const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+          const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+          const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let gameOpponent = "";
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              gameOpponent = normalizeAbbr(visitorTeamAbbr);
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              gameOpponent = normalizeAbbr(homeTeamAbbr);
+            }
+          }
+          if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (playerTeamNorm && playerTeamNorm === homeNorm) {
+              gameOpponent = awayNorm;
+            } else if (playerTeamNorm && playerTeamNorm === awayNorm) {
+              gameOpponent = homeNorm;
+            }
+          }
+          let matches = gameOpponent === normalizedOpponent;
+          if (!matches && normalizedOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (homeNorm === normalizedOpponent || awayNorm === normalizedOpponent) {
+              matches = true;
+            }
+          }
+          return matches;
+        }).slice(0, 6);
+      } else if (selectedTimeframe === 'thisseason') {
+        const currentSeason = currentNbaSeason();
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+        timeframeFiltered = allGamesSecondAxisData.filter((item: any) => {
+          const stats = item.stats;
+          if (!stats?.game?.date) return false;
+          const gameDate = new Date(stats.game.date);
+          const gameYear = gameDate.getFullYear();
+          const gameMonth = gameDate.getMonth();
+          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+          return gameSeasonYear === seasonStartYear;
+        });
+      } else if (selectedTimeframe === 'lastseason') {
+        const lastSeason = currentNbaSeason() - 1;
+        timeframeFiltered = allGamesSecondAxisData.filter((item: any) => {
+          const stats = item.stats;
+          if (!stats?.game?.date) return false;
+          const gameDate = new Date(stats.game.date);
+          const gameYear = gameDate.getFullYear();
+          const gameMonth = gameDate.getMonth();
+          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+          return gameSeasonYear === lastSeason;
+        });
+      }
+      
+      // Map to chartData format
+      const sorted = [...timeframeFiltered].sort((a: any, b: any) => {
+        const dateA = a.stats?.game?.date ? new Date(a.stats.game.date).getTime() : 0;
+        const dateB = b.stats?.game?.date ? new Date(b.stats.game.date).getTime() : 0;
+        return dateB - dateA;
+      }).reverse();
+      
+      return sorted.map((item: any, index: number) => {
+        const stats = item.stats;
+        let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+        const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+        const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+        const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+        const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+        const playerTeamNorm = normalizeAbbr(playerTeam);
+        const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+        let opponent = "";
+        if (playerTeamId && homeTeamId && visitorTeamId) {
+          if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+            opponent = visitorTeamAbbr;
+          } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+            opponent = homeTeamAbbr;
+          }
+        }
+        if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+          const homeNorm = normalizeAbbr(homeTeamAbbr);
+          const awayNorm = normalizeAbbr(visitorTeamAbbr);
+          if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
+          else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
+        }
+        const iso = stats?.game?.date;
+        const d = iso ? new Date(iso) : null;
+        const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+        const gameId = stats?.game?.id ?? `${opponent}-${index}`;
+        const gameData = {
+          stats,
+          opponent,
+          gameNumber: index + 1,
+          game: opponent ? `vs ${opponent}` : "—",
+          date: shortDate,
+          xKey: String(gameId),
+          tickLabel: opponent || "",
+        };
+        const statValue = getStatValue(stats, selectedStat);
+        const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+        return {
+          ...gameData,
+          value,
+        };
+      });
     }
 
     // Filter ALL games by slider range using allGamesSecondAxisData (calculated from playerStats directly)
@@ -13324,9 +13449,101 @@ const lineMovementInFlightRef = useRef(false);
     if (!Number.isNaN(n) && selectedTimeframe.startsWith('last')) {
       // Take the first N games (newest first, so these are the most recent N)
       timeframeFilteredStats = sortedFilteredStats.slice(0, n);
-    } else if (selectedTimeframe === 'h2h' || selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') {
-      // For these timeframes, baseGameData already applied the filter, so we keep all filtered games
-      timeframeFilteredStats = sortedFilteredStats;
+    } else if (selectedTimeframe === 'h2h') {
+      // Filter to only show games against the current opponent team
+      if (opponentTeam && opponentTeam !== '') {
+        const normalizedOpponent = normalizeAbbr(opponentTeam);
+        const beforeFilter = sortedFilteredStats.length;
+        timeframeFilteredStats = sortedFilteredStats.filter((stats: any) => {
+          const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+          const playerTeamNorm = normalizeAbbr(playerTeam);
+          
+          // Get opponent from game data
+          const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+          const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+          const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          
+          // Determine opponent using team IDs/abbrs
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let gameOpponent = "";
+          
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              gameOpponent = normalizeAbbr(visitorTeamAbbr);
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              gameOpponent = normalizeAbbr(homeTeamAbbr);
+            }
+          }
+          
+          // Fallback: compare abbreviations directly if IDs missing
+          if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (playerTeamNorm && playerTeamNorm === homeNorm) {
+              gameOpponent = awayNorm;
+            } else if (playerTeamNorm && playerTeamNorm === awayNorm) {
+              gameOpponent = homeNorm;
+            }
+          }
+          
+          // Check if the primary match works
+          let matches = gameOpponent === normalizedOpponent;
+          
+          // Additional fallback: if primary match failed, check if the opponent appears in the game
+          if (!matches && normalizedOpponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (homeNorm === normalizedOpponent || awayNorm === normalizedOpponent) {
+              matches = true;
+            }
+          }
+          
+          return matches;
+        }).slice(0, 6); // Limit to last 6 H2H games
+        console.log(`[filteredChartData] H2H filter: ${beforeFilter} -> ${timeframeFilteredStats.length} games vs ${opponentTeam}`);
+      } else {
+        timeframeFilteredStats = [];
+        console.log(`[filteredChartData] H2H filter: No opponent team, returning empty`);
+      }
+    } else if (selectedTimeframe === 'thisseason') {
+      // Filter to current season games only
+      const currentSeason = currentNbaSeason();
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+      const beforeFilter = sortedFilteredStats.length;
+      
+      timeframeFilteredStats = sortedFilteredStats.filter((stats: any) => {
+        if (!stats?.game?.date) return false;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        
+        // Calculate which NBA season this game belongs to
+        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+        
+        // Game must be from the current NBA season
+        return gameSeasonYear === seasonStartYear;
+      });
+      console.log(`[filteredChartData] This Season filter: ${beforeFilter} -> ${timeframeFilteredStats.length} games (seasonStartYear=${seasonStartYear}, currentSeason=${currentSeason})`);
+    } else if (selectedTimeframe === 'lastseason') {
+      // Filter to last season games only
+      const lastSeason = currentNbaSeason() - 1;
+      const beforeFilter = sortedFilteredStats.length;
+      
+      timeframeFilteredStats = sortedFilteredStats.filter((stats: any) => {
+        if (!stats?.game?.date) return false;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        
+        // NBA season spans two calendar years
+        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
+        return gameSeasonYear === lastSeason;
+      });
+      console.log(`[filteredChartData] Last Season filter: ${beforeFilter} -> ${timeframeFilteredStats.length} games (lastSeason=${lastSeason})`);
     }
 
     // Reverse for chronological order (oldest→newest, left→right)
@@ -13386,7 +13603,7 @@ const lineMovementInFlightRef = useRef(false);
     });
 
     return mapped;
-  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer]);
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer, opponentTeam]);
 
   // Set initial slider range when filter is selected
   useEffect(() => {
