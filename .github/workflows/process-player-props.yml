@@ -1,9 +1,9 @@
 name: Process Player Props
 
 on:
-  # Run once daily at 8:00 AM ET (after odds refresh has run)
+  # Run once daily at 1:30 AM ET (after all games are done)
   schedule:
-    - cron: '0 8 * * *'  # 8:00 AM ET (12:00 PM UTC)
+    - cron: '30 5 * * *'  # 1:30 AM EDT / 12:30 AM EST (5:30 AM UTC)
   # Also allow manual trigger
   workflow_dispatch:
     inputs:
