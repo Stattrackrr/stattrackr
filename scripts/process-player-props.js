@@ -1644,6 +1644,9 @@ async function processPlayerProps() {
     }
     
     console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (merged with existing)`);
+  } else if (propsSplit || gameSplit) {
+    // For split jobs, we'll merge in the retry loop, so don't say "overwriting" yet
+    console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (will merge in retry loop)`);
   } else {
     console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (overwriting existing)`);
   }
