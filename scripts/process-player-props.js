@@ -660,8 +660,8 @@ async function processPlayerProps() {
           return statData && (typeof statData === 'object' || Array.isArray(statData));
         });
         
-        for (const statType of allStatTypes) {
-          const statData = propsData[statType];
+        for (const statTypeKey of allStatTypes) {
+          const statData = propsData[statTypeKey];
           if (!statData) continue;
           
           const entries = Array.isArray(statData) ? statData : [statData];
@@ -673,6 +673,9 @@ async function processPlayerProps() {
             
             const line = parseFloat(entry.line);
             if (isNaN(line)) continue;
+            
+            // Ensure statType matches the key we're iterating (safety check)
+            const statType = statTypeKey.toUpperCase();
             
             const overOddsStr = entry.over;
             const underOddsStr = entry.under;
@@ -693,6 +696,11 @@ async function processPlayerProps() {
             
             // Player ID will be fetched from production API during stats calculation
             const playerId = '';
+            
+            // Debug: Log suspiciously low lines for PTS to catch data issues
+            if (statType === 'PTS' && line < 10) {
+              console.warn(`[GitHub Actions] ⚠️ Suspiciously low PTS line (${line}) for ${playerName} - statType: ${statType}, entry.line: ${entry.line}`);
+            }
             
             allProps.push({
               playerName,
@@ -793,25 +801,24 @@ async function processPlayerProps() {
       // Update bestProp with merged bookmakerLines
       bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
       
-      // Safety check: Ensure prop.line matches the bookmakerLines (use most common line if mismatch)
+      // Safety check: Ensure prop.line matches the bookmakerLines
+      // Only filter bookmakerLines to those matching the prop's line (don't change prop.line)
       if (bestProp.bookmakerLines && bestProp.bookmakerLines.length > 0) {
-        const lineValues = bestProp.bookmakerLines.map(l => typeof l.line === 'number' ? l.line : parseFloat(l.line)).filter(v => !isNaN(v));
-        if (lineValues.length > 0) {
-          // Find most common line value
-          const lineCounts = new Map();
-          lineValues.forEach(v => {
-            const rounded = Math.round(v * 2) / 2;
-            lineCounts.set(rounded, (lineCounts.get(rounded) || 0) + 1);
-          });
-          const mostCommonLine = Array.from(lineCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
-          
-          // If prop.line doesn't match most common line, update it
-          if (mostCommonLine !== undefined && Math.abs(mostCommonLine - propLineValue) > 0.1) {
-            console.warn(`[GitHub Actions] ⚠️ Prop line ${propLineValue} doesn't match bookmakerLines (most common: ${mostCommonLine}) for ${bestProp.playerName} ${bestProp.statType} - updating prop.line`);
-            bestProp.line = mostCommonLine;
-            bestProp.bestLine = mostCommonLine;
-          }
+        // Filter bookmakerLines to only include those matching the prop's line value
+        const filteredBookmakerLines = bestProp.bookmakerLines.filter(line => {
+          const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
+          if (isNaN(lineValue)) return false;
+          // Only keep lines that match the prop's line (within 0.1 tolerance)
+          return Math.abs(lineValue - propLineValue) <= 0.1;
+        });
+        
+        if (filteredBookmakerLines.length !== bestProp.bookmakerLines.length) {
+          console.warn(`[GitHub Actions] ⚠️ Filtered out ${bestProp.bookmakerLines.length - filteredBookmakerLines.length} bookmakerLines that don't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
+          bestProp.bookmakerLines = filteredBookmakerLines;
         }
+        
+        // Ensure prop.line stays as the original value (don't change it based on bookmakerLines)
+        // The prop.line should be the primary line value, and bookmakerLines should match it
       }
       
       processedProps.push(bestProp);
