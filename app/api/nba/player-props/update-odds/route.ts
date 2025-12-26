@@ -408,12 +408,10 @@ export async function POST(request: NextRequest) {
       }, { status: 503 });
     }
     
-    // Get game date and cache key
-    const gameDate = getGameDateFromOddsCache(oddsCache);
-    const cacheKey = getPlayerPropsCacheKey(gameDate);
+    // Use all-dates cache only (no date-specific cache)
+    const cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
     
-    console.log(`[Player Props Update Odds] 📅 Updating props for game date: ${gameDate}`);
-    console.log(`[Player Props Update Odds] 🔑 Cache key: ${cacheKey}`);
+    console.log(`[Player Props Update Odds] 🔑 Using all-dates cache: ${cacheKey}`);
     
     // Load existing player props cache
     let cachedProps: any[] = await getNBACache<any>(cacheKey, {
