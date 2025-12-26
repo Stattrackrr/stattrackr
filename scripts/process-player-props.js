@@ -517,11 +517,12 @@ async function processPlayerProps() {
     }
   }
   
-  const gameDate = getGameDateFromOddsCache(oddsCache, dateOverride);
-  const cacheKey = getPlayerPropsCacheKey(gameDate);
-  const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-${gameDate}`;
+  // Process ALL games regardless of date
+  const gameDate = dateOverride || 'all-dates';
+  const cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
+  const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-all-dates`;
   
-  console.log(`[GitHub Actions] 📅 Processing for game date: ${gameDate}`);
+  console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
   console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
   
   // Check for force refresh flag
@@ -575,31 +576,11 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 🔄 Force refresh requested, recalculating all props...`);
   }
   
-  // Extract props from odds cache - FILTER TO ONLY THE TARGET GAME DATE
-  const targetGameDate = gameDate;
-  const getUSEasternDateString = (date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    });
-  };
-  
-  // Filter games to only the target date
+  // Extract props from odds cache - PROCESS ALL GAMES (no date filter)
+  // Get all games that have player props
   let games = (oddsCache.games || []).filter(game => {
-    if (!game.commenceTime) return false;
-    const commenceStr = String(game.commenceTime).trim();
-    let gameDateUSET;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-      gameDateUSET = commenceStr;
-    } else {
-      const date = new Date(commenceStr);
-      gameDateUSET = getUSEasternDateString(date);
-    }
-    return gameDateUSET === targetGameDate;
+    // Only include games that have player props
+    return game?.playerPropsByBookmaker && typeof game.playerPropsByBookmaker === 'object';
   });
   
   // Apply game split if specified (split games into chunks)
@@ -612,21 +593,20 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] 🔀 Split games: ${startIndex}-${endIndex} of ${totalGames} (part ${gameSplit.part}/${gameSplit.total})`);
   }
   
-  console.log(`[GitHub Actions] 🎯 Processing ${games.length} games for TOMORROW (${gameDate}) out of ${oddsCache.games?.length || 0} total games`);
+  console.log(`[GitHub Actions] 🎯 Processing ${games.length} games with player props out of ${oddsCache.games?.length || 0} total games`);
   
   if (games.length === 0) {
-    console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${gameDate}) - nothing to process`);
-    console.log(`[GitHub Actions] 💡 This is normal if tomorrow's games aren't in the odds cache yet`);
+    console.log(`[GitHub Actions] ⚠️ No games with player props found - nothing to process`);
     return;
   }
   
-  // Log which teams are playing tomorrow
-  const tomorrowTeams = new Set();
+  // Log unique teams playing
+  const allTeams = new Set();
   for (const game of games) {
-    if (game.homeTeam) tomorrowTeams.add(game.homeTeam);
-    if (game.awayTeam) tomorrowTeams.add(game.awayTeam);
+    if (game.homeTeam) allTeams.add(game.homeTeam);
+    if (game.awayTeam) allTeams.add(game.awayTeam);
   }
-  console.log(`[GitHub Actions] 🏀 Teams playing tomorrow: ${Array.from(tomorrowTeams).join(', ')}`);
+  console.log(`[GitHub Actions] 🏀 Teams with props: ${Array.from(allTeams).join(', ')}`);
   
   const allProps = [];
   
@@ -646,13 +626,19 @@ async function processPlayerProps() {
         if (!playerData || typeof playerData !== 'object') continue;
         
         const propsData = playerData;
-        const statTypes = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'THREES', 'PRA', 'PA', 'PR', 'RA'];
-        
-        for (const statType of statTypes) {
-          // Filter by allowed stats if specified
+        // Get ALL stat types dynamically from the props data (not just hardcoded list)
+        const allStatTypes = Object.keys(propsData).filter(key => {
+          // Skip non-stat keys and filter by allowedStats if specified
+          const statType = key.toUpperCase();
           if (allowedStats && !allowedStats.includes(statType)) {
-            continue;
+            return false;
           }
+          // Only include keys that have stat data (not metadata)
+          const statData = propsData[key];
+          return statData && (typeof statData === 'object' || Array.isArray(statData));
+        });
+        
+        for (const statType of allStatTypes) {
           const statData = propsData[statType];
           if (!statData) continue;
           
@@ -702,7 +688,7 @@ async function processPlayerProps() {
               bestLine: line,
               bookmaker: bookmakerName,
               confidence: Math.max(overProb, underProb) > 70 ? 'High' : Math.max(overProb, underProb) > 65 ? 'Medium' : 'Low',
-              gameDate: game.commenceTime || gameDate,
+              gameDate: game.commenceTime || (game.commenceTime ? String(game.commenceTime) : 'unknown'),
               last5Avg: null,
               last10Avg: null,
               h2hAvg: null,
@@ -1696,7 +1682,7 @@ async function processPlayerProps() {
       }
       
       console.log(`[GitHub Actions] 💾 Saving ${propsSplit ? 'merged' : 'new'} cache with key: ${cacheKey}${retry > 0 ? ` (retry ${retry})` : ''}`);
-      console.log(`[GitHub Actions] 📊 Cache details: gameDate=${gameDate}, propsCount=${finalProps.length}`);
+      console.log(`[GitHub Actions] 📊 Cache details: cacheKey=${cacheKey}, propsCount=${finalProps.length}`);
       
       // Debug: Log stat type breakdown
       const statTypeCounts = {};
