@@ -1,7 +1,10 @@
 name: Process Player Props
 
 on:
-  # Only trigger manually or via API from the tipoff-checker workflow
+  # Run once daily at 8:00 AM ET (after odds refresh has run)
+  schedule:
+    - cron: '0 8 * * *'  # 8:00 AM ET (12:00 PM UTC)
+  # Also allow manual trigger
   workflow_dispatch:
     inputs:
       date:

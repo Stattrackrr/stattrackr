@@ -697,10 +697,12 @@ async function processPlayerProps() {
             // Player ID will be fetched from production API during stats calculation
             const playerId = '';
             
-            // Debug: Log suspiciously low lines for PTS to catch data issues
+            // Skip suspiciously low PTS lines (likely wrong data from odds cache)
+            // PTS lines should typically be >= 10 for NBA players (even bench players)
+            // Lines below 10 are likely from other stat types (REB, AST, etc.) that got mixed up
             if (statType === 'PTS' && line < 10) {
-              console.warn(`[GitHub Actions] ⚠️ Suspiciously low PTS line (${line}) for ${playerName} - statTypeKey: ${statTypeKey}, statType: ${statType}, entry.line: ${entry.line}, entry keys: ${Object.keys(entry).join(', ')}`);
-              // Also check if other stat types have this same line value (might be a mix-up)
+              console.warn(`[GitHub Actions] ⚠️ Skipping suspiciously low PTS line (${line}) for ${playerName} - likely wrong data from odds cache`);
+              // Check if other stat types have this same line value (confirms it's a mix-up)
               const otherStats = Object.keys(propsData).filter(k => k.toUpperCase() !== 'PTS');
               for (const otherStat of otherStats) {
                 const otherStatData = propsData[otherStat];
@@ -708,10 +710,13 @@ async function processPlayerProps() {
                   const otherEntries = Array.isArray(otherStatData) ? otherStatData : [otherStatData];
                   const matchingLine = otherEntries.find((e) => e && parseFloat(e.line) === line);
                   if (matchingLine) {
-                    console.warn(`[GitHub Actions] 🔍 Found same line (${line}) in ${otherStat.toUpperCase()} for ${playerName} - possible mix-up!`);
+                    console.warn(`[GitHub Actions] 🔍 Confirmed mix-up: Found same line (${line}) in ${otherStat.toUpperCase()} for ${playerName} - skipping PTS entry`);
+                    continue; // Skip this entry
                   }
                 }
               }
+              // If no matching line found in other stats, still skip (likely bad data)
+              continue;
             }
             
             allProps.push({
