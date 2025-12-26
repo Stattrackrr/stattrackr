@@ -1526,7 +1526,16 @@ async function processPlayerProps() {
       }
     });
     
-    propsWithStats.push(...processedResults);
+    // Filter out PTS props with streak >= 11 (likely wrong line)
+    const filteredResults = processedResults.filter(prop => {
+      if (prop.statType === 'PTS' && prop.streak !== null && prop.streak >= 11) {
+        console.warn(`[GitHub Actions] ⚠️ Removing PTS prop for ${prop.playerName} with streak ${prop.streak} (likely wrong line)`);
+        return false;
+      }
+      return true;
+    });
+    
+    propsWithStats.push(...filteredResults);
     
     // Save checkpoint after each batch
     await setCache(checkpointKey, {
