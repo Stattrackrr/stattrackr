@@ -98,9 +98,68 @@ async function checkCache(dateStr) {
   }
 }
 
+async function checkAllDatesCache() {
+  const cacheKey = 'nba-player-props-all-dates';
+  console.log(`\n🔍 Checking cache for: ${cacheKey}`);
+  
+  try {
+    const { data, error } = await supabase
+      .from('nba_api_cache')
+      .select('cache_key, cache_type, updated_at, expires_at')
+      .eq('cache_key', cacheKey)
+      .single();
+    
+    if (error || !data) {
+      console.log(`❌ No cache found for ${cacheKey}`);
+      return null;
+    }
+    
+    console.log(`✅ Cache found:`);
+    console.log(`   Updated: ${data.updated_at}`);
+    console.log(`   Expires: ${data.expires_at}`);
+    
+    // Get the actual data
+    const { data: cacheData, error: dataError } = await supabase
+      .from('nba_api_cache')
+      .select('data')
+      .eq('cache_key', cacheKey)
+      .single();
+    
+    if (dataError || !cacheData || !cacheData.data) {
+      console.log(`❌ Could not retrieve cache data`);
+      return null;
+    }
+    
+    const props = Array.isArray(cacheData.data) ? cacheData.data : [];
+    console.log(`📊 Total props: ${props.length}`);
+    
+    // Count by stat type
+    const statTypeCounts = {};
+    props.forEach(prop => {
+      const statType = prop.statType || 'UNKNOWN';
+      statTypeCounts[statType] = (statTypeCounts[statType] || 0) + 1;
+    });
+    
+    console.log(`📊 Stat type breakdown:`);
+    Object.entries(statTypeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([statType, count]) => {
+        console.log(`   ${statType}: ${count}`);
+      });
+    
+    return props;
+  } catch (e) {
+    console.error(`❌ Exception checking ${cacheKey}:`, e.message);
+    return null;
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const specificDate = args[0];
+  
+  // Always check all-dates cache first (new unified approach)
+  await checkAllDatesCache();
   
   if (specificDate) {
     // Check specific date
@@ -112,7 +171,7 @@ async function main() {
     const tomorrowDate = new Date(year, month - 1, day + 1);
     const tomorrowUSET = getUSEasternDateString(tomorrowDate);
     
-    console.log(`🔍 Checking player props cache for today and tomorrow (US ET)`);
+    console.log(`\n🔍 Checking player props cache for today and tomorrow (US ET)`);
     console.log(`📅 Today (US ET): ${todayUSET}`);
     console.log(`📅 Tomorrow (US ET): ${tomorrowUSET}`);
     
