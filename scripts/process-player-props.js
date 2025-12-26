@@ -1587,8 +1587,11 @@ async function processPlayerProps() {
   const shouldMerge = propsSplit || gameSplit || (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
   
   // When splitting (by props OR by games), read cache again right before saving to get latest from parallel jobs
+  // Add a small delay to ensure other parallel jobs have time to write
   let cacheToMerge = existingCache;
   if (propsSplit || gameSplit) {
+    // Small delay to allow other parallel jobs to finish writing
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
     console.log(`[GitHub Actions] 🔄 Re-reading cache before merge to get latest from parallel jobs...`);
     const latestCache = await getCache(cacheKey);
     if (latestCache && Array.isArray(latestCache) && latestCache.length > 0) {
@@ -1667,9 +1670,14 @@ async function processPlayerProps() {
   
   for (let retry = 0; retry < maxRetries && !savedSuccessfully; retry++) {
     try {
-      // If retrying, re-read cache to get latest (another job may have written)
-      if (retry > 0 && (propsSplit || gameSplit)) {
-        console.log(`[GitHub Actions] 🔄 Retry ${retry}: Re-reading cache before save...`);
+      // Always re-read cache right before saving when splitting (to get latest from parallel jobs)
+      // Also re-read on retry
+      if ((retry > 0 || retry === 0) && (propsSplit || gameSplit)) {
+        if (retry > 0) {
+          // Longer delay on retry to ensure other jobs have finished
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay on retry
+        }
+        console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
         const retryCache = await getCache(cacheKey);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
           // Re-merge with latest cache
@@ -1677,11 +1685,14 @@ async function processPlayerProps() {
             propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
           );
           const uniqueExistingProps = retryCache.filter(existingProp => {
+            if (!existingProp.playerName || !existingProp.statType || existingProp.line === undefined || existingProp.line === null) {
+              return false;
+            }
             const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
             return !newPropsKeys.has(key);
           });
           finalProps = [...propsWithStats, ...uniqueExistingProps];
-          console.log(`[GitHub Actions] 🔀 Re-merged for retry: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
+          console.log(`[GitHub Actions] 🔀 Re-merged: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
         }
       }
       
