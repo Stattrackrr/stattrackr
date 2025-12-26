@@ -520,7 +520,10 @@ async function processPlayerProps() {
   // Process ALL games regardless of date
   const gameDate = dateOverride || 'all-dates';
   const cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
-  const checkpointKey = `${CHECKPOINT_CACHE_PREFIX}-all-dates`;
+  // Use per-part checkpoint key when splitting (each part processes different props)
+  const checkpointKey = propsSplit || gameSplit 
+    ? `${CHECKPOINT_CACHE_PREFIX}-all-dates-part${propsSplit?.part || gameSplit?.part || 1}`
+    : `${CHECKPOINT_CACHE_PREFIX}-all-dates`;
   
   console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
   console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
