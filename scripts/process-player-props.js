@@ -830,8 +830,43 @@ async function processPlayerProps() {
     }
   }
   
-  // Remove duplicates
-  let uniqueProps = processedProps.filter((prop, index, self) =>
+  // For PTS props, keep only the highest line per player (remove suspiciously low lines)
+  // Group PTS props by player
+  const ptsPropsByPlayer = new Map();
+  const nonPtsProps = [];
+  
+  for (const prop of processedProps) {
+    if (prop.statType === 'PTS') {
+      if (!ptsPropsByPlayer.has(prop.playerName)) {
+        ptsPropsByPlayer.set(prop.playerName, []);
+      }
+      ptsPropsByPlayer.get(prop.playerName).push(prop);
+    } else {
+      nonPtsProps.push(prop);
+    }
+  }
+  
+  // For each player, keep only the highest PTS line
+  const filteredPtsProps = [];
+  for (const [playerName, ptsProps] of ptsPropsByPlayer.entries()) {
+    if (ptsProps.length > 1) {
+      // Multiple PTS lines - keep only the highest one
+      const highestLineProp = ptsProps.reduce((highest, current) => {
+        return current.line > highest.line ? current : highest;
+      });
+      console.warn(`[GitHub Actions] ⚠️ Multiple PTS lines for ${playerName}: ${ptsProps.map(p => p.line).join(', ')} - keeping highest: ${highestLineProp.line}`);
+      filteredPtsProps.push(highestLineProp);
+    } else {
+      // Only one PTS line - keep it
+      filteredPtsProps.push(ptsProps[0]);
+    }
+  }
+  
+  // Combine filtered PTS props with all other stat types
+  let uniqueProps = [...filteredPtsProps, ...nonPtsProps];
+  
+  // Remove any remaining duplicates (for non-PTS stats)
+  uniqueProps = uniqueProps.filter((prop, index, self) =>
     index === self.findIndex((p) => 
       p.playerName === prop.playerName && 
       p.statType === prop.statType && 
