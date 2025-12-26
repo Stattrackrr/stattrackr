@@ -528,6 +528,9 @@ async function processPlayerProps() {
   // Check for force refresh flag
   const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('-r');
   
+  // Check for clear cache flag
+  const clearCache = process.argv.includes('--clear-cache') || process.argv.includes('--clear');
+  
   // Check for stat filter (e.g., --stats=PRA,RA,PR,PA,POINTS,REB,AST)
   let allowedStats = null;
   const statsArg = process.argv.find(arg => arg.startsWith('--stats='));
@@ -559,6 +562,25 @@ async function processPlayerProps() {
           console.log(`[GitHub Actions] 🔀 Splitting games: processing part ${part} of ${total}`);
         }
       }
+    }
+  }
+  
+  // Clear cache if requested
+  if (clearCache) {
+    console.log(`[GitHub Actions] 🗑️ Clearing existing cache: ${cacheKey}`);
+    try {
+      const { error } = await supabase
+        .from('nba_api_cache')
+        .delete()
+        .eq('cache_key', cacheKey);
+      
+      if (error) {
+        console.warn(`[GitHub Actions] ⚠️ Failed to clear cache:`, error.message);
+      } else {
+        console.log(`[GitHub Actions] ✅ Cache cleared successfully`);
+      }
+    } catch (error) {
+      console.warn(`[GitHub Actions] ⚠️ Failed to clear cache (may not exist):`, error.message);
     }
   }
   

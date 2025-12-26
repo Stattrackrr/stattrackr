@@ -58,7 +58,8 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 1/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=1/3 --split-props
+          echo "🗑️ Clearing old cache first..."
+          node scripts/process-player-props.js --clear-cache --split=1/3
           echo "✅ All props processing part 1/3 completed"
 
   process_props_main_part2:
@@ -97,7 +98,7 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 2/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=2/3 --split-props
+          node scripts/process-player-props.js --split=2/3
           echo "✅ All props processing part 2/3 completed"
 
   process_props_main_part3:
@@ -136,7 +137,7 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 3/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=3/3 --split-props
+          node scripts/process-player-props.js --split=3/3
           echo "✅ All props processing part 3/3 completed"
 
   process_props_secondary_part1:
@@ -172,7 +173,7 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 1/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=1/3 --split-props
+          node scripts/process-player-props.js --split=1/3
           echo "✅ All props processing part 1/3 completed"
 
   process_props_secondary_part2:
@@ -208,7 +209,7 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 2/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=2/3 --split-props
+          node scripts/process-player-props.js --split=2/3
           echo "✅ All props processing part 2/3 completed"
 
   process_props_secondary_part3:
@@ -244,6 +245,6 @@ jobs:
         run: |
           echo "🔄 Starting player props processing for ALL props (part 3/3)..."
           echo "📅 Processing ALL games and ALL stat types (no filters)"
-          node scripts/process-player-props.js --split=3/3 --split-props
+          node scripts/process-player-props.js --split=3/3
           echo "✅ All props processing part 3/3 completed"
 
