@@ -239,7 +239,7 @@ async function processNewProps(newProps: any[], oddsCache: OddsCache): Promise<a
         );
         
         // Get DvP rating
-        let dvp = { rank: null, statValue: null };
+        let dvp: { rank: number | null; statValue: number | null } = { rank: null, statValue: null };
         if (position && actualOpponent) {
           await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
           dvp = await getDvpRatingForNewProp(baseUrl, actualOpponent, position, prop.statType);
