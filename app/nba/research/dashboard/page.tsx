@@ -4563,6 +4563,266 @@ const ChartControls = function ChartControls({
 
 
 // Container that combines controls and chart
+// Dual Handle Range Slider Component
+const RangeSlider = memo(function RangeSlider({
+  min,
+  max,
+  valueMin,
+  valueMax,
+  onChange,
+  step = 0.5,
+  formatValue = (val) => val.toString(),
+}: {
+  min: number;
+  max: number;
+  valueMin: number;
+  valueMax: number;
+  onChange: (min: number, max: number) => void;
+  step?: number;
+  formatValue?: (val: number) => string;
+}) {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<'min' | 'max' | null>(null);
+  const [localMin, setLocalMin] = useState(valueMin);
+  const [localMax, setLocalMax] = useState(valueMax);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setLocalMin(valueMin);
+    setLocalMax(valueMax);
+  }, [valueMin, valueMax]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    if (typeof window !== 'undefined') {
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+
+  const getPercentage = (value: number) => {
+    return ((value - min) / (max - min)) * 100;
+  };
+
+  const getValueFromPosition = (clientX: number) => {
+    if (!sliderRef.current) return 0;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const value = min + percent * (max - min);
+    return Math.round(value / step) * step;
+  };
+
+  const handleStart = (clientX: number, handle: 'min' | 'max') => {
+    setDragging(handle);
+    
+    const value = getValueFromPosition(clientX);
+    if (handle === 'min') {
+      const newMin = Math.max(min, Math.min(value, localMax - step));
+      setLocalMin(newMin);
+      onChange(newMin, localMax);
+    } else {
+      const newMax = Math.min(max, Math.max(value, localMin + step));
+      setLocalMax(newMax);
+      onChange(localMin, newMax);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, handle: 'min' | 'max') => {
+    e.preventDefault();
+    handleStart(e.clientX, handle);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, handle: 'min' | 'max') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.touches.length > 0) {
+      handleStart(e.touches[0].clientX, handle);
+    }
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMove = (clientX: number) => {
+      const value = getValueFromPosition(clientX);
+      
+      if (dragging === 'min') {
+        const newMin = Math.max(min, Math.min(value, localMax - step));
+        setLocalMin(newMin);
+        onChange(newMin, localMax);
+      } else {
+        const newMax = Math.min(max, Math.max(value, localMin + step));
+        setLocalMax(newMax);
+        onChange(localMin, newMax);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      handleMove(e.clientX);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX);
+      }
+    };
+
+    const handleEnd = () => {
+      setDragging(null);
+    };
+
+    const handleMouseUp = () => {
+      handleEnd();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleEnd();
+    };
+
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [dragging, localMin, localMax, min, max, step, onChange]);
+
+  const minPercent = getPercentage(localMin);
+  const maxPercent = getPercentage(localMax);
+
+  const handleTrackClick = (clientX: number) => {
+    const value = getValueFromPosition(clientX);
+    const distToMin = Math.abs(value - localMin);
+    const distToMax = Math.abs(value - localMax);
+    
+    if (distToMin < distToMax) {
+      const newMin = Math.max(min, Math.min(value, localMax - step));
+      setLocalMin(newMin);
+      onChange(newMin, localMax);
+    } else {
+      const newMax = Math.min(max, Math.max(value, localMin + step));
+      setLocalMax(newMax);
+      onChange(localMin, newMax);
+    }
+  };
+
+  return (
+    <div 
+      className="relative w-full sm:w-48 h-8 sm:h-8 select-none touch-none"
+      style={{ 
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        touchAction: 'none'
+      }}
+    >
+      {/* Track background */}
+      <div className="absolute top-1/2 left-0 right-0 h-1 sm:h-1 bg-purple-500/30 -translate-y-1/2 rounded-full"></div>
+      
+      {/* Active range */}
+      <div 
+        className="absolute top-1/2 h-1 sm:h-1 bg-purple-600 -translate-y-1/2 rounded-full"
+        style={{
+          left: `${minPercent}%`,
+          width: `${maxPercent - minPercent}%`,
+        }}
+      ></div>
+
+      {/* Min handle */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10 select-none touch-none"
+        style={{ 
+          left: `calc(${minPercent}% - ${isMobile ? '8px' : '8px'})`,
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          touchAction: 'none'
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'min')}
+        onTouchStart={(e) => handleTouchStart(e, 'min')}
+      >
+        <div className="w-4 h-4 sm:w-4 sm:h-4 rounded-full bg-purple-600 border-2 sm:border-2 border-white shadow-lg sm:shadow-lg"></div>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 sm:mt-1 whitespace-nowrap pointer-events-none">
+          <span className="text-xs sm:text-xs text-gray-300 dark:text-gray-400 font-medium">
+            {formatValue(localMin)}
+          </span>
+        </div>
+      </div>
+
+      {/* Max handle */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10 select-none touch-none"
+        style={{ 
+          left: `calc(${maxPercent}% - ${isMobile ? '8px' : '8px'})`,
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          touchAction: 'none'
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'max')}
+        onTouchStart={(e) => handleTouchStart(e, 'max')}
+      >
+        <div className="w-4 h-4 sm:w-4 sm:h-4 rounded-full bg-purple-600 border-2 sm:border-2 border-white shadow-lg sm:shadow-lg"></div>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 sm:mt-1 whitespace-nowrap pointer-events-none">
+          <span className="text-xs sm:text-xs text-gray-300 dark:text-gray-400 font-medium">
+            {formatValue(localMax)}
+          </span>
+        </div>
+      </div>
+
+      {/* Invisible track for click detection */}
+      <div
+        ref={sliderRef}
+        className="absolute top-0 left-0 right-0 h-full cursor-pointer select-none touch-none"
+        style={{
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          touchAction: 'none'
+        }}
+        onMouseDown={(e) => {
+          if (e.target === sliderRef.current || (e.target as HTMLElement).closest('.cursor-grab')) {
+            return;
+          }
+          e.preventDefault();
+          handleTrackClick(e.clientX);
+        }}
+        onTouchStart={(e) => {
+          if (e.target === sliderRef.current || (e.target as HTMLElement).closest('.cursor-grab')) {
+            return;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.touches.length > 0) {
+            handleTrackClick(e.touches[0].clientX);
+          }
+        }}
+      ></div>
+    </div>
+  );
+}, (prev, next) => 
+  prev.min === next.min &&
+  prev.max === next.max &&
+  prev.valueMin === next.valueMin &&
+  prev.valueMax === next.valueMax &&
+  prev.step === next.step
+);
+
 const ChartContainer = function ChartContainer({
   isDark,
   currentStatOptions,
@@ -4617,9 +4877,6 @@ const ChartContainer = function ChartContainer({
   setSliderRange,
 }: any) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [activeHandle, setActiveHandle] = useState<'min' | 'max' | null>(null);
-  const sliderContainerRef = useRef<HTMLDivElement>(null);
-  const intendedHandleRef = useRef<'min' | 'max' | null>(null);
   const totalSamples = hitRateStats?.total ?? chartData.length;
   const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
   
@@ -4754,217 +5011,49 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
       />
       {/* Second Axis Filter Pills and Slider - Inside chart container */}
       {showAdvancedFilters && (
-        <div className="mb-2 sm:mb-3 flex items-center gap-3">
-          {showAdvancedFilters && SecondAxisFilterPills}
-          {/* Horizontal Range Slider on the right */}
-          {showAdvancedFilters && selectedFilterForAxis && sliderConfig && sliderRange && (
-            <div className="flex-shrink-0 ml-2 pr-12">
-              <div ref={sliderContainerRef} className="relative w-48 h-8">
-                {/* Purple track line - thicker - non-interactive */}
-                <div className="absolute top-1/2 left-0 right-0 h-1 bg-purple-500 -translate-y-1/2 rounded-full pointer-events-none"></div>
-                
-                {/* Filled portion between min and max - non-interactive */}
-                <div 
-                  className="absolute top-1/2 h-1 bg-purple-600 -translate-y-1/2 rounded-full pointer-events-none"
-                  style={{
-                    left: `${((sliderRange.min - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
-                    width: `${((sliderRange.max - sliderRange.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
-                  }}
-                ></div>
-                
-                {/* Min slider input */}
-                <input
-                  type="range"
+        <>
+          <div className="mb-2 sm:mb-3 flex items-center gap-3">
+            {showAdvancedFilters && SecondAxisFilterPills}
+            {/* Range Slider on the right - Desktop only */}
+            {showAdvancedFilters && selectedFilterForAxis && sliderConfig && sliderRange && (
+              <div className="hidden sm:flex flex-shrink-0 ml-2 pr-12">
+                <RangeSlider
                   min={sliderConfig.min}
-                  max={sliderRange.max}
-                  step={selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 0.1 : selectedFilterForAxis === 'dvp_rank' ? 1 : 0.5}
-                  value={sliderRange.min}
-                  onChange={(e) => {
-                    // Only update if this is the intended handle
-                    if (intendedHandleRef.current !== 'min' && intendedHandleRef.current !== null) {
-                      return;
-                    }
-                    const newMin = Number(e.target.value);
-                    // Ensure min doesn't exceed max
-                    const constrainedMin = Math.min(newMin, sliderRange.max);
-                    setSliderRange({ min: constrainedMin, max: sliderRange.max });
-                  }}
-                  onPointerDown={(e) => {
-                    if (!sliderContainerRef.current) {
-                      intendedHandleRef.current = 'min';
-                      setActiveHandle('min');
-                      return;
-                    }
-                    // Calculate click position relative to slider
-                    const rect = sliderContainerRef.current.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const sliderWidth = rect.width;
-                    const clickPercent = clickX / sliderWidth;
-                    
-                    // Calculate handle positions
-                    const range = sliderConfig.max - sliderConfig.min;
-                    const minPercent = (sliderRange.min - sliderConfig.min) / range;
-                    const maxPercent = (sliderRange.max - sliderConfig.min) / range;
-                    
-                    // Determine which handle is closer to click position
-                    const distToMin = Math.abs(clickPercent - minPercent);
-                    const distToMax = Math.abs(clickPercent - maxPercent);
-                    
-                    // Only activate min if it's closer or if click is clearly on the left side
-                    if (distToMin <= distToMax || clickPercent < (minPercent + maxPercent) / 2) {
-                      intendedHandleRef.current = 'min';
-                      setActiveHandle('min');
-                    } else {
-                      intendedHandleRef.current = null;
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onPointerUp={() => {
-                    setActiveHandle(null);
-                    intendedHandleRef.current = null;
-                  }}
-                  onPointerCancel={() => {
-                    setActiveHandle(null);
-                    intendedHandleRef.current = null;
-                  }}
-                  style={{ 
-                    zIndex: activeHandle === 'min' ? 50 : 20
-                  }}
-                  className="absolute top-1/2 left-0 right-0 w-full h-2 -translate-y-1/2 appearance-none cursor-grab active:cursor-grabbing bg-transparent"
-                />
-                
-                {/* Max slider input */}
-                <input
-                  type="range"
-                  min={sliderRange.min}
                   max={sliderConfig.max}
+                  valueMin={sliderRange.min}
+                  valueMax={sliderRange.max}
+                  onChange={(min, max) => setSliderRange({ min, max })}
                   step={selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 0.1 : selectedFilterForAxis === 'dvp_rank' ? 1 : 0.5}
-                  value={sliderRange.max}
-                  onChange={(e) => {
-                    // Only update if this is the intended handle
-                    if (intendedHandleRef.current !== 'max' && intendedHandleRef.current !== null) {
-                      return;
+                  formatValue={(val) => {
+                    if (selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate') {
+                      return `${val.toFixed(1)}%`;
                     }
-                    const newMax = Number(e.target.value);
-                    // Ensure max doesn't go below min
-                    const constrainedMax = Math.max(newMax, sliderRange.min);
-                    setSliderRange({ min: sliderRange.min, max: constrainedMax });
+                    return Math.round(val).toString();
                   }}
-                  onPointerDown={(e) => {
-                    if (!sliderContainerRef.current) {
-                      intendedHandleRef.current = 'max';
-                      setActiveHandle('max');
-                      return;
-                    }
-                    // Calculate click position relative to slider
-                    const rect = sliderContainerRef.current.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const sliderWidth = rect.width;
-                    const clickPercent = clickX / sliderWidth;
-                    
-                    // Calculate handle positions
-                    const range = sliderConfig.max - sliderConfig.min;
-                    const minPercent = (sliderRange.min - sliderConfig.min) / range;
-                    const maxPercent = (sliderRange.max - sliderConfig.min) / range;
-                    
-                    // Determine which handle is closer to click position
-                    const distToMin = Math.abs(clickPercent - minPercent);
-                    const distToMax = Math.abs(clickPercent - maxPercent);
-                    
-                    // Only activate max if it's closer or if click is clearly on the right side
-                    if (distToMax <= distToMin || clickPercent > (minPercent + maxPercent) / 2) {
-                      intendedHandleRef.current = 'max';
-                      setActiveHandle('max');
-                    } else {
-                      intendedHandleRef.current = null;
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onPointerUp={() => {
-                    setActiveHandle(null);
-                    intendedHandleRef.current = null;
-                  }}
-                  onPointerCancel={() => {
-                    setActiveHandle(null);
-                    intendedHandleRef.current = null;
-                  }}
-                  style={{ 
-                    zIndex: activeHandle === 'max' ? 50 : 30
-                  }}
-                  className="absolute top-1/2 left-0 right-0 w-full h-2 -translate-y-1/2 appearance-none cursor-grab active:cursor-grabbing bg-transparent"
                 />
-                
-                <style jsx>{`
-                  input[type="range"] {
-                    -webkit-appearance: none;
-                    appearance: none;
-                  }
-                  input[type="range"]::-webkit-slider-thumb {
-                    -webkit-appearance: none;
-                    appearance: none;
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 50%;
-                    background: transparent;
-                    cursor: grab;
-                    opacity: 0;
-                  }
-                  input[type="range"]::-moz-range-thumb {
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 50%;
-                    background: transparent;
-                    cursor: grab;
-                    border: none;
-                    opacity: 0;
-                  }
-                  input[type="range"]::-webkit-slider-runnable-track {
-                    height: 0;
-                    background: transparent;
-                    pointer-events: none;
-                  }
-                  input[type="range"]::-moz-range-track {
-                    height: 0;
-                    background: transparent;
-                    pointer-events: none;
-                  }
-                `}</style>
-                
-                {/* Min value circle and label */}
-                <div 
-                  className="absolute top-1/2 -translate-y-1/2 flex items-center flex-row-reverse gap-1.5 pointer-events-none"
-                  style={{
-                    left: `${((sliderRange.min - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  <div className="w-4 h-4 rounded-full bg-purple-600 border-2 border-white shadow-md"></div>
-                  <span className="text-xs text-gray-300 dark:text-gray-400 font-medium whitespace-nowrap">
-                    {sliderRange.min.toFixed(selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 1 : 0)}
-                    {selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? '%' : ''}
-                  </span>
-                </div>
-                
-                {/* Max value circle and label */}
-                <div 
-                  className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none"
-                  style={{
-                    left: `${((sliderRange.max - sliderConfig.min) / (sliderConfig.max - sliderConfig.min)) * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  <div className="w-4 h-4 rounded-full bg-purple-600 border-2 border-white shadow-md"></div>
-                  <span className="text-xs text-gray-300 dark:text-gray-400 font-medium whitespace-nowrap">
-                    {sliderRange.max.toFixed(selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 1 : 0)}
-                    {selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? '%' : ''}
-                  </span>
-                </div>
               </div>
+            )}
+          </div>
+          {/* Range Slider below filters - Mobile only */}
+          {showAdvancedFilters && selectedFilterForAxis && sliderConfig && sliderRange && (
+            <div className="sm:hidden mb-2 flex justify-center px-4">
+              <RangeSlider
+                min={sliderConfig.min}
+                max={sliderConfig.max}
+                valueMin={sliderRange.min}
+                valueMax={sliderRange.max}
+                onChange={(min, max) => setSliderRange({ min, max })}
+                step={selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate' ? 0.1 : selectedFilterForAxis === 'dvp_rank' ? 1 : 0.5}
+                formatValue={(val) => {
+                  if (selectedFilterForAxis === 'fg_pct' || selectedFilterForAxis === 'usage_rate') {
+                    return `${val.toFixed(1)}%`;
+                  }
+                  return Math.round(val).toString();
+                }}
+              />
             </div>
           )}
-        </div>
+        </>
       )}
       <div className="flex-1 min-h-0 relative">
         <PureChart
