@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Cache the response
-    await setNBACache(cacheKey, response, cacheTTL, 'projections');
+    await setNBACache(cacheKey, 'projections', response, cacheTTL);
     console.log(`[SportsLine] Cached ${playerMinutes.length} projections`);
 
     return NextResponse.json(response);
