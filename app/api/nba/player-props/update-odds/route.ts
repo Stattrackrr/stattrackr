@@ -1230,7 +1230,7 @@ export async function POST(request: NextRequest) {
         for (const [playerName, playerData] of Object.entries(bookmakerProps as any)) {
           if (!playerData || typeof playerData !== 'object') continue;
           
-          const propsData = playerData;
+          const propsData = playerData as Record<string, any>;
           // Get ALL stat types dynamically
           const allStatTypes = Object.keys(propsData).filter(key => {
             const statData = propsData[key];
