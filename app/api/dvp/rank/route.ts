@@ -2,8 +2,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { normalizeAbbr, NBA_TEAMS } from '@/lib/nbaAbbr';
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from '@/lib/bettingpros-dvp';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -45,12 +47,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: `unsupported pos: ${pos}` }, { status: 400 });
     }
 
-    const cacheKey = `dvp_rank:${metric}:${pos}:${seasonYear}:${games}`;
+    // Use today's date for cache key to ensure date-specific storage
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const cacheKey = `dvp_rank:${metric}:${pos}:${seasonYear}:${games}:${today}`;
     
-    // Check cache
+    // Check Supabase cache first (persistent, date-specific)
+    if (!forceRefresh) {
+      const supabaseCache = await getNBACache<any>(cacheKey);
+      if (supabaseCache) {
+        console.log(`[DVP Rank API] ✅ Supabase cache HIT for ${cacheKey}`);
+        // Also update in-memory cache for faster subsequent access
+        cache.set(cacheKey, supabaseCache, CACHE_TTL.ADVANCED_STATS);
+        return NextResponse.json(supabaseCache);
+      }
+    }
+    
+    // Check in-memory cache as fallback
     if (!forceRefresh) {
       const hit = cache.get<any>(cacheKey);
       if (hit) {
+        console.log(`[DVP Rank API] ✅ In-memory cache HIT for ${cacheKey}`);
         return NextResponse.json(hit);
       }
     }
@@ -173,9 +189,53 @@ export async function GET(req: NextRequest) {
       season: seasonYear,
       games,
       ranks,
-      values: results.map(r => ({ team: normalizeAbbr(r.team), value: r.value }))
+      values: results.map(r => ({ team: normalizeAbbr(r.team), value: r.value })),
+      snapshot_date: today, // Include date in payload for reference
     };
+    
+    // Store in both caches
     cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
+    
+    // Store in Supabase with date-specific key (persistent, shared across instances)
+    await setNBACache(
+      cacheKey,
+      'dvp_rank',
+      payload,
+      CACHE_TTL.ADVANCED_STATS,
+      true // quiet mode
+    );
+    
+    // Also create snapshot in dvp_rank_snapshots table for historical lookups
+    try {
+      const supabase = await createClient();
+      const snapshots = Object.entries(ranks).map(([team, rank]) => ({
+        snapshot_date: today,
+        season: seasonYear,
+        position: pos,
+        metric,
+        team,
+        rank,
+      }));
+      
+      if (snapshots.length > 0) {
+        const { error: snapshotError } = await supabase
+          .from('dvp_rank_snapshots')
+          .upsert(snapshots, {
+            onConflict: 'snapshot_date,season,position,metric,team',
+          });
+        
+        if (snapshotError) {
+          console.error('[DVP Rank API] Error creating snapshot:', snapshotError);
+          // Don't fail the request if snapshot fails
+        } else {
+          console.log(`[DVP Rank API] ✅ Created snapshot for ${snapshots.length} teams (${metric}/${pos}/${today})`);
+        }
+      }
+    } catch (snapshotErr: any) {
+      console.error('[DVP Rank API] Error creating snapshot:', snapshotErr);
+      // Don't fail the request if snapshot fails
+    }
+    
     return NextResponse.json(payload);
   } catch (e: any) {
     console.error('[DVP Rank API] Error:', e);

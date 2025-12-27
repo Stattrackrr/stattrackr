@@ -1613,6 +1613,23 @@ async function processPlayerProps() {
   }));
   console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
+  // Get all game commence times from current odds cache to filter out old props
+  const currentGameDates = new Set();
+  const currentGameCommenceTimes = new Set();
+  if (oddsCache && oddsCache.games && Array.isArray(oddsCache.games)) {
+    for (const game of oddsCache.games) {
+      if (game.commenceTime) {
+        currentGameCommenceTimes.add(String(game.commenceTime));
+        // Also extract date part for matching
+        const dateMatch = String(game.commenceTime).match(/^(\d{4}-\d{2}-\d{2})/);
+        if (dateMatch) {
+          currentGameDates.add(dateMatch[1]);
+        }
+      }
+    }
+  }
+  console.log(`[GitHub Actions] 🎮 Current odds cache has ${currentGameCommenceTimes.size} games (${currentGameDates.size} unique dates)`);
+  
   // Merge with existing cache if splitting by props OR filtering by stats
   let finalProps = [...propsWithStats];
   
@@ -1653,8 +1670,8 @@ async function processPlayerProps() {
     );
     
     if (propsSplit || gameSplit) {
-      // When splitting (by props OR by games): merge ALL existing props (from other parallel jobs)
-      // Only exclude exact duplicates based on player|stat|line
+      // When splitting (by props OR by games): merge existing props (from other parallel jobs)
+      // BUT only keep props from games in the current odds cache (remove old props from previous days)
       const uniqueExistingProps = cacheToMerge.filter(existingProp => {
         // Validate prop structure before merging
         if (!existingProp.playerName || !existingProp.statType || existingProp.line === undefined || existingProp.line === null) {
@@ -1666,9 +1683,29 @@ async function processPlayerProps() {
           return false;
         }
         
+        // Check if this prop is from a game in the current odds cache
+        // If gameDate doesn't match any current game, it's an old prop that should be removed
+        if (existingProp.gameDate) {
+          const propGameDate = String(existingProp.gameDate);
+          const isCurrentGame = currentGameCommenceTimes.has(propGameDate) || 
+                               (propGameDate.match(/^(\d{4}-\d{2}-\d{2})/) && currentGameDates.has(propGameDate.match(/^(\d{4}-\d{2}-\d{2})/)[1]));
+          
+          if (!isCurrentGame) {
+            // This prop is from an old game that's no longer in the odds cache - remove it
+            return false;
+          }
+        }
+        
+        // Exclude exact duplicates based on player|stat|line
         const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
         return !newPropsKeys.has(key);
       });
+      
+      // Count how many props were removed (invalid props + old props from games not in current odds cache)
+      const totalFilteredOut = cacheToMerge.length - uniqueExistingProps.length;
+      if (totalFilteredOut > 0) {
+        console.log(`[GitHub Actions] 🗑️ Filtered out ${totalFilteredOut} props (invalid/duplicate/old games)`);
+      }
       
       // Validate new props before merging
       const validNewProps = propsWithStats.filter(prop => {
@@ -1688,8 +1725,23 @@ async function processPlayerProps() {
       console.log(`[GitHub Actions] 🔀 Merging (split by ${splitType}): ${validNewProps.length} new props + ${uniqueExistingProps.length} existing props = ${finalProps.length} total`);
     } else if (allowedStats) {
       // When filtering by stats: only keep existing props that are NOT in the filtered stat list
+      // AND are from games in the current odds cache (remove old props)
       const existingPropsToKeep = cacheToMerge.filter(existingProp => {
-        return !allowedStats.includes(existingProp.statType);
+        // First check if it's a stat we want to keep (not in the filtered list)
+        if (allowedStats.includes(existingProp.statType)) {
+          return false;
+        }
+        
+        // Then check if it's from a current game (remove old props)
+        if (existingProp.gameDate) {
+          const propGameDate = String(existingProp.gameDate);
+          const isCurrentGame = currentGameCommenceTimes.has(propGameDate) || 
+                               (propGameDate.match(/^(\d{4}-\d{2}-\d{2})/) && currentGameDates.has(propGameDate.match(/^(\d{4}-\d{2}-\d{2})/)[1]));
+          return isCurrentGame;
+        }
+        
+        // Keep props without gameDate (shouldn't happen, but be safe)
+        return true;
       });
       
       const uniqueExistingProps = existingPropsToKeep.filter(existingProp => {

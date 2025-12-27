@@ -1,0 +1,12 @@
+[2025-12-27 00:00:02] [INFO] ========================================
+[2025-12-27 00:00:02] [INFO] Daily Player Cache Refresh
+[2025-12-27 00:00:02] [INFO] ========================================
+[2025-12-27 00:00:02] [INFO] 
+[2025-12-27 00:00:02] [INFO] Dev server is already running
+[2025-12-27 00:00:02] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2025-12-27 00:00:02] [INFO] 
+[2025-12-27 00:45:02] [ERROR] ❌ Error: The operation has timed out.
+[2025-12-27 00:45:02] [INFO] 
+[2025-12-27 00:45:02] [INFO] ========================================
+[2025-12-27 00:45:02] [INFO] Refresh failed
+[2025-12-27 00:45:02] [INFO] ========================================

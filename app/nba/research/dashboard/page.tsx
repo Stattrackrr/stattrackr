@@ -1829,6 +1829,7 @@ const SECOND_AXIS_FILTER_OPTIONS = [
   { key: 'pace', label: 'Game Pace' },
   { key: 'usage_rate', label: 'Usage Rate' },
   { key: 'dvp_rank', label: 'Opp DvP Rank' },
+  { key: 'projected', label: 'Projected' },
 ];
 
 // Static chart configuration - never recreated
@@ -5766,6 +5767,165 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
     </div>
   );
 }, (prev, next) => prev.isDark === next.isDark && prev.opponentTeam === next.opponentTeam && prev.selectedPosition === next.selectedPosition);
+
+// Projected Stats Card (isolated, memoized)
+const ProjectedStatsCard = memo(function ProjectedStatsCard({ 
+  isDark, 
+  selectedPlayer, 
+  opponentTeam, 
+  currentTeam,
+  projectedMinutes,
+  loading,
+  predictedPace,
+  seasonFgPct,
+  averageUsageRate,
+  averageMinutes,
+  averageGamePace,
+  selectedTimeframe
+}: { 
+  isDark: boolean; 
+  selectedPlayer: any; 
+  opponentTeam: string; 
+  currentTeam: string;
+  projectedMinutes: number | null;
+  loading: boolean;
+  predictedPace: number | null;
+  seasonFgPct: number | null;
+  averageUsageRate: number | null;
+  averageMinutes: number | null;
+  averageGamePace: number | null;
+  selectedTimeframe?: string;
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!selectedPlayer || !currentTeam || !opponentTeam) {
+    return (
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
+        </div>
+        <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} p-4`}>
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+            Select a player to view projected stats
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
+      </div>
+      <div className={`rounded-xl border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} shadow-sm`}>
+        {loading ? (
+          <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            Loading projections...
+          </div>
+        ) : (
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Projected Minutes */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
+                <div className="flex flex-col">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                    Projected Minutes
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {projectedMinutes !== null ? `${projectedMinutes.toFixed(1)}` : '—'}
+                    </span>
+                    {projectedMinutes !== null && (
+                      <span className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>min</span>
+                    )}
+                  </div>
+                  {averageMinutes !== null && (
+                    <div className={`text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
+                      Avg: {averageMinutes.toFixed(1)} min
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Predicted Game Pace */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
+                <div className="flex flex-col">
+                  <span className={`text-[10px] font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-0.5`}>
+                    Projected
+                  </span>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                    Game Pace
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {predictedPace !== null ? `${predictedPace.toFixed(1)}` : '—'}
+                    </span>
+                    {predictedPace !== null && (
+                      <span className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>poss</span>
+                    )}
+                  </div>
+                  {averageGamePace !== null && (
+                    <div className={`text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
+                      Avg: {averageGamePace.toFixed(1)} poss
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Average Usage Rate / FG% */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
+                <div className="flex flex-col">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                    {(() => {
+                      const timeframe = selectedTimeframe || 'last10';
+                      if (timeframe === 'last10') return 'L10 Average Usage';
+                      if (timeframe === 'last5') return 'L5 Average Usage';
+                      if (timeframe === 'thisseason') return 'Season Average Usage';
+                      if (timeframe === 'lastseason') return 'Last Season Avg Usage';
+                      if (timeframe === 'h2h') return 'H2H Average Usage';
+                      return 'Average Usage';
+                    })()}
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {averageUsageRate !== null ? `${averageUsageRate.toFixed(1)}` : '—'}
+                    </span>
+                    {averageUsageRate !== null && (
+                      <span className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>%</span>
+                    )}
+                  </div>
+                  {seasonFgPct !== null && (
+                    <div className={`text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
+                      Avg FG%: {seasonFgPct.toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}, (prev, next) => 
+  prev.isDark === next.isDark && 
+  prev.selectedPlayer?.id === next.selectedPlayer?.id &&
+  prev.opponentTeam === next.opponentTeam && 
+  prev.currentTeam === next.currentTeam &&
+  prev.projectedMinutes === next.projectedMinutes &&
+  prev.predictedPace === next.predictedPace &&
+  prev.seasonFgPct === next.seasonFgPct &&
+  prev.averageUsageRate === next.averageUsageRate &&
+  prev.averageMinutes === next.averageMinutes &&
+  prev.averageGamePace === next.averageGamePace &&
+  prev.selectedTimeframe === next.selectedTimeframe
+);
+
 // Opponent Analysis (isolated, memoized)
 // NOTE: This reuses the same batched DvP + rank data and caches as PositionDefenseCard
 // to avoid redundant API calls and to ensure we always display real values instead of 0s.
@@ -7181,7 +7341,16 @@ function NBADashboardContent() {
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
   const [selectedFilterForAxis, setSelectedFilterForAxis] = useState<string | null>(null); // Second axis filter: 'minutes', 'dvp_rank', 'pace', 'usage_rate', 'fg_pct', null
+  const [dvpProjectedTab, setDvpProjectedTab] = useState<'dvp' | 'projected' | 'opponent'>('dvp'); // Tab selector for DvP, Projected, and Opponent Breakdown
   const [sliderRange, setSliderRange] = useState<{ min: number; max: number } | null>(null); // Slider range for filtering
+  const [projectedMinutes, setProjectedMinutes] = useState<number | null>(null); // Cached projected minutes (persists across tab switches)
+  const [projectedMinutesLoading, setProjectedMinutesLoading] = useState(false);
+  const [allProjectedMinutes, setAllProjectedMinutes] = useState<Record<string, number>>({}); // Bulk cache: key = "playerName|teamAbbr", value = minutes
+  const [predictedPace, setPredictedPace] = useState<number | null>(null); // Predicted game pace from betting total
+  const [seasonFgPct, setSeasonFgPct] = useState<number | null>(null); // Season average FG%
+  const [averageUsageRate, setAverageUsageRate] = useState<number | null>(null); // Season average usage rate
+  const [averageMinutes, setAverageMinutes] = useState<number | null>(null); // Season average minutes
+  const [averageGamePace, setAverageGamePace] = useState<number | null>(null); // Average game pace from player's games
   
   const handleSelectFilterForAxis = useCallback((filter: string | null) => {
     setSelectedFilterForAxis(filter);
@@ -7723,6 +7892,16 @@ const lineMovementInFlightRef = useRef(false);
   
   // DvP ranks per game (for second axis - dvp_rank)
   const [dvpRanksPerGame, setDvpRanksPerGame] = useState<Record<string, number | null>>({});
+  
+  // Prefetched advanced stats (pace, usage_rate) - stored by game ID
+  const [prefetchedAdvancedStats, setPrefetchedAdvancedStats] = useState<Record<number, { pace?: number; usage_percentage?: number }>>({});
+  
+  // Prefetched DvP ranks - stored by stat/metric combination
+  const [prefetchedDvpRanks, setPrefetchedDvpRanks] = useState<Record<string, Record<string, number | null>>>({});
+  
+  // Refs to track prefetch status (prevent duplicate prefetches)
+  const advancedStatsPrefetchRef = useRef<Set<string>>(new Set());
+  const dvpRanksPrefetchRef = useRef<Set<string>>(new Set());
   
   // Shot distance stats state
   const [shotDistanceData, setShotDistanceData] = useState<any | null>(null);
@@ -8370,6 +8549,171 @@ const lineMovementInFlightRef = useRef(false);
     const timer = setTimeout(prefetchLast5Games, 1000);
     return () => clearTimeout(timer);
   }, [selectedTeam, propsMode]);
+
+  // Fetch and cache ALL projected minutes once (bulk load)
+  useEffect(() => {
+    const CACHE_KEY = 'nba_all_projected_minutes';
+    const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+    // Check sessionStorage cache first
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const cacheAge = Date.now() - (parsed.timestamp || 0);
+          if (cacheAge < CACHE_TTL_MS && parsed.data) {
+            console.log(`[Dashboard] ✅ Loaded ${Object.keys(parsed.data).length} projected minutes from cache`);
+            setAllProjectedMinutes(parsed.data);
+            return; // Use cached data
+          }
+        }
+      } catch (e) {
+        console.warn('[Dashboard] Failed to load projected minutes cache:', e);
+      }
+    }
+
+    // Fetch all projections
+    let abort = false;
+    const fetchAllProjections = async () => {
+      try {
+        console.log('[Dashboard] Fetching all projected minutes from SportsLine...');
+        const response = await fetch('/api/nba/projections');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch projections: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (abort) return;
+
+        // Normalize player name for matching
+        const normalizePlayerName = (name: string): string => {
+          return name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        };
+
+        // Build cache map: key = "normalizedPlayerName|normalizedTeam", value = minutes
+        const cache: Record<string, number> = {};
+        if (data.playerMinutes && Array.isArray(data.playerMinutes)) {
+          for (const proj of data.playerMinutes) {
+            const normalizedName = normalizePlayerName(proj.player);
+            const normalizedTeam = normalizeAbbr(proj.team);
+            const key = `${normalizedName}|${normalizedTeam}`;
+            cache[key] = proj.minutes;
+          }
+        }
+
+        if (!abort) {
+          console.log(`[Dashboard] ✅ Cached ${Object.keys(cache).length} projected minutes`);
+          setAllProjectedMinutes(cache);
+
+          // Save to sessionStorage
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                data: cache,
+                timestamp: Date.now()
+              }));
+            } catch (e) {
+              console.warn('[Dashboard] Failed to save projected minutes cache:', e);
+            }
+          }
+        }
+      } catch (err: any) {
+        if (!abort) {
+          console.error('[Dashboard] Error fetching all projected minutes:', err);
+        }
+      }
+    };
+
+    fetchAllProjections();
+
+    return () => {
+      abort = true;
+    };
+  }, []); // Only run once on mount
+
+  // Look up projected minutes from cache when player/team changes
+  useEffect(() => {
+    if (!selectedPlayer || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
+      setProjectedMinutes(null);
+      setProjectedMinutesLoading(false);
+      return;
+    }
+
+    setProjectedMinutesLoading(true);
+
+    // Normalize player name for matching
+    const normalizePlayerName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const getNameVariations = (fullName: string): string[] => {
+      const normalized = normalizePlayerName(fullName);
+      const parts = normalized.split(' ');
+      const variations = [normalized];
+      if (parts.length > 1) {
+        variations.push(`${parts[1]} ${parts[0]}`);
+        variations.push(`${parts[0][0]} ${parts[1]}`);
+        variations.push(`${parts[0]} ${parts[1][0]}`);
+      }
+      return Array.from(new Set(variations));
+    };
+
+    // Look up from cache
+    const playerFullName = selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
+    const nameVariations = getNameVariations(playerFullName);
+    const normalizedCurrentTeam = normalizeAbbr(selectedTeam);
+
+    // Try exact match first
+    const normalizedName = normalizePlayerName(playerFullName);
+    const exactKey = `${normalizedName}|${normalizedCurrentTeam}`;
+    let minutes = allProjectedMinutes[exactKey];
+
+    // If no exact match, try variations
+    if (minutes === undefined) {
+      for (const variation of nameVariations) {
+        const variationKey = `${variation}|${normalizedCurrentTeam}`;
+        if (allProjectedMinutes[variationKey] !== undefined) {
+          minutes = allProjectedMinutes[variationKey];
+          break;
+        }
+      }
+
+      // If still no match, try fuzzy search (check if any key contains the variation)
+      if (minutes === undefined) {
+        for (const variation of nameVariations) {
+          const matchingKey = Object.keys(allProjectedMinutes).find(key => {
+            const [namePart, teamPart] = key.split('|');
+            return (namePart.includes(variation) || variation.includes(namePart)) &&
+                   teamPart === normalizedCurrentTeam;
+          });
+          if (matchingKey) {
+            minutes = allProjectedMinutes[matchingKey];
+            break;
+          }
+        }
+      }
+    }
+
+    if (minutes !== undefined) {
+      console.log('[Dashboard] Found projected minutes from cache:', minutes);
+      setProjectedMinutes(minutes);
+    } else {
+      console.log('[Dashboard] No projected minutes found in cache for player');
+      setProjectedMinutes(null);
+    }
+
+    setProjectedMinutesLoading(false);
+  }, [selectedPlayer, selectedTeam, opponentTeam, propsMode, allProjectedMinutes]);
+
 
   // Update opponent when games or selected team changes
   useEffect(() => {
@@ -13234,6 +13578,113 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
 
+  // Calculate predicted pace from betting total line
+  useEffect(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
+      setPredictedPace(null);
+      return;
+    }
+
+    // Find Total line from odds data
+    let totalLine: number | null = null;
+    for (const book of realOddsData) {
+      const totalData = (book as any)?.Total;
+      if (totalData && totalData.line && totalData.line !== 'N/A') {
+        const lineValue = parseFloat(totalData.line);
+        if (!isNaN(lineValue) && lineValue > 0) {
+          // Use the first valid total line found (or could average them)
+          totalLine = lineValue;
+          break;
+        }
+      }
+    }
+
+    if (totalLine === null) {
+      setPredictedPace(null);
+      return;
+    }
+
+    // Convert total points to predicted pace
+    // Formula: Pace ≈ Total / (2 * avg_points_per_possession)
+    // Average NBA points per possession is ~1.12
+    // So: Pace ≈ Total / 2.24
+    // We'll use a more accurate formula based on historical data
+    // Typical range: Total 200-240, Pace 95-105
+    // Linear relationship: Pace = (Total - 200) * (10/40) + 95 = (Total - 200) * 0.25 + 95
+    // Or more accurate: Pace = Total / 2.2 (simpler)
+    const calculatedPace = totalLine / 2.2;
+    
+    // Clamp to reasonable NBA pace range (90-110)
+    const clampedPace = Math.max(90, Math.min(110, calculatedPace));
+    
+    console.log('[Dashboard] Calculated predicted pace from total:', { totalLine, calculatedPace, clampedPace });
+    setPredictedPace(clampedPace);
+  }, [realOddsData, selectedTeam, opponentTeam, propsMode]);
+
+  // Calculate season averages (FG%, minutes, game pace) from playerStats
+  useEffect(() => {
+    if (!playerStats || playerStats.length === 0 || propsMode !== 'player') {
+      setSeasonFgPct(null);
+      setAverageUsageRate(null);
+      setAverageMinutes(null);
+      setAverageGamePace(null);
+      return;
+    }
+
+    // Calculate average FG% from all games
+    const fgPctValues = playerStats
+      .map(stats => stats.fg_pct)
+      .filter((pct): pct is number => pct !== null && pct !== undefined && !isNaN(pct));
+
+    if (fgPctValues.length === 0) {
+      setSeasonFgPct(null);
+    } else {
+      const averageFgPct = fgPctValues.reduce((sum, pct) => sum + pct, 0) / fgPctValues.length;
+      // Convert to percentage (multiply by 100)
+      setSeasonFgPct(averageFgPct * 100);
+    }
+
+    // Calculate average minutes from all games
+    const minutesValues = playerStats
+      .map(stats => parseMinutes(stats.min))
+      .filter((min): min is number => min !== null && min !== undefined && !isNaN(min) && min > 0);
+
+    if (minutesValues.length === 0) {
+      setAverageMinutes(null);
+    } else {
+      const avgMinutes = minutesValues.reduce((sum, min) => sum + min, 0) / minutesValues.length;
+      setAverageMinutes(avgMinutes);
+    }
+
+    // Calculate average game pace from all games
+    const paceValues: number[] = [];
+    for (const stats of playerStats) {
+      const game = stats.game;
+      if (!game) continue;
+
+      const homeTeam = game.home_team?.abbreviation;
+      const awayTeam = game.visitor_team?.abbreviation;
+      
+      if (!homeTeam || !awayTeam) continue;
+
+      const homePace = getTeamPace(normalizeAbbr(homeTeam));
+      const awayPace = getTeamPace(normalizeAbbr(awayTeam));
+
+      if (homePace > 0 && awayPace > 0) {
+        const gamePace = (homePace + awayPace) / 2;
+        paceValues.push(gamePace);
+      }
+    }
+
+    if (paceValues.length === 0) {
+      setAverageGamePace(null);
+    } else {
+      const avgPace = paceValues.reduce((sum, pace) => sum + pace, 0) / paceValues.length;
+      setAverageGamePace(avgPace);
+    }
+  }, [playerStats, propsMode]);
+
+
   // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
   // Uses existing lastPlayerStatsLengthRef (defined earlier) to track per-player changes
   const coreDataReadySetRef = useRef(false);
@@ -13281,6 +13732,125 @@ const lineMovementInFlightRef = useRef(false);
 
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
+
+  // Calculate average usage rate from prefetchedAdvancedStats
+  // Use baseGameData (filtered by timeframe) to match what the chart shows - works automatically without clicking filter
+  useEffect(() => {
+    if (!baseGameData || baseGameData.length === 0 || propsMode !== 'player') {
+      setAverageUsageRate(null);
+      return;
+    }
+
+    // Get player ID
+    const playerIdRaw = selectedPlayer?.id;
+    if (!playerIdRaw) {
+      setAverageUsageRate(null);
+      return;
+    }
+    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
+    if (isNaN(playerId)) {
+      setAverageUsageRate(null);
+      return;
+    }
+
+    // Extract game IDs from baseGameData
+    const gameIds: number[] = [];
+    baseGameData.forEach((game: any) => {
+      const stat = game.stats || game;
+      const gameId = stat.game?.id || game.game?.id;
+      if (gameId && typeof gameId === 'number') {
+        gameIds.push(gameId);
+      }
+    });
+
+    if (gameIds.length === 0) {
+      setAverageUsageRate(null);
+      return;
+    }
+
+    // Check if we have prefetched data for these games
+    const missingGameIds = gameIds.filter(id => prefetchedAdvancedStats[id] === undefined);
+    const hasAllData = missingGameIds.length === 0;
+
+    // If we don't have all data, fetch it immediately (don't wait for background prefetch)
+    if (!hasAllData) {
+      let isMounted = true;
+      const fetchUsageRate = async () => {
+        try {
+          const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
+          
+          if (!isMounted) return;
+          
+          // Map stats by game ID
+          const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
+          stats.forEach((stat: any) => {
+            const gameId = stat.game?.id;
+            if (gameId && typeof gameId === 'number') {
+              statsByGame[gameId] = {
+                pace: stat.pace ?? undefined,
+                usage_percentage: stat.usage_percentage ?? undefined,
+              };
+            }
+          });
+          
+          // Update prefetched stats
+          setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
+          
+          // Calculate usage rate from the fetched data
+          const usageValues: number[] = [];
+          baseGameData.forEach((game: any) => {
+            const stat = game.stats || game;
+            const gameId = stat.game?.id || game.game?.id;
+            const minutes = parseMinutes(stat.min);
+            
+            if (gameId && minutes > 0 && statsByGame[gameId]?.usage_percentage !== undefined) {
+              const usage = statsByGame[gameId].usage_percentage;
+              if (usage !== null && usage !== undefined && !isNaN(usage) && usage >= 0) {
+                usageValues.push(usage);
+              }
+            }
+          });
+
+          if (usageValues.length > 0) {
+            const avgUsage = usageValues.reduce((sum, usage) => sum + usage, 0) / usageValues.length;
+            setAverageUsageRate(avgUsage * 100);
+          }
+        } catch (error) {
+          console.error('[Usage Rate] Error fetching advanced stats:', error);
+        }
+      };
+
+      fetchUsageRate();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    // If we have all prefetched data, calculate from it
+    const usageValues: number[] = [];
+    baseGameData.forEach((game: any) => {
+      const stat = game.stats || game;
+      const gameId = stat.game?.id || game.game?.id;
+      const minutes = parseMinutes(stat.min);
+      
+      // Only include games where player actually played
+      if (gameId && minutes > 0 && prefetchedAdvancedStats[gameId]?.usage_percentage !== undefined) {
+        const usage = prefetchedAdvancedStats[gameId].usage_percentage;
+        if (usage !== null && usage !== undefined && !isNaN(usage) && usage >= 0) {
+          usageValues.push(usage);
+        }
+      }
+    });
+
+    if (usageValues.length === 0) {
+      setAverageUsageRate(null);
+    } else {
+      const avgUsage = usageValues.reduce((sum, usage) => sum + usage, 0) / usageValues.length;
+      // Convert to percentage (multiply by 100)
+      const usageRate = avgUsage * 100;
+      setAverageUsageRate(usageRate);
+    }
+  }, [prefetchedAdvancedStats, baseGameData, propsMode, selectedPlayer?.id]);
 
   // Calculate second axis data for display (from adjustedChartData for chart rendering)
   const secondAxisData = useMemo(() => {
@@ -13702,32 +14272,136 @@ const lineMovementInFlightRef = useRef(false);
     }
   }, [selectedFilterForAxis, sliderConfig, sliderRange]);
 
-  // Fetch advanced stats per game when pace or usage_rate is selected
+  // Prefetch advanced stats (pace, usage_rate) in background when player stats are available
+  // This runs independently of filter selection to ensure usage rate is always available
   useEffect(() => {
-    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
-      setAdvancedStatsPerGame({});
+    if (propsMode !== 'player' || !playerStats || playerStats.length === 0) {
       return;
     }
 
-    // Only fetch if pace or usage_rate is selected
-    if (selectedFilterForAxis !== 'pace' && selectedFilterForAxis !== 'usage_rate') {
-      setAdvancedStatsPerGame({});
-      return;
-    }
-
-    // Get player ID (convert to number if string)
+    // Get player ID
     const playerIdRaw = selectedPlayer?.id;
     if (!playerIdRaw) {
-      setAdvancedStatsPerGame({});
       return;
     }
     const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
     if (isNaN(playerId)) {
+      return;
+    }
+
+    // Clear prefetch ref when player changes to ensure fresh fetch
+    const currentPlayerKey = `player_${playerId}`;
+    if (!advancedStatsPrefetchRef.current.has(currentPlayerKey)) {
+      // New player - clear old prefetch keys
+      advancedStatsPrefetchRef.current.clear();
+      advancedStatsPrefetchRef.current.add(currentPlayerKey);
+    }
+
+    // Extract game IDs from playerStats - include ALL games (don't filter by minutes)
+    // This ensures we get usage rate for all games, matching what the chart would show
+    const gameIds: number[] = [];
+    const seenGameIds = new Set<number>();
+    playerStats.forEach((stat: any) => {
+      const gameId = stat.game?.id;
+      if (gameId && typeof gameId === 'number' && !seenGameIds.has(gameId)) {
+        gameIds.push(gameId);
+        seenGameIds.add(gameId);
+      }
+    });
+
+    if (gameIds.length === 0) {
+      return;
+    }
+
+    // Prefetch in background (don't block UI)
+    // Use a ref to track if we've already started prefetching for these game IDs
+    const prefetchKey = `advanced_${playerId}_${gameIds.sort().join(',')}`;
+    
+    if (advancedStatsPrefetchRef.current.has(prefetchKey)) {
+      // Already prefetching or prefetched for these games
+      console.log('[Usage Rate Prefetch] Already prefetching/prefetched for player', playerId);
+      return;
+    }
+
+    // Check if we already have prefetched data for all these games
+    const missingGameIds = gameIds.filter(id => prefetchedAdvancedStats[id] === undefined);
+    if (missingGameIds.length === 0 && gameIds.length > 0) {
+      // Already prefetched all games, mark as done
+      advancedStatsPrefetchRef.current.add(prefetchKey);
+      console.log('[Usage Rate Prefetch] Already have all prefetched data for', gameIds.length, 'games');
+      return;
+    }
+    
+    // If we have some but not all, still fetch (will merge with existing)
+    if (missingGameIds.length < gameIds.length) {
+      console.log('[Usage Rate Prefetch] Have', gameIds.length - missingGameIds.length, 'games, fetching', missingGameIds.length, 'missing');
+    }
+
+    // Mark as prefetching
+    advancedStatsPrefetchRef.current.add(prefetchKey);
+    console.log('[Usage Rate Prefetch] Starting prefetch for player', playerId, 'with', gameIds.length, 'games');
+    
+    let isMounted = true;
+    const prefetchAdvancedStats = async () => {
+      try {
+        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
+        
+        if (!isMounted) return;
+        
+        // Map stats by game ID
+        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
+        stats.forEach((stat: any) => {
+          const gameId = stat.game?.id;
+          if (gameId && typeof gameId === 'number') {
+            statsByGame[gameId] = {
+              pace: stat.pace ?? undefined,
+              usage_percentage: stat.usage_percentage ?? undefined,
+            };
+          }
+        });
+        
+        console.log('[Usage Rate Prefetch] Fetched', Object.keys(statsByGame).length, 'games with usage rate data');
+        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
+      } catch (error) {
+        console.error('[Prefetch] Error prefetching advanced stats:', error);
+      }
+    };
+
+    prefetchAdvancedStats();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [playerStats, propsMode, selectedPlayer?.id]);
+
+  // Use prefetched advanced stats when pace or usage_rate is selected (for chart filtering)
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player') {
       setAdvancedStatsPerGame({});
       return;
     }
 
-    // Extract game IDs from chart data (need numeric IDs, not xKey strings)
+    // Only use prefetched data if pace or usage_rate is selected
+    if (selectedFilterForAxis === 'pace' || selectedFilterForAxis === 'usage_rate') {
+      // Use prefetched data immediately
+      setAdvancedStatsPerGame(prefetchedAdvancedStats);
+    } else {
+      setAdvancedStatsPerGame({});
+    }
+  }, [selectedFilterForAxis, propsMode, prefetchedAdvancedStats]);
+
+  // Legacy fetch (kept for backward compatibility, but should use prefetched data)
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
+      return;
+    }
+
+    // Only fetch if pace or usage_rate is selected AND we don't have prefetched data
+    if (selectedFilterForAxis !== 'pace' && selectedFilterForAxis !== 'usage_rate') {
+      return;
+    }
+
+    // Check if we already have prefetched data
     const gameIds: number[] = [];
     adjustedChartData.forEach((game: any) => {
       const gameId = game.game?.id || game.stats?.game?.id;
@@ -13736,8 +14410,23 @@ const lineMovementInFlightRef = useRef(false);
       }
     });
 
+    const hasAllPrefetched = gameIds.length > 0 && gameIds.every(id => prefetchedAdvancedStats[id] !== undefined);
+    if (hasAllPrefetched) {
+      // Already have prefetched data, skip fetch
+      return;
+    }
+
+    // Get player ID (convert to number if string)
+    const playerIdRaw = selectedPlayer?.id;
+    if (!playerIdRaw) {
+      return;
+    }
+    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
+    if (isNaN(playerId)) {
+      return;
+    }
+
     if (gameIds.length === 0) {
-      setAdvancedStatsPerGame({});
       return;
     }
 
@@ -13761,7 +14450,9 @@ const lineMovementInFlightRef = useRef(false);
           }
         });
         
+        // Populate both advancedStatsPerGame (for filter) and prefetchedAdvancedStats (for usage rate calculation)
         setAdvancedStatsPerGame(statsByGame);
+        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
       } catch (error) {
         console.error('[Second Axis] Error fetching advanced stats:', error);
         if (isMounted) {
@@ -13777,16 +14468,9 @@ const lineMovementInFlightRef = useRef(false);
     };
   }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPlayer?.id]);
 
-  // Fetch DvP ranks when dvp_rank is selected for second axis
+  // Prefetch DvP ranks in background for all possible stat/position combinations
   useEffect(() => {
-    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !adjustedChartData.length) {
-      setDvpRanksPerGame({});
-      return;
-    }
-
-    // Need player position and selected stat to fetch DvP ranks
-    if (!selectedPosition || !selectedStat) {
-      setDvpRanksPerGame({});
+    if (propsMode !== 'player' || !adjustedChartData.length || !selectedPosition || !selectedStat) {
       return;
     }
 
@@ -13808,7 +14492,222 @@ const lineMovementInFlightRef = useRef(false);
     
     const dvpMetric = statToDvpMetric[selectedStat];
     if (!dvpMetric) {
+      return;
+    }
+
+    // Use a ref to track if we've already started prefetching for this combination
+    const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+    
+    if (dvpRanksPrefetchRef.current.has(prefetchKey)) {
+      // Already prefetching or prefetched for this combination
+      return;
+    }
+
+    // Check if we already have prefetched data
+    if (prefetchedDvpRanks[prefetchKey]) {
+      // Already prefetched, mark as done
+      dvpRanksPrefetchRef.current.add(prefetchKey);
+      return;
+    }
+
+    // Mark as prefetching
+    dvpRanksPrefetchRef.current.add(prefetchKey);
+
+    // Prefetch in background (don't block UI)
+    let isMounted = true;
+    const prefetchDvpRanks = async () => {
+      try {
+        // Map ranks to game IDs based on opponent team and game date
+        const ranksByGame: Record<string, number | null> = {};
+        
+        // Fetch historical ranks for each game
+        const rankPromises = adjustedChartData.map(async (game: any) => {
+          const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
+          const opponent = game.opponent || game.tickLabel || '';
+          const gameDate = game.date || game.stats?.game?.date || '';
+          
+          if (!opponent || opponent === 'N/A' || opponent === 'ALL' || opponent === '') {
+            return { gameIdStr, rank: null };
+          }
+          
+          if (!gameDate) {
+            return { gameIdStr, rank: null, useCurrent: true };
+          }
+          
+          // Try to fetch historical rank for this game date
+          try {
+            const dateStr = new Date(gameDate).toISOString().split('T')[0];
+            const historicalResponse = await fetch(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            );
+            
+            if (historicalResponse.ok) {
+              const historicalData = await historicalResponse.json();
+              if (historicalData.success && historicalData.ranks) {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = historicalData.ranks[normalizedOpp] ?? 
+                            historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
+                return { gameIdStr, rank: rank && rank > 0 ? rank : null };
+              }
+            }
+          } catch (historicalError) {
+            // Silent fail for prefetch
+          }
+          
+          return { gameIdStr, rank: null, useCurrent: true };
+        });
+        
+        const rankResults = await Promise.all(rankPromises);
+        
+        // Check if we need to fetch current ranks for any games
+        const needsCurrentRanks = rankResults.some(r => r.useCurrent);
+        let currentRanks: Record<string, number> = {};
+        
+        if (needsCurrentRanks) {
+          try {
+            const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
+            if (currentResponse.ok) {
+              const currentData = await currentResponse.json();
+              currentRanks = currentData.metrics?.[dvpMetric] || {};
+            }
+          } catch (error) {
+            // Silent fail for prefetch
+          }
+        }
+        
+        if (!isMounted) return;
+        
+        // Map ranks to games
+        rankResults.forEach((result) => {
+          if (result.rank !== null) {
+            ranksByGame[result.gameIdStr] = result.rank;
+          } else if (result.useCurrent) {
+            const game = adjustedChartData.find((g: any) => {
+              const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
+              return gameIdStr === result.gameIdStr;
+            });
+            
+            if (game) {
+              const opponent = game.opponent || game.tickLabel || '';
+              if (opponent && opponent !== 'N/A' && opponent !== 'ALL' && opponent !== '') {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = currentRanks[normalizedOpp] ?? currentRanks[normalizedOpp.toUpperCase()] ?? null;
+                ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
+              } else {
+                ranksByGame[result.gameIdStr] = null;
+              }
+            } else {
+              ranksByGame[result.gameIdStr] = null;
+            }
+          } else {
+            ranksByGame[result.gameIdStr] = null;
+          }
+        });
+        
+        // Store prefetched data
+        setPrefetchedDvpRanks(prev => ({
+          ...prev,
+          [prefetchKey]: ranksByGame,
+        }));
+      } catch (error) {
+        // Silent fail for prefetch
+        console.error('[Prefetch] Error prefetching DvP ranks:', error);
+      }
+    };
+
+    prefetchDvpRanks();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [adjustedChartData, propsMode, selectedPosition, selectedStat]);
+
+  // Use prefetched DvP ranks when dvp_rank filter is selected
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player') {
       setDvpRanksPerGame({});
+      return;
+    }
+
+    if (selectedFilterForAxis === 'dvp_rank') {
+      // Need player position and selected stat to get the right prefetched data
+      if (!selectedPosition || !selectedStat) {
+        setDvpRanksPerGame({});
+        return;
+      }
+
+      const statToDvpMetric: Record<string, string> = {
+        'pts': 'pts',
+        'reb': 'reb',
+        'ast': 'ast',
+        'fg3m': 'fg3m',
+        'stl': 'stl',
+        'blk': 'blk',
+        'to': 'to',
+        'fg_pct': 'fg_pct',
+        'pra': 'pra',
+        'pr': 'pr',
+        'pa': 'pa',
+        'ra': 'ra',
+      };
+      
+      const dvpMetric = statToDvpMetric[selectedStat];
+      if (!dvpMetric) {
+        setDvpRanksPerGame({});
+        return;
+      }
+
+      const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+      const prefetched = prefetchedDvpRanks[prefetchKey];
+      
+      if (prefetched) {
+        // Use prefetched data immediately
+        setDvpRanksPerGame(prefetched);
+      } else {
+        // Fallback to empty (will trigger legacy fetch if needed)
+        setDvpRanksPerGame({});
+      }
+    } else {
+      setDvpRanksPerGame({});
+    }
+  }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
+
+  // Legacy fetch DvP ranks (kept for backward compatibility, but should use prefetched data)
+  useEffect(() => {
+    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !adjustedChartData.length) {
+      return;
+    }
+
+    // Need player position and selected stat to fetch DvP ranks
+    if (!selectedPosition || !selectedStat) {
+      return;
+    }
+
+    // Map selected stat to DvP metric
+    const statToDvpMetric: Record<string, string> = {
+      'pts': 'pts',
+      'reb': 'reb',
+      'ast': 'ast',
+      'fg3m': 'fg3m',
+      'stl': 'stl',
+      'blk': 'blk',
+      'to': 'to',
+      'fg_pct': 'fg_pct',
+      'pra': 'pra',
+      'pr': 'pr',
+      'pa': 'pa',
+      'ra': 'ra',
+    };
+    
+    const dvpMetric = statToDvpMetric[selectedStat];
+    if (!dvpMetric) {
+      return;
+    }
+
+    // Check if we already have prefetched data
+    const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+    if (prefetchedDvpRanks[prefetchKey]) {
+      // Already have prefetched data, skip fetch
       return;
     }
 
@@ -16997,18 +17896,75 @@ const lineMovementInFlightRef = useRef(false);
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
-              {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
-              {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
-
-              {/* Section 1: Opponent Analysis */}
-              <OpponentAnalysisCard 
-                isDark={isDark} 
-                opponentTeam={opponentTeam} 
-                selectedTimeFilter={selectedTimeFilter}
-                propsMode={propsMode}
-                playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
-                selectedStat={selectedStat}
-              />
+                {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
+                {propsMode === 'player' && (
+                  <>
+                    {/* Tab Selector */}
+                    <div className="flex gap-2 mb-3">
+                      <button
+                        onClick={() => setDvpProjectedTab('dvp')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'dvp'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Defense vs Position
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('projected')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'projected'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Projected
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('opponent')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'opponent'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Opponent Breakdown
+                      </button>
+                    </div>
+                    
+                    {/* Content based on selected tab */}
+                    {dvpProjectedTab === 'dvp' && (
+                      <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+                    )}
+                    {dvpProjectedTab === 'projected' && (
+                      <ProjectedStatsCard
+                        isDark={isDark}
+                        selectedPlayer={selectedPlayer}
+                        opponentTeam={opponentTeam}
+                        currentTeam={selectedTeam}
+                        projectedMinutes={projectedMinutes}
+                        loading={projectedMinutesLoading}
+                        predictedPace={predictedPace}
+                        seasonFgPct={seasonFgPct}
+                        averageUsageRate={averageUsageRate}
+                        averageMinutes={averageMinutes}
+                        averageGamePace={averageGamePace}
+                        selectedTimeframe={selectedTimeframe}
+                      />
+                    )}
+                    {dvpProjectedTab === 'opponent' && (
+                      <OpponentAnalysisCard 
+                        isDark={isDark} 
+                        opponentTeam={opponentTeam} 
+                        selectedTimeFilter={selectedTimeFilter}
+                        propsMode={propsMode}
+                        playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                        selectedStat={selectedStat}
+                      />
+                    )}
+                  </>
+                )}
 
               {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
               {propsMode === 'team' && (
@@ -17789,18 +18745,75 @@ const lineMovementInFlightRef = useRef(false);
             </div>
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
             <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
-                {/* Section 0: Defense vs Position (new) - only show in Player Props mode */}
-                {propsMode === 'player' && <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />}
-
-                {/* Section 1: Opponent Analysis */}
-                <OpponentAnalysisCard 
-                  isDark={isDark} 
-                  opponentTeam={opponentTeam} 
-                  selectedTimeFilter={selectedTimeFilter}
-                  propsMode={propsMode}
-                  playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
-                  selectedStat={selectedStat}
-                />
+                {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
+                {propsMode === 'player' && (
+                  <>
+                    {/* Tab Selector */}
+                    <div className="flex gap-2 mb-3">
+                      <button
+                        onClick={() => setDvpProjectedTab('dvp')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'dvp'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Defense vs Position
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('projected')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'projected'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Projected
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('opponent')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          dvpProjectedTab === 'opponent'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Opponent Breakdown
+                      </button>
+                    </div>
+                    
+                    {/* Content based on selected tab */}
+                    {dvpProjectedTab === 'dvp' && (
+                      <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+                    )}
+                    {dvpProjectedTab === 'projected' && (
+                      <ProjectedStatsCard
+                        isDark={isDark}
+                        selectedPlayer={selectedPlayer}
+                        opponentTeam={opponentTeam}
+                        currentTeam={selectedTeam}
+                        projectedMinutes={projectedMinutes}
+                        loading={projectedMinutesLoading}
+                        predictedPace={predictedPace}
+                        seasonFgPct={seasonFgPct}
+                        averageUsageRate={averageUsageRate}
+                        averageMinutes={averageMinutes}
+                        averageGamePace={averageGamePace}
+                        selectedTimeframe={selectedTimeframe}
+                      />
+                    )}
+                    {dvpProjectedTab === 'opponent' && (
+                      <OpponentAnalysisCard 
+                        isDark={isDark} 
+                        opponentTeam={opponentTeam} 
+                        selectedTimeFilter={selectedTimeFilter}
+                        propsMode={propsMode}
+                        playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                        selectedStat={selectedStat}
+                      />
+                    )}
+                  </>
+                )}
 
                 {/* Section 2: Team Matchup with Pie Chart - only show in Game Props mode */}
                 {propsMode === 'team' && (

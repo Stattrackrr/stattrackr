@@ -1993,30 +1993,53 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     return todaysGames.filter((game) => idsWithProps.has(game.id));
   }, [playerProps, todaysGames, getGameForProp]);
 
+  // Track explicitly deselected games (games user clicked to deselect)
+  const [deselectedGames, setDeselectedGames] = useState<Set<number>>(() => {
+    if (typeof window === 'undefined') return new Set<number>();
+    try {
+      const saved = localStorage.getItem('nba_filters_deselected_games');
+      return saved ? new Set<number>(JSON.parse(saved)) : new Set<number>();
+    } catch {
+      return new Set<number>();
+    }
+  });
+
+  // Save deselected games to localStorage
+  const saveDeselectedGames = (deselected: Set<number>) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('nba_filters_deselected_games', JSON.stringify(Array.from(deselected)));
+      } catch (e) {
+        console.warn('[NBA Landing] Failed to save deselected games:', e);
+      }
+    }
+  };
+
+  // Initialize: Select all games with props by default (unless explicitly deselected)
   useEffect(() => {
-    if (gamesWithProps.length > 0 && selectedGames.size === 0) {
-      // Only set defaults if localStorage was empty (no saved filters)
+    if (gamesWithProps.length === 0) return;
+    
+    const gameIds = new Set(gamesWithProps.map(game => game.id));
+    
+    // If no games are selected yet (first load), select all games except explicitly deselected ones
+    if (selectedGames.size === 0) {
       const savedGames = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_games') : null;
       if (!savedGames) {
-        const newSet = new Set(gamesWithProps.map(game => game.id));
+        // First time: select all games except those explicitly deselected
+        const newSet = new Set(Array.from(gameIds).filter(id => !deselectedGames.has(id)));
         setSelectedGames(newSet);
         saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
       }
+    } else {
+      // Add any new games that appeared (unless they were explicitly deselected)
+      const newGames = Array.from(gameIds).filter(id => !selectedGames.has(id) && !deselectedGames.has(id));
+      if (newGames.length > 0) {
+        const merged = new Set([...Array.from(selectedGames), ...newGames]);
+        setSelectedGames(merged);
+        saveFiltersToStorage(selectedBookmakers, selectedPropTypes, merged);
+      }
     }
-  }, [gamesWithProps]);
-
-  // Ensure games with props stay selected even when date shifts (e.g., future games)
-  useEffect(() => {
-    if (gamesWithProps.length === 0) return;
-    const todayIds = new Set(gamesWithProps.map(game => game.id));
-    const hasOverlap = Array.from(selectedGames).some(id => todayIds.has(id));
-    if (!hasOverlap) {
-      const merged = new Set([...Array.from(selectedGames), ...Array.from(todayIds)]);
-      setSelectedGames(merged);
-      saveFiltersToStorage(selectedBookmakers, selectedPropTypes, merged);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gamesWithProps]);
+  }, [gamesWithProps, deselectedGames]);
 
   // Reset pagination when filtered props change
   useEffect(() => {
@@ -2328,9 +2351,23 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     setSelectedGames(prev => {
       const newSet = new Set(prev);
       if (newSet.has(gameId)) {
+        // User is deselecting this game - mark it as explicitly deselected
         newSet.delete(gameId);
+        setDeselectedGames(prevDeselected => {
+          const newDeselected = new Set(prevDeselected);
+          newDeselected.add(gameId);
+          saveDeselectedGames(newDeselected);
+          return newDeselected;
+        });
       } else {
+        // User is selecting this game - remove from deselected list
         newSet.add(gameId);
+        setDeselectedGames(prevDeselected => {
+          const newDeselected = new Set(prevDeselected);
+          newDeselected.delete(gameId);
+          saveDeselectedGames(newDeselected);
+          return newDeselected;
+        });
       }
       // Save to localStorage
       saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);

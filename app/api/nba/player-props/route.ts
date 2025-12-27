@@ -324,13 +324,67 @@ export async function GET(request: NextRequest) {
           // Ignore deletion errors
         }
       } else {
-        console.log(`[Player Props API] ✅ Cache HIT for game date: ${gameDate}, props count: ${cachedProps.length}`);
+        // Filter out props from games that are no longer in the current odds cache
+        // This removes props from games that have started (odds removed after game starts)
+        const currentGameCommenceTimes = new Set<string>();
+        const currentGameDates = new Set<string>();
+        
+        if (oddsCache && oddsCache.games && Array.isArray(oddsCache.games)) {
+          for (const game of oddsCache.games) {
+            if (game.commenceTime) {
+              const commenceStr = String(game.commenceTime).trim();
+              currentGameCommenceTimes.add(commenceStr);
+              
+              // Also extract date part for matching
+              const dateMatch = commenceStr.match(/^(\d{4}-\d{2}-\d{2})/);
+              if (dateMatch) {
+                currentGameDates.add(dateMatch[1]);
+              } else {
+                // If it's a full timestamp, extract date from it
+                try {
+                  const date = new Date(commenceStr);
+                  if (!isNaN(date.getTime())) {
+                    const dateStr = getUSEasternDateStringLocal(date);
+                    currentGameDates.add(dateStr);
+                  }
+                } catch (e) {
+                  // Ignore parse errors
+                }
+              }
+            }
+          }
+        }
+        
+        const beforeFilter = cachedProps.length;
+        const filteredProps = cachedProps.filter((prop: any) => {
+          // If prop has no gameDate, keep it (shouldn't happen, but be safe)
+          if (!prop.gameDate) {
+            return true;
+          }
+          
+          const propGameDate = String(prop.gameDate);
+          
+          // Check if this prop's game is still in the current odds cache
+          const isCurrentGame = currentGameCommenceTimes.has(propGameDate) || 
+                               (propGameDate.match(/^(\d{4}-\d{2}-\d{2})/) && 
+                                currentGameDates.has(propGameDate.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || ''));
+          
+          return isCurrentGame;
+        });
+        
+        const removedCount = beforeFilter - filteredProps.length;
+        if (removedCount > 0) {
+          console.log(`[Player Props API] 🗑️ Removed ${removedCount} props from games no longer in odds cache (games started)`);
+        }
+        
+        console.log(`[Player Props API] ✅ Cache HIT for game date: ${gameDate}, props count: ${filteredProps.length} (filtered from ${beforeFilter})`);
         return NextResponse.json({
           success: true,
-          data: cachedProps,
+          data: filteredProps,
           lastUpdated: oddsCache.lastUpdated,
           gameDate,
-          cached: true
+          cached: true,
+          filtered: removedCount > 0 ? removedCount : undefined
         });
       }
     }
