@@ -1,9 +1,11 @@
 name: Daily Player Stats Ingestion
 
 on:
-  schedule:
-    # Run at 5:30pm AEST (7:30am UTC) - AEST is UTC+10
-    - cron: '30 7 * * *'
+  # DISABLED - process-player-props.yml now runs every hour instead
+  # schedule:
+  #   # Run at 5:30pm AEST (7:30am UTC) - AEST is UTC+10
+  #   - cron: '30 7 * * *'
+  # Manual trigger only (workflow disabled in favor of process-player-props.yml)
   workflow_dispatch:
     inputs:
       trigger:
@@ -133,6 +135,7 @@ jobs:
           echo "🔄 Starting daily stats ingestion for all NBA players (part 3/3)..."
           node scripts/process-all-player-stats.js --split=3/3
           echo "✅ Daily stats ingestion part 3/3 completed"
+
 
 
 

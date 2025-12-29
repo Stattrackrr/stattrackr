@@ -1,11 +1,10 @@
 name: Process Player Props
 
 on:
-  # Daily ingestion is now optional - 30-minute update handles everything
-  # Keeping this for manual trigger only (can be used for full cache refresh if needed)
-  # schedule:
-  #   - cron: '30 6 * * *'  # 5:30 PM AEDT (6:30 AM UTC) / 4:30 PM AEST
-  # Manual trigger only - use if you need to refresh all props from scratch
+  # Run every hour to process player props
+  schedule:
+    - cron: '0 * * * *'  # Every hour at :00 minutes
+  # Manual trigger - use if you need to refresh all props from scratch
   workflow_dispatch:
     inputs:
       date:
