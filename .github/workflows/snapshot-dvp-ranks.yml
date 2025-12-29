@@ -62,7 +62,8 @@ jobs:
           
           echo "📸 Snapshotting DvP ranks${DATE_PARAM:+ for date ${{ inputs.date }}}..."
           
-          RESPONSE=$(curl -s -X POST "${PROD_URL}/api/dvp/rank/snapshot${DATE_PARAM}" \
+          # Use -L to follow redirects (HTTP 307)
+          RESPONSE=$(curl -s -L -X POST "${PROD_URL}/api/dvp/rank/snapshot${DATE_PARAM}" \
             -H "Content-Type: application/json" \
             -w "\n%{http_code}")
           
@@ -88,6 +89,7 @@ jobs:
           else
             echo "❌ DvP ranks snapshot failed"
           fi
+
 
 
 
