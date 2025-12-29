@@ -63,7 +63,8 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
     if (cached) {
       console.log(`[Shot Chart Enhanced] ✅ Using Supabase cached defensive stats for ${teamAbbr}`);
       // Also store in in-memory cache for faster access
-      cache.set(cacheKey, cached, 1440); // 24 hours
+      // Use TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
+      cache.set(cacheKey, cached, CACHE_TTL.TRACKING_STATS);
       return cached;
     }
     
@@ -86,8 +87,8 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
       if (staleData?.data) {
         const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
         console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr}`);
-        // Store in in-memory cache
-        cache.set(cacheKey, staleData.data, 1440);
+        // Store in in-memory cache with TRACKING_STATS TTL
+        cache.set(cacheKey, staleData.data, CACHE_TTL.TRACKING_STATS);
         return staleData.data;
       }
     }
@@ -208,13 +209,13 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
         }
       };
 
-      // Cache the result for 24 hours (1440 minutes) in both in-memory and Supabase
-      cache.set(cacheKey, stats, 1440);
+      // Cache with TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
+      cache.set(cacheKey, stats, CACHE_TTL.TRACKING_STATS);
       
       // Also save to Supabase for persistence across instances
       try {
         const { setNBACache } = await import('@/lib/nbaCache');
-        await setNBACache(cacheKey, 'team_defense', stats, 1440);
+        await setNBACache(cacheKey, 'team_defense', stats, CACHE_TTL.TRACKING_STATS);
         console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory + Supabase)`);
       } catch (cacheError: any) {
         console.warn(`[Shot Chart Enhanced] ⚠️ Failed to save to Supabase cache:`, cacheError.message);
@@ -248,8 +249,8 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
         if (staleData?.data) {
           const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
           console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr} (NBA API failed)`);
-          // Store in in-memory cache for faster access
-          cache.set(cacheKey, staleData.data, 1440);
+          // Store in in-memory cache for faster access with TRACKING_STATS TTL
+          cache.set(cacheKey, staleData.data, CACHE_TTL.TRACKING_STATS);
           return staleData.data;
         }
       }
@@ -539,7 +540,8 @@ export async function GET(request: NextRequest) {
             cachedRankings = cache.get<any>(rankingsCacheKey);
           } else {
             // If we got fresh data from Supabase, update in-memory cache too
-            cache.set(rankingsCacheKey, cachedRankings, 1440);
+            // Use TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
+            cache.set(rankingsCacheKey, cachedRankings, CACHE_TTL.TRACKING_STATS);
           }
           
           // Handle both formats: direct rankings object or wrapped in rankings property

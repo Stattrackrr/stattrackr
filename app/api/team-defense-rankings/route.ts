@@ -1,6 +1,6 @@
 // app/api/team-defense-rankings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cache } from '@/lib/cache';
+import { cache, CACHE_TTL } from '@/lib/cache';
 import { currentNbaSeason } from '@/lib/nbaUtils';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
@@ -589,8 +589,9 @@ export async function GET(request: NextRequest) {
           };
 
         // Also cache in-memory and persist so other environments can reuse
-        cache.set(cacheKey, response, 1440);
-        await setNBACache(cacheKey, 'team_defense_rankings', response, 1440);
+        // Use TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
+        cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
+        await setNBACache(cacheKey, 'team_defense_rankings', response, CACHE_TTL.TRACKING_STATS);
           
           return NextResponse.json(response, {
             status: 200,
@@ -682,9 +683,10 @@ export async function GET(request: NextRequest) {
       source: 'nba_api'
     };
 
-    // Cache for 24 hours (1440 minutes) in both layers
-    cache.set(cacheKey, response, 1440);
-    await setNBACache(cacheKey, 'team_defense_rankings', response, 1440);
+    // Cache with TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
+    // This prevents cache expiration when the 12am cron job doesn't run
+    cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
+    await setNBACache(cacheKey, 'team_defense_rankings', response, CACHE_TTL.TRACKING_STATS);
     console.log(`[Team Defense Rankings] 💾 Cached rankings for season ${season}`);
 
     return NextResponse.json(response, {
