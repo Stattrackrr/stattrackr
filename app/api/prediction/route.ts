@@ -380,15 +380,13 @@ export async function GET(request: NextRequest) {
     let h2hAvg: number | null = null;
     let h2hStatsLength = 0;
     if (normalizedOpponent && playerTeam) {
-      const normalizedPlayerTeam = normalizeAbbr(playerTeam);
-      // Use all stats (current + last season) for H2H calculation
+      // FIXED to handle players who changed teams
+      // If a player has stats for a game, and the opponent is in that game, it's an H2H match
       const h2hStats = sortedAllStats
         .filter((stats: any) => {
           const minutes = parseMinutes(stats.min || '0:00');
           if (minutes === 0) return false;
           
-          const playerTeamFromStats = stats?.team?.abbreviation || '';
-          const playerTeamNorm = normalizeAbbr(playerTeamFromStats);
           const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
           const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
           
@@ -403,18 +401,15 @@ export async function GET(request: NextRequest) {
           const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
           const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
           
-          let gameOpponent = '';
-          if (homeTeamAbbr && visitorTeamAbbr) {
-            const homeNorm = normalizeAbbr(homeTeamAbbr);
-            const visitorNorm = normalizeAbbr(visitorTeamAbbr);
-            if (homeNorm === playerTeamNorm) {
-              gameOpponent = visitorNorm;
-            } else if (visitorNorm === playerTeamNorm) {
-              gameOpponent = homeNorm;
-            }
+          if (!homeTeamAbbr || !visitorTeamAbbr) {
+            return false;
           }
           
-          return normalizeAbbr(gameOpponent) === normalizedOpponent;
+          const homeNorm = normalizeAbbr(homeTeamAbbr);
+          const awayNorm = normalizeAbbr(visitorTeamAbbr);
+          
+          // If the opponent is in this game, and the player has stats for it, it's an H2H match
+          return homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
         })
         .map((stats: any) => getStatValue(stats, statType))
         .filter((val: number) => Number.isFinite(val));

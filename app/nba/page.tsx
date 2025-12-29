@@ -1540,72 +1540,37 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           });
         }
         
-        // EXACT COPY FROM DASHBOARD (lines 9638-9669) - just filter, no corrections
+        // FIXED to handle players who changed teams
+        // The key insight: if a player has stats for a game, and the opponent we're looking for
+        // is one of the teams in that game, then the player played against that opponent
+        // (regardless of which team the player was on - this correctly handles team changes)
         h2hStats = gamesWithStats
           .filter((stats: any) => {
-            // EXACT COPY: stats?.team?.abbreviation || selectedPlayer?.teamAbbr || ""
-            // Use playerTeam parameter as fallback (like dashboard uses selectedPlayer?.teamAbbr)
-            const playerTeamFromStats = stats?.team?.abbreviation || (playerTeam ? (TEAM_FULL_TO_ABBR[playerTeam] || playerTeam) : "") || "";
-            const playerTeamNorm = normalizeAbbr(playerTeamFromStats);
-            
-            // Get opponent from game data (EXACT COPY FROM DASHBOARD)
+            // Get both teams from the game
             const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
             const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
             const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
             const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
             
-            // Determine opponent using team IDs/abbrs (EXACT COPY FROM DASHBOARD)
-            const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
-            let gameOpponent = "";
-            
-            if (playerTeamId && homeTeamId && visitorTeamId) {
-              if (playerTeamId === homeTeamId && visitorTeamAbbr) {
-                gameOpponent = normalizeAbbr(visitorTeamAbbr);
-              } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
-                gameOpponent = normalizeAbbr(homeTeamAbbr);
-              }
+            if (!homeTeamAbbr || !visitorTeamAbbr) {
+              return false;
             }
             
-            // Fallback: compare abbreviations directly if IDs missing (EXACT COPY FROM DASHBOARD)
-            if (!gameOpponent && homeTeamAbbr && visitorTeamAbbr) {
-              const homeNorm = normalizeAbbr(homeTeamAbbr);
-              const awayNorm = normalizeAbbr(visitorTeamAbbr);
-              if (playerTeamNorm && playerTeamNorm === homeNorm) gameOpponent = awayNorm;
-              else if (playerTeamNorm && playerTeamNorm === awayNorm) gameOpponent = homeNorm;
-            }
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
             
-            return gameOpponent === normalizedOpponent;
+            // If the opponent we're looking for is in this game, and the player has stats for it,
+            // then the player played against that opponent (regardless of which team they were on)
+            // This correctly handles players who changed teams - we don't need to know which team
+            // the player was on, we just need to know if the opponent is in the game
+            const opponentInGame = homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
+            
+            // Player has stats for this game (gamesWithStats already filters for minutes > 0),
+            // so if the opponent is in the game, this is an H2H match
+            return opponentInGame;
           })
-          .slice(0, 6) // Limit to last 6 H2H games (same as dashboard)
+          .slice(0, 6) // Limit to last 6 H2H games
           .map((s: any) => s.statValue);
-
-        // Fallback: if no H2H stats found (e.g., team mapping edge cases), include any game where either side matches the opponent abbr
-        if (h2hStats.length === 0 && normalizedOpponent) {
-          const fallbackStats = gamesWithStats
-            .filter((stats: any) => {
-              const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-              const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-              const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-              const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-              const homeNorm = normalizeAbbr(homeTeamAbbr || '');
-              const awayNorm = normalizeAbbr(visitorTeamAbbr || '');
-              return homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
-            })
-            .slice(0, 6)
-            .map((s: any) => s.statValue);
-          
-          if (fallbackStats.length > 0) {
-            h2hStats = fallbackStats;
-            console.log('[calculatePlayerAverages][H2H Fallback] Used fallback games', {
-              playerName,
-              statType,
-              line,
-              opponent,
-              normalizedOpponent,
-              fallbackCount: fallbackStats.length,
-            });
-          }
-        }
         
         h2hAvg = h2hStats.length > 0
           ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
