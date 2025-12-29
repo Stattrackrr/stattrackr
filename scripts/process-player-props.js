@@ -192,80 +192,7 @@ const TEAM_FULL_TO_ABBR = {
   'Sacramento Kings': 'SAC', 'San Antonio Spurs': 'SAS', 'Utah Jazz': 'UTA',
 };
 
-function getGameDateFromOddsCache(oddsCache, overrideDate) {
-  const getUSEasternDateString = (date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    });
-  };
-
-  // Allow explicit override (e.g., from workflow input)
-  if (overrideDate && /^\d{4}-\d{2}-\d{2}$/.test(overrideDate)) {
-    console.log(`[GitHub Actions] ⏩ Date override provided: ${overrideDate}`);
-    return overrideDate;
-  }
-  
-  // ALWAYS use TOMORROW's date (stats are processed once per day for tomorrow's games)
-  // STRICT: Only process games that are exactly tomorrow, not any future date
-  // Calculate tomorrow in US ET (not 24 hours from now, but actual tomorrow in US ET)
-  const todayUSETStr = getUSEasternDateString(new Date());
-  const [year, month, day] = todayUSETStr.split('-').map(Number);
-  const tomorrowDate = new Date(year, month - 1, day + 1); // month is 0-indexed
-  const tomorrowUSET = getUSEasternDateString(tomorrowDate);
-  
-  if (!oddsCache.games || oddsCache.games.length === 0) {
-    console.log(`[GitHub Actions] ⚠️ No games in cache, using tomorrow: ${tomorrowUSET}`);
-    return tomorrowUSET;
-  }
-  
-  // Filter games to ONLY include tomorrow's games (strict check)
-  const tomorrowGames = oddsCache.games.filter(game => {
-    if (!game.commenceTime) return false;
-    const commenceStr = String(game.commenceTime).trim();
-    let gameDateUSET;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-      gameDateUSET = commenceStr;
-    } else {
-      const date = new Date(commenceStr);
-      gameDateUSET = getUSEasternDateString(date);
-    }
-    return gameDateUSET === tomorrowUSET;
-  });
-  
-  // If we have games for tomorrow, use tomorrow's date
-  if (tomorrowGames.length > 0) {
-    console.log(`[GitHub Actions] ✅ Found ${tomorrowGames.length} games for TOMORROW (${tomorrowUSET})`);
-    return tomorrowUSET;
-  }
-  
-  // NO FALLBACK: If no games for tomorrow, return tomorrow anyway but log a warning
-  // This ensures we don't process games from 2-3 days in the future
-  const todayUSET = getUSEasternDateString(new Date());
-  const allGameDates = new Set();
-  for (const game of oddsCache.games) {
-    if (!game.commenceTime) continue;
-    const commenceStr = String(game.commenceTime).trim();
-    let gameDateUSET;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-      gameDateUSET = commenceStr;
-    } else {
-      const date = new Date(commenceStr);
-      gameDateUSET = getUSEasternDateString(date);
-    }
-    allGameDates.add(gameDateUSET);
-  }
-  
-  console.log(`[GitHub Actions] ⚠️ No games found for tomorrow (${tomorrowUSET})`);
-  console.log(`[GitHub Actions] 📊 Available game dates in cache: ${Array.from(allGameDates).sort().join(', ')}`);
-  console.log(`[GitHub Actions] 📅 Today: ${todayUSET}, Tomorrow: ${tomorrowUSET}`);
-  console.log(`[GitHub Actions] ⚠️ Returning tomorrow anyway - will result in empty cache (no games to process)`);
-  return tomorrowUSET;
-}
+// Date filtering removed - now processes ALL games regardless of date
 
 function calculateImpliedProbabilities(overOddsStr, underOddsStr) {
   // Parse American odds strings (e.g., "+130", "-110") to numeric American odds
@@ -326,10 +253,7 @@ function getPlayerPropVendors(oddsCache) {
   return Array.from(vendors).sort();
 }
 
-function getPlayerPropsCacheKey(gameDate) {
-  // Simple key: just date, no timestamp or vendor count
-  return `${PLAYER_PROPS_CACHE_PREFIX}-${gameDate}`;
-}
+// Cache key is now hardcoded to 'all-dates' - no date filtering
 
 // Cache helpers
 async function getCache(key) {
@@ -498,27 +422,7 @@ async function processPlayerProps() {
   
   console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
 
-  // Optional date override (CLI flag or env var)
-  let dateOverride = null;
-  const dateArg = process.argv.find(arg => arg.startsWith('--date='));
-  if (dateArg) {
-    const candidate = dateArg.split('=')[1];
-    if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
-      dateOverride = candidate;
-    } else {
-      console.warn(`[GitHub Actions] ⚠️ Invalid --date format (expected YYYY-MM-DD): ${candidate}`);
-    }
-  } else if (process.env.PLAYER_PROPS_DATE_OVERRIDE) {
-    const candidate = process.env.PLAYER_PROPS_DATE_OVERRIDE.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
-      dateOverride = candidate;
-    } else {
-      console.warn(`[GitHub Actions] ⚠️ Invalid PLAYER_PROPS_DATE_OVERRIDE format (expected YYYY-MM-DD): ${candidate}`);
-    }
-  }
-  
-  // Process ALL games regardless of date
-  const gameDate = dateOverride || 'all-dates';
+  // Process ALL games regardless of date - no date filtering
   const cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
   
   console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
@@ -761,73 +665,71 @@ async function processPlayerProps() {
   
   const processedProps = [];
   for (const [key, propGroup] of propsByPlayerStat.entries()) {
-    const bestProb = Math.max(...propGroup.map(p => Math.max(p.overProb, p.underProb)));
-    if (bestProb > 50) {
-      const bestProp = propGroup.reduce((best, current) => {
-        const bestMaxProb = Math.max(best.overProb, best.underProb);
-        const currentMaxProb = Math.max(current.overProb, current.underProb);
-        return currentMaxProb > bestMaxProb ? current : best;
-      });
+    // Process ALL props regardless of probability - no filtering
+    const bestProp = propGroup.reduce((best, current) => {
+      const bestMaxProb = Math.max(best.overProb, best.underProb);
+      const currentMaxProb = Math.max(current.overProb, current.underProb);
+      return currentMaxProb > bestMaxProb ? current : best;
+    });
+    
+    // Merge all bookmakerLines from all props in the group
+    // IMPORTANT: Only include lines that match the prop's line value (within 0.1 tolerance)
+    // This prevents mixing lines from different stat types or different line values
+    const allBookmakerLines = [];
+    const seenBookmakers = new Set();
+    const propLineValue = bestProp.line;
+    
+    for (const prop of propGroup) {
+      // Verify prop matches the group's stat type and line (safety check)
+      if (prop.statType !== bestProp.statType) {
+        console.warn(`[GitHub Actions] ⚠️ Prop statType mismatch in group: ${prop.statType} vs ${bestProp.statType}`);
+        continue;
+      }
       
-      // Merge all bookmakerLines from all props in the group
-      // IMPORTANT: Only include lines that match the prop's line value (within 0.1 tolerance)
-      // This prevents mixing lines from different stat types or different line values
-      const allBookmakerLines = [];
-      const seenBookmakers = new Set();
-      const propLineValue = bestProp.line;
-      
-      for (const prop of propGroup) {
-        // Verify prop matches the group's stat type and line (safety check)
-        if (prop.statType !== bestProp.statType) {
-          console.warn(`[GitHub Actions] ⚠️ Prop statType mismatch in group: ${prop.statType} vs ${bestProp.statType}`);
-          continue;
-        }
-        
-        if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines)) {
-          for (const line of prop.bookmakerLines) {
-            // Only include lines that match the prop's line value (within 0.1 tolerance)
-            // This ensures we don't mix lines from different stat types or values
-            const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
-            if (isNaN(lineValue) || Math.abs(lineValue - propLineValue) > 0.1) {
-              console.warn(`[GitHub Actions] ⚠️ Skipping bookmaker line ${lineValue} that doesn't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
-              continue;
-            }
-            
-            // Deduplicate by bookmaker name (in case same bookmaker appears multiple times)
-            const bookmakerKey = `${line.bookmaker}|${lineValue}`;
-            if (!seenBookmakers.has(bookmakerKey)) {
-              allBookmakerLines.push(line);
-              seenBookmakers.add(bookmakerKey);
-            }
+      if (prop.bookmakerLines && Array.isArray(prop.bookmakerLines)) {
+        for (const line of prop.bookmakerLines) {
+          // Only include lines that match the prop's line value (within 0.1 tolerance)
+          // This ensures we don't mix lines from different stat types or values
+          const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
+          if (isNaN(lineValue) || Math.abs(lineValue - propLineValue) > 0.1) {
+            console.warn(`[GitHub Actions] ⚠️ Skipping bookmaker line ${lineValue} that doesn't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
+            continue;
+          }
+          
+          // Deduplicate by bookmaker name (in case same bookmaker appears multiple times)
+          const bookmakerKey = `${line.bookmaker}|${lineValue}`;
+          if (!seenBookmakers.has(bookmakerKey)) {
+            allBookmakerLines.push(line);
+            seenBookmakers.add(bookmakerKey);
           }
         }
       }
+    }
+    
+    // Update bestProp with merged bookmakerLines
+    bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
+    
+    // Safety check: Ensure prop.line matches the bookmakerLines
+    // Only filter bookmakerLines to those matching the prop's line (don't change prop.line)
+    if (bestProp.bookmakerLines && bestProp.bookmakerLines.length > 0) {
+      // Filter bookmakerLines to only include those matching the prop's line value
+      const filteredBookmakerLines = bestProp.bookmakerLines.filter(line => {
+        const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
+        if (isNaN(lineValue)) return false;
+        // Only keep lines that match the prop's line (within 0.1 tolerance)
+        return Math.abs(lineValue - propLineValue) <= 0.1;
+      });
       
-      // Update bestProp with merged bookmakerLines
-      bestProp.bookmakerLines = allBookmakerLines.length > 0 ? allBookmakerLines : bestProp.bookmakerLines;
-      
-      // Safety check: Ensure prop.line matches the bookmakerLines
-      // Only filter bookmakerLines to those matching the prop's line (don't change prop.line)
-      if (bestProp.bookmakerLines && bestProp.bookmakerLines.length > 0) {
-        // Filter bookmakerLines to only include those matching the prop's line value
-        const filteredBookmakerLines = bestProp.bookmakerLines.filter(line => {
-          const lineValue = typeof line.line === 'number' ? line.line : parseFloat(line.line);
-          if (isNaN(lineValue)) return false;
-          // Only keep lines that match the prop's line (within 0.1 tolerance)
-          return Math.abs(lineValue - propLineValue) <= 0.1;
-        });
-        
-        if (filteredBookmakerLines.length !== bestProp.bookmakerLines.length) {
-          console.warn(`[GitHub Actions] ⚠️ Filtered out ${bestProp.bookmakerLines.length - filteredBookmakerLines.length} bookmakerLines that don't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
-          bestProp.bookmakerLines = filteredBookmakerLines;
-        }
-        
-        // Ensure prop.line stays as the original value (don't change it based on bookmakerLines)
-        // The prop.line should be the primary line value, and bookmakerLines should match it
+      if (filteredBookmakerLines.length !== bestProp.bookmakerLines.length) {
+        console.warn(`[GitHub Actions] ⚠️ Filtered out ${bestProp.bookmakerLines.length - filteredBookmakerLines.length} bookmakerLines that don't match prop line ${propLineValue} for ${bestProp.playerName} ${bestProp.statType}`);
+        bestProp.bookmakerLines = filteredBookmakerLines;
       }
       
-      processedProps.push(bestProp);
+      // Ensure prop.line stays as the original value (don't change it based on bookmakerLines)
+      // The prop.line should be the primary line value, and bookmakerLines should match it
     }
+    
+    processedProps.push(bestProp);
   }
   
   // For PTS props, keep only the highest line per player (remove suspiciously low lines)
@@ -1613,22 +1515,57 @@ async function processPlayerProps() {
   }));
   console.log(`[GitHub Actions] 📋 Sample props with stats:`, JSON.stringify(sampleProps, null, 2));
   
-  // Get all game commence times from current odds cache to filter out old props
-  const currentGameDates = new Set();
-  const currentGameCommenceTimes = new Set();
+  // Log game count for reference (no date filtering - process all games)
+  let totalGamesInCache = 0;
+  if (oddsCache && oddsCache.games && Array.isArray(oddsCache.games)) {
+    totalGamesInCache = oddsCache.games.length;
+  }
+  console.log(`[GitHub Actions] 🎮 Processing ALL games from odds cache (${totalGamesInCache} total games, no date filter)`);
+  
+  // Build a set of all current props from the odds cache (to filter out props that no longer have lines)
+  const currentPropsInOddsCache = new Set();
   if (oddsCache && oddsCache.games && Array.isArray(oddsCache.games)) {
     for (const game of oddsCache.games) {
-      if (game.commenceTime) {
-        currentGameCommenceTimes.add(String(game.commenceTime));
-        // Also extract date part for matching
-        const dateMatch = String(game.commenceTime).match(/^(\d{4}-\d{2}-\d{2})/);
-        if (dateMatch) {
-          currentGameDates.add(dateMatch[1]);
+      if (!game?.playerPropsByBookmaker || typeof game.playerPropsByBookmaker !== 'object') continue;
+      
+      for (const [bookmakerName, bookmakerProps] of Object.entries(game.playerPropsByBookmaker)) {
+        if (!bookmakerProps || typeof bookmakerProps !== 'object') continue;
+        if (isPickemBookmaker(bookmakerName)) continue;
+        
+        for (const [playerName, playerData] of Object.entries(bookmakerProps)) {
+          if (!playerData || typeof playerData !== 'object') continue;
+          
+          const propsData = playerData;
+          const allStatTypes = Object.keys(propsData).filter(key => {
+            const statData = propsData[key];
+            return statData && (typeof statData === 'object' || Array.isArray(statData));
+          });
+          
+          for (const statTypeKey of allStatTypes) {
+            const statData = propsData[statTypeKey];
+            if (!statData) continue;
+            
+            const entries = Array.isArray(statData) ? statData : [statData];
+            
+            for (const entry of entries) {
+              if (!entry || !entry.line || entry.line === 'N/A') continue;
+              if (entry.isPickem === true) continue;
+              if (entry.variantLabel && (entry.variantLabel.toLowerCase().includes('goblin') || entry.variantLabel.toLowerCase().includes('demon'))) continue;
+              
+              const line = parseFloat(entry.line);
+              if (isNaN(line)) continue;
+              
+              const statType = statTypeKey.toUpperCase();
+              const roundedLine = Math.round(line * 2) / 2;
+              const key = `${playerName}|${statType}|${roundedLine}`;
+              currentPropsInOddsCache.add(key);
+            }
+          }
         }
       }
     }
   }
-  console.log(`[GitHub Actions] 🎮 Current odds cache has ${currentGameCommenceTimes.size} games (${currentGameDates.size} unique dates)`);
+  console.log(`[GitHub Actions] 📊 Current props in odds cache: ${currentPropsInOddsCache.size} unique props`);
   
   // Merge with existing cache if splitting by props OR filtering by stats
   let finalProps = [...propsWithStats];
@@ -1671,7 +1608,7 @@ async function processPlayerProps() {
     
     if (propsSplit || gameSplit) {
       // When splitting (by props OR by games): merge existing props (from other parallel jobs)
-      // BUT only keep props from games in the current odds cache (remove old props from previous days)
+      // Remove props that no longer have lines in the current odds cache
       const uniqueExistingProps = cacheToMerge.filter(existingProp => {
         // Validate prop structure before merging
         if (!existingProp.playerName || !existingProp.statType || existingProp.line === undefined || existingProp.line === null) {
@@ -1683,28 +1620,29 @@ async function processPlayerProps() {
           return false;
         }
         
-        // Check if this prop is from a game in the current odds cache
-        // If gameDate doesn't match any current game, it's an old prop that should be removed
-        if (existingProp.gameDate) {
-          const propGameDate = String(existingProp.gameDate);
-          const isCurrentGame = currentGameCommenceTimes.has(propGameDate) || 
-                               (propGameDate.match(/^(\d{4}-\d{2}-\d{2})/) && currentGameDates.has(propGameDate.match(/^(\d{4}-\d{2}-\d{2})/)[1]));
-          
-          if (!isCurrentGame) {
-            // This prop is from an old game that's no longer in the odds cache - remove it
-            return false;
-          }
-        }
-        
         // Exclude exact duplicates based on player|stat|line
         const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
-        return !newPropsKeys.has(key);
+        if (newPropsKeys.has(key)) {
+          return false; // Duplicate of new prop
+        }
+        
+        // Remove props that no longer have lines in the current odds cache
+        if (!currentPropsInOddsCache.has(key)) {
+          return false; // Prop no longer exists in odds cache (line was removed)
+        }
+        
+        return true;
       });
       
-      // Count how many props were removed (invalid props + old props from games not in current odds cache)
+      // Count how many props were removed (invalid props + duplicates + removed lines)
       const totalFilteredOut = cacheToMerge.length - uniqueExistingProps.length;
       if (totalFilteredOut > 0) {
-        console.log(`[GitHub Actions] 🗑️ Filtered out ${totalFilteredOut} props (invalid/duplicate/old games)`);
+        const removedLines = cacheToMerge.filter(p => {
+          if (!p.playerName || !p.statType || p.line === undefined || p.line === null) return false;
+          const key = `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`;
+          return !newPropsKeys.has(key) && !currentPropsInOddsCache.has(key);
+        }).length;
+        console.log(`[GitHub Actions] 🗑️ Filtered out ${totalFilteredOut} props (invalid/duplicate/removed lines: ${removedLines})`);
       }
       
       // Validate new props before merging
@@ -1725,22 +1663,19 @@ async function processPlayerProps() {
       console.log(`[GitHub Actions] 🔀 Merging (split by ${splitType}): ${validNewProps.length} new props + ${uniqueExistingProps.length} existing props = ${finalProps.length} total`);
     } else if (allowedStats) {
       // When filtering by stats: only keep existing props that are NOT in the filtered stat list
-      // AND are from games in the current odds cache (remove old props)
+      // Remove props that no longer have lines in the current odds cache
       const existingPropsToKeep = cacheToMerge.filter(existingProp => {
-        // First check if it's a stat we want to keep (not in the filtered list)
+        // Check if it's a stat we want to keep (not in the filtered list)
         if (allowedStats.includes(existingProp.statType)) {
           return false;
         }
         
-        // Then check if it's from a current game (remove old props)
-        if (existingProp.gameDate) {
-          const propGameDate = String(existingProp.gameDate);
-          const isCurrentGame = currentGameCommenceTimes.has(propGameDate) || 
-                               (propGameDate.match(/^(\d{4}-\d{2}-\d{2})/) && currentGameDates.has(propGameDate.match(/^(\d{4}-\d{2}-\d{2})/)[1]));
-          return isCurrentGame;
+        // Remove props that no longer have lines in the current odds cache
+        const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
+        if (!currentPropsInOddsCache.has(key)) {
+          return false; // Prop no longer exists in odds cache (line was removed)
         }
         
-        // Keep props without gameDate (shouldn't happen, but be safe)
         return true;
       });
       
@@ -1759,6 +1694,22 @@ async function processPlayerProps() {
     console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (will merge in retry loop)`);
   } else {
     console.log(`[GitHub Actions] ✅ Saving ${finalProps.length} props to cache (overwriting existing)`);
+  }
+  
+  // Final filter: Remove any props that no longer have lines in the current odds cache
+  // This ensures we never save props that have been removed (e.g., when games start)
+  const propsBeforeFilter = finalProps.length;
+  finalProps = finalProps.filter(prop => {
+    if (!prop.playerName || !prop.statType || prop.line === undefined || prop.line === null) {
+      return false;
+    }
+    const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+    // Only keep props that exist in the current odds cache
+    return currentPropsInOddsCache.has(key);
+  });
+  
+  if (propsBeforeFilter !== finalProps.length) {
+    console.log(`[GitHub Actions] 🗑️ Final filter: Removed ${propsBeforeFilter - finalProps.length} props that no longer have lines`);
   }
   
   // Clear checkpoint and save final cache
@@ -1787,7 +1738,14 @@ async function processPlayerProps() {
               return false;
             }
             const key = `${existingProp.playerName}|${existingProp.statType}|${Math.round(existingProp.line * 2) / 2}`;
-            return !newPropsKeys.has(key);
+            // Remove duplicates and props that no longer have lines
+            if (newPropsKeys.has(key)) {
+              return false; // Duplicate of new prop
+            }
+            if (!currentPropsInOddsCache.has(key)) {
+              return false; // Prop no longer exists in odds cache (line was removed)
+            }
+            return true;
           });
           finalProps = [...propsWithStats, ...uniqueExistingProps];
           console.log(`[GitHub Actions] 🔀 Re-merged: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
