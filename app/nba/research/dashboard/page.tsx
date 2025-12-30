@@ -12200,16 +12200,13 @@ const lineMovementInFlightRef = useRef(false);
               sampleNoMatches.push({
                 gameDate: stats?.game?.date,
                 playerTeamFromStats: stats?.team?.abbreviation,
-                playerTeamNorm,
                 homeTeamAbbr,
                 visitorTeamAbbr,
                 homeTeamId,
                 visitorTeamId,
-                playerTeamId,
-                gameOpponent,
                 normalizedOpponent,
-                hasHOU: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
-                        (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
+                hasOpponent: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
+                            (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
               });
             }
           }
