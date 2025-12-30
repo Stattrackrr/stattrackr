@@ -12068,18 +12068,15 @@ const lineMovementInFlightRef = useRef(false);
             sampleNoMatches.push({
               gameDate: stats?.game?.date,
               playerTeamFromStats: stats?.team?.abbreviation,
-              playerTeamNorm,
               homeTeamAbbr,
               visitorTeamAbbr,
               homeTeamId,
               visitorTeamId,
-              playerTeamId,
-              gameOpponent,
               normalizedOpponent,
               lookingFor: normalizedOpponent,
-              // Check if HOU appears in the game
-              hasHOU: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
-                      (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
+              // Check if opponent appears in the game
+              hasOpponent: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
+                          (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
             });
           }
         }
