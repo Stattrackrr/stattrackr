@@ -375,10 +375,6 @@ async function calculatePlayerAverages(
         })
         .slice(0, 6) // Limit to last 6 H2H games
         .map((s: any) => s.statValue);
-            normalizedOpponent,
-            fallbackCount: fallbackStats.length,
-          });
-        }
       }
       
       h2hAvg = h2hStats.length > 0
