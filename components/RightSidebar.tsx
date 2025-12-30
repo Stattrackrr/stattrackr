@@ -267,19 +267,11 @@ export default function RightSidebar({
   };
 
   // Fetch journal bets from Supabase
+  // Note: check-journal-bets is handled by cron workflow (runs every 15 mins)
+  // No need to trigger it on every refresh - reduces database load
   const fetchJournalBets = async () => {
     setIsRefreshing(true);
     
-    try {
-      // First, trigger the check-journal-bets API to update any completed games
-      await fetch('/api/check-journal-bets', {
-        credentials: 'include', // Include cookies for authentication
-      });
-    } catch (error) {
-      console.error('Failed to check journal bets:', error);
-      // Continue anyway to fetch current data
-    }
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsRefreshing(false);

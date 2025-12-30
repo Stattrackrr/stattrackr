@@ -882,13 +882,8 @@ export default function NBALandingPage() {
             initialFetchCompletedRef.current = true; // Mark initial fetch as completed
             setPropsLoading(false);
             
-            // If cache is empty, trigger processing in the background (non-blocking)
-            if (!cacheData.cached) {
-              console.log(`[NBA Landing] 🔄 Cache is empty - triggering background processing...`);
-              fetch('/api/nba/player-props/process?async=1', { method: 'POST' }).catch(err => {
-                console.warn('[NBA Landing] ⚠️ Failed to trigger background processing:', err);
-              });
-            }
+            // Note: Player props processing is handled by GitHub workflow (process-player-props.yml)
+            // No need to trigger from frontend - reduces server load and prevents duplicate processing
             return;
           }
         } else {

@@ -12,7 +12,7 @@ interface CacheEntry<T> {
 
 class ServerCache {
   private cache = new Map<string, CacheEntry<any>>();
-  private readonly maxSize: number = 1000; // Maximum cache entries
+  private readonly maxSize: number = 5000; // Maximum cache entries (increased for 100+ users)
   private accessOrder = new Map<string, number>(); // Track access time for LRU
   
   /**
