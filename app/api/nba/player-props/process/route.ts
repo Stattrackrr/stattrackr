@@ -375,7 +375,6 @@ async function calculatePlayerAverages(
         })
         .slice(0, 6) // Limit to last 6 H2H games
         .map((s: any) => s.statValue);
-      }
       
       h2hAvg = h2hStats.length > 0
         ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
