@@ -303,7 +303,6 @@ export interface OfficialOddsCardProps {
     lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
   } | null;
   selectedStat?: string;
-  predictedOutcome?: PredictedOutcomeResult | null;
   calculatedImpliedOdds?: {
     overImpliedProb: number | null;
     underImpliedProb: number | null;
@@ -5132,7 +5131,6 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
   lineMovementEnabled,
   lineMovementData,
   selectedStat,
-  predictedOutcome,
   calculatedImpliedOdds,
   selectedBookmakerName,
   selectedBookmakerLine,
@@ -5209,14 +5207,19 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                 );
   };
 
-  // Don't render anything for game props
-  if (propsMode === 'team') {
-    return null;
-  }
-
-              return (
+  // Always render container - show empty state for game props instead of returning null
+  return (
     <div className="relative z-50 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
       <div className="p-3 sm:p-4 md:p-6">
+        {/* Show empty state for game props mode */}
+        {propsMode === 'team' ? (
+          <div className="text-center py-8">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Official Odds are only available for Player Props
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Market Predicted Outcomes - Full Width (only show for player props, not game props) */}
         <div>
           <div>
@@ -5237,89 +5240,33 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
                 </div>
               )}
 
-              {/* Two wheels side by side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center justify-center">
-                {/* StatTrackr Prediction Wheel */}
-                <div className="flex flex-col items-center">
-                  {predictedOutcome ? (
-                    <>
-                      {renderWheel(
-                        predictedOutcome.overProb ?? 50,
-                        predictedOutcome.underProb ?? 50,
-                        'StatTrackr Prediction',
-                        140
-                      )}
-                      <div className="mt-3 text-center">
-                        <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          StatTrackr Prob: <span className="font-semibold">{predictedOutcome.overProb?.toFixed(1) ?? 'N/A'}%</span>
-                      </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Calculating prediction...
-                    </div>
-                  )}
-                    </div>
-
-                {/* Bookmaker/Implied Odds Wheel */}
-                <div className="flex flex-col items-center">
-                  {calculatedImpliedOdds ? (
-                    <>
-                      {renderWheel(
-                        calculatedImpliedOdds.overImpliedProb ?? 50,
-                        calculatedImpliedOdds.underImpliedProb ?? 50,
-                        'Bookmaker/Implied Odds',
-                        140
-                      )}
-                      <div className="mt-3 text-center">
-                        <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          Market Prob: <span className="font-semibold">{calculatedImpliedOdds.overImpliedProb?.toFixed(1) ?? 'N/A'}%</span>
+              {/* Bookmaker/Implied Odds Wheel */}
+              <div className="flex flex-col items-center justify-center">
+                {calculatedImpliedOdds ? (
+                  <>
+                    {renderWheel(
+                      calculatedImpliedOdds.overImpliedProb ?? 50,
+                      calculatedImpliedOdds.underImpliedProb ?? 50,
+                      'Bookmaker/Implied Odds',
+                      140
+                    )}
+                    <div className="mt-3 text-center">
+                      <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Market Prob: <span className="font-semibold">{calculatedImpliedOdds.overImpliedProb?.toFixed(1) ?? 'N/A'}%</span>
                       </div>
                     </div>
-                    </>
-                  ) : (
-                    <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No market odds available
-                  </div>
-                  )}
-                </div>
-            </div>
-
-              {/* Confidence and EV */}
-              {predictedOutcome && (
-                <div className="flex items-center justify-center gap-6 mt-2">
-                  <div className="text-center">
-                    <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Confidence</div>
-                    <div className={`text-sm font-semibold ${
-                      predictedOutcome.confidence === 'High' 
-                          ? 'text-green-600 dark:text-green-400' 
-                        : predictedOutcome.confidence === 'Medium'
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-red-600 dark:text-red-400'
-                      }`}>
-                      {predictedOutcome.confidence}
-                    </div>
-                  </div>
-                  {predictedOutcome.expectedValue !== null && predictedOutcome.expectedValue !== undefined && (
-                    <div className="text-center">
-                      <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected Value</div>
-                      <div className={`text-sm font-semibold ${
-                        predictedOutcome.expectedValue > 0
-                          ? 'text-green-600 dark:text-green-400' 
-                          : predictedOutcome.expectedValue < 0
-                          ? 'text-red-600 dark:text-red-400'
-                          : mounted && isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        {predictedOutcome.expectedValue > 0 ? '+' : ''}{predictedOutcome.expectedValue.toFixed(1)}%
-                    </div>
-                  </div>
-                  )}
+                  </>
+                ) : (
+                  <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    No market odds available
                   </div>
                 )}
               </div>
+              </div>
             </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -5335,7 +5282,6 @@ const OfficialOddsCard = memo(function OfficialOddsCard({
     prev.matchupInfo?.tipoffLocal === next.matchupInfo?.tipoffLocal &&
     prev.oddsFormat === next.oddsFormat &&
     prev.books === next.books &&
-    prev.predictedOutcome === next.predictedOutcome &&
     prev.calculatedImpliedOdds === next.calculatedImpliedOdds &&
     prev.selectedBookmakerName === next.selectedBookmakerName &&
     prev.selectedBookmakerLine === next.selectedBookmakerLine
@@ -5710,6 +5656,23 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
         </div>
         {!posSel && !selectedPosition ? (
           <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>
+        ) : loading && Object.keys(perStat).length === 0 ? (
+          // Skeleton loader - show placeholder metrics while loading
+          <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-48 sm:max-h-56 md:max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
+            {DVP_METRICS.map((m, index) => (
+              <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${mounted && isDark ? 'border-slate-700' : 'border-slate-300'} px-3 py-2.5`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse`} style={{ animationDelay: `${index * 0.1}s` }}></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse`} style={{ animationDelay: `${index * 0.1 + 0.05}s` }}></div>
+                    <div className={`h-5 w-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse`} style={{ animationDelay: `${index * 0.1 + 0.1}s` }}></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
 <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-48 sm:max-h-56 md:max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
             {DVP_METRICS.map((m) => {
@@ -10344,9 +10307,9 @@ const lineMovementInFlightRef = useRef(false);
     const grabSeason = async (yr: number) => {
       const fetchRegular = async () => {
         // Use cache for faster loading - stats API has 8 hour cache
-        // Fetch all pages to ensure we get all historical games (needed for H2H stats)
-        // 50 pages = 5000 games max, which is more than enough for any player's career
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=50&postseason=false`;
+        // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
+        // This is much faster than fetching 50 pages (5000 games) which was overkill
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=false`;
         const requestId = `stats-${playerId}-${yr}-reg`;
         try {
           const r = await queuedFetch(url, {}, requestId);
@@ -10465,9 +10428,9 @@ const lineMovementInFlightRef = useRef(false);
 
       const fetchPlayoffs = async () => {
         // Use cache for faster loading - stats API has 8 hour cache
-        // Fetch all pages to ensure we get all historical games (needed for H2H stats)
-        // 50 pages = 5000 games max, which is more than enough for any player's career
-        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=50&postseason=true`;
+        // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
+        // This is much faster than fetching 50 pages (5000 games) which was overkill
+        const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=true`;
         const requestId = `stats-${playerId}-${yr}-po`;
         try {
           const r = await queuedFetch(url, {}, requestId);
@@ -11023,18 +10986,78 @@ const lineMovementInFlightRef = useRef(false);
         }
       }
       
-      // OPTIMIZATION: Lazy load premium stats
-      // Fetch critical path data first: game stats + BDL player data + ESPN (as fallback)
-      // Then load premium features (advanced stats, shot distance) in background
-      const [rows, bdlPlayerData, espnData] = await Promise.all([
-        fetchSortedStats(pid),
+      // OPTIMIZATION: Progressive loading for faster initial render
+      // 1. Fetch critical path data first (stats) - show UI immediately
+      // 2. Load non-critical data (BDL/ESPN metadata) in background
+      // 3. Load premium features (advanced stats, shot distance) in background
+      
+      // Fetch stats first (critical - needed for chart)
+      const rows = await fetchSortedStats(pid);
+      
+      // Use sample data team directly for default players - NO GAME DATA FALLBACK
+      const currentTeam = normalizeAbbr(player.teamAbbr);
+      
+      // Set player stats immediately so UI can render (with basic player info)
+      startTransition(() => {
+        setSelectedTimeframe('last10');
+        setPlayerStats(rows);
+        setSelectedTeam(currentTeam);
+        setOriginalPlayerTeam(currentTeam);
+        setDepthChartTeam(currentTeam);
+        setSelectedPlayer(player); // Set basic player first, will update with jersey/height later
+      });
+      
+      // Load non-critical metadata in background (doesn't block UI)
+      Promise.all([
         fetchBdlPlayerData(pid),
-        fetchEspnPlayerData(player.full, player.teamAbbr).catch(() => null) // Fetch ESPN in parallel as fallback
-      ]);
+        fetchEspnPlayerData(player.full, player.teamAbbr).catch(() => null)
+      ]).then(([bdlPlayerData, espnData]) => {
+        // Parse BDL height data and merge with sample player data
+        const heightData = parseBdlHeight(bdlPlayerData?.height);
+        
+        // Get jersey and height from BDL, with fallbacks to player object
+        const bdlJersey = bdlPlayerData?.jersey_number;
+        const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
+          ? Number(bdlJersey) 
+          : 0;
+        let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : (player.jersey || 0);
+        let heightFeetData: number | undefined = heightData.feet || player.heightFeet || undefined;
+        let heightInchesData: number | undefined = heightData.inches || player.heightInches || undefined;
+        
+        // Fallback to depth chart roster for jersey if still missing
+        if (!jerseyNumber && playerTeamRoster) {
+          const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+          for (const pos of positions) {
+            const posPlayers = playerTeamRoster[pos];
+            if (Array.isArray(posPlayers)) {
+              const found = posPlayers.find(p => 
+                p.name && player.full && 
+                (p.name.toLowerCase().includes(player.full.toLowerCase()) || 
+                 player.full.toLowerCase().includes(p.name.toLowerCase()))
+              );
+              if (found && found.jersey && found.jersey !== 'N/A') {
+                jerseyNumber = Number(found.jersey);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Update player with jersey/height metadata (non-blocking update)
+        startTransition(() => {
+          setSelectedPlayer({
+            ...player,
+            jersey: jerseyNumber,
+            heightFeet: heightFeetData || undefined,
+            heightInches: heightInchesData || undefined,
+          });
+        });
+      }).catch(err => {
+        console.warn('Failed to load player metadata (non-critical):', err);
+      });
       
       // Start premium fetches in background (don't await)
       if (hasPremium) {
-        // Fire and forget - these will update state when ready
         fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
         fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
       }
@@ -11052,72 +11075,8 @@ const lineMovementInFlightRef = useRef(false);
         sampleRowKeys: rows[0] ? Object.keys(rows[0]) : [],
       });
       
-      // Use sample data team directly for default players - NO GAME DATA FALLBACK
-      const currentTeam = normalizeAbbr(player.teamAbbr);
-      
-      // Parse BDL height data and merge with sample player data
-      const heightData = parseBdlHeight(bdlPlayerData?.height);
-      
-      // Get jersey and height from BDL, with fallbacks to player object
-      // BDL returns jersey_number as string, so check for empty string too
-      const bdlJersey = bdlPlayerData?.jersey_number;
-      const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
-        ? Number(bdlJersey) 
-        : 0;
-      let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : (player.jersey || 0);
-      let heightFeetData: number | undefined = heightData.feet || player.heightFeet || undefined;
-      let heightInchesData: number | undefined = heightData.inches || player.heightInches || undefined;
-      
-      console.log(`🔍 BDL data for ${player.full}:`, {
-        jersey_number: bdlJersey,
-        height: bdlPlayerData?.height,
-        parsedHeight: heightData
-      });
-      
-      // Fallback to depth chart roster for jersey if still missing
-      if (!jerseyNumber && playerTeamRoster) {
-        // Search all positions in roster for this player
-        const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
-        for (const pos of positions) {
-          const posPlayers = playerTeamRoster[pos];
-          if (Array.isArray(posPlayers)) {
-            const found = posPlayers.find(p => 
-              p.name && player.full && 
-              (p.name.toLowerCase().includes(player.full.toLowerCase()) || 
-               player.full.toLowerCase().includes(p.name.toLowerCase()))
-            );
-            if (found && found.jersey && found.jersey !== 'N/A') {
-              jerseyNumber = Number(found.jersey);
-              break;
-            }
-          }
-        }
-      }
-      
-      // Batch all state updates in startTransition to prevent multiple re-renders
-      // Set selectedTimeframe FIRST so it's correct when playerStats updates
+      // Batch remaining state updates in startTransition
       startTransition(() => {
-        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
-        // Set this FIRST so baseGameData calculates correctly when playerStats updates
-        console.log(`[Player Select] FORCING timeframe to "last10" for new player`);
-        setSelectedTimeframe('last10');
-        
-        // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
-        setPlayerStats(rows);
-        
-        // WORKAROUND: Stats fetching by game_id is handled in a separate useEffect
-        // that watches selectedTimeframe to trigger when user switches to lastseason
-        setSelectedTeam(currentTeam);
-        setOriginalPlayerTeam(currentTeam); // Track the original player's team
-        setDepthChartTeam(currentTeam); // Initialize depth chart to show player's team
-        
-        setSelectedPlayer({
-          ...player,
-          jersey: jerseyNumber,
-          heightFeet: heightFeetData || undefined,
-          heightInches: heightInchesData || undefined,
-        });
-
         // Reset betting-line auto-set trackers so odds can re-apply for the new player
         lastAutoSetStatRef.current = null;
         lastAutoSetLineRef.current = null;
@@ -15088,8 +15047,6 @@ const lineMovementInFlightRef = useRef(false);
 
 
   // Prediction state
-  const [predictedOutcome, setPredictedOutcome] = useState<PredictedOutcomeResult | null>(null);
-  
   // Hardcode to FanDuel only
   const selectedBookmakerForPrediction = 'fanduel';
   
@@ -15960,551 +15917,6 @@ const lineMovementInFlightRef = useRef(false);
     return z > 0 ? 1 - p : p;
   };
 
-  // Prediction calculation useEffect - only recalculates when player or stat changes, NOT when line changes
-  // DEFERRED: Wait 2 seconds after stats load to avoid blocking initial display
-  useEffect(() => {
-    if (propsMode !== 'player' || !selectedPlayer || !selectedStat) {
-      setPredictedOutcome(null);
-      return;
-    }
-    
-    // Use primary market line (consensus from real bookmakers) - this is fixed and doesn't change when user adjusts betting line
-    const predictionLine = primaryMarketLine;
-    
-    // Defer prediction API call by 2 seconds to let stats display first (non-blocking)
-    const timeoutId = setTimeout(() => {
-      // Use shared API endpoint for prediction calculation to ensure consistency with Top Player Props page
-      const calculatePrediction = async () => {
-      try {
-        if (!selectedPlayer?.id) {
-          setPredictedOutcome(null);
-          return;
-        }
-
-        // Build API request params - use selectedPlayer.id (BallDon'tLie ID)
-        if (!predictionLine || !Number.isFinite(predictionLine)) {
-          console.warn('[Dashboard] No valid prediction line available:', predictionLine, 'cannot calculate prediction');
-          setPredictedOutcome(null);
-          return;
-        }
-        
-        console.log('[Dashboard] Calling prediction API with:', {
-          playerId: selectedPlayer.id,
-          statType: selectedStat,
-          line: predictionLine,
-          playerTeam: selectedPlayer.teamAbbr,
-          opponent: opponentTeam
-        });
-        
-        const params = new URLSearchParams({
-          playerId: selectedPlayer.id.toString(),
-          statType: selectedStat,
-          line: predictionLine.toString(),
-          playerTeam: selectedPlayer.teamAbbr || '',
-          opponent: opponentTeam || '',
-          position: selectedPosition || '',
-        });
-
-        // Add market probabilities for blending if available
-        const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
-        const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
-        if (marketOverProb !== null && marketUnderProb !== null && predictionLine !== null) {
-          params.append('marketLine', predictionLine.toString());
-          params.append('marketOverProb', marketOverProb.toString());
-          params.append('marketUnderProb', marketUnderProb.toString());
-        }
-
-        // Call shared API endpoint
-        const response = await fetch(`/api/prediction?${params.toString()}`);
-        if (!response.ok) {
-          console.error('[Dashboard] Failed to fetch prediction from API');
-          setPredictedOutcome(null);
-          return;
-        }
-
-        const data = await response.json();
-        if (data.error) {
-          console.error('[Dashboard] Prediction API error:', data.error);
-          setPredictedOutcome(null);
-          return;
-        }
-
-        if (data.overProb !== null && data.overProb !== undefined && 
-            data.underProb !== null && data.underProb !== undefined) {
-          // Calculate confidence and EV (these are dashboard-specific, not in API)
-          const isOver = data.overProb >= 50;
-          const statProb = isOver ? data.overProb : data.underProb;
-          const marketProb = isOver ? marketOverProb : marketUnderProb;
-          
-          // Calculate edge and confidence
-          const edge = marketProb != null ? statProb - marketProb : null;
-          let confidence: 'High' | 'Medium' | 'Low' = 'Low';
-          if (edge != null) {
-            const absEdge = Math.abs(edge);
-            confidence = absEdge >= 12 ? 'High' : absEdge >= 6 ? 'Medium' : 'Low';
-          }
-          
-          // Calculate Expected Value (EV) using actual betting odds
-          let expectedValue: number | null = null;
-          
-          // Get the actual odds for the bet (over or under)
-          const bookRowKey = getBookRowKey(selectedStat);
-          if (bookRowKey && realOddsData && realOddsData.length > 0 && predictionLine !== null && predictionLine !== undefined) {
-            // Find the best odds for the primary market line (consensus line)
-            let bestOverOdds: number | null = null;
-            let bestUnderOdds: number | null = null;
-            
-            for (const book of realOddsData) {
-              const statData = (book as any)[bookRowKey];
-              if (!statData || statData.line === 'N/A') continue;
-              
-              const lineValue = parseFloat(statData.line);
-              if (isNaN(lineValue)) continue;
-              
-              // Only use real lines (not alt lines) - check if it matches primary market line
-              const meta = (book as any)?.meta;
-              if (meta?.variantLabel) continue; // Skip alt lines
-              
-              // Check if this line matches the primary market line (within 0.1)
-              if (Math.abs(lineValue - predictionLine) < 0.1) {
-                // Parse over odds
-                if (statData.over && statData.over !== 'N/A') {
-                  const overOddsStr = statData.over;
-                  const overOdds = typeof overOddsStr === 'string' 
-                    ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, ''))
-                    : parseFloat(String(overOddsStr));
-                  if (Number.isFinite(overOdds) && (bestOverOdds === null || overOdds > bestOverOdds)) {
-                    bestOverOdds = overOdds;
-                  }
-                }
-                
-                // Parse under odds
-                if (statData.under && statData.under !== 'N/A') {
-                  const underOddsStr = statData.under;
-                  const underOdds = typeof underOddsStr === 'string'
-                    ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, ''))
-                    : parseFloat(String(underOddsStr));
-                  if (Number.isFinite(underOdds) && (bestUnderOdds === null || underOdds > bestUnderOdds)) {
-                    bestUnderOdds = underOdds;
-                  }
-                }
-              }
-            }
-            
-            // Calculate EV using the best odds
-            if (isOver && bestOverOdds !== null) {
-              // Convert American odds to decimal odds
-              const decimalOdds = bestOverOdds > 0 
-                ? (bestOverOdds / 100) + 1 
-                : (100 / Math.abs(bestOverOdds)) + 1;
-              
-              // EV = (Probability × Decimal Odds - 1) × 100
-              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
-            } else if (!isOver && bestUnderOdds !== null) {
-              // Convert American odds to decimal odds
-              const decimalOdds = bestUnderOdds > 0 
-                ? (bestUnderOdds / 100) + 1 
-                : (100 / Math.abs(bestUnderOdds)) + 1;
-              
-              // EV = (Probability × Decimal Odds - 1) × 100
-              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
-            }
-          }
-          
-          // Fallback: if we can't get actual odds, use implied probability method
-          if (expectedValue === null && marketProb !== null && marketProb > 0 && marketProb <= 100) {
-            // This is a rough approximation using implied probability
-            // EV ≈ (StatTrackr Probability / Market Implied Probability - 1) × 100
-            expectedValue = (statProb / marketProb - 1) * 100;
-          }
-          
-          setPredictedOutcome({
-            overProb: data.overProb,
-            underProb: data.underProb,
-            confidence,
-            expectedValue,
-          });
-          return;
-        }
-
-        // API returned null probabilities - log the full response for debugging
-        console.warn('[Dashboard] API returned null probabilities. Full response:', JSON.stringify(data, null, 2));
-        setPredictedOutcome(null);
-        return;
-      } catch (error) {
-        console.error('[Dashboard] Error fetching prediction from API:', error);
-        setPredictedOutcome(null);
-        return;
-      }
-    };
-    
-    calculatePrediction();
-    }, 2000); // Defer by 2 seconds to let stats display first
-    
-    return () => clearTimeout(timeoutId);
-    
-    // OLD CLIENT-SIDE CALCULATION (now disabled, using API instead)
-    /*try {
-      // Extract all stat values from unfiltered playerStats (not chartData which is filtered by timeframe)
-        const allStatValues = playerStats
-          .filter((stats: any) => {
-            const minutes = parseMinutes(stats.min);
-            return minutes > 0; // Only include games where player played
-          })
-          .map((stats: any) => getStatValue(stats, selectedStat))
-          .filter((val: number) => Number.isFinite(val));
-        
-        if (allStatValues.length === 0) {
-          setPredictedOutcome(null);
-          return;
-        }
-        
-        // 1. Last 5 games average (most recent form) - use all stats, not filtered
-        // Sort by date newest-first, then take first 5
-        const sortedStats = [...playerStats].sort((a, b) => {
-          const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
-          const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
-          return dateB - dateA; // Newest first
-        });
-        const last5Stats = sortedStats
-          .filter((stats: any) => {
-            const minutes = parseMinutes(stats.min);
-            return minutes > 0;
-          })
-          .slice(0, 5)
-          .map((stats: any) => getStatValue(stats, selectedStat))
-          .filter((val: number) => Number.isFinite(val));
-        const last5Avg = last5Stats.length > 0
-          ? last5Stats.reduce((sum: number, val: number) => sum + val, 0) / last5Stats.length
-          : null;
-        
-        // 2. H2H average vs current opponent - use all stats, not filtered
-        const normalizedOpponent = opponentTeam && opponentTeam !== 'N/A' && opponentTeam !== 'ALL' && opponentTeam !== ''
-          ? normalizeAbbr(opponentTeam)
-          : null;
-        const h2hStats = normalizedOpponent
-          ? playerStats
-              .filter((stats: any) => {
-                const minutes = parseMinutes(stats.min);
-                if (minutes === 0) return false;
-                
-                // FIXED to handle players who changed teams
-                // If a player has stats for a game, and the opponent is in that game, it's an H2H match
-                const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-                const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-                const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-                const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-                
-                if (!homeTeamAbbr || !visitorTeamAbbr) {
-                  return false;
-                }
-                
-                const homeNorm = normalizeAbbr(homeTeamAbbr);
-                const awayNorm = normalizeAbbr(visitorTeamAbbr);
-                
-                // If the opponent is in this game, and the player has stats for it, it's an H2H match
-                return homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
-              })
-              .map((stats: any) => getStatValue(stats, selectedStat))
-              .filter((val: number) => Number.isFinite(val))
-          : [];
-        const h2hAvg = h2hStats.length > 0
-          ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
-          : null;
-        
-        // 3. Season average (baseline) - use all stats, not filtered
-        const seasonAvg = allStatValues.reduce((sum: number, val: number) => sum + val, 0) / allStatValues.length;
-        
-        // 4. DvP adjustment - use rankings for more impactful adjustments
-        let dvpAdjustment = 0;
-        if (normalizedOpponent && selectedPosition) {
-          try {
-            // Map selectedStat to DvP metric name
-            const statToMetric: Record<string, string> = {
-              'pts': 'pts',
-              'reb': 'reb',
-              'ast': 'ast',
-              'fg3m': 'fg3m',
-              'stl': 'stl',
-              'blk': 'blk',
-              'to': 'to',
-              'fg_pct': 'fg_pct',
-              'ft_pct': 'ft_pct',
-            };
-            const metric = statToMetric[selectedStat] || selectedStat;
-            
-            // Fetch DvP rank (1-30, where 1 is best defense, 30 is worst)
-            const dvpRankResponse = await cachedFetch(
-              `/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${metric}&games=82`,
-              undefined,
-              120000 // 2 minute cache
-            );
-            
-            if (dvpRankResponse?.metrics?.[metric]) {
-              // Get the rank for this specific team
-              const ranks = dvpRankResponse.metrics[metric];
-              const teamRank = ranks[normalizedOpponent] || ranks[normalizedOpponent.toUpperCase()] || null;
-              
-              // If we have a rank, apply tiered adjustments
-              if (teamRank !== null && teamRank >= 1 && teamRank <= 30) {
-                // Rank 1-10: Very good defense (lower prediction)
-                if (teamRank <= 10) {
-                  // Further reduced negative adjustment: -0.5 to -1.0 points based on rank (1 = -1.0, 10 = -0.5)
-                  // Even less aggressive to avoid overly pessimistic predictions - even best defenses don't completely shut down good players
-                  dvpAdjustment = -0.5 - ((10 - teamRank) / 10) * 0.5;
-                }
-                // Rank 11-20: Medium defense (small adjustment)
-                else if (teamRank <= 20) {
-                  // Small adjustment: -1 to +1 points based on rank (11 = -1, 20 = +1)
-                  dvpAdjustment = -1 + ((teamRank - 11) / 9) * 2;
-                }
-                // Rank 21-30: Bad defense (raise prediction)
-                else {
-                  // Positive adjustment: +1.5 to +2.5 points based on rank (21 = +1.5, 30 = +2.5)
-                  dvpAdjustment = 1.5 + ((teamRank - 21) / 9) * 1;
-                }
-              }
-            }
-          } catch (dvpError) {
-            console.warn('Failed to fetch DvP rank data for prediction:', dvpError);
-          }
-        }
-        
-        // 5. Advanced stats/potentials (if available)
-        let advancedStatsAdjustment = 0;
-        if (advancedStats) {
-          // Use usage percentage to adjust (applies to all stats)
-          // Higher usage = more opportunities = higher expected output
-          if (advancedStats.usage_percentage && Number.isFinite(advancedStats.usage_percentage)) {
-            const usagePct = advancedStats.usage_percentage * 100;
-            // Normalize usage (typical range 15-35%) to adjustment (further reduced)
-            advancedStatsAdjustment += ((usagePct - 25) / 10) * 0.15; // Further reduced from 0.25
-          }
-          
-          // Stat-specific advanced stats adjustments
-          if (selectedStat === 'reb') {
-            // Use rebound percentage for rebounds
-            // Higher rebound % = better at getting rebounds relative to opportunities
-            if (advancedStats.rebound_percentage && Number.isFinite(advancedStats.rebound_percentage)) {
-              // Typical rebound % range: 8-20% (centers/forwards higher, guards lower)
-              // Normalize to adjustment: above 14% = positive, below 14% = negative
-              const rebPct = advancedStats.rebound_percentage;
-              const rebAdjustment = ((rebPct - 14) / 6) * 0.5; // Scale: -1 to +1 points adjustment
-              advancedStatsAdjustment += rebAdjustment;
-            }
-            
-            // Also use offensive rebound percentage for rebounds
-            if (advancedStats.offensive_rebound_percentage && Number.isFinite(advancedStats.offensive_rebound_percentage)) {
-              // Typical ORB % range: 2-12% (centers/forwards higher)
-              // Normalize to adjustment: above 6% = positive, below 6% = negative
-              const orbPct = advancedStats.offensive_rebound_percentage;
-              const orbAdjustment = ((orbPct - 6) / 5) * 0.3; // Scale: -0.6 to +0.6 points adjustment
-              advancedStatsAdjustment += orbAdjustment;
-            }
-          } else if (selectedStat === 'ast') {
-            // Use assist percentage for assists
-            // Higher assist % = better at getting assists relative to opportunities
-            if (advancedStats.assist_percentage && Number.isFinite(advancedStats.assist_percentage)) {
-              // Typical assist % range: 10-40% (point guards higher, centers lower)
-              // Normalize to adjustment: above 20% = positive, below 20% = negative
-              const astPct = advancedStats.assist_percentage;
-              const astAdjustment = ((astPct - 20) / 15) * 0.6; // Scale: -0.8 to +0.8 points adjustment
-              advancedStatsAdjustment += astAdjustment;
-            }
-            
-            // Also use assist-to-turnover ratio for assists
-            if (advancedStats.assist_to_turnover && Number.isFinite(advancedStats.assist_to_turnover)) {
-              // Typical A/TO range: 1.5-3.5 (higher = better playmaker)
-              // Normalize to adjustment: above 2.5 = positive, below 2.5 = negative
-              const ato = advancedStats.assist_to_turnover;
-              const atoAdjustment = ((ato - 2.5) / 1) * 0.2; // Scale: -0.2 to +0.2 points adjustment
-              advancedStatsAdjustment += atoAdjustment;
-            }
-          }
-        }
-        
-        // 6. Team pace adjustment (team-level stat, not player-level)
-        // Higher pace = more possessions = more opportunities for stats
-        const playerTeamAbbr = normalizeAbbr(selectedPlayer?.teamAbbr || '');
-        const teamPaceValue = getTeamPace(playerTeamAbbr);
-        if (teamPaceValue > 0) {
-          const paceAdjustment = ((teamPaceValue - 100) / 10) * 0.1; // Further reduced from 0.15
-          advancedStatsAdjustment += paceAdjustment;
-        }
-        
-        // Combine all factors with weights
-        // Weights: H2H (30%), Last 5 games (35%), Season avg (35%), then apply DvP and Advanced stats adjustments
-        let predictedValue = seasonAvg; // Default to season average
-        
-        // Calculate weighted average of the three main factors
-        let totalWeight = 0.35; // Season avg weight (35%)
-        let weightedSum = seasonAvg * 0.35;
-        
-        if (last5Avg !== null && last5Stats.length >= 3) {
-          // Only use last 5 if we have at least 3 games (35% weight)
-          weightedSum += last5Avg * 0.35;
-          totalWeight += 0.35;
-        }
-        
-        if (h2hAvg !== null && h2hStats.length >= 2) {
-          // Only use H2H if we have at least 2 games (30% weight)
-          weightedSum += h2hAvg * 0.30;
-          totalWeight += 0.30;
-        }
-        
-        // Normalize by total weight to get weighted average
-        predictedValue = totalWeight > 0 ? weightedSum / totalWeight : seasonAvg;
-        
-        // Apply adjustments (these are additive, not weighted)
-        predictedValue += dvpAdjustment;
-        predictedValue += advancedStatsAdjustment;
-        
-        // Get market probabilities from calculatedImpliedOdds (which only uses real lines)
-        const marketOverProb = calculatedImpliedOdds?.overImpliedProb ?? null;
-        const marketUnderProb = calculatedImpliedOdds?.underImpliedProb ?? null;
-        
-        // Blend with bookmaker implied odds to "level it out" (30% market influence)
-        // This helps align our predictions with market consensus
-        let finalPredictedValue = predictedValue;
-        if (marketOverProb !== null && marketUnderProb !== null && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine)) {
-          // The market line already reflects market consensus, so we blend our prediction 70% with market line 30%
-          // This pulls our prediction closer to market when there's a big discrepancy
-          finalPredictedValue = predictedValue * 0.7 + predictionLine * 0.3;
-        }
-        
-        // Calculate standard deviation from all historical data (use allStatValues, not filtered)
-        const variance = allStatValues.reduce((sum: number, val: number) => {
-          const diff = val - seasonAvg;
-          return sum + (diff * diff);
-        }, 0) / allStatValues.length;
-        const stdDev = Math.sqrt(variance);
-        const adjustedStdDev = Math.max(stdDev, 2);
-        
-        if (Number.isFinite(finalPredictedValue) && predictionLine !== null && predictionLine !== undefined && Number.isFinite(predictionLine) && adjustedStdDev > 0) {
-          // Calculate z-score using the final predicted value (blended with market)
-          const zScore = (predictionLine - finalPredictedValue) / adjustedStdDev;
-          
-          // Use normal distribution CDF to calculate probability
-          const underProb = normalCDF(zScore) * 100;
-          const overProb = (1 - normalCDF(zScore)) * 100;
-          
-          // Clamp probabilities between 0-100
-          const clampedOverProb = Math.max(0, Math.min(100, overProb));
-          const clampedUnderProb = Math.max(0, Math.min(100, underProb));
-          
-          const isOver = clampedOverProb >= 50;
-          const statProb = isOver ? clampedOverProb : clampedUnderProb;
-          const marketProb = isOver ? marketOverProb : marketUnderProb;
-          
-          // Calculate edge and confidence
-          const edge = marketProb != null ? statProb - marketProb : null;
-          let confidence: 'High' | 'Medium' | 'Low' = 'Low';
-          if (edge != null) {
-            const absEdge = Math.abs(edge);
-            confidence = absEdge >= 12 ? 'High' : absEdge >= 6 ? 'Medium' : 'Low';
-          }
-          
-          // Calculate Expected Value (EV) using actual betting odds
-          // EV = (Probability × Decimal Odds - 1) × 100
-          let expectedValue: number | null = null;
-          
-          // Get the actual odds for the bet (over or under)
-          const bookRowKey = getBookRowKey(selectedStat);
-          if (bookRowKey && realOddsData && realOddsData.length > 0 && predictionLine !== null && predictionLine !== undefined) {
-            // Find the best odds for the primary market line (consensus line)
-            let bestOverOdds: number | null = null;
-            let bestUnderOdds: number | null = null;
-            
-            for (const book of realOddsData) {
-              const statData = (book as any)[bookRowKey];
-              if (!statData || statData.line === 'N/A') continue;
-              
-              const lineValue = parseFloat(statData.line);
-              if (isNaN(lineValue)) continue;
-              
-              // Only use real lines (not alt lines) - check if it matches primary market line
-              const meta = (book as any)?.meta;
-              if (meta?.variantLabel) continue; // Skip alt lines
-              
-              // Check if this line matches the primary market line (within 0.1)
-              if (Math.abs(lineValue - predictionLine) < 0.1) {
-                // Parse over odds
-                if (statData.over && statData.over !== 'N/A') {
-                  const overOddsStr = statData.over;
-                  const overOdds = typeof overOddsStr === 'string' 
-                    ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, ''))
-                    : parseFloat(String(overOddsStr));
-                  if (Number.isFinite(overOdds) && (bestOverOdds === null || overOdds > bestOverOdds)) {
-                    bestOverOdds = overOdds;
-                  }
-                }
-                
-                // Parse under odds
-                if (statData.under && statData.under !== 'N/A') {
-                  const underOddsStr = statData.under;
-                  const underOdds = typeof underOddsStr === 'string'
-                    ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, ''))
-                    : parseFloat(String(underOddsStr));
-                  if (Number.isFinite(underOdds) && (bestUnderOdds === null || underOdds > bestUnderOdds)) {
-                    bestUnderOdds = underOdds;
-                  }
-                }
-              }
-            }
-            
-            // Calculate EV using the best odds
-            if (isOver && bestOverOdds !== null) {
-              // Convert American odds to decimal odds
-              const decimalOdds = bestOverOdds > 0 
-                ? (bestOverOdds / 100) + 1 
-                : (100 / Math.abs(bestOverOdds)) + 1;
-              
-              // EV = (Probability × Decimal Odds - 1) × 100
-              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
-            } else if (!isOver && bestUnderOdds !== null) {
-              // Convert American odds to decimal odds
-              const decimalOdds = bestUnderOdds > 0 
-                ? (bestUnderOdds / 100) + 1 
-                : (100 / Math.abs(bestUnderOdds)) + 1;
-              
-              // EV = (Probability × Decimal Odds - 1) × 100
-              expectedValue = ((statProb / 100) * decimalOdds - 1) * 100;
-            }
-          }
-          
-          // Fallback: if we can't get actual odds, use implied probability method
-          if (expectedValue === null && marketProb !== null && marketProb > 0 && marketProb <= 100) {
-            // This is a rough approximation using implied probability
-            // EV ≈ (StatTrackr Probability / Market Implied Probability - 1) × 100
-            expectedValue = (statProb / marketProb - 1) * 100;
-          }
-          
-          setPredictedOutcome({
-            overProb: clampedOverProb,
-            underProb: clampedUnderProb,
-            confidence,
-            expectedValue,
-          });
-        } else {
-          setPredictedOutcome(null);
-        }
-      } catch (error) {
-        console.error('Error calculating prediction:', error);
-        setPredictedOutcome(null);
-      }
-      */
-  }, [
-    propsMode,
-    selectedPlayer,
-    selectedStat,
-    primaryMarketLine, // Only changes when player/stat changes, not when user adjusts betting line
-    calculatedImpliedOdds, // Only uses real lines from bookmakers
-    playerStats, // Use unfiltered playerStats instead of chartData (which is filtered by timeframe)
-    opponentTeam, // For H2H calculation
-    selectedPosition, // For DvP calculation
-    advancedStats, // For advanced stats adjustment
-    // Note: realOddsData is accessed from closure, not in deps to avoid array size changes
-  ]);
 
   return (
 <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
@@ -18014,36 +17426,38 @@ const lineMovementInFlightRef = useRef(false);
                       </button>
                     </div>
                     
-                    {/* Content based on selected tab */}
-                    {dvpProjectedTab === 'dvp' && (
-                      <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
-                    )}
-                    {dvpProjectedTab === 'projected' && (
-                      <ProjectedStatsCard
-                        isDark={isDark}
-                        selectedPlayer={selectedPlayer}
-                        opponentTeam={opponentTeam}
-                        currentTeam={selectedTeam}
-                        projectedMinutes={projectedMinutes}
-                        loading={projectedMinutesLoading}
-                        predictedPace={predictedPace}
-                        seasonFgPct={seasonFgPct}
-                        averageUsageRate={averageUsageRate}
-                        averageMinutes={averageMinutes}
-                        averageGamePace={averageGamePace}
-                        selectedTimeframe={selectedTimeframe}
-                      />
-                    )}
-                    {dvpProjectedTab === 'opponent' && (
-                      <OpponentAnalysisCard 
-                        isDark={isDark} 
-                        opponentTeam={opponentTeam} 
-                        selectedTimeFilter={selectedTimeFilter}
-                        propsMode={propsMode}
-                        playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
-                        selectedStat={selectedStat}
-                      />
-                    )}
+                    {/* Content based on selected tab - always render container, just show/hide content */}
+                    <div className="relative min-h-[200px]">
+                      <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
+                        <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+                      </div>
+                      <div className={dvpProjectedTab === 'projected' ? 'block' : 'hidden'}>
+                        <ProjectedStatsCard
+                          isDark={isDark}
+                          selectedPlayer={selectedPlayer}
+                          opponentTeam={opponentTeam}
+                          currentTeam={selectedTeam}
+                          projectedMinutes={projectedMinutes}
+                          loading={projectedMinutesLoading}
+                          predictedPace={predictedPace}
+                          seasonFgPct={seasonFgPct}
+                          averageUsageRate={averageUsageRate}
+                          averageMinutes={averageMinutes}
+                          averageGamePace={averageGamePace}
+                          selectedTimeframe={selectedTimeframe}
+                        />
+                      </div>
+                      <div className={dvpProjectedTab === 'opponent' ? 'block' : 'hidden'}>
+                        <OpponentAnalysisCard 
+                          isDark={isDark} 
+                          opponentTeam={opponentTeam} 
+                          selectedTimeFilter={selectedTimeFilter}
+                          propsMode={propsMode}
+                          playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                          selectedStat={selectedStat}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -18405,7 +17819,6 @@ const lineMovementInFlightRef = useRef(false);
                 lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                   lineMovementData={mergedLineMovementData}
                   selectedStat={selectedStat}
-                  predictedOutcome={predictedOutcome}
                   calculatedImpliedOdds={calculatedImpliedOdds}
                   selectedBookmakerName={selectedBookmakerName}
                   selectedBookmakerLine={selectedBookmakerLine}
@@ -18415,7 +17828,7 @@ const lineMovementInFlightRef = useRef(false);
                   bettingLine={bettingLine}
                 />
               </div>
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
 
             {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
             <BestOddsTable
@@ -18578,7 +17991,6 @@ const lineMovementInFlightRef = useRef(false);
                     lineMovementEnabled={LINE_MOVEMENT_ENABLED}
                     lineMovementData={mergedLineMovementData}
                     selectedStat={selectedStat}
-                    predictedOutcome={predictedOutcome}
                     calculatedImpliedOdds={calculatedImpliedOdds}
                     selectedBookmakerName={selectedBookmakerName}
                     selectedBookmakerLine={selectedBookmakerLine}
@@ -18589,7 +18001,7 @@ const lineMovementInFlightRef = useRef(false);
                 />
               </div>
             ) : null
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, predictedOutcome, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
+            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
 
             {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
             <BestOddsTableDesktop
@@ -18863,36 +18275,38 @@ const lineMovementInFlightRef = useRef(false);
                       </button>
                     </div>
                     
-                    {/* Content based on selected tab */}
-                    {dvpProjectedTab === 'dvp' && (
-                      <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
-                    )}
-                    {dvpProjectedTab === 'projected' && (
-                      <ProjectedStatsCard
-                        isDark={isDark}
-                        selectedPlayer={selectedPlayer}
-                        opponentTeam={opponentTeam}
-                        currentTeam={selectedTeam}
-                        projectedMinutes={projectedMinutes}
-                        loading={projectedMinutesLoading}
-                        predictedPace={predictedPace}
-                        seasonFgPct={seasonFgPct}
-                        averageUsageRate={averageUsageRate}
-                        averageMinutes={averageMinutes}
-                        averageGamePace={averageGamePace}
-                        selectedTimeframe={selectedTimeframe}
-                      />
-                    )}
-                    {dvpProjectedTab === 'opponent' && (
-                      <OpponentAnalysisCard 
-                        isDark={isDark} 
-                        opponentTeam={opponentTeam} 
-                        selectedTimeFilter={selectedTimeFilter}
-                        propsMode={propsMode}
-                        playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
-                        selectedStat={selectedStat}
-                      />
-                    )}
+                    {/* Content based on selected tab - always render container, just show/hide content */}
+                    <div className="relative min-h-[200px]">
+                      <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
+                        <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+                      </div>
+                      <div className={dvpProjectedTab === 'projected' ? 'block' : 'hidden'}>
+                        <ProjectedStatsCard
+                          isDark={isDark}
+                          selectedPlayer={selectedPlayer}
+                          opponentTeam={opponentTeam}
+                          currentTeam={selectedTeam}
+                          projectedMinutes={projectedMinutes}
+                          loading={projectedMinutesLoading}
+                          predictedPace={predictedPace}
+                          seasonFgPct={seasonFgPct}
+                          averageUsageRate={averageUsageRate}
+                          averageMinutes={averageMinutes}
+                          averageGamePace={averageGamePace}
+                          selectedTimeframe={selectedTimeframe}
+                        />
+                      </div>
+                      <div className={dvpProjectedTab === 'opponent' ? 'block' : 'hidden'}>
+                        <OpponentAnalysisCard 
+                          isDark={isDark} 
+                          opponentTeam={opponentTeam} 
+                          selectedTimeFilter={selectedTimeFilter}
+                          propsMode={propsMode}
+                          playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
+                          selectedStat={selectedStat}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
 

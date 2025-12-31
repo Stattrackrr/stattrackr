@@ -373,32 +373,290 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
     return '#6b7280'; // Gray if no data
   };
 
-  // Show loading/error state only if we don't have data AND we're not in fallback mode with shotData
-  // Also show loading state if we're actively loading
-  if (!enhancedData && (!allowFallback || !shotData)) {
-    // Removed excessive logging
-    // console.log('[Shot Chart] Rendering loading/error state:', {
-    //   hasEnhancedData: !!enhancedData,
-    //   allowFallback,
-    //   hasShotData: !!shotData,
-    //   enhancedLoading,
-    //   enhancedError
-    // });
+  // Always render the container - only change the content inside
+  // Show skeleton when we don't have enhanced data AND we're not in fallback mode with shotData
+  const showSkeleton = !enhancedData && (!allowFallback || !shotData);
+  
+  // Skeleton loader with basketball court shape (calculate once, use in both skeleton and as fallback)
+  const scale = 10;
+  const courtWidth = 50 * scale; // 500px
+  const courtHeight = 38 * scale; // 380px
+  const paintWidth = 16 * scale; // 160px
+  const threePointRadius = 23.75 * scale; // 237.5px
+  const threePointCorner = 14 * scale; // 140px
+  const freeThrowRadius = 6 * scale; // 60px
+  const restrictedRadius = 4 * scale; // 40px
+  
+  const centerX = courtWidth / 2; // 250
+  const baseline = courtHeight; // 380
+  const paintLeft = centerX - paintWidth / 2; // 170
+  const paintRight = centerX + paintWidth / 2; // 330
+  const freeThrowLine = baseline - 21 * scale; // 170
+  
+  // Three-point line path
+  const threePointPath = `M ${centerX - threePointCorner} ${baseline} 
+    A ${threePointRadius} ${threePointRadius} 0 0 1 ${centerX - threePointRadius} ${baseline - threePointRadius}
+    A ${threePointRadius} ${threePointRadius} 0 0 1 ${centerX} ${baseline - threePointRadius * 2}
+    A ${threePointRadius} ${threePointRadius} 0 0 1 ${centerX + threePointRadius} ${baseline - threePointRadius}
+    A ${threePointRadius} ${threePointRadius} 0 0 1 ${centerX + threePointCorner} ${baseline}
+    Z`;
+  
+  // Render skeleton content - matches exact structure of real shot chart
+  const renderSkeleton = () => {
+    const midRangeWidth = 80; // Width of mid-range zone
+    
     return (
-      <div className="w-full h-full flex items-center justify-center p-6" style={{ minHeight: '200px' }}>
+      <>
+        {/* Title with Info Button and Season Label - skeleton */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 relative">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+            <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* SVG Chart - skeleton with exact same structure */}
         {enhancedError ? (
-          <div className="text-center max-w-md">
-            <div className="text-red-500 dark:text-red-400 font-semibold mb-2 text-sm">⚠️ Error Loading Shot Chart</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">{enhancedError}</div>
+          <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '380px' }}>
+            <div className="text-center max-w-md">
+              <div className="text-red-500 dark:text-red-400 font-semibold mb-2 text-sm">⚠️ Error Loading Shot Chart</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">{enhancedError}</div>
+            </div>
           </div>
         ) : (
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            {enhancedLoading ? 'Loading NBA Stats data...' : 'No shot data available'}
-          </div>
+          <svg viewBox="0 0 500 380" className="w-full" style={{ height: 'auto', width: '100%' }} preserveAspectRatio="xMidYMid meet">
+            {/* Define clip path for rounded corners */}
+            <defs>
+              <clipPath id="roundedCourtSkeleton">
+                <rect x="0" y="0" width="500" height="380" rx="15" ry="15" />
+              </clipPath>
+            </defs>
+            
+            {/* Court background with rounded corners */}
+            <rect x="0" y="0" width="500" height="380" rx="15" ry="15" fill={isDark ? '#1e293b' : '#d4a574'} />
+            
+            {/* Group with clip path for all zones */}
+            <g clipPath="url(#roundedCourtSkeleton)">
+              {/* ===== ZONE FILLS (drawn first, behind lines) - skeleton with pulse animation ===== */}
+              
+              {/* Left Corner 3 - skeleton */}
+              <path
+                d={`M 0 270 
+                    L 150 270 
+                    L 150 ${baseline} 
+                    L 15 ${baseline} 
+                    Q 0 ${baseline} 0 ${baseline - 15} Z`}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                stroke="none"
+              />
+              
+              {/* Right Corner 3 - skeleton */}
+              <path
+                d={`M ${courtWidth - 150} 270 
+                    L ${courtWidth} 270 
+                    L ${courtWidth} ${baseline - 15} 
+                    Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+                    L ${courtWidth - 150} ${baseline} Z`}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                style={{ animationDelay: '0.1s' }}
+                stroke="none"
+              />
+              
+              {/* Paint zone (5-9ft shots) - skeleton */}
+              <rect
+                x={paintLeft}
+                y={freeThrowLine}
+                width={paintWidth}
+                height={baseline - freeThrowLine}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                style={{ animationDelay: '0.2s' }}
+                stroke="none"
+              />
+              
+              {/* Restricted area zone - less than 5ft - skeleton */}
+              <path
+                d={`M ${centerX - 60} ${baseline} 
+                    L ${centerX - 60} ${baseline - 60} 
+                    Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
+                    L ${centerX + 60} ${baseline} Z`}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                style={{ animationDelay: '0.3s' }}
+                stroke="#000"
+                strokeWidth="3"
+              />
+              
+              {/* 3-point zone - skeleton */}
+              <path
+                d={`M 15 0 
+                    L ${courtWidth - 15} 0 
+                    Q ${courtWidth} 0 ${courtWidth} 15 
+                    L ${courtWidth} 270 
+                    L ${courtWidth - 150} 270 
+                    L ${courtWidth - 150} ${freeThrowLine - 50} 
+                    L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+                    Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+                    L 150 ${freeThrowLine - 50} 
+                    L 150 270 
+                    L 0 270 
+                    L 0 15 
+                    Q 0 0 15 0 Z`}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                style={{ animationDelay: '0.4s' }}
+              />
+              
+              {/* Mid-range zone - skeleton */}
+              <path
+                d={`M ${paintLeft - midRangeWidth} ${baseline - 15} 
+                    Q ${paintLeft - midRangeWidth} ${baseline} ${paintLeft - midRangeWidth + 15} ${baseline} 
+                    L 15 ${baseline} 
+                    Q 0 ${baseline} 0 ${baseline - 15} 
+                    L 0 ${baseline - 15} 
+                    Q 0 ${baseline} 15 ${baseline} 
+                    L ${paintLeft} ${baseline} 
+                    L ${paintLeft} ${freeThrowLine} 
+                    L ${paintRight} ${freeThrowLine} 
+                    L ${paintRight} ${baseline} 
+                    L ${courtWidth - 15} ${baseline} 
+                    Q ${courtWidth} ${baseline} ${courtWidth} ${baseline - 15} 
+                    L ${courtWidth} ${baseline - 15} 
+                    Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} 
+                    L ${paintRight + midRangeWidth - 15} ${baseline} 
+                    Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} 
+                    L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+                    Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
+                fill="#d1d5db"
+                className="dark:fill-gray-700 animate-pulse"
+                opacity="0.6"
+                style={{ animationDelay: '0.5s' }}
+                stroke="none"
+              />
+              
+              {/* ===== COURT LINES ===== */}
+              
+              {/* Court boundary with rounded corners */}
+              <rect x="0" y="0" width={courtWidth} height={courtHeight} rx="15" ry="15" fill="none" stroke="#000" strokeWidth="3" />
+              
+              {/* Paint */}
+              <rect
+                x={paintLeft}
+                y={freeThrowLine}
+                width={paintWidth}
+                height={baseline - freeThrowLine}
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              
+              {/* Mid-range outer border */}
+              <path
+                d={`M ${paintLeft - midRangeWidth} ${baseline} 
+                    L ${paintLeft - midRangeWidth} ${freeThrowLine - 50} 
+                    Q ${centerX} ${freeThrowLine - 120} ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
+                    L ${paintRight + midRangeWidth} ${baseline}`}
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              
+              {/* Free throw mark */}
+              <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
+              
+              {/* Corner 3 separator lines - horizontal lines on left and right */}
+              <line
+                x1="0"
+                y1="270"
+                x2="90"
+                y2="270"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              <line
+                x1="410"
+                y1="270"
+                x2="500"
+                y2="270"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              
+              {/* ===== PERCENTAGE PLACEHOLDERS (skeleton text) ===== */}
+              
+              {/* Above-the-break 3 percentage placeholder */}
+              <text x={centerX} y="60" textAnchor="middle" fill="#ffffff" fontSize="32" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" repeatCount="indefinite" />
+                --
+              </text>
+              
+              {/* Mid-Range percentage placeholder */}
+              <text x={centerX} y={freeThrowLine - 30} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" begin="0.2s" repeatCount="indefinite" />
+                --
+              </text>
+              
+              {/* Restricted area percentage placeholder */}
+              <text x={centerX} y={baseline - 25} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" begin="0.4s" repeatCount="indefinite" />
+                --
+              </text>
+              
+              {/* Paint percentage placeholder */}
+              <text x={centerX} y={freeThrowLine + (baseline - freeThrowLine) / 2} textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" begin="0.6s" repeatCount="indefinite" />
+                --
+              </text>
+              
+              {/* Left Corner 3 percentage placeholder */}
+              <text x="45" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" begin="0.8s" repeatCount="indefinite" />
+                --
+              </text>
+              
+              {/* Right Corner 3 percentage placeholder */}
+              <text x="455" y="330" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="bold" stroke="#000" strokeWidth="0.5" opacity="0.5">
+                <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" begin="1s" repeatCount="indefinite" />
+                --
+              </text>
+            </g>
+          </svg>
         )}
-      </div>
+        
+        {/* Color Legend - skeleton */}
+        <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="flex items-center gap-1">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </>
     );
-  }
+  };
   
   // Removed excessive logging - was causing performance issues
   // if (enhancedData) {
@@ -409,29 +667,16 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   //   });
   // }
 
-  // NBA court dimensions (in feet, scaled to fit viewBox)
-  // Court is 50ft wide × 47ft half-court
-  // Scale: 10px = 1ft
-  const scale = 10;
-  const courtWidth = 50 * scale; // 500px
-  const courtHeight = 38 * scale; // 380px (reduced to minimize top space)
-  const paintWidth = 16 * scale; // 160px
-  const threePointRadius = 23.75 * scale; // 237.5px from hoop
-  const threePointCorner = 14 * scale; // 140px from baseline (NBA: 14ft corners)
-  const freeThrowRadius = 6 * scale; // 60px
-  const restrictedRadius = 4 * scale; // 40px
-  
-  const centerX = courtWidth / 2; // 250
-  const baseline = courtHeight; // 470
-  const paintLeft = centerX - paintWidth / 2; // 170
-  const paintRight = centerX + paintWidth / 2; // 330
-  const freeThrowLine = baseline - 21 * scale; // 210 (moved higher up)
+  // Use the same court dimensions for actual chart (already calculated above)
   const midRangeWidth = 80; // Width of mid-range zone
 
+  // Always render the container - show skeleton if no data, otherwise show chart
   return (
     <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
-      {/* Title with Info Button and Season Label */}
-      <div className="flex items-center justify-between w-full">
+      {showSkeleton ? renderSkeleton() : (
+        <>
+          {/* Title with Info Button and Season Label */}
+          <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2 relative">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
           <button
@@ -817,7 +1062,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           </div>
         </div>
       )}
-
+        </>
+      )}
     </div>
   );
 };
