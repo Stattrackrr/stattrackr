@@ -345,8 +345,8 @@ export default function InjuryContainer({
           const selectedPlayerGameDates = new Set(playerStats.map((s: any) => {
             const date = s.game?.date;
             return date ? new Date(date).toISOString().split('T')[0] : null;
-          }).filter(Boolean));
-          const overlap = Array.from(gamesWithInjuredPlayerByDate).filter(date => selectedPlayerGameDates.has(date));
+          }).filter(Boolean) as string[]);
+          const overlap = Array.from(gamesWithInjuredPlayerByDate).filter((date: string) => selectedPlayerGameDates.has(date));
           console.log(`[Injury Impact] Game date overlap: ${overlap.length} games in common`);
 
           // If no games in common (by date), they haven't played together
