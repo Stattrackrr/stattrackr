@@ -344,6 +344,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
 
   const mappedDepthChart = createDepthChart(depthChart);
   
+  // Always render the container - show skeleton/placeholder when no team selected
   if (!selectedTeam || selectedTeam === 'N/A') {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">

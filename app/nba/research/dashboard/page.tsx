@@ -1925,10 +1925,11 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
     setCurrentPage(0);
   }, [selectedPlayer]);
   
+  // Always render the container - show skeleton when loading or no player selected
   if (!selectedPlayer) {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Games</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Game Log</h3>
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <div className="text-gray-500 dark:text-gray-400">Select a player to view their recent game logs</div>
@@ -1938,13 +1939,29 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
     );
   }
 
+  // Show skeleton when player is selected but stats are loading (empty array)
   if (!playerStats.length) {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Games</h3>
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="text-gray-500 dark:text-gray-400">No game data available for {selectedPlayer.full}</div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Game Log</h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            {/* Skeleton table */}
+            <div className="animate-pulse">
+              <div className={`${isDark ? 'bg-[#0a1929]' : 'bg-slate-100'} h-10 mb-2 rounded`}></div>
+              {[...Array(5)].map((_, idx) => (
+                <div key={idx} className={`${isDark ? 'border-slate-700' : 'border-slate-200'} border-b h-12 mb-1`}>
+                  <div className="flex gap-2 h-full items-center px-2">
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded flex-1`}></div>
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded w-12`}></div>
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded w-12`}></div>
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded w-12`}></div>
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded w-12`}></div>
+                    <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded w-12`}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -5580,14 +5597,14 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
   const posLabel = posSel || selectedPosition || 'Select Position';
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
+    <div className="mb-4 sm:mb-6 w-full min-w-0">
+      <div className="flex items-center justify-between mb-2 sm:mb-2">
+        <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
+        <span className="text-xs sm:text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
       </div>
-      <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'}`}>
+      <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} w-full min-w-0`}>
         {/* Controls row */}
-        <div className="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="px-3 sm:px-3 py-3 sm:py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
           {/* Position switcher */}
           <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-600' : 'border-gray-300'} p-2 relative`}>
             <div className={`text-[11px] font-semibold mb-2 ${mounted && isDark ? 'text-slate-200' : 'text-slate-800'}`}>Position</div>
@@ -5767,12 +5784,12 @@ const ProjectedStatsCard = memo(function ProjectedStatsCard({
 
   if (!selectedPlayer || !currentTeam || !opponentTeam) {
     return (
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
+      <div className="mb-4 sm:mb-6 w-full min-w-0">
+        <div className="flex items-center justify-between mb-2 sm:mb-2">
+          <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
         </div>
-        <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} p-4`}>
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+        <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} p-4 sm:p-3 md:p-4`}>
+          <div className="text-sm sm:text-sm text-gray-500 dark:text-gray-400 text-center py-4 sm:py-4">
             Select a player to view projected stats
           </div>
         </div>
@@ -5781,18 +5798,18 @@ const ProjectedStatsCard = memo(function ProjectedStatsCard({
   }
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
+    <div className="mb-4 sm:mb-6 w-full min-w-0">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
       </div>
-      <div className={`rounded-xl border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} shadow-sm`}>
+      <div className={`rounded-xl border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} shadow-sm w-full min-w-0`}>
         {loading ? (
-          <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="px-4 sm:px-3 md:px-4 py-6 sm:py-6 text-center text-sm sm:text-sm text-gray-500 dark:text-gray-400">
             Loading projections...
           </div>
         ) : (
-          <div className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 sm:p-3 md:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3 w-full min-w-0">
               {/* Projected Minutes */}
               <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
                 <div className="flex flex-col">
@@ -5816,24 +5833,24 @@ const ProjectedStatsCard = memo(function ProjectedStatsCard({
               </div>
 
               {/* Predicted Game Pace */}
-              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 sm:p-3 md:p-4 transition-all w-full min-w-0`}>
                 <div className="flex flex-col">
-                  <span className={`text-[10px] font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-0.5`}>
+                  <span className={`text-[10px] sm:text-[10px] font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-0.5`}>
                     Projected
                   </span>
-                  <span className={`text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                  <span className={`text-xs sm:text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2 sm:mb-2`}>
                     Game Pace
                   </span>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <span className={`text-2xl sm:text-xl md:text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                       {predictedPace !== null ? `${predictedPace.toFixed(1)}` : '—'}
                     </span>
                     {predictedPace !== null && (
-                      <span className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>poss</span>
+                      <span className={`text-sm sm:text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>poss</span>
                     )}
                   </div>
                   {averageGamePace !== null && (
-                    <div className={`text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
+                    <div className={`text-sm sm:text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
                       Avg: {averageGamePace.toFixed(1)} poss
                     </div>
                   )}
@@ -5841,9 +5858,9 @@ const ProjectedStatsCard = memo(function ProjectedStatsCard({
               </div>
 
               {/* Average Usage Rate / FG% */}
-              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 transition-all`}>
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'} p-4 sm:p-3 md:p-4 transition-all w-full min-w-0`}>
                 <div className="flex flex-col">
-                  <span className={`text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
+                  <span className={`text-xs sm:text-xs font-medium uppercase tracking-wide ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'} mb-2 sm:mb-2`}>
                     {(() => {
                       const timeframe = selectedTimeframe || 'last10';
                       if (timeframe === 'last10') return 'L10 Average Usage';
@@ -5855,15 +5872,15 @@ const ProjectedStatsCard = memo(function ProjectedStatsCard({
                     })()}
                   </span>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <span className={`text-2xl sm:text-xl md:text-2xl font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                       {averageUsageRate !== null ? `${averageUsageRate.toFixed(1)}` : '—'}
                     </span>
                     {averageUsageRate !== null && (
-                      <span className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>%</span>
+                      <span className={`text-sm sm:text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>%</span>
                     )}
                   </div>
                   {seasonFgPct !== null && (
-                    <div className={`text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
+                    <div className={`text-sm sm:text-xs ${mounted && isDark ? 'text-white' : 'text-gray-900'} mt-1.5`}>
                       Avg FG%: {seasonFgPct.toFixed(1)}%
                     </div>
                   )}
@@ -7304,7 +7321,7 @@ function NBADashboardContent() {
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
   const [selectedFilterForAxis, setSelectedFilterForAxis] = useState<string | null>(null); // Second axis filter: 'minutes', 'dvp_rank', 'pace', 'usage_rate', 'fg_pct', null
-  const [dvpProjectedTab, setDvpProjectedTab] = useState<'dvp' | 'projected' | 'opponent'>('dvp'); // Tab selector for DvP, Projected, and Opponent Breakdown
+  const [dvpProjectedTab, setDvpProjectedTab] = useState<'dvp' | 'projected' | 'opponent' | 'injuries'>('dvp'); // Tab selector for DvP, Projected, Opponent Breakdown, and Injuries
   const [sliderRange, setSliderRange] = useState<{ min: number; max: number } | null>(null); // Slider range for filtering
   const [projectedMinutes, setProjectedMinutes] = useState<number | null>(null); // Cached projected minutes (persists across tab switches)
   const [projectedMinutesLoading, setProjectedMinutesLoading] = useState(false);
@@ -7945,8 +7962,9 @@ const lineMovementInFlightRef = useRef(false);
   // Fetch line movement data when game, player, and stat change
   useEffect(() => {
     if (!LINE_MOVEMENT_ENABLED) {
-      setLineMovementLoading(false);
-      setLineMovementData(null);
+      // Only update state if it's not already set to these values to prevent infinite loops
+      setLineMovementLoading(prev => prev ? false : prev);
+      setLineMovementData(prev => prev !== null ? null : prev);
       return;
     }
     const fetchLineMovement = async () => {
@@ -7955,7 +7973,8 @@ const lineMovementInFlightRef = useRef(false);
       // Only fetch for player mode
       if (propsMode !== 'player' || !selectedPlayer || !selectedTeam || !opponentTeam || opponentTeam === '' || opponentTeam === 'N/A') {
         console.log('⏸️ Skipping line movement fetch - missing requirements');
-        setLineMovementData(null);
+        // Only update if not already null to prevent infinite loops
+        setLineMovementData(prev => prev !== null ? null : prev);
         return;
       }
       
@@ -12527,9 +12546,13 @@ const lineMovementInFlightRef = useRef(false);
     // Apply timeframe to unique games - use slice(0, n) to get FIRST n games (most recent)
     // Since uniqueGames is sorted newest-first, slice(0, n) gives us the newest n games
     // For special timeframes (h2h, lastseason, thisseason), don't slice
+    // If a teammate filter is active, take many more games (10x) so we have enough after teammate filter
+    // This is especially important for "without" filters which can be very restrictive
+    const sliceMultiplier = teammateFilterId && selectedTimeframe.startsWith('last') ? 10 : 1;
+    const sliceCount = !Number.isNaN(nForSlice) ? nForSlice * sliceMultiplier : undefined;
     const timeframeGames = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe)
       ? uniqueGames
-      : (!Number.isNaN(nForSlice) ? uniqueGames.slice(0, nForSlice) : uniqueGames);
+      : (sliceCount ? uniqueGames.slice(0, sliceCount) : uniqueGames);
     
     // Reverse for chronological order (left→right oldest→newest)
     const ordered = timeframeGames.slice().reverse();
@@ -12626,7 +12649,7 @@ const lineMovementInFlightRef = useRef(false);
     });
     
     return result;
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId]); // Removed deferredPlayerStats to prevent double refresh
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]); // Added teammateFilterId to support larger slice when teammate filter is active
   
   // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
   // This allows us to filter from ALL games, then apply timeframe
@@ -12812,7 +12835,9 @@ const lineMovementInFlightRef = useRef(false);
   // Apply advanced filters to base data for player mode
   const filteredGameData = useMemo(() => {
     if (propsMode !== 'player') return baseGameData;
-    const filtered = baseGameData.filter((g: any) => {
+    
+    // First, apply all filters EXCEPT teammate filter
+    let filtered = baseGameData.filter((g: any) => {
       const stats = g?.stats;
       const game = stats?.game;
 
@@ -12836,18 +12861,132 @@ const lineMovementInFlightRef = useRef(false);
       if (excludeBackToBack) {
         if (!game || !backToBackGameIds.has(game.id)) return false;
       }
-      
-      // with/without teammate filter
-      if (teammateFilterId) {
+
+      return true;
+    });
+    
+    // Apply teammate filter AFTER other filters
+    // For "last N" timeframes with teammate filter, we want the last N games WHERE the teammate played/didn't play
+    // Not: last N games filtered by teammate (which might only give 1 game)
+    // So we need to filter ALL games first, then take the last N
+    if (teammateFilterId && selectedTimeframe.startsWith('last')) {
+      const n = parseInt(selectedTimeframe.replace('last', ''));
+      if (!Number.isNaN(n) && n > 0) {
+        // For "last N" with teammate filter, we need to work with ALL games, not just the timeframe slice
+        // Get all games from playerStats (before timeframe filter) and apply filters
+        // Reuse the same structure as baseGameData for consistency
+        const allGamesFromStats: any[] = [];
+        (playerStats || []).forEach((stat: any, index: number) => {
+          const game = stat?.game;
+          if (!game) return;
+          
+          let playerTeam = stat?.team?.abbreviation || selectedPlayer?.teamAbbr || '';
+          const homeTeamId = game?.home_team?.id ?? (game as any)?.home_team_id;
+          const visitorTeamId = game?.visitor_team?.id ?? (game as any)?.visitor_team_id;
+          const homeTeamAbbr = game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+          const visitorTeamAbbr = game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+          
+          const playerTeamNorm = normalizeAbbr(playerTeam);
+          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+          let opponent = "";
+          
+          if (playerTeamId && homeTeamId && visitorTeamId) {
+            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+              opponent = visitorTeamAbbr;
+            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+              opponent = homeTeamAbbr;
+            }
+          }
+          if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+            const homeNorm = normalizeAbbr(homeTeamAbbr);
+            const awayNorm = normalizeAbbr(visitorTeamAbbr);
+            if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
+            else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
+          }
+          
+          const iso = game?.date;
+          const d = iso ? new Date(iso) : null;
+          const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+          const gameId = game?.id ?? `${opponent}-${index}`;
+          const tickLabel = opponent || "";
+          
+          allGamesFromStats.push({
+            stats: stat,
+            opponent,
+            gameNumber: index + 1,
+            game: opponent ? `vs ${opponent}` : "—",
+            date: shortDate,
+            xKey: String(gameId),
+            tickLabel,
+          });
+        });
+        
+        // Apply all filters (minutes, blowouts, back-to-back) to all games
+        let allFiltered = allGamesFromStats.filter((g: any) => {
+          const stats = g?.stats;
+          const game = stats?.game;
+          const minutes = parseMinutesPlayed(stats?.min);
+          const isLastSeasonWithApiIssue = selectedTimeframe === 'lastseason' && minutes === 0 && game?.id;
+          if (minutes === 0 && !isLastSeasonWithApiIssue) return false;
+          if (minutes > 0 && (minutes < minMinutesFilter || minutes > maxMinutesFilter)) return false;
+          if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
+            const diff = Math.abs((game.home_team_score || 0) - (game.visitor_team_score || 0));
+            if (diff >= 21) return false;
+          }
+          if (excludeBackToBack) {
+            if (!game || !backToBackGameIds.has(game.id)) return false;
+          }
+          return true;
+        });
+        
+        // Apply teammate filter to ALL games
+        const teammateFiltered = allFiltered.filter((g: any) => {
+          const game = g?.stats?.game;
+          const gid = game?.id;
+          if (!gid) return false;
+          const didPlay = teammatePlayedGameIds.has(gid);
+          if (withWithoutMode === 'with' && !didPlay) return false;
+          if (withWithoutMode === 'without' && didPlay) return false;
+          return true;
+        });
+        
+        // Sort by date (newest first) and take the last N games
+        const sortedByDate = [...teammateFiltered].sort((a: any, b: any) => {
+          const dateA = a?.stats?.game?.date ? new Date(a.stats.game.date).getTime() : 0;
+          const dateB = b?.stats?.game?.date ? new Date(b.stats.game.date).getTime() : 0;
+          return dateB - dateA; // Newest first
+        });
+        
+        // Take the first N (most recent) games, then reverse so oldest is on the left
+        filtered = sortedByDate.slice(0, n).reverse();
+        
+        console.log(`[Teammate Filter] Last N with teammate: ${allFiltered.length} total games -> ${teammateFiltered.length} after teammate filter -> ${filtered.length} last N games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games)`);
+      } else {
+        // Not a valid "last N" timeframe, just apply teammate filter normally
+        filtered = filtered.filter((g: any) => {
+          const game = g?.stats?.game;
+          const gid = game?.id;
+          if (!gid) return false;
+          const didPlay = teammatePlayedGameIds.has(gid);
+          if (withWithoutMode === 'with' && !didPlay) return false;
+          if (withWithoutMode === 'without' && didPlay) return false;
+          return true;
+        });
+      }
+    } else if (teammateFilterId) {
+      // Apply teammate filter for non-"last N" timeframes
+      const beforeCount = filtered.length;
+      filtered = filtered.filter((g: any) => {
+        const game = g?.stats?.game;
         const gid = game?.id;
         if (!gid) return false;
         const didPlay = teammatePlayedGameIds.has(gid);
         if (withWithoutMode === 'with' && !didPlay) return false;
         if (withWithoutMode === 'without' && didPlay) return false;
-      }
-
-      return true;
-    });
+        return true;
+      });
+      console.log(`[Teammate Filter] Filtering results: ${beforeCount} games -> ${filtered.length} games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games, timeframe: ${selectedTimeframe})`);
+    }
     
     // Debug: log filtering results
     console.log('[filteredGameData] Filtering results:', {
@@ -12986,6 +13125,7 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       try {
+        // Get all games from baseGameData to check
         const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
         if (!games.length) {
           setTeammatePlayedGameIds(new Set());
@@ -13007,11 +13147,23 @@ const lineMovementInFlightRef = useRef(false);
               try {
                 const cachedGameIds = JSON.parse(cachedData);
                 if (Array.isArray(cachedGameIds)) {
-                  // Filter to only games we care about (from baseGameData)
-                  const relevantGameIds = new Set(cachedGameIds.filter((id: number) => games.includes(id)));
-                  setTeammatePlayedGameIds(relevantGameIds);
-                  console.log(`[Teammate Filter] ✅ Using cached data (${relevantGameIds.size} games, ${Math.round(age / 1000)}s old)`);
-                  return; // Use cached data, skip API calls
+                  // Use all cached game IDs, not just ones from baseGameData
+                  // This ensures we have complete data for all games
+                  const allCachedIds = new Set(cachedGameIds);
+                  
+                  // If cache has very few games (< 10), it might be incomplete (from old logic)
+                  // Clear the cache and refetch to ensure we have complete season data
+                  if (allCachedIds.size < 10) {
+                    console.log(`[Teammate Filter] ⚠️ Cache has only ${allCachedIds.size} games, likely incomplete. Clearing cache and refetching...`);
+                    // Clear the stale cache
+                    sessionStorage.removeItem(CACHE_KEY);
+                    sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
+                    // Continue to fetch fresh data below
+                  } else {
+                    setTeammatePlayedGameIds(allCachedIds);
+                    console.log(`[Teammate Filter] ✅ Using cached data (${allCachedIds.size} total games, ${games.length} in current view, ${Math.round(age / 1000)}s old)`);
+                    return; // Use cached data, skip API calls
+                  }
                 }
               } catch (e) {
                 console.warn('[Teammate Filter] ⚠️ Failed to parse cached data, fetching fresh');
@@ -13030,77 +13182,78 @@ const lineMovementInFlightRef = useRef(false);
         const abortController = new AbortController();
         teammateFetchAbortControllerRef.current = abortController;
         
-        // Use larger chunks (50 instead of 25) to reduce number of requests
-        const chunks: number[][] = [];
-        const size = 50; // Increased from 25 to reduce requests
-        for (let i = 0; i < games.length; i += size) chunks.push(games.slice(i, i + size));
+        // Fetch ALL teammate stats for the current season, not just games in baseGameData
+        // This ensures we have complete data regardless of timeframe filter
+        const currentSeason = currentNbaSeason();
+        const params = new URLSearchParams();
+        params.set('endpoint', '/stats');
+        params.set('per_page', '100');
+        params.set('player_ids[]', String(teammateFilterId));
+        params.set('seasons[]', String(currentSeason));
+        const url = `/api/balldontlie?${params.toString()}`;
         
-        // Fetch all chunks in parallel with abort signal
-        const fetchPromises = chunks.map(async (chunk) => {
-          if (abortController.signal.aborted) return [];
+        try {
+          const res = await fetch(url, { 
+            cache: 'no-store',
+            signal: abortController.signal 
+          }).catch(() => null);
           
-          const params = new URLSearchParams();
-          params.set('endpoint', '/stats');
-          params.set('per_page', '100');
-          params.set('player_ids[]', String(teammateFilterId));
-          for (const gid of chunk) params.append('game_ids[]', String(gid));
-          const url = `/api/balldontlie?${params.toString()}`;
-          
-          try {
-            const res = await fetch(url, { 
-              cache: 'no-store',
-              signal: abortController.signal 
-            }).catch(() => null);
-            
-            if (abortController.signal.aborted) return [];
-            
-            const json = await res?.json().catch(() => ({})) as any;
-            return Array.isArray(json?.data) ? json.data : [];
-          } catch (e: any) {
-            if (e.name === 'AbortError') return [];
-            return [];
+          if (abortController.signal.aborted) {
+            return;
           }
-        });
+          
+          const json = await res?.json().catch(() => ({})) as any;
+          const allStats = Array.isArray(json?.data) ? json.data : [];
+          
+          // Check if request was aborted
+          if (abortController.signal.aborted) {
+            return;
+          }
+          
+          const played = new Set<number>();
+          
+          // Process all results - mark games where teammate played (minutes > 0)
+          allStats.forEach((s: any) => {
+            const minStr = s?.min || '0:00';
+            const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
+            const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
+            const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
+            if (minutes > 0 && gid != null) {
+              played.add(gid);
+            }
+          });
+          
+        console.log(`[Teammate Filter] 📊 Fetched ${allStats.length} total stats, ${played.size} games where teammate played`);
         
-        // Wait for all requests to complete in parallel
-        const allResults = await Promise.all(fetchPromises);
-        
-        // Check if request was aborted
-        if (abortController.signal.aborted) {
-          return;
-        }
-        
-        const played = new Set<number>();
-        
-        // Process all results
-        allResults.flat().forEach((s: any) => {
-          const minStr = s?.min || '0:00';
-          const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
-          const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
-          const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
-          if (minutes > 0 && gid != null) played.add(gid);
-        });
-        
-        // Cache the results
+        // Cache the results (only if we got a reasonable amount of data)
+        // If we got very few stats, the teammate might not have played much, but cache it anyway
         if (typeof window !== 'undefined') {
           try {
             const allPlayedGameIds = Array.from(played);
             sessionStorage.setItem(CACHE_KEY, JSON.stringify(allPlayedGameIds));
             sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-            console.log(`[Teammate Filter] 💾 Cached ${allPlayedGameIds.length} games for teammate ${teammateFilterId}`);
+            console.log(`[Teammate Filter] 💾 Cached ${allPlayedGameIds.length} games for teammate ${teammateFilterId} (from ${allStats.length} total stats)`);
           } catch (e) {
             console.warn('[Teammate Filter] ⚠️ Failed to cache results', e);
           }
         }
         
         setTeammatePlayedGameIds(played);
+        } catch (e: any) {
+          if (e.name !== 'AbortError') {
+            console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
+          }
+        } finally {
+          teammateFetchInProgressRef.current.delete(teammateFilterId);
+          setLoadingTeammateGames(false);
+        }
       } catch (e: any) {
         if (e.name !== 'AbortError') {
-          console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
+          console.error('[Teammate Filter] ❌ Error in teammate filter logic:', e);
         }
+        setTeammatePlayedGameIds(new Set());
       } finally {
-        teammateFetchInProgressRef.current.delete(teammateFilterId);
-        setLoadingTeammateGames(false);
+        // Cleanup is handled in inner finally
       }
     };
     run();
@@ -13952,58 +14105,6 @@ const lineMovementInFlightRef = useRef(false);
     }
   }, [prefetchedAdvancedStats, baseGameData, propsMode, selectedPlayer?.id]);
 
-  // Calculate second axis data for display (from adjustedChartData for chart rendering)
-  const secondAxisData = useMemo(() => {
-    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
-      return null;
-    }
-
-    const result = adjustedChartData.map((game: any) => {
-      const numericGameId = typeof game.game?.id === 'number' ? game.game.id : 
-                            typeof game.stats?.game?.id === 'number' ? game.stats.game.id : null;
-      const gameIdStr = game.xKey || String(numericGameId || '');
-      const gameDate = game.date || game.stats?.game?.date || '';
-      let value: number | null = null;
-      const stats = game.stats;
-
-      switch (selectedFilterForAxis) {
-        case 'minutes':
-          if (stats?.min) {
-            value = parseMinutes(stats.min);
-          }
-          break;
-        case 'fg_pct':
-          if (stats?.fg_pct !== null && stats?.fg_pct !== undefined) {
-            value = stats.fg_pct * 100;
-          }
-          break;
-        case 'pace':
-          if (numericGameId && advancedStatsPerGame[numericGameId]?.pace !== undefined) {
-            value = advancedStatsPerGame[numericGameId].pace!;
-          }
-          break;
-        case 'usage_rate':
-          if (numericGameId && advancedStatsPerGame[numericGameId]?.usage_percentage !== undefined) {
-            value = advancedStatsPerGame[numericGameId].usage_percentage! * 100;
-          }
-          break;
-        case 'dvp_rank':
-          value = dvpRanksPerGame[gameIdStr] ?? null;
-          break;
-        default:
-          value = null;
-      }
-
-      return {
-        gameId: gameIdStr,
-        gameDate: String(gameDate),
-        value,
-      };
-    });
-    
-    return result;
-  }, [selectedFilterForAxis, adjustedChartData, propsMode, advancedStatsPerGame, dvpRanksPerGame]);
-
   // Calculate slider min/max based on selected filter (use all games for accurate min/max)
   const sliderConfig = useMemo(() => {
     if (!selectedFilterForAxis || !allGamesSecondAxisData) {
@@ -14047,7 +14148,7 @@ const lineMovementInFlightRef = useRef(false);
     }
 
     return { min, max, values };
-  }, [selectedFilterForAxis, secondAxisData]);
+  }, [selectedFilterForAxis, allGamesSecondAxisData]);
 
   // Filter chart data based on slider range
   // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
@@ -14110,6 +14211,20 @@ const lineMovementInFlightRef = useRef(false);
           const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
           return gameSeasonYear === lastSeason;
         });
+      } else if (selectedTimeframe.startsWith('last')) {
+        // Handle 'last10', 'last5', etc.
+        const n = parseInt(selectedTimeframe.replace('last', ''));
+        if (!Number.isNaN(n)) {
+          // Sort by date (newest first) and take first N
+          const sorted = [...allGamesSecondAxisData].sort((a: any, b: any) => {
+            const dateA = a.stats?.game?.date ? new Date(a.stats.game.date).getTime() : 0;
+            const dateB = b.stats?.game?.date ? new Date(b.stats.game.date).getTime() : 0;
+            return dateB - dateA; // Newest first
+          });
+          timeframeFiltered = sorted.slice(0, n);
+        } else {
+          timeframeFiltered = allGamesSecondAxisData;
+        }
       }
       
       // Map to chartData format
@@ -14318,6 +14433,102 @@ const lineMovementInFlightRef = useRef(false);
     return mapped;
   }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer, opponentTeam]);
 
+  // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
+  const secondAxisData = useMemo(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !filteredChartData.length) {
+      return null;
+    }
+
+    let debugCount = 0;
+    const result = filteredChartData.map((game: any) => {
+      const numericGameId = typeof game.game?.id === 'number' ? game.game.id : 
+                            typeof game.stats?.game?.id === 'number' ? game.stats.game.id : null;
+      const gameIdStr = game.xKey || String(numericGameId || '');
+      const gameDate = game.date || game.stats?.game?.date || '';
+      let value: number | null = null;
+      const stats = game.stats;
+
+      switch (selectedFilterForAxis) {
+        case 'minutes':
+          if (stats?.min) {
+            value = parseMinutes(stats.min);
+          }
+          break;
+        case 'fg_pct':
+          if (stats?.fg_pct !== null && stats?.fg_pct !== undefined) {
+            value = stats.fg_pct * 100;
+          }
+          break;
+        case 'pace':
+          if (numericGameId && advancedStatsPerGame[numericGameId]?.pace !== undefined) {
+            value = advancedStatsPerGame[numericGameId].pace!;
+          }
+          break;
+        case 'usage_rate':
+          if (numericGameId && advancedStatsPerGame[numericGameId]?.usage_percentage !== undefined) {
+            value = advancedStatsPerGame[numericGameId].usage_percentage! * 100;
+          }
+          break;
+        case 'dvp_rank':
+          // Try multiple gameId formats for lookup
+          const rank1 = dvpRanksPerGame[gameIdStr];
+          const rank2 = numericGameId ? dvpRanksPerGame[String(numericGameId)] : null;
+          value = rank1 ?? rank2 ?? null;
+          
+          // Debug first few lookups
+          if (debugCount < 3) {
+            console.log('[secondAxisData] DvP rank lookup:', {
+              gameIdStr,
+              numericGameId,
+              rank1,
+              rank2,
+              finalValue: value,
+              availableKeys: Object.keys(dvpRanksPerGame).slice(0, 5),
+              totalKeys: Object.keys(dvpRanksPerGame).length
+            });
+            debugCount++;
+          }
+          break;
+        default:
+          value = null;
+      }
+
+      return {
+        gameId: gameIdStr,
+        gameDate: String(gameDate),
+        value,
+      };
+    });
+    
+    // Debug summary for DvP rank
+    if (selectedFilterForAxis === 'dvp_rank') {
+      const valuesWithRanks = result.filter(item => item.value !== null && item.value !== undefined);
+      const allGameIdsInResult = result.map(item => item.gameId);
+      const allKeysInDvpRanks = Object.keys(dvpRanksPerGame);
+      const matchingKeys = allGameIdsInResult.filter(id => allKeysInDvpRanks.includes(id));
+      
+      // Get sample entries with their values
+      const sampleEntries = Object.entries(dvpRanksPerGame).slice(0, 5).map(([key, value]) => ({
+        key,
+        value,
+        valueType: typeof value
+      }));
+      
+      console.log('[secondAxisData] DvP rank summary:', {
+        totalGames: result.length,
+        gamesWithRanks: valuesWithRanks.length,
+        sampleGameIdsInResult: allGameIdsInResult.slice(0, 5),
+        sampleKeysInDvpRanks: allKeysInDvpRanks.slice(0, 5),
+        sampleEntriesWithValues: sampleEntries,
+        matchingKeys: matchingKeys.slice(0, 5),
+        totalKeysInDvpRanks: allKeysInDvpRanks.length,
+        nonNullValues: Object.entries(dvpRanksPerGame).filter(([_, v]) => v !== null && v !== undefined).length
+      });
+    }
+    
+    return result;
+  }, [selectedFilterForAxis, filteredChartData, propsMode, advancedStatsPerGame, dvpRanksPerGame]);
+
   // Set initial slider range when filter is selected
   useEffect(() => {
     if (selectedFilterForAxis && sliderConfig && sliderRange === null) {
@@ -14523,8 +14734,24 @@ const lineMovementInFlightRef = useRef(false);
   }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPlayer?.id]);
 
   // Prefetch DvP ranks in background for all possible stat/position combinations
+  // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
   useEffect(() => {
-    if (propsMode !== 'player' || !adjustedChartData.length || !selectedPosition || !selectedStat) {
+    if (propsMode !== 'player' || !playerStats.length || !selectedStat) {
+      if (propsMode === 'player' && playerStats.length && !selectedPosition) {
+        console.log('[DvP Rank Prefetch] Waiting for selectedPosition to be determined...', {
+          playerName: selectedPlayer?.full,
+          hasPlayerStats: playerStats.length > 0,
+          hasRoster: !!playerTeamRoster
+        });
+      }
+      return;
+    }
+    
+    if (!selectedPosition) {
+      console.log('[DvP Rank Prefetch] Skipping - selectedPosition is null', {
+        playerName: selectedPlayer?.full,
+        hasPlayerStats: playerStats.length > 0
+      });
       return;
     }
 
@@ -14566,20 +14793,66 @@ const lineMovementInFlightRef = useRef(false);
 
     // Mark as prefetching
     dvpRanksPrefetchRef.current.add(prefetchKey);
+    
+    console.log('[DvP Rank Prefetch] Starting prefetch', {
+      prefetchKey,
+      selectedPosition,
+      selectedStat,
+      dvpMetric,
+      playerStatsCount: playerStats.length,
+      playerName: selectedPlayer?.full
+    });
 
     // Prefetch in background (don't block UI)
     let isMounted = true;
     const prefetchDvpRanks = async () => {
       try {
         // Map ranks to game IDs based on opponent team and game date
+        // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
         const ranksByGame: Record<string, number | null> = {};
         
+        // Build game data from playerStats (all games, not filtered by timeframe)
+        const gamesToProcess = playerStats
+          .filter((stats: any) => {
+            // Only include games where player played (same filter as baseGameData)
+            const minutes = parseMinutes(stats.min);
+            return minutes > 0;
+          })
+          .map((stats: any) => {
+            // Extract opponent and game info from stats
+            let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+            const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+            const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+            const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+            const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+            
+            const playerTeamNorm = normalizeAbbr(playerTeam);
+            const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+            let opponent = "";
+            
+            if (playerTeamId && homeTeamId && visitorTeamId) {
+              if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+                opponent = visitorTeamAbbr;
+              } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+                opponent = homeTeamAbbr;
+              }
+            }
+            if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+              const homeNorm = normalizeAbbr(homeTeamAbbr);
+              const awayNorm = normalizeAbbr(visitorTeamAbbr);
+              if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
+              else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
+            }
+            
+            const numericGameId = typeof stats?.game?.id === 'number' ? stats.game.id : null;
+            const gameIdStr = String(numericGameId || '');
+            const gameDate = stats?.game?.date || '';
+            
+            return { gameIdStr, opponent, gameDate, stats };
+          });
+        
         // Fetch historical ranks for each game
-        const rankPromises = adjustedChartData.map(async (game: any) => {
-          const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
-          const opponent = game.opponent || game.tickLabel || '';
-          const gameDate = game.date || game.stats?.game?.date || '';
-          
+        const rankPromises = gamesToProcess.map(async ({ gameIdStr, opponent, gameDate }) => {
           if (!opponent || opponent === 'N/A' || opponent === 'ALL' || opponent === '') {
             return { gameIdStr, rank: null };
           }
@@ -14601,11 +14874,22 @@ const lineMovementInFlightRef = useRef(false);
                 const normalizedOpp = normalizeAbbr(opponent);
                 const rank = historicalData.ranks[normalizedOpp] ?? 
                             historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
-                return { gameIdStr, rank: rank && rank > 0 ? rank : null };
+                if (rank && rank > 0) {
+                  return { gameIdStr, rank };
+                }
+                // If historical lookup returned empty, fall through to current ranks
+              } else {
+                console.log(`[Prefetch] Historical API returned no ranks for ${dateStr} ${selectedPosition}:${dvpMetric}`, {
+                  success: historicalData.success,
+                  hasRanks: !!historicalData.ranks,
+                  note: historicalData.note
+                });
               }
+            } else {
+              console.warn(`[Prefetch] Historical API error for ${dateStr}: ${historicalResponse.status}`);
             }
           } catch (historicalError) {
-            // Silent fail for prefetch
+            console.warn(`[Prefetch] Historical fetch failed for ${gameIdStr}:`, historicalError);
           }
           
           return { gameIdStr, rank: null, useCurrent: true };
@@ -14614,51 +14898,80 @@ const lineMovementInFlightRef = useRef(false);
         const rankResults = await Promise.all(rankPromises);
         
         // Check if we need to fetch current ranks for any games
+        // Also check if historical lookups returned any valid ranks
         const needsCurrentRanks = rankResults.some(r => r.useCurrent);
+        const hasHistoricalRanks = rankResults.some(r => r.rank !== null);
         let currentRanks: Record<string, number> = {};
         
-        if (needsCurrentRanks) {
+        // If no historical ranks were found, fetch current ranks for all games as fallback
+        const shouldFetchCurrent = needsCurrentRanks || !hasHistoricalRanks;
+        
+        if (shouldFetchCurrent) {
           try {
             const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
             if (currentResponse.ok) {
               const currentData = await currentResponse.json();
               currentRanks = currentData.metrics?.[dvpMetric] || {};
+              console.log(`[Prefetch] Fetched current ranks for ${selectedPosition}:${dvpMetric}:`, {
+                rankCount: Object.keys(currentRanks).length,
+                sampleTeams: Object.keys(currentRanks).slice(0, 5),
+                reason: !hasHistoricalRanks ? 'No historical ranks found, using current as fallback' : 'Some games need current ranks'
+              });
+            } else {
+              console.warn(`[Prefetch] Current ranks API error: ${currentResponse.status}`);
             }
           } catch (error) {
-            // Silent fail for prefetch
+            console.error(`[Prefetch] Failed to fetch current ranks:`, error);
           }
         }
         
         if (!isMounted) return;
         
         // Map ranks to games
-        rankResults.forEach((result) => {
+        rankResults.forEach((result, index) => {
           if (result.rank !== null) {
             ranksByGame[result.gameIdStr] = result.rank;
-          } else if (result.useCurrent) {
-            const game = adjustedChartData.find((g: any) => {
-              const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
-              return gameIdStr === result.gameIdStr;
-            });
-            
-            if (game) {
-              const opponent = game.opponent || game.tickLabel || '';
-              if (opponent && opponent !== 'N/A' && opponent !== 'ALL' && opponent !== '') {
-                const normalizedOpp = normalizeAbbr(opponent);
-                const rank = currentRanks[normalizedOpp] ?? currentRanks[normalizedOpp.toUpperCase()] ?? null;
-                ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
-              } else {
-                ranksByGame[result.gameIdStr] = null;
+          } else {
+            // Try to use current ranks as fallback
+            const gameData = gamesToProcess[index];
+            if (gameData && gameData.opponent && gameData.opponent !== 'N/A' && gameData.opponent !== 'ALL' && gameData.opponent !== '') {
+              const normalizedOpp = normalizeAbbr(gameData.opponent);
+              // Try multiple variations of the team abbreviation
+              let rank = currentRanks[normalizedOpp] ?? 
+                        currentRanks[normalizedOpp.toUpperCase()] ?? 
+                        currentRanks[normalizedOpp.toLowerCase()] ?? null;
+              
+              // If still not found, try to find a partial match
+              if (rank === null || rank === undefined) {
+                const matchingKey = Object.keys(currentRanks).find(key => 
+                  key.toUpperCase() === normalizedOpp.toUpperCase() ||
+                  normalizedOpp.toUpperCase().includes(key.toUpperCase()) ||
+                  key.toUpperCase().includes(normalizedOpp.toUpperCase())
+                );
+                if (matchingKey) {
+                  rank = currentRanks[matchingKey];
+                }
               }
+              
+              ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
             } else {
               ranksByGame[result.gameIdStr] = null;
             }
-          } else {
-            ranksByGame[result.gameIdStr] = null;
           }
         });
         
         // Store prefetched data
+        const ranksWithValues = Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined);
+        const sampleRanksWithValues = ranksWithValues.slice(0, 5);
+        const sampleRanksNull = Object.entries(ranksByGame).filter(([_, rank]) => rank === null).slice(0, 5);
+        
+        console.log(`[DvP Rank Prefetch] Stored ranks for ${prefetchKey}:`, {
+          gameCount: Object.keys(ranksByGame).length,
+          ranksWithValues: ranksWithValues.length,
+          sampleRanksWithValues,
+          sampleRanksNull,
+          sampleGameIds: Object.keys(ranksByGame).slice(0, 10)
+        });
         setPrefetchedDvpRanks(prev => ({
           ...prev,
           [prefetchKey]: ranksByGame,
@@ -14674,7 +14987,7 @@ const lineMovementInFlightRef = useRef(false);
     return () => {
       isMounted = false;
     };
-  }, [adjustedChartData, propsMode, selectedPosition, selectedStat]);
+  }, [playerStats, propsMode, selectedPosition, selectedStat, selectedPlayer]);
 
   // Use prefetched DvP ranks when dvp_rank filter is selected
   useEffect(() => {
@@ -14686,6 +14999,13 @@ const lineMovementInFlightRef = useRef(false);
     if (selectedFilterForAxis === 'dvp_rank') {
       // Need player position and selected stat to get the right prefetched data
       if (!selectedPosition || !selectedStat) {
+        console.log('[DvP Rank] Cannot use ranks - missing data:', {
+          hasPosition: !!selectedPosition,
+          hasStat: !!selectedStat,
+          selectedPosition,
+          selectedStat,
+          playerName: selectedPlayer?.full
+        });
         setDvpRanksPerGame({});
         return;
       }
@@ -14716,9 +15036,21 @@ const lineMovementInFlightRef = useRef(false);
       
       if (prefetched) {
         // Use prefetched data immediately
+        console.log(`[DvP Rank] Using prefetched data for ${prefetchKey}:`, {
+          gameCount: Object.keys(prefetched).length,
+          sampleRanks: Object.entries(prefetched).slice(0, 5),
+          sampleGameIds: Object.keys(prefetched).slice(0, 5),
+          ranksWithValues: Object.entries(prefetched).filter(([_, rank]) => rank !== null && rank !== undefined).length
+        });
         setDvpRanksPerGame(prefetched);
       } else {
         // Fallback to empty (will trigger legacy fetch if needed)
+        console.log(`[DvP Rank] No prefetched data for ${prefetchKey}, waiting for prefetch...`, {
+          availableKeys: Object.keys(prefetchedDvpRanks),
+          selectedPosition,
+          dvpMetric,
+          prefetchKey
+        });
         setDvpRanksPerGame({});
       }
     } else {
@@ -14727,8 +15059,9 @@ const lineMovementInFlightRef = useRef(false);
   }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
 
   // Legacy fetch DvP ranks (kept for backward compatibility, but should use prefetched data)
+  // Use filteredChartData to match what's actually displayed
   useEffect(() => {
-    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !adjustedChartData.length) {
+    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !filteredChartData.length) {
       return;
     }
 
@@ -14758,11 +15091,19 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
 
-    // Check if we already have prefetched data
+    // Check if we already have prefetched data with valid values
     const prefetchKey = `${selectedPosition}:${dvpMetric}`;
-    if (prefetchedDvpRanks[prefetchKey]) {
-      // Already have prefetched data, skip fetch
-      return;
+    const prefetched = prefetchedDvpRanks[prefetchKey];
+    if (prefetched) {
+      // Check if prefetched data has any valid (non-null) values
+      const hasValidValues = Object.values(prefetched).some(v => v !== null && v !== undefined);
+      if (hasValidValues) {
+        // Already have prefetched data with valid values, skip fetch
+        console.log('[DvP Rank Legacy] Skipping - prefetched data has valid values');
+        return;
+      }
+      // Prefetched data exists but all values are null - still fetch to try to get data
+      console.log('[DvP Rank Legacy] Prefetched data exists but all values are null, fetching...');
     }
 
     let isMounted = true;
@@ -14771,8 +15112,8 @@ const lineMovementInFlightRef = useRef(false);
         // Map ranks to game IDs based on opponent team and game date
         const ranksByGame: Record<string, number | null> = {};
         
-        // Fetch historical ranks for each game
-        const rankPromises = adjustedChartData.map(async (game: any) => {
+        // Fetch historical ranks for each game - use filteredChartData to match displayed games
+        const rankPromises = filteredChartData.map(async (game: any) => {
           const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
           const opponent = game.opponent || game.tickLabel || '';
           const gameDate = game.date || game.stats?.game?.date || '';
@@ -14795,13 +15136,16 @@ const lineMovementInFlightRef = useRef(false);
             
             if (historicalResponse.ok) {
               const historicalData = await historicalResponse.json();
-              if (historicalData.success && historicalData.ranks) {
+              if (historicalData.success && historicalData.ranks && Object.keys(historicalData.ranks).length > 0) {
                 const normalizedOpp = normalizeAbbr(opponent);
                 const rank = historicalData.ranks[normalizedOpp] ?? 
                             historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
                 // Only return rank if it's not 0 (0 means no data)
-                return { gameIdStr, rank: rank && rank > 0 ? rank : null };
+                if (rank && rank > 0) {
+                  return { gameIdStr, rank };
+                }
               }
+              // If historical API returned empty ranks or no match, fall through to use current ranks
             }
           } catch (historicalError) {
             console.warn(`[Second Axis] Failed to fetch historical rank for game ${gameIdStr}:`, historicalError);
@@ -14819,11 +15163,21 @@ const lineMovementInFlightRef = useRef(false);
         
         if (needsCurrentRanks) {
           // Fetch current DvP ranks as fallback
+          console.log('[DvP Rank Legacy] Fetching current ranks...', { selectedPosition, dvpMetric });
           const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
           
           if (currentResponse.ok) {
             const currentData = await currentResponse.json();
             currentRanks = currentData.metrics?.[dvpMetric] || {};
+            console.log('[DvP Rank Legacy] Current ranks response:', {
+              hasMetrics: !!currentData.metrics,
+              hasDvpMetric: !!currentData.metrics?.[dvpMetric],
+              rankCount: Object.keys(currentRanks).length,
+              sampleTeams: Object.keys(currentRanks).slice(0, 10),
+              sampleRanks: Object.entries(currentRanks).slice(0, 5)
+            });
+          } else {
+            console.warn('[DvP Rank Legacy] Current ranks API error:', currentResponse.status);
           }
         }
         
@@ -14835,7 +15189,7 @@ const lineMovementInFlightRef = useRef(false);
             ranksByGame[result.gameIdStr] = result.rank;
           } else if (result.useCurrent) {
             // Use current rank as fallback
-            const game = adjustedChartData.find((g: any) => {
+            const game = filteredChartData.find((g: any) => {
               const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
               return gameIdStr === result.gameIdStr;
             });
@@ -14844,8 +15198,34 @@ const lineMovementInFlightRef = useRef(false);
               const opponent = game.opponent || game.tickLabel || '';
               if (opponent && opponent !== 'N/A' && opponent !== 'ALL' && opponent !== '') {
                 const normalizedOpp = normalizeAbbr(opponent);
-                const rank = currentRanks[normalizedOpp] ?? currentRanks[normalizedOpp.toUpperCase()] ?? null;
+                // Try multiple variations
+                let rank = currentRanks[normalizedOpp] ?? 
+                          currentRanks[normalizedOpp.toUpperCase()] ?? 
+                          currentRanks[normalizedOpp.toLowerCase()] ?? null;
+                
+                // If still not found, try partial match
+                if (rank === null || rank === undefined) {
+                  const matchingKey = Object.keys(currentRanks).find(key => 
+                    key.toUpperCase() === normalizedOpp.toUpperCase() ||
+                    normalizedOpp.toUpperCase().includes(key.toUpperCase()) ||
+                    key.toUpperCase().includes(normalizedOpp.toUpperCase())
+                  );
+                  if (matchingKey) {
+                    rank = currentRanks[matchingKey];
+                  }
+                }
+                
                 ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
+                
+                // Log when we can't find a match
+                if (rank === null || rank === undefined) {
+                  console.log('[DvP Rank Legacy] No rank found for opponent:', {
+                    gameIdStr: result.gameIdStr,
+                    opponent,
+                    normalizedOpp,
+                    availableTeams: Object.keys(currentRanks).slice(0, 10)
+                  });
+                }
               } else {
                 ranksByGame[result.gameIdStr] = null;
               }
@@ -14857,6 +15237,15 @@ const lineMovementInFlightRef = useRef(false);
           }
         });
         
+        console.log('[DvP Rank Legacy] Fetched ranks:', {
+          gameCount: Object.keys(ranksByGame).length,
+          ranksWithValues: Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined).length,
+          sampleRanks: Object.entries(ranksByGame).slice(0, 5),
+          sampleGamesWithOpponents: filteredChartData.slice(0, 3).map((g: any) => ({
+            gameId: g.xKey || String(g.game?.id || g.stats?.game?.id || ''),
+            opponent: g.opponent || g.tickLabel || 'N/A'
+          }))
+        });
         setDvpRanksPerGame(ranksByGame);
       } catch (error) {
         console.error('[Second Axis] Error fetching DvP ranks:', error);
@@ -14871,7 +15260,7 @@ const lineMovementInFlightRef = useRef(false);
     return () => {
       isMounted = false;
     };
-  }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPosition, selectedStat]);
+  }, [selectedFilterForAxis, filteredChartData, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
 
   // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
   const getBookRowKey = useCallback((stat: string): string | null => {
@@ -17388,25 +17777,26 @@ const lineMovementInFlightRef = useRef(false);
       setSliderRange={setSliderRange}
             />
 {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
-            <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 md:p-3 border border-gray-200 dark:border-gray-700">
+            <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
                 {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
                 {propsMode === 'player' && (
                   <>
                     {/* Tab Selector */}
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 sm:gap-2 mb-3 sm:mb-3">
                       <button
                         onClick={() => setDvpProjectedTab('dvp')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'dvp'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Defense vs Position
+                        <span className="hidden xs:inline">Defense vs Position</span>
+                        <span className="xs:hidden">DvP</span>
                       </button>
                       <button
                         onClick={() => setDvpProjectedTab('projected')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'projected'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -17416,18 +17806,29 @@ const lineMovementInFlightRef = useRef(false);
                       </button>
                       <button
                         onClick={() => setDvpProjectedTab('opponent')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'opponent'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Opponent Breakdown
+                        <span className="hidden xs:inline">Opponent Breakdown</span>
+                        <span className="xs:hidden">Opponent</span>
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('injuries')}
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          dvpProjectedTab === 'injuries'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Injuries
                       </button>
                     </div>
                     
                     {/* Content based on selected tab - always render container, just show/hide content */}
-                    <div className="relative min-h-[200px]">
+                    <div className="relative min-h-[250px] sm:min-h-[200px] w-full min-w-0">
                       <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
                         <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
                       </div>
@@ -17455,6 +17856,21 @@ const lineMovementInFlightRef = useRef(false);
                           propsMode={propsMode}
                           playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                           selectedStat={selectedStat}
+                        />
+                      </div>
+                      <div className={dvpProjectedTab === 'injuries' ? 'block' : 'hidden'}>
+                        <InjuryContainer
+                          selectedTeam={selectedTeam}
+                          opponentTeam={opponentTeam}
+                          isDark={isDark}
+                          selectedPlayer={selectedPlayer}
+                          playerStats={playerStats}
+                          teammateFilterId={teammateFilterId}
+                          setTeammateFilterId={setTeammateFilterId}
+                          setTeammateFilterName={setTeammateFilterName}
+                          withWithoutMode={withWithoutMode}
+                          setWithWithoutMode={setWithWithoutMode}
+                          clearTeammateFilter={clearTeammateFilter}
                         />
                       </div>
                     </div>
@@ -17761,8 +18177,8 @@ const lineMovementInFlightRef = useRef(false);
               )}
             </div>
 
-            {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only - DEFERRED until core data ready */}
-            {propsMode === 'player' && coreDataReady && (
+            {/* 4.5 Shot Chart Container (Mobile) - Player Props mode only - Always visible with skeleton when loading */}
+            {propsMode === 'player' && (
               <div className="lg:hidden w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
@@ -17846,18 +18262,12 @@ const lineMovementInFlightRef = useRef(false);
               selectedStat={selectedStat}
 />
 
-            {/* 8. Depth Chart Container (Mobile) */}
+            {/* 8. Depth Chart Container (Mobile) - Always visible with skeleton when loading */}
             {useMemo(() => {
               // Determine which team to show based on mode
               const currentTeam = propsMode === 'player' 
                 ? depthChartTeam 
                 : (depthChartTeam && depthChartTeam !== 'N/A' ? depthChartTeam : gamePropsTeam);
-              
-              // Defer depth chart until core data is ready
-              if (!coreDataReady) return null;
-              
-              // Don't render if no team selected
-              if (!currentTeam || currentTeam === 'N/A') return null;
               
               // Determine roster data based on mode
               const currentTeamRoster = propsMode === 'player' 
@@ -17907,7 +18317,6 @@ const lineMovementInFlightRef = useRef(false);
                 </div>
               );
             }, [
-              coreDataReady, // Defer until core data is ready
               propsMode, 
               depthChartTeam, 
               gamePropsTeam, 
@@ -17926,16 +18335,6 @@ const lineMovementInFlightRef = useRef(false);
               todaysGames
             ])}
 
-            {/* 9. Injury Container (Mobile) - DEFERRED until core data ready */}
-            {coreDataReady && (
-              <div className="lg:hidden">
-                <InjuryContainer
-                  selectedTeam={propsMode === 'team' ? (gamePropsTeam && gamePropsTeam !== 'N/A' ? gamePropsTeam : '') : selectedTeam}
-                  opponentTeam={opponentTeam}
-                  isDark={isDark}
-                />
-              </div>
-            )}
 
             {/* 10. Player Box Score Container (Mobile) */}
             {useMemo(() => {
@@ -18019,19 +18418,13 @@ const lineMovementInFlightRef = useRef(false);
                 selectedStat={selectedStat}
               />
 
-            {/* Unified Depth Chart (Desktop) - optimized for both modes - DEFERRED until core data ready */}
+            {/* Unified Depth Chart (Desktop) - optimized for both modes - Always visible with skeleton when loading */}
             {useMemo(() => {
-              // Defer depth chart until core data is ready
-              if (!coreDataReady) return null;
-              
               // Determine which team to show based on mode
               // For Game Props mode, use depthChartTeam for switching, fallback to gamePropsTeam
               const currentTeam = propsMode === 'player' 
                 ? depthChartTeam 
                 : (depthChartTeam && depthChartTeam !== 'N/A' ? depthChartTeam : gamePropsTeam);
-              
-              // Don't render if no team selected
-              if (!currentTeam || currentTeam === 'N/A') return null;
               
               // Determine roster data based on mode
               const currentTeamRoster = propsMode === 'player' 
@@ -18085,7 +18478,6 @@ const lineMovementInFlightRef = useRef(false);
                 </div>
               );
             }, [
-              coreDataReady, // Defer until core data is ready
               propsMode, 
               depthChartTeam, 
               gamePropsTeam, 
@@ -18237,25 +18629,26 @@ const lineMovementInFlightRef = useRef(false);
               </p>
             </div>
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
-            <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 border border-gray-200 dark:border-gray-700">
+            <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
                 {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
                 {propsMode === 'player' && (
                   <>
                     {/* Tab Selector */}
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
                       <button
                         onClick={() => setDvpProjectedTab('dvp')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'dvp'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Defense vs Position
+                        <span className="hidden 2xl:inline">Defense vs Position</span>
+                        <span className="2xl:hidden">DvP</span>
                       </button>
                       <button
                         onClick={() => setDvpProjectedTab('projected')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'projected'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -18265,18 +18658,29 @@ const lineMovementInFlightRef = useRef(false);
                       </button>
                       <button
                         onClick={() => setDvpProjectedTab('opponent')}
-                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                           dvpProjectedTab === 'opponent'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Opponent Breakdown
+                        <span className="hidden 2xl:inline">Opponent Breakdown</span>
+                        <span className="2xl:hidden">Opponent</span>
+                      </button>
+                      <button
+                        onClick={() => setDvpProjectedTab('injuries')}
+                        className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                          dvpProjectedTab === 'injuries'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Injuries
                       </button>
                     </div>
                     
                     {/* Content based on selected tab - always render container, just show/hide content */}
-                    <div className="relative min-h-[200px]">
+                    <div className="relative min-h-[180px] xl:min-h-[200px] w-full min-w-0">
                       <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
                         <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
                       </div>
@@ -18304,6 +18708,21 @@ const lineMovementInFlightRef = useRef(false);
                           propsMode={propsMode}
                           playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
                           selectedStat={selectedStat}
+                        />
+                      </div>
+                      <div className={dvpProjectedTab === 'injuries' ? 'block' : 'hidden'}>
+                        <InjuryContainer
+                          selectedTeam={selectedTeam}
+                          opponentTeam={opponentTeam}
+                          isDark={isDark}
+                          selectedPlayer={selectedPlayer}
+                          playerStats={playerStats}
+                          teammateFilterId={teammateFilterId}
+                          setTeammateFilterId={setTeammateFilterId}
+                          setTeammateFilterName={setTeammateFilterName}
+                          withWithoutMode={withWithoutMode}
+                          setWithWithoutMode={setWithWithoutMode}
+                          clearTeammateFilter={clearTeammateFilter}
                         />
                       </div>
                     </div>
@@ -18833,8 +19252,8 @@ const lineMovementInFlightRef = useRef(false);
                 )}
               </div>
 
-            {/* Shot Chart (Desktop) - only in Player Props mode - DEFERRED until core data ready */}
-            {propsMode === 'player' && coreDataReady && (
+            {/* Shot Chart (Desktop) - only in Player Props mode - Always visible with skeleton when loading */}
+            {propsMode === 'player' && (
               <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
                 <ShotChart 
                   isDark={isDark} 
@@ -18853,16 +19272,6 @@ const lineMovementInFlightRef = useRef(false);
             )}
 
 
-            {/* ESP Injury Report (Desktop) - always visible in both modes - DEFERRED until core data ready */}
-            {coreDataReady && (
-              <div className="hidden lg:block">
-                <InjuryContainer
-                  selectedTeam={propsMode === 'team' ? (gamePropsTeam && gamePropsTeam !== 'N/A' ? gamePropsTeam : '') : selectedTeam}
-                  opponentTeam={opponentTeam}
-                  isDark={isDark}
-                />
-              </div>
-            )}
             </div>
 
 

@@ -120,7 +120,7 @@ export default memo(function StaticBarsChart({
     });
     
     // Merge into main data
-    return data.map((item: any) => {
+    const merged = data.map((item: any) => {
       const lookupKey = item.xKey || String(item.game?.id || '');
       const secondValue = secondAxisMap.get(lookupKey) ?? null;
       
@@ -129,6 +129,33 @@ export default memo(function StaticBarsChart({
         secondAxisValue: secondValue,
       };
     });
+    
+    // Debug logging for DvP rank
+    if (selectedFilterForAxis === 'dvp_rank') {
+      const valuesWithRanks = merged.filter((item: any) => item.secondAxisValue !== null && item.secondAxisValue !== undefined);
+      const sampleMerged = merged.slice(0, 3).map((item: any) => ({
+        xKey: item.xKey,
+        gameId: item.game?.id,
+        statsGameId: item.stats?.game?.id,
+        secondAxisValue: item.secondAxisValue,
+        value: item.value
+      }));
+      const secondAxisDataSample = secondAxisData.slice(0, 3);
+      const allGameIds = Array.from(secondAxisMap.keys());
+      const allXKeys = merged.map((item: any) => item.xKey || String(item.game?.id || ''));
+      
+      console.log('[StaticBarsChart] Merged DvP rank data:', {
+        totalGames: merged.length,
+        gamesWithRanks: valuesWithRanks.length,
+        sampleMerged,
+        secondAxisDataSample,
+        allGameIdsFromMap: allGameIds.slice(0, 10),
+        allXKeysFromData: allXKeys.slice(0, 10),
+        matchingGameIds: allGameIds.filter(id => allXKeys.includes(id)).slice(0, 5)
+      });
+    }
+    
+    return merged;
   }, [data, secondAxisData, selectedFilterForAxis]);
 
   // Calculate Y-axis config for second axis
@@ -212,6 +239,20 @@ export default memo(function StaticBarsChart({
 
   const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
   const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;
+  
+  // Debug logging for DvP rank
+  if (selectedFilterForAxis === 'dvp_rank') {
+    console.log('[StaticBarsChart] Second axis setup:', {
+      hasSecondAxis,
+      hasSelectedFilter: !!selectedFilterForAxis,
+      hasSecondAxisData: !!secondAxisData,
+      secondAxisDataLength: secondAxisData?.length || 0,
+      hasSecondAxisConfig: !!secondAxisConfig,
+      secondAxisConfig: secondAxisConfig,
+      usingComposedChart: hasSecondAxis,
+      sampleSecondAxisData: secondAxisData?.slice(0, 3)
+    });
+  }
   
   // On mobile, use mobile margins (which already account for second axis)
   // On desktop, use larger right margin when second axis is present to give y-axis more space

@@ -151,10 +151,38 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         setEnhancedError(null); // Clear any previous errors
         
         try {
+          // Ensure we're in the browser before fetching
+          if (typeof window === 'undefined') {
+            console.warn('[Shot Chart] Skipping fetch - not in browser environment');
+            setEnhancedLoading(false);
+            return;
+          }
+
           const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
           // Removed excessive logging
           // console.log('[Shot Chart] Fetching from:', url);
-          const response = await fetch(url);
+          
+          // Add timeout and better error handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
+          let response: Response;
+          try {
+            response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+          } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+              throw new Error('Request timeout - the server took too long to respond');
+            }
+            throw new Error(fetchError.message || 'Network error - failed to connect to server');
+          }
+          
+          clearTimeout(timeoutId);
           
           if (response.ok) {
             const data = await response.json();
@@ -247,7 +275,20 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         } catch (err: any) {
           console.error('[Shot Chart] Error fetching enhanced data:', err);
           setEnhancedData(null);
-          setEnhancedError(err.message || 'Failed to fetch shot chart data. Please try again.');
+          
+          // Provide more specific error messages
+          let errorMessage = 'Failed to fetch shot chart data. Please try again.';
+          if (err.message) {
+            if (err.message.includes('timeout')) {
+              errorMessage = 'Request timed out. The server is taking too long to respond.';
+            } else if (err.message.includes('Network error') || err.message.includes('Failed to fetch')) {
+              errorMessage = 'Network error. Please check your connection and try again.';
+            } else {
+              errorMessage = err.message;
+            }
+          }
+          
+          setEnhancedError(errorMessage);
         } finally {
           setEnhancedLoading(false);
         }
