@@ -256,7 +256,7 @@ function getPlayerPropVendors(oddsCache) {
 // Cache key is now hardcoded to 'all-dates' - no date filtering
 
 // Cache helpers
-async function getCache(key, retries = 0) {
+async function getCache(key, retries = 0, minUpdatedAt = null) {
   let attempt = 0;
   const maxAttempts = retries + 1;
   
@@ -275,7 +275,7 @@ async function getCache(key, retries = 0) {
           if (attempt < maxAttempts - 1) {
             attempt++;
             console.log(`[GitHub Actions] ⚠️ Cache not found (attempt ${attempt}/${maxAttempts}) - may be replication delay, retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
             continue;
           }
           return null;
@@ -284,7 +284,7 @@ async function getCache(key, retries = 0) {
         if (attempt < maxAttempts - 1) {
           attempt++;
           console.log(`[GitHub Actions] ⚠️ Cache read error (attempt ${attempt}/${maxAttempts}):`, error.message);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           continue;
         }
         return null;
@@ -293,7 +293,7 @@ async function getCache(key, retries = 0) {
       if (!data) {
         if (attempt < maxAttempts - 1) {
           attempt++;
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           continue;
         }
         return null;
@@ -301,6 +301,21 @@ async function getCache(key, retries = 0) {
       
       const expiresAt = new Date(data.expires_at);
       if (expiresAt < new Date()) return null;
+      
+      // If we have a minimum updated_at timestamp, verify the cache is fresh enough
+      if (minUpdatedAt && data.updated_at) {
+        const cacheUpdatedAt = new Date(data.updated_at);
+        if (cacheUpdatedAt < minUpdatedAt) {
+          if (attempt < maxAttempts - 1) {
+            attempt++;
+            console.log(`[GitHub Actions] ⚠️ Cache too old (updated ${cacheUpdatedAt.toISOString()}, need after ${minUpdatedAt.toISOString()}) - retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            continue;
+          }
+          // Last attempt, return null to indicate stale cache
+          return null;
+        }
+      }
       
       if (attempt > 0) {
         console.log(`[GitHub Actions] ✅ Cache found on attempt ${attempt + 1}/${maxAttempts}`);
@@ -311,7 +326,7 @@ async function getCache(key, retries = 0) {
       if (attempt < maxAttempts - 1) {
         attempt++;
         console.log(`[GitHub Actions] ⚠️ Cache read exception (attempt ${attempt}/${maxAttempts}):`, e.message);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         continue;
       }
       return null;
@@ -1748,10 +1763,12 @@ async function processPlayerProps() {
         }
         
         console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
-        // Retry cache read up to 5 times with 2s delay to handle Supabase replication delays
-        // Part 3 needs more retries since it runs last and may have longer propagation delays
-        const retryCount = partNumber === 3 ? 5 : 3;
-        const retryCache = await getCache(cacheKey, retryCount);
+        // Retry cache read with increased delays to handle Supabase replication delays
+        // Part 2 and 3 need more retries since they run after Part 1
+        const retryCount = partNumber === 1 ? 3 : partNumber === 2 ? 10 : 15; // More retries for later parts
+        // Calculate minimum updated_at - cache should be updated after we started (give 30s buffer for Part 1 to finish)
+        const minUpdatedAt = partNumber > 1 ? new Date(Date.now() - (partNumber === 2 ? 60 : 120) * 1000) : null;
+        const retryCache = await getCache(cacheKey, retryCount, minUpdatedAt);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
           console.log(`[GitHub Actions] 📦 Found cache with ${retryCache.length} props after ${retryCount} attempts`);
           // Merge with latest cache - this is the ONLY merge for split jobs
