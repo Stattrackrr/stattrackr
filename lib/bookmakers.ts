@@ -26,7 +26,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'caesars': {
     name: 'Caesars',
     logo: 'CZR',
-    logoUrl: getLogoUrl('caesars.com'),
+    logoUrl: '/images/caesars.jpg',
     color: '#002855',
   },
   'betonlineag': {
@@ -188,7 +188,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'rebet': {
     name: 'ReBet',
     logo: 'RB',
-    logoUrl: getLogoUrl('rebet.com'),
+    logoUrl: '/images/rebet.png',
     color: '#6B7280',
   },
 };
