@@ -723,7 +723,11 @@ function JournalContent() {
         })
           .then(async (response) => {
             if (!response.ok) {
-              clientLogger.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+              // Silently handle 401 (Unauthorized) - expected if user is not logged in
+              // Only log other errors in development
+              if (response.status !== 401) {
+                clientLogger.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+              }
               return;
             }
             const data = await response.json();
@@ -742,8 +746,9 @@ function JournalContent() {
             }
           })
           .catch((error) => {
-            clientLogger.error('[Journal] ❌ Failed to check journal bets:', error);
-            // Non-blocking, so we don't need to handle this
+            // Silently handle errors - this is a non-blocking background operation
+            // Only log in development for debugging
+            clientLogger.debug('[Journal] check-journal-bets error (non-critical):', error);
           });
       } catch (error) {
         clientLogger.error('Error checking subscription:', error);
@@ -778,12 +783,21 @@ function JournalContent() {
       if (isMounted) {
         try {
           // Trigger check-journal-bets to update completed games
-          console.log('[Journal] Periodic refresh: calling /api/check-journal-bets...');
+          clientLogger.debug('[Journal] Periodic refresh: calling /api/check-journal-bets...');
           const response = await fetch('/api/check-journal-bets', {
             credentials: 'include', // Include cookies for authentication
           });
-          const data = await response.json();
-          console.log('[Journal] Periodic refresh response:', data);
+          
+          // Silently handle 401 (Unauthorized) - expected if user is not logged in
+          if (!response.ok && response.status !== 401) {
+            clientLogger.warn('[Journal] Periodic refresh failed:', response.status);
+            return;
+          }
+          
+          if (response.ok) {
+            const data = await response.json();
+            clientLogger.debug('[Journal] Periodic refresh response:', data);
+          }
           
           // Then refresh bets from database
           const { data: { session } } = await supabase.auth.getSession();
