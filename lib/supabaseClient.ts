@@ -173,14 +173,14 @@ if (!isBrowser && isBuildPhase) {
       // Only suppress known build-time Supabase errors
       return;
     }
-    originalConsoleError.apply(console, args);
+    originalConsoleError!.apply(console, args);
   };
   
   console.warn = (...args: any[]) => {
     if (isKnownSupabaseBuildError(args)) {
       return;
     }
-    originalConsoleWarn.apply(console, args);
+    originalConsoleWarn!.apply(console, args);
   };
 }
 
