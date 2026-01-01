@@ -670,11 +670,15 @@ async function fetchTeamGameLog(teamId: number, seasonLabel: string): Promise<st
   }
 }
 
-function loadMaster(): { positions: Record<string, Position>; aliases: Record<string, string> } {
+async function loadMaster(): Promise<{ positions: Record<string, Position>; aliases: Record<string, string> }> {
   const filePath = path.resolve(process.cwd(), 'data', 'player_positions', 'master.json');
   try {
-    if (!fs.existsSync(filePath)) return { positions: {}, aliases: {} };
-    const content = fs.readFileSync(filePath, 'utf8');
+    try {
+      await fs.promises.access(filePath);
+    } catch {
+      return { positions: {}, aliases: {} };
+    }
+    const content = await fs.promises.readFile(filePath, 'utf8');
     const data = JSON.parse(content);
     return {
       positions: data.positions || {},
@@ -685,13 +689,15 @@ function loadMaster(): { positions: Record<string, Position>; aliases: Record<st
   }
 }
 
-function saveMaster(data: { positions: Record<string, Position>; aliases: Record<string, string> }) {
+async function saveMaster(data: { positions: Record<string, Position>; aliases: Record<string, string> }): Promise<void> {
   const filePath = path.resolve(process.cwd(), 'data', 'player_positions', 'master.json');
   const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    await fs.promises.access(dir);
+  } catch {
+    await fs.promises.mkdir(dir, { recursive: true });
   }
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
 }
 
 export async function GET(req: NextRequest) {
@@ -887,7 +893,7 @@ export async function GET(req: NextRequest) {
       }
       
       if (mostCommonPos) {
-        const master = loadMaster();
+        const master = await loadMaster();
         const currentPosition = master.positions[stats.normalized];
         
         updates.push({
@@ -913,7 +919,7 @@ export async function GET(req: NextRequest) {
     
     // Update master.json if not dry run
     if (!dryRun) {
-      const master = loadMaster();
+      const master = await loadMaster();
       let updatedCount = 0;
       let newCount = 0;
       
@@ -928,7 +934,7 @@ export async function GET(req: NextRequest) {
         }
       }
       
-      saveMaster(master);
+      await saveMaster(master);
       
       return NextResponse.json({
         success: true,

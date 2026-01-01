@@ -106,10 +106,15 @@ function fuzzyMatchByLastAndInitial(a: string, b: string){
   return ai && bi && ai === bi;
 }
 
-function readTeamFile(team: string){
+async function readTeamFile(team: string){
   const p = path.resolve(process.cwd(),'data','player_positions','teams',`${team}.json`);
-  if (!fs.existsSync(p)) return { file:p, json:{ team, season:'', players:[], positions:{}, aliases:{} } } as any;
-  return { file: p, json: JSON.parse(fs.readFileSync(p,'utf8')) } as any;
+  try {
+    await fs.promises.access(p);
+  } catch {
+    return { file:p, json:{ team, season:'', players:[], positions:{}, aliases:{} } } as any;
+  }
+  const content = await fs.promises.readFile(p, 'utf8');
+  return { file: p, json: JSON.parse(content) } as any;
 }
 
 export async function GET(req: NextRequest){
@@ -161,7 +166,7 @@ export async function GET(req: NextRequest){
         rows.forEach((r:any)=> bdlKeys.add(normName(`${r?.player?.first_name||''} ${r?.player?.last_name||''}`.trim())));
       }
 
-      const { file, json } = readTeamFile(team);
+      const { file, json } = await readTeamFile(team);
       json.aliases = json.aliases && typeof json.aliases==='object'? json.aliases: {};
 
       // Suggest aliases
@@ -174,8 +179,8 @@ export async function GET(req: NextRequest){
         }
       }
 
-      fs.mkdirSync(path.dirname(file), { recursive:true });
-      fs.writeFileSync(file, JSON.stringify(json, null, 2));
+      await fs.promises.mkdir(path.dirname(file), { recursive:true });
+      await fs.promises.writeFile(file, JSON.stringify(json, null, 2));
       updates.push({ team, aliases: Object.keys(json.aliases||{}).length });
     }
 
