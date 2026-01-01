@@ -275,39 +275,81 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Get cache key based on game date only (simplified)
-    // First check for all-dates cache (new unified cache)
-    // ONLY use all-dates cache - no date-specific fallback
-    const allDatesCacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
+    // Check for split cache keys first (part1, part2, part3) - new parallel processing approach
+    // If split caches exist, combine them. Otherwise fall back to unified cache key.
+    const part1CacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part1`;
+    const part2CacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part2`;
+    const part3CacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part3`;
+    const allDatesCacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`; // Fallback for unified cache
     
-    console.log(`[Player Props API] 🔑 GET: Using all-dates cache only: ${allDatesCacheKey}`);
+    console.log(`[Player Props API] 🔑 GET: Checking for split cache keys (part1, part2, part3) or unified cache`);
     
-    // Check if we have cached processed player props
-    // If refresh=1, only check Supabase (bypass in-memory cache to get latest)
+    // Try to read all 3 part caches
+    const cacheOptions = {
+      restTimeoutMs: 30000,
+      jsTimeoutMs: 30000,
+      quiet: false,
+    };
+    
     let cachedProps: any = null;
+    let part1Props: any = null;
+    let part2Props: any = null;
+    let part3Props: any = null;
     
     if (forceRefresh) {
-      cachedProps = await getNBACache<any>(allDatesCacheKey, {
-        restTimeoutMs: 30000,
-        jsTimeoutMs: 30000,
-        quiet: false,
-      });
+      // Force refresh: only check Supabase (bypass in-memory cache)
+      part1Props = await getNBACache<any>(part1CacheKey, cacheOptions);
+      part2Props = await getNBACache<any>(part2CacheKey, cacheOptions);
+      part3Props = await getNBACache<any>(part3CacheKey, cacheOptions);
     } else {
-      cachedProps = await getNBACache<any>(allDatesCacheKey, {
-        restTimeoutMs: 30000,
-        jsTimeoutMs: 30000,
-        quiet: false,
-      });
+      // Check Supabase first, then in-memory cache
+      part1Props = await getNBACache<any>(part1CacheKey, cacheOptions);
+      if (!part1Props) part1Props = cache.get<any>(part1CacheKey);
       
-      if (!cachedProps) {
-        cachedProps = cache.get<any>(allDatesCacheKey);
-      }
+      part2Props = await getNBACache<any>(part2CacheKey, cacheOptions);
+      if (!part2Props) part2Props = cache.get<any>(part2CacheKey);
+      
+      part3Props = await getNBACache<any>(part3CacheKey, cacheOptions);
+      if (!part3Props) part3Props = cache.get<any>(part3CacheKey);
     }
     
-    if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
-      console.log(`[Player Props API] ✅ Using all-dates cache (${cachedProps.length} props from all games)`);
+    // If any part cache exists, combine them (even if some are missing)
+    if (part1Props || part2Props || part3Props) {
+      const parts: any[] = [];
+      if (part1Props && Array.isArray(part1Props)) parts.push(...part1Props);
+      if (part2Props && Array.isArray(part2Props)) parts.push(...part2Props);
+      if (part3Props && Array.isArray(part3Props)) parts.push(...part3Props);
+      
+      if (parts.length > 0) {
+        // Deduplicate props (same player|stat|line)
+        const propsMap = new Map<string, any>();
+        for (const prop of parts) {
+          if (!prop.playerName || !prop.statType || prop.line === undefined || prop.line === null) continue;
+          const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+          // Keep the first one we see (or could prioritize by some criteria)
+          if (!propsMap.has(key)) {
+            propsMap.set(key, prop);
+          }
+        }
+        cachedProps = Array.from(propsMap.values());
+        console.log(`[Player Props API] ✅ Combined split caches: part1=${part1Props?.length || 0}, part2=${part2Props?.length || 0}, part3=${part3Props?.length || 0}, total=${cachedProps.length}`);
+      }
     } else {
-      console.log(`[Player Props API] ⚠️ All-dates cache not found or empty`);
+      // No split caches found, try unified cache key (backward compatibility)
+      if (forceRefresh) {
+        cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
+      } else {
+        cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
+        if (!cachedProps) {
+          cachedProps = cache.get<any>(allDatesCacheKey);
+        }
+      }
+      
+      if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
+        console.log(`[Player Props API] ✅ Using unified all-dates cache (${cachedProps.length} props from all games)`);
+      } else {
+        console.log(`[Player Props API] ⚠️ No cache found (checked split keys and unified key)`);
+      }
     }
     
     if (cachedProps) {

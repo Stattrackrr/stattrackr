@@ -4360,7 +4360,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           
                           // Helper to format hit rate percentage
                           const getHitRatePercent = (hitRate: { hits: number; total: number } | null | undefined): string => {
-                            if (!hitRate || hitRate.total === 0) return '-';
+                            if (!hitRate || hitRate.total === 0) return 'N/A';
                             return `${((hitRate.hits / hitRate.total) * 100).toFixed(0)}%`;
                           };
                           
@@ -4548,7 +4548,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null, true)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>STRK</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.streak ?? '-'}
+                                    {prop.streak ?? 'N/A'}
                                   </div>
                                 </div>
                                 
@@ -4600,7 +4600,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 })()}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? `#${prop.dvpRating}` : '-'}
+                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? `#${prop.dvpRating}` : 'N/A'}
                                   </div>
                                 </div>
                               </div>

@@ -2162,22 +2162,118 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
                       <span className="font-medium">{opponent}</span>
                     </div>
                   </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.min || '0:00'}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-bold">{game.pts || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.reb || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.ast || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.stl || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.blk || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.fgm || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.fga || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{fgPct}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.fg3m || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.fg3a || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{fg3Pct}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.ftm || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.fta || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.turnover || 0}</td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">{game.pf || 0}</td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.min == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.min || '0:00'
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white">
+                    {game.pts == null ? (
+                      <span className="text-gray-400 dark:text-gray-500 font-bold">N/A</span>
+                    ) : (
+                      <span className="font-bold">{game.pts || 0}</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.reb == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.reb || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.ast == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.ast || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.stl == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.stl || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.blk == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.blk || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fgm == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.fgm || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fga == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.fga || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fga == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      fgPct
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fg3m == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.fg3m || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fg3a == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.fg3a || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fg3a == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      fg3Pct
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.ftm == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.ftm || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.fta == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.fta || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.turnover == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.turnover || 0
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                    {game.pf == null ? (
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                    ) : (
+                      game.pf || 0
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -12861,7 +12957,7 @@ const lineMovementInFlightRef = useRef(false);
       if (excludeBackToBack) {
         if (!game || !backToBackGameIds.has(game.id)) return false;
       }
-
+      
       return true;
     });
     
@@ -12942,11 +13038,11 @@ const lineMovementInFlightRef = useRef(false);
         // Apply teammate filter to ALL games
         const teammateFiltered = allFiltered.filter((g: any) => {
           const game = g?.stats?.game;
-          const gid = game?.id;
-          if (!gid) return false;
-          const didPlay = teammatePlayedGameIds.has(gid);
-          if (withWithoutMode === 'with' && !didPlay) return false;
-          if (withWithoutMode === 'without' && didPlay) return false;
+        const gid = game?.id;
+        if (!gid) return false;
+        const didPlay = teammatePlayedGameIds.has(gid);
+        if (withWithoutMode === 'with' && !didPlay) return false;
+        if (withWithoutMode === 'without' && didPlay) return false;
           return true;
         });
         
@@ -12970,8 +13066,8 @@ const lineMovementInFlightRef = useRef(false);
           const didPlay = teammatePlayedGameIds.has(gid);
           if (withWithoutMode === 'with' && !didPlay) return false;
           if (withWithoutMode === 'without' && didPlay) return false;
-          return true;
-        });
+      return true;
+    });
       }
     } else if (teammateFilterId) {
       // Apply teammate filter for non-"last N" timeframes
@@ -13162,7 +13258,7 @@ const lineMovementInFlightRef = useRef(false);
                   } else {
                     setTeammatePlayedGameIds(allCachedIds);
                     console.log(`[Teammate Filter] ✅ Using cached data (${allCachedIds.size} total games, ${games.length} in current view, ${Math.round(age / 1000)}s old)`);
-                    return; // Use cached data, skip API calls
+                  return; // Use cached data, skip API calls
                   }
                 }
               } catch (e) {
@@ -13185,44 +13281,44 @@ const lineMovementInFlightRef = useRef(false);
         // Fetch ALL teammate stats for the current season, not just games in baseGameData
         // This ensures we have complete data regardless of timeframe filter
         const currentSeason = currentNbaSeason();
-        const params = new URLSearchParams();
-        params.set('endpoint', '/stats');
-        params.set('per_page', '100');
-        params.set('player_ids[]', String(teammateFilterId));
+          const params = new URLSearchParams();
+          params.set('endpoint', '/stats');
+          params.set('per_page', '100');
+          params.set('player_ids[]', String(teammateFilterId));
         params.set('seasons[]', String(currentSeason));
-        const url = `/api/balldontlie?${params.toString()}`;
-        
-        try {
-          const res = await fetch(url, { 
-            cache: 'no-store',
-            signal: abortController.signal 
-          }).catch(() => null);
+          const url = `/api/balldontlie?${params.toString()}`;
           
+          try {
+            const res = await fetch(url, { 
+              cache: 'no-store',
+              signal: abortController.signal 
+            }).catch(() => null);
+            
           if (abortController.signal.aborted) {
             return;
           }
-          
-          const json = await res?.json().catch(() => ({})) as any;
+            
+            const json = await res?.json().catch(() => ({})) as any;
           const allStats = Array.isArray(json?.data) ? json.data : [];
-          
-          // Check if request was aborted
-          if (abortController.signal.aborted) {
-            return;
-          }
-          
-          const played = new Set<number>();
-          
+        
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
+        
+        const played = new Set<number>();
+        
           // Process all results - mark games where teammate played (minutes > 0)
           allStats.forEach((s: any) => {
-            const minStr = s?.min || '0:00';
-            const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
-            const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
-            const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
+          const minStr = s?.min || '0:00';
+          const [m, sec] = String(minStr).split(':').map((x: any) => parseInt(x || '0', 10));
+          const minutes = (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) ? sec : 0) > 0 ? 1 : 0);
+          const gid = typeof s?.game?.id === 'number' ? s.game.id : (typeof s?.game_id === 'number' ? s.game_id : null);
             if (minutes > 0 && gid != null) {
               played.add(gid);
             }
-          });
-          
+        });
+        
         console.log(`[Teammate Filter] 📊 Fetched ${allStats.length} total stats, ${played.size} games where teammate played`);
         
         // Cache the results (only if we got a reasonable amount of data)
@@ -13239,13 +13335,13 @@ const lineMovementInFlightRef = useRef(false);
         }
         
         setTeammatePlayedGameIds(played);
-        } catch (e: any) {
-          if (e.name !== 'AbortError') {
-            console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
-          }
-        } finally {
-          teammateFetchInProgressRef.current.delete(teammateFilterId);
-          setLoadingTeammateGames(false);
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+          console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
+        }
+      } finally {
+        teammateFetchInProgressRef.current.delete(teammateFilterId);
+        setLoadingTeammateGames(false);
         }
       } catch (e: any) {
         if (e.name !== 'AbortError') {
@@ -14931,7 +15027,7 @@ const lineMovementInFlightRef = useRef(false);
         rankResults.forEach((result, index) => {
           if (result.rank !== null) {
             ranksByGame[result.gameIdStr] = result.rank;
-          } else {
+              } else {
             // Try to use current ranks as fallback
             const gameData = gamesToProcess[index];
             if (gameData && gameData.opponent && gameData.opponent !== 'N/A' && gameData.opponent !== 'ALL' && gameData.opponent !== '') {
@@ -14954,8 +15050,8 @@ const lineMovementInFlightRef = useRef(false);
               }
               
               ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
-            } else {
-              ranksByGame[result.gameIdStr] = null;
+          } else {
+            ranksByGame[result.gameIdStr] = null;
             }
           }
         });
@@ -15100,7 +15196,7 @@ const lineMovementInFlightRef = useRef(false);
       if (hasValidValues) {
         // Already have prefetched data with valid values, skip fetch
         console.log('[DvP Rank Legacy] Skipping - prefetched data has valid values');
-        return;
+      return;
       }
       // Prefetched data exists but all values are null - still fetch to try to get data
       console.log('[DvP Rank Legacy] Prefetched data exists but all values are null, fetching...');
@@ -15143,7 +15239,7 @@ const lineMovementInFlightRef = useRef(false);
                 // Only return rank if it's not 0 (0 means no data)
                 if (rank && rank > 0) {
                   return { gameIdStr, rank };
-                }
+              }
               }
               // If historical API returned empty ranks or no match, fall through to use current ranks
             }

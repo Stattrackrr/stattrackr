@@ -484,7 +484,12 @@ async function processPlayerProps() {
   console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
 
   // Process ALL games regardless of date - no date filtering
-  const cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
+  // When splitting, use separate cache keys for each part (no merging needed)
+  let cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
+  if (propsSplit || gameSplit) {
+    const partNumber = (propsSplit?.part || gameSplit?.part || 1);
+    cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part${partNumber}`;
+  }
   
   console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
   console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
@@ -1613,18 +1618,16 @@ async function processPlayerProps() {
   }
   console.log(`[GitHub Actions] 📊 Current props in odds cache: ${currentPropsInOddsCache.size} unique props`);
   
-  // Merge with existing cache if splitting by props OR filtering by stats
+  // When splitting, each part writes to its own cache key - NO MERGING needed
+  // Dashboard will read all parts and combine them
   let finalProps = [...propsWithStats];
   
-  // Always merge when splitting (by props OR by games) to combine results from parallel jobs
-  // Also merge when filtering by stats (secondary stats job merging with main stats)
-  // IMPORTANT: When splitting, don't merge here - merge only in retry loop after re-reading latest cache
+  // Only merge when filtering by stats (secondary stats job merging with main stats)
+  // NO merging for split jobs - each part saves to its own cache key
   const shouldMerge = !(propsSplit || gameSplit) && (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
   
-  // When splitting (by props OR by games), we'll merge in the retry loop after re-reading cache
-  // This ensures we always get the latest data from parallel jobs
   let cacheToMerge = existingCache;
-  if (!(propsSplit || gameSplit) && shouldMerge && cacheToMerge && Array.isArray(cacheToMerge) && cacheToMerge.length > 0) {
+  if (shouldMerge && cacheToMerge && Array.isArray(cacheToMerge) && cacheToMerge.length > 0) {
     // Create a Set of keys from new props to avoid duplicates
     const newPropsKeys = new Set(
       propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
@@ -1812,7 +1815,7 @@ async function processPlayerProps() {
       // For split jobs, we merge (don't clear) because other parallel jobs might still be writing
       
       if (propsSplit || gameSplit) {
-        console.log(`[GitHub Actions] 📦 Split job: Merging with existing cache (not clearing - other jobs may be writing)`);
+        console.log(`[GitHub Actions] 📦 Split job: Saving to part-specific cache key (no merging needed)`);
       } else if (finalProps.length === 0) {
         console.warn(`[GitHub Actions] ⚠️ No props to save - skipping cache update to preserve existing data`);
         throw new Error('No props processed - cannot update cache without replacement data');
