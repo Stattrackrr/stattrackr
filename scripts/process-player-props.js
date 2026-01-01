@@ -256,21 +256,40 @@ function getPlayerPropVendors(oddsCache) {
 // Cache key is now hardcoded to 'all-dates' - no date filtering
 
 // Cache helpers
-async function getCache(key) {
+async function getCache(key, retries = 0) {
   try {
     const { data, error } = await supabase
       .from('nba_api_cache')
-      .select('data, expires_at')
+      .select('data, expires_at, updated_at')
       .eq('cache_key', key)
       .single();
     
-    if (error || !data) return null;
+    if (error) {
+      // If error is "PGRST116" (no rows returned), that's expected - cache doesn't exist
+      if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+        return null;
+      }
+      // For other errors, log and retry if retries left
+      if (retries > 0) {
+        console.log(`[GitHub Actions] ⚠️ Cache read error (retrying ${retries} more times):`, error.message);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return getCache(key, retries - 1);
+      }
+      return null;
+    }
+    
+    if (!data) return null;
     
     const expiresAt = new Date(data.expires_at);
     if (expiresAt < new Date()) return null;
     
     return data.data;
   } catch (e) {
+    if (retries > 0) {
+      console.log(`[GitHub Actions] ⚠️ Cache read exception (retrying ${retries} more times):`, e.message);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return getCache(key, retries - 1);
+    }
     return null;
   }
 }
@@ -1702,8 +1721,10 @@ async function processPlayerProps() {
         }
         
         console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
-        const retryCache = await getCache(cacheKey);
+        // Retry cache read up to 3 times with 1s delay to handle Supabase replication delays
+        const retryCache = await getCache(cacheKey, 3);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
+          console.log(`[GitHub Actions] 📦 Found cache with ${retryCache.length} props`);
           // Merge with latest cache - this is the ONLY merge for split jobs
           const newPropsKeys = new Set(
             propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
