@@ -822,7 +822,9 @@ const InjuryContainer = memo(function InjuryContainer({
   // Compare playerStats array - check length and reference
   // For arrays, we check length as a quick comparison
   // If length changed, definitely re-render
-  if (prevProps.playerStats.length !== nextProps.playerStats.length) {
+  const prevStatsLength = prevProps.playerStats?.length ?? 0;
+  const nextStatsLength = nextProps.playerStats?.length ?? 0;
+  if (prevStatsLength !== nextStatsLength) {
     return false;
   }
 
