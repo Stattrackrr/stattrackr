@@ -1557,35 +1557,13 @@ async function processPlayerProps() {
   
   // Always merge when splitting (by props OR by games) to combine results from parallel jobs
   // Also merge when filtering by stats (secondary stats job merging with main stats)
-  const shouldMerge = propsSplit || gameSplit || (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
+  // IMPORTANT: When splitting, don't merge here - merge only in retry loop after re-reading latest cache
+  const shouldMerge = !(propsSplit || gameSplit) && (allowedStats && existingCache && Array.isArray(existingCache) && existingCache.length > 0);
   
-  // When splitting (by props OR by games), read cache again right before saving to get latest from parallel jobs
-  // Add staggered delays - later parts wait longer for earlier parts to finish
+  // When splitting (by props OR by games), we'll merge in the retry loop after re-reading cache
+  // This ensures we always get the latest data from parallel jobs
   let cacheToMerge = existingCache;
-  if (propsSplit || gameSplit) {
-    // Calculate delay based on part number - later parts wait longer for earlier parts
-    const partNumber = (propsSplit?.part || gameSplit?.part || 1);
-    const delaySeconds = partNumber === 1 ? 0 : partNumber === 2 ? 5 : 10; // Part 2 waits 5s, Part 3 waits 10s
-    
-    if (delaySeconds > 0) {
-      console.log(`[GitHub Actions] ⏳ Waiting ${delaySeconds}s for earlier parts to finish writing...`);
-      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
-    }
-    
-    console.log(`[GitHub Actions] 🔄 Re-reading cache before merge to get latest from parallel jobs...`);
-    const latestCache = await getCache(cacheKey);
-    if (latestCache && Array.isArray(latestCache) && latestCache.length > 0) {
-      cacheToMerge = latestCache;
-      console.log(`[GitHub Actions] 📦 Found updated cache (${cacheToMerge.length} props) - will merge with new data`);
-    } else if (existingCache && Array.isArray(existingCache) && existingCache.length > 0) {
-      cacheToMerge = existingCache;
-      console.log(`[GitHub Actions] 📦 Using initial cache (${cacheToMerge.length} props) - no updates from parallel jobs yet`);
-    } else {
-      console.log(`[GitHub Actions] ⚠️ No cache found yet - earlier parts may still be processing`);
-    }
-  }
-  
-  if (shouldMerge && cacheToMerge && Array.isArray(cacheToMerge) && cacheToMerge.length > 0) {
+  if (!(propsSplit || gameSplit) && shouldMerge && cacheToMerge && Array.isArray(cacheToMerge) && cacheToMerge.length > 0) {
     // Create a Set of keys from new props to avoid duplicates
     const newPropsKeys = new Set(
       propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
@@ -1704,23 +1682,29 @@ async function processPlayerProps() {
   
   for (let retry = 0; retry < maxRetries && !savedSuccessfully; retry++) {
     try {
-      // Always re-read cache right before saving when splitting (to get latest from parallel jobs)
-      // This is critical to avoid race conditions - always use the latest cache, not the initial merge
+      // When splitting, ALWAYS re-read cache and merge in retry loop (this is the only place we merge)
+      // This ensures we always get the latest data from parallel jobs, avoiding race conditions
       if (propsSplit || gameSplit) {
-        if (retry > 0) {
-          // Longer delay on retry to ensure other jobs have finished
-          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay on retry
+        // Calculate delay based on part number - later parts wait longer for earlier parts
+        const partNumber = (propsSplit?.part || gameSplit?.part || 1);
+        let delaySeconds = 0;
+        if (retry === 0) {
+          // First attempt: wait based on part number to give earlier parts time to finish
+          delaySeconds = partNumber === 1 ? 0 : partNumber === 2 ? 10 : 20; // Part 2 waits 10s, Part 3 waits 20s
         } else {
-          // Even on first attempt, wait a bit to let earlier parts finish writing
-          const partNumber = (propsSplit?.part || gameSplit?.part || 1);
-          if (partNumber > 1) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay before first save attempt
-          }
+          // Retry: wait longer to ensure other jobs have finished
+          delaySeconds = 5; // 5 second delay on retry
         }
+        
+        if (delaySeconds > 0) {
+          console.log(`[GitHub Actions] ⏳ Waiting ${delaySeconds}s ${retry === 0 ? 'for earlier parts to finish' : 'before retry'}...`);
+          await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+        }
+        
         console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
         const retryCache = await getCache(cacheKey);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
-          // Re-merge with latest cache (ignore the initial merge, use latest)
+          // Merge with latest cache - this is the ONLY merge for split jobs
           const newPropsKeys = new Set(
             propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
           );
@@ -1739,11 +1723,12 @@ async function processPlayerProps() {
             return true;
           });
           finalProps = [...propsWithStats, ...uniqueExistingProps];
-          console.log(`[GitHub Actions] 🔀 Re-merged: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
+          const splitType = propsSplit ? 'props' : 'games';
+          console.log(`[GitHub Actions] 🔀 Merging (split by ${splitType}): ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
         } else {
           // No cache found, use only our props
           finalProps = [...propsWithStats];
-          console.log(`[GitHub Actions] ⚠️ No cache found in retry loop, using only our ${propsWithStats.length} props`);
+          console.log(`[GitHub Actions] ⚠️ No cache found, using only our ${propsWithStats.length} props`);
         }
       }
       
