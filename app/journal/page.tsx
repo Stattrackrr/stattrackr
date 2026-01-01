@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import React, { useEffect, useState, useMemo, Suspense, useRef } from "react";
+import { clientLogger } from '@/lib/clientLogger';
 import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
