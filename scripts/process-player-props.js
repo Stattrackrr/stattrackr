@@ -257,41 +257,68 @@ function getPlayerPropVendors(oddsCache) {
 
 // Cache helpers
 async function getCache(key, retries = 0) {
-  try {
-    const { data, error } = await supabase
-      .from('nba_api_cache')
-      .select('data, expires_at, updated_at')
-      .eq('cache_key', key)
-      .single();
-    
-    if (error) {
-      // If error is "PGRST116" (no rows returned), that's expected - cache doesn't exist
-      if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+  let attempt = 0;
+  const maxAttempts = retries + 1;
+  
+  while (attempt < maxAttempts) {
+    try {
+      const { data, error } = await supabase
+        .from('nba_api_cache')
+        .select('data, expires_at, updated_at')
+        .eq('cache_key', key)
+        .single();
+      
+      if (error) {
+        // If error is "PGRST116" (no rows returned), retry if we have retries left
+        // This could be a replication delay - cache exists but not visible yet
+        if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+          if (attempt < maxAttempts - 1) {
+            attempt++;
+            console.log(`[GitHub Actions] ⚠️ Cache not found (attempt ${attempt}/${maxAttempts}) - may be replication delay, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+            continue;
+          }
+          return null;
+        }
+        // For other errors, log and retry if retries left
+        if (attempt < maxAttempts - 1) {
+          attempt++;
+          console.log(`[GitHub Actions] ⚠️ Cache read error (attempt ${attempt}/${maxAttempts}):`, error.message);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
         return null;
       }
-      // For other errors, log and retry if retries left
-      if (retries > 0) {
-        console.log(`[GitHub Actions] ⚠️ Cache read error (retrying ${retries} more times):`, error.message);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return getCache(key, retries - 1);
+      
+      if (!data) {
+        if (attempt < maxAttempts - 1) {
+          attempt++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        return null;
+      }
+      
+      const expiresAt = new Date(data.expires_at);
+      if (expiresAt < new Date()) return null;
+      
+      if (attempt > 0) {
+        console.log(`[GitHub Actions] ✅ Cache found on attempt ${attempt + 1}/${maxAttempts}`);
+      }
+      
+      return data.data;
+    } catch (e) {
+      if (attempt < maxAttempts - 1) {
+        attempt++;
+        console.log(`[GitHub Actions] ⚠️ Cache read exception (attempt ${attempt}/${maxAttempts}):`, e.message);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
       }
       return null;
     }
-    
-    if (!data) return null;
-    
-    const expiresAt = new Date(data.expires_at);
-    if (expiresAt < new Date()) return null;
-    
-    return data.data;
-  } catch (e) {
-    if (retries > 0) {
-      console.log(`[GitHub Actions] ⚠️ Cache read exception (retrying ${retries} more times):`, e.message);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return getCache(key, retries - 1);
-    }
-    return null;
   }
+  
+  return null;
 }
 
 async function setCache(key, value, ttlMinutes = 24 * 60) {
