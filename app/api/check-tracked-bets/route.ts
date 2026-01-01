@@ -349,9 +349,9 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      message: `Checked ${trackedProps.length} tracked bets, updated ${updatedCount}`,
+      message: `Checked ${allTrackedProps.length} tracked bets, updated ${updatedCount}`,
       updated: updatedCount,
-      total: trackedProps.length,
+      total: allTrackedProps.length,
     });
 
   } catch (error: any) {
