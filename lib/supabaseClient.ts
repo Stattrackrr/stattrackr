@@ -144,11 +144,15 @@ const isBuildPhase = typeof process !== 'undefined' &&
   (process.env.NEXT_PHASE === 'phase-production-build' || 
    process.env.NODE_ENV === 'production' && !process.env.VERCEL);
 
+// Store original console methods at module level for restoration later
+let originalConsoleError: typeof console.error | null = null;
+let originalConsoleWarn: typeof console.warn | null = null;
+
 if (!isBrowser && isBuildPhase) {
   // Only during build: suppress known Supabase auth errors that occur during static generation
   // These errors are expected when Supabase client initializes during build without a session
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
+  originalConsoleError = console.error;
+  originalConsoleWarn = console.warn;
   
   const isKnownSupabaseBuildError = (args: any[]): boolean => {
     const message = args[0]?.toString() || '';
@@ -379,12 +383,12 @@ try {
 }
 
 // Restore console methods after client creation
-if (!isBrowser) {
+if (!isBrowser && originalConsoleError && originalConsoleWarn) {
   // Keep error suppression active during build to catch async errors
   // The suppression will remain until the module is fully loaded
   setTimeout(() => {
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
+    console.error = originalConsoleError!;
+    console.warn = originalConsoleWarn!;
   }, 0);
 }
 
