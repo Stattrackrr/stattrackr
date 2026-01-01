@@ -812,7 +812,7 @@ function JournalContent() {
             }
           }
         } catch (error) {
-          console.error('Error refreshing bets:', error);
+          clientLogger.debug('Error refreshing bets (non-critical):', error);
         }
       }
     }, 10 * 60 * 1000); // 10 minutes
