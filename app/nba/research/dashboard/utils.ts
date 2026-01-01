@@ -211,13 +211,38 @@ export const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] 
   const mergedMap = new Map<string, any>();
   const order: string[] = [];
 
+  // Optimized clone function - replaces expensive JSON.parse(JSON.stringify())
+  const cloneBookRow = (book: any): any => {
+    const clone: any = { ...book };
+    // Clone nested objects
+    if (book.H2H) clone.H2H = { ...book.H2H };
+    if (book.Spread) clone.Spread = { ...book.Spread };
+    if (book.Total) clone.Total = { ...book.Total };
+    if (book.PTS) clone.PTS = { ...book.PTS };
+    if (book.REB) clone.REB = { ...book.REB };
+    if (book.AST) clone.AST = { ...book.AST };
+    if (book.THREES) clone.THREES = { ...book.THREES };
+    if (book.PRA) clone.PRA = { ...book.PRA };
+    if (book.PR) clone.PR = { ...book.PR };
+    if (book.PA) clone.PA = { ...book.PA };
+    if (book.RA) clone.RA = { ...book.RA };
+    if (book.BLK) clone.BLK = { ...book.BLK };
+    if (book.STL) clone.STL = { ...book.STL };
+    if (book.TO) clone.TO = { ...book.TO };
+    if (book.DD) clone.DD = { ...book.DD };
+    if (book.TD) clone.TD = { ...book.TD };
+    if (book.FIRST_BASKET) clone.FIRST_BASKET = { ...book.FIRST_BASKET };
+    if (book.meta) clone.meta = { ...book.meta };
+    return clone;
+  };
+
   for (const book of books || []) {
     const baseNameRaw = (book as any)?.meta?.baseName || book?.name || '';
     const baseKey = baseNameRaw.toLowerCase();
     const displayName = baseNameRaw || book?.name || 'Book';
 
     if (!mergedMap.has(baseKey)) {
-      const clone = JSON.parse(JSON.stringify(book));
+      const clone = cloneBookRow(book);
       clone.name = displayName;
       mergedMap.set(baseKey, clone);
       order.push(baseKey);
@@ -249,7 +274,10 @@ export const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] 
 
       if (!needsLine) {
         if (!targetVal && sourceVal) {
-          target[key] = JSON.parse(JSON.stringify(sourceVal));
+          // Clone object if it's a nested object, otherwise use spread
+          target[key] = typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)
+            ? { ...sourceVal }
+            : sourceVal;
         }
         continue;
       }

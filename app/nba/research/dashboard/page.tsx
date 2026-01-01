@@ -110,6 +110,41 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
 
 const LINE_MOVEMENT_ENABLED = process.env.NEXT_PUBLIC_ENABLE_LINE_MOVEMENT === 'true';
 
+// Optimized clone function - replaces expensive JSON.parse(JSON.stringify())
+// Performs shallow clone with nested object cloning for BookRow structure
+function cloneBookRow(book: any): any {
+  const clone: any = { ...book };
+  // Clone nested objects (H2H, Spread, Total, etc.)
+  if (book.H2H) clone.H2H = { ...book.H2H };
+  if (book.Spread) clone.Spread = { ...book.Spread };
+  if (book.Total) clone.Total = { ...book.Total };
+  if (book.PTS) clone.PTS = { ...book.PTS };
+  if (book.REB) clone.REB = { ...book.REB };
+  if (book.AST) clone.AST = { ...book.AST };
+  if (book.THREES) clone.THREES = { ...book.THREES };
+  if (book.PRA) clone.PRA = { ...book.PRA };
+  if (book.PR) clone.PR = { ...book.PR };
+  if (book.PA) clone.PA = { ...book.PA };
+  if (book.RA) clone.RA = { ...book.RA };
+  if (book.BLK) clone.BLK = { ...book.BLK };
+  if (book.STL) clone.STL = { ...book.STL };
+  if (book.TO) clone.TO = { ...book.TO };
+  if (book.DD) clone.DD = { ...book.DD };
+  if (book.TD) clone.TD = { ...book.TD };
+  if (book.FIRST_BASKET) clone.FIRST_BASKET = { ...book.FIRST_BASKET };
+  // Clone metadata if present
+  if (book.meta) clone.meta = { ...book.meta };
+  // Clone any other nested objects
+  for (const key in book) {
+    if (book[key] && typeof book[key] === 'object' && !Array.isArray(book[key]) && 
+        !clone[key] && key !== 'meta' && 
+        !['H2H', 'Spread', 'Total', 'PTS', 'REB', 'AST', 'THREES', 'PRA', 'PR', 'PA', 'RA', 'BLK', 'STL', 'TO', 'DD', 'TD', 'FIRST_BASKET'].includes(key)) {
+      clone[key] = { ...book[key] };
+    }
+  }
+  return clone;
+}
+
 const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
   if (skipMerge) return books;
 
@@ -142,7 +177,7 @@ const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
     const displayName = baseNameRaw || book?.name || 'Book';
 
     if (!mergedMap.has(baseKey)) {
-      const clone = JSON.parse(JSON.stringify(book));
+      const clone = cloneBookRow(book);
       clone.name = displayName;
       // Preserve metadata (including gameHomeTeam/gameAwayTeam)
       if (book.meta && !clone.meta) {
@@ -186,7 +221,10 @@ const mergeBookRowsByBaseName = (books: any[], skipMerge = false): any[] => {
 
       if (!needsLine) {
         if (!targetVal && sourceVal) {
-          target[key] = JSON.parse(JSON.stringify(sourceVal));
+          // Clone object if it's a nested object, otherwise use spread
+          target[key] = typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)
+            ? { ...sourceVal }
+            : sourceVal;
         }
         continue;
       }
@@ -6407,7 +6445,7 @@ const BestOddsTable = memo(function BestOddsTable({
           if (isAway) {
             // Flip spread sign and swap over/under odds, swap H2H odds
             return filtered.map((book: any) => {
-              const flipped = JSON.parse(JSON.stringify(book));
+              const flipped = cloneBookRow(book);
               
               // Flip spread: if home is -8.5, away should be +8.5
               if (flipped.Spread && flipped.Spread.line !== 'N/A') {
@@ -6841,7 +6879,7 @@ const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
           if (isAway) {
             // Flip spread sign and swap over/under odds, swap H2H odds
             return filtered.map((book: any) => {
-              const flipped = JSON.parse(JSON.stringify(book));
+              const flipped = cloneBookRow(book);
               
               // Flip spread: if home is -8.5, away should be +8.5
               if (flipped.Spread && flipped.Spread.line !== 'N/A') {
