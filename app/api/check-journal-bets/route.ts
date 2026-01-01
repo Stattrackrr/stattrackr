@@ -987,6 +987,34 @@ export async function GET(request: Request) {
     
     // Fetch player props (have player_id) OR game props (have game prop stat type)
     // We'll fetch both and filter in memory to avoid complex OR queries
+    // Helper function to fetch bets in batches (pagination)
+    const fetchBetsInBatches = async (baseQuery: any, batchSize = 100): Promise<any[]> => {
+      const allBets: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error } = await baseQuery
+          .order('game_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+
+        if (error) {
+          throw error;
+        }
+
+        if (batch && batch.length > 0) {
+          allBets.push(...batch);
+          hasMore = batch.length === batchSize;
+          offset += batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allBets;
+    };
+
     // IMPORTANT: Always include 'live' status bets so we can maintain their live status
     let playerPropsQuery = supabaseAdmin
       .from('bets')
@@ -1016,20 +1044,11 @@ export async function GET(request: Request) {
       gamePropsQuery = gamePropsQuery.or('result.eq.pending,status.eq.live');
     }
     
-    const [{ data: playerProps, error: playerPropsError }, { data: gameProps, error: gamePropsError }] = await Promise.all([
-      playerPropsQuery,
-      gamePropsQuery,
+    // Fetch bets in batches to avoid loading all into memory
+    const [playerProps, gameProps] = await Promise.all([
+      fetchBetsInBatches(playerPropsQuery),
+      fetchBetsInBatches(gamePropsQuery),
     ]);
-    
-    if (playerPropsError) {
-      console.error('Error fetching player props:', playerPropsError);
-      throw playerPropsError;
-    }
-    
-    if (gamePropsError) {
-      console.error('Error fetching game props:', gamePropsError);
-      throw gamePropsError;
-    }
     
     // Filter out completed bets in normal mode (optimization: skip already resolved bets)
     let singleBets = [...(playerProps || []), ...(gameProps || [])];
@@ -1044,7 +1063,7 @@ export async function GET(request: Request) {
       });
     }
     
-    // Then get parlay bets (market contains "Parlay")
+    // Then get parlay bets (market contains "Parlay") in batches
     let parlayBetsQuery = supabaseAdmin
       .from('bets')
       .select('*')
@@ -1059,12 +1078,7 @@ export async function GET(request: Request) {
       parlayBetsQuery = parlayBetsQuery.or('result.eq.pending,status.eq.live');
     }
     
-    const { data: parlayBets, error: parlayError } = await parlayBetsQuery;
-    
-    if (parlayError) {
-      console.error('Error fetching parlay bets:', parlayError);
-      throw parlayError;
-    }
+    const parlayBets = await fetchBetsInBatches(parlayBetsQuery);
     
     // Filter out completed parlay bets in normal mode
     let filteredParlayBets = parlayBets || [];

@@ -85,19 +85,38 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Fetch all pending, live tracked props, and completed ones missing individual stat breakdown
-    const { data: trackedProps, error } = await supabaseAdmin
-      .from('tracked_props')
-      .select('*')
-      .or('status.in.(pending,live),and(status.eq.completed,actual_pts.is.null)');
+    // Process tracked props in batches to avoid loading all into memory
+    const BATCH_SIZE = 100;
+    let allTrackedProps: any[] = [];
+    let offset = 0;
+    let hasMore = true;
 
-    logDebug('Fetched tracked props:', trackedProps?.length || 0);
-    if (error) {
-      console.error('Error fetching tracked props:', error);
-      throw error;
+    // Fetch tracked props in batches
+    while (hasMore) {
+      const { data: batch, error } = await supabaseAdmin
+        .from('tracked_props')
+        .select('*')
+        .or('status.in.(pending,live),and(status.eq.completed,actual_pts.is.null)')
+        .order('game_date', { ascending: false })
+        .range(offset, offset + BATCH_SIZE - 1);
+
+      if (error) {
+        console.error('Error fetching tracked props:', error);
+        throw error;
+      }
+
+      if (batch && batch.length > 0) {
+        allTrackedProps.push(...batch);
+        hasMore = batch.length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+      } else {
+        hasMore = false;
+      }
     }
 
-    if (!trackedProps || trackedProps.length === 0) {
+    logDebug('Fetched tracked props:', allTrackedProps.length);
+    
+    if (allTrackedProps.length === 0) {
       logDebug('No tracked props found with pending or live status');
       return NextResponse.json({ message: 'No pending tracked bets', updated: 0 });
     }
@@ -105,7 +124,7 @@ export async function GET(request: Request) {
     let updatedCount = 0;
 
     // Group by game date to minimize API calls
-    const gamesByDate = trackedProps.reduce((acc: any, prop) => {
+    const gamesByDate = allTrackedProps.reduce((acc: any, prop) => {
       const date = prop.game_date;
       if (!acc[date]) acc[date] = [];
       acc[date].push(prop);
