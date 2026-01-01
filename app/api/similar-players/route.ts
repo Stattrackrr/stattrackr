@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { currentNbaSeason } from '@/lib/nbaUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { TEAM_ID_TO_ABBR } from '@/lib/nbaConstants';
+import { checkRateLimit, apiRateLimiter } from '@/lib/rateLimit';
 
 // Helper function to get the base URL for API calls (works in both local and Vercel)
 function getBaseUrl(request?: NextRequest): string {
