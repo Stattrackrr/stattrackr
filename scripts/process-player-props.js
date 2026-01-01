@@ -484,15 +484,7 @@ async function processPlayerProps() {
   console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
 
   // Process ALL games regardless of date - no date filtering
-  // When splitting, use separate cache keys for each part (no merging needed)
-  let cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
-  if (propsSplit || gameSplit) {
-    const partNumber = (propsSplit?.part || gameSplit?.part || 1);
-    cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part${partNumber}`;
-  }
-  
   console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
-  console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
   
   // Check for force refresh flag
   const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('-r');
@@ -533,6 +525,16 @@ async function processPlayerProps() {
       }
     }
   }
+  
+  // When splitting, use separate cache keys for each part (no merging needed)
+  // Must be defined AFTER propsSplit and gameSplit are set
+  let cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates`;
+  if (propsSplit || gameSplit) {
+    const partNumber = (propsSplit?.part || gameSplit?.part || 1);
+    cacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part${partNumber}`;
+  }
+  
+  console.log(`[GitHub Actions] 🔑 Cache key: ${cacheKey}`);
   
   // Use per-part checkpoint key when splitting (each part processes different props)
   // Must be defined AFTER propsSplit and gameSplit are set
