@@ -541,6 +541,15 @@ async function processPlayerProps() {
   
   const allProps = [];
   
+  // Debug: Log game details to understand why props extraction might fail
+  console.log(`[GitHub Actions] 🔍 Debug: Processing ${games.length} games for part ${gameSplit?.part || propsSplit?.part || 'N/A'}`);
+  for (let i = 0; i < Math.min(games.length, 3); i++) {
+    const game = games[i];
+    const hasProps = !!(game?.playerPropsByBookmaker && typeof game.playerPropsByBookmaker === 'object');
+    const propCount = hasProps ? Object.keys(game.playerPropsByBookmaker || {}).length : 0;
+    console.log(`[GitHub Actions] 🔍 Debug game ${i + 1}: ${game?.homeTeam} vs ${game?.awayTeam}, hasProps=${hasProps}, bookmakers=${propCount}`);
+  }
+  
   for (const game of games) {
     if (!game?.playerPropsByBookmaker || typeof game.playerPropsByBookmaker !== 'object') continue;
     
@@ -651,6 +660,8 @@ async function processPlayerProps() {
       }
     }
   }
+  
+  console.log(`[GitHub Actions] 🔍 Debug: Extracted ${allProps.length} raw props from ${games.length} games (part ${gameSplit?.part || propsSplit?.part || 'N/A'})`);
   
   // Group and deduplicate
   const propsByPlayerStat = new Map();
