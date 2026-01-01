@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { currentNbaSeason } from '@/lib/nbaConstants';
+import { clientLogger } from '@/lib/clientLogger';
 
 interface InjuryData {
   player: {
@@ -178,12 +179,12 @@ const InjuryContainer = memo(function InjuryContainer({
   useEffect(() => {
     // Prevent concurrent calculations
     if (calculatingRef.current) {
-      console.log(`[Injury Impact] Calculation already in progress, skipping`);
+      clientLogger.debug(`[Injury Impact] Calculation already in progress, skipping`);
       return;
     }
 
     if (!selectedPlayer || !playerStats || playerStats.length === 0 || teamInjuriesRaw.length === 0) {
-      console.log(`[Injury Impact] Skipping calculation:`, {
+      clientLogger.debug(`[Injury Impact] Skipping calculation:`, {
         hasSelectedPlayer: !!selectedPlayer,
         playerStatsLength: playerStats?.length || 0,
         teamInjuriesLength: teamInjuriesRaw.length
@@ -200,7 +201,7 @@ const InjuryContainer = memo(function InjuryContainer({
       return;
     }
 
-    console.log(`[Injury Impact] Processing ${teamInjuriesRaw.length} injured players:`, 
+    clientLogger.debug(`[Injury Impact] Processing ${teamInjuriesRaw.length} injured players:`, 
       teamInjuriesRaw.map(i => `${i.player.first_name} ${i.player.last_name} (ID: ${i.player.id})`).join(', '));
 
     calculatingRef.current = true;
@@ -210,7 +211,7 @@ const InjuryContainer = memo(function InjuryContainer({
       const newAverages: Record<number, { rebounds: number; points: number; assists: number; plusMinus: number; fg3m: number }> = {};
       const loadingSet = new Set<number>();
 
-      console.log(`[Injury Impact] Starting calculation for ${teamInjuriesRaw.length} injured players`);
+      clientLogger.debug(`[Injury Impact] Starting calculation for ${teamInjuriesRaw.length} injured players`);
 
       for (const injury of teamInjuriesRaw) {
         const injuredPlayerId = injury.player.id;
@@ -226,9 +227,9 @@ const InjuryContainer = memo(function InjuryContainer({
           const injuredPlayerData = await response.json();
           const injuredPlayerStats = injuredPlayerData?.data || [];
 
-          console.log(`[Injury Impact] Fetching stats for current season (${season}), got ${injuredPlayerStats.length} games`);
+          clientLogger.debug(`[Injury Impact] Fetching stats for current season (${season}), got ${injuredPlayerStats.length} games`);
 
-          console.log(`[Injury Impact] Calculating for ${injury.player.first_name} ${injury.player.last_name}:`, {
+          clientLogger.debug(`[Injury Impact] Calculating for ${injury.player.first_name} ${injury.player.last_name}:`, {
             injuredPlayerId,
             injuredPlayerStatsCount: injuredPlayerStats.length,
             selectedPlayerStatsCount: playerStats.length
@@ -236,7 +237,7 @@ const InjuryContainer = memo(function InjuryContainer({
 
           // If injured player has no stats, they never played, so no games together
           if (injuredPlayerStats.length === 0) {
-            console.log(`[Injury Impact] ${injury.player.first_name} ${injury.player.last_name} has no stats, no games together`);
+            clientLogger.debug(`[Injury Impact] ${injury.player.first_name} ${injury.player.last_name} has no stats, no games together`);
             newImpacts[injuredPlayerId] = {
               plusMinus: null,
               rebounds: null,
@@ -295,8 +296,8 @@ const InjuryContainer = memo(function InjuryContainer({
               .filter((id: any) => id != null)
           );
 
-          console.log(`[Injury Impact] Games where injured player played: ${gamesWithInjuredPlayerByDate.size} (by date), ${gamesWithInjuredPlayerById.size} (by ID)`);
-          console.log(`[Injury Impact] Sample game dates from injured player:`, Array.from(gamesWithInjuredPlayerByDate).slice(0, 5));
+          clientLogger.debug(`[Injury Impact] Games where injured player played: ${gamesWithInjuredPlayerByDate.size} (by date), ${gamesWithInjuredPlayerById.size} (by ID)`);
+          clientLogger.debug(`[Injury Impact] Sample game dates from injured player:`, Array.from(gamesWithInjuredPlayerByDate).slice(0, 5));
 
           // Filter selected player's stats: games WITHOUT injured player (match by date first, then ID)
           const gamesWithoutInjured = playerStats.filter((stat: any) => {
@@ -336,7 +337,7 @@ const InjuryContainer = memo(function InjuryContainer({
             return normalizedGameId && gamesWithInjuredPlayerById.has(normalizedGameId);
           });
 
-          console.log(`[Injury Impact] Sample game dates from selected player:`, playerStats.slice(0, 5).map((s: any) => {
+          clientLogger.debug(`[Injury Impact] Sample game dates from selected player:`, playerStats.slice(0, 5).map((s: any) => {
             const date = s.game?.date;
             return date ? new Date(date).toISOString().split('T')[0] : null;
           }).filter(Boolean));
@@ -347,11 +348,11 @@ const InjuryContainer = memo(function InjuryContainer({
             return date ? new Date(date).toISOString().split('T')[0] : null;
           }).filter((date): date is string => date != null));
           const overlap = Array.from(gamesWithInjuredPlayerByDate).filter((date) => selectedPlayerGameDates.has(date));
-          console.log(`[Injury Impact] Game date overlap: ${overlap.length} games in common`);
+          clientLogger.debug(`[Injury Impact] Game date overlap: ${overlap.length} games in common`);
 
           // If no games in common (by date), they haven't played together
           if (overlap.length === 0 && gamesWithInjured.length === 0) {
-            console.log(`[Injury Impact] No games played together between ${injury.player.first_name} ${injury.player.last_name} and selected player`);
+            clientLogger.debug(`[Injury Impact] No games played together between ${injury.player.first_name} ${injury.player.last_name} and selected player`);
             newImpacts[injuredPlayerId] = {
               plusMinus: null,
               rebounds: null,
@@ -364,10 +365,10 @@ const InjuryContainer = memo(function InjuryContainer({
             continue;
           }
 
-          console.log(`[Injury Impact] Selected player games - Without: ${gamesWithoutInjured.length}, With: ${gamesWithInjured.length}`);
+          clientLogger.debug(`[Injury Impact] Selected player games - Without: ${gamesWithoutInjured.length}, With: ${gamesWithInjured.length}`);
 
           if (gamesWithoutInjured.length === 0) {
-            console.log(`[Injury Impact] No games without injured player found`);
+            clientLogger.debug(`[Injury Impact] No games without injured player found`);
             newImpacts[injuredPlayerId] = {
               plusMinus: null,
               rebounds: null,
@@ -400,11 +401,11 @@ const InjuryContainer = memo(function InjuryContainer({
             ? playerStats[0]?.team?.abbreviation
             : selectedTeam;
 
-          console.log(`[Injury Impact] Teams - Injured: ${injuredPlayerTeam}, Selected: ${selectedPlayerTeam}`);
+          clientLogger.debug(`[Injury Impact] Teams - Injured: ${injuredPlayerTeam}, Selected: ${selectedPlayerTeam}`);
 
           // Only compare if they're on the same team
           if (injuredPlayerTeam && selectedPlayerTeam && injuredPlayerTeam !== selectedPlayerTeam) {
-            console.log(`[Injury Impact] Players are on different teams, skipping`);
+            clientLogger.debug(`[Injury Impact] Players are on different teams, skipping`);
             newImpacts[injuredPlayerId] = {
               plusMinus: null,
               rebounds: null,
@@ -427,10 +428,10 @@ const InjuryContainer = memo(function InjuryContainer({
             return statTeam === injuredPlayerTeam || statTeam === selectedPlayerTeam;
           });
 
-          console.log(`[Injury Impact] After team filter - Without: ${gamesWithoutInjuredSameTeam.length}, With: ${gamesWithInjuredSameTeam.length}`);
+          clientLogger.debug(`[Injury Impact] After team filter - Without: ${gamesWithoutInjuredSameTeam.length}, With: ${gamesWithInjuredSameTeam.length}`);
 
           if (gamesWithoutInjuredSameTeam.length === 0) {
-            console.log(`[Injury Impact] No games without injured player on same team`);
+            clientLogger.debug(`[Injury Impact] No games without injured player on same team`);
             newImpacts[injuredPlayerId] = {
               plusMinus: null,
               rebounds: null,
@@ -490,7 +491,7 @@ const InjuryContainer = memo(function InjuryContainer({
             Math.abs(diff.assists) >= 0.5 ||
             Math.abs(diff.fg3m) >= 0.5;
 
-          console.log(`[Injury Impact] Results for ${injury.player.first_name} ${injury.player.last_name}:`, {
+          clientLogger.debug(`[Injury Impact] Results for ${injury.player.first_name} ${injury.player.last_name}:`, {
             avgWithout,
             avgWith,
             diff,

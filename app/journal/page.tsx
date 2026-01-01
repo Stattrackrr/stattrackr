@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Journal page error:', error, errorInfo);
+    clientLogger.error('Journal page error:', error, errorInfo);
   }
 
   render() {
@@ -52,7 +52,10 @@ class ErrorBoundary extends React.Component<
         <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
           <div className="text-center">
             <div className="text-xl font-bold mb-2">Something went wrong</div>
-            <div className="text-sm text-gray-400 mb-4">{this.state.error?.message}</div>
+            {/* Don't show error message in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-sm text-gray-400 mb-4">{this.state.error?.message}</div>
+            )}
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
@@ -411,7 +414,7 @@ function JournalContent() {
           router.push('/subscription');
         }
       } catch (error) {
-        console.error('Portal error:', error);
+        clientLogger.error('Portal error:', error);
         router.push('/subscription');
       }
     } else {
@@ -567,7 +570,7 @@ function JournalContent() {
               .single();
             
             if (unitProfileFallback) {
-              console.log('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
+              clientLogger.debug('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
               const fallback = unitProfileFallback as {
                 unit_size?: number | null;
                 bankroll?: number | null;
@@ -578,23 +581,23 @@ function JournalContent() {
               };
               if (fallback.unit_size !== null && fallback.unit_size !== undefined) {
                 const unitSizeValue = parseFloat(fallback.unit_size.toString());
-                console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+                clientLogger.debug('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
                 setUnitSize(unitSizeValue);
                 if (!mobileUnitSize) {
                   setMobileUnitSize(unitSizeValue.toString());
                 }
               } else {
-                console.log('[INITIAL LOAD] No unit_size in profile');
+                clientLogger.debug('[INITIAL LOAD] No unit_size in profile');
               }
               if (fallback.bankroll !== null && fallback.bankroll !== undefined) {
                 const bankrollValue = parseFloat(fallback.bankroll.toString());
-                console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+                clientLogger.debug('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
                 setBankroll(bankrollValue);
                 if (!mobileBankroll) {
                   setMobileBankroll(fallback.bankroll.toString());
                 }
               } else {
-                console.log('[INITIAL LOAD] No bankroll in profile');
+                clientLogger.debug('[INITIAL LOAD] No bankroll in profile');
               }
               if (fallback.bankroll_currency) {
                 setMobileBankrollCurrency(fallback.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
@@ -613,7 +616,7 @@ function JournalContent() {
           }
           
           if (unitProfile) {
-            console.log('[INITIAL LOAD] Profile data loaded:', unitProfile);
+            clientLogger.debug('[INITIAL LOAD] Profile data loaded:', unitProfile);
             const profile = unitProfile as {
               unit_size?: number | null;
               bankroll?: number | null;
@@ -625,23 +628,23 @@ function JournalContent() {
             };
             if (profile.unit_size !== null && profile.unit_size !== undefined) {
               const unitSizeValue = parseFloat(profile.unit_size.toString());
-              console.log('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+              clientLogger.debug('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
               setUnitSize(unitSizeValue);
               if (!mobileUnitSize) {
                 setMobileUnitSize(unitSizeValue.toString());
               }
             } else {
-              console.log('[INITIAL LOAD] No unit_size found in profile');
+              clientLogger.debug('[INITIAL LOAD] No unit_size found in profile');
             }
             if (profile.bankroll !== null && profile.bankroll !== undefined) {
               const bankrollValue = parseFloat(profile.bankroll.toString());
-              console.log('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+              clientLogger.debug('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
               setBankroll(bankrollValue);
               if (!mobileBankroll) {
                 setMobileBankroll(profile.bankroll.toString());
               }
             } else {
-              console.log('[INITIAL LOAD] No bankroll found in profile');
+              clientLogger.debug('[INITIAL LOAD] No bankroll found in profile');
             }
             if (profile.bankroll_set_date) {
               setBankrollSetDate(profile.bankroll_set_date);
@@ -661,7 +664,7 @@ function JournalContent() {
           }
         } catch (unitError) {
           // Silently fail - unit settings are optional and shouldn't block subscription check
-          console.log('Could not load unit settings (optional):', unitError);
+          clientLogger.debug('Could not load unit settings (optional):', unitError);
         }
         
         const proStatus = isActive && isPro;
@@ -677,7 +680,7 @@ function JournalContent() {
         
         // Always update if status changed, subscription expired, or if this is the first check
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          console.log('🔐 Journal Pro Status Check:', { isActive, isPro, proStatus, profile, metadata: session.user.user_metadata });
+          clientLogger.debug('🔐 Journal Pro Status Check:', { isActive, isPro, proStatus, profile, metadata: session.user.user_metadata });
           
           if (isMounted) {
             setHasProAccess(proStatus);
@@ -703,7 +706,7 @@ function JournalContent() {
         if (!isMounted) return;
 
         if (error) {
-          console.error('Error fetching bets:', error);
+          clientLogger.error('Error fetching bets:', error);
           setBets([]);
         } else {
           setBets(data || []);
@@ -719,11 +722,11 @@ function JournalContent() {
         })
           .then(async (response) => {
             if (!response.ok) {
-              console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+              clientLogger.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
               return;
             }
             const data = await response.json();
-            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
+            clientLogger.debug('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
             
             // Refresh bets after check completes to show updated results
             if (isMounted) {
@@ -738,14 +741,14 @@ function JournalContent() {
             }
           })
           .catch((error) => {
-            console.error('[Journal] ❌ Failed to check journal bets:', error);
+            clientLogger.error('[Journal] ❌ Failed to check journal bets:', error);
             // Non-blocking, so we don't need to handle this
           });
       } catch (error) {
-        console.error('Error checking subscription:', error);
+        clientLogger.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          console.log('🔐 Using cached active subscription status due to error');
+          clientLogger.debug('🔐 Using cached active subscription status due to error');
           setHasProAccess(lastSubscriptionStatus.isPro);
           setIsPro(lastSubscriptionStatus.isPro);
         }

@@ -32,6 +32,7 @@ const PlayTypeAnalysis = lazy(() => import('@/components/PlayTypeAnalysis').then
 import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 import serverLogger from '@/lib/serverLogger';
+import { clientLogger } from '@/lib/clientLogger';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -1739,31 +1740,31 @@ const getPlayerCurrentTeam = (playerStats: BallDontLieStats[]): string => {
   for (const stat of sortedStats.slice(0, 10)) {
     const teamAbbr = stat?.team?.abbreviation;
     if (teamAbbr) {
-      console.log(`🏀 Player's most recent team from game data: ${teamAbbr} (date: ${stat?.game?.date})`);
+      clientLogger.log(`🏀 Player's most recent team from game data: ${teamAbbr} (date: ${stat?.game?.date})`);
       return teamAbbr;
     }
   }
   
-  console.log(`⚠️ No valid team found in player stats`);
+  clientLogger.warn(`⚠️ No valid team found in player stats`);
   return 'N/A';
 };
 
 // Get opponent team from games schedule
 const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
   // Removed console.clear() to preserve debug logs
-  console.log(`%c🔍 === OPPONENT DETECTION START ===%c`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
-  console.log(`%cSearching for opponent of: %c${currentTeam}`, 'color: #555', 'color: #e74c3c; font-weight: bold; font-size: 14px');
-  console.log(`%cTotal games available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
+  clientLogger.debug(`🔍 === OPPONENT DETECTION START ===`);
+  clientLogger.debug(`Searching for opponent of: ${currentTeam}`);
+  clientLogger.debug(`Total games available: ${todaysGames.length}`);
   
   if (!currentTeam || currentTeam === 'N/A' || !todaysGames.length) {
-    console.log(`%c⏸️ EARLY RETURN - Insufficient data%c`, 'color: #f39c12; font-weight: bold', '');
-    console.log(`  currentTeam: ${currentTeam}, games: ${todaysGames.length}`);
+    clientLogger.debug(`⏸️ EARLY RETURN - Insufficient data`);
+    clientLogger.debug(`  currentTeam: ${currentTeam}, games: ${todaysGames.length}`);
     return '';
   }
   
   // Normalize the current team for comparison
   const normCurrentTeam = normalizeAbbr(currentTeam);
-  console.log(`%cNormalized input team: %c${normCurrentTeam}`, 'color: #555', 'color: #27ae60; font-weight: bold; font-size: 14px');
+  clientLogger.debug(`Normalized input team: ${normCurrentTeam}`);
   
   // Create a table of all games
   const gameTable = todaysGames.map((game, i) => ({
@@ -1776,8 +1777,7 @@ const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
     'Status': game.status || 'unknown'
   }));
   
-  console.log(`%c📊 ALL GAMES:`, 'color: #2c3e50; font-weight: bold; font-size: 12px');
-  console.table(gameTable);
+  clientLogger.debug(`📊 ALL GAMES:`, gameTable);
   
   let matchingGames = [];
   
@@ -1794,33 +1794,33 @@ const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
       
       matchingGames.push({ homeTeam, visitorTeam, date: game.date, status: game.status, isFinal });
       
-      console.log(`%c✅ MATCH FOUND [${i}]%c ${homeTeam} vs ${visitorTeam}`, 'color: #27ae60; font-weight: bold', 'color: #000');
-      console.log(`   ${normCurrentTeam} is ${matchType}, opponent is ${opponent}, status: ${status}, isFinal: ${isFinal}`);
+      clientLogger.debug(`✅ MATCH FOUND [${i}] ${homeTeam} vs ${visitorTeam}`);
+      clientLogger.debug(`   ${normCurrentTeam} is ${matchType}, opponent is ${opponent}, status: ${status}, isFinal: ${isFinal}`);
       
       // Skip final games and look for upcoming games
       if (!isFinal) {
         if (homeTeam === normCurrentTeam && visitorTeam) {
-          console.log(`%c🎯 RETURNING: ${visitorTeam}%c (${normCurrentTeam} is HOME)`, 'color: #27ae60; font-weight: bold; font-size: 14px', '');
-          console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+          clientLogger.debug(`🎯 RETURNING: ${visitorTeam} (${normCurrentTeam} is HOME)`);
+          clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
           return visitorTeam;
         }
         if (visitorTeam === normCurrentTeam && homeTeam) {
-          console.log(`%c🎯 RETURNING: ${homeTeam}%c (${normCurrentTeam} is AWAY)`, 'color: #27ae60; font-weight: bold; font-size: 14px', '');
-          console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+          clientLogger.debug(`🎯 RETURNING: ${homeTeam} (${normCurrentTeam} is AWAY)`);
+          clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
           return homeTeam;
         }
       } else {
-        console.log(`   ⏭️ Skipping - this is a FINAL game, looking for upcoming...`);
+        clientLogger.debug(`   ⏭️ Skipping - this is a FINAL game, looking for upcoming...`);
       }
     }
   }
   
-  console.log(`%c❌ NO OPPONENT FOUND%c for ${normCurrentTeam}`, 'color: #e74c3c; font-weight: bold; font-size: 14px', '');
-  console.log(`   Searched ${todaysGames.length} games, found ${matchingGames.length} matches`);
+  clientLogger.warn(`❌ NO OPPONENT FOUND for ${normCurrentTeam}`);
+  clientLogger.debug(`   Searched ${todaysGames.length} games, found ${matchingGames.length} matches`);
   if (matchingGames.length > 0) {
-    console.table(matchingGames);
+    clientLogger.debug(`Matching games:`, matchingGames);
   }
-  console.log(`%c🔍 === OPPONENT DETECTION END ===%c\n`, 'color: #3498db; font-weight: bold; font-size: 14px', '');
+  clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
   return '';
 };
 
@@ -3075,7 +3075,7 @@ const ChartControls = function ChartControls({
   const oddsStabilizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    console.log('[DEBUG bettingLine useEffect] Triggered', {
+    clientLogger.debug('[DEBUG bettingLine useEffect] Triggered', {
       bestLineForStat,
       oddsLoading,
       selectedStat,
@@ -3085,12 +3085,12 @@ const ChartControls = function ChartControls({
     
     // Don't update betting line if odds are still loading (prevents double refresh on initial load)
     if (oddsLoading) {
-      console.log('[DEBUG bettingLine useEffect] Odds still loading, skipping update');
+      clientLogger.debug('[DEBUG bettingLine useEffect] Odds still loading, skipping update');
       return;
     }
     
     if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
-      console.log('[DEBUG bettingLine useEffect] Will update betting line', {
+      clientLogger.debug('[DEBUG bettingLine useEffect] Will update betting line', {
         bestLineForStat,
         currentBettingLine: bettingLine
       });
@@ -5621,16 +5621,16 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           results.forEach(result => {
             if (result.type === 'team') {
               if (!result.data || result.data.error) {
-                console.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
-                setError(result.data?.error || 'Failed to fetch team DVP data');
+                clientLogger.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
+                setError('Unable to load data. Please try again.');
                 return;
               }
               dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() };
               dvpTeamCache.set(teamCacheKey, dvpData);
             } else if (result.type === 'rank') {
               if (!result.data || result.data.error) {
-                console.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
-                setError(result.data?.error || 'Failed to fetch rank data');
+                clientLogger.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
+                setError('Unable to load data. Please try again.');
                 return;
               }
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
@@ -5653,7 +5653,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
               
               // Debug logging for first metric only
               if (m.key === 'pts') {
-                console.log(`[DVP Frontend] Rank lookup for ${m.key}:`, {
+                clientLogger.debug(`[DVP Frontend] Rank lookup for ${m.key}:`, {
                   normalizedOpp,
                   rank,
                   availableTeamKeys: Object.keys(ranks).slice(0, 10),
@@ -5672,7 +5672,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             }
             
             // Debug: log what we're setting
-            console.log(`[DVP Frontend] Setting ranks:`, {
+            clientLogger.debug(`[DVP Frontend] Setting ranks:`, {
               rmap,
               sampleRanks: Object.entries(rmap).slice(0, 3),
               allKeys: Object.keys(rmap)
@@ -5685,7 +5685,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           } else if (!abort) {
             // If we have cached data but new fetch failed, show error
             if (promises.length > 0) {
-              console.warn('[DVP Frontend] Missing data after fetch:', { hasDvpData: !!dvpData, hasRankData: !!rankData });
+              clientLogger.warn('[DVP Frontend] Missing data after fetch:', { hasDvpData: !!dvpData, hasRankData: !!rankData });
             }
           }
         } else if (!abort && (teamCached || rankCached)) {
@@ -5716,8 +5716,8 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           setLoading(false);
         }
       } catch (e: any) {
-        console.error('[DVP Frontend] Error:', e);
-        if (!abort) setError(e?.message || 'Failed to load DVP stats');
+        clientLogger.error('[DVP Frontend] Error:', e);
+        if (!abort) setError('Unable to load data. Please try again.');
       } finally {
         if (!abort) setLoading(false);
       }
@@ -6179,9 +6179,9 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           );
         } catch (fetchError: any) {
           // Handle HTTP errors (like 500, 400, etc.) and timeouts
-          console.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
+          clientLogger.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
           if (!abort) {
-            setError(fetchError?.message || 'Failed to fetch defensive stats');
+            setError('Unable to load data. Please try again.');
             setTeamStats(null);
             setTeamRanks({});
             setLoading(false);
@@ -6191,9 +6191,9 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
 
         // Check if response is valid
         if (!defensiveStatsResponse) {
-          console.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
+          clientLogger.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
           if (!abort) {
-            setError('No response from server');
+            setError('Unable to load data. Please try again.');
             setTeamStats(null);
             setTeamRanks({});
             setLoading(false);
@@ -6201,7 +6201,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           return;
         }
 
-        console.log('[OpponentAnalysisCard] Response for', targetOpp, ':', {
+        clientLogger.debug('[OpponentAnalysisCard] Response for', targetOpp, ':', {
           success: defensiveStatsResponse.success,
           hasPerGame: !!defensiveStatsResponse.perGame,
           sampleGames: defensiveStatsResponse.sample_games,
@@ -6251,7 +6251,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                 }
               }
             } catch (rankError: any) {
-              console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
+              clientLogger.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
               // Continue without ranks if ranking fetch fails
             }
           })();
@@ -6262,20 +6262,19 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
             setError(null);
           }
         } else {
-          const errorMsg = defensiveStatsResponse?.error || defensiveStatsResponse?.message || 'Failed to fetch defensive stats';
-          console.error('Failed to fetch defensive stats:', defensiveStatsResponse);
+          clientLogger.error('Failed to fetch defensive stats:', defensiveStatsResponse);
           if (!abort) {
             setTeamStats(null);
             setTeamRanks({});
-            setError(errorMsg);
+            setError('Unable to load data. Please try again.');
           }
         }
       } catch (error: any) {
-        console.error('Failed to fetch opponent analysis data:', error);
+        clientLogger.error('Failed to fetch opponent analysis data:', error);
         if (!abort) {
           setTeamStats(null);
           setTeamRanks({});
-          setError(error?.message || 'Failed to load defensive stats');
+          setError('Unable to load data. Please try again.');
         }
       } finally {
         if (!abort) setLoading(false);
@@ -7403,7 +7402,7 @@ function NBADashboardContent() {
         
         // Always update if status changed, subscription expired, or if this is the first check
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          console.log('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
+          clientLogger.debug('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
           
           if (isMounted) {
             setIsPro(proStatus);
@@ -7414,10 +7413,10 @@ function NBADashboardContent() {
           }
         }
       } catch (error) {
-        console.error('Error checking subscription:', error);
+        clientLogger.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          console.log('🔐 Using cached active subscription status due to error');
+          clientLogger.debug('🔐 Using cached active subscription status due to error');
           setIsPro(lastSubscriptionStatus.isPro);
         }
       }
@@ -7521,7 +7520,7 @@ function NBADashboardContent() {
         router.push('/subscription');
       }
     } catch (error) {
-      console.error('Portal error:', error);
+      clientLogger.error('Portal error:', error);
       router.push('/subscription');
     }
   };
@@ -7558,14 +7557,14 @@ function NBADashboardContent() {
   const handleStatSelect = useCallback((stat: string) => {
     userSelectedStatRef.current = true; // Mark as user selection
     setSelectedStat(stat);
-    console.log(`[Dashboard] 👤 User selected stat: "${stat}"`);
+    clientLogger.debug(`[Dashboard] 👤 User selected stat: "${stat}"`);
     
     // Update URL immediately to prevent race conditions
     if (typeof window !== 'undefined' && router) {
       const url = new URL(window.location.href);
       url.searchParams.set('stat', stat);
       router.replace(url.pathname + url.search, { scroll: false });
-      console.log(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
+      clientLogger.debug(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
       
       // Mark that URL was updated by user, so useSearchParams doesn't override it
       statFromUrlRef.current = true;
@@ -7574,7 +7573,7 @@ function NBADashboardContent() {
       // This prevents useSearchParams from reading the old URL value
       setTimeout(() => {
         userSelectedStatRef.current = false;
-        console.log(`[Dashboard] ✅ Reset user selection flag after URL update`);
+        clientLogger.debug(`[Dashboard] ✅ Reset user selection flag after URL update`);
       }, 100); // 100ms should be enough for router.replace to complete
     }
   }, [router]);
@@ -7600,13 +7599,13 @@ function NBADashboardContent() {
             return stat.toLowerCase();
           })();
           initialStatFromUrlRef.current = normalizedStat;
-          console.log(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
+          clientLogger.debug(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
           statFromUrlRef.current = true;
           // Set it immediately
           setSelectedStat(normalizedStat);
         }
       } catch (e) {
-        console.error('[Dashboard] Error capturing initial stat from URL:', e);
+        clientLogger.error('[Dashboard] Error capturing initial stat from URL:', e);
       }
     }
   }, []); // Run only once on mount

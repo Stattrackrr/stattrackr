@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { clientLogger } from '@/lib/clientLogger';
 
 interface Props {
   children: ReactNode;
@@ -28,8 +29,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error details to console (you can also send to error tracking service)
-    console.error('Error Boundary caught an error:', error, errorInfo);
+    // Use clientLogger which suppresses logs in production
+    clientLogger.error('Error Boundary caught an error:', error, errorInfo);
+    // In production: clientLogger.error is completely silent
   }
 
   handleReset = () => {
@@ -70,6 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
               We're sorry, but something unexpected happened. The error has been logged and we'll look into it.
             </p>
 
+            {/* Error details only shown in development */}
             {this.state.error && process.env.NODE_ENV === 'development' && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
                 <p className="text-sm font-mono text-red-800 dark:text-red-300 break-all">

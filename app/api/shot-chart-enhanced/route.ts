@@ -1207,23 +1207,26 @@ export async function GET(request: NextRequest) {
     let errorMessage = 'Failed to fetch enhanced shot data';
     let errorType = error.name || 'UnknownError';
     
+    const isProduction = process.env.NODE_ENV === 'production';
+    
     if (error.message?.includes('timeout') || error.name === 'AbortError') {
-      errorMessage = 'Request timed out - NBA API is slow to respond. Please try again.';
       errorType = 'TimeoutError';
+      errorMessage = isProduction ? 'Request timed out. Please try again.' : 'Request timed out - API is slow to respond. Please try again.';
     } else if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND')) {
-      errorMessage = 'Network error - Unable to reach NBA API. Please check your connection.';
       errorType = 'NetworkError';
+      errorMessage = isProduction ? 'Network error. Please check your connection.' : 'Network error - Unable to reach data source. Please check your connection.';
     } else if (error.message?.includes('NBA API 4')) {
-      errorMessage = 'NBA API returned an error. The player data may not be available.';
       errorType = 'APIError';
+      errorMessage = isProduction ? 'Data unavailable. Please try again later.' : 'API returned an error. The player data may not be available.';
     } else if (error.message?.includes('NBA API 5')) {
-      errorMessage = 'NBA API server error. Please try again in a few moments.';
       errorType = 'ServerError';
-    } else if (error.message) {
+      errorMessage = isProduction ? 'Server error. Please try again in a few moments.' : 'Server error. Please try again in a few moments.';
+    } else if (error.message && !isProduction) {
       errorMessage = error.message;
+    } else {
+      errorMessage = isProduction ? 'An error occurred. Please try again later.' : error.message || 'Failed to fetch enhanced shot data';
     }
     
-    const isProduction = process.env.NODE_ENV === 'production';
     const errorDetails = isProduction 
       ? {
           error: errorMessage,

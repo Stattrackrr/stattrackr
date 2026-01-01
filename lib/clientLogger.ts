@@ -107,16 +107,14 @@ class ClientLogger {
   }
 
   /**
-   * Log an error (always visible, but sanitized in production)
+   * Log an error (completely suppressed in production unless admin override)
    */
   error(message: string, ...args: any[]): void {
-    // Errors are always logged, but sanitized in production
-    if (isProduction && !this.enabled) {
-      // Sanitized error - generic message only
-      console.error('An error occurred');
-    } else {
+    // Completely suppress errors in production unless admin override
+    if (this.canLog('error')) {
       console.error(message, ...args);
     }
+    // In production without admin override: completely silent (no console.error at all)
   }
 
   /**
@@ -208,14 +206,12 @@ if (typeof window !== 'undefined' && isProduction && originalConsole) {
     }
   };
   
-  // Keep console.error but show sanitized message in production unless logs enabled
+  // Completely suppress console.error in production unless logs enabled
   console.error = (...args: any[]) => {
     if (shouldLog()) {
       original.error(...args);
-    } else {
-      // Sanitized error - generic message only
-      original.error('An error occurred');
     }
+    // In production without admin override: completely silent (no console.error at all)
   };
 }
 
