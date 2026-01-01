@@ -1705,16 +1705,22 @@ async function processPlayerProps() {
   for (let retry = 0; retry < maxRetries && !savedSuccessfully; retry++) {
     try {
       // Always re-read cache right before saving when splitting (to get latest from parallel jobs)
-      // Also re-read on retry
-      if ((retry > 0 || retry === 0) && (propsSplit || gameSplit)) {
+      // This is critical to avoid race conditions - always use the latest cache, not the initial merge
+      if (propsSplit || gameSplit) {
         if (retry > 0) {
           // Longer delay on retry to ensure other jobs have finished
           await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay on retry
+        } else {
+          // Even on first attempt, wait a bit to let earlier parts finish writing
+          const partNumber = (propsSplit?.part || gameSplit?.part || 1);
+          if (partNumber > 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay before first save attempt
+          }
         }
         console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
         const retryCache = await getCache(cacheKey);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
-          // Re-merge with latest cache
+          // Re-merge with latest cache (ignore the initial merge, use latest)
           const newPropsKeys = new Set(
             propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
           );
@@ -1734,6 +1740,10 @@ async function processPlayerProps() {
           });
           finalProps = [...propsWithStats, ...uniqueExistingProps];
           console.log(`[GitHub Actions] 🔀 Re-merged: ${propsWithStats.length} new + ${uniqueExistingProps.length} existing = ${finalProps.length} total`);
+        } else {
+          // No cache found, use only our props
+          finalProps = [...propsWithStats];
+          console.log(`[GitHub Actions] ⚠️ No cache found in retry loop, using only our ${propsWithStats.length} props`);
         }
       }
       
