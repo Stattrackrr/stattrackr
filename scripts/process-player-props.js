@@ -491,6 +491,25 @@ async function processPlayerProps() {
     } catch (error) {
       console.warn(`[GitHub Actions] ⚠️ Failed to clear cache (may not exist):`, error.message);
     }
+    
+    // Also clear checkpoint for this part (if splitting)
+    if (propsSplit || gameSplit) {
+      console.log(`[GitHub Actions] 🗑️ Clearing checkpoint: ${checkpointKey}`);
+      try {
+        const { error: checkpointError } = await supabase
+          .from('nba_api_cache')
+          .delete()
+          .eq('cache_key', checkpointKey);
+        
+        if (checkpointError) {
+          console.warn(`[GitHub Actions] ⚠️ Failed to clear checkpoint:`, checkpointError.message);
+        } else {
+          console.log(`[GitHub Actions] ✅ Checkpoint cleared successfully`);
+        }
+      } catch (error) {
+        console.warn(`[GitHub Actions] ⚠️ Failed to clear checkpoint (may not exist):`, error.message);
+      }
+    }
   }
   
   // Check for existing cache - will merge if filtering by stats, otherwise overwrite
@@ -808,9 +827,16 @@ async function processPlayerProps() {
   let propsWithStats = [];
   const checkpoint = await getCache(checkpointKey);
   if (checkpoint && checkpoint.processedProps && checkpoint.startIndex > 0) {
-    console.log(`[GitHub Actions] 📍 Resuming from checkpoint at index ${checkpoint.startIndex}`);
-    startIndex = checkpoint.startIndex;
-    propsWithStats = checkpoint.processedProps;
+    // Validate checkpoint index is within bounds of our split slice
+    if (checkpoint.startIndex < uniqueProps.length) {
+      console.log(`[GitHub Actions] 📍 Resuming from checkpoint at index ${checkpoint.startIndex}`);
+      startIndex = checkpoint.startIndex;
+      propsWithStats = checkpoint.processedProps;
+    } else {
+      console.log(`[GitHub Actions] ⚠️ Checkpoint index ${checkpoint.startIndex} is beyond split range (0-${uniqueProps.length - 1}), ignoring checkpoint`);
+      startIndex = 0;
+      propsWithStats = [];
+    }
   }
   
   // Process in batches (call production APIs for stats/dvp/depth-chart)
