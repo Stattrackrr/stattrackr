@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,6 +16,18 @@ const ODDS_CACHE_KEY_STAGING = 'all_nba_odds_v2_bdl_staging';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const clearPlayerProps = searchParams.get('playerProps') === '1';
     
@@ -117,10 +131,13 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('[Odds Clear] ❌ Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to clear odds cache'
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Failed to clear odds cache')
       },
       { status: 500 }
     );

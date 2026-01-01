@@ -32,9 +32,12 @@ function getOrigin(req: NextRequest): string {
 async function fetchBdlGamesByDate(ymd: string){
   try{
     const iso = toISO(ymd);
-    const key = process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd';
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+    if (!apiKey) {
+      throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+    }
     const h: Record<string,string> = { Accept: 'application/json', 'User-Agent': 'StatTrackr/1.0' };
-    if (key) h['Authorization'] = `Bearer ${key}`;
+    h['Authorization'] = `Bearer ${apiKey}`;
     const r = await fetch(`https://api.balldontlie.io/v1/games?start_date=${encodeURIComponent(iso)}&end_date=${encodeURIComponent(iso)}&per_page=100`, { headers: h, cache: 'no-store' });
     if (!r.ok) return [] as any[];
     const j = await r.json().catch(()=> ({}));

@@ -5,6 +5,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { TrackedBetsProvider } from "@/contexts/TrackedBetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import NavigationLoader from "@/components/NavigationLoader";
+import '@/lib/clientLogger'; // Initialize client logger to suppress production logs
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   // Prefetch player props cache on app load so it's ready when user navigates to player props page

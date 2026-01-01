@@ -61,9 +61,9 @@ export function extractStatsFromHTML(html: string): any {
 
   const jsonStr = html.substring(jsonStart, jsonEnd);
   
-  // Parse the JSON (using eval in a controlled way)
+  // Parse the JSON using JSON.parse (safer than eval)
   try {
-    return eval('(' + jsonStr + ')');
+    return JSON.parse(jsonStr);
   } catch (e: any) {
     throw new Error(`Failed to parse JSON: ${e.message}`);
   }

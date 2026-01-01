@@ -940,12 +940,10 @@ export async function GET(request: Request) {
       }
     }
     
-    // If not a cron request, try to authenticate user (but allow if cookies aren't available)
-    // This endpoint is safe to call without auth because it only updates bets based on game results,
-    // doesn't return sensitive data, and processes all users' bets
+    // If not a cron request, try to authenticate user
+    // This endpoint requires authentication (cron secret OR user session) for security
     if (!isAuthorized) {
       try {
-        const cookieHeader = request.headers.get('cookie');
         const supabase = await createClient();
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -953,20 +951,11 @@ export async function GET(request: Request) {
           // User is authenticated via cookies
           isAuthorized = true;
           console.log('[check-journal-bets] ✅ User authenticated via session');
-        } else if (!cookieHeader || cookieHeader.length === 0) {
-          // No cookies sent - allow request anyway (safe endpoint, only updates bets)
-          // This handles cases where cookies aren't being sent from browser
-          isAuthorized = true;
-          console.log('[check-journal-bets] ⚠️ No cookies present, allowing request (safe endpoint)');
-        } else {
-          // Cookies present but session invalid - still allow (endpoint is safe)
-          isAuthorized = true;
-          console.log('[check-journal-bets] ⚠️ Cookies present but no valid session, allowing request (safe endpoint)');
         }
       } catch (error: any) {
-        // If auth check fails, still allow (endpoint is safe)
-        console.error('[check-journal-bets] Auth check exception, allowing anyway:', error?.message);
-        isAuthorized = true;
+        // Auth check failed - do not authorize
+        console.error('[check-journal-bets] Auth check failed:', error?.message);
+        // isAuthorized remains false - will return 401 below
       }
     }
     
@@ -1731,8 +1720,13 @@ export async function GET(request: Request) {
 
   } catch (error: any) {
     console.error('Error checking journal bets:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Failed to check journal bets' },
+      { 
+        error: isProduction 
+          ? 'An error occurred while checking journal bets' 
+          : error.message || 'Failed to check journal bets' 
+      },
       { status: 500 }
     );
   }

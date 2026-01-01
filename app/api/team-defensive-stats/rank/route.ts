@@ -8,8 +8,12 @@ import { normalizeAbbr } from '@/lib/nbaAbbr';
 export const runtime = 'nodejs';
 
 const BDL_BASE = 'https://api.balldontlie.io/v1';
-const getBdlApiKey = () => {
-  return process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd';
+const getBdlApiKey = (): string => {
+  const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+  if (!apiKey) {
+    throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+  }
+  return apiKey;
 };
 
 const getBdlHeaders = (): Record<string, string> => {
@@ -262,9 +266,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(payload);
   } catch (e: any) {
     console.error('[team-defensive-stats-rank] Error:', e);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json({
       success: false,
-      error: e?.message || 'Failed to get defensive stats rankings',
+      error: isProduction 
+        ? 'An error occurred. Please try again later.' 
+        : (e?.message || 'Failed to get defensive stats rankings'),
       rankings: {},
       teamStats: {},
     }, { status: 500 });

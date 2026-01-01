@@ -643,7 +643,6 @@ export async function GET(request: NextRequest) {
       ? {
           error: errorMessage,
           type: errorType,
-          originalError: error.message?.substring(0, 100) || 'Unknown error',
         }
       : {
           error: errorMessage,

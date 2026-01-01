@@ -308,6 +308,23 @@ async function fetchAllActivePlayers() {
  */
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin or cron only
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const { authorizeCronRequest } = await import('@/lib/cronAuth');
+    
+    const adminAuth = await authorizeAdminRequest(req);
+    const cronAuth = authorizeCronRequest(req);
+    
+    if (!adminAuth.authorized && !cronAuth.authorized) {
+      return adminAuth.response || NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Rate limiting
+    const { checkRateLimit, strictRateLimiter } = await import('@/lib/rateLimit');
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
     console.log('🔄 Starting player sync from BDL to Supabase...');
 
     // Fetch all active players from BDL

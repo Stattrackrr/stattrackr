@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { normalizeAbbr, NBA_TEAMS } from "@/lib/nbaAbbr";
 import { currentNbaSeason } from "@/lib/nbaConstants";
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from "@/lib/bettingpros-dvp";
+import { authorizeAdminRequest } from "@/lib/adminAuth";
+import { authorizeCronRequest } from "@/lib/cronAuth";
 
 export const runtime = "nodejs";
 
@@ -31,6 +33,14 @@ const COMBINED_STATS = {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - admin or cron only
+    const adminAuth = await authorizeAdminRequest(request);
+    const cronAuth = authorizeCronRequest(request);
+    
+    if (!adminAuth.authorized && !cronAuth.authorized) {
+      return adminAuth.response || NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
     const seasonParam = searchParams.get('season');
@@ -211,8 +221,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (e: any) {
     console.error('[DVP Snapshot] Error:', e);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: e?.message || 'Snapshot failed' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (e?.message || 'Snapshot failed')
+      },
       { status: 500 }
     );
   }

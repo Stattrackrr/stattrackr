@@ -119,10 +119,14 @@ async function getPlayersWithGames(): Promise<Array<{
     console.log(`[CRON] 📅 Using US Eastern Time dates: today=${todayUSET}, tomorrow=${tomorrowUSET}`);
     
     const BDL_BASE = 'https://api.balldontlie.io/v1';
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+    if (!apiKey) {
+      throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+    }
     const BDL_HEADERS: Record<string, string> = {
       Accept: 'application/json',
       'User-Agent': 'StatTrackr/1.0',
-      Authorization: `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
+      Authorization: `Bearer ${apiKey}`,
     };
     
     // Fetch games for today and tomorrow (in US ET)
@@ -255,10 +259,14 @@ async function getPlayerStats(playerId: string, season: number): Promise<Record<
   
   try {
     const BDL_BASE = 'https://api.balldontlie.io/v1';
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+    if (!apiKey) {
+      throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+    }
     const BDL_HEADERS: Record<string, string> = {
       Accept: 'application/json',
       'User-Agent': 'StatTrackr/1.0',
-      Authorization: `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
+      Authorization: `Bearer ${apiKey}`,
     };
     
     // Get player stats for current season

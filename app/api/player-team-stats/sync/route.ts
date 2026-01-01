@@ -162,6 +162,24 @@ async function getPlayerStatsVsTeams(playerId: number, season: number): Promise<
  */
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin or cron only
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const { authorizeCronRequest } = await import('@/lib/cronAuth');
+    
+    const adminAuth = await authorizeAdminRequest(req);
+    const cronAuth = authorizeCronRequest(req);
+    
+    if (!adminAuth.authorized && !cronAuth.authorized) {
+      return adminAuth.response || NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Rate limiting
+    const { checkRateLimit, strictRateLimiter } = await import('@/lib/rateLimit');
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(req.url);
     const seasonParam = searchParams.get('season');
     const season = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
@@ -295,8 +313,14 @@ export async function GET(req: NextRequest) {
     
   } catch (error: any) {
     console.error('❌ Error in player-team stats sync:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { success: false, error: error.message || 'Unknown error' },
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Unknown error')
+      },
       { status: 500 }
     );
   }

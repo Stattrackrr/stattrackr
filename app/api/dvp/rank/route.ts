@@ -239,6 +239,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(payload);
   } catch (e: any) {
     console.error('[DVP Rank API] Error:', e);
-    return NextResponse.json({ success: false, error: e?.message || 'rank failed' }, { status: 500 });
+    const isProduction = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (e?.message || 'rank failed')
+      }, 
+      { status: 500 }
+    );
   }
 }

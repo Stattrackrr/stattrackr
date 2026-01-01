@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 // Normalize player name (lowercase, remove special chars)
 function normName(name: string): string {
@@ -30,6 +32,18 @@ async function savePositionsFile(filePath: string, data: any): Promise<void> {
 
 export async function POST(req: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const body = await req.json();
     const { team, updates, forceOverride } = body;
 
@@ -101,8 +115,14 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[Position Update] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: 'Failed to update positions', details: error.message },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Failed to update positions',
+        ...(isProduction ? {} : { details: error.message })
+      },
       { status: 500 }
     );
   }
@@ -111,6 +131,18 @@ export async function POST(req: NextRequest) {
 // GET endpoint to view current positions
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const team = searchParams.get('team');
 
@@ -141,8 +173,14 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[Position Get] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: 'Failed to load positions', details: error.message },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Failed to load positions',
+        ...(isProduction ? {} : { details: error.message })
+      },
       { status: 500 }
     );
   }

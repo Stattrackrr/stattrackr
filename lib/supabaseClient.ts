@@ -1,8 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Access NEXT_PUBLIC_ vars directly - they're injected at build time
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key-' + 'x'.repeat(100)
+// These should always be present - if not, it's a configuration error
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate that required env vars are present
+// NEXT_PUBLIC_ vars are injected at build time, so this check should pass
+if (!supabaseUrl || !supabaseAnonKey) {
+  const errorMsg = 'Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY). Please check your configuration.';
+  if (typeof window !== 'undefined') {
+    console.error(errorMsg);
+  }
+  // Throw error to fail fast - these are required
+  throw new Error(errorMsg);
+}
 
 const isBrowser = typeof window !== 'undefined'
 const TAB_NAMESPACE_SESSION_KEY = 'stattrackr_tab_namespace'
@@ -125,60 +137,47 @@ if (supabaseUrl !== 'https://placeholder.supabase.co') {
   console.warn('⚠️ Supabase URL not configured. Please set NEXT_PUBLIC_SUPABASE_URL in your .env.local file.');
 }
 
-// Suppress console errors during build for Supabase auth
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-const suppressAuthError = (args: any[]): boolean => {
-  const message = args[0]?.toString() || '';
-  const errorObj = typeof args[0] === 'object' ? args[0] : null;
-  const errorMessage = errorObj?.message || errorObj?.error_description || '';
-  
-  // Suppress refresh token errors during build
-  return (
-    message.includes('Invalid Refresh Token') ||
-    message.includes('Refresh Token Not Found') ||
-    message.includes('refresh') ||
-    errorMessage.includes('refresh') ||
-    errorMessage.includes('token') ||
-    message.includes('AuthApiError')
-  );
-};
+// Only suppress Supabase auth errors during build phase, not at runtime
+// This prevents build failures from known Supabase client initialization issues
+// but does not hide runtime errors which are important for debugging
+const isBuildPhase = typeof process !== 'undefined' && 
+  (process.env.NEXT_PHASE === 'phase-production-build' || 
+   process.env.NODE_ENV === 'production' && !process.env.VERCEL);
 
-if (!isBrowser) {
+if (!isBrowser && isBuildPhase) {
+  // Only during build: suppress known Supabase auth errors that occur during static generation
+  // These errors are expected when Supabase client initializes during build without a session
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  
+  const isKnownSupabaseBuildError = (args: any[]): boolean => {
+    const message = args[0]?.toString() || '';
+    const errorObj = typeof args[0] === 'object' ? args[0] : null;
+    const errorMessage = errorObj?.message || errorObj?.error_description || '';
+    
+    // Only suppress specific known Supabase build-time errors
+    return (
+      (message.includes('Invalid Refresh Token') || 
+       message.includes('Refresh Token Not Found') ||
+       message.includes('AuthApiError')) &&
+      (message.includes('build') || errorMessage.includes('build'))
+    );
+  };
+
   console.error = (...args: any[]) => {
-    if (suppressAuthError(args)) {
-      // Silently ignore during build
+    if (isKnownSupabaseBuildError(args)) {
+      // Only suppress known build-time Supabase errors
       return;
     }
     originalConsoleError.apply(console, args);
   };
   
   console.warn = (...args: any[]) => {
-    if (suppressAuthError(args)) {
-      // Silently ignore during build
+    if (isKnownSupabaseBuildError(args)) {
       return;
     }
     originalConsoleWarn.apply(console, args);
   };
-  
-  // Also catch unhandled promise rejections during build
-  if (typeof process !== 'undefined' && process.on) {
-    process.on('unhandledRejection', (reason: any) => {
-      const errorMessage = reason?.message || reason?.toString() || '';
-      if (
-        errorMessage.includes('Invalid Refresh Token') ||
-        errorMessage.includes('Refresh Token Not Found') ||
-        errorMessage.includes('refresh') ||
-        errorMessage.includes('token') ||
-        errorMessage.includes('AuthApiError')
-      ) {
-        // Silently ignore during build
-        return;
-      }
-      // Re-throw other errors
-      throw reason;
-    });
-  }
 }
 
 // Auth config - completely disabled during build/server

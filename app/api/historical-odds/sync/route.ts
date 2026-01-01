@@ -332,6 +332,24 @@ function extractPlayerProps(oddsData: any): Array<{
  */
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin or cron only
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const { authorizeCronRequest } = await import('@/lib/cronAuth');
+    
+    const adminAuth = await authorizeAdminRequest(req);
+    const cronAuth = authorizeCronRequest(req);
+    
+    if (!adminAuth.authorized && !cronAuth.authorized) {
+      return adminAuth.response || NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Rate limiting
+    const { checkRateLimit, strictRateLimiter } = await import('@/lib/rateLimit');
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     if (!ODDS_API_KEY) {
       return NextResponse.json(
         { success: false, error: 'ODDS_API_KEY not configured' },
@@ -631,8 +649,14 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Error in historical odds sync:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { success: false, error: error.message || 'Unknown error' },
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Unknown error')
+      },
       { status: 500 }
     );
   }

@@ -3,15 +3,17 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe';
-
-// Create Supabase admin client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key-' + 'x'.repeat(100)
-);
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     // Get user from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     console.log('Portal Client - Auth check:', { userId: user?.id, authError });
 
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe customer ID from profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', user.id)
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
       if (stripeError.code === 'resource_missing') {
         console.log('Invalid Stripe customer ID, clearing from profile');
         // Clear the invalid customer ID
-        await supabase
+        await supabaseAdmin
           .from('profiles')
           .update({ stripe_customer_id: null, subscription_status: 'inactive', subscription_tier: 'free' })
           .eq('id', user.id);
@@ -71,8 +73,13 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Portal client error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }

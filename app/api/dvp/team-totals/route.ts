@@ -7,11 +7,17 @@ import { normalizeAbbr } from '@/lib/nbaAbbr';
 export const runtime = 'nodejs';
 
 const BDL_BASE = 'https://api.balldontlie.io/v1';
-const BDL_HEADERS: Record<string, string> = {
-  Accept: 'application/json',
-  'User-Agent': 'StatTrackr/1.0',
-  Authorization: `Bearer ${process.env.BALLDONTLIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd'}`,
-};
+function getBdlHeaders(): Record<string, string> {
+  const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+  if (!apiKey) {
+    throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+  }
+  return {
+    Accept: 'application/json',
+    'User-Agent': 'StatTrackr/1.0',
+    Authorization: `Bearer ${apiKey}`,
+  };
+}
 
 const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
   ATL: 1, BOS: 2, BKN: 3, CHA: 4, CHI: 5, CLE: 6, DAL: 7, DEN: 8, DET: 9, GSW: 10,
@@ -20,7 +26,7 @@ const ABBR_TO_TEAM_ID_BDL: Record<string, number> = {
 };
 
 async function bdlFetch(url: string) {
-  const res = await fetch(url, { headers: BDL_HEADERS, cache: 'no-store' });
+  const res = await fetch(url, { headers: getBdlHeaders(), cache: 'no-store' });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw new Error(`BDL ${res.status}: ${t || url}`);
@@ -188,6 +194,16 @@ export async function GET(req: NextRequest) {
     cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS);
     return NextResponse.json(payload);
   } catch (e: any) {
-    return NextResponse.json({ success: false, error: e?.message || 'Failed to get team totals' }, { status: 500 });
+    console.error('[DVP Team Totals] Error:', e);
+    const isProduction = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (e?.message || 'Failed to get team totals')
+      }, 
+      { status: 500 }
+    );
   }
 }

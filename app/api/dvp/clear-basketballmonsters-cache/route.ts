@@ -5,12 +5,26 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(req.url);
     const teamFilter = searchParams.get('team')?.toUpperCase();
     
@@ -70,8 +84,14 @@ export async function GET(req: NextRequest) {
     
   } catch (error: any) {
     console.error('[Clear Cache] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to clear cache' },
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Failed to clear cache')
+      },
       { status: 500 }
     );
   }

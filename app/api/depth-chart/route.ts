@@ -756,6 +756,16 @@ export async function GET(req: NextRequest) {
     cache.set(cacheKey, payload, CACHE_TTL.DEPTH_CHART);
     return NextResponse.json(payload, { status: ok ? 200 : 206 });
   } catch (e: any) {
-    return NextResponse.json({ success: false, error: e?.message || 'Unexpected error' }, { status: 500 });
+    console.error('[Depth Chart] Error:', e);
+    const isProduction = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (e?.message || 'Unexpected error')
+      }, 
+      { status: 500 }
+    );
   }
 }

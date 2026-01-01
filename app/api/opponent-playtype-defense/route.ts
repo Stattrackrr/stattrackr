@@ -325,11 +325,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[Play Type Defense] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     
     return NextResponse.json(
       {
-        error: 'Failed to fetch play type defense data',
-        details: error.message
+        error: isProduction 
+          ? 'Failed to fetch play type defense data. Please try again later.' 
+          : 'Failed to fetch play type defense data',
+        ...(isProduction ? {} : { details: error.message })
       },
       { status: 500 }
     );

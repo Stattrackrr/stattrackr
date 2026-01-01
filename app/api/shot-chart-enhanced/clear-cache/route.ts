@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function clearCache(request: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
     const season = searchParams.get('season') || '2025';
@@ -54,8 +68,13 @@ async function clearCache(request: NextRequest) {
     });
   } catch (error) {
     console.error('[Shot Chart Cache] Error clearing cache:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: 'Failed to clear cache' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Failed to clear cache' 
+      },
       { status: 500 }
     );
   }

@@ -302,6 +302,12 @@ async function getPlayerMinutes(playerId: string | number): Promise<number | nul
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateResult = checkRateLimit(request, apiRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
   // Get base URL for internal API calls (works in both local and Vercel)
   const baseUrl = getBaseUrl(request);
   try {
@@ -1679,10 +1685,13 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[Similar Players] Error finding similar players:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
       { 
         success: false,
-        error: error.message || 'Internal server error',
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Internal server error'),
         data: []
       },
       { status: 500 }

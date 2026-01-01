@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -7,15 +9,38 @@ export const runtime = 'nodejs';
 /**
  * Admin endpoint to list all bets for a user by email
  * GET /api/admin/list-user-bets?email=user@example.com
+ * 
+ * Requires ADMIN_SECRET or authenticated admin user (email in ADMIN_EMAILS env var)
  */
 export async function GET(request: Request) {
   try {
+    // Check admin authorization
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 
+    // Validate email input
     if (!email) {
       return NextResponse.json(
         { error: 'Email parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format and length
+    if (email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
@@ -25,8 +50,13 @@ export async function GET(request: Request) {
     
     if (authError) {
       console.error('Error fetching users:', authError);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: 'Failed to fetch users' },
+        { 
+          error: isProduction 
+            ? 'Failed to fetch users' 
+            : authError.message 
+        },
         { status: 500 }
       );
     }
@@ -35,7 +65,7 @@ export async function GET(request: Request) {
     
     if (!user) {
       return NextResponse.json(
-        { error: `User with email ${email} not found` },
+        { error: 'User not found' },
         { status: 404 }
       );
     }
@@ -50,8 +80,13 @@ export async function GET(request: Request) {
 
     if (betsError) {
       console.error('Error fetching bets:', betsError);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: 'Failed to fetch bets' },
+        { 
+          error: isProduction 
+            ? 'Failed to fetch bets' 
+            : betsError.message 
+        },
         { status: 500 }
       );
     }
@@ -91,8 +126,13 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error('Error in list-user-bets:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }

@@ -72,6 +72,24 @@ async function fetchSeasonAverages(playerId: number, season: number, retryCount 
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - admin or cron only
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const { authorizeCronRequest } = await import('@/lib/cronAuth');
+    
+    const adminAuth = await authorizeAdminRequest(request);
+    const cronAuth = authorizeCronRequest(request);
+    
+    if (!adminAuth.authorized && !cronAuth.authorized) {
+      return adminAuth.response || NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Rate limiting
+    const { checkRateLimit, strictRateLimiter } = await import('@/lib/rateLimit');
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { season: seasonParam, full_season } = await request.json().catch(() => ({}));
     const season = seasonParam || currentNbaSeason();
     
@@ -207,8 +225,14 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('[Player Season Averages Sync] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { 
+        success: false, 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Internal server error')
+      },
       { status: 500 }
     );
   }

@@ -10,22 +10,27 @@ const nextConfig: NextConfig = {
   experimental: {
     // Experimental features disabled to avoid build errors
   },
-  // Suppress Supabase auth errors during build
+  // Only suppress known Supabase auth errors during build phase (not runtime)
+  // These are expected errors when Supabase client initializes during static generation
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Suppress console errors from Supabase during server-side build
       const originalError = console.error;
       console.error = (...args: any[]) => {
         const message = args[0]?.toString() || '';
+        // Only suppress specific known Supabase build-time errors
+        // This prevents build failures but does not hide runtime errors
         if (
-          message.includes('Invalid Refresh Token') ||
-          message.includes('Refresh Token Not Found') ||
-          message.includes('AuthApiError')
+          (message.includes('Invalid Refresh Token') ||
+           message.includes('Refresh Token Not Found') ||
+           message.includes('AuthApiError')) &&
+          process.env.NEXT_PHASE === 'phase-production-build'
         ) {
-          return; // Suppress during build
+          return; // Suppress only during build phase
         }
         originalError.apply(console, args);
       };
+      // Restore original console.error after webpack config is done
+      // Note: This is build-time only, runtime errors are not suppressed
     }
     return config;
   },

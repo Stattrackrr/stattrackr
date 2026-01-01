@@ -86,8 +86,14 @@ export async function GET(request: Request) {
 
     if (fetchError) {
       console.error('[reset-bets] Error fetching bets:', fetchError);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: 'Failed to fetch bets', details: fetchError.message },
+        { 
+          error: isProduction 
+            ? 'Failed to fetch bets. Please try again later.' 
+            : 'Failed to fetch bets',
+          ...(isProduction ? {} : { details: fetchError.message })
+        },
         { status: 500 }
       );
     }
@@ -117,8 +123,14 @@ export async function GET(request: Request) {
 
     if (updateError) {
       console.error('[reset-bets] Error resetting bets:', updateError);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: 'Failed to reset bets', details: updateError.message },
+        { 
+          error: isProduction 
+            ? 'Failed to reset bets. Please try again later.' 
+            : 'Failed to reset bets',
+          ...(isProduction ? {} : { details: updateError.message })
+        },
         { status: 500 }
       );
     }
@@ -141,8 +153,13 @@ export async function GET(request: Request) {
 
   } catch (error: any) {
     console.error('[reset-bets] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Failed to reset bets' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : error.message || 'Failed to reset bets' 
+      },
       { status: 500 }
     );
   }

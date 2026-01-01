@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import cache from '@/lib/cache';
 import { deleteNBACache, getNBACache } from '@/lib/nbaCache';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 // Cache keys to clear
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
@@ -17,6 +19,18 @@ const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const clearSupabase = searchParams.get('supabase') !== 'false'; // Default: true
     const clearInMemory = searchParams.get('inmemory') !== 'false'; // Default: true
@@ -151,10 +165,13 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('[Cache Clear] Error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
       { 
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to clear cache',
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error instanceof Error ? error.message : 'Failed to clear cache'),
         timestamp: new Date().toISOString()
       },
       { status: 500 }
@@ -167,6 +184,18 @@ export async function DELETE(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Authentication check - admin only
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const cacheStats = cache.getStats();
     const cacheKeys = cache.keys();
     
@@ -208,8 +237,13 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error in cache clear dry run:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: 'Failed to get cache information' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Failed to get cache information' 
+      },
       { status: 500 }
     );
   }

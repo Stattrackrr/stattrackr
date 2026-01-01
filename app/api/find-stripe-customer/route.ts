@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,6 +27,12 @@ const stripe = new Stripe(stripeSecretKey, {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     // Get user from Authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -71,8 +78,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Find Stripe customer error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Failed to find Stripe customer' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Failed to find Stripe customer')
+      },
       { status: 500 }
     );
   }

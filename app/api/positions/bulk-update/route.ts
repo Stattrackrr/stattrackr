@@ -696,6 +696,20 @@ function saveMaster(data: { positions: Record<string, Position>; aliases: Record
 
 export async function GET(req: NextRequest) {
   try {
+    // Authentication check - admin only
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const authResult = await authorizeAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
+    // Rate limiting
+    const { checkRateLimit, strictRateLimiter } = await import('@/lib/rateLimit');
+    const rateResult = checkRateLimit(req, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const { searchParams } = new URL(req.url);
     let season = searchParams.get('season') || '2025';
     const minGames = parseInt(searchParams.get('minGames') || '3', 10);

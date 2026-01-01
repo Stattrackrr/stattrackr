@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { checkRateLimit, apiRateLimiter } from '@/lib/rateLimit';
+import { createClient } from '@/lib/supabase/server';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
 
 // Odds API base URL - you'll need to replace with your actual odds API endpoint
 const ODDS_API_BASE = process.env.ODDS_API_BASE || 'https://api.the-odds-api.com';
@@ -29,11 +23,36 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Validate and parse playerId
+    const playerIdNum = parseInt(playerId, 10);
+    if (isNaN(playerIdNum) || playerIdNum <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid playerId' },
+        { status: 400 }
+      );
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) {
+      return NextResponse.json(
+        { error: 'Invalid gameDate format. Use YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
+    // Validate opponent length
+    if (opponent.length > 100) {
+      return NextResponse.json(
+        { error: 'Opponent name too long' },
+        { status: 400 }
+      );
+    }
+
     // Check if we already have this data in Supabase
     const { data: existingOdds } = await supabaseAdmin
       .from('historical_odds')
       .select('*')
-      .eq('player_id', parseInt(playerId))
+      .eq('player_id', playerIdNum)
       .eq('game_date', gameDate)
       .eq('opponent', opponent)
       .eq('stat_type', statType);
@@ -75,8 +94,13 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching historical odds:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }
@@ -84,6 +108,27 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - require admin or authenticated user
+    const authResult = await authorizeAdminRequest(request);
+    if (!authResult.authorized) {
+      // If admin auth failed, try user session
+      try {
+        const supabase = await createClient();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!session || error) {
+          return authResult.response; // Return admin auth error
+        }
+      } catch {
+        return authResult.response; // Return admin auth error
+      }
+    }
+
+    // Rate limiting
+    const rateResult = checkRateLimit(request, apiRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const body = await request.json();
     const { playerId, playerName, gameDate, opponent, statType, line, overOdds, underOdds, bookmaker } = body;
     
@@ -94,19 +139,88 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Validate inputs
+    const playerIdNum = parseInt(String(playerId), 10);
+    if (isNaN(playerIdNum) || playerIdNum <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid playerId' },
+        { status: 400 }
+      );
+    }
+
+    const lineNum = parseFloat(String(line));
+    if (isNaN(lineNum)) {
+      return NextResponse.json(
+        { error: 'Invalid line value' },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) {
+      return NextResponse.json(
+        { error: 'Invalid gameDate format. Use YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
+    if (opponent.length > 100) {
+      return NextResponse.json(
+        { error: 'Opponent name too long' },
+        { status: 400 }
+      );
+    }
+
+    if (statType.length > 20) {
+      return NextResponse.json(
+        { error: 'Stat type too long' },
+        { status: 400 }
+      );
+    }
+
+    if (playerName && playerName.length > 200) {
+      return NextResponse.json(
+        { error: 'Player name too long' },
+        { status: 400 }
+      );
+    }
+
+    if (bookmaker && bookmaker.length > 100) {
+      return NextResponse.json(
+        { error: 'Bookmaker name too long' },
+        { status: 400 }
+      );
+    }
+
+    const overOddsNum = overOdds ? parseFloat(String(overOdds)) : null;
+    const underOddsNum = underOdds ? parseFloat(String(underOdds)) : null;
+
+    if (overOddsNum !== null && (isNaN(overOddsNum) || overOddsNum < -10000 || overOddsNum > 10000)) {
+      return NextResponse.json(
+        { error: 'Invalid over odds value' },
+        { status: 400 }
+      );
+    }
+
+    if (underOddsNum !== null && (isNaN(underOddsNum) || underOddsNum < -10000 || underOddsNum > 10000)) {
+      return NextResponse.json(
+        { error: 'Invalid under odds value' },
+        { status: 400 }
+      );
+    }
+
     // Insert or update historical odds
     const { data, error } = await supabaseAdmin
       .from('historical_odds')
       .upsert({
-        player_id: parseInt(playerId),
-        player_name: playerName || '',
+        player_id: playerIdNum,
+        player_name: (playerName || '').substring(0, 200),
         game_date: gameDate,
-        opponent,
-        stat_type: statType,
-        line: parseFloat(line),
-        over_odds: overOdds || null,
-        under_odds: underOdds || null,
-        bookmaker: bookmaker || 'Unknown',
+        opponent: opponent.substring(0, 100),
+        stat_type: statType.substring(0, 20),
+        line: lineNum,
+        over_odds: overOddsNum,
+        under_odds: underOddsNum,
+        bookmaker: (bookmaker || 'Unknown').substring(0, 100),
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'player_id,game_date,opponent,stat_type,bookmaker',
@@ -115,8 +229,13 @@ export async function POST(request: NextRequest) {
     
     if (error) {
       console.error('Error storing historical odds:', error);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: error.message },
+        { 
+          error: isProduction 
+            ? 'Failed to store historical odds' 
+            : error.message 
+        },
         { status: 500 }
       );
     }
@@ -127,8 +246,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error storing historical odds:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }

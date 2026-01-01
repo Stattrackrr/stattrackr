@@ -1,4 +1,0 @@
-# Ignore problematic or pending modules from lint during production build
-app/api/odds/**
-lib/types/**
-scripts/**

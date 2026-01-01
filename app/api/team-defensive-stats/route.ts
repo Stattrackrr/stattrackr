@@ -12,9 +12,13 @@ const BDL_HEADERS: Record<string, string> = {
   'User-Agent': 'StatTrackr/1.0',
 };
 
-// Get API key with fallback
-const getBdlApiKey = () => {
-  return process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '9823adcf-57dc-4036-906d-aeb9f0003cfd';
+// Get API key - throw error if missing (no fallback for security)
+const getBdlApiKey = (): string => {
+  const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY;
+  if (!apiKey) {
+    throw new Error('BALLDONTLIE_API_KEY environment variable is required');
+  }
+  return apiKey;
 };
 
 // Set authorization header dynamically
@@ -324,9 +328,12 @@ export async function GET(req: NextRequest) {
     });
     // Return 200 with success: false so the component can read the error message
     // Don't cache error responses
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json({ 
       success: false, 
-      error: e?.message || 'Failed to get team defensive stats',
+      error: isProduction 
+        ? 'Failed to get team defensive stats. Please try again later.' 
+        : (e?.message || 'Failed to get team defensive stats'),
       team: rawTeam || '',
       season: seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason(),
       sample_games: 0,

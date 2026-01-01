@@ -604,6 +604,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[prediction API] Error calculating StatTrackr prediction:', error);
-    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    const isProduction = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Internal server error',
+        ...(isProduction ? {} : { details: error instanceof Error ? error.message : String(error) })
+      }, 
+      { status: 500 }
+    );
   }
 }

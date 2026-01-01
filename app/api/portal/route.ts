@@ -3,9 +3,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting (even with auth, prevent abuse)
+    const rateResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateResult.allowed && rateResult.response) {
+      return rateResult.response;
+    }
+
     const supabase = await createClient();
     
     // Get authenticated session first
@@ -52,8 +59,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(portalSession.url);
   } catch (error: any) {
     console.error('Portal error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : (error.message || 'Internal server error')
+      },
       { status: 500 }
     );
   }

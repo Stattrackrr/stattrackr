@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorizeAdminRequest } from '@/lib/adminAuth';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -129,8 +131,14 @@ export async function GET(request: Request) {
 
     if (fetchError) {
       console.error('Error fetching parlay bets:', fetchError);
+      const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
-        { error: 'Failed to fetch parlay bets', details: fetchError.message },
+        { 
+          error: isProduction 
+            ? 'An error occurred. Please try again later.' 
+            : 'Failed to fetch parlay bets',
+          ...(isProduction ? {} : { details: fetchError.message })
+        },
         { status: 500 }
       );
     }
@@ -233,8 +241,14 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error('Migration error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
     return NextResponse.json(
-      { error: 'Migration failed', details: error.message },
+      { 
+        error: isProduction 
+          ? 'An error occurred. Please try again later.' 
+          : 'Migration failed',
+        ...(isProduction ? {} : { details: error.message })
+      },
       { status: 500 }
     );
   }

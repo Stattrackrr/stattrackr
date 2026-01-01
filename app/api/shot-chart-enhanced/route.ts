@@ -1228,8 +1228,6 @@ export async function GET(request: NextRequest) {
       ? {
           error: errorMessage,
           type: errorType,
-          // Include original message for debugging but sanitized
-          originalError: error.message?.substring(0, 100) || 'Unknown error',
         }
       : {
           error: errorMessage,
