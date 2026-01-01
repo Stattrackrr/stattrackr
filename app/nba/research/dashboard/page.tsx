@@ -4976,7 +4976,7 @@ const RangeSlider = memo(function RangeSlider({
   prev.step === next.step
 );
 
-const ChartContainer = function ChartContainer({
+const ChartContainer = memo(function ChartContainer({
   isDark,
   currentStatOptions,
   selectedStat,
@@ -5268,7 +5268,32 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
       )}
     </div>
   );
-};
+}, (prev, next) => {
+  // Memo comparison for ChartContainer - skip if key props haven't changed
+  // Since ChartContainer has many props, we'll do a shallow comparison
+  // For function props, we rely on stable references from useCallback
+  return (
+    prev.isDark === next.isDark &&
+    prev.selectedStat === next.selectedStat &&
+    prev.bettingLine === next.bettingLine &&
+    prev.selectedTimeframe === next.selectedTimeframe &&
+    prev.propsMode === next.propsMode &&
+    prev.isLoading === next.isLoading &&
+    prev.oddsLoading === next.oddsLoading &&
+    prev.chartData === next.chartData &&
+    prev.yAxisConfig === next.yAxisConfig &&
+    prev.currentOpponent === next.currentOpponent &&
+    prev.currentTeam === next.currentTeam &&
+    prev.homeAway === next.homeAway &&
+    prev.minMinutesFilter === next.minMinutesFilter &&
+    prev.maxMinutesFilter === next.maxMinutesFilter &&
+    prev.excludeBlowouts === next.excludeBlowouts &&
+    prev.excludeBackToBack === next.excludeBackToBack &&
+    prev.withWithoutMode === next.withWithoutMode &&
+    prev.selectedFilterForAxis === next.selectedFilterForAxis &&
+    prev.sliderRange === next.sliderRange
+  );
+});
 const OfficialOddsCard = memo(function OfficialOddsCard({
   isDark,
   derivedOdds,

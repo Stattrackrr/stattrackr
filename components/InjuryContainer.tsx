@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { currentNbaSeason } from '@/lib/nbaConstants';
 
 interface InjuryData {
@@ -58,7 +58,7 @@ interface InjuryContainerProps {
   clearTeammateFilter?: () => void;
 }
 
-export default function InjuryContainer({
+const InjuryContainer = memo(function InjuryContainer({
   selectedTeam,
   opponentTeam,
   isDark,
@@ -799,4 +799,35 @@ export default function InjuryContainer({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Compare primitive props
+  if (
+    prevProps.selectedTeam !== nextProps.selectedTeam ||
+    prevProps.opponentTeam !== nextProps.opponentTeam ||
+    prevProps.isDark !== nextProps.isDark ||
+    prevProps.teammateFilterId !== nextProps.teammateFilterId ||
+    prevProps.withWithoutMode !== nextProps.withWithoutMode
+  ) {
+    return false; // Props changed, re-render
+  }
+
+  // Compare selectedPlayer (object) - check if ID changed
+  const prevPlayerId = prevProps.selectedPlayer?.id;
+  const nextPlayerId = nextProps.selectedPlayer?.id;
+  if (prevPlayerId !== nextPlayerId) {
+    return false;
+  }
+
+  // Compare playerStats array - check length and reference
+  // For arrays, we check length as a quick comparison
+  // If length changed, definitely re-render
+  if (prevProps.playerStats.length !== nextProps.playerStats.length) {
+    return false;
+  }
+
+  // If all checks pass, skip re-render
+  return true; // Props are equal, skip re-render
+});
+
+export default InjuryContainer;
