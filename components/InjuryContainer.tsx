@@ -209,14 +209,14 @@ const InjuryContainer = memo(function InjuryContainer({
     const calculateImpacts = async () => {
       const newImpacts: Record<number, StatisticalImpact> = {};
       const newAverages: Record<number, { rebounds: number; points: number; assists: number; plusMinus: number; fg3m: number }> = {};
-      const loadingSet = new Set<number>();
 
       clientLogger.debug(`[Injury Impact] Starting calculation for ${teamInjuriesRaw.length} injured players`);
 
-      for (const injury of teamInjuriesRaw) {
+      // OPTIMIZATION: Process each injury in parallel instead of sequentially
+      // This dramatically reduces load time when multiple players are injured
+      const processInjury = async (injury: InjuryData): Promise<{ playerId: number; impact: StatisticalImpact; average: { rebounds: number; points: number; assists: number; plusMinus: number; fg3m: number } | null }> => {
         const injuredPlayerId = injury.player.id;
-        loadingSet.add(injuredPlayerId);
-
+        
         try {
           // Use current NBA season (automatically updates when season changes)
           const season = currentNbaSeason();
@@ -238,16 +238,19 @@ const InjuryContainer = memo(function InjuryContainer({
           // If injured player has no stats, they never played, so no games together
           if (injuredPlayerStats.length === 0) {
             clientLogger.debug(`[Injury Impact] ${injury.player.first_name} ${injury.player.last_name} has no stats, no games together`);
-            newImpacts[injuredPlayerId] = {
-              plusMinus: null,
-              rebounds: null,
-              points: null,
-              assists: null,
-              fg3m: null,
-              hasSignificantChange: false,
-              noGamesTogether: true
+            return {
+              playerId: injuredPlayerId,
+              impact: {
+                plusMinus: null,
+                rebounds: null,
+                points: null,
+                assists: null,
+                fg3m: null,
+                hasSignificantChange: false,
+                noGamesTogether: true
+              },
+              average: null
             };
-            continue;
           }
 
           // Create a set of game dates where injured player played (match by date since game IDs differ)
@@ -353,31 +356,37 @@ const InjuryContainer = memo(function InjuryContainer({
           // If no games in common (by date), they haven't played together
           if (overlap.length === 0 && gamesWithInjured.length === 0) {
             clientLogger.debug(`[Injury Impact] No games played together between ${injury.player.first_name} ${injury.player.last_name} and selected player`);
-            newImpacts[injuredPlayerId] = {
-              plusMinus: null,
-              rebounds: null,
-              points: null,
-              assists: null,
-              fg3m: null,
-              hasSignificantChange: false,
-              noGamesTogether: true
+            return {
+              playerId: injuredPlayerId,
+              impact: {
+                plusMinus: null,
+                rebounds: null,
+                points: null,
+                assists: null,
+                fg3m: null,
+                hasSignificantChange: false,
+                noGamesTogether: true
+              },
+              average: null
             };
-            continue;
           }
 
           clientLogger.debug(`[Injury Impact] Selected player games - Without: ${gamesWithoutInjured.length}, With: ${gamesWithInjured.length}`);
 
           if (gamesWithoutInjured.length === 0) {
             clientLogger.debug(`[Injury Impact] No games without injured player found`);
-            newImpacts[injuredPlayerId] = {
-              plusMinus: null,
-              rebounds: null,
-              points: null,
-              assists: null,
-              fg3m: null,
-              hasSignificantChange: false
+            return {
+              playerId: injuredPlayerId,
+              impact: {
+                plusMinus: null,
+                rebounds: null,
+                points: null,
+                assists: null,
+                fg3m: null,
+                hasSignificantChange: false
+              },
+              average: null
             };
-            continue;
           }
 
           // Calculate averages
@@ -406,15 +415,18 @@ const InjuryContainer = memo(function InjuryContainer({
           // Only compare if they're on the same team
           if (injuredPlayerTeam && selectedPlayerTeam && injuredPlayerTeam !== selectedPlayerTeam) {
             clientLogger.debug(`[Injury Impact] Players are on different teams, skipping`);
-            newImpacts[injuredPlayerId] = {
-              plusMinus: null,
-              rebounds: null,
-              points: null,
-              assists: null,
-              fg3m: null,
-              hasSignificantChange: false
+            return {
+              playerId: injuredPlayerId,
+              impact: {
+                plusMinus: null,
+                rebounds: null,
+                points: null,
+                assists: null,
+                fg3m: null,
+                hasSignificantChange: false
+              },
+              average: null
             };
-            continue;
           }
 
           // Filter selected player's stats to only games where they were on the same team as injured player
@@ -432,15 +444,18 @@ const InjuryContainer = memo(function InjuryContainer({
 
           if (gamesWithoutInjuredSameTeam.length === 0) {
             clientLogger.debug(`[Injury Impact] No games without injured player on same team`);
-            newImpacts[injuredPlayerId] = {
-              plusMinus: null,
-              rebounds: null,
-              points: null,
-              assists: null,
-              fg3m: null,
-              hasSignificantChange: false
+            return {
+              playerId: injuredPlayerId,
+              impact: {
+                plusMinus: null,
+                rebounds: null,
+                points: null,
+                assists: null,
+                fg3m: null,
+                hasSignificantChange: false
+              },
+              average: null
             };
-            continue;
           }
 
           const avgWithout = {
@@ -463,15 +478,6 @@ const InjuryContainer = memo(function InjuryContainer({
             points: 0,
             assists: 0,
             fg3m: 0
-          };
-
-          // Store averages for display (when injured player is OUT) - batch update at end
-          newAverages[injuredPlayerId] = {
-            rebounds: avgWithout.rebounds,
-            points: avgWithout.points,
-            assists: avgWithout.assists,
-            plusMinus: avgWithout.plusMinus,
-            fg3m: avgWithout.fg3m
           };
 
           // Calculate differences
@@ -498,28 +504,53 @@ const InjuryContainer = memo(function InjuryContainer({
             hasSignificantChange
           });
 
-          newImpacts[injuredPlayerId] = {
-            plusMinus: diff.plusMinus,
-            rebounds: diff.rebounds,
-            points: diff.points,
-            assists: diff.assists,
-            fg3m: diff.fg3m,
-            hasSignificantChange
+          return {
+            playerId: injuredPlayerId,
+            impact: {
+              plusMinus: diff.plusMinus,
+              rebounds: diff.rebounds,
+              points: diff.points,
+              assists: diff.assists,
+              fg3m: diff.fg3m,
+              hasSignificantChange
+            },
+            average: {
+              rebounds: avgWithout.rebounds,
+              points: avgWithout.points,
+              assists: avgWithout.assists,
+              plusMinus: avgWithout.plusMinus,
+              fg3m: avgWithout.fg3m
+            }
           };
         } catch (err) {
-          console.error(`[Injury Impact] Failed to calculate impact for ${injury.player.first_name} ${injury.player.last_name} (ID: ${injuredPlayerId}):`, err);
-          newImpacts[injuredPlayerId] = {
-            plusMinus: null,
-            rebounds: null,
-            points: null,
-            assists: null,
-            fg3m: null,
-            hasSignificantChange: false
+          clientLogger.error(`[Injury Impact] Failed to calculate impact for ${injury.player.first_name} ${injury.player.last_name} (ID: ${injuredPlayerId}):`, err);
+          return {
+            playerId: injuredPlayerId,
+            impact: {
+              plusMinus: null,
+              rebounds: null,
+              points: null,
+              assists: null,
+              fg3m: null,
+              hasSignificantChange: false
+            },
+            average: null
           };
+        }
+      };
+
+      // Process all injuries in parallel using Promise.all
+      const results = await Promise.all(teamInjuriesRaw.map(injury => processInjury(injury)));
+
+      // Process results and populate the maps
+      for (const result of results) {
+        newImpacts[result.playerId] = result.impact;
+        if (result.average) {
+          newAverages[result.playerId] = result.average;
         }
       }
 
-      console.log(`[Injury Impact] Completed calculation for ${Object.keys(newImpacts).length} players`);
+      clientLogger.debug(`[Injury Impact] Completed calculation for ${Object.keys(newImpacts).length} players`);
       setImpactData(newImpacts);
       setAverageData(newAverages);
       setLoadingImpacts(new Set());
@@ -528,7 +559,7 @@ const InjuryContainer = memo(function InjuryContainer({
 
     setLoadingImpacts(new Set(teamInjuriesRaw.map(i => i.player.id)));
     calculateImpacts().catch((err) => {
-      console.error(`[Injury Impact] Error in calculateImpacts:`, err);
+      clientLogger.error(`[Injury Impact] Error in calculateImpacts:`, err);
       calculatingRef.current = false;
       setLoadingImpacts(new Set());
     });

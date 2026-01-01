@@ -33,6 +33,7 @@ import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 import serverLogger from '@/lib/serverLogger';
 import { clientLogger } from '@/lib/clientLogger';
+import Image from 'next/image';
 
 // Depth chart types
 type DepthPos = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -17146,14 +17147,20 @@ const lineMovementInFlightRef = useRef(false);
                                 >
                                   <div className="flex items-center gap-3">
                                     {r.headshotUrl && (
-                                      <img 
-                                        src={r.headshotUrl} 
-                                        alt={r.full}
-                                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
+                                      <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 overflow-hidden relative">
+                                        <Image 
+                                          src={r.headshotUrl} 
+                                          alt={r.full}
+                                          width={40}
+                                          height={40}
+                                          className="object-cover"
+                                          loading="lazy"
+                                          unoptimized={false}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
                                     )}
                                     <div className="flex-1 min-w-0">
                                       <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>

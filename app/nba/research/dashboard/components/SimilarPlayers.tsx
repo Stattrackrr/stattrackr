@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 
 interface SimilarPlayerData {
   playerId: number;
@@ -619,14 +620,20 @@ export function SimilarPlayers({ playerId, opponent, statType, isDark = false, s
                       >
                         <div className="flex items-center gap-2">
                           {player.headshotUrl && (
-                            <img 
-                              src={player.headshotUrl} 
-                              alt={player.playerName}
-                              className="w-8 h-8 rounded-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
+                            <div className="w-8 h-8 rounded-full object-cover overflow-hidden relative">
+                              <Image 
+                                src={player.headshotUrl} 
+                                alt={player.playerName}
+                                width={32}
+                                height={32}
+                                className="object-cover"
+                                loading="lazy"
+                                unoptimized={false}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
                           )}
                           <div>
                             <div className="font-medium text-base">{player.playerName}</div>

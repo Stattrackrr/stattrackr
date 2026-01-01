@@ -3,7 +3,7 @@
 import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
@@ -16,6 +16,7 @@ import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
 import { clientLogger } from '@/lib/clientLogger';
+import Image from 'next/image';
 
 interface Game {
   id: number;
@@ -1889,7 +1890,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
   }, [availablePropTypes]);
 
   // Helper to match a prop to a game based on team/opponent
-  const getGameForProp = (prop: PlayerProp): Game | null => {
+  // OPTIMIZATION: useCallback to prevent unnecessary re-creation on every render
+  const getGameForProp = useCallback((prop: PlayerProp): Game | null => {
     if (todaysGames.length === 0) {
       return null;
     }
@@ -1949,7 +1951,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     }
     
     return matchedGame || null;
-  };
+  }, [todaysGames]); // OPTIMIZATION: Only recreate when todaysGames changes
 
   // Only show games that have at least one player prop
   const gamesWithProps = useMemo(() => {
@@ -4454,19 +4456,20 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 {/* Player Name and Headshot Row */}
                                 <div className="flex items-center gap-2.5 mb-2">
                                   {headshotUrl && (
-                                    <img
-                                      src={headshotUrl}
-                                      alt={prop.playerName}
-                                      className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2"
-                                      style={{ 
-                                        borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
-                                        imageRendering: 'auto'
-                                      }}
-                                      loading="lazy"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                      }}
-                                    />
+                                    <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 overflow-hidden relative" style={{ borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' }}>
+                                      <Image
+                                        src={headshotUrl}
+                                        alt={prop.playerName}
+                                        width={40}
+                                        height={40}
+                                        className="object-cover"
+                                        loading="lazy"
+                                        unoptimized={false}
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
                                   )}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
