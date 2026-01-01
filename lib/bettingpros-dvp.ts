@@ -112,7 +112,7 @@ export function extractStatsFromHTML(html: string): any {
 
   let jsonStr = html.substring(jsonStart, jsonEnd);
   
-  // Clean up the JSON string
+  // Clean up the string
   // Remove any trailing commas before closing braces/brackets
   jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
   // Remove any comments (though JSON shouldn't have them, but just in case)
@@ -120,39 +120,57 @@ export function extractStatsFromHTML(html: string): any {
   // Trim whitespace
   jsonStr = jsonStr.trim();
   
-  // Validate JSON starts with {
+  // Validate string starts with {
   if (!jsonStr.startsWith('{')) {
-    throw new Error(`Extracted JSON does not start with '{'. First 50 chars: ${jsonStr.substring(0, 50)}`);
+    throw new Error(`Extracted data does not start with '{'. First 50 chars: ${jsonStr.substring(0, 50)}`);
   }
   
-  // Parse the JSON using JSON.parse (safer than eval)
+  // BettingPros uses JavaScript object literal syntax (unquoted keys), not JSON
+  // Try JSON.parse first, but if it fails, use Function constructor to parse JS object literal
+  let parsed: any;
   try {
-    const parsed = JSON.parse(jsonStr);
-    
-    // Validate structure
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error('Parsed data is not an object');
+    // Try direct JSON parse first (in case they've changed to JSON format)
+    parsed = JSON.parse(jsonStr);
+  } catch (jsonError: any) {
+    // JSON parse failed - likely JavaScript object literal syntax
+    // Use Function constructor (safer than eval) to parse JS object literal
+    try {
+      // Create a function that returns the object literal
+      // This safely evaluates JavaScript object syntax
+      const func = new Function('return ' + jsonStr);
+      parsed = func();
+      
+      // Validate it's an object (not array or primitive)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Function constructor did not return a valid object');
+      }
+    } catch (funcError: any) {
+      // If Function constructor also fails, log detailed error
+      const errorPos = parseInt(jsonError.message.match(/position (\d+)/)?.[1] || '0', 10);
+      const startPos = Math.max(0, errorPos - 200);
+      const endPos = Math.min(jsonStr.length, errorPos + 200);
+      const context = jsonStr.substring(startPos, endPos);
+      
+      console.error('[BettingPros] All parsing methods failed:', {
+        jsonError: jsonError.message,
+        funcError: funcError.message,
+        position: errorPos,
+        context: context,
+        jsonLength: jsonStr.length,
+        first500: jsonStr.substring(0, 500),
+        last500: jsonStr.substring(Math.max(0, jsonStr.length - 500))
+      });
+      
+      throw new Error(`Failed to parse BettingPros data: ${jsonError.message}. Context: ${context.substring(0, 300)}`);
     }
-    
-    return parsed;
-  } catch (e: any) {
-    // Log detailed error information for debugging
-    const errorPos = parseInt(e.message.match(/position (\d+)/)?.[1] || '0', 10);
-    const startPos = Math.max(0, errorPos - 50);
-    const endPos = Math.min(jsonStr.length, errorPos + 50);
-    const context = jsonStr.substring(startPos, endPos);
-    
-    console.error('[BettingPros] JSON parse error:', {
-      error: e.message,
-      position: errorPos,
-      context: context,
-      jsonLength: jsonStr.length,
-      first100: jsonStr.substring(0, 100),
-      last100: jsonStr.substring(Math.max(0, jsonStr.length - 100))
-    });
-    
-    throw new Error(`Failed to parse JSON: ${e.message}. Context around error: ${context}`);
   }
+  
+  // Validate structure
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Parsed data is not a valid object');
+  }
+  
+  return parsed;
 }
 
 /**
