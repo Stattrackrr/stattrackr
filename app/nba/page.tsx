@@ -237,8 +237,18 @@ export default function NBALandingPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [todaysGames, setTodaysGames] = useState<Game[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+
+  // Debounce search query to reduce filtering overhead
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms delay
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   
   // Initialize player props and loading state - always start with loading true to prevent hydration mismatch
   // We'll check sessionStorage in useEffect after mount
@@ -441,7 +451,7 @@ export default function NBALandingPage() {
   useEffect(() => {
     setCurrentPage(1);
     setOpenPopup(null); // Close any open popups
-  }, [propLineSort, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, columnSort]);
+  }, [propLineSort, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, columnSort]);
   
   // Helper function to cycle column sort: none -> asc -> desc -> none
   // When a column is clicked, clear all other column sorts (only one column sorted at a time)
@@ -2004,15 +2014,15 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
   // Reset pagination when filtered props change
   useEffect(() => {
     setCurrentPage(1);
-  }, [playerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, propLineSort]);
+  }, [playerProps, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, propLineSort]);
 
   // Filter player props based on search query and selected filters
   // Filter props based on search, bookmakers, prop types, and games
   const filteredPlayerProps = useMemo(() => {
     return playerProps.filter(prop => {
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+      // Search filter (using debounced query)
+      if (debouncedSearchQuery.trim()) {
+        const query = debouncedSearchQuery.toLowerCase();
         const playerNameMatch = prop.playerName.toLowerCase().includes(query);
         const statTypeMatch = getStatLabel(prop.statType).toLowerCase().includes(query);
         if (!playerNameMatch && !statTypeMatch) {
@@ -2056,7 +2066,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
 
       return true;
     });
-  }, [playerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel]);
+  }, [playerProps, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel]);
 
   // Apply prop line sorting (highest/lowest)
   // IMPORTANT: Sort ALL playerProps first (across all pages), then filter

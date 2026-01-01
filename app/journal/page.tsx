@@ -897,76 +897,81 @@ function JournalContent() {
 
   // Filter bets based on current filters (no currency filter)
   // Voids bypass all filters but are still included in the result
+  // OPTIMIZED: Single pass filtering instead of multiple filter chains
   const filteredBets = useMemo(() => {
-    // Separate voids from other bets
-    const voidBets = bets.filter(bet => bet.result === 'void');
-    let filtered = bets.filter(bet => bet.result !== 'void');
+    const voidBets: typeof bets = [];
+    const filtered: typeof bets = [];
+    const now = new Date();
 
-    // Filter by sport (non-voids only)
-    if (sport !== 'All') {
-      filtered = filtered.filter(bet => bet.sport === sport);
-    }
+    // Single pass: separate voids and apply all filters to non-voids
+    for (const bet of bets) {
+      // Voids bypass all filters
+      if (bet.result === 'void') {
+        voidBets.push(bet);
+        continue;
+      }
 
-    // Filter by bet type (straight vs parlay) (non-voids only)
-    if (betTypeFilter !== 'All') {
-      filtered = filtered.filter(bet => {
+      // Sport filter
+      if (sport !== 'All' && bet.sport !== sport) {
+        continue;
+      }
+
+      // Bet type filter (straight vs parlay)
+      if (betTypeFilter !== 'All') {
         const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
-        return betTypeFilter === 'Parlay' ? isParlay : !isParlay;
-      });
-    }
+        const matchesBetType = betTypeFilter === 'Parlay' ? isParlay : !isParlay;
+        if (!matchesBetType) {
+          continue;
+        }
+      }
 
-    // Filter by bookmaker (non-voids only)
-    if (bookmaker !== 'All') {
-      filtered = filtered.filter(bet => {
+      // Bookmaker filter
+      if (bookmaker !== 'All') {
         const entries = extractBookmakerEntries(bet.bookmaker);
-        return entries.some(entry => entry.key === bookmaker);
-      });
-    }
+        const hasBookmaker = entries.some(entry => entry.key === bookmaker);
+        if (!hasBookmaker) {
+          continue;
+        }
+      }
 
-    // Filter by selected calendar date (non-voids only)
-    if (selectedDate && selectedDateType) {
-      filtered = filtered.filter(bet => {
-        const betDate = new Date(bet.date);
-        
+      // Date filter
+      const betDate = new Date(bet.date);
+      let matchesDate = true;
+      
+      if (selectedDate && selectedDateType) {
+        // Calendar date filter
         if (selectedDateType === 'day') {
-          // Match exact day
-          return betDate.toDateString() === selectedDate.toDateString();
+          matchesDate = betDate.toDateString() === selectedDate.toDateString();
         } else if (selectedDateType === 'week') {
-          // Match week - use the same calculation as calendar
           const weekStart = new Date(selectedDate);
           weekStart.setHours(0, 0, 0, 0);
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           weekEnd.setHours(23, 59, 59, 999);
           const betDateTime = betDate.getTime();
-          return betDateTime >= weekStart.getTime() && betDateTime <= weekEnd.getTime();
+          matchesDate = betDateTime >= weekStart.getTime() && betDateTime <= weekEnd.getTime();
         } else if (selectedDateType === 'month') {
-          // Match month and year
-          return betDate.getMonth() === selectedDate.getMonth() && 
-                 betDate.getFullYear() === selectedDate.getFullYear();
+          matchesDate = betDate.getMonth() === selectedDate.getMonth() && 
+                        betDate.getFullYear() === selectedDate.getFullYear();
         } else if (selectedDateType === 'year') {
-          // Match year
-          return betDate.getFullYear() === selectedDate.getFullYear();
+          matchesDate = betDate.getFullYear() === selectedDate.getFullYear();
         }
-        return true;
-      });
-    } else {
-      // Filter by date range when no specific date selected (non-voids only)
-      const now = new Date();
-      if (dateRange !== 'all') {
-        filtered = filtered.filter(bet => {
-          const betDate = new Date(bet.date);
-          const diffTime = Math.abs(now.getTime() - betDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          switch (dateRange) {
-            case 'daily': return diffDays <= 1;
-            case 'weekly': return diffDays <= 7;
-            case 'monthly': return diffDays <= 30;
-            case 'yearly': return diffDays <= 365;
-            default: return true;
-          }
-        });
+      } else if (dateRange !== 'all') {
+        // Date range filter
+        const diffTime = Math.abs(now.getTime() - betDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        switch (dateRange) {
+          case 'daily': matchesDate = diffDays <= 1; break;
+          case 'weekly': matchesDate = diffDays <= 7; break;
+          case 'monthly': matchesDate = diffDays <= 30; break;
+          case 'yearly': matchesDate = diffDays <= 365; break;
+          default: matchesDate = true;
+        }
+      }
+      
+      if (matchesDate) {
+        filtered.push(bet);
       }
     }
 

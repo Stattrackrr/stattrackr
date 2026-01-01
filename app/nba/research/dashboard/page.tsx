@@ -3,7 +3,7 @@
 import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useMemo, useRef, useEffect, memo, useCallback, Suspense, startTransition, useDeferredValue } from 'react';
+import { useState, useMemo, useRef, useEffect, memo, useCallback, Suspense, startTransition, useDeferredValue, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -21,12 +21,14 @@ import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
-import ShotChart from './ShotChart';
 import StaticBarsChart from './components/charts/StaticBarsChart';
-import AddToJournalModal from '@/components/AddToJournalModal';
 import { useSubscription } from '@/hooks/useSubscription';
-import { TeamTrackingStatsTable } from '@/components/TeamTrackingStatsTable';
-import { PlayTypeAnalysis } from '@/components/PlayTypeAnalysis';
+
+// Lazy load heavy components for better initial bundle size
+const ShotChart = lazy(() => import('./ShotChart').then(mod => ({ default: mod.default })));
+const AddToJournalModal = lazy(() => import('@/components/AddToJournalModal').then(mod => ({ default: mod.default })));
+const TeamTrackingStatsTable = lazy(() => import('@/components/TeamTrackingStatsTable').then(mod => ({ default: mod.TeamTrackingStatsTable })));
+const PlayTypeAnalysis = lazy(() => import('@/components/PlayTypeAnalysis').then(mod => ({ default: mod.PlayTypeAnalysis })));
 import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 import serverLogger from '@/lib/serverLogger';
@@ -13102,34 +13104,40 @@ const lineMovementInFlightRef = useRef(false);
           });
         });
         
-        // Apply all filters (minutes, blowouts, back-to-back) to all games
-        let allFiltered = allGamesFromStats.filter((g: any) => {
+        // Apply all filters in a single pass (minutes, blowouts, back-to-back, teammate)
+        const allFiltered = allGamesFromStats.filter((g: any) => {
           const stats = g?.stats;
           const game = stats?.game;
+          const gid = game?.id;
+          
+          // Minutes filter
           const minutes = parseMinutesPlayed(stats?.min);
           const isLastSeasonWithApiIssue = selectedTimeframe === 'lastseason' && minutes === 0 && game?.id;
           if (minutes === 0 && !isLastSeasonWithApiIssue) return false;
           if (minutes > 0 && (minutes < minMinutesFilter || minutes > maxMinutesFilter)) return false;
+          
+          // Blowouts filter
           if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
             const diff = Math.abs((game.home_team_score || 0) - (game.visitor_team_score || 0));
             if (diff >= 21) return false;
           }
+          
+          // Back-to-back filter
           if (excludeBackToBack) {
             if (!game || !backToBackGameIds.has(game.id)) return false;
           }
+          
+          // Teammate filter
+          if (gid) {
+            const didPlay = teammatePlayedGameIds.has(gid);
+            if (withWithoutMode === 'with' && !didPlay) return false;
+            if (withWithoutMode === 'without' && didPlay) return false;
+          }
+          
           return true;
         });
         
-        // Apply teammate filter to ALL games
-        const teammateFiltered = allFiltered.filter((g: any) => {
-          const game = g?.stats?.game;
-        const gid = game?.id;
-        if (!gid) return false;
-        const didPlay = teammatePlayedGameIds.has(gid);
-        if (withWithoutMode === 'with' && !didPlay) return false;
-        if (withWithoutMode === 'without' && didPlay) return false;
-          return true;
-        });
+        const teammateFiltered = allFiltered; // Single filter pass now
         
         // Sort by date (newest first) and take the last N games
         const sortedByDate = [...teammateFiltered].sort((a: any, b: any) => {
@@ -18387,13 +18395,15 @@ const lineMovementInFlightRef = useRef(false);
               
               return (
 <div className="lg:hidden">
-                  <TeamTrackingStatsTable
-                    teamAbbr={selectedTeam}
-                    selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-                    selectedPlayerName={playerName || undefined}
-                    season={2025}
-                    isDark={isDark}
-                  />
+                  <Suspense fallback={<div className="h-32 flex items-center justify-center text-gray-500">Loading stats...</div>}>
+                    <TeamTrackingStatsTable
+                      teamAbbr={selectedTeam}
+                      selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                      selectedPlayerName={playerName || undefined}
+                      season={2025}
+                      isDark={isDark}
+                    />
+                  </Suspense>
                 </div>
               );
             }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
@@ -18541,13 +18551,15 @@ const lineMovementInFlightRef = useRef(false);
               
               return (
 <div className="hidden lg:block">
-                  <TeamTrackingStatsTable
-                    teamAbbr={selectedTeam}
-                    selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-                    selectedPlayerName={playerName || undefined}
-                    season={2025}
-                    isDark={isDark}
-                  />
+                  <Suspense fallback={<div className="h-32 flex items-center justify-center text-gray-500">Loading stats...</div>}>
+                    <TeamTrackingStatsTable
+                      teamAbbr={selectedTeam}
+                      selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                      selectedPlayerName={playerName || undefined}
+                      season={2025}
+                      isDark={isDark}
+                    />
+                  </Suspense>
                 </div>
               );
             }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
@@ -19436,19 +19448,23 @@ const lineMovementInFlightRef = useRef(false);
             {/* Shot Chart (Desktop) - only in Player Props mode - Always visible with skeleton when loading */}
             {propsMode === 'player' && (
               <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
-                <ShotChart 
-                  isDark={isDark} 
-                  shotData={shotDistanceData}
-                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-                  opponentTeam={opponentTeam}
-                />
+                <Suspense fallback={<div className="h-64 flex items-center justify-center text-gray-500">Loading shot chart...</div>}>
+                  <ShotChart 
+                    isDark={isDark} 
+                    shotData={shotDistanceData}
+                    playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
+                    opponentTeam={opponentTeam}
+                  />
+                </Suspense>
                 {/* Play Type Analysis */}
-                <PlayTypeAnalysis
-                  playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
-                  opponentTeam={opponentTeam}
-                  season={currentNbaSeason()}
-                  isDark={isDark}
-                />
+                <Suspense fallback={<div className="h-32 flex items-center justify-center text-gray-500">Loading analysis...</div>}>
+                  <PlayTypeAnalysis
+                    playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
+                    opponentTeam={opponentTeam}
+                    season={currentNbaSeason()}
+                    isDark={isDark}
+                  />
+                </Suspense>
               </div>
             )}
 
@@ -19464,21 +19480,24 @@ const lineMovementInFlightRef = useRef(false);
       
       {/* Journal Modals */}
       {propsMode === 'player' && selectedPlayer && opponentTeam && (
-        <AddToJournalModal
-          isOpen={showJournalModal}
-          onClose={() => setShowJournalModal(false)}
-          playerName={selectedPlayer.full}
-          playerId={String(selectedPlayer.id)}
-          team={selectedTeam}
-          opponent={nextGameOpponent}
-          gameDate={nextGameDate}
-          oddsFormat={oddsFormat}
-        />
+        <Suspense fallback={null}>
+          <AddToJournalModal
+            isOpen={showJournalModal}
+            onClose={() => setShowJournalModal(false)}
+            playerName={selectedPlayer.full}
+            playerId={String(selectedPlayer.id)}
+            team={selectedTeam}
+            opponent={nextGameOpponent}
+            gameDate={nextGameDate}
+            oddsFormat={oddsFormat}
+          />
+        </Suspense>
       )}
       
       {/* Game Props Journal Modals */}
       {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && (
-        <AddToJournalModal
+        <Suspense fallback={null}>
+          <AddToJournalModal
           isOpen={showJournalModal}
           onClose={() => setShowJournalModal(false)}
           playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
@@ -19489,6 +19508,7 @@ const lineMovementInFlightRef = useRef(false);
           oddsFormat={oddsFormat}
           isGameProp={true}
         />
+        </Suspense>
       )}
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
