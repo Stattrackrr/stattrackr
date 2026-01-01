@@ -5593,9 +5593,19 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
           
           results.forEach(result => {
             if (result.type === 'team') {
+              if (!result.data || result.data.error) {
+                console.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
+                setError(result.data?.error || 'Failed to fetch team DVP data');
+                return;
+              }
               dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() };
               dvpTeamCache.set(teamCacheKey, dvpData);
             } else if (result.type === 'rank') {
+              if (!result.data || result.data.error) {
+                console.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
+                setError(result.data?.error || 'Failed to fetch rank data');
+                return;
+              }
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
               dvpRankCache.set(rankCacheKey, rankData);
             }
@@ -5644,10 +5654,43 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             setPerStat(map);
             setPerRank(rmap);
             setSample(dvpData.sample);
+            setError(null); // Clear any previous errors
+          } else if (!abort) {
+            // If we have cached data but new fetch failed, show error
+            if (promises.length > 0) {
+              console.warn('[DVP Frontend] Missing data after fetch:', { hasDvpData: !!dvpData, hasRankData: !!rankData });
+            }
           }
+        } else if (!abort && (teamCached || rankCached)) {
+          // We have some cached data, use it even if incomplete
+          const map: Record<string, number | null> = {};
+          const rmap: Record<string, number | null> = {};
+          const normalizedOpp = normalizeAbbr(targetOpp);
+          
+          if (teamCached) {
+            for (const m of DVP_METRICS) {
+              const perGame = teamCached.metrics?.[m.key];
+              const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
+              map[m.key] = typeof value === 'number' ? value : null;
+            }
+            setPerStat(map);
+            setSample(teamCached.sample);
+          }
+          
+          if (rankCached) {
+            for (const m of DVP_METRICS) {
+              const ranks = rankCached.metrics?.[m.key] || {};
+              const rank = ranks?.[normalizedOpp] as number | undefined;
+              rmap[m.key] = Number.isFinite(rank as any) ? (rank as number) : null;
+            }
+            setPerRank(rmap);
+          }
+          
+          setLoading(false);
         }
       } catch (e: any) {
-        if (!abort) setError(e?.message || 'Failed to load');
+        console.error('[DVP Frontend] Error:', e);
+        if (!abort) setError(e?.message || 'Failed to load DVP stats');
       } finally {
         if (!abort) setLoading(false);
       }
@@ -5805,7 +5848,11 @@ const PositionDefenseCard = memo(function PositionDefenseCard({ isDark, opponent
             )}
           </div>
         </div>
-        {!posSel && !selectedPosition ? (
+        {error ? (
+          <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">
+            Error loading DvP stats: {error}
+          </div>
+        ) : !posSel && !selectedPosition ? (
           <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>
         ) : loading && Object.keys(perStat).length === 0 ? (
           // Skeleton loader - show placeholder metrics while loading

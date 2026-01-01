@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, apiRateLimiter } from '@/lib/rateLimit';
 
 /**
  * Batched DVP Rank API endpoint
@@ -14,6 +15,12 @@ import { NextRequest, NextResponse } from 'next/server';
  * Example: /api/dvp/rank/batch?pos=PG&metrics=pts,reb,ast&games=82
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateResult = checkRateLimit(request, apiRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const pos = searchParams.get('pos');

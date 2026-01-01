@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import cache, { CACHE_TTL } from "@/lib/cache";
 import { normalizeAbbr } from "@/lib/nbaAbbr";
 import { currentNbaSeason } from "@/lib/nbaConstants";
+import { checkRateLimit, apiRateLimiter } from "@/lib/rateLimit";
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from "@/lib/bettingpros-dvp";
 
 /**
@@ -12,6 +13,12 @@ import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from "@/lib/be
  * Optimized to fetch BettingPros data once for all metrics
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateResult = checkRateLimit(request, apiRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const team = searchParams.get('team');
