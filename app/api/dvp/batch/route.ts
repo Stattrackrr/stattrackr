@@ -58,9 +58,48 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch BettingPros data (with caching)
-    const bpData = await fetchBettingProsData(forceRefresh);
+    let bpData;
+    try {
+      bpData = await fetchBettingProsData(forceRefresh);
+    } catch (fetchError: any) {
+      console.error('[DVP Batch] Error fetching BettingPros data:', fetchError);
+      const isProduction = process.env.NODE_ENV === 'production';
+      return NextResponse.json(
+        {
+          error: isProduction
+            ? 'Failed to fetch DVP data. Please try again later.'
+            : `Failed to fetch BettingPros data: ${fetchError.message}`,
+          team: teamAbbr,
+          games,
+          metrics: {},
+          sample_games: 0,
+        },
+        { status: 500 }
+      );
+    }
     
-    const teamStats = bpData.teamStats?.[bpTeamAbbr];
+    if (!bpData || !bpData.teamStats) {
+      console.error('[DVP Batch] Invalid BettingPros data structure:', {
+        hasBpData: !!bpData,
+        hasTeamStats: !!bpData?.teamStats,
+        teamStatsKeys: bpData?.teamStats ? Object.keys(bpData.teamStats).slice(0, 5) : []
+      });
+      const isProduction = process.env.NODE_ENV === 'production';
+      return NextResponse.json(
+        {
+          error: isProduction
+            ? 'DVP data is currently unavailable. Please try again later.'
+            : 'Invalid BettingPros data structure',
+          team: teamAbbr,
+          games,
+          metrics: {},
+          sample_games: 0,
+        },
+        { status: 500 }
+      );
+    }
+    
+    const teamStats = bpData.teamStats[bpTeamAbbr];
     if (!teamStats) {
       // Return null for all metrics if team not found
       const metricsObj: Record<string, Record<string, number | null>> = {};
