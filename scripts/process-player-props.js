@@ -508,10 +508,14 @@ async function processPlayerProps() {
   }
   
   // Extract props from odds cache - PROCESS ALL GAMES (no date filter)
-  // Get all games that have player props
+  // Get all games that have player props (and at least one bookmaker with props)
   let games = (oddsCache.games || []).filter(game => {
-    // Only include games that have player props
-    return game?.playerPropsByBookmaker && typeof game.playerPropsByBookmaker === 'object';
+    // Only include games that have player props AND at least one bookmaker with props
+    if (!game?.playerPropsByBookmaker || typeof game.playerPropsByBookmaker !== 'object') {
+      return false;
+    }
+    // Check that the object is not empty (has at least one bookmaker)
+    return Object.keys(game.playerPropsByBookmaker).length > 0;
   });
   
   // Apply game split if specified (split games into chunks)
