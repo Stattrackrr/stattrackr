@@ -1721,10 +1721,12 @@ async function processPlayerProps() {
         }
         
         console.log(`[GitHub Actions] 🔄 ${retry > 0 ? `Retry ${retry}: ` : ''}Re-reading cache before save to get latest from parallel jobs...`);
-        // Retry cache read up to 3 times with 1s delay to handle Supabase replication delays
-        const retryCache = await getCache(cacheKey, 3);
+        // Retry cache read up to 5 times with 2s delay to handle Supabase replication delays
+        // Part 3 needs more retries since it runs last and may have longer propagation delays
+        const retryCount = partNumber === 3 ? 5 : 3;
+        const retryCache = await getCache(cacheKey, retryCount);
         if (retryCache && Array.isArray(retryCache) && retryCache.length > 0) {
-          console.log(`[GitHub Actions] 📦 Found cache with ${retryCache.length} props`);
+          console.log(`[GitHub Actions] 📦 Found cache with ${retryCache.length} props after ${retryCount} attempts`);
           // Merge with latest cache - this is the ONLY merge for split jobs
           const newPropsKeys = new Set(
             propsWithStats.map(p => `${p.playerName}|${p.statType}|${Math.round(p.line * 2) / 2}`)
