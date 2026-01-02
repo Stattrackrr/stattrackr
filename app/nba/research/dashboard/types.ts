@@ -21,6 +21,7 @@ export type MovementRow = { ts: number; timeLabel: string; line: number; change:
 export type MatchupInfo = { tipoffLocal?: string | null; tipoffDate?: string | null } | null;
 
 export interface OfficialOddsCardProps {
+  bettingLine?: number;
   isDark: boolean;
   derivedOdds: DerivedOdds;
   intradayMovements: MovementRow[];
@@ -32,6 +33,7 @@ export interface OfficialOddsCardProps {
   oddsFormat: OddsFormat;
   books: BookRow[];
   fmtOdds: (odds: string) => string;
+  lineMovementEnabled: boolean;
   lineMovementData?: {
     openingLine: { line: number; bookmaker: string; timestamp: string } | null;
     currentLine: { line: number; bookmaker: string; timestamp: string } | null;
@@ -39,6 +41,15 @@ export interface OfficialOddsCardProps {
     lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
   } | null;
   selectedStat?: string;
+  calculatedImpliedOdds?: {
+    overImpliedProb: number | null;
+    underImpliedProb: number | null;
+  } | null;
+  selectedBookmakerName?: string | null;
+  selectedBookmakerLine?: number | null;
+  propsMode?: 'player' | 'team';
+  selectedPlayer?: any;
+  primaryMarketLine?: number | null;
 }
 
 export interface BallDontLieGame {
