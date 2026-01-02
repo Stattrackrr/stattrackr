@@ -247,7 +247,7 @@ export const TEAM_STAT_OPTIONS = [
 ];
 
 export const CHART_CONFIG = {
-  margin: { top: 22, right: 14, left: 0, bottom: 18 },
+  margin: { top: 22, right: 14, left: 0, bottom: 29 },
   colors: {
     green: '#10b981',
     red: '#ef4444',
