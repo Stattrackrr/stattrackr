@@ -23,6 +23,7 @@ import DepthChartContainer from './components/DepthChartContainer';
 import { cachedFetch } from '@/lib/requestCache';
 import StaticBarsChart from './components/charts/StaticBarsChart';
 import { RangeSlider } from './components/charts';
+import SimpleChart from './components/charts/SimpleChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { OfficialOddsCard, BestOddsTable, BestOddsTableDesktop, ProjectedStatsCard } from './components/odds';
 import { PositionDefenseCard, OpponentAnalysisCard } from './components/dvp';
@@ -2120,23 +2121,16 @@ const PureChart = memo(function PureChart({
       )}
     </div>
   );
-}, (prev, next) => (
-  prev.isLoading === next.isLoading &&
-  prev.chartData === next.chartData &&
-  prev.yAxisConfig === next.yAxisConfig &&
-  prev.isDark === next.isDark &&
-  prev.bettingLine === next.bettingLine &&
-  prev.selectedStat === next.selectedStat &&
-  prev.currentStatOptions === next.currentStatOptions &&
-  prev.apiError === next.apiError &&
-  prev.selectedPlayer === next.selectedPlayer &&
-  prev.propsMode === next.propsMode &&
-  prev.gamePropsTeam === next.gamePropsTeam &&
-  prev.customTooltip === next.customTooltip &&
-  prev.selectedTimeframe === next.selectedTimeframe &&
-  prev.secondAxisData === next.secondAxisData &&
-  prev.selectedFilterForAxis === next.selectedFilterForAxis
-));
+}, (prev, next) => {
+  // Simplified comparison - only check the most critical props
+  // This matches the extracted PureChart for consistency
+  return (
+    prev.isLoading === next.isLoading &&
+    prev.chartData === next.chartData &&
+    prev.selectedStat === next.selectedStat &&
+    prev.selectedTimeframe === next.selectedTimeframe
+  );
+});
 
 // Per-button memoized components to prevent unrelated re-renders
 const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, isDark }: { label: string; value: string; isSelected: boolean; onSelect: (v: string) => void; isDark: boolean }) {
@@ -2490,6 +2484,11 @@ const ChartControls = function ChartControls({
 
   // Fast recolor (no React) when the transient input value changes while holding +/-
   const recolorBarsFast = (value: number) => {
+    // First try to call SimpleChart's recolor function if available
+    if (typeof window !== 'undefined' && (window as any).__simpleChartRecolorBars) {
+      (window as any).__simpleChartRecolorBars(value);
+    }
+    
     // Handle fg3m (3PM) bars specially - they have a separate makes rect
     if (selectedStat === 'fg3m') {
       // Query all rects in the chart container and filter for fg3m makes
@@ -2520,7 +2519,7 @@ const ChartControls = function ChartControls({
         }
       });
     } else {
-      // Handle regular bars
+      // Handle regular bars (fallback for old chart if it exists)
       const rects = document.querySelectorAll('[data-bar-index]');
       rects.forEach((el: any) => {
         // Skip fg3m makes rects
@@ -4668,22 +4667,13 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
         </>
       )}
       <div className="flex-1 min-h-0 relative">
-        <PureChart
+        <SimpleChart
           isLoading={isLoading || (oddsLoading ?? false)}
           chartData={chartData}
           yAxisConfig={yAxisConfig}
           isDark={isDark}
           bettingLine={bettingLine}
           selectedStat={selectedStat}
-          currentStatOptions={currentStatOptions}
-          apiError={apiError}
-          selectedPlayer={selectedPlayer}
-          propsMode={propsMode}
-          gamePropsTeam={gamePropsTeam}
-          customTooltip={customTooltip}
-          selectedTimeframe={selectedTimeframe}
-          secondAxisData={showAdvancedFilters ? secondAxisData : null}
-          selectedFilterForAxis={showAdvancedFilters ? selectedFilterForAxis : null}
         />
       </div>
       
