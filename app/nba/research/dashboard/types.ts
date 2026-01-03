@@ -74,7 +74,7 @@ export interface BallDontLieStats {
   player?: any;
 }
 
-export type BdlSearchResult = { id: number; full: string; team?: string; pos?: string };
+export type BdlSearchResult = { id: number; full: string; team?: string; pos?: string; headshotUrl?: string | null };
 export type EspnPlayerData = { name: string; jersey?: string; height?: string; weight?: number; team?: string; position?: string };
 
 export const SESSION_KEY = 'nba_dashboard_session_v1';
@@ -107,4 +107,25 @@ export interface AdvancedStats {
   assist_percentage?: number | null;
   offensive_rebound_percentage?: number | null;
   assist_to_turnover?: number | null;
+}
+
+export type AverageStatInfo = {
+  label: string;
+  value: number;
+  format?: 'percent';
+};
+
+export type HitRateStats = {
+  overCount: number;
+  underCount: number;
+  total: number;
+  totalBeforeFilters?: number; // Track total games before advanced filters (for "X/Y games" display)
+  averages: AverageStatInfo[];
+};
+
+export interface PredictedOutcomeResult {
+  overProb: number | null;
+  underProb: number | null;
+  confidence: 'High' | 'Medium' | 'Low';
+  expectedValue?: number | null;
 }
