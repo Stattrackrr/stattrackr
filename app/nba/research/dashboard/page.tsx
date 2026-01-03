@@ -80,6 +80,7 @@ import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
 import { getReboundRank, getRankColor, createTeamComparisonPieData, getPlayerCurrentTeam, getOpponentTeam } from './utils/teamAnalysisUtils';
+import { getSavedSession, saveSession, getLocalStorage, setLocalStorage, updateSessionProperty } from './utils/storageUtils';
 
 // Lazy load heavy components for better initial bundle size
 const ShotChart = lazy(() => import('./ShotChart').then(mod => ({ default: mod.default })));
@@ -419,14 +420,7 @@ function NBADashboardContent() {
       setSelectedStat(initialStat);
       
       // Store in session storage
-      const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-      if (saved && typeof saved === 'string') {
-        try {
-          const parsed = JSON.parse(saved);
-          parsed.selectedStat = initialStat;
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
-        } catch {}
-      }
+      updateSessionProperty('selectedStat', initialStat);
       return; // Use initial stat on first render only
     }
     
@@ -453,14 +447,7 @@ function NBADashboardContent() {
         setSelectedStat(normalizedStat);
         
         // Store in session storage
-        const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            parsed.selectedStat = normalizedStat;
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
-          } catch {}
-        }
+        updateSessionProperty('selectedStat', normalizedStat);
       }
     } else {
       console.log(`[Dashboard] ⚠️ useSearchParams: No stat parameter found in URL`);
@@ -2718,7 +2705,7 @@ const lineMovementInFlightRef = useRef(false);
 
     // First, restore propsMode from session storage
     try {
-      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+      const raw = getSavedSession();
       if (raw) {
         const saved = JSON.parse(raw) as Partial<SavedSession> & { gamePropsTeam?: string };
         if (saved?.propsMode && (saved.propsMode === 'player' || saved.propsMode === 'team')) {
@@ -2790,7 +2777,7 @@ const lineMovementInFlightRef = useRef(false);
           setSelectedStat(normalizedStat);
           
           // Store in session storage to persist across player loading
-          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          const saved = getSavedSession();
           if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
@@ -2831,7 +2818,7 @@ const lineMovementInFlightRef = useRef(false);
           console.log(`[Dashboard] ✅ Setting timeframe from URL: "${tf}"`);
           setSelectedTimeframe(tf);
           // Also store it in session storage for persistence
-          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          const saved = getSavedSession();
           if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
@@ -2850,7 +2837,7 @@ const lineMovementInFlightRef = useRef(false);
             window.history.replaceState({}, '', newUrl.toString());
           }
           // Store in session storage
-          const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+          const saved = getSavedSession();
           if (saved && typeof saved === 'string') {
             try {
               const parsed = JSON.parse(saved);
@@ -3129,7 +3116,7 @@ const lineMovementInFlightRef = useRef(false);
       // Only restore if we're still on default timeframe (last10)
       // This means we haven't manually selected a timeframe yet
       try {
-        const saved = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+        const saved = getSavedSession();
         if (saved && typeof saved === 'string') {
           const parsed = JSON.parse(saved);
           if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
