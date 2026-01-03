@@ -68,9 +68,3 @@ export default memo(function StaticLabelList({
     />
   );
 }, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel && prev.fontSizePx === next.fontSizePx);
-
-
-
-
-
-

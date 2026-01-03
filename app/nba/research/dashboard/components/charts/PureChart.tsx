@@ -3,6 +3,7 @@
 import { memo, useCallback } from 'react';
 import StatsBarChart from './StatsBarChart';
 
+// Using memo but with a simpler comparison to avoid blocking re-renders
 export default memo(function PureChart({
   isLoading,
   chartData,
@@ -29,11 +30,35 @@ export default memo(function PureChart({
 
   return (
     <div className="h-full w-full">
-      {isLoading ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <div className="text-gray-600 dark:text-gray-400">Loading player stats...</div>
+      {isLoading || !chartData || chartData.length === 0 ? (
+        <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+          {/* Chart bars skeleton - vertical bars like the actual chart */}
+          <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+            {[...Array(20)].map((_, idx) => {
+              // Create varied heights like a real chart
+              const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+              const height = heights[idx] || (Math.random() * 40 + 30);
+              
+              return (
+                <div
+                  key={idx}
+                  className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                  style={{ height: '100%' }}
+                >
+                  {/* Vertical bar - matches chart bar structure, thicker */}
+                  <div
+                    className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                    style={{
+                      height: `${height}%`,
+                      animationDelay: `${idx * 0.08}s`,
+                      minHeight: '30px',
+                      transition: 'height 0.3s ease',
+                      minWidth: '28px'
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -52,23 +77,16 @@ export default memo(function PureChart({
       )}
     </div>
   );
-}, (prev, next) => (
-  prev.isLoading === next.isLoading &&
-  prev.chartData === next.chartData &&
-  prev.yAxisConfig === next.yAxisConfig &&
-  prev.isDark === next.isDark &&
-  prev.bettingLine === next.bettingLine &&
-  prev.selectedStat === next.selectedStat &&
-  prev.currentStatOptions === next.currentStatOptions &&
-  prev.apiError === next.apiError &&
-  prev.selectedPlayer === next.selectedPlayer &&
-  prev.propsMode === next.propsMode &&
-  prev.gamePropsTeam === next.gamePropsTeam &&
-  prev.customTooltip === next.customTooltip &&
-  prev.selectedTimeframe === next.selectedTimeframe &&
-  prev.secondAxisData === next.secondAxisData &&
-  prev.selectedFilterForAxis === next.selectedFilterForAxis
-));
+}, (prev, next) => {
+  // Simplified comparison - only check the most critical props
+  // Using === for chartData might be too strict when component is extracted
+  return (
+    prev.isLoading === next.isLoading &&
+    prev.chartData === next.chartData &&
+    prev.selectedStat === next.selectedStat &&
+    prev.selectedTimeframe === next.selectedTimeframe
+  );
+});
 
 
 

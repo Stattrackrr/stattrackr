@@ -35,7 +35,7 @@ export default memo(function CustomXAxisTick({ x, y, payload, data }: any) {
     <g transform={`translate(${x},${y})`}>
       <image
         x={-12}
-        y={0}
+        y={8}
         width={24}
         height={24}
         xlinkHref={logoUrl}
