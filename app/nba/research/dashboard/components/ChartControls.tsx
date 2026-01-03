@@ -7,7 +7,7 @@ import { clientLogger } from '@/lib/clientLogger';
 import { HomeAwaySelect, OverRatePill } from './ui';
 import { SECOND_AXIS_FILTER_OPTIONS } from '../constants';
 import { updateBettingLinePosition } from '../utils/chartUtils';
-import { AltLineItem, partitionAltLineItems } from '../utils/oddsUtils';
+import { AltLineItem, partitionAltLineItems, getBookRowKey } from '../utils/oddsUtils';
 import { ABBR_TO_TEAM_ID, getEspnLogoCandidates } from '../utils/teamUtils';
 
 // Per-button memoized components to prevent unrelated re-renders
@@ -512,27 +512,6 @@ const ChartControls = function ChartControls({
     const n = typeof line === 'number' ? line : parseFloat(String(line));
     if (!Number.isFinite(n)) return String(line);
     return n > 0 ? `+${n}` : `${n}`;
-  };
-
-  // Map selectedStat -> odds book key
-  const getBookRowKey = (stat: string | null | undefined): string | null => {
-    const map: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'fg3m': 'THREES',
-      'stl': 'STL',
-      'blk': 'BLK',
-      'to': 'TO',
-      'pra': 'PRA',
-      'pr': 'PR',
-      'pa': 'PA',
-      'ra': 'RA',
-      'spread': 'Spread',
-      'total_pts': 'Total',
-      'moneyline': 'H2H',
-    };
-    return stat ? (map[stat] || null) : null;
   };
   
   // Calculate best bookmaker and line for stat (lowest over line)

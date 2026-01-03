@@ -55,7 +55,7 @@ import PlayerBoxScore from './components/PlayerBoxScore';
 import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS, LINE_MOVEMENT_ENABLED } from './constants';
 import { updateBettingLinePosition, getUnifiedTooltipStyle } from './utils/chartUtils';
 import { createChartLabelFormatter } from './utils/chartFormatters';
-import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName } from './utils/oddsUtils';
+import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey } from './utils/oddsUtils';
 import { 
   TEAM_ID_TO_ABBR, 
   ABBR_TO_TEAM_ID, 
@@ -7953,27 +7953,6 @@ const lineMovementInFlightRef = useRef(false);
       isMounted = false;
     };
   }, [selectedFilterForAxis, filteredChartData, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
-
-  // Helper function to map selected stat to bookmaker row key (defined early for use in bestLineForStat)
-  const getBookRowKey = useCallback((stat: string): string | null => {
-    const statToBookKey: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'fg3m': 'THREES',
-      'stl': 'STL',
-      'blk': 'BLK',
-      'to': 'TO',
-      'pra': 'PRA',
-      'pr': 'PR',
-      'pa': 'PA',
-      'ra': 'RA',
-      'spread': 'Spread',
-      'total_pts': 'Total',
-      'moneyline': 'H2H',
-    };
-    return statToBookKey[stat] || null;
-  }, []);
   
   // Calculate best line for stat (lowest over line) - exclude alternate lines
   // This is used to initialize bettingLine when switching stats

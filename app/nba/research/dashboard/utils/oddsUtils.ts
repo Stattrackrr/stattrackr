@@ -9,6 +9,31 @@ export type AltLineItem = {
   variantLabel?: string | null;
 };
 
+/**
+ * Maps a stat key to its corresponding bookmaker row key
+ */
+export function getBookRowKey(stat: string | null | undefined): string | null {
+  if (!stat) return null;
+  
+  const statToBookKey: Record<string, string> = {
+    'pts': 'PTS',
+    'reb': 'REB',
+    'ast': 'AST',
+    'fg3m': 'THREES',
+    'stl': 'STL',
+    'blk': 'BLK',
+    'to': 'TO',
+    'pra': 'PRA',
+    'pr': 'PR',
+    'pa': 'PA',
+    'ra': 'RA',
+    'spread': 'Spread',
+    'total_pts': 'Total',
+    'moneyline': 'H2H',
+  };
+  return statToBookKey[stat] || null;
+}
+
 // Performs shallow clone with nested object cloning for BookRow structure
 export function cloneBookRow(book: any): any {
   const clone: any = { ...book };
