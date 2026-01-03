@@ -81,7 +81,7 @@ import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
 import { getReboundRank, getRankColor, createTeamComparisonPieData, getPlayerCurrentTeam, getOpponentTeam } from './utils/teamAnalysisUtils';
 import { getSavedSession, saveSession, getLocalStorage, setLocalStorage, updateSessionProperty } from './utils/storageUtils';
-import { HeaderNavigation } from './components/header';
+import { HeaderNavigation, MobileBottomNavigation } from './components/header';
 
 // Lazy load heavy components for better initial bundle size
 const ShotChart = lazy(() => import('./ShotChart').then(mod => ({ default: mod.default })));
@@ -94,7 +94,7 @@ import serverLogger from '@/lib/serverLogger';
 import { clientLogger } from '@/lib/clientLogger';
 import Image from 'next/image';
 
-function NBADashboardContent() {
+export function NBADashboardContent() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
   
@@ -12321,147 +12321,48 @@ const lineMovementInFlightRef = useRef(false);
       )}
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1929] border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
-        {/* Profile Dropdown Menu - Shows above bottom nav */}
-        {showProfileDropdown && (
-          <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowProfileDropdown(false);
-                  handleSidebarSubscription();
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Subscription
-              </button>
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-              <button
-                onClick={() => {
-                  setShowProfileDropdown(false);
-                  handleLogout();
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Journal Dropdown Menu - Shows above bottom nav */}
-        {showJournalDropdown && hasPremium && (
-          <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowJournalDropdown(false);
-                  router.push('/journal');
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                View Journal
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Settings Dropdown Menu - Shows above bottom nav */}
-        {showSettingsDropdown && (
-          <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              {/* Theme Selection */}
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
-                <select 
-                  value={theme}
-                  onChange={(e) => {
-                    setTheme(e.target.value as 'Light' | 'Dark');
-                    localStorage.setItem('theme', e.target.value);
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="Light">Light</option>
-                  <option value="Dark">Dark</option>
-                </select>
-              </div>
-              
-              {/* Odds Format Selection */}
-              <div className="px-4 py-3">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Odds Format</label>
-                <select 
-                  value={oddsFormat}
-                  onChange={(e) => {
-                    const newFormat = e.target.value as 'american' | 'decimal';
-                    setOddsFormat(newFormat);
-                    localStorage.setItem('oddsFormat', newFormat);
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="american">American</option>
-                  <option value="decimal">Decimal</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Mobile Navigation */}
-        <div className="grid grid-cols-4 h-16 lg:hidden">
-          <HeaderNavigation
-            variant="mobile"
-            hasPremium={hasPremium}
-            username={username}
-            userEmail={userEmail}
-            avatarUrl={avatarUrl}
-            showJournalDropdown={showJournalDropdown}
-            showProfileDropdown={showProfileDropdown}
-            showSettingsDropdown={showSettingsDropdown}
-            setShowJournalDropdown={setShowJournalDropdown}
-            setShowProfileDropdown={setShowProfileDropdown}
-            setShowSettingsDropdown={setShowSettingsDropdown}
-          />
-        </div>
-        
-        {/* Desktop Navigation */}
-        <HeaderNavigation
-          variant="desktop"
-          hasPremium={hasPremium}
-          username={username}
-          userEmail={userEmail}
-          avatarUrl={avatarUrl}
-          showJournalDropdown={showJournalDropdown}
-          showProfileDropdown={showProfileDropdown}
-          showSettingsDropdown={showSettingsDropdown}
-          setShowJournalDropdown={setShowJournalDropdown}
-          setShowProfileDropdown={setShowProfileDropdown}
-          setShowSettingsDropdown={setShowSettingsDropdown}
-        />
-      </div>
+      <MobileBottomNavigation
+        hasPremium={hasPremium}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={showJournalDropdown}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={setShowJournalDropdown}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+        profileDropdownRef={profileDropdownRef}
+        journalDropdownRef={journalDropdownRef}
+        settingsDropdownRef={settingsDropdownRef}
+        onSubscription={handleSidebarSubscription}
+        onLogout={handleLogout}
+        theme={theme}
+        oddsFormat={oddsFormat}
+        setTheme={setTheme}
+        setOddsFormat={setOddsFormat}
+      />
+      
+      {/* Desktop Navigation */}
+      <HeaderNavigation
+        variant="desktop"
+        hasPremium={hasPremium}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={showJournalDropdown}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={setShowJournalDropdown}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+      />
     </div>
   );
 }
 
-export default function NBADashboard() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#050d1a]">Loading dashboard...</div>}>
-      <NBADashboardWrapper />
-    </Suspense>
-  );
-}
+import NBADashboardWrapper from './components/NBADashboardWrapper';
 
-// Wrapper component to ensure theme context is available
-// This ensures the component only renders client-side after ThemeProvider is mounted
-function NBADashboardWrapper() {
-  const [mounted, setMounted] = useState(false);
-  
-  // Call all hooks before any conditional returns
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
-  // Always render NBADashboardContent to ensure hooks are called consistently
-  // The ThemeProvider should always be available from layout-client.tsx
-  // If there's an error, it will be caught by ErrorBoundary
-  return <NBADashboardContent />;
+export default function NBADashboard() {
+  return <NBADashboardWrapper />;
 }
