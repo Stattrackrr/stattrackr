@@ -31,7 +31,7 @@ import { HomeAwaySelect, OverRatePill } from './components/ui';
 import ChartControls from './components/ChartControls';
 import ChartContainer from './components/ChartContainer';
 import PlayerBoxScore from './components/PlayerBoxScore';
-import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS } from './constants';
+import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS, LINE_MOVEMENT_ENABLED } from './constants';
 import { updateBettingLinePosition, getUnifiedTooltipStyle } from './utils/chartUtils';
 import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName } from './utils/oddsUtils';
 import { 
@@ -90,66 +90,6 @@ export type BookRow = {
   AST: { line: string; over: string; under: string };
 };
 
-const PLACEHOLDER_BOOK_ROWS: any[] = [
-  {
-    name: 'DraftKings',
-    H2H: { home: 'N/A', away: 'N/A' },
-    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-  },
-  {
-    name: 'FanDuel',
-    H2H: { home: 'N/A', away: 'N/A' },
-    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-  },
-  {
-    name: 'BetMGM',
-    H2H: { home: 'N/A', away: 'N/A' },
-    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-  },
-  {
-    name: 'Caesars',
-    H2H: { home: 'N/A', away: 'N/A' },
-    Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PTS: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    REB: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    AST: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    THREES: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PRA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-    RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
-  },
-];
-
-const LINE_MOVEMENT_ENABLED = process.env.NEXT_PUBLIC_ENABLE_LINE_MOVEMENT === 'true';
 
 // Optimized clone function - replaces expensive JSON.parse(JSON.stringify())
 // Performs shallow clone with nested object cloning for BookRow structure
