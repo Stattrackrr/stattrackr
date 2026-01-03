@@ -283,6 +283,16 @@ export const DVP_METRICS = [
   { key: 'ast', label: 'Assists', statType: 'astAllowed' },
 ];
 
+// Second axis filter options (only available in player mode)
+export const SECOND_AXIS_FILTER_OPTIONS = [
+  { key: null, label: 'None' },
+  { key: 'minutes', label: 'Player Minutes' },
+  { key: 'fg_pct', label: 'Player FG%' },
+  { key: 'pace', label: 'Game Pace' },
+  { key: 'usage_rate', label: 'Usage Rate' },
+  { key: 'dvp_rank', label: 'Opp DvP Rank' },
+];
+
 
 
 

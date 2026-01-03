@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState, memo } from 'react';
 import {
   BarChart,
   Bar,
@@ -8,8 +8,11 @@ import {
   YAxis,
   ResponsiveContainer,
   Cell,
+  ComposedChart,
+  Line,
 } from 'recharts';
 import StaticLabelList from './StaticLabelList';
+import CustomXAxisTick from './CustomXAxisTick';
 
 interface SimpleChartProps {
   isLoading?: boolean;
@@ -18,17 +21,35 @@ interface SimpleChartProps {
   isDark: boolean;
   bettingLine: number;
   selectedStat: string;
+  secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
+  selectedFilterForAxis?: string | null;
   [key: string]: any; // Accept other props for compatibility
 }
 
-export default function SimpleChart({
+const SimpleChart = memo(function SimpleChart({
   isLoading,
   chartData,
   yAxisConfig,
   isDark,
   bettingLine,
   selectedStat,
+  secondAxisData,
+  selectedFilterForAxis,
 }: SimpleChartProps) {
+  // Detect mobile for hiding Y-axis and X-axis tick marks
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    checkMobile();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+
   // Calculate initial background gradient (only when chartData or isDark changes)
   const getBackgroundGradient = useCallback((overPercent: number, underPercent: number) => {
     if (overPercent > 60) {
@@ -90,7 +111,33 @@ export default function SimpleChart({
         data-bar-value={entry.value}
       />
     ));
-  }, [chartData, getBarColor]); // Removed bettingLine - colors updated via DOM
+  }, [chartData, getBarColor, bettingLine]); // Include bettingLine for initial render
+
+  // Merge second axis data with main data
+  const mergedChartData = useMemo(() => {
+    if (!secondAxisData || !selectedFilterForAxis) {
+      return chartData;
+    }
+    
+    // Create a map of second axis values by gameId
+    const secondAxisMap = new Map<string, number | null>();
+    secondAxisData.forEach(item => {
+      secondAxisMap.set(item.gameId, item.value);
+    });
+    
+    // Merge into main data
+    const merged = chartData.map((item: any) => {
+      const lookupKey = item.xKey || String(item.game?.id || item.gameId || '');
+      const secondValue = secondAxisMap.get(lookupKey) ?? null;
+      
+      return {
+        ...item,
+        secondAxisValue: secondValue,
+      };
+    });
+    
+    return merged;
+  }, [chartData, secondAxisData, selectedFilterForAxis]);
 
   // Store chartData in ref so event handler always has latest data
   const chartDataRef = useRef(chartData);
@@ -274,6 +321,54 @@ export default function SimpleChart({
     }
   }, [selectedStat]); // Only depend on selectedStat for spread logic
 
+  // Calculate Y-axis config for second axis
+  const secondAxisConfig = useMemo(() => {
+    if (!selectedFilterForAxis || !secondAxisData) return null;
+    
+    const values = secondAxisData
+      .map(item => item.value)
+      .filter((v): v is number => v !== null && Number.isFinite(v));
+    
+    if (values.length === 0) return null;
+    
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    
+    // Special handling for DvP ranks: always use 0-30 domain (30 teams in NBA)
+    if (selectedFilterForAxis === 'dvp_rank') {
+      const min = 0;
+      const max = 30;
+      const ticks = [0, 5, 10, 15, 20, 25, 30];
+      return { domain: [min, max] as [number, number], ticks, dataMin, dataMax };
+    }
+    
+    // Special handling for game pace
+    if (selectedFilterForAxis === 'pace') {
+      const paddedMin = dataMin * 0.97;
+      const min = Math.floor(paddedMin / 5) * 5;
+      const paddedMax = dataMax * 1.05;
+      const max = Math.ceil(paddedMax / 5) * 5;
+      const range = max - min;
+      const tickCount = Math.max(6, Math.min(7, Math.floor(range / 10) + 1));
+      const step = range / (tickCount - 1);
+      const ticks = Array.from({ length: tickCount }, (_, i) => Math.round(min + step * i));
+      return { domain: [min, max] as [number, number], ticks, dataMin, dataMax };
+    }
+    
+    // Default: start at 0
+    const min = 0;
+    const paddedMax = dataMax * 1.05;
+    const roughMax = Math.ceil(paddedMax);
+    const max = Math.ceil(roughMax / 5) * 5;
+    const tickCount = 6;
+    const step = max / (tickCount - 1);
+    const ticks = Array.from({ length: tickCount }, (_, i) => Math.round(min + step * i));
+    return { domain: [min, max] as [number, number], ticks, dataMin, dataMax };
+  }, [secondAxisData, selectedFilterForAxis]);
+
+  const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
+  const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;
+
   // Format label value based on stat type
   // Memoize this to a stable reference - only changes when selectedStat changes
   const formatChartLabel = useMemo(() => {
@@ -295,6 +390,78 @@ export default function SimpleChart({
       />
     );
   }, [isDark, formatChartLabel, chartData.length, selectedStat]);
+
+  // Limit Y-axis ticks to only 4: evenly spaced across the domain
+  const limitTicks = useCallback((ticks: number[], domain: [number, number]) => {
+    if (!domain || !ticks || ticks.length === 0) {
+      return ticks || [];
+    }
+    
+    const [minY, maxY] = domain;
+    
+    // Use domain min/max for even spacing (prefer 0 if it's in the domain, otherwise use minY)
+    const minTick = minY === 0 || domain[0] === 0 ? 0 : minY;
+    const maxTick = maxY;
+    
+    // Calculate evenly spaced ticks: divide range into 3 equal parts for 4 ticks
+    const range = maxTick - minTick;
+    const step = range / 3;
+    
+    // Create 4 evenly spaced tick values
+    const evenTicks = [
+      minTick,
+      minTick + step,
+      minTick + (2 * step),
+      maxTick
+    ];
+    
+    // Round to reasonable precision for display
+    return evenTicks.map(tick => {
+      // If step is a whole number, round ticks to whole numbers
+      if (step >= 1) {
+        return Math.round(tick);
+      }
+      // For smaller steps, round to 1 decimal place
+      return Math.round(tick * 10) / 10;
+    });
+  }, []);
+
+  // Limit left Y-axis ticks to only 4
+  const limitedTicks = useMemo(() => {
+    if (!yAxisConfig?.domain || !yAxisConfig?.ticks) {
+      return yAxisConfig?.ticks || [];
+    }
+    return limitTicks(yAxisConfig.ticks, yAxisConfig.domain);
+  }, [yAxisConfig, limitTicks]);
+
+  // Limit right Y-axis ticks to only 4 (matching left axis)
+  const limitedRightTicks = useMemo(() => {
+    if (!hasSecondAxis || !secondAxisConfig?.domain || !secondAxisConfig?.ticks) {
+      return secondAxisConfig?.ticks || [];
+    }
+    return limitTicks(secondAxisConfig.ticks, secondAxisConfig.domain);
+  }, [hasSecondAxis, secondAxisConfig, limitTicks]);
+
+  // Function to update betting line container margins via DOM (no re-renders)
+  const updateBettingLineContainerMargin = useCallback(() => {
+    const container = document.getElementById('simple-chart-betting-line-container');
+    if (container) {
+      if (isMobile) {
+        // Full width on mobile
+        (container as HTMLElement).style.left = '0px';
+        (container as HTMLElement).style.right = '0px';
+      } else {
+        // Desktop margins
+        (container as HTMLElement).style.left = '32px';
+        (container as HTMLElement).style.right = hasSecondAxis ? '77px' : '14px';
+      }
+    }
+  }, [isMobile, hasSecondAxis]);
+
+  // Update container margin when second axis or mobile state changes
+  useEffect(() => {
+    updateBettingLineContainerMargin();
+  }, [updateBettingLineContainerMargin]);
 
   // Function to update betting line position via DOM (no re-renders)
   const updateBettingLinePosition = useCallback((line: number) => {
@@ -323,9 +490,16 @@ export default function SimpleChart({
     updateBettingLinePositionRef.current = updateBettingLinePosition;
   }, [updateBettingLinePosition]);
 
+  // Track last betting line value to prevent unnecessary updates
+  const lastBettingLineRef = useRef<number | null>(null);
+  
   // Update betting line position when bettingLine prop changes (after debounce)
+  // Only update if the value actually changed to prevent re-renders on release
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
+    // Skip update if value hasn't changed (prevents re-render on release when value is same)
+    if (lastBettingLineRef.current === bettingLine) return;
+    lastBettingLineRef.current = bettingLine;
     updateBettingLinePosition(bettingLine);
     // Retry to ensure DOM is ready
     const timeout = setTimeout(() => updateBettingLinePosition(bettingLine), 50);
@@ -406,10 +580,10 @@ export default function SimpleChart({
         className="absolute pointer-events-none"
         style={{
           left: '32px', // yAxis width
-          right: '14px', // margin.right
+          right: '14px', // Updated via DOM when second axis changes
           top: '22px', // margin.top
           bottom: '57px', // margin.bottom + extra space for alignment
-          zIndex: 15 // above bars and chart
+          zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
         }}
       >
         <div
@@ -418,35 +592,59 @@ export default function SimpleChart({
           style={{
             bottom: '50%', // Initial position
             opacity: 1,
-            height: '3px',
+            height: isMobile ? '2px' : '3px',
             background: isDark ? '#ffffff' : '#000000'
           }}
         />
       </div>
       
-      <div className="relative z-10 w-full h-full">
+      <div className="relative z-20 w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            key={`chart-${selectedStat}-${chartData.length}`}
-            data={chartData}
-            margin={{ top: 22, right: 14, left: 0, bottom: 29 }}
+          <ChartComponent
+            key={`chart-${selectedStat}-${mergedChartData.length}-${hasSecondAxis ? 'secondaxis' : 'single'}`}
+            data={mergedChartData}
+            margin={{ 
+              top: 22, 
+              right: isMobile ? 0 : (hasSecondAxis ? 5 : 14), 
+              left: 0, 
+              bottom: 19 
+            }}
             barCategoryGap="5%"
           >
             <XAxis
-              dataKey="tickLabel"
-              tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }}
-              height={30}
+              dataKey="xKey"
+              tick={<CustomXAxisTick data={mergedChartData} />}
+              height={40}
+              interval={0}
+              allowDuplicatedCategory={false}
+              axisLine={{ stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
+              tickLine={false}
             />
             <YAxis
               domain={yAxisConfig.domain}
-              ticks={yAxisConfig.ticks}
+              ticks={limitedTicks}
               tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
               width={32}
+              hide={isMobile}
             />
+            {hasSecondAxis && secondAxisConfig && (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                domain={secondAxisConfig.domain}
+                ticks={limitedRightTicks}
+                tick={{ fill: isDark ? '#a855f7' : '#9333ea', fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                width={isMobile ? 30 : 70}
+              />
+            )}
 
             {/* Bar chart */}
             <Bar
-              key={`bar-${selectedStat}-${chartData.length}`}
+              key={`bar-${selectedStat}-${mergedChartData.length}`}
               dataKey="value"
               radius={[10, 10, 10, 10]}
             >
@@ -455,9 +653,44 @@ export default function SimpleChart({
               {/* Labels on top of bars - memoized to prevent re-renders when betting line changes */}
               {memoizedLabelList}
             </Bar>
-          </BarChart>
+            {hasSecondAxis && (
+              <Line
+                yAxisId="right"
+                type="linear"
+                dataKey="secondAxisValue"
+                stroke={isDark ? '#a855f7' : '#9333ea'}
+                strokeWidth={3}
+                dot={false}
+                isAnimationActive={false}
+                animationDuration={0}
+              />
+            )}
+          </ChartComponent>
         </ResponsiveContainer>
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Re-render if meaningful props change
+  // Only skip re-render if ONLY bettingLine changed (dragging scenario)
+  // Allow re-render when selectedStat changes (stat/player change scenario)
+  const statChanged = prevProps.selectedStat !== nextProps.selectedStat;
+  const dataChanged = prevProps.chartData !== nextProps.chartData;
+  const configChanged = prevProps.yAxisConfig !== nextProps.yAxisConfig;
+  const otherPropsChanged = 
+    prevProps.isLoading !== nextProps.isLoading ||
+    prevProps.isDark !== nextProps.isDark ||
+    prevProps.secondAxisData !== nextProps.secondAxisData ||
+    prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis;
+  
+  // If stat/data/config/other props changed, allow re-render
+  if (statChanged || dataChanged || configChanged || otherPropsChanged) {
+    return false; // Allow re-render
+  }
+  
+  // If only bettingLine changed (and nothing else), skip re-render (dragging scenario)
+  // The betting line position is updated via DOM manipulation in useEffect
+  return prevProps.bettingLine === nextProps.bettingLine;
+});
+
+export default SimpleChart;
