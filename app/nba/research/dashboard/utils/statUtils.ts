@@ -1,12 +1,6 @@
 import { BallDontLieStats } from '../types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
-
-// Helper function for parsing minutes
-function parseMinutes(minStr: string): number {
-  if (!minStr || minStr === '0:00') return 0;
-  const [m, s] = minStr.split(':').map(Number);
-  return (Number.isFinite(m) ? m : 0) + ((Number.isFinite(s) ? s : 0) / 60);
-}
+import { parseMinutes } from './playerUtils';
 
 // Player stats from BallDontLie stats API
 export function getStatValue(stats: BallDontLieStats, key: string): number {
