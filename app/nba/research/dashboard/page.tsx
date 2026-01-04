@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -81,6 +81,8 @@ import {
 import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
+import { processBaseGameData } from './utils/baseGameDataUtils';
+import { processFilteredGameData } from './utils/filteredGameDataUtils';
 import { getReboundRank, getRankColor, createTeamComparisonPieData, getPlayerCurrentTeam, getOpponentTeam } from './utils/teamAnalysisUtils';
 import { getSavedSession, saveSession, getLocalStorage, setLocalStorage, updateSessionProperty } from './utils/storageUtils';
 import { HeaderNavigation, MobileBottomNavigation } from './components/header';
@@ -126,7 +128,7 @@ export function NBADashboardContent() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('success') === 'true') {
-      alert('✅ Subscription successful! Welcome to Pro! Your Player Props features are now unlocked.');
+      alert('âœ… Subscription successful! Welcome to Pro! Your Player Props features are now unlocked.');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -197,7 +199,7 @@ export function NBADashboardContent() {
         
         // Always update if status changed, subscription expired, or if this is the first check
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          clientLogger.debug('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
+          clientLogger.debug('ðŸ” Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
           
           if (isMounted) {
             setIsPro(proStatus);
@@ -211,7 +213,7 @@ export function NBADashboardContent() {
         clientLogger.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          clientLogger.debug('🔐 Using cached active subscription status due to error');
+          clientLogger.debug('ðŸ” Using cached active subscription status due to error');
           setIsPro(lastSubscriptionStatus.isPro);
         }
       }
@@ -352,14 +354,14 @@ export function NBADashboardContent() {
   const handleStatSelect = useCallback((stat: string) => {
     userSelectedStatRef.current = true; // Mark as user selection
     setSelectedStat(stat);
-    clientLogger.debug(`[Dashboard] 👤 User selected stat: "${stat}"`);
+    clientLogger.debug(`[Dashboard] ðŸ‘¤ User selected stat: "${stat}"`);
     
     // Update URL immediately to prevent race conditions
     if (typeof window !== 'undefined' && router) {
       const url = new URL(window.location.href);
       url.searchParams.set('stat', stat);
       router.replace(url.pathname + url.search, { scroll: false });
-      clientLogger.debug(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
+      clientLogger.debug(`[Dashboard] ðŸ”„ Immediately updated URL stat parameter to: "${stat}"`);
       
       // Mark that URL was updated by user, so useSearchParams doesn't override it
       statFromUrlRef.current = true;
@@ -368,7 +370,7 @@ export function NBADashboardContent() {
       // This prevents useSearchParams from reading the old URL value
       setTimeout(() => {
         userSelectedStatRef.current = false;
-        clientLogger.debug(`[Dashboard] ✅ Reset user selection flag after URL update`);
+        clientLogger.debug(`[Dashboard] âœ… Reset user selection flag after URL update`);
       }, 100); // 100ms should be enough for router.replace to complete
     }
   }, [router]);
@@ -394,7 +396,7 @@ export function NBADashboardContent() {
             return stat.toLowerCase();
           })();
           initialStatFromUrlRef.current = normalizedStat;
-          clientLogger.debug(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
+          clientLogger.debug(`[Dashboard] ðŸŽ¯ Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
           statFromUrlRef.current = true;
           // Set it immediately
           setSelectedStat(normalizedStat);
@@ -418,7 +420,7 @@ export function NBADashboardContent() {
       // Clear the initial stat ref so we don't use it again
       const initialStat = initialStatFromUrlRef.current;
       initialStatFromUrlRef.current = null; // Clear it so we don't reset to it later
-      console.log(`[Dashboard] 🎯 useSearchParams: Using initial stat from mount: "${initialStat}"`);
+      console.log(`[Dashboard] ðŸŽ¯ useSearchParams: Using initial stat from mount: "${initialStat}"`);
       statFromUrlRef.current = true;
       setSelectedStat(initialStat);
       
@@ -430,7 +432,7 @@ export function NBADashboardContent() {
     // After first render, always respect the current URL parameter
     // BUT skip if user just manually selected a stat (to prevent override)
     if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] ⏭️ useSearchParams: Skipping - user just manually selected stat`);
+      console.log(`[Dashboard] â­ï¸ useSearchParams: Skipping - user just manually selected stat`);
       return;
     }
     
@@ -445,7 +447,7 @@ export function NBADashboardContent() {
       
       // Only update if it's different from current stat to avoid unnecessary re-renders
       if (normalizedStat !== selectedStat) {
-        console.log(`[Dashboard] 🎯 useSearchParams: Updating stat from URL: "${stat}" -> "${normalizedStat}" (current: "${selectedStat}")`);
+        console.log(`[Dashboard] ðŸŽ¯ useSearchParams: Updating stat from URL: "${stat}" -> "${normalizedStat}" (current: "${selectedStat}")`);
         statFromUrlRef.current = true;
         setSelectedStat(normalizedStat);
         
@@ -453,7 +455,7 @@ export function NBADashboardContent() {
         updateSessionProperty('selectedStat', normalizedStat);
       }
     } else {
-      console.log(`[Dashboard] ⚠️ useSearchParams: No stat parameter found in URL`);
+      console.log(`[Dashboard] âš ï¸ useSearchParams: No stat parameter found in URL`);
     }
   }, [searchParams, selectedStat]);
   
@@ -486,7 +488,7 @@ export function NBADashboardContent() {
         url.searchParams.set('stat', selectedStat);
         // Use replace to avoid adding to history
         router.replace(url.pathname + url.search, { scroll: false });
-        console.log(`[Dashboard] 🔄 Updated URL stat parameter to: "${selectedStat}"`);
+        console.log(`[Dashboard] ðŸ”„ Updated URL stat parameter to: "${selectedStat}"`);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -494,11 +496,11 @@ export function NBADashboardContent() {
   
   // Ensure correct default stat is set when propsMode changes (but not when user clicks stats)
   useEffect(() => {
-    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}", userSelectedStat=${userSelectedStatRef.current}`);
+    console.log(`[Dashboard] ðŸ”„ Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}", userSelectedStat=${userSelectedStatRef.current}`);
     
     // Skip if user manually selected a stat (don't override user choice)
     if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] ⏭️ Skipping default stat logic - user manually selected stat`);
+      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - user manually selected stat`);
       userSelectedStatRef.current = false; // Reset after one check
       return;
     }
@@ -506,7 +508,7 @@ export function NBADashboardContent() {
     // Skip if we have an initial stat from URL (don't override it, even if URL was changed)
     // But only if we haven't used it yet - after first use, always respect URL
     if (initialStatFromUrlRef.current && !hasUsedInitialStatRef.current) {
-      console.log(`[Dashboard] ⏭️ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
+      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
       return;
     }
     
@@ -515,14 +517,14 @@ export function NBADashboardContent() {
       const url = new URL(window.location.href);
       const urlStat = url.searchParams.get('stat');
       if (urlStat) {
-        console.log(`[Dashboard] ⏭️ Skipping default stat logic - stat "${urlStat}" found in URL`);
+        console.log(`[Dashboard] â­ï¸ Skipping default stat logic - stat "${urlStat}" found in URL`);
         return;
       }
     }
     
     // Skip if stat was set from URL (don't override it)
     if (statFromUrlRef.current) {
-      console.log(`[Dashboard] ⏭️ Skipping default stat logic - stat was set from URL (ref flag)`);
+      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - stat was set from URL (ref flag)`);
       statFromUrlRef.current = false; // Reset flag after skipping once
       return;
     }
@@ -542,7 +544,7 @@ export function NBADashboardContent() {
       // Don't reset if user has a valid stat selected
       const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
       if (!playerStatExists && selectedStat !== 'pts') {
-        console.log(`[Dashboard] ⚠️ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
+        console.log(`[Dashboard] âš ï¸ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
         setSelectedStat('pts');
       }
     } else if (propsMode === 'team') {
@@ -659,7 +661,7 @@ const lineMovementInFlightRef = useRef(false);
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
         const suffix = entry.bookmaker ? ` (${entry.bookmaker})` : '';
-        return `${time}${suffix}${label ? ` — ${label}` : ''}`;
+        return `${time}${suffix}${label ? ` â€” ${label}` : ''}`;
       };
 
       if (openingLine) {
@@ -757,8 +759,8 @@ const lineMovementInFlightRef = useRef(false);
       };
       
       // Log to both browser console and server terminal
-      console.log(`🎨 [Render #${renderCountRef.current}]`, renderData);
-      serverLogger.log(`🎨 [Render #${renderCountRef.current}]`, { data: renderData });
+      console.log(`ðŸŽ¨ [Render #${renderCountRef.current}]`, renderData);
+      serverLogger.log(`ðŸŽ¨ [Render #${renderCountRef.current}]`, { data: renderData });
       
       if (urlChanged) lastUrlRef.current = currentUrl;
       if (timeframeChanged) lastTimeframeRef.current = selectedTimeframe;
@@ -840,7 +842,7 @@ const lineMovementInFlightRef = useRef(false);
     
     // If there's no player parameter in URL but we have a selected player, clear it
     if (!player && !pid && !name && selectedPlayer) {
-      console.log('[Dashboard] 🧹 Clearing selectedPlayer - no player parameter in URL');
+      console.log('[Dashboard] ðŸ§¹ Clearing selectedPlayer - no player parameter in URL');
       setSelectedPlayer(null);
       setResolvedPlayerId(null);
       setPlayerStats([]);
@@ -956,11 +958,11 @@ const lineMovementInFlightRef = useRef(false);
       return;
     }
     const fetchLineMovement = async () => {
-      console.log('📊 Line Movement Fetch Check:', { propsMode, selectedPlayer: selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat });
+      console.log('ðŸ“Š Line Movement Fetch Check:', { propsMode, selectedPlayer: selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat });
       
       // Only fetch for player mode
       if (propsMode !== 'player' || !selectedPlayer || !selectedTeam || !opponentTeam || opponentTeam === '' || opponentTeam === 'N/A') {
-        console.log('⏸️ Skipping line movement fetch - missing requirements');
+        console.log('â¸ï¸ Skipping line movement fetch - missing requirements');
         // Only update if not already null to prevent infinite loops
         setLineMovementData(prev => prev !== null ? null : prev);
         return;
@@ -996,32 +998,32 @@ const lineMovementInFlightRef = useRef(false);
         lastLineMovementRequestRef.current.key === requestKey &&
         nowTs - lastLineMovementRequestRef.current.fetchedAt < TTL_MS
       ) {
-        console.log('⏩ Skipping duplicate line movement fetch', requestKey);
+        console.log('â© Skipping duplicate line movement fetch', requestKey);
         return;
       }
 
       if (lineMovementInFlightRef.current) {
-        console.log('⏳ Line movement fetch already in-flight, skipping new request');
+        console.log('â³ Line movement fetch already in-flight, skipping new request');
         return;
       }
 
       lastLineMovementRequestRef.current = { key: requestKey, fetchedAt: nowTs };
       lineMovementInFlightRef.current = true;
 
-      console.log(`🎯 Fetching line movement for: ${playerName} (date: ${gameDate}, stat: ${selectedStat})`);
+      console.log(`ðŸŽ¯ Fetching line movement for: ${playerName} (date: ${gameDate}, stat: ${selectedStat})`);
       
       setLineMovementLoading(true);
       try {
         const url = `/api/odds/line-movement?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(selectedStat)}&date=${gameDate}`;
-        console.log('📡 Fetching:', url);
+        console.log('ðŸ“¡ Fetching:', url);
         const response = await fetch(url);
         if (!response.ok) {
-          console.warn('❌ Line movement fetch failed:', response.status);
+          console.warn('âŒ Line movement fetch failed:', response.status);
           setLineMovementData(null);
           return;
         }
         const result = await response.json();
-        console.log('✅ Line movement data received:', result);
+        console.log('âœ… Line movement data received:', result);
         // Extract the nested data object from the API response
         setLineMovementData(result.hasOdds ? (result.data as typeof lineMovementData) : null);
       } catch (error) {
@@ -1136,7 +1138,7 @@ const lineMovementInFlightRef = useRef(false);
     if (backgroundCacheLoading) return; // Prevent multiple background loads
     
     setBackgroundCacheLoading(true);
-    console.log('🔄 Starting background cache of all team data...');
+    console.log('ðŸ”„ Starting background cache of all team data...');
     
     // List of all NBA teams
     const allTeams = Object.keys(ABBR_TO_TEAM_ID);
@@ -1166,7 +1168,7 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
-    console.log('✅ Background cache completed for all teams');
+    console.log('âœ… Background cache completed for all teams');
     setBackgroundCacheLoading(false);
     setCacheProgress({ current: 0, total: 0 });
   };
@@ -1187,7 +1189,7 @@ const lineMovementInFlightRef = useRef(false);
         return [];
       }
       
-      console.log(`🏀 Fetching games for team ${teamAbbr} (ID: ${teamId})`);
+      console.log(`ðŸ€ Fetching games for team ${teamAbbr} (ID: ${teamId})`);
       
       // Use aggregated, team-scoped fast path (no cursor), one call per season
       const current = currentNbaSeason();
@@ -1211,14 +1213,14 @@ const lineMovementInFlightRef = useRef(false);
       const seasonData = { data: seasonResults.flat() } as any;
 
       if (seasonData?.data) {
-        console.log(`🔍 FILTERING: Starting with ${seasonData.data.length} total games`);
+        console.log(`ðŸ” FILTERING: Starting with ${seasonData.data.length} total games`);
         
         // Filter for games involving our team and only completed games
         let allTeamGames = seasonData.data.filter((game: any) => {
           return game.home_team?.id === teamId || game.visitor_team?.id === teamId;
         });
         
-        console.log(`🔍 Found ${allTeamGames.length} total games involving ${teamAbbr} (before status filtering)`);
+        console.log(`ðŸ” Found ${allTeamGames.length} total games involving ${teamAbbr} (before status filtering)`);
         
         // Check what statuses we have
         const statusCounts = allTeamGames.reduce((acc: any, game: any) => {
@@ -1227,7 +1229,7 @@ const lineMovementInFlightRef = useRef(false);
           return acc;
         }, {});
         
-        console.log(`🔍 Game statuses for ${teamAbbr}:`, statusCounts);
+        console.log(`ðŸ” Game statuses for ${teamAbbr}:`, statusCounts);
         
         let games = seasonData.data.filter((game: any) => {
           const isTeamInvolved = game.home_team?.id === teamId || game.visitor_team?.id === teamId;
@@ -1238,7 +1240,7 @@ const lineMovementInFlightRef = useRef(false);
           
           // Debug first few games
           if (seasonData.data.indexOf(game) < 5) {
-            console.log(`🔎 Game filter debug:`, {
+            console.log(`ðŸ”Ž Game filter debug:`, {
               id: game.id,
               date: game.date,
               home: game.home_team?.abbreviation + ` (ID: ${game.home_team?.id})`,
@@ -1263,7 +1265,7 @@ const lineMovementInFlightRef = useRef(false);
             return dateA - dateB; // Oldest first (season progression)
           });
           
-        console.log(`🏆 Full 2024-25 season: ${games.length} games`);
+        console.log(`ðŸ† Full 2024-25 season: ${games.length} games`);
         
         // Break down games by month/type
         const gamesByMonth = games.reduce((acc: any, game: any) => {
@@ -1273,7 +1275,7 @@ const lineMovementInFlightRef = useRef(false);
           return acc;
         }, {});
         
-        console.log(`📅 Games breakdown by month:`, gamesByMonth);
+        console.log(`ðŸ“… Games breakdown by month:`, gamesByMonth);
         
         // Check for potential preseason (October before 15th) or playoff games (April after 15th)
         const preseasonGames = games.filter((g: any) => {
@@ -1286,14 +1288,14 @@ const lineMovementInFlightRef = useRef(false);
           return date && (date.startsWith('2025-04') && parseInt(date.split('-')[2]) > 15) || date.startsWith('2025-05') || date.startsWith('2025-06');
         });
         
-        console.log(`🏆 Potential preseason games: ${preseasonGames.length}`);
-        console.log(`🏆 Potential playoff games: ${playoffGames.length}`);
+        console.log(`ðŸ† Potential preseason games: ${preseasonGames.length}`);
+        console.log(`ðŸ† Potential playoff games: ${playoffGames.length}`);
         
-        console.log(`📊 Found ${games.length} games for ${teamAbbr}`);
+        console.log(`ðŸ“Š Found ${games.length} games for ${teamAbbr}`);
         if (games.length > 0) {
           const newest = games[0]?.date;
           const oldest = games[games.length - 1]?.date;
-          console.log(`📅 Date range: ${oldest} to ${newest}`);
+          console.log(`ðŸ“… Date range: ${oldest} to ${newest}`);
         }
         
         // Games are already in chronological order (oldest to newest)
@@ -1323,7 +1325,7 @@ const lineMovementInFlightRef = useRef(false);
     
     // Check cache first
     if (teamGameCache[teamAbbr]) {
-      console.log(`⚡ Using cached data for ${teamAbbr}`);
+      console.log(`âš¡ Using cached data for ${teamAbbr}`);
       
       // Add 20ms delay to make switching visible
       setGameStatsLoading(true);
@@ -1334,7 +1336,7 @@ const lineMovementInFlightRef = useRef(false);
       return teamGameCache[teamAbbr];
     }
     
-    console.log(`🏀 Priority loading ${teamAbbr}...`);
+    console.log(`ðŸ€ Priority loading ${teamAbbr}...`);
     
     // Load requested team immediately with UI loading state
     const games = await fetchTeamGamesData(teamAbbr, true);
@@ -1353,7 +1355,7 @@ const lineMovementInFlightRef = useRef(false);
     return games;
   };
 
-  // Fetch games function (today ± 7 days)
+  // Fetch games function (today Â± 7 days)
   const fetchTodaysGames = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (gamesFetchInFlightRef.current) {
       return;
@@ -1369,7 +1371,7 @@ const lineMovementInFlightRef = useRef(false);
         return date.toISOString().split('T')[0];
       };
       
-      // Fetch only a small date range (today ± 7 days) to avoid season paging
+      // Fetch only a small date range (today Â± 7 days) to avoid season paging
       const today = new Date();
       const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
       const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
@@ -1388,7 +1390,7 @@ const lineMovementInFlightRef = useRef(false);
               try {
                 const parsed = JSON.parse(cachedData);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                  console.log(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
+                  console.log(`âœ… Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
                   setTodaysGames(parsed);
                   setGamesLoading(false);
                   gamesFetchInFlightRef.current = false;
@@ -1420,7 +1422,7 @@ const lineMovementInFlightRef = useRef(false);
         const data = await response.json();
         const arr = Array.isArray(data?.data) ? data.data : [];
         if (arr.length > 0) {
-          console.log(`✅ Fetched ${arr.length} games from ${start} to ${end}`);
+          console.log(`âœ… Fetched ${arr.length} games from ${start} to ${end}`);
           console.log(`   Games: ${arr.map((g: any) => `${g.home_team?.abbreviation} vs ${g.visitor_team?.abbreviation}`).join(', ')}`);
           setTodaysGames(arr);
           // Cache for next time
@@ -1439,7 +1441,7 @@ const lineMovementInFlightRef = useRef(false);
         console.error('Error fetching date-range games:', e);
       }
 
-      console.log('❌ No games found in date range');
+      console.log('âŒ No games found in date range');
       setTodaysGames([]);
       
     } catch (error) {
@@ -1476,7 +1478,7 @@ const lineMovementInFlightRef = useRef(false);
             const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
             
             if (cacheAge < CACHE_TTL_MS) {
-              console.log(`[Dashboard] ✅ Last 5 Games data already cached for ${selectedTeam} (${Math.round(cacheAge / 1000)}s old)`);
+              console.log(`[Dashboard] âœ… Last 5 Games data already cached for ${selectedTeam} (${Math.round(cacheAge / 1000)}s old)`);
               return; // Already cached and fresh
             }
           } catch (e) {
@@ -1488,7 +1490,7 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       // Prefetch in background (non-blocking)
-      console.log(`[Dashboard] 🚀 Prefetching Last 5 Games data for ${selectedTeam}...`);
+      console.log(`[Dashboard] ðŸš€ Prefetching Last 5 Games data for ${selectedTeam}...`);
       const baseParams = `team=${encodeURIComponent(selectedTeam)}&season=${season}&lastNGames=5`;
       
       Promise.all([
@@ -1505,13 +1507,13 @@ const lineMovementInFlightRef = useRef(false);
               players: reboundingResult.players || [],
               __timestamp: Date.now()
             }));
-            console.log(`[Dashboard] ✅ Prefetched Last 5 Games data for ${selectedTeam} (${passingResult.players?.length || 0} passing, ${reboundingResult.players?.length || 0} rebounding)`);
+            console.log(`[Dashboard] âœ… Prefetched Last 5 Games data for ${selectedTeam} (${passingResult.players?.length || 0} passing, ${reboundingResult.players?.length || 0} rebounding)`);
           } catch (e) {
             // Ignore storage errors
           }
         }
       }).catch(err => {
-        console.warn(`[Dashboard] ⚠️ Failed to prefetch Last 5 Games for ${selectedTeam}:`, err);
+        console.warn(`[Dashboard] âš ï¸ Failed to prefetch Last 5 Games for ${selectedTeam}:`, err);
       });
     };
     
@@ -1533,7 +1535,7 @@ const lineMovementInFlightRef = useRef(false);
           const parsed = JSON.parse(cached);
           const cacheAge = Date.now() - (parsed.timestamp || 0);
           if (cacheAge < CACHE_TTL_MS && parsed.data) {
-            console.log(`[Dashboard] ✅ Loaded ${Object.keys(parsed.data).length} projected minutes from cache`);
+            console.log(`[Dashboard] âœ… Loaded ${Object.keys(parsed.data).length} projected minutes from cache`);
             setAllProjectedMinutes(parsed.data);
             return; // Use cached data
           }
@@ -1577,7 +1579,7 @@ const lineMovementInFlightRef = useRef(false);
         }
 
         if (!abort) {
-          console.log(`[Dashboard] ✅ Cached ${Object.keys(cache).length} projected minutes`);
+          console.log(`[Dashboard] âœ… Cached ${Object.keys(cache).length} projected minutes`);
           setAllProjectedMinutes(cache);
 
           // Save to sessionStorage
@@ -1687,14 +1689,14 @@ const lineMovementInFlightRef = useRef(false);
 
   // Update opponent when games or selected team changes
   useEffect(() => {
-    console.log(`%c🔍 === OPPONENT USEEFFECT TRIGGERED ===%c`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
+    console.log(`%cðŸ” === OPPONENT USEEFFECT TRIGGERED ===%c`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
     console.log(`%cDependency changes: propsMode=${propsMode}, manualOpponent="${manualOpponent}"`, 'color: #555', '');
     
     // If manual opponent is set and not ALL, use that instead of automatic detection
     if (manualOpponent && manualOpponent !== '' && manualOpponent !== 'ALL') {
-      console.log(`%c🎯 MANUAL OPPONENT OVERRIDE: ${manualOpponent}%c`, 'color: #f39c12; font-weight: bold; font-size: 12px', '');
+      console.log(`%cðŸŽ¯ MANUAL OPPONENT OVERRIDE: ${manualOpponent}%c`, 'color: #f39c12; font-weight: bold; font-size: 12px', '');
       setOpponentTeam(normalizeAbbr(manualOpponent));
-      console.log(`%c🔍 === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
+      console.log(`%cðŸ” === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
       return;
     }
     
@@ -1705,17 +1707,17 @@ const lineMovementInFlightRef = useRef(false);
     
     if (teamToCheck && teamToCheck !== 'N/A' && todaysGames.length > 0) {
       const opponent = getOpponentTeam(teamToCheck, todaysGames);
-      console.log(`%c🎯 SETTING OPPONENT: ${opponent}%c (for ${teamToCheck})`, 'color: #27ae60; font-weight: bold; font-size: 12px', 'color: #555');
+      console.log(`%cðŸŽ¯ SETTING OPPONENT: ${opponent}%c (for ${teamToCheck})`, 'color: #27ae60; font-weight: bold; font-size: 12px', 'color: #555');
       setOpponentTeam(normalizeAbbr(opponent));
     } else {
-      console.log(`%c⏸️ SKIPPING OPPONENT UPDATE%c - Insufficient data`, 'color: #f39c12; font-weight: bold', 'color: #555');
+      console.log(`%câ¸ï¸ SKIPPING OPPONENT UPDATE%c - Insufficient data`, 'color: #f39c12; font-weight: bold', 'color: #555');
       console.log(`  teamToCheck: ${teamToCheck}, todaysGames: ${todaysGames.length}`);
       if (propsMode === 'team' && (!gamePropsTeam || gamePropsTeam === 'N/A')) {
         console.log(`  -> Clearing opponent (team mode with no team selected)`);
         setOpponentTeam('');
       }
     }
-    console.log(`%c🔍 === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
+    console.log(`%cðŸ” === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
   }, [selectedTeam, gamePropsTeam, todaysGames, propsMode, manualOpponent]);
 
   // Load games on mount and refresh every 3 hours (reduced churn)
@@ -2060,7 +2062,7 @@ const lineMovementInFlightRef = useRef(false);
       
       // If opponentTeam is not set (empty, N/A, or ALL), use the nextGameOpponent that's already calculated
       if ((!opponentTeam || opponentTeam === 'N/A' || opponentTeam === 'ALL' || opponentTeam === '') && nextGameOpponent && nextGameOpponent !== '') {
-        console.log(`🔄 H2H: Setting opponent to next game opponent: ${nextGameOpponent}`);
+        console.log(`ðŸ”„ H2H: Setting opponent to next game opponent: ${nextGameOpponent}`);
         setOpponentTeam(nextGameOpponent);
       }
     }
@@ -2070,7 +2072,7 @@ const lineMovementInFlightRef = useRef(false);
   // Fetch game data when in team mode and team is selected
   useEffect(() => {
     if (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A') {
-      console.log(`🏀 Fetching game data for team mode: ${gamePropsTeam}`);
+      console.log(`ðŸ€ Fetching game data for team mode: ${gamePropsTeam}`);
       fetchGameDataForTeam(gamePropsTeam);
     } else if (propsMode === 'player') {
       // Clear game data when switching back to player mode
@@ -2115,7 +2117,7 @@ const lineMovementInFlightRef = useRef(false);
     
     const lastSeasonStats = playerStats.filter(s => getSeasonYear(s) === lastSeason);
     if (lastSeasonStats.length === 0) {
-      console.log(`[useEffect lastseason] ⏭️ No last season stats found, skipping`);
+      console.log(`[useEffect lastseason] â­ï¸ No last season stats found, skipping`);
       return;
     }
     
@@ -2148,7 +2150,7 @@ const lineMovementInFlightRef = useRef(false);
     if (lastSeasonGameIdFetchRef.current.playerId === playerId && 
         lastSeasonGameIdFetchRef.current.attempted && 
         hasValidLastSeasonStats) {
-      console.log(`[useEffect lastseason] ⏭️ Already attempted for player ${playerId} and have valid stats, skipping`);
+      console.log(`[useEffect lastseason] â­ï¸ Already attempted for player ${playerId} and have valid stats, skipping`);
       return;
     }
     
@@ -2162,7 +2164,7 @@ const lineMovementInFlightRef = useRef(false);
       // Mark as attempted NOW to prevent duplicate fetches
       lastSeasonGameIdFetchRef.current = { playerId, attempted: true };
       
-      console.log(`[useEffect lastseason] 🔧 Detected API data quality issue: all ${lastSeasonStats.length} last season stats have 0 minutes. Fetching by game_id...`);
+      console.log(`[useEffect lastseason] ðŸ”§ Detected API data quality issue: all ${lastSeasonStats.length} last season stats have 0 minutes. Fetching by game_id...`);
       
       // Identify ALL games where ATL appears - player was on ATL for those games
       // We know from the logs that there are 4 games where ATL appears
@@ -2172,7 +2174,7 @@ const lineMovementInFlightRef = useRef(false);
         return (homeTeam === 'ATL' || visitorTeam === 'ATL') && s.game?.id;
       });
       
-      console.log(`[useEffect lastseason] 🔍 Found ${atlGames.length} games where ATL appears (player was on ATL):`, atlGames.map(s => ({
+      console.log(`[useEffect lastseason] ðŸ” Found ${atlGames.length} games where ATL appears (player was on ATL):`, atlGames.map(s => ({
         gameId: s.game?.id,
         date: s.game?.date,
         homeTeam: s.game?.home_team?.abbreviation,
@@ -2187,11 +2189,11 @@ const lineMovementInFlightRef = useRef(false);
           .filter((id): id is number => typeof id === 'number' && !isNaN(id))
       ));
       
-      console.log(`[useEffect lastseason] 🔍 Unique game IDs to fetch: ${gameIds.length}`, gameIds);
+      console.log(`[useEffect lastseason] ðŸ” Unique game IDs to fetch: ${gameIds.length}`, gameIds);
       
       if (gameIds.length > 0) {
-        console.log(`[useEffect lastseason] 🔧 Found ${gameIds.length} games with player's previous team, fetching stats by game_id...`);
-        console.log(`[useEffect lastseason] 🔧 Game IDs to fetch:`, gameIds);
+        console.log(`[useEffect lastseason] ðŸ”§ Found ${gameIds.length} games with player's previous team, fetching stats by game_id...`);
+        console.log(`[useEffect lastseason] ðŸ”§ Game IDs to fetch:`, gameIds);
         
         // Fetch stats by game_id in batches (async, don't block)
         const fetchStatsByGameId = async () => {
@@ -2208,11 +2210,11 @@ const lineMovementInFlightRef = useRef(false);
               const gameIdsStr = batch.join(',');
               const url = `/api/stats?player_id=${playerId}&game_ids=${gameIdsStr}&per_page=100&max_pages=1`;
               const requestId = `stats-${playerId}-games-${batch[0]}-${Date.now()}`;
-              console.log(`[useEffect lastseason] 🔧 Fetching stats for game IDs: ${gameIdsStr}`);
+              console.log(`[useEffect lastseason] ðŸ”§ Fetching stats for game IDs: ${gameIdsStr}`);
               const r = await queuedFetch(url, {}, requestId);
               const j = await r.json().catch(() => ({}));
               
-              console.log(`[useEffect lastseason] 🔧 API response:`, {
+              console.log(`[useEffect lastseason] ðŸ”§ API response:`, {
                 hasData: !!j?.data,
                 dataIsArray: Array.isArray(j?.data),
                 dataLength: Array.isArray(j?.data) ? j.data.length : 0,
@@ -2222,7 +2224,7 @@ const lineMovementInFlightRef = useRef(false);
               
               const batchStats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
               
-              console.log(`[useEffect lastseason] 🔧 Raw batch stats (${batchStats.length}):`, batchStats.slice(0, 3).map(s => ({
+              console.log(`[useEffect lastseason] ðŸ”§ Raw batch stats (${batchStats.length}):`, batchStats.slice(0, 3).map(s => ({
                 gameId: s.game?.id,
                 date: s.game?.date,
                 team: s.team?.abbreviation,
@@ -2253,7 +2255,7 @@ const lineMovementInFlightRef = useRef(false);
                 const isIdentifiedAtlGame = gameId && gameIds.includes(gameId);
                 
                 if (isIdentifiedAtlGame) {
-                  console.log(`[useEffect lastseason] ✅ Including stat from identified ATL game (even with 0 minutes):`, {
+                  console.log(`[useEffect lastseason] âœ… Including stat from identified ATL game (even with 0 minutes):`, {
                     gameId,
                     date: s.game?.date,
                     team: s.team?.abbreviation,
@@ -2269,7 +2271,7 @@ const lineMovementInFlightRef = useRef(false);
                 
                 // For other games, only include if they have actual data
                 if (!hasActualData) {
-                  console.log(`[useEffect lastseason] 🔍 Filtered out stat (not identified ATL game, no data):`, {
+                  console.log(`[useEffect lastseason] ðŸ” Filtered out stat (not identified ATL game, no data):`, {
                     gameId,
                     min: s.min,
                     parsedMin: min,
@@ -2280,14 +2282,14 @@ const lineMovementInFlightRef = useRef(false);
               });
               
               statsByGameId.push(...validStats);
-              console.log(`[useEffect lastseason] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games (raw: ${batchStats.length})`);
+              console.log(`[useEffect lastseason] ðŸ”§ Fetched ${validStats.length} valid stats from ${batch.length} games (raw: ${batchStats.length})`);
             } catch (error: any) {
-              console.warn(`[useEffect lastseason] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+              console.warn(`[useEffect lastseason] âš ï¸ Error fetching stats by game_id for batch:`, error?.message || error);
             }
           }
           
           if (statsByGameId.length > 0) {
-            console.log(`[useEffect lastseason] ✅ Successfully fetched ${statsByGameId.length} stats by game_id. Updating playerStats...`);
+            console.log(`[useEffect lastseason] âœ… Successfully fetched ${statsByGameId.length} stats by game_id. Updating playerStats...`);
             
             // CORRECT THE TEAM: For stats from identified ATL games, fix the team abbreviation
             // The API returns stat.team=WAS, but we know the player was on ATL for these games
@@ -2310,7 +2312,7 @@ const lineMovementInFlightRef = useRef(false);
                 // Use the team ID from game data if available, otherwise fall back to original or 0
                 const teamId: number = correctTeamId ?? stat.team?.id ?? 0;
                 
-                console.log(`[useEffect lastseason] 🔧 Correcting team for game ${gameId}: ${stat.team?.abbreviation} → ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam}, teamId: ${teamId})`);
+                console.log(`[useEffect lastseason] ðŸ”§ Correcting team for game ${gameId}: ${stat.team?.abbreviation} â†’ ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam}, teamId: ${teamId})`);
                 
                 return {
                   ...stat,
@@ -2333,7 +2335,7 @@ const lineMovementInFlightRef = useRef(false);
             const currentSeasonStats = playerStats.filter(s => getSeasonYear(s) === currentNbaSeason());
             const lastSeasonStatsOriginal = playerStats.filter(s => getSeasonYear(s) === lastSeason);
             
-            console.log(`[useEffect lastseason] 📊 Before merge: current=${currentSeasonStats.length}, lastSeason original=${lastSeasonStatsOriginal.length}, corrected stats=${correctedStats.length}`);
+            console.log(`[useEffect lastseason] ðŸ“Š Before merge: current=${currentSeasonStats.length}, lastSeason original=${lastSeasonStatsOriginal.length}, corrected stats=${correctedStats.length}`);
             
             // Create a map of game_id -> corrected stat for quick lookup
             const correctedStatsMap = new Map(correctedStats.map(s => [s.game?.id, s]));
@@ -2342,7 +2344,7 @@ const lineMovementInFlightRef = useRef(false);
             const lastSeasonStatsCorrected = lastSeasonStatsOriginal.map(stat => {
               const gameId = stat.game?.id;
               if (gameId && correctedStatsMap.has(gameId)) {
-                console.log(`[useEffect lastseason] 🔄 Replacing stat for game ${gameId} with corrected version`);
+                console.log(`[useEffect lastseason] ðŸ”„ Replacing stat for game ${gameId} with corrected version`);
                 return correctedStatsMap.get(gameId)!;
               }
               return stat;
@@ -2357,23 +2359,23 @@ const lineMovementInFlightRef = useRef(false);
             });
             
             if (newStats.length > 0) {
-              console.log(`[useEffect lastseason] ➕ Adding ${newStats.length} new stats that weren't in original`);
+              console.log(`[useEffect lastseason] âž• Adding ${newStats.length} new stats that weren't in original`);
             }
             
             // Combine: current season + corrected last season stats + any new stats
             const updatedStats = [...currentSeasonStats, ...lastSeasonStatsCorrected, ...newStats];
             
-            console.log(`[useEffect lastseason] 📊 After merge: current=${currentSeasonStats.length}, lastSeason=${lastSeasonStatsCorrected.length}, new=${newStats.length}, total=${updatedStats.length}`);
+            console.log(`[useEffect lastseason] ðŸ“Š After merge: current=${currentSeasonStats.length}, lastSeason=${lastSeasonStatsCorrected.length}, new=${newStats.length}, total=${updatedStats.length}`);
             
             setPlayerStats(updatedStats);
           } else {
-            console.warn(`[useEffect lastseason] ⚠️ No valid stats found when querying by game_id`);
+            console.warn(`[useEffect lastseason] âš ï¸ No valid stats found when querying by game_id`);
           }
         };
         
         // Fetch asynchronously (don't block the UI)
         fetchStatsByGameId().catch(err => {
-          console.error(`[useEffect lastseason] ❌ Error in fetchStatsByGameId:`, err);
+          console.error(`[useEffect lastseason] âŒ Error in fetchStatsByGameId:`, err);
         });
       }
     }
@@ -2603,7 +2605,7 @@ const lineMovementInFlightRef = useRef(false);
       if (todaysGames.length === 0) return;
       
       setRosterCacheLoading(true);
-      console.log('🚀 Preloading all team rosters for instant switching...');
+      console.log('ðŸš€ Preloading all team rosters for instant switching...');
       
       // Get all unique teams from today's games
       const allTeams = new Set<string>();
@@ -2612,7 +2614,7 @@ const lineMovementInFlightRef = useRef(false);
         if (game.visitor_team?.abbreviation) allTeams.add(normalizeAbbr(game.visitor_team.abbreviation));
       });
       
-      console.log(`📋 Found ${allTeams.size} teams to preload:`, Array.from(allTeams));
+      console.log(`ðŸ“‹ Found ${allTeams.size} teams to preload:`, Array.from(allTeams));
       
       // Fetch all rosters with staggered delays to avoid rate limiting
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -2645,7 +2647,7 @@ const lineMovementInFlightRef = useRef(false);
       setAllTeamRosters(rosterCache);
       setRosterCacheLoading(false);
       
-      console.log(`✅ Preloaded ${Object.keys(rosterCache).length} team rosters for instant switching`);
+      console.log(`âœ… Preloaded ${Object.keys(rosterCache).length} team rosters for instant switching`);
 
       // Preload injuries for all teams we just cached so swaps show injury badges instantly
       try {
@@ -2701,7 +2703,7 @@ const lineMovementInFlightRef = useRef(false);
 
   // On mount: restore from sessionStorage and URL once
   useEffect(() => {
-    console.log(`[Dashboard] 🚀 Mount useEffect running - checking URL and session storage`);
+    console.log(`[Dashboard] ðŸš€ Mount useEffect running - checking URL and session storage`);
     let initialPropsMode: 'player' | 'team' = 'player';
     let shouldLoadDefaultPlayer = true;
     
@@ -2723,10 +2725,10 @@ const lineMovementInFlightRef = useRef(false);
         // Don't restore stat from session storage if there's a stat in the URL (URL takes precedence)
         const urlHasStat = typeof window !== 'undefined' ? new URL(window.location.href).searchParams.get('stat') : null;
         if (saved?.selectedStat && !urlHasStat) {
-          console.log(`[Dashboard] 📦 Restoring stat from session storage: "${saved.selectedStat}" (no stat in URL)`);
+          console.log(`[Dashboard] ðŸ“¦ Restoring stat from session storage: "${saved.selectedStat}" (no stat in URL)`);
           setSelectedStat(saved.selectedStat);
         } else if (urlHasStat) {
-          console.log(`[Dashboard] ⏭️ Skipping session storage stat restore - stat "${urlHasStat}" found in URL`);
+          console.log(`[Dashboard] â­ï¸ Skipping session storage stat restore - stat "${urlHasStat}" found in URL`);
         }
         // Only restore selectedTimeframe if we have playerStats loaded (prevents race condition)
         // If playerStats is empty, don't restore timeframe yet - wait for stats to load first
@@ -2741,7 +2743,7 @@ const lineMovementInFlightRef = useRef(false);
       if (typeof window !== 'undefined') {
         // Capture initial URL IMMEDIATELY to prevent race conditions
         const initialUrl = window.location.href;
-        console.log(`[Dashboard] 🔍 Initial URL (captured immediately): ${initialUrl}`);
+        console.log(`[Dashboard] ðŸ” Initial URL (captured immediately): ${initialUrl}`);
         const url = new URL(initialUrl);
         const pid = url.searchParams.get('pid');
         const name = url.searchParams.get('name');
@@ -2752,13 +2754,13 @@ const lineMovementInFlightRef = useRef(false);
         const tf = url.searchParams.get('tf');
         const mode = url.searchParams.get('mode');
         
-        console.log(`[Dashboard] 🔍 URL params: stat="${stat}", player="${player}", mode="${mode}", line="${line}"`);
-        console.log(`[Dashboard] 🔍 All URL params:`, Object.fromEntries(url.searchParams.entries()));
-        console.log(`[Dashboard] 🔍 Current window.location.href: ${window.location.href}`);
+        console.log(`[Dashboard] ðŸ” URL params: stat="${stat}", player="${player}", mode="${mode}", line="${line}"`);
+        console.log(`[Dashboard] ðŸ” All URL params:`, Object.fromEntries(url.searchParams.entries()));
+        console.log(`[Dashboard] ðŸ” Current window.location.href: ${window.location.href}`);
         
         // Set stat from URL FIRST (before propsMode) to prevent default stat logic from overriding it
         if (stat) {
-          console.log(`[Dashboard] ✅ Found stat in URL: "${stat}"`);
+          console.log(`[Dashboard] âœ… Found stat in URL: "${stat}"`);
           // Normalize stat from props page format (uppercase) to dashboard format (lowercase)
           // Also handle special cases like "THREES" -> "fg3m"
           const normalizedStat = (() => {
@@ -2773,7 +2775,7 @@ const lineMovementInFlightRef = useRef(false);
             return stat.toLowerCase();
           })();
           
-          console.log(`[Dashboard] 📊 Setting stat from URL: "${stat}" -> "${normalizedStat}"`);
+          console.log(`[Dashboard] ðŸ“Š Setting stat from URL: "${stat}" -> "${normalizedStat}"`);
           
           // Set flag to prevent default stat logic from overriding
           statFromUrlRef.current = true;
@@ -2800,12 +2802,12 @@ const lineMovementInFlightRef = useRef(false);
             }
           }
         } else {
-          console.log(`[Dashboard] ⚠️ No stat parameter found in URL`);
+          console.log(`[Dashboard] âš ï¸ No stat parameter found in URL`);
         }
         
         // Set propsMode AFTER stat (so default stat logic can see the URL stat)
         if (mode === 'team' || mode === 'player') {
-          console.log(`[Dashboard] 📝 Setting propsMode from URL: "${mode}"`);
+          console.log(`[Dashboard] ðŸ“ Setting propsMode from URL: "${mode}"`);
           initialPropsMode = mode;
           setPropsMode(mode);
         }
@@ -2818,7 +2820,7 @@ const lineMovementInFlightRef = useRef(false);
         if (tf && tf !== 'thisseason') {
           // Set timeframe immediately from URL (don't wait for stats to load)
           // This ensures the correct timeframe is active when stats load
-          console.log(`[Dashboard] ✅ Setting timeframe from URL: "${tf}"`);
+          console.log(`[Dashboard] âœ… Setting timeframe from URL: "${tf}"`);
           setSelectedTimeframe(tf);
           // Also store it in session storage for persistence
           const saved = getSavedSession();
@@ -2831,7 +2833,7 @@ const lineMovementInFlightRef = useRef(false);
           }
         } else {
           // ALWAYS default to last10 (override "thisseason" from URL or when no URL param)
-          console.log(`[Dashboard] 🔄 FORCING timeframe to "last10" (overriding URL tf=${tf || 'none'})`);
+          console.log(`[Dashboard] ðŸ”„ FORCING timeframe to "last10" (overriding URL tf=${tf || 'none'})`);
           setSelectedTimeframe('last10');
           // Update URL to reflect the change
           if (typeof window !== 'undefined') {
@@ -2905,8 +2907,8 @@ const lineMovementInFlightRef = useRef(false);
             // Trigger search for the player name
             const searchForPlayer = async () => {
               try {
-                console.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
-                serverLogger.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
+                console.log(`[Dashboard] ðŸ” [Props Page] Searching for player: "${playerName}"`);
+                serverLogger.log(`[Dashboard] ðŸ” [Props Page] Searching for player: "${playerName}"`);
                 
                 // OPTIMIZATION: Try all search variations in parallel instead of sequentially
                 // This reduces search time from ~1.8s to ~0.6s (fastest response wins)
@@ -2937,7 +2939,7 @@ const lineMovementInFlightRef = useRef(false);
                     json = await res.json();
                     rawResults = json?.results || json?.data;
                     if (Array.isArray(rawResults) && rawResults.length > 0) {
-                      console.log(`[Dashboard] ✅ [Props Page] Found results from parallel search`);
+                      console.log(`[Dashboard] âœ… [Props Page] Found results from parallel search`);
                       break; // Use first successful result
                     }
                   } catch (e) {
@@ -2947,7 +2949,7 @@ const lineMovementInFlightRef = useRef(false);
                 
                 // Fallback: if no results, try the original sequential approach
                 if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
-                  console.log(`[Dashboard] ⚠️ [Props Page] Parallel search found no results, trying sequential fallback...`);
+                  console.log(`[Dashboard] âš ï¸ [Props Page] Parallel search found no results, trying sequential fallback...`);
                   const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}`);
                   if (res.ok) {
                     json = await res.json();
@@ -2964,7 +2966,7 @@ const lineMovementInFlightRef = useRef(false);
                       headshotUrl: r.headshotUrl || null 
                     }))
                   : [];
-                console.log(`[Dashboard] 📊 [Props Page] Parsed ${results.length} results for "${playerName}"`);
+                console.log(`[Dashboard] ðŸ“Š [Props Page] Parsed ${results.length} results for "${playerName}"`);
                 if (results && results.length > 0) {
                   // Try to find exact match first, then use first result
                   const playerNameLower = playerName.toLowerCase().trim();
@@ -2981,8 +2983,8 @@ const lineMovementInFlightRef = useRef(false);
                     playerResult = results[0];
                   }
                   
-                  console.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
-                  serverLogger.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full}`, { data: { id: playerResult.id, team: playerResult.team } });
+                  console.log(`[Dashboard] âœ… [Props Page] Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
+                  serverLogger.log(`[Dashboard] âœ… [Props Page] Found player: ${playerResult.full}`, { data: { id: playerResult.id, team: playerResult.team } });
                   const r: BdlSearchResult = {
                     id: playerResult.id,
                     full: playerResult.full,
@@ -3016,29 +3018,29 @@ const lineMovementInFlightRef = useRef(false);
                   });
                   
                   // Now load stats in background without blocking
-                  console.log(`[Dashboard] 🚀 [Props Page] Loading stats in background for:`, r);
-                  serverLogger.log(`[Dashboard] 🚀 [Props Page] Loading stats in background`, { data: r });
+                  console.log(`[Dashboard] ðŸš€ [Props Page] Loading stats in background for:`, r);
+                  serverLogger.log(`[Dashboard] ðŸš€ [Props Page] Loading stats in background`, { data: r });
                   handlePlayerSelectFromSearch(r).catch(err => {
-                    console.error('[Dashboard] ❌ [Props Page] Error loading player stats:', err);
+                    console.error('[Dashboard] âŒ [Props Page] Error loading player stats:', err);
                     setApiError(`Failed to load stats: ${err instanceof Error ? err.message : 'Unknown error'}`);
                     setIsLoading(false);
                   });
                   shouldLoadDefaultPlayer = false;
                 } else {
-                  console.warn(`[Dashboard] ⚠️ [Props Page] No results found for player: "${playerName}"`);
-                  console.warn(`[Dashboard] ⚠️ [Props Page] API response was:`, json);
+                  console.warn(`[Dashboard] âš ï¸ [Props Page] No results found for player: "${playerName}"`);
+                  console.warn(`[Dashboard] âš ï¸ [Props Page] API response was:`, json);
                   setApiError(`Player "${playerName}" not found. Please try searching manually.`);
                   setIsLoading(false); // Clear loading state if no results found
                 }
               } catch (error) {
-                console.error(`[Dashboard] ❌ [Props Page] Error searching for player "${playerName}":`, error);
+                console.error(`[Dashboard] âŒ [Props Page] Error searching for player "${playerName}":`, error);
                 setApiError(`Error searching for player: ${error instanceof Error ? error.message : 'Unknown error'}`);
                 setIsLoading(false); // Clear loading state on error
               }
             };
             // Await the search to ensure it completes before continuing
             searchForPlayer().catch(err => {
-              console.error('[Dashboard] ❌ [Props Page] Unhandled error in searchForPlayer:', err);
+              console.error('[Dashboard] âŒ [Props Page] Unhandled error in searchForPlayer:', err);
               setApiError(`Failed to load player: ${err instanceof Error ? err.message : 'Unknown error'}`);
               setIsLoading(false); // Clear loading state on error
             });
@@ -3098,7 +3100,7 @@ const lineMovementInFlightRef = useRef(false);
       
       // If URL has "thisseason", force it to "last10"
       if (urlTimeframe === 'thisseason' || selectedTimeframe === 'thisseason') {
-        console.log('[Dashboard] 🔄 FORCING timeframe from "thisseason" to "last10" in restore logic');
+        console.log('[Dashboard] ðŸ”„ FORCING timeframe from "thisseason" to "last10" in restore logic');
         setSelectedTimeframe('last10');
         if (typeof window !== 'undefined') {
           const newUrl = new URL(window.location.href);
@@ -3111,7 +3113,7 @@ const lineMovementInFlightRef = useRef(false);
       
       // Check if URL has a timeframe param - respect other values
       if (urlTimeframe && urlTimeframe !== 'thisseason') {
-        console.log('[Dashboard] ⚠️ Skipping timeframe restore - URL has timeframe param:', urlTimeframe);
+        console.log('[Dashboard] âš ï¸ Skipping timeframe restore - URL has timeframe param:', urlTimeframe);
         hasRestoredTimeframeRef.current = true;
         return;
       }
@@ -3123,7 +3125,7 @@ const lineMovementInFlightRef = useRef(false);
         if (saved && typeof saved === 'string') {
           const parsed = JSON.parse(saved);
           if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
-            console.log(`[Dashboard] 🔄 Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
+            console.log(`[Dashboard] ðŸ”„ Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
             setSelectedTimeframe(parsed.selectedTimeframe);
           }
         }
@@ -3266,7 +3268,7 @@ const lineMovementInFlightRef = useRef(false);
 
   // Parse ESPN height format (total inches or "6'10") into feet and inches
   const parseEspnHeight = (height: any): { feet?: number; inches?: number } => {
-    console.log('🏀 ESPN height data:', height, 'Type:', typeof height);
+    console.log('ðŸ€ ESPN height data:', height, 'Type:', typeof height);
     
     if (!height) return {};
     
@@ -3275,7 +3277,7 @@ const lineMovementInFlightRef = useRef(false);
       const totalInches = parseInt(String(height), 10);
       const feet = Math.floor(totalInches / 12);
       const inches = totalInches % 12;
-      console.log(`🏀 Converted ${totalInches}" to ${feet}'${inches}"`);
+      console.log(`ðŸ€ Converted ${totalInches}" to ${feet}'${inches}"`);
       return { feet, inches };
     }
     
@@ -3287,11 +3289,11 @@ const lineMovementInFlightRef = useRef(false);
     if (match) {
       const feet = parseInt(match[1], 10);
       const inches = parseInt(match[2], 10);
-      console.log(`🏀 Parsed height: ${feet}'${inches}"`);
+      console.log(`ðŸ€ Parsed height: ${feet}'${inches}"`);
       return { feet, inches };
     }
     
-    console.log(`❌ Could not parse height: "${heightStr}"`);
+    console.log(`âŒ Could not parse height: "${heightStr}"`);
     return {};
   };
 
@@ -3356,7 +3358,7 @@ const lineMovementInFlightRef = useRef(false);
               
               // WORKAROUND: If all stats have 0 minutes, identify games where player was on their previous team
               // and fetch stats by game_id to get actual data
-              console.log(`[fetchSortedStatsCore] 🔧 Attempting to fetch stats by game_id for games with player's previous team...`);
+              console.log(`[fetchSortedStatsCore] ðŸ”§ Attempting to fetch stats by game_id for games with player's previous team...`);
               
               // Identify games where stat.team doesn't match either team in the game
               // This indicates the player was on a different team (e.g., stat.team=WAS but game has ATL)
@@ -3380,7 +3382,7 @@ const lineMovementInFlightRef = useRef(false);
                 .filter((id): id is number => typeof id === 'number' && !isNaN(id));
               
               if (gamesWithPreviousTeam.length > 0) {
-                console.log(`[fetchSortedStatsCore] 🔧 Found ${gamesWithPreviousTeam.length} games with player's previous team, fetching stats by game_id...`);
+                console.log(`[fetchSortedStatsCore] ðŸ”§ Found ${gamesWithPreviousTeam.length} games with player's previous team, fetching stats by game_id...`);
                 
                 // Fetch stats for these specific games (batch in groups of 50 to avoid URL length issues)
                 const batchSize = 50;
@@ -3406,18 +3408,18 @@ const lineMovementInFlightRef = useRef(false);
                     });
                     
                     statsByGameId.push(...validStats);
-                    console.log(`[fetchSortedStatsCore] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games`);
+                    console.log(`[fetchSortedStatsCore] ðŸ”§ Fetched ${validStats.length} valid stats from ${batch.length} games`);
                   } catch (error: any) {
-                    console.warn(`[fetchSortedStatsCore] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+                    console.warn(`[fetchSortedStatsCore] âš ï¸ Error fetching stats by game_id for batch:`, error?.message || error);
                   }
                 }
                 
                 if (statsByGameId.length > 0) {
-                  console.log(`[fetchSortedStatsCore] ✅ Successfully fetched ${statsByGameId.length} stats by game_id (workaround for API data quality issue)`);
+                  console.log(`[fetchSortedStatsCore] âœ… Successfully fetched ${statsByGameId.length} stats by game_id (workaround for API data quality issue)`);
                   // Replace the invalid stats with the valid ones we fetched
                   return statsByGameId;
                 } else {
-                  console.warn(`[fetchSortedStatsCore] ⚠️ No valid stats found when querying by game_id`);
+                  console.warn(`[fetchSortedStatsCore] âš ï¸ No valid stats found when querying by game_id`);
                 }
               }
             }
@@ -3507,7 +3509,7 @@ const lineMovementInFlightRef = useRef(false);
             pts: s.pts,
             reb: s.reb
           }));
-          console.log(`[fetchSortedStatsCore] ⚠️ All last season stats have 0 minutes! Sample:`, sample);
+          console.log(`[fetchSortedStatsCore] âš ï¸ All last season stats have 0 minutes! Sample:`, sample);
         }
       }
       
@@ -3571,7 +3573,7 @@ const lineMovementInFlightRef = useRef(false);
           pts: s.pts,
           reb: s.reb
         }));
-        console.log(`[fetchSortedStatsCore] ⚠️ All last season stats have 0 minutes! Sample:`, sample);
+        console.log(`[fetchSortedStatsCore] âš ï¸ All last season stats have 0 minutes! Sample:`, sample);
       }
     }
     
@@ -3744,26 +3746,26 @@ const lineMovementInFlightRef = useRef(false);
     try {
       const res = await fetch(`/api/bdl/player/${playerId}`);
       if (!res.ok) {
-        console.warn(`❌ Failed to fetch BDL player data for ${playerId}: ${res.status}`);
+        console.warn(`âŒ Failed to fetch BDL player data for ${playerId}: ${res.status}`);
         return null;
       }
       const json = await res.json();
       const playerData = json.data || null;
       
       if (playerData) {
-        console.log(`✅ BDL player data fetched for ${playerId}:`, {
+        console.log(`âœ… BDL player data fetched for ${playerId}:`, {
           jersey_number: playerData.jersey_number,
           height: playerData.height,
           hasJersey: !!playerData.jersey_number && playerData.jersey_number !== '',
           hasHeight: !!playerData.height && playerData.height !== ''
         });
       } else {
-        console.warn(`⚠️ BDL player data is null for ${playerId}`);
+        console.warn(`âš ï¸ BDL player data is null for ${playerId}`);
       }
       
       return playerData;
     } catch (error) {
-      console.warn('❌ Failed to fetch BDL player data:', error);
+      console.warn('âŒ Failed to fetch BDL player data:', error);
       return null;
     }
   };
@@ -3809,7 +3811,7 @@ const lineMovementInFlightRef = useRef(false);
           if (cachedAdvancedStats) {
             const stats = JSON.parse(cachedAdvancedStats);
             setAdvancedStats(stats);
-            console.log('✅ Restored advanced stats from cache for player', resolvedPlayerId);
+            console.log('âœ… Restored advanced stats from cache for player', resolvedPlayerId);
           }
         } catch (e) {
           console.error('Error restoring advanced stats:', e);
@@ -3822,7 +3824,7 @@ const lineMovementInFlightRef = useRef(false);
           if (cachedShotData) {
             const shotData = JSON.parse(cachedShotData);
             setShotDistanceData(shotData);
-            console.log('✅ Restored shot chart data from cache for player', resolvedPlayerId);
+            console.log('âœ… Restored shot chart data from cache for player', resolvedPlayerId);
           }
         } catch (e) {
           console.error('Error restoring shot chart data:', e);
@@ -4144,7 +4146,7 @@ const lineMovementInFlightRef = useRef(false);
   const handlePlayerSelectFromSearch = async (r: BdlSearchResult) => {
     // Prevent duplicate calls
     if (isHandlingPlayerSelectRef.current) {
-      console.log('🔍 [handlePlayerSelectFromSearch] Already handling, skipping duplicate call');
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Already handling, skipping duplicate call');
       return;
     }
     
@@ -4158,14 +4160,14 @@ const lineMovementInFlightRef = useRef(false);
         pos: r.pos,
         stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
       };
-      console.log('🔍 [handlePlayerSelectFromSearch] Called with:', callData);
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Called with', { data: callData });
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Called with:', callData);
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Called with', { data: callData });
       // Only set loading if not already loading (prevents double render when called from URL params)
       if (!isLoading) {
-        console.log('🔍 [handlePlayerSelectFromSearch] Setting isLoading=true');
+        console.log('ðŸ” [handlePlayerSelectFromSearch] Setting isLoading=true');
         setIsLoading(true);
       } else {
-        console.log('🔍 [handlePlayerSelectFromSearch] Already loading, skipping setIsLoading');
+        console.log('ðŸ” [handlePlayerSelectFromSearch] Already loading, skipping setIsLoading');
       }
       setApiError(null);
     
@@ -4220,23 +4222,23 @@ const lineMovementInFlightRef = useRef(false);
       // OPTIMIZATION: Fetch both current season and last season stats in parallel
       // This prevents multiple refreshes and ensures all data is available at once
       // fetchSortedStatsCore handles parallel fetching for both seasons
-      console.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch', { data: { pid, name: r.full } });
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Starting stats fetch', { data: { pid, name: r.full } });
       
       // Fetch both seasons in parallel - prevents multiple refreshes
       const rows = await fetchSortedStats(pid).catch(err => {
-        console.error('❌ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
+        console.error('âŒ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
         return [];
       });
       
       // Start BDL and ESPN fetches in background (don't await - they'll update state when ready)
       const bdlPromise = fetchBdlPlayerData(pid).catch(err => {
-        console.error('❌ [handlePlayerSelectFromSearch] fetchBdlPlayerData failed:', err);
+        console.error('âŒ [handlePlayerSelectFromSearch] fetchBdlPlayerData failed:', err);
         return null;
       });
       
       const espnPromise = fetchEspnPlayerData(r.full, r.team).catch(err => {
-        console.warn('⚠️ [handlePlayerSelectFromSearch] fetchEspnPlayerData failed (non-critical):', err);
+        console.warn('âš ï¸ [handlePlayerSelectFromSearch] fetchEspnPlayerData failed (non-critical):', err);
         return null;
       });
       
@@ -4282,12 +4284,12 @@ const lineMovementInFlightRef = useRef(false);
           }
         }
       }).catch(err => {
-        console.warn('⚠️ [handlePlayerSelectFromSearch] Error processing BDL/ESPN data:', err);
+        console.warn('âš ï¸ [handlePlayerSelectFromSearch] Error processing BDL/ESPN data:', err);
       });
       
       // Log stats completion
-      console.log('🔍 [handlePlayerSelectFromSearch] Stats fetch completed:', { statsCount: rows.length });
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Stats fetch completed', { data: { statsCount: rows.length } });
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Stats fetch completed:', { statsCount: rows.length });
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Stats fetch completed', { data: { statsCount: rows.length } });
       
       // Start premium fetches in background (don't await)
       if (hasPremium) {
@@ -4323,12 +4325,12 @@ const lineMovementInFlightRef = useRef(false);
       if (samplePlayer) {
         if (samplePlayer.jersey) {
           jerseyNumber = samplePlayer.jersey;
-          console.log(`✅ Found jersey #${jerseyNumber} from sample data for ${r.full}`);
+          console.log(`âœ… Found jersey #${jerseyNumber} from sample data for ${r.full}`);
         }
         if (samplePlayer.heightFeet) {
           heightFeetData = samplePlayer.heightFeet;
           heightInchesData = samplePlayer.heightInches;
-          console.log(`✅ Found height ${heightFeetData}'${heightInchesData}" from sample data for ${r.full}`);
+          console.log(`âœ… Found height ${heightFeetData}'${heightInchesData}" from sample data for ${r.full}`);
         }
       }
       
@@ -4346,11 +4348,11 @@ const lineMovementInFlightRef = useRef(false);
             if (found) {
               if (!jerseyNumber && found.jersey && found.jersey !== 'N/A') {
                 jerseyNumber = Number(found.jersey);
-                console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
+                console.log(`âœ… Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
               }
               if (!playerPosition) {
                 playerPosition = pos;
-                console.log(`✅ Found position ${playerPosition} from depth chart for ${r.full}`);
+                console.log(`âœ… Found position ${playerPosition} from depth chart for ${r.full}`);
               }
               break;
             }
@@ -4445,9 +4447,9 @@ const lineMovementInFlightRef = useRef(false);
       }
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
-      console.log('✅ handlePlayerSelectFromSearch completed successfully');
+      console.log('âœ… handlePlayerSelectFromSearch completed successfully');
     } catch (e: any) {
-      console.error('❌ handlePlayerSelectFromSearch error:', e);
+      console.error('âŒ handlePlayerSelectFromSearch error:', e);
       setApiError(e?.message || "Failed to load stats."); 
       setPlayerStats([]);
       setOpponentTeam('N/A');
@@ -4534,1110 +4536,22 @@ const lineMovementInFlightRef = useRef(false);
   /* -------- Base game data (structure only, no stat values) ----------
      This should only recalculate when player/timeframe changes, NOT when stat changes */
   const baseGameData = useMemo(() => {
-    // Debug: Check what seasons are in playerStats
-    const currentSeason = currentNbaSeason();
-    const getSeasonYear = (stat: any) => {
-      if (!stat?.game?.date) return null;
-      const d = new Date(stat.game.date);
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      return m >= 9 ? y : y - 1;
-    };
-    const seasonBreakdown: Record<number, number> = {};
-    playerStats.forEach(s => {
-      const seasonYear = getSeasonYear(s);
-      if (seasonYear) {
-        seasonBreakdown[seasonYear] = (seasonBreakdown[seasonYear] || 0) + 1;
-      }
-    });
-    
-    console.log('[DEBUG baseGameData] Recalculating baseGameData', {
-      playerStatsLength: playerStats.length,
+    return processBaseGameData({
+      playerStats,
       selectedTimeframe,
-      selectedPlayer: selectedPlayer?.full,
+      selectedPlayer,
       propsMode,
-      seasonBreakdown,
-      currentSeason,
-      expectedLastSeason: currentSeason - 1,
-      hasLastSeasonData: seasonBreakdown[currentSeason - 1] > 0,
-      timestamp: new Date().toISOString()
+      gameStats,
+      selectedTeam,
+      opponentTeam,
+      manualOpponent,
+      homeAway,
+      isLoading,
+      resolvedPlayerId,
+      teammateFilterId,
+      gamePropsTeam,
     });
-    
-    // Use playerStats directly to prevent double refresh from deferred value
-    const statsToUse = playerStats;
-    // Team mode: use game data instead of player stats
-    if (propsMode === 'team') {
-      if (!gameStats.length) return [];
-      
-      // Guard: If playerStats was just cleared but we're in team mode, don't recalculate
-      // This prevents race conditions where playerStats gets cleared during team mode operations
-      
-      // Apply timeframe to games
-      let filteredTeamGames = gameStats;
-      
-      // First, apply opponent filtering if a specific opponent is selected (not ALL)
-      if (manualOpponent && manualOpponent !== 'ALL' && manualOpponent !== '') {
-        const normalizedOpponent = normalizeAbbr(manualOpponent);
-        filteredTeamGames = gameStats.filter(game => {
-          const homeTeam = normalizeAbbr(game.home_team?.abbreviation || '');
-          const visitorTeam = normalizeAbbr(game.visitor_team?.abbreviation || '');
-          const currentTeam = normalizeAbbr(gamePropsTeam || '');
-          
-          // Check if this game involves both the selected team and the manual opponent
-          const teamsInGame = [homeTeam, visitorTeam];
-          return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
-        });
-        console.log(`🎯 Manual Opponent Team: Filtered to ${filteredTeamGames.length} games vs ${manualOpponent}`);
-      }
-      
-      // Special case: H2H filtering for team mode (only if no manual opponent is set)
-      if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
-        if (opponentTeam && opponentTeam !== '') {
-          const normalizedOpponent = normalizeAbbr(opponentTeam);
-          filteredTeamGames = gameStats.filter(game => {
-            const homeTeam = normalizeAbbr(game.home_team?.abbreviation || '');
-            const visitorTeam = normalizeAbbr(game.visitor_team?.abbreviation || '');
-            const currentTeam = normalizeAbbr(gamePropsTeam || '');
-            
-            // Check if this game involves both the selected team and the opponent
-            const teamsInGame = [homeTeam, visitorTeam];
-            return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
-          }).slice(-6); // Limit to last 6 H2H games (most recent)
-          console.log(`🔥 H2H Team: Filtered to ${filteredTeamGames.length} games vs ${opponentTeam} (max 6)`);
-        } else {
-          filteredTeamGames = [];
-          console.log(`⚠️ H2H Team: No opponent available for filtering`);
-        }
-      } else if (selectedTimeframe === 'lastseason') {
-        // Filter to last season games only
-        const lastSeason = currentNbaSeason() - 1;
-        filteredTeamGames = gameStats.filter(game => {
-          if (!game.date) return false;
-          const gameDate = new Date(game.date);
-          const gameYear = gameDate.getFullYear();
-          const gameMonth = gameDate.getMonth();
-          
-          // NBA season spans two calendar years (e.g., 2023-24 season)
-          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-          return gameSeasonYear === lastSeason;
-        });
-        console.log(`📅 Last Season Team: Filtered to ${filteredTeamGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
-      } else if (selectedTimeframe === 'thisseason') {
-        // Filter to current season games only
-        const currentSeason = currentNbaSeason();
-        filteredTeamGames = gameStats.filter(game => {
-          if (!game.date) return false;
-          const gameDate = new Date(game.date);
-          const gameYear = gameDate.getFullYear();
-          const gameMonth = gameDate.getMonth();
-          
-          // NBA season spans two calendar years (e.g., 2024-25 season)
-          const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-          return gameSeasonYear === currentSeason;
-        });
-        console.log(`📅 This Season Team: Filtered to ${filteredTeamGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
-      }
-      
-      // Home/Away filter
-      if (homeAway !== 'ALL') {
-        const currentNorm = normalizeAbbr(gamePropsTeam || selectedTeam || '');
-        filteredTeamGames = filteredTeamGames.filter(game => {
-          const homeAbbr = normalizeAbbr(game.home_team?.abbreviation || '');
-          const isHome = homeAbbr === currentNorm;
-          return homeAway === 'HOME' ? isHome : !isHome;
-        });
-      }
-      
-      const n = parseInt(selectedTimeframe.replace('last', ''));
-      const recentGames = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe) 
-        ? filteredTeamGames 
-        : (!Number.isNaN(n) ? filteredTeamGames.slice(-n) : filteredTeamGames); // Last N games
-      
-      return recentGames.map((game, index) => {
-        const homeTeam = game.home_team?.abbreviation || '';
-        const visitorTeam = game.visitor_team?.abbreviation || '';
-        const currentTeam = gamePropsTeam || selectedTeam; // Use gamePropsTeam for team mode
-        const isHome = normalizeAbbr(homeTeam) === normalizeAbbr(currentTeam);
-        const opponent = isHome ? visitorTeam : homeTeam;
-        
-        const iso = game.date;
-        const d = iso ? new Date(iso) : null;
-        const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
-        
-        return {
-          gameData: game, // Keep reference to game data for value calculation
-          opponent,
-          gameNumber: index + 1,
-          game: opponent ? `vs ${opponent}` : "",
-          date: shortDate,
-          xKey: String(game.id || `game-${index}`),
-          tickLabel: opponent || "", // Show opponent abbreviation on x-axis for team mode
-        };
-      });
-    }
-    
-    // Player mode: use existing player stats logic
-    // IMPORTANT: If playerStats is empty but we have a selectedPlayer or resolvedPlayerId, this might be a race condition
-    // Don't return empty array immediately - check if we're in the middle of a fetch
-    if (!statsToUse.length) {
-      // Check if URL params indicate a player should be loaded (for initial page load detection)
-      let hasUrlPlayer = false;
-      if (typeof window !== 'undefined' && propsMode === 'player') {
-        try {
-          const url = new URL(window.location.href);
-          const pid = url.searchParams.get('pid');
-          const name = url.searchParams.get('name');
-          hasUrlPlayer = !!(pid && name);
-          // Debug: log URL check details
-          console.log('[baseGameData] URL check:', {
-            href: window.location.href,
-            search: window.location.search,
-            pid,
-            name,
-            mode: url.searchParams.get('mode'),
-            hasUrlPlayer,
-          });
-        } catch (e) {
-          console.warn('[baseGameData] URL check error:', e);
-        }
-      }
-      
-      // Debug: log why we're returning empty
-      console.log('[baseGameData] No playerStats:', {
-        playerStatsLength: playerStats.length,
-        selectedPlayer: selectedPlayer?.full,
-        resolvedPlayerId,
-        isLoading,
-        hasUrlPlayer,
-      });
-      // If we have a selectedPlayer OR resolvedPlayerId OR URL params indicate a player, we're either loading or haven't started loading yet
-      // This can happen on initial page load when URL params exist but selectedPlayer/fetch hasn't started
-      // Return empty array to prevent showing wrong data (0/0), but don't break the memoization
-      if (selectedPlayer || resolvedPlayerId || hasUrlPlayer) {
-        // Player is selected/resolved/indicated by URL but stats aren't loaded yet - treat as loading state
-        // This prevents showing "0/0" during initial load
-        return [];
-      }
-      // No player selected or stats truly empty - return empty
-      return [];
-    }
-    
-    // Debug: log stats structure at the start of baseGameData processing
-    console.log('[baseGameData] Processing playerStats:', {
-      playerStatsLength: statsToUse.length,
-      selectedPlayer: selectedPlayer?.full,
-      selectedTimeframe,
-      sampleStat: statsToUse[0],
-      hasGame: !!statsToUse[0]?.game,
-      hasGameDate: !!statsToUse[0]?.game?.date,
-      hasTeam: !!statsToUse[0]?.team,
-      hasTeamAbbr: !!statsToUse[0]?.team?.abbreviation,
-    });
-    
-    // Filter out games where player played 0 minutes FIRST
-    // BUT for lastseason, we need to check ALL stats (including 0 minutes) to see if we can infer team from game data
-    const shouldIncludeZeroMinutes = selectedTimeframe === 'lastseason';
-    const gamesPlayed = statsToUse.filter(stats => {
-      const minutes = parseMinutes(stats.min);
-      if (shouldIncludeZeroMinutes) {
-        // For last season, include stats even with 0 minutes if we can infer the team from game data
-        // This helps us work around API data quality issues where stat.team is wrong
-        return true; // We'll filter by minutes later after we've determined the correct team
-      }
-      return minutes > 0;
-    });
-    
-    // Debug: Check what's happening with last season stats
-    if (selectedTimeframe === 'lastseason') {
-      const currentSeason = currentNbaSeason();
-      const lastSeason = currentSeason - 1;
-      const getSeasonYear = (stat: any) => {
-        if (!stat?.game?.date) return null;
-        const d = new Date(stat.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        return m >= 9 ? y : y - 1;
-      };
-      
-      const lastSeasonStats = statsToUse.filter(s => {
-        const seasonYear = getSeasonYear(s);
-        return seasonYear === lastSeason;
-      });
-      
-      const lastSeasonWithMinutes = lastSeasonStats.filter(s => {
-        const minutes = parseMinutes(s.min);
-        return minutes > 0;
-      });
-      
-      console.log(`[Last Season Debug] Total last season stats: ${lastSeasonStats.length}, with minutes > 0: ${lastSeasonWithMinutes.length}`);
-      
-      // Check if there are any stats with actual data (points, rebounds, etc.) even if minutes are 0
-      const lastSeasonWithData = lastSeasonStats.filter(s => {
-        const hasAnyStat = (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || 
-                          (s.fgm && s.fgm > 0) || (s.fga && s.fga > 0);
-        return hasAnyStat;
-      });
-      
-      console.log(`[Last Season Debug] Last season stats with actual data (pts/reb/ast > 0): ${lastSeasonWithData.length}`);
-      
-      if (lastSeasonStats.length > 0 && lastSeasonWithMinutes.length === 0) {
-        // Sample a few to see what's wrong
-        const samples = lastSeasonStats.slice(0, 10).map(s => ({
-          date: s.game?.date,
-          team: s.team?.abbreviation,
-          teamId: s.team?.id,
-          teamFull: s.team?.full_name,
-          homeTeam: s.game?.home_team?.abbreviation,
-          visitorTeam: s.game?.visitor_team?.abbreviation,
-          min: s.min,
-          minType: typeof s.min,
-          minRaw: s.min,
-          minutes: parseMinutes(s.min),
-          pts: s.pts,
-          reb: s.reb,
-          ast: s.ast,
-          fgm: s.fgm,
-          fga: s.fga,
-          // Check player ID
-          playerId: s.player?.id,
-          // Check all numeric fields that might indicate actual play
-          hasAnyStat: (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || (s.fgm && s.fgm > 0)
-        }));
-        console.log(`[Last Season Debug] Sample last season stats (first 10) - FULL DETAILS:`, samples);
-        
-        // Also check one stat in full detail to see ALL fields
-        if (lastSeasonStats.length > 0) {
-          const firstStat = lastSeasonStats[0];
-          console.log(`[Last Season Debug] FIRST STAT FULL OBJECT (checking for hidden minutes/data):`, {
-            id: firstStat.id,
-            min: firstStat.min,
-            minRaw: firstStat.min,
-            minType: typeof firstStat.min,
-            minutesParsed: parseMinutes(firstStat.min),
-            pts: firstStat.pts,
-            reb: firstStat.reb,
-            ast: firstStat.ast,
-            team: firstStat.team,
-            player: firstStat.player ? { id: firstStat.player.id, name: firstStat.player.first_name + ' ' + firstStat.player.last_name } : null,
-            game: firstStat.game ? {
-              id: firstStat.game.id,
-              date: firstStat.game.date,
-              home_team: firstStat.game.home_team,
-              visitor_team: firstStat.game.visitor_team
-            } : null,
-            // Check for alternative minute fields
-            allKeys: Object.keys(firstStat),
-            // Check if there are any numeric fields > 0
-            numericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number' && v > 0).map(([k, v]) => ({ [k]: v })),
-            // Show which specific stat fields have values
-            statFieldValues: {
-              pts: { value: firstStat.pts, type: typeof firstStat.pts, isPositive: firstStat.pts > 0 },
-              reb: { value: firstStat.reb, type: typeof firstStat.reb, isPositive: firstStat.reb > 0 },
-              ast: { value: firstStat.ast, type: typeof firstStat.ast, isPositive: firstStat.ast > 0 },
-              fgm: { value: firstStat.fgm, type: typeof firstStat.fgm, isPositive: firstStat.fgm > 0 },
-              fga: { value: firstStat.fga, type: typeof firstStat.fga, isPositive: firstStat.fga > 0 },
-              fg3m: { value: firstStat.fg3m, type: typeof firstStat.fg3m, isPositive: firstStat.fg3m > 0 },
-              ftm: { value: firstStat.ftm, type: typeof firstStat.ftm, isPositive: firstStat.ftm > 0 },
-              fta: { value: firstStat.fta, type: typeof firstStat.fta, isPositive: firstStat.fta > 0 }
-            },
-            // Also check ALL numeric fields (including 0) to see the full picture
-            allNumericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number').map(([k, v]) => ({ [k]: v })).slice(0, 20),
-            // Check specific stat fields
-            statFields: {
-              pts: firstStat.pts,
-              reb: firstStat.reb,
-              ast: firstStat.ast,
-              fgm: firstStat.fgm,
-              fga: firstStat.fga,
-              fg3m: firstStat.fg3m,
-              fg3a: firstStat.fg3a,
-              ftm: firstStat.ftm,
-              fta: firstStat.fta,
-              stl: firstStat.stl,
-              blk: firstStat.blk,
-              turnover: firstStat.turnover,
-              pf: firstStat.pf
-            }
-          });
-        }
-        
-        // Also check all teams in last season stats
-        const allTeams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
-        console.log(`[Last Season Debug] ⚠️ All teams in last season stats (${lastSeasonStats.length} total):`, Array.from(allTeams));
-        
-        // Check if ATL appears in the game data (home_team/visitor_team) even if stat.team is wrong
-        const teamsInGames = new Set<string>();
-        const atlGames: any[] = [];
-        lastSeasonStats.forEach(s => {
-          const homeTeam = s?.game?.home_team?.abbreviation;
-          const visitorTeam = s?.game?.visitor_team?.abbreviation;
-          if (homeTeam) teamsInGames.add(homeTeam);
-          if (visitorTeam) teamsInGames.add(visitorTeam);
-          if (homeTeam === 'ATL' || visitorTeam === 'ATL') {
-            atlGames.push({
-              date: s.game?.date,
-              statTeam: s.team?.abbreviation,
-              homeTeam,
-              visitorTeam,
-              min: s.min,
-              pts: s.pts
-            });
-          }
-        });
-        console.log(`[Last Season Debug] ⚠️ Teams appearing in game data (home/visitor):`, Array.from(teamsInGames));
-        console.log(`[Last Season Debug] ⚠️ Games where ATL appears (${atlGames.length} total):`, atlGames.slice(0, 5));
-        
-        // Check if in those ATL games, WAS is the opponent (meaning player was on ATL)
-        const atlGamesWithWasOpponent = atlGames.filter(g => {
-          const opponent = g.homeTeam === 'ATL' ? g.visitorTeam : g.homeTeam;
-          return opponent === 'WAS';
-        });
-        console.log(`[Last Season Debug] ⚠️ Games where ATL vs WAS (player likely on ATL):`, atlGamesWithWasOpponent.length);
-        
-        // Also check: if stat.team is WAS but game has ATL, player was likely on ATL
-        const likelyAtlGames = lastSeasonStats.filter(s => {
-          const homeTeam = s?.game?.home_team?.abbreviation;
-          const visitorTeam = s?.game?.visitor_team?.abbreviation;
-          const statTeam = s?.team?.abbreviation;
-          return (homeTeam === 'ATL' || visitorTeam === 'ATL') && statTeam === 'WAS';
-        });
-        console.log(`[Last Season Debug] ⚠️ Stats where game has ATL but stat.team=WAS (likely player was on ATL):`, likelyAtlGames.length);
-        
-        // If we have stats with actual data but 0 minutes, we might need to include them
-        if (lastSeasonWithData.length > 0) {
-          console.log(`[Last Season Debug] ⚠️ Found ${lastSeasonWithData.length} last season stats with data but 0 minutes - these are being filtered out!`);
-          const dataSamples = lastSeasonWithData.slice(0, 5).map(s => ({
-            date: s.game?.date,
-            team: s.team?.abbreviation,
-            min: s.min,
-            minutes: parseMinutes(s.min),
-            pts: s.pts,
-            reb: s.reb,
-            ast: s.ast
-          }));
-          console.log(`[Last Season Debug] Sample stats with data but 0 minutes:`, dataSamples);
-        }
-      }
-    }
-    
-    // Debug: Log breakdown of gamesPlayed by season year to diagnose filtering issues
-    if (selectedTimeframe === 'thisseason') {
-      const currentSeason = currentNbaSeason();
-      const gamesBySeasonYear: Record<number, number> = {};
-      const gamesWithZeroMinutes: Record<number, number> = {};
-      const currentSeasonStats: any[] = [];
-      const lastSeasonStats: any[] = [];
-      
-      statsToUse.forEach(s => {
-        const minutes = parseMinutes(s.min);
-        if (!s.game?.date) return;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        
-        if (minutes > 0) {
-          gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
-          if (gameSeasonYear === currentSeason) {
-            currentSeasonStats.push({ date: s.game.date, min: s.min, minutes });
-          } else {
-            lastSeasonStats.push({ date: s.game.date, min: s.min, minutes });
-          }
-        } else {
-          gamesWithZeroMinutes[gameSeasonYear] = (gamesWithZeroMinutes[gameSeasonYear] || 0) + 1;
-        }
-      });
-      
-      const breakdown = {
-        totalPlayerStats: playerStats.length,
-        totalGamesPlayed: gamesPlayed.length,
-        gamesBySeasonYear,
-        gamesWithZeroMinutes,
-        currentSeason,
-        expectedCurrentSeasonGames: gamesBySeasonYear[currentSeason] || 0,
-        expectedLastSeasonGames: gamesBySeasonYear[currentSeason - 1] || 0,
-        currentSeasonStatsSample: currentSeasonStats.slice(0, 5),
-        lastSeasonStatsSample: lastSeasonStats.slice(0, 5),
-        currentSeasonStatsCount: currentSeasonStats.length,
-        lastSeasonStatsCount: lastSeasonStats.length
-      };
-      
-      console.log(`[baseGameData] 📊 Games breakdown for "thisseason" filter:`, breakdown);
-      serverLogger.log(`[baseGameData] 📊 Games breakdown: totalStats=${breakdown.totalPlayerStats}, gamesPlayed=${breakdown.totalGamesPlayed}, currentSeason=${breakdown.currentSeason}, currentSeasonGames=${breakdown.expectedCurrentSeasonGames}, lastSeasonGames=${breakdown.expectedLastSeasonGames}`, { data: breakdown });
-    }
-    
-    // If timeframe is "thisseason" and we're still loading, check if we have current season data yet
-    // This prevents showing last season data while current season is still loading
-    // BUT: If we already have current season data, show it even if still loading (might be loading more data)
-    if (selectedTimeframe === 'thisseason' && isLoading) {
-      const currentSeason = currentNbaSeason();
-      const currentSeasonGames = gamesPlayed.filter(stats => {
-        if (!stats.game?.date) return false;
-        const d = new Date(stats.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        return (m >= 9 ? y : y - 1) === currentSeason;
-      });
-      
-      // If we don't have ANY current season data yet, return empty to prevent showing last season data
-      // But if we have some current season data, continue processing (don't return empty)
-      if (currentSeasonGames.length === 0) {
-        console.log(`[This Season] Still loading current season data, waiting... (have ${gamesPlayed.length} games but none from current season ${currentSeason})`);
-        return [];
-      } else {
-        console.log(`[This Season] Have ${currentSeasonGames.length} current season games, showing them even though still loading`);
-        // Continue processing - we have current season data to show
-      }
-    }
-    
-    // THEN apply opponent filter (if any) and timeframe logic on a deduped, date-sorted pool
-    let filteredGames = gamesPlayed;
-    
-    // First, apply opponent filtering if a specific opponent is selected (not ALL)
-    if (manualOpponent && manualOpponent !== 'ALL' && manualOpponent !== '') {
-      const normalizedOpponent = normalizeAbbr(manualOpponent);
-      let matchCount = 0;
-      let noMatchCount = 0;
-      const sampleNoMatches: any[] = [];
-      
-      filteredGames = gamesPlayed.filter(stats => {
-        // FIXED to handle players who changed teams
-        // The key insight: if a player has stats for a game, and the opponent we're looking for
-        // is one of the teams in that game, then the player played against that opponent
-        // (regardless of which team the player was on - this correctly handles team changes)
-        
-        // Get both teams from the game
-        const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-        const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-        const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-        const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-        
-        if (!homeTeamAbbr || !visitorTeamAbbr) {
-          return false;
-        }
-        
-        const homeNorm = normalizeAbbr(homeTeamAbbr);
-        const awayNorm = normalizeAbbr(visitorTeamAbbr);
-        
-        // If the opponent we're looking for is in this game, and the player has stats for it,
-        // then the player played against that opponent (regardless of which team they were on)
-        // This correctly handles players who changed teams - we don't need to know which team
-        // the player was on, we just need to know if the opponent is in the game
-        const matches = homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
-        
-        if (matches) {
-          matchCount++;
-        } else {
-          noMatchCount++;
-          // Collect sample of non-matches for debugging (first 3)
-          if (sampleNoMatches.length < 3) {
-            sampleNoMatches.push({
-              gameDate: stats?.game?.date,
-              playerTeamFromStats: stats?.team?.abbreviation,
-              homeTeamAbbr,
-              visitorTeamAbbr,
-              homeTeamId,
-              visitorTeamId,
-              normalizedOpponent,
-              lookingFor: normalizedOpponent,
-              // Check if opponent appears in the game
-              hasOpponent: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
-                          (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
-            });
-          }
-        }
-        
-        return matches;
-      });
-      
-      console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent} (${matchCount} matches, ${noMatchCount} non-matches)`);
-      if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
-        console.log(`🔍 Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
-        // Also log a sample stat to see the full structure
-        if (gamesPlayed.length > 0) {
-          const sampleStat = gamesPlayed[0];
-          console.log(`🔍 Sample stat structure:`, {
-            hasTeam: !!sampleStat?.team,
-            teamAbbr: sampleStat?.team?.abbreviation,
-            hasGame: !!sampleStat?.game,
-            homeTeam: sampleStat?.game?.home_team?.abbreviation,
-            visitorTeam: sampleStat?.game?.visitor_team?.abbreviation,
-            homeTeamId: sampleStat?.game?.home_team?.id,
-            visitorTeamId: sampleStat?.game?.visitor_team?.id,
-            gameDate: sampleStat?.game?.date
-          });
-        }
-      }
-    }
-    
-    // Deduplicate by game id and sort DESC before timeframe selection
-    const dedupAndSortDesc = (games: any[]) => {
-      const sorted = [...games].sort((a, b) => {
-        const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
-        const db = b?.game?.date ? new Date(b.game.date).getTime() : 0;
-        return db - da;
-      });
-      const seen = new Set<number | string>();
-      const out: typeof games = [];
-      for (const g of sorted) {
-        const gid = (g as any)?.game?.id ?? (g as any)?.game_id;
-        if (gid && seen.has(gid)) continue;
-        if (gid) seen.add(gid);
-        out.push(g);
-      }
-      return out;
-    };
-
-    // Special case filters
-    // For L5, L10, L15, L20 - prefer current season, but backfill from previous seasons to reach N games
-    const n = parseInt(selectedTimeframe.replace('last', ''));
-    if (!Number.isNaN(n) && ['last5', 'last10', 'last15', 'last20'].includes(selectedTimeframe)) {
-      const currentSeason = currentNbaSeason();
-      
-      const getSeasonYear = (stats: any) => {
-        if (!stats.game?.date) return null;
-        const gameDate = new Date(stats.game.date);
-        const gameYear = gameDate.getFullYear();
-        const gameMonth = gameDate.getMonth();
-        return gameMonth >= 9 ? gameYear : gameYear - 1; // Oct-Dec -> season year, Jan-Apr -> season year - 1
-      };
-      
-      // Dedup and sort before selection to avoid losing count after slicing
-      const pool = dedupAndSortDesc(filteredGames);
-      
-      // Separate by season (all games already have >0 minutes)
-      const currentSeasonGames = pool.filter(stats => getSeasonYear(stats) === currentSeason);
-      const otherSeasonGames = pool.filter(stats => getSeasonYear(stats) !== currentSeason);
-      
-      // Take N games: prefer current season first, then backfill from previous seasons
-      const result: typeof filteredGames = [];
-      
-      // First, add current season games up to N
-      for (let i = 0; i < currentSeasonGames.length && result.length < n; i++) {
-        result.push(currentSeasonGames[i]);
-      }
-      
-      // Then backfill from previous seasons to reach N
-      for (let i = 0; i < otherSeasonGames.length && result.length < n; i++) {
-        result.push(otherSeasonGames[i]);
-      }
-      
-      filteredGames = result;
-      console.log(`📅 ${selectedTimeframe.toUpperCase()}: Using ${filteredGames.length}/${n} games (current season ${currentSeason}-${(currentSeason + 1) % 100}: ${currentSeasonGames.length}, backfill: ${Math.max(filteredGames.length - currentSeasonGames.length, 0)}, pool (dedup) total: ${pool.length})`);
-    } else if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
-      // Filter games to only show those against the current opponent team
-      if (opponentTeam && opponentTeam !== '') {
-        const normalizedOpponent = normalizeAbbr(opponentTeam);
-        let matchCount = 0;
-        let noMatchCount = 0;
-        const sampleNoMatches: any[] = [];
-        
-        filteredGames = gamesPlayed.filter(stats => {
-          // FIXED to handle players who changed teams
-          // The key insight: if a player has stats for a game, and the opponent we're looking for
-          // is one of the teams in that game, then the player played against that opponent
-          // (regardless of which team the player was on - this correctly handles team changes)
-          
-          // Get both teams from the game
-          const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-          const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-          const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-          const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-          
-          if (!homeTeamAbbr || !visitorTeamAbbr) {
-            return false;
-          }
-          
-          const homeNorm = normalizeAbbr(homeTeamAbbr);
-          const awayNorm = normalizeAbbr(visitorTeamAbbr);
-          
-          // If the opponent we're looking for is in this game, and the player has stats for it,
-          // then the player played against that opponent (regardless of which team they were on)
-          // This correctly handles players who changed teams - we don't need to know which team
-          // the player was on, we just need to know if the opponent is in the game
-          const matches = homeNorm === normalizedOpponent || awayNorm === normalizedOpponent;
-          
-          if (matches) {
-            matchCount++;
-          } else {
-            noMatchCount++;
-            // Collect sample of non-matches for debugging (first 3)
-            if (sampleNoMatches.length < 3) {
-              sampleNoMatches.push({
-                gameDate: stats?.game?.date,
-                playerTeamFromStats: stats?.team?.abbreviation,
-                homeTeamAbbr,
-                visitorTeamAbbr,
-                homeTeamId,
-                visitorTeamId,
-                normalizedOpponent,
-                hasOpponent: (homeTeamAbbr && normalizeAbbr(homeTeamAbbr) === normalizedOpponent) || 
-                            (visitorTeamAbbr && normalizeAbbr(visitorTeamAbbr) === normalizedOpponent)
-              });
-            }
-          }
-          
-          return matches;
-        }).slice(0, 6); // Limit to last 6 H2H games
-        
-        console.log(`🔥 H2H: Filtered to ${filteredGames.length} games vs ${opponentTeam} (${matchCount} matches, ${noMatchCount} non-matches, max 6)`);
-        if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
-          console.log(`🔍 H2H Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
-        }
-      } else {
-        // No opponent team available, show empty
-        filteredGames = [];
-        console.log(`⚠️ H2H: No opponent team available for filtering`);
-      }
-    } else if (selectedTimeframe === 'lastseason') {
-      // Filter to last season games only
-      const lastSeason = currentNbaSeason() - 1;
-      const currentSeason = currentNbaSeason();
-      
-      console.log(`🔍 [Last Season] Starting filter - playerStats.length=${playerStats?.length || 0}, gamesPlayed.length=${gamesPlayed.length}`);
-      
-      // Debug: Log breakdown of all stats by season and team
-      const gamesBySeasonYear: Record<number, number> = {};
-      const gamesByTeam: Record<string, number> = {};
-      const lastSeasonTeams = new Set<string>();
-      const currentSeasonTeams = new Set<string>();
-      
-      gamesPlayed.forEach(s => {
-        if (!s.game?.date) return;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        const teamAbbr = s?.team?.abbreviation || 'UNKNOWN';
-        
-        gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
-        gamesByTeam[teamAbbr] = (gamesByTeam[teamAbbr] || 0) + 1;
-        
-        if (gameSeasonYear === lastSeason) {
-          lastSeasonTeams.add(teamAbbr);
-        } else if (gameSeasonYear === currentSeason) {
-          currentSeasonTeams.add(teamAbbr);
-        }
-      });
-      
-      // For last season, we need to work around API data quality issues:
-      // 1. stat.team might be wrong (e.g., WAS instead of ATL)
-      // 2. All stats might have 0 minutes
-      // Solution: Use game data to infer the player's team, then filter by minutes
-      filteredGames = gamesPlayed.filter(stats => {
-        if (!stats.game?.date) return false;
-        const gameDate = new Date(stats.game.date);
-        const gameYear = gameDate.getFullYear();
-        const gameMonth = gameDate.getMonth();
-        
-        // NBA season spans two calendar years (e.g., 2023-24 season)
-        // Games from Oct-Dec are from the season year, games from Jan-Apr are from season year + 1
-        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-        if (gameSeasonYear !== lastSeason) return false;
-        
-        // WORKAROUND: If stat.team is wrong (e.g., WAS), try to infer from game data
-        // If the game has ATL and stat.team is WAS, the player was likely on ATL
-        // NOTE: We do NOT mutate the stats object here to avoid infinite loops
-        // Instead, we just use the corrected team for filtering purposes
-        const homeTeam = stats.game?.home_team?.abbreviation;
-        const visitorTeam = stats.game?.visitor_team?.abbreviation;
-        const statTeam = stats.team?.abbreviation;
-        
-        // Use game data to determine the player's actual team for filtering
-        // If stat.team is WAS but game has ATL, the player was on ATL (not WAS)
-        // We'll use this corrected team value for filtering, but NOT mutate the original object
-        let actualTeam = statTeam;
-        if (statTeam === 'WAS' && (homeTeam === 'ATL' || visitorTeam === 'ATL')) {
-          // Player was on ATL, not WAS - use ATL for filtering
-          actualTeam = 'ATL';
-        }
-        
-        // Include all stats for now - we'll filter by minutes/data later
-        // The actualTeam variable is used for logic, but we don't mutate stats.team
-        return true;
-      });
-      
-      // Now filter by minutes AFTER we've determined the correct team
-      // WORKAROUND: For last season, if all stats have 0 minutes (API data quality issue),
-      // use game data to identify which games the player was actually in
-      const minutesFiltered = filteredGames.filter(stats => {
-        const minutes = parseMinutes(stats.min);
-        // For last season, include stats with 0 minutes if they have actual stat data (pts, reb, ast, etc.)
-        // This handles cases where minutes are 0 but the player actually played
-        if (minutes === 0) {
-          const hasAnyStat = (stats.pts && stats.pts > 0) || (stats.reb && stats.reb > 0) || 
-                            (stats.ast && stats.ast > 0) || (stats.fgm && stats.fgm > 0) ||
-                            (stats.fga && stats.fga > 0);
-          return hasAnyStat;
-        }
-        return minutes > 0;
-      });
-      
-      console.log(`📅 Last Season: Before minutes filter: ${filteredGames.length}, After minutes filter: ${minutesFiltered.length}`);
-      
-      // CRITICAL WORKAROUND: If all last season stats have 0 minutes (API data quality issue),
-      // use game data to identify games where the player was actually involved
-      if (filteredGames.length > 0 && minutesFiltered.length === 0) {
-        console.warn(`[Last Season Debug] ⚠️ API DATA QUALITY ISSUE: All ${filteredGames.length} last season stats have 0 minutes. Using game data to identify actual games...`);
-        
-        // Use game data to identify games where the player's team was involved
-        // Strategy: If stat.team doesn't match either team in the game, but we have game data,
-        // we can infer the player was on one of the teams in the game
-        const gamesWithPlayerTeam = filteredGames.filter(stats => {
-          const homeTeam = stats.game?.home_team?.abbreviation;
-          const visitorTeam = stats.game?.visitor_team?.abbreviation;
-          const statTeam = stats.team?.abbreviation;
-          
-          // Normal case: stat.team matches one of the teams in the game
-          if (statTeam && (statTeam === homeTeam || statTeam === visitorTeam)) {
-            return true;
-          }
-          
-          // Workaround: If stat.team doesn't match, but we have game data with two teams,
-          // the player was likely on one of those teams (API data quality issue)
-          // Include the game if we have valid game data
-          if (homeTeam && visitorTeam && stats.game?.id) {
-            return true;
-          }
-          
-          return false;
-        });
-        
-        console.log(`[Last Season Debug] ✅ Found ${gamesWithPlayerTeam.length} games where player's team appears in game data (workaround for API data quality issue)`);
-        
-        // Use the games identified from game data instead of the empty minutesFiltered
-        if (gamesWithPlayerTeam.length > 0) {
-          filteredGames = gamesWithPlayerTeam;
-          console.log(`[Last Season Debug] ✅ Using ${filteredGames.length} games identified from game data (workaround for 0-minute stats)`);
-        } else {
-          console.warn(`[Last Season Debug] ⚠️ Could not identify any games from game data either. All stats filtered out.`);
-        }
-      } else {
-        filteredGames = minutesFiltered;
-      }
-      
-      // Also check ALL stats (before minutes filter) to see what teams are in last season
-      const allLastSeasonStats = playerStats?.filter((s: any) => {
-        if (!s.game?.date) return false;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        return gameSeasonYear === lastSeason;
-      }) || [];
-      
-      const allLastSeasonTeams = new Set<string>();
-      const allLastSeasonWithMinutes = allLastSeasonStats.filter((s: any) => {
-        const teamAbbr = s?.team?.abbreviation || 'UNKNOWN';
-        allLastSeasonTeams.add(teamAbbr);
-        const minutes = parseMinutes(s.min);
-        return minutes > 0;
-      });
-      
-      console.log(`📅 Last Season: Filtered to ${filteredGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
-      console.log(`📅 Last Season Debug:`, {
-        totalGamesPlayed: gamesPlayed.length,
-        gamesBySeasonYear,
-        gamesByTeam,
-        lastSeasonTeams: Array.from(lastSeasonTeams),
-        currentSeasonTeams: Array.from(currentSeasonTeams),
-        filteredCount: filteredGames.length,
-        sampleFilteredDates: filteredGames.slice(0, 5).map(s => ({ date: s.game?.date, team: s.team?.abbreviation })),
-        // NEW: Check ALL last season stats (including 0 minutes)
-        allLastSeasonStatsCount: allLastSeasonStats.length,
-        allLastSeasonTeams: Array.from(allLastSeasonTeams),
-        allLastSeasonWithMinutesCount: allLastSeasonWithMinutes.length,
-        sampleAllLastSeason: allLastSeasonStats.slice(0, 5).map(s => ({
-          date: s.game?.date,
-          team: s.team?.abbreviation,
-          min: s.min,
-          minutes: parseMinutes(s.min),
-          pts: s.pts
-        }))
-      });
-    } else if (selectedTimeframe === 'thisseason') {
-      // Filter to current season games only
-      const currentSeason = currentNbaSeason();
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      // Calculate the season start year for the current NBA season
-      // If we're in Oct-Dec, current season started this year (e.g., Dec 2025 = 2025-26 season = year 2025)
-      // If we're in Jan-Apr, current season started last year (e.g., Jan 2025 = 2024-25 season = year 2024)
-      const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
-      
-      filteredGames = gamesPlayed.filter(stats => {
-        if (!stats.game?.date) return false;
-        const gameDate = new Date(stats.game.date);
-        const gameYear = gameDate.getFullYear();
-        const gameMonth = gameDate.getMonth();
-        
-        // Calculate which NBA season this game belongs to
-        // Games from Oct-Dec belong to the season year (e.g., Oct 2024 = 2024-25 season = year 2024)
-        // Games from Jan-Apr belong to the previous calendar year's season (e.g., Apr 2025 = 2024-25 season = year 2024)
-        const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
-        
-        // Game must be from the current NBA season
-        return gameSeasonYear === seasonStartYear;
-      });
-      const allGameDates = gamesPlayed.map(s => s.game?.date).filter(Boolean);
-      
-      // Debug: Check what season years the games actually belong to
-      // Show both filtered and unfiltered games to understand the mismatch
-      const gameSeasonYears = gamesPlayed.slice(0, 10).map(s => {
-        if (!s.game?.date) return null;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        return { date: s.game.date, year: y, month: m, seasonYear: gameSeasonYear, matches: gameSeasonYear === seasonStartYear };
-      });
-      
-      // Also check the filtered games to see what we're actually showing
-      const filteredGameSeasonYears = filteredGames.slice(0, 10).map(s => {
-        if (!s.game?.date) return null;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        return { date: s.game.date, year: y, month: m, seasonYear: gameSeasonYear };
-      });
-      
-      // Show breakdown of games by season year to understand the data
-      const gamesBySeasonYear: Record<number, number> = {};
-      gamesPlayed.forEach(s => {
-        if (!s.game?.date) return;
-        const d = new Date(s.game.date);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const gameSeasonYear = m >= 9 ? y : y - 1;
-        gamesBySeasonYear[gameSeasonYear] = (gamesBySeasonYear[gameSeasonYear] || 0) + 1;
-      });
-      
-      const filterData = {
-        currentSeason,
-        seasonStartYear: seasonStartYear,
-        totalGames: gamesPlayed.length,
-        filteredGames: filteredGames.length,
-        isLoading,
-        selectedPlayer: selectedPlayer?.full,
-        sampleDates: allGameDates.slice(0, 5),
-        sampleFilteredDates: filteredGames.slice(0, 5).map(s => s.game?.date),
-        selectedTimeframe,
-        gameSeasonYears: gameSeasonYears.filter(Boolean),
-        filteredGameSeasonYears: filteredGameSeasonYears.filter(Boolean),
-        gamesBySeasonYear
-      };
-      console.log(`📅 [This Season Filter]`, filterData);
-      serverLogger.log(`📅 [This Season Filter]`, { data: filterData });
-      
-      // If thisseason filter returns empty but we have playerStats, check if current season data is still loading
-      // If we're still loading (isLoading is true), return empty array to prevent showing last season data
-      if (filteredGames.length === 0 && gamesPlayed.length > 0) {
-        // Check if we have any current season games in the full playerStats (might still be loading)
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const seasonStartYear = currentMonth >= 9 ? currentYear : currentYear - 1;
-        
-        const currentSeasonInAllStats = statsToUse.filter(s => {
-          if (!s.game?.date) return false;
-          const d = new Date(s.game.date);
-          const y = d.getFullYear();
-          const m = d.getMonth();
-          const gameSeasonYear = m >= 9 ? y : y - 1;
-          return gameSeasonYear === seasonStartYear;
-        });
-        
-        console.warn(`⚠️ [This Season Filter] Returned 0 games but player has ${gamesPlayed.length} total games.`, {
-          currentSeason,
-          isLoading,
-          currentSeasonInAllStatsCount: currentSeasonInAllStats.length,
-          sampleDates: allGameDates.slice(0, 10),
-          sampleCurrentSeasonDates: currentSeasonInAllStats.slice(0, 5).map(s => s.game?.date)
-        });
-        
-        // If we're still loading AND we have current season games in the full stats, wait for them
-        // Otherwise, if loading is done and still no current season games, log warning
-        if (isLoading && currentSeasonInAllStats.length > 0) {
-          console.log(`[This Season] Current season data still loading (${currentSeasonInAllStats.length} games found in full stats), waiting...`);
-          // Return empty to prevent showing last season data while current season loads
-          filteredGames = [];
-        } else if (!isLoading) {
-          // Debug: log sample game dates to understand the issue
-          const sampleDates = gamesPlayed.slice(0, 5).map(s => {
-            if (!s.game?.date) return null;
-            const d = new Date(s.game.date);
-            const y = d.getFullYear();
-            const m = d.getMonth();
-            const gameSeasonYear = m >= 9 ? y : y - 1;
-            return { date: s.game.date, year: y, month: m, gameSeasonYear, currentSeason };
-          });
-          console.warn(`⚠️ This Season filter returned 0 games but player has ${gamesPlayed.length} total games.`, {
-            currentSeason,
-            sampleDates,
-            allGameDates: gamesPlayed.map(s => s.game?.date).filter(Boolean).slice(0, 10),
-            isLoading,
-            currentSeasonInAllStats: currentSeasonInAllStats.length
-          });
-        }
-      }
-    }
-    
-    // Apply Home/Away filter before slicing/time-ordering
-    if (homeAway !== 'ALL') {
-      filteredGames = filteredGames.filter(stats => {
-        const playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || '';
-        const playerTeamNorm = normalizeAbbr(playerTeam);
-        const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-        const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-        const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-        const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-        const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
-        let isHome = false;
-        if (playerTeamId && homeTeamId && visitorTeamId) {
-          isHome = playerTeamId === homeTeamId;
-        } else if (homeTeamAbbr && visitorTeamAbbr) {
-          isHome = playerTeamNorm === normalizeAbbr(homeTeamAbbr);
-        }
-        return homeAway === 'HOME' ? isHome : !isHome;
-      });
-    }
-    
-    // Sort games by date (newest first) before applying timeframe filters
-    const sortedByDate = [...filteredGames].sort((a, b) => {
-      const dateA = a?.game?.date ? new Date(a.game.date).getTime() : 0;
-      const dateB = b?.game?.date ? new Date(b.game.date).getTime() : 0;
-      return dateB - dateA; // Newest first
-    });
-    
-    // n was already parsed above for season filtering, but we need it again for slicing
-    const nForSlice = parseInt(selectedTimeframe.replace('last', ''));
-    
-    // Deduplicate by gameId to fix API duplicate data issue (on sorted games)
-    const uniqueGames = [];
-    const seenGameIds = new Set();
-    
-    for (const game of sortedByDate) {
-      const gameId = game?.game?.id;
-      if (gameId && !seenGameIds.has(gameId)) {
-        seenGameIds.add(gameId);
-        uniqueGames.push(game);
-      } else if (!gameId) {
-        // Keep games without gameId (shouldn't happen but just in case)
-        uniqueGames.push(game);
-      }
-    }
-    
-    console.log(`📈 Deduplicated: ${sortedByDate.length} → ${uniqueGames.length} unique games`);
-    
-    // Apply timeframe to unique games - use slice(0, n) to get FIRST n games (most recent)
-    // Since uniqueGames is sorted newest-first, slice(0, n) gives us the newest n games
-    // For special timeframes (h2h, lastseason, thisseason), don't slice
-    // If a teammate filter is active, take many more games (10x) so we have enough after teammate filter
-    // This is especially important for "without" filters which can be very restrictive
-    const sliceMultiplier = teammateFilterId && selectedTimeframe.startsWith('last') ? 10 : 1;
-    const sliceCount = !Number.isNaN(nForSlice) ? nForSlice * sliceMultiplier : undefined;
-    const timeframeGames = ['h2h', 'lastseason', 'thisseason'].includes(selectedTimeframe)
-      ? uniqueGames
-      : (sliceCount ? uniqueGames.slice(0, sliceCount) : uniqueGames);
-    
-    // Reverse for chronological order (left→right oldest→newest)
-    const ordered = timeframeGames.slice().reverse();
-    
-    // Debug: log before mapping
-    console.log('[baseGameData] Before mapping:', {
-      selectedTimeframe,
-      gamesPlayedCount: gamesPlayed.length,
-      filteredGamesCount: filteredGames.length,
-      uniqueGamesCount: uniqueGames.length,
-      timeframeGamesCount: timeframeGames.length,
-      orderedCount: ordered.length,
-      sampleOrderedStat: ordered[0],
-      hasGame: !!ordered[0]?.game,
-      hasGameDate: !!ordered[0]?.game?.date,
-    });
-    
-    const result = ordered.map((stats, index) => {
-      let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
-      
-      // Get team info from stats.game - support both nested objects and *_id fields
-      const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
-      const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
-      const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-      const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-      
-      // WORKAROUND: For last season, if stat.team doesn't match either team in the game,
-      // infer the correct team from game data (API data quality issue for players who changed teams)
-      if (selectedTimeframe === 'lastseason' && playerTeam && homeTeamAbbr && visitorTeamAbbr) {
-        const playerTeamNorm = normalizeAbbr(playerTeam);
-        const homeNorm = normalizeAbbr(homeTeamAbbr);
-        const visitorNorm = normalizeAbbr(visitorTeamAbbr);
-        
-        // If playerTeam doesn't match either team in the game, infer from game data
-        if (playerTeamNorm !== homeNorm && playerTeamNorm !== visitorNorm) {
-          // The player was on one of the teams in the game, but stat.team is wrong
-          // For Saddiq Bey, we know he was on ATL last season, so if ATL is in the game, use ATL
-          // Otherwise, we can't definitively determine which team, but we'll use the home team as a fallback
-          if (homeNorm === 'ATL' || visitorNorm === 'ATL') {
-            playerTeam = 'ATL';
-            console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ATL (game: ${homeTeamAbbr} vs ${visitorTeamAbbr})`);
-          } else {
-            // For other games, we can't be sure, but we'll use the home team as a heuristic
-            // (This is a fallback - ideally we'd have better data)
-            playerTeam = homeTeamAbbr;
-            console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ${homeTeamAbbr} (game: ${homeTeamAbbr} vs ${visitorTeamAbbr}, using home team as fallback)`);
-          }
-        }
-      }
-      
-      const playerTeamNorm = normalizeAbbr(playerTeam);
-      
-      // Determine opponent using team IDs/abbrs
-      const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
-      let opponent = "";
-      
-      if (playerTeamId && homeTeamId && visitorTeamId) {
-        if (playerTeamId === homeTeamId && visitorTeamAbbr) {
-          opponent = visitorTeamAbbr;
-        } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
-          opponent = homeTeamAbbr;
-        }
-      }
-      // Fallback: compare abbreviations directly if IDs missing
-      if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
-        const homeNorm = normalizeAbbr(homeTeamAbbr);
-        const awayNorm = normalizeAbbr(visitorTeamAbbr);
-        if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
-        else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
-      }
-      
-      const iso = stats?.game?.date;
-      const d = iso ? new Date(iso) : null;
-      const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
-      
-      // Create unique key for each game to fix tooltip data grouping
-      const gameId = stats?.game?.id ?? `${opponent}-${index}`;
-      const tickLabel = opponent || "";
-      
-      return {
-        stats, // Keep reference to original stats for value calculation
-        opponent,
-        gameNumber: index + 1,
-        game: opponent ? `vs ${opponent}` : "—",
-        date: shortDate,
-        xKey: String(gameId),   // unique per game
-        tickLabel,              // what we show on the axis
-      };
-    });
-    
-    console.log('[baseGameData] Final result:', {
-      resultLength: result.length,
-      selectedTimeframe,
-    });
-    
-    return result;
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]); // Added teammateFilterId to support larger slice when teammate filter is active
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]);
   
   // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
   // This allows us to filter from ALL games, then apply timeframe
@@ -5691,14 +4605,13 @@ const lineMovementInFlightRef = useRef(false);
 
         return {
           gameId: gameIdStr,
-          gameDate: String(gameDate),
           value,
-          stats: stats, // Store stats reference for mapping later
+          gameDate,
         };
       });
-    
+
     return result;
-  }, [selectedFilterForAxis, playerStats, propsMode, advancedStatsPerGame, dvpRanksPerGame, selectedTimeframe]);
+  }, [playerStats, selectedFilterForAxis, selectedTimeframe, advancedStatsPerGame, dvpRanksPerGame, propsMode]);
   
   // Prefetch teammate game data in background when roster is available (for faster filtering)
   useEffect(() => {
@@ -5772,7 +4685,7 @@ const lineMovementInFlightRef = useRef(false);
                 const allPlayedGameIds = Array.from(played);
                 sessionStorage.setItem(CACHE_KEY, JSON.stringify(allPlayedGameIds));
                 sessionStorage.setItem(`teammate-games-${teammateId}-timestamp`, Date.now().toString());
-                console.log(`[Teammate Filter] 🔮 Prefetched ${allPlayedGameIds.length} games for teammate ${teammateId}`);
+                console.log(`[Teammate Filter] ðŸ”® Prefetched ${allPlayedGameIds.length} games for teammate ${teammateId}`);
               } catch (e) {
                 // Ignore cache errors
               }
@@ -5808,195 +4721,24 @@ const lineMovementInFlightRef = useRef(false);
     return b2b;
   }, [propsMode, playerStats]);
 
-  const parseMinutesPlayed = (minVal: any): number => {
-    if (typeof minVal === 'number') return minVal;
-    if (!minVal) return 0;
-    const s = String(minVal);
-    if (s.includes(':')) {
-      const [m, sec] = s.split(':').map(x => parseInt(x || '0', 10));
-      return (Number.isFinite(m) ? m : 0) + ((Number.isFinite(sec) && sec > 0) ? 1 : 0);
-    }
-    const n = parseInt(s, 10);
-    return Number.isFinite(n) ? n : 0;
-  };
-
   // Apply advanced filters to base data for player mode
   const filteredGameData = useMemo(() => {
-    if (propsMode !== 'player') return baseGameData;
-    
-    // First, apply all filters EXCEPT teammate filter
-    let filtered = baseGameData.filter((g: any) => {
-      const stats = g?.stats;
-      const game = stats?.game;
-
-      // minutes
-      const minutes = parseMinutesPlayed(stats?.min);
-      
-      // WORKAROUND: For last season, if we have 0-minute games that were included via the API data quality workaround,
-      // allow them through (they'll show 0 values but at least the games will be visible)
-      const isLastSeasonWithApiIssue = selectedTimeframe === 'lastseason' && minutes === 0 && game?.id;
-      
-      if (minutes === 0 && !isLastSeasonWithApiIssue) return false; // exclude zero-minute games (except last season workaround)
-      if (minutes > 0 && (minutes < minMinutesFilter || minutes > maxMinutesFilter)) return false;
-
-      // blowout
-      if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
-        const diff = Math.abs((game.home_team_score || 0) - (game.visitor_team_score || 0));
-        if (diff >= 21) return false;
-      }
-
-      // back-to-back (when enabled, only include second game of B2B)
-      if (excludeBackToBack) {
-        if (!game || !backToBackGameIds.has(game.id)) return false;
-      }
-      
-      return true;
-    });
-    
-    // Apply teammate filter AFTER other filters
-    // For "last N" timeframes with teammate filter, we want the last N games WHERE the teammate played/didn't play
-    // Not: last N games filtered by teammate (which might only give 1 game)
-    // So we need to filter ALL games first, then take the last N
-    if (teammateFilterId && selectedTimeframe.startsWith('last')) {
-      const n = parseInt(selectedTimeframe.replace('last', ''));
-      if (!Number.isNaN(n) && n > 0) {
-        // For "last N" with teammate filter, we need to work with ALL games, not just the timeframe slice
-        // Get all games from playerStats (before timeframe filter) and apply filters
-        // Reuse the same structure as baseGameData for consistency
-        const allGamesFromStats: any[] = [];
-        (playerStats || []).forEach((stat: any, index: number) => {
-          const game = stat?.game;
-          if (!game) return;
-          
-          let playerTeam = stat?.team?.abbreviation || selectedPlayer?.teamAbbr || '';
-          const homeTeamId = game?.home_team?.id ?? (game as any)?.home_team_id;
-          const visitorTeamId = game?.visitor_team?.id ?? (game as any)?.visitor_team_id;
-          const homeTeamAbbr = game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-          const visitorTeamAbbr = game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-          
-          const playerTeamNorm = normalizeAbbr(playerTeam);
-          const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
-          let opponent = "";
-          
-          if (playerTeamId && homeTeamId && visitorTeamId) {
-            if (playerTeamId === homeTeamId && visitorTeamAbbr) {
-              opponent = visitorTeamAbbr;
-            } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
-              opponent = homeTeamAbbr;
-            }
-          }
-          if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
-            const homeNorm = normalizeAbbr(homeTeamAbbr);
-            const awayNorm = normalizeAbbr(visitorTeamAbbr);
-            if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
-            else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
-          }
-          
-          const iso = game?.date;
-          const d = iso ? new Date(iso) : null;
-          const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
-          const gameId = game?.id ?? `${opponent}-${index}`;
-          const tickLabel = opponent || "";
-          
-          allGamesFromStats.push({
-            stats: stat,
-            opponent,
-            gameNumber: index + 1,
-            game: opponent ? `vs ${opponent}` : "—",
-            date: shortDate,
-            xKey: String(gameId),
-            tickLabel,
-          });
-        });
-        
-        // Apply all filters in a single pass (minutes, blowouts, back-to-back, teammate)
-        const allFiltered = allGamesFromStats.filter((g: any) => {
-          const stats = g?.stats;
-          const game = stats?.game;
-          const gid = game?.id;
-          
-          // Minutes filter
-          const minutes = parseMinutesPlayed(stats?.min);
-          const isLastSeasonWithApiIssue = selectedTimeframe === 'lastseason' && minutes === 0 && game?.id;
-          if (minutes === 0 && !isLastSeasonWithApiIssue) return false;
-          if (minutes > 0 && (minutes < minMinutesFilter || minutes > maxMinutesFilter)) return false;
-          
-          // Blowouts filter
-          if (excludeBlowouts && game && typeof game.home_team_score === 'number' && typeof game.visitor_team_score === 'number') {
-            const diff = Math.abs((game.home_team_score || 0) - (game.visitor_team_score || 0));
-            if (diff >= 21) return false;
-          }
-          
-          // Back-to-back filter
-          if (excludeBackToBack) {
-            if (!game || !backToBackGameIds.has(game.id)) return false;
-          }
-          
-          // Teammate filter
-          if (gid) {
-            const didPlay = teammatePlayedGameIds.has(gid);
-            if (withWithoutMode === 'with' && !didPlay) return false;
-            if (withWithoutMode === 'without' && didPlay) return false;
-          }
-          
-          return true;
-        });
-        
-        const teammateFiltered = allFiltered; // Single filter pass now
-        
-        // Sort by date (newest first) and take the last N games
-        const sortedByDate = [...teammateFiltered].sort((a: any, b: any) => {
-          const dateA = a?.stats?.game?.date ? new Date(a.stats.game.date).getTime() : 0;
-          const dateB = b?.stats?.game?.date ? new Date(b.stats.game.date).getTime() : 0;
-          return dateB - dateA; // Newest first
-        });
-        
-        // Take the first N (most recent) games, then reverse so oldest is on the left
-        filtered = sortedByDate.slice(0, n).reverse();
-        
-        console.log(`[Teammate Filter] Last N with teammate: ${allFiltered.length} total games -> ${teammateFiltered.length} after teammate filter -> ${filtered.length} last N games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games)`);
-      } else {
-        // Not a valid "last N" timeframe, just apply teammate filter normally
-        filtered = filtered.filter((g: any) => {
-          const game = g?.stats?.game;
-          const gid = game?.id;
-          if (!gid) return false;
-          const didPlay = teammatePlayedGameIds.has(gid);
-          if (withWithoutMode === 'with' && !didPlay) return false;
-          if (withWithoutMode === 'without' && didPlay) return false;
-      return true;
-    });
-      }
-    } else if (teammateFilterId) {
-      // Apply teammate filter for non-"last N" timeframes
-      const beforeCount = filtered.length;
-      filtered = filtered.filter((g: any) => {
-        const game = g?.stats?.game;
-        const gid = game?.id;
-        if (!gid) return false;
-        const didPlay = teammatePlayedGameIds.has(gid);
-        if (withWithoutMode === 'with' && !didPlay) return false;
-        if (withWithoutMode === 'without' && didPlay) return false;
-        return true;
-      });
-      console.log(`[Teammate Filter] Filtering results: ${beforeCount} games -> ${filtered.length} games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games, timeframe: ${selectedTimeframe})`);
-    }
-    
-    // Debug: log filtering results
-    console.log('[filteredGameData] Filtering results:', {
-      baseGameDataLength: baseGameData.length,
-      filteredLength: filtered.length,
+    return processFilteredGameData({
+      propsMode,
+      baseGameData,
       minMinutesFilter,
       maxMinutesFilter,
       excludeBlowouts,
       excludeBackToBack,
-      teammateFilterId,
+      backToBackGameIds,
       withWithoutMode,
-      sampleFiltered: filtered[0],
+      teammateFilterId,
+      teammatePlayedGameIds,
+      selectedTimeframe,
+      playerStats,
+      selectedPlayer,
     });
-    
-    return filtered;
-  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe]);
+  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe, playerStats, selectedPlayer]);
 
   /* -------- Chart data with current stat values ----------
      Only recalculate values when selectedStat changes */
@@ -6114,7 +4856,7 @@ const lineMovementInFlightRef = useRef(false);
       
       // Check if already fetching this teammate
       if (teammateFetchInProgressRef.current.has(teammateFilterId)) {
-        console.log(`[Teammate Filter] ⏳ Already fetching games for teammate ${teammateFilterId}, skipping duplicate`);
+        console.log(`[Teammate Filter] â³ Already fetching games for teammate ${teammateFilterId}, skipping duplicate`);
         return;
       }
       
@@ -6148,22 +4890,22 @@ const lineMovementInFlightRef = useRef(false);
                   // If cache has very few games (< 10), it might be incomplete (from old logic)
                   // Clear the cache and refetch to ensure we have complete season data
                   if (allCachedIds.size < 10) {
-                    console.log(`[Teammate Filter] ⚠️ Cache has only ${allCachedIds.size} games, likely incomplete. Clearing cache and refetching...`);
+                    console.log(`[Teammate Filter] âš ï¸ Cache has only ${allCachedIds.size} games, likely incomplete. Clearing cache and refetching...`);
                     // Clear the stale cache
                     sessionStorage.removeItem(CACHE_KEY);
                     sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
                     // Continue to fetch fresh data below
                   } else {
                     setTeammatePlayedGameIds(allCachedIds);
-                    console.log(`[Teammate Filter] ✅ Using cached data (${allCachedIds.size} total games, ${games.length} in current view, ${Math.round(age / 1000)}s old)`);
+                    console.log(`[Teammate Filter] âœ… Using cached data (${allCachedIds.size} total games, ${games.length} in current view, ${Math.round(age / 1000)}s old)`);
                   return; // Use cached data, skip API calls
                   }
                 }
               } catch (e) {
-                console.warn('[Teammate Filter] ⚠️ Failed to parse cached data, fetching fresh');
+                console.warn('[Teammate Filter] âš ï¸ Failed to parse cached data, fetching fresh');
               }
             } else {
-              console.log(`[Teammate Filter] ⏰ Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
+              console.log(`[Teammate Filter] â° Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
             }
           }
         }
@@ -6217,7 +4959,7 @@ const lineMovementInFlightRef = useRef(false);
             }
         });
         
-        console.log(`[Teammate Filter] 📊 Fetched ${allStats.length} total stats, ${played.size} games where teammate played`);
+        console.log(`[Teammate Filter] ðŸ“Š Fetched ${allStats.length} total stats, ${played.size} games where teammate played`);
         
         // Cache the results (only if we got a reasonable amount of data)
         // If we got very few stats, the teammate might not have played much, but cache it anyway
@@ -6226,16 +4968,16 @@ const lineMovementInFlightRef = useRef(false);
             const allPlayedGameIds = Array.from(played);
             sessionStorage.setItem(CACHE_KEY, JSON.stringify(allPlayedGameIds));
             sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-            console.log(`[Teammate Filter] 💾 Cached ${allPlayedGameIds.length} games for teammate ${teammateFilterId} (from ${allStats.length} total stats)`);
+            console.log(`[Teammate Filter] ðŸ’¾ Cached ${allPlayedGameIds.length} games for teammate ${teammateFilterId} (from ${allStats.length} total stats)`);
           } catch (e) {
-            console.warn('[Teammate Filter] ⚠️ Failed to cache results', e);
+            console.warn('[Teammate Filter] âš ï¸ Failed to cache results', e);
           }
         }
         
         setTeammatePlayedGameIds(played);
       } catch (e: any) {
         if (e.name !== 'AbortError') {
-          console.error('[Teammate Filter] ❌ Error fetching teammate games:', e);
+          console.error('[Teammate Filter] âŒ Error fetching teammate games:', e);
         }
       } finally {
         teammateFetchInProgressRef.current.delete(teammateFilterId);
@@ -6243,7 +4985,7 @@ const lineMovementInFlightRef = useRef(false);
         }
       } catch (e: any) {
         if (e.name !== 'AbortError') {
-          console.error('[Teammate Filter] ❌ Error in teammate filter logic:', e);
+          console.error('[Teammate Filter] âŒ Error in teammate filter logic:', e);
         }
         setTeammatePlayedGameIds(new Set());
       } finally {
@@ -6550,9 +5292,9 @@ const lineMovementInFlightRef = useRef(false);
     }
 
     // Convert total points to predicted pace
-    // Formula: Pace ≈ Total / (2 * avg_points_per_possession)
+    // Formula: Pace â‰ˆ Total / (2 * avg_points_per_possession)
     // Average NBA points per possession is ~1.12
-    // So: Pace ≈ Total / 2.24
+    // So: Pace â‰ˆ Total / 2.24
     // We'll use a more accurate formula based on historical data
     // Typical range: Total 200-240, Pace 95-105
     // Linear relationship: Pace = (Total - 200) * (10/40) + 95 = (Total - 200) * 0.25 + 95
@@ -6957,7 +5699,7 @@ const lineMovementInFlightRef = useRef(false);
           stats,
           opponent,
           gameNumber: index + 1,
-          game: opponent ? `vs ${opponent}` : "—",
+          game: opponent ? `vs ${opponent}` : "â€”",
           date: shortDate,
           xKey: String(gameId),
           tickLabel: opponent || "",
@@ -7066,7 +5808,7 @@ const lineMovementInFlightRef = useRef(false);
       console.log(`[filteredChartData] Last Season filter: ${beforeFilter} -> ${timeframeFilteredStats.length} games (lastSeason=${lastSeason})`);
     }
 
-    // Reverse for chronological order (oldest→newest, left→right)
+    // Reverse for chronological order (oldestâ†’newest, leftâ†’right)
     const ordered = timeframeFilteredStats.slice().reverse();
 
     // Map to baseGameData format, then to chartData format
@@ -7106,7 +5848,7 @@ const lineMovementInFlightRef = useRef(false);
         stats,
         opponent,
         gameNumber: index + 1,
-        game: opponent ? `vs ${opponent}` : "—",
+        game: opponent ? `vs ${opponent}` : "â€”",
         date: shortDate,
         xKey: String(gameId),
         tickLabel: opponent || "",
@@ -8299,7 +7041,7 @@ const lineMovementInFlightRef = useRef(false);
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
         const suffix = entry.bookmaker ? ` (${entry.bookmaker})` : '';
-        return `${time}${suffix}${label ? ` — ${label}` : ''}`;
+        return `${time}${suffix}${label ? ` â€” ${label}` : ''}`;
       };
 
       if (openingLine) {
@@ -8524,7 +7266,7 @@ const lineMovementInFlightRef = useRef(false);
       
       const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
       const target = propsMode === 'player' ? playerName : gamePropsTeam;
-      console.log(`📊 Loaded ${data.data?.length || 0} bookmaker odds for ${target}`);
+      console.log(`ðŸ“Š Loaded ${data.data?.length || 0} bookmaker odds for ${target}`);
       
       // Debug: Check for PrizePicks in the data
       const allBookmakers = new Set<string>();
@@ -8864,12 +7606,12 @@ const lineMovementInFlightRef = useRef(false);
           // Round to nearest 0.5 to group similar lines together
           const roundedLine = Math.round(line * 2) / 2;
           lineCounts.set(roundedLine, (lineCounts.get(roundedLine) || 0) + 1);
-          console.log('[primaryMarketLine] ✅ Found valid line:', { line, roundedLine, count: lineCounts.get(roundedLine) });
+          console.log('[primaryMarketLine] âœ… Found valid line:', { line, roundedLine, count: lineCounts.get(roundedLine) });
         } else {
-          console.log('[primaryMarketLine] ❌ Invalid line value:', { lineStr, parsed: line, isFinite: Number.isFinite(line) });
+          console.log('[primaryMarketLine] âŒ Invalid line value:', { lineStr, parsed: line, isFinite: Number.isFinite(line) });
         }
       } else {
-        console.log('[primaryMarketLine] ❌ Stat data missing or N/A:', { 
+        console.log('[primaryMarketLine] âŒ Stat data missing or N/A:', { 
           hasStatData: !!statData,
           line: statData?.line,
           over: statData?.over,
@@ -8882,7 +7624,7 @@ const lineMovementInFlightRef = useRef(false);
     }
     
     if (lineCounts.size === 0) {
-      console.log('[primaryMarketLine] ❌ No valid lines found after processing all books');
+      console.log('[primaryMarketLine] âŒ No valid lines found after processing all books');
       return null;
     }
     
@@ -8896,7 +7638,7 @@ const lineMovementInFlightRef = useRef(false);
       }
     }
     
-    console.log('[primaryMarketLine] ✅ Consensus line:', { consensusLine, maxCount, allLines: Array.from(lineCounts.entries()) });
+    console.log('[primaryMarketLine] âœ… Consensus line:', { consensusLine, maxCount, allLines: Array.from(lineCounts.entries()) });
     return consensusLine;
   }, [realOddsData, selectedStat, getBookRowKey]);
   
@@ -9586,14 +8328,14 @@ const lineMovementInFlightRef = useRef(false);
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log('🔘 Mobile search result clicked (first):', r, 'isPro:', isPro);
+                                    console.log('ðŸ”˜ Mobile search result clicked (first):', r, 'isPro:', isPro);
                                     if (!isPro) {
                                       if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
                                         router.push('/subscription');
                                       }
                                       return;
                                     }
-                                    console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                                    console.log('âœ… Calling handlePlayerSelectFromSearch for:', r.full);
                                     handlePlayerSelectFromSearch(r).catch(err => {
                                       console.error('Error in handlePlayerSelectFromSearch:', err);
                                     });
@@ -9622,7 +8364,7 @@ const lineMovementInFlightRef = useRef(false);
                                     <div className="flex-1 min-w-0">
                                       <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
                                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                                        {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                        {r.team || 'â€”'} {r.pos ? `â€¢ ${r.pos}` : ''}
                                       </div>
                                     </div>
                                   </div>
@@ -9647,7 +8389,7 @@ const lineMovementInFlightRef = useRef(false);
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('🔘 Desktop search result clicked:', r, 'isPro:', isPro);
+                              console.log('ðŸ”˜ Desktop search result clicked:', r, 'isPro:', isPro);
                               // Extra check: ensure Pro access before player selection
                               if (!isPro) {
                                 if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
@@ -9655,7 +8397,7 @@ const lineMovementInFlightRef = useRef(false);
                                 }
                                 return;
                               }
-                              console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                              console.log('âœ… Calling handlePlayerSelectFromSearch for:', r.full);
                               handlePlayerSelectFromSearch(r).catch(err => {
                                 console.error('Error in handlePlayerSelectFromSearch:', err);
                               });
@@ -9679,7 +8421,7 @@ const lineMovementInFlightRef = useRef(false);
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
                                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                    {r.team || 'â€”'} {r.pos ? `â€¢ ${r.pos}` : ''}
                                   </div>
                                 </div>
                               </div>
@@ -9721,7 +8463,7 @@ const lineMovementInFlightRef = useRef(false);
                             <button
                               key={team.abbr}
                               onClick={() => {
-                                console.log(`%c🎬 === TEAM SELECTION HANDLER ===%c`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
+                                console.log(`%cðŸŽ¬ === TEAM SELECTION HANDLER ===%c`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
                                 console.log(`%cSelected Team: %c${team.abbr}`, 'color: #555', 'color: #e74c3c; font-weight: bold; font-size: 14px');
                                 console.log(`%cTeam Full Name: %c${team.fullName}`, 'color: #555', 'color: #3498db; font-weight: bold');
                                 console.log(`%cGames available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
@@ -9736,8 +8478,8 @@ const lineMovementInFlightRef = useRef(false);
                                 console.log(`%cNormalized opponent: %c"${normalized}"`, 'color: #555', 'color: #27ae60; font-weight: bold; font-size: 14px');
                                 
                                 setOpponentTeam(normalized);
-                                console.log(`%c✅ State Updated%c - gamePropsTeam: ${team.abbr}, opponentTeam: ${normalized}`, 'color: #27ae60; font-weight: bold', 'color: #000');
-                                console.log(`%c🎬 === HANDLER END ===%c\n`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
+                                console.log(`%câœ… State Updated%c - gamePropsTeam: ${team.abbr}, opponentTeam: ${normalized}`, 'color: #27ae60; font-weight: bold', 'color: #000');
+                                console.log(`%cðŸŽ¬ === HANDLER END ===%c\n`, 'color: #9b59b6; font-weight: bold; font-size: 14px', '');
                                 
                                 setSearchQuery('');
                               }}
@@ -10109,14 +8851,14 @@ const lineMovementInFlightRef = useRef(false);
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log('🔘 Mobile search result clicked (second):', r, 'isPro:', isPro);
+                                    console.log('ðŸ”˜ Mobile search result clicked (second):', r, 'isPro:', isPro);
                                     if (!isPro) {
                                       if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
                                         router.push('/subscription');
                                       }
                                       return;
                                     }
-                                    console.log('✅ Calling handlePlayerSelectFromSearch for:', r.full);
+                                    console.log('âœ… Calling handlePlayerSelectFromSearch for:', r.full);
                                     handlePlayerSelectFromSearch(r).catch(err => {
                                       console.error('Error in handlePlayerSelectFromSearch:', err);
                                     });
@@ -10139,7 +8881,7 @@ const lineMovementInFlightRef = useRef(false);
                                     <div className="flex-1 min-w-0">
                                       <div className="font-medium text-gray-900 dark:text-white">{r.full}</div>
                                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                                        {r.team || '—'} {r.pos ? `• ${r.pos}` : ''}
+                                        {r.team || 'â€”'} {r.pos ? `â€¢ ${r.pos}` : ''}
                                       </div>
                                     </div>
                                   </div>
@@ -10985,7 +9727,7 @@ const lineMovementInFlightRef = useRef(false);
                     opponentTeamRoster={currentOpponentRoster}
                     rostersLoading={currentRostersLoading}
                     onTeamSwap={(team) => {
-                      console.log(`🔄 Mobile depth chart team swap: ${team}`);
+                      console.log(`ðŸ”„ Mobile depth chart team swap: ${team}`);
                       if (propsMode === 'player') {
                         setDepthChartTeam(team);
                       } else if (propsMode === 'team') {
@@ -11144,7 +9886,7 @@ const lineMovementInFlightRef = useRef(false);
                   opponentTeamRoster={currentOpponentRoster}
                   rostersLoading={currentRostersLoading}
                   onTeamSwap={(team) => {
-                    console.log(`🔄 Depth chart view only team swap: ${team}`);
+                    console.log(`ðŸ”„ Depth chart view only team swap: ${team}`);
                     // Only update the depth chart display team, not the main stats container
                     if (propsMode === 'player') {
                       setDepthChartTeam(team);
