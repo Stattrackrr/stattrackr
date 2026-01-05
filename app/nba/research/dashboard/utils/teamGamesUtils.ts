@@ -180,3 +180,103 @@ export async function fetchTeamGamesData(
   }
 }
 
+/**
+ * Background cache all teams function
+ */
+export async function cacheAllTeamsInBackground(options: CacheAllTeamsOptions & { backgroundCacheLoading: boolean }): Promise<void> {
+  const {
+    backgroundCacheLoading,
+    teamGameCache,
+    fetchTeamGamesData,
+    onBackgroundCacheLoadingChange,
+    onCacheProgressChange,
+    onTeamGameCacheUpdate,
+  } = options;
+
+  if (backgroundCacheLoading) return; // Prevent multiple background loads
+  
+  onBackgroundCacheLoadingChange?.(true);
+  console.log('🔄 Starting background cache of all team data...');
+  
+  // List of all NBA teams
+  const allTeams = Object.keys(ABBR_TO_TEAM_ID);
+  const teamsToCache = allTeams.filter(team => !teamGameCache[team]);
+  
+  onCacheProgressChange?.({ current: 0, total: teamsToCache.length });
+  
+  for (let i = 0; i < teamsToCache.length; i++) {
+    const teamAbbr = teamsToCache[i];
+    try {
+      // Use a simplified version without UI loading states
+      const games = await fetchTeamGamesData(teamAbbr, false); // false = no UI loading
+      
+      onTeamGameCacheUpdate?.(prev => ({
+        ...prev,
+        [teamAbbr]: games
+      }));
+      
+      // Update progress
+      onCacheProgressChange?.({ current: i + 1, total: teamsToCache.length });
+      
+      // Small delay between teams to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+    } catch (error) {
+      console.warn(`Background cache failed for ${teamAbbr}:`, error);
+    }
+  }
+  
+  console.log('✅ Background cache completed for all teams');
+  onBackgroundCacheLoadingChange?.(false);
+  onCacheProgressChange?.({ current: 0, total: 0 });
+}
+
+/**
+ * Priority fetch: load requested team immediately, then cache others in background
+ */
+export async function fetchGameDataForTeam(options: FetchGameDataForTeamOptions): Promise<BallDontLieGame[]> {
+  const {
+    teamAbbr,
+    teamGameCache,
+    fetchTeamGamesData,
+    onGameStatsLoadingChange,
+    onGameStatsChange,
+    onTeamGameCacheUpdate,
+    onCacheAllTeams,
+  } = options;
+
+  if (!teamAbbr || teamAbbr === 'N/A') return [];
+  
+  // Check cache first
+  if (teamGameCache[teamAbbr]) {
+    console.log(`⚡ Using cached data for ${teamAbbr}`);
+    
+    // Add 20ms delay to make switching visible
+    onGameStatsLoadingChange?.(true);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    onGameStatsChange?.(teamGameCache[teamAbbr]);
+    onGameStatsLoadingChange?.(false);
+    
+    return teamGameCache[teamAbbr];
+  }
+  
+  console.log(`🏀 Priority loading ${teamAbbr}...`);
+  
+  // Load requested team immediately with UI loading state
+  const games = await fetchTeamGamesData(teamAbbr, true);
+  
+  // Cache the result
+  onTeamGameCacheUpdate?.(prev => ({
+    ...prev,
+    [teamAbbr]: games
+  }));
+  
+  // Trigger background caching of all other teams (non-blocking)
+  if (onCacheAllTeams) {
+    setTimeout(() => {
+      onCacheAllTeams();
+    }, 500); // Small delay to let UI update first
+  }
+  
+  return games;
+}
