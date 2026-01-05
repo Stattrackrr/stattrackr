@@ -1125,7 +1125,7 @@ const lineMovementInFlightRef = useRef(false);
       onGamesChange: showLoading ? setGameStats : undefined,
     });
   };
-;
+
   // Priority fetch: load requested team immediately, then cache others in background
   const fetchGameDataForTeam = async (teamAbbr: string) => {
     if (!teamAbbr || teamAbbr === 'N/A') return [];
