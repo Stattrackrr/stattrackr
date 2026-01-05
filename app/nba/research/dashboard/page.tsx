@@ -3667,8 +3667,6 @@ const lineMovementInFlightRef = useRef(false);
       setApiError(e?.message || "Failed to load stats."); 
       setPlayerStats([]);
       setOpponentTeam('N/A');
-    } finally {
-      isHandlingPlayerSelectRef.current = false;
     }
     } finally {
       isHandlingPlayerSelectRef.current = false;
