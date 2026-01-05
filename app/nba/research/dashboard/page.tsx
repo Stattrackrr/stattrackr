@@ -3650,7 +3650,7 @@ const lineMovementInFlightRef = useRef(false);
 
   // Fetch game stats for a player
   const fetchSortedStats = async (playerId: string) => {
-    return await fetchSortedStatsCore(playerId);
+    return await fetchSortedStatsCore(playerId, selectedTimeframe);
   };
   
   // Core function to fetch advanced stats (without UI state updates)
