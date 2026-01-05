@@ -1163,105 +1163,16 @@ const lineMovementInFlightRef = useRef(false);
     return games;
   };
 
-  // Fetch games function (today Â± 7 days)
+  // Fetch games function (today ± 7 days) - now imported from utils
   const fetchTodaysGames = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
-    if (gamesFetchInFlightRef.current) {
-      return;
-    }
-    gamesFetchInFlightRef.current = true;
-
-    try {
-      if (!silent) {
-        setGamesLoading(true);
-      }
-      
-      const formatDate = (date: Date) => {
-        return date.toISOString().split('T')[0];
-      };
-      
-      // Fetch only a small date range (today Â± 7 days) to avoid season paging
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-      const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
-
-      // Check sessionStorage first for instant load (if prefetched)
-      if (typeof window !== 'undefined') {
-        try {
-          const cacheKey = `dashboard-games-${start}-${end}`;
-          const cachedData = sessionStorage.getItem(cacheKey);
-          const cachedTimestamp = sessionStorage.getItem(`${cacheKey}-timestamp`);
-          const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-          
-          if (cachedData && cachedTimestamp) {
-            const age = Date.now() - parseInt(cachedTimestamp, 10);
-            if (age < CACHE_TTL_MS) {
-              try {
-                const parsed = JSON.parse(cachedData);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  console.log(`âœ… Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
-                  setTodaysGames(parsed);
-                  setGamesLoading(false);
-                  gamesFetchInFlightRef.current = false;
-                  // Still fetch in background to update if needed (non-blocking)
-                  fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' }).then(async (response) => {
-                    if (response.ok) {
-                      const data = await response.json();
-                      if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-                        setTodaysGames(data.data);
-                        sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
-                        sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
-                      }
-                    }
-                  }).catch(() => {});
-                  return;
-                }
-              } catch (e) {
-                console.warn('Failed to parse cached games data, fetching fresh');
-              }
-            }
-          }
-        } catch (e) {
-          // Ignore sessionStorage errors, continue to fetch
-        }
-      }
-
-      try {
-        const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
-        const data = await response.json();
-        const arr = Array.isArray(data?.data) ? data.data : [];
-        if (arr.length > 0) {
-          console.log(`âœ… Fetched ${arr.length} games from ${start} to ${end}`);
-          console.log(`   Games: ${arr.map((g: any) => `${g.home_team?.abbreviation} vs ${g.visitor_team?.abbreviation}`).join(', ')}`);
-          setTodaysGames(arr);
-          // Cache for next time
-          if (typeof window !== 'undefined') {
-            try {
-              const cacheKey = `dashboard-games-${start}-${end}`;
-              sessionStorage.setItem(cacheKey, JSON.stringify(arr));
-              sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
-            } catch (e) {
-              // Ignore storage errors
-            }
-          }
-          return;
-        }
-      } catch (e) {
-        console.error('Error fetching date-range games:', e);
-      }
-
-      console.log('âŒ No games found in date range');
-      setTodaysGames([]);
-      
-    } catch (error) {
-      console.error('Error in fetchTodaysGames:', error);
-      setTodaysGames([]);
-    } finally {
-      gamesFetchInFlightRef.current = false;
-      if (!silent) {
-        setGamesLoading(false);
-      }
-    }
-  }, [gamesFetchInFlightRef]);
+    return await fetchTodaysGamesCore({
+      silent,
+      onLoadingChange: setGamesLoading,
+      onGamesChange: setTodaysGames,
+      isFetchInFlight: () => gamesFetchInFlightRef.current,
+      setFetchInFlight: (inFlight) => { gamesFetchInFlightRef.current = inFlight; },
+    });
+  }, []);
 
   // Prefetch "Last 5 Games" tracking stats when selectedTeam changes (for instant load when user clicks "Last 5 Games")
   useEffect(() => {
