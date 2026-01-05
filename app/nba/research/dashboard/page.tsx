@@ -3212,3 +3212,2981 @@ const lineMovementInFlightRef = useRef(false);
 
   // Parse ESPN height format (total inches or "6'10") into feet and inches
   const parseEspnHeight = (height: any): { feet?: number; inches?: number } => {
+    console.log('ðŸ€ ESPN height data:', height, 'Type:', typeof height);
+    
+    if (!height) return {};
+    
+    // If it's a number (total inches)
+    if (typeof height === 'number' || /^\d+$/.test(String(height))) {
+      const totalInches = parseInt(String(height), 10);
+      const feet = Math.floor(totalInches / 12);
+      const inches = totalInches % 12;
+      console.log(`ðŸ€ Converted ${totalInches}" to ${feet}'${inches}"`);
+      return { feet, inches };
+    }
+    
+    // Convert to string for other formats
+    const heightStr = String(height);
+    
+    // ESPN format is like "6'10" or "6'10\"" or "6-10"
+    const match = heightStr.match(/(\d+)['-](\d+)/);
+    if (match) {
+      const feet = parseInt(match[1], 10);
+      const inches = parseInt(match[2], 10);
+      console.log(`ðŸ€ Parsed height: ${feet}'${inches}"`);
+      return { feet, inches };
+    }
+    
+    console.log(`âŒ Could not parse height: "${heightStr}"`);
+    return {};
+  };
+
+  // Fetch ESPN player data (jersey, height, etc.)
+  const fetchEspnPlayerData = async (playerName: string, team?: string): Promise<EspnPlayerData | null> => {
+    return await fetchEspnPlayerDataCore(playerName, team);
+  };
+
+
+  // Fetch game stats for a player
+  const fetchSortedStats = async (playerId: string) => {
+    return await fetchSortedStatsCore(playerId, selectedTimeframe);
+  };
+  
+  // Core function to fetch advanced stats (without UI state updates)
+  const fetchAdvancedStatsCore = async (playerId: string) => {
+    const playerIdNum = parseInt(playerId);
+    if (isNaN(playerIdNum)) {
+      throw new Error('Invalid player ID');
+    }
+    
+    const season = currentNbaSeason();
+    let stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season));
+    
+    if (stats.length === 0) {
+      // If no current season stats, try previous season
+      stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season - 1));
+    }
+    
+    return stats.length > 0 ? stats[0] : null;
+  };
+
+  // Core function to fetch ESPN player data (without UI state updates) 
+  const fetchEspnPlayerDataCore = async (playerName: string, team?: string) => {
+    try {
+      const params = new URLSearchParams({ name: playerName });
+      if (team) params.set('team', team.toLowerCase());
+      const res = await fetch(`/api/espn/player?${params.toString()}`);
+      const json = await res.json();
+      return json.data || null;
+    } catch (error) {
+      console.warn('Failed to fetch ESPN player data:', error);
+      return null;
+    }
+  };
+
+  // Fetch full player data from Ball Don't Lie API (includes height, jersey_number, etc.)
+  const fetchBdlPlayerData = async (playerId: string): Promise<any | null> => {
+    try {
+      const res = await fetch(`/api/bdl/player/${playerId}`);
+      if (!res.ok) {
+        console.warn(`âŒ Failed to fetch BDL player data for ${playerId}: ${res.status}`);
+        return null;
+      }
+      const json = await res.json();
+      const playerData = json.data || null;
+      
+      if (playerData) {
+        console.log(`âœ… BDL player data fetched for ${playerId}:`, {
+          jersey_number: playerData.jersey_number,
+          height: playerData.height,
+          hasJersey: !!playerData.jersey_number && playerData.jersey_number !== '',
+          hasHeight: !!playerData.height && playerData.height !== ''
+        });
+      } else {
+        console.warn(`âš ï¸ BDL player data is null for ${playerId}`);
+      }
+      
+      return playerData;
+    } catch (error) {
+      console.warn('âŒ Failed to fetch BDL player data:', error);
+      return null;
+    }
+  };
+
+  // Parse BDL height format (can be "6-10", "6'10\"", or total inches as number/string)
+  const parseBdlHeight = (height: string | number | null | undefined): { feet?: number; inches?: number } => {
+    if (!height) return {};
+    
+    // If it's a number (total inches)
+    if (typeof height === 'number' || /^\d+$/.test(String(height))) {
+      const totalInches = parseInt(String(height), 10);
+      const feet = Math.floor(totalInches / 12);
+      const inches = totalInches % 12;
+      return { feet, inches };
+    }
+    
+    // Convert to string for parsing
+    const heightStr = String(height);
+    
+    // BDL format is typically "6-10" or "6'10" or "6'10\""
+    const match = heightStr.match(/(\d+)['-](\d+)/);
+    if (match) {
+      const feet = parseInt(match[1], 10);
+      const inches = parseInt(match[2], 10);
+      return { feet, inches };
+    }
+    
+    return {};
+  };
+
+  
+  // Track current fetch to prevent race conditions
+  const advancedStatsFetchRef = useRef<string | null>(null);
+  const shotDistanceFetchRef = useRef<string | null>(null);
+  
+  // Restore stats from sessionStorage when player ID is set (for page refresh)
+  useEffect(() => {
+    if (resolvedPlayerId && hasPremium && typeof window !== 'undefined') {
+      // Only restore if stats aren't already loaded
+      if (!advancedStats) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${resolvedPlayerId}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+            console.log('âœ… Restored advanced stats from cache for player', resolvedPlayerId);
+          }
+        } catch (e) {
+          console.error('Error restoring advanced stats:', e);
+        }
+      }
+      
+      if (!shotDistanceData) {
+        try {
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${resolvedPlayerId}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+            console.log('âœ… Restored shot chart data from cache for player', resolvedPlayerId);
+          }
+        } catch (e) {
+          console.error('Error restoring shot chart data:', e);
+        }
+      }
+    }
+  }, [resolvedPlayerId, hasPremium]); // Restore when player ID or premium status changes
+  
+  // Fetch advanced stats for a player
+  const fetchAdvancedStats = async (playerId: string) => {
+    // Don't attempt to fetch if user doesn't have premium - just silently return
+    // The UI will already be gated by checkFeatureAccess elsewhere
+    if (!hasPremium) {
+      setAdvancedStats(null);
+      setAdvancedStatsLoading(false);
+      return;
+    }
+    
+    // Mark this fetch as the current one
+    advancedStatsFetchRef.current = playerId;
+    
+    // Check if we already have cached data - if so, don't clear it (preserve on refresh)
+    const hasCachedData = typeof window !== 'undefined' && sessionStorage.getItem(`advanced_stats_${playerId}`);
+    
+    // Only clear if we don't have cached data (to preserve restored stats on refresh)
+    if (!hasCachedData) {
+      setAdvancedStats(null);
+    }
+    setAdvancedStatsLoading(true);
+    setAdvancedStatsError(null);
+    
+    try {
+      const stats = await fetchAdvancedStatsCore(playerId);
+      
+      // Only update if this is still the current fetch (prevent race conditions)
+      if (advancedStatsFetchRef.current === playerId) {
+        if (stats) {
+          setAdvancedStats(stats);
+          // Save to sessionStorage for persistence across refreshes
+          if (typeof window !== 'undefined') {
+            try {
+              const storageKey = `advanced_stats_${playerId}`;
+              sessionStorage.setItem(storageKey, JSON.stringify(stats));
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
+        } else {
+          setAdvancedStats(null);
+          setAdvancedStatsError('No advanced stats found for this player');
+        }
+      }
+    } catch (error: any) {
+      // Only update if this is still the current fetch
+      if (advancedStatsFetchRef.current === playerId) {
+        setAdvancedStatsError(error.message || 'Failed to fetch advanced stats');
+        setAdvancedStats(null);
+      }
+    } finally {
+      // Only update loading state if this is still the current fetch
+      if (advancedStatsFetchRef.current === playerId) {
+        setAdvancedStatsLoading(false);
+      }
+    }
+  };
+  
+  // Fetch shot distance stats for a player
+  const fetchShotDistanceStats = async (playerId: string) => {
+    // Don't attempt to fetch if user doesn't have premium - just silently return
+    // The UI will already be gated by checkFeatureAccess elsewhere
+    if (!hasPremium) {
+      setShotDistanceData(null);
+      setShotDistanceLoading(false);
+      return;
+    }
+    
+    // Mark this fetch as the current one
+    shotDistanceFetchRef.current = playerId;
+    
+    // Check if we already have cached data - if so, don't clear it (preserve on refresh)
+    const hasCachedData = typeof window !== 'undefined' && sessionStorage.getItem(`shot_distance_${playerId}`);
+    
+    // Only clear if we don't have cached data (to preserve restored stats on refresh)
+    if (!hasCachedData) {
+      setShotDistanceData(null);
+    }
+    setShotDistanceLoading(true);
+    
+    try {
+      const season = currentNbaSeason();
+      const response = await fetch(`/api/bdl/shot-distance?player_id=${playerId}&season=${season}`);
+      const data = await response.json();
+      
+      // Only update if this is still the current fetch (prevent race conditions)
+      if (shotDistanceFetchRef.current === playerId) {
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          const shotData = data.data[0].stats;
+          setShotDistanceData(shotData);
+          // Save to sessionStorage for persistence across refreshes
+          if (typeof window !== 'undefined') {
+            try {
+              const storageKey = `shot_distance_${playerId}`;
+              sessionStorage.setItem(storageKey, JSON.stringify(shotData));
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
+        } else {
+          setShotDistanceData(null);
+        }
+      }
+    } catch (error) {
+      // Only update if this is still the current fetch
+      if (shotDistanceFetchRef.current === playerId) {
+        console.error('Failed to fetch shot distance stats:', error);
+        setShotDistanceData(null);
+      }
+    } finally {
+      // Only update loading state if this is still the current fetch
+      if (shotDistanceFetchRef.current === playerId) {
+        setShotDistanceLoading(false);
+      }
+    }
+  };
+
+  // Select from your local SAMPLE_PLAYERS (default) - but use API for team data
+  const handlePlayerSelectFromLocal = async (player: NBAPlayer) => {
+    setIsLoading(true); setApiError(null);
+    
+    // Clear premium stats immediately when switching players
+    setAdvancedStats(null);
+    setShotDistanceData(null);
+    setAdvancedStatsLoading(false);
+    setShotDistanceLoading(false);
+    
+    // Clear all odds data when switching players
+    setRealOddsData([]);
+    setOddsSnapshots([]);
+    setLineMovementData(null);
+    setOddsLoading(false);
+    setOddsError(null);
+    
+    // Clear opponent team when switching players to force re-detection
+    console.log(`[Player Select] Clearing opponent team for player switch to: ${player.full}`);
+    setOpponentTeam('N/A');
+    
+    try {
+      const pid = /^\d+$/.test(String(player.id)) ? String(player.id) : await resolvePlayerId(player.full, player.teamAbbr);
+      if (!pid) throw new Error(`Couldn't resolve player id for "${player.full}"`);
+      setResolvedPlayerId(pid);
+      
+      // Restore cached stats from sessionStorage if available
+      if (typeof window !== 'undefined' && hasPremium) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${pid}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+          }
+          
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${pid}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+          }
+        } catch (e) {
+          // Ignore storage errors, will fetch fresh data
+        }
+      }
+      
+      // OPTIMIZATION: Progressive loading for faster initial render
+      // 1. Fetch critical path data first (stats) - show UI immediately
+      // 2. Load non-critical data (BDL/ESPN metadata) in background
+      // 3. Load premium features (advanced stats, shot distance) in background
+      
+      // Fetch stats first (critical - needed for chart)
+      const rows = await fetchSortedStats(pid);
+      
+      // Use sample data team directly for default players - NO GAME DATA FALLBACK
+      const currentTeam = normalizeAbbr(player.teamAbbr);
+      
+      // Set player stats immediately so UI can render (with basic player info)
+      startTransition(() => {
+        setSelectedTimeframe('last10');
+        setPlayerStats(rows);
+        setSelectedTeam(currentTeam);
+        setOriginalPlayerTeam(currentTeam);
+        setDepthChartTeam(currentTeam);
+        setSelectedPlayer(player); // Set basic player first, will update with jersey/height later
+      });
+      
+      // Load non-critical metadata in background (doesn't block UI)
+      Promise.all([
+        fetchBdlPlayerData(pid),
+        fetchEspnPlayerData(player.full, player.teamAbbr).catch(() => null)
+      ]).then(([bdlPlayerData, espnData]) => {
+        // Parse BDL height data and merge with sample player data
+        const heightData = parseBdlHeight(bdlPlayerData?.height);
+        
+        // Get jersey and height from BDL, with fallbacks to player object
+        const bdlJersey = bdlPlayerData?.jersey_number;
+        const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
+          ? Number(bdlJersey) 
+          : 0;
+        let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : (player.jersey || 0);
+        let heightFeetData: number | undefined = heightData.feet || player.heightFeet || undefined;
+        let heightInchesData: number | undefined = heightData.inches || player.heightInches || undefined;
+        
+        // Fallback to depth chart roster for jersey if still missing
+        if (!jerseyNumber && playerTeamRoster) {
+          const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+          for (const pos of positions) {
+            const posPlayers = playerTeamRoster[pos];
+            if (Array.isArray(posPlayers)) {
+              const found = posPlayers.find(p => 
+                p.name && player.full && 
+                (p.name.toLowerCase().includes(player.full.toLowerCase()) || 
+                 player.full.toLowerCase().includes(p.name.toLowerCase()))
+              );
+              if (found && found.jersey && found.jersey !== 'N/A') {
+                jerseyNumber = Number(found.jersey);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Update player with jersey/height metadata (non-blocking update)
+        startTransition(() => {
+          setSelectedPlayer({
+            ...player,
+            jersey: jerseyNumber,
+            heightFeet: heightFeetData || undefined,
+            heightInches: heightInchesData || undefined,
+          });
+        });
+      }).catch(err => {
+        console.warn('Failed to load player metadata (non-critical):', err);
+      });
+      
+      // Start premium fetches in background (don't await)
+      if (hasPremium) {
+        fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
+        fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+      }
+      
+      // Debug: log what we're setting as playerStats
+      console.log('[Dashboard] Setting playerStats:', {
+        playerId: pid,
+        playerName: player.full,
+        rowsCount: rows.length,
+        sampleRow: rows[0],
+        hasGame: !!rows[0]?.game,
+        hasGameDate: !!rows[0]?.game?.date,
+        hasTeam: !!rows[0]?.team,
+        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
+        sampleRowKeys: rows[0] ? Object.keys(rows[0]) : [],
+      });
+      
+      // Batch remaining state updates in startTransition
+      startTransition(() => {
+        // Reset betting-line auto-set trackers so odds can re-apply for the new player
+        lastAutoSetStatRef.current = null;
+        lastAutoSetLineRef.current = null;
+        hasManuallySetLineRef.current = false;
+        
+        // Reset betting lines in transition to prevent visible refresh
+        // BUT preserve the line from URL if it exists (important for steals/blocks)
+        setBettingLines(prev => {
+          // Check URL for line parameter
+          if (typeof window !== 'undefined') {
+            try {
+              const url = new URL(window.location.href);
+              const urlLine = url.searchParams.get('line');
+              const urlStat = url.searchParams.get('stat');
+              if (urlLine && urlStat) {
+                const lineValue = parseFloat(urlLine);
+                const normalizedStat = urlStat.toLowerCase();
+                if (!isNaN(lineValue) && normalizedStat) {
+                  // Preserve the URL line for the URL stat
+                  return { [normalizedStat]: Math.abs(lineValue) };
+                }
+              }
+            } catch {}
+          }
+          // Also check if current stat has a line that was set from URL
+          const currentStatLine = prev[selectedStat];
+          if (currentStatLine !== undefined && statFromUrlRef.current) {
+            return { [selectedStat]: currentStatLine };
+          }
+          return {};
+        });
+      });
+      // Update URL to reflect the change
+      if (typeof window !== 'undefined') {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('tf', 'last10');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+      
+      // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
+      if (todaysGames.length > 0) {
+        const opponent = getOpponentTeam(currentTeam, todaysGames);
+        const normalizedOpponent = normalizeAbbr(opponent);
+        console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (games already loaded)`);
+        setOpponentTeam(normalizedOpponent);
+      } else {
+        console.log(`[Player Select] Team set to ${currentTeam}, opponent will be set when games load`);
+      }
+      
+      if (!rows.length) setApiError("No games found for current/previous season for this player.");
+    } catch (e: any) {
+      setApiError(e?.message || "Failed to load stats."); setPlayerStats([]);
+      setOpponentTeam('');
+    } finally { setIsLoading(false); }
+  };
+
+  // Select from live search results
+  const handlePlayerSelectFromSearch = async (r: BdlSearchResult) => {
+    // Prevent duplicate calls
+    if (isHandlingPlayerSelectRef.current) {
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Already handling, skipping duplicate call');
+      return;
+    }
+    
+    isHandlingPlayerSelectRef.current = true;
+    
+    try {
+      const callData = {
+        player: r.full,
+        id: r.id,
+        team: r.team,
+        pos: r.pos,
+        stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+      };
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Called with:', callData);
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Called with', { data: callData });
+      // Only set loading if not already loading (prevents double render when called from URL params)
+      if (!isLoading) {
+        console.log('ðŸ” [handlePlayerSelectFromSearch] Setting isLoading=true');
+        setIsLoading(true);
+      } else {
+        console.log('ðŸ” [handlePlayerSelectFromSearch] Already loading, skipping setIsLoading');
+      }
+      setApiError(null);
+    
+    // Clear premium stats immediately when switching players
+    setAdvancedStats(null);
+    setShotDistanceData(null);
+    setAdvancedStatsLoading(false);
+    setShotDistanceLoading(false);
+    
+    // Clear all odds data when switching players
+    setRealOddsData([]);
+    setOddsSnapshots([]);
+    setLineMovementData(null);
+    setOddsLoading(false);
+    setOddsError(null);
+    
+    try {
+      const pid = String(r.id);
+      setResolvedPlayerId(pid);
+      
+      // Restore cached stats from sessionStorage if available
+      if (typeof window !== 'undefined' && hasPremium) {
+        try {
+          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${pid}`);
+          if (cachedAdvancedStats) {
+            const stats = JSON.parse(cachedAdvancedStats);
+            setAdvancedStats(stats);
+          }
+          
+          const cachedShotData = sessionStorage.getItem(`shot_distance_${pid}`);
+          if (cachedShotData) {
+            const shotData = JSON.parse(cachedShotData);
+            setShotDistanceData(shotData);
+          }
+        } catch (e) {
+          // Ignore storage errors, will fetch fresh data
+        }
+      }
+      // Create player object from search result
+      const tempPlayer = {
+        id: pid,
+        full: r.full,
+        firstName: r.full.split(' ')[0] || r.full,
+        lastName: r.full.split(' ').slice(1).join(' ') || '',
+        teamAbbr: '', // Will be determined from API game data
+        jersey: '',
+        heightFeet: null,
+        heightInches: null,
+        position: r.pos || '',
+      } as any;
+      
+      // OPTIMIZATION: Fetch both current season and last season stats in parallel
+      // This prevents multiple refreshes and ensures all data is available at once
+      // fetchSortedStatsCore handles parallel fetching for both seasons
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Starting stats fetch', { data: { pid, name: r.full } });
+      
+      // Fetch both seasons in parallel - prevents multiple refreshes
+      const rows = await fetchSortedStats(pid).catch(err => {
+        console.error('âŒ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
+        return [];
+      });
+      
+      // Start BDL and ESPN fetches in background (don't await - they'll update state when ready)
+      const bdlPromise = fetchBdlPlayerData(pid).catch(err => {
+        console.error('âŒ [handlePlayerSelectFromSearch] fetchBdlPlayerData failed:', err);
+        return null;
+      });
+      
+      const espnPromise = fetchEspnPlayerData(r.full, r.team).catch(err => {
+        console.warn('âš ï¸ [handlePlayerSelectFromSearch] fetchEspnPlayerData failed (non-critical):', err);
+        return null;
+      });
+      
+      // Process BDL/ESPN data when ready (non-blocking)
+      Promise.all([bdlPromise, espnPromise]).then(([bdlPlayerData, espnData]) => {
+        // Update player with jersey/height data when available
+        if (bdlPlayerData || espnData) {
+          const heightData = parseBdlHeight(bdlPlayerData?.height);
+          const bdlJersey = bdlPlayerData?.jersey_number;
+          const bdlJerseyNum = (bdlJersey && bdlJersey !== '' && bdlJersey !== 'null' && bdlJersey !== '0') 
+            ? Number(bdlJersey) 
+            : 0;
+          let jerseyNumber = bdlJerseyNum > 0 ? bdlJerseyNum : 0;
+          let heightFeetData: number | undefined = heightData.feet;
+          let heightInchesData: number | undefined = heightData.inches;
+          
+          // Use ESPN as fallback
+          if (espnData) {
+            if (!jerseyNumber && espnData.jersey) {
+              jerseyNumber = Number(espnData.jersey);
+            }
+            if (!heightFeetData && espnData.height) {
+              const espnHeightData = parseEspnHeight(espnData.height);
+              if (espnHeightData.feet) {
+                heightFeetData = espnHeightData.feet;
+                heightInchesData = espnHeightData.inches;
+              }
+            }
+          }
+          
+          // Update player with new data if we got any
+          if (jerseyNumber || heightFeetData) {
+            setSelectedPlayer(prev => {
+              if (!prev) return prev; // Return null if no previous player
+              const currentJersey = typeof prev.jersey === 'number' ? prev.jersey : (typeof prev.jersey === 'string' ? Number(prev.jersey) || 0 : 0);
+              return {
+                ...prev,
+                jersey: jerseyNumber || currentJersey,
+                heightFeet: heightFeetData ?? prev.heightFeet ?? undefined,
+                heightInches: heightInchesData ?? prev.heightInches ?? undefined,
+              };
+            });
+          }
+        }
+      }).catch(err => {
+        console.warn('âš ï¸ [handlePlayerSelectFromSearch] Error processing BDL/ESPN data:', err);
+      });
+      
+      // Log stats completion
+      console.log('ðŸ” [handlePlayerSelectFromSearch] Stats fetch completed:', { statsCount: rows.length });
+      serverLogger.log('ðŸ” [handlePlayerSelectFromSearch] Stats fetch completed', { data: { statsCount: rows.length } });
+      
+      // Start premium fetches in background (don't await)
+      if (hasPremium) {
+        // Fire and forget - these will update state when ready
+        fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
+        fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+      }
+      
+      // Batch critical state updates together to prevent multiple re-renders
+      // Use startTransition for non-urgent updates to keep UI responsive
+      // Use the team from search API directly - NO FALLBACK TO GAME DATA
+      const currentTeam = normalizeAbbr(r.team || '');
+      
+      // Get position from search result
+      let playerPosition = r.pos || tempPlayer.position || '';
+      
+      // Try to get jersey/height from sample players or depth chart (synchronous sources)
+      let jerseyNumber = 0;
+      let heightFeetData: number | undefined = undefined;
+      let heightInchesData: number | undefined = undefined;
+      
+      // Fallback to sample players data if available
+      const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const searchName = normalizeName(r.full);
+      const samplePlayer = SAMPLE_PLAYERS.find(p => {
+        const playerName = normalizeName(p.full);
+        return playerName === searchName || 
+               playerName.includes(searchName) || 
+               searchName.includes(playerName) ||
+               (p.firstName && normalizeName(p.firstName + p.lastName) === searchName) ||
+               (p.lastName && normalizeName(p.lastName) === normalizeName(r.full.split(' ').pop() || ''));
+      });
+      if (samplePlayer) {
+        if (samplePlayer.jersey) {
+          jerseyNumber = samplePlayer.jersey;
+          console.log(`âœ… Found jersey #${jerseyNumber} from sample data for ${r.full}`);
+        }
+        if (samplePlayer.heightFeet) {
+          heightFeetData = samplePlayer.heightFeet;
+          heightInchesData = samplePlayer.heightInches;
+          console.log(`âœ… Found height ${heightFeetData}'${heightInchesData}" from sample data for ${r.full}`);
+        }
+      }
+      
+      // Fallback to depth chart roster for jersey and position if still missing
+      if (playerTeamRoster) {
+        const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+        for (const pos of positions) {
+          const posPlayers = playerTeamRoster[pos];
+          if (Array.isArray(posPlayers)) {
+            const found = posPlayers.find(p => 
+              p.name && r.full && 
+              (p.name.toLowerCase().includes(r.full.toLowerCase()) || 
+               r.full.toLowerCase().includes(p.name.toLowerCase()))
+            );
+            if (found) {
+              if (!jerseyNumber && found.jersey && found.jersey !== 'N/A') {
+                jerseyNumber = Number(found.jersey);
+                console.log(`âœ… Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
+              }
+              if (!playerPosition) {
+                playerPosition = pos;
+                console.log(`âœ… Found position ${playerPosition} from depth chart for ${r.full}`);
+              }
+              break;
+            }
+          }
+        }
+      }
+      
+      // Batch all state updates together in startTransition to prevent multiple re-renders
+      // Set selectedTimeframe FIRST so it's correct when playerStats updates (prevents double baseGameData recalculation)
+      console.log('[DEBUG handlePlayerSelectFromSearch] About to batch state updates', {
+        rowsCount: rows.length,
+        currentTeam,
+        timestamp: new Date().toISOString()
+      });
+      
+      startTransition(() => {
+        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
+        // Set this FIRST so baseGameData calculates correctly when playerStats updates
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting timeframe to "last10"`);
+        setSelectedTimeframe('last10');
+        
+        // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting playerStats (${rows.length} rows)`);
+        setPlayerStats(rows);
+        
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting teams and player`);
+        setSelectedTeam(currentTeam);
+        setOriginalPlayerTeam(currentTeam);
+        setDepthChartTeam(currentTeam);
+        
+        // Update player with available data (jersey/height from BDL/ESPN will update later)
+        setSelectedPlayer({
+          ...tempPlayer,
+          teamAbbr: currentTeam,
+          jersey: jerseyNumber || '',
+          heightFeet: heightFeetData || null,
+          heightInches: heightInchesData || null,
+          position: playerPosition || undefined,
+        });
+
+        // Reset betting-line auto-set trackers so odds can re-apply for the new player
+        lastAutoSetStatRef.current = null;
+        lastAutoSetLineRef.current = null;
+        hasManuallySetLineRef.current = false;
+        
+        // Reset betting lines in transition to prevent visible refresh
+        // BUT preserve the line from URL if it exists (important for steals/blocks)
+        console.log(`[DEBUG handlePlayerSelectFromSearch] Resetting bettingLines`);
+        setBettingLines(prev => {
+          // Check URL for line parameter
+          if (typeof window !== 'undefined') {
+            try {
+              const url = new URL(window.location.href);
+              const urlLine = url.searchParams.get('line');
+              const urlStat = url.searchParams.get('stat');
+              if (urlLine && urlStat) {
+                const lineValue = parseFloat(urlLine);
+                const normalizedStat = urlStat.toLowerCase();
+                if (!isNaN(lineValue) && normalizedStat) {
+                  // Preserve the URL line for the URL stat
+                  return { [normalizedStat]: Math.abs(lineValue) };
+                }
+              }
+            } catch {}
+          }
+          // Also check if current stat has a line that was set from URL
+          const currentStatLine = prev[selectedStat];
+          if (currentStatLine !== undefined && statFromUrlRef.current) {
+            return { [selectedStat]: currentStatLine };
+          }
+          return {};
+        });
+        
+        console.log(`[DEBUG handlePlayerSelectFromSearch] All state updates batched in startTransition`);
+      });
+      
+      // Update URL to reflect the timeframe change (outside transition, doesn't affect rendering)
+      if (typeof window !== 'undefined') {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('tf', 'last10');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+      
+      // Set opponent immediately if games are already loaded, otherwise useEffect will handle it
+      if (todaysGames.length > 0) {
+        const opponent = getOpponentTeam(currentTeam, todaysGames);
+        const normalizedOpponent = normalizeAbbr(opponent);
+        console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (games already loaded)`);
+        setOpponentTeam(normalizedOpponent);
+      } else {
+        console.log(`[Player Select] Team set to ${currentTeam}, opponent will be set when games load`);
+      }
+      
+      if (!rows.length) setApiError("No games found for current/previous season for this player.");
+      console.log('âœ… handlePlayerSelectFromSearch completed successfully');
+    } catch (e: any) {
+      console.error('âŒ handlePlayerSelectFromSearch error:', e);
+      setApiError(e?.message || "Failed to load stats."); 
+      setPlayerStats([]);
+      setOpponentTeam('N/A');
+    } finally {
+      isHandlingPlayerSelectRef.current = false;
+    }
+    } finally {
+      isHandlingPlayerSelectRef.current = false;
+      setIsLoading(false);
+      setShowDropdown(false);
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking inside the search container (includes dropdown)
+      // The button handlers will close the dropdown themselves
+      if (searchRef.current && searchRef.current.contains(target)) {
+        return; // Click is inside search container
+      }
+      // Click is outside - close dropdown
+      setShowDropdown(false);
+    };
+    // Use a slight delay to ensure button onClick handlers fire first
+    const handleClick = (e: MouseEvent) => {
+      // Use requestAnimationFrame to defer the check until after button handlers
+      requestAnimationFrame(() => {
+        onClick(e);
+      });
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // header info - dynamic based on props mode
+  const headerInfo = useMemo(() => {
+    return calculateHeaderInfo({
+      propsMode,
+      gamePropsTeam,
+      selectedPlayer,
+      selectedTeam,
+    });
+  }, [propsMode, gamePropsTeam, selectedPlayer, selectedTeam]);
+
+  // Keep the old variable name for compatibility
+  const playerInfo = headerInfo;
+  
+  // Defer heavy baseGameData computation to prevent UI freeze during player selection
+  // This allows the UI to remain responsive while stats are being processed
+  // Removed useDeferredValue to prevent double refresh - use playerStats directly
+  // const deferredPlayerStats = useDeferredValue(playerStats);
+  
+  /* -------- Base game data (structure only, no stat values) ----------
+     This should only recalculate when player/timeframe changes, NOT when stat changes */
+  const baseGameData = useMemo(() => {
+    return processBaseGameData({
+      playerStats,
+      selectedTimeframe,
+      selectedPlayer,
+      propsMode,
+      gameStats,
+      selectedTeam,
+      opponentTeam,
+      manualOpponent,
+      homeAway,
+      isLoading,
+      resolvedPlayerId,
+      teammateFilterId,
+      gamePropsTeam,
+    });
+  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]);
+  
+  // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
+  // This allows us to filter from ALL games, then apply timeframe
+  const allGamesSecondAxisData = useMemo(() => {
+    return processAllGamesSecondAxisData({
+      playerStats,
+      selectedFilterForAxis,
+      selectedTimeframe,
+      advancedStatsPerGame,
+      dvpRanksPerGame,
+      propsMode,
+    });
+  }, [playerStats, selectedFilterForAxis, selectedTimeframe, advancedStatsPerGame, dvpRanksPerGame, propsMode]);
+  
+  // Prefetch teammate game data in background when roster is available (for faster filtering)
+  useTeammatePrefetch({
+    rosterForSelectedTeam,
+    baseGameData,
+    propsMode,
+    selectedPlayer,
+  });
+  
+  // Precompute back-to-back games (player mode)
+  const backToBackGameIds = useMemo(() => {
+    return calculateBackToBackGameIds({
+      propsMode,
+      playerStats,
+    });
+  }, [propsMode, playerStats]);
+
+  // Apply advanced filters to base data for player mode
+  const filteredGameData = useMemo(() => {
+    return processFilteredGameData({
+      propsMode,
+      baseGameData,
+      minMinutesFilter,
+      maxMinutesFilter,
+      excludeBlowouts,
+      excludeBackToBack,
+      backToBackGameIds,
+      withWithoutMode,
+      teammateFilterId,
+      teammatePlayedGameIds,
+      selectedTimeframe,
+      playerStats,
+      selectedPlayer,
+    });
+  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe, playerStats, selectedPlayer]);
+
+  /* -------- Chart data with current stat values ----------
+     Only recalculate values when selectedStat changes */
+  const chartData = useMemo(() => {
+    const source = propsMode === 'player' ? filteredGameData : baseGameData;
+    return processChartData({
+      source,
+      selectedStat,
+      propsMode,
+      gamePropsTeam,
+      todaysGames,
+    });
+  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
+
+  // Track in-flight requests to prevent duplicates
+  const teammateFetchAbortControllerRef = useRef<AbortController | null>(null);
+  const teammateFetchInProgressRef = useRef<Set<number>>(new Set());
+
+  // Load teammate participation for current base games when filter is active
+  useTeammateFilterData({
+    teammateFilterId,
+    baseGameData,
+    withWithoutMode,
+    setTeammatePlayedGameIds,
+    setLoadingTeammateGames,
+    teammateFetchAbortControllerRef,
+    teammateFetchInProgressRef,
+  });
+
+  const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
+
+  // Hit rate calculations - using statistical distribution instead of simple counting
+  const hitRateStats = useMemo<HitRateStats>(() => {
+    // Debug: log chartData values before filtering
+    console.log('[hitRateStats] Processing chartData:', {
+      chartDataLength: chartData.length,
+      sampleChartData: chartData[0],
+      sampleValue: chartData[0]?.value,
+      sampleValueType: typeof chartData[0]?.value,
+      allValues: chartData.map(d => d.value),
+      allValueTypes: chartData.map(d => typeof d.value),
+    });
+    
+    const validValues = chartData
+      .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
+      .filter((v): v is number => Number.isFinite(v));
+    
+    // Debug: log filtering results
+    console.log('[hitRateStats] Valid values:', {
+      validValuesLength: validValues.length,
+      validValues,
+      chartDataLength: chartData.length,
+      filteredOut: chartData.length - validValues.length,
+    });
+    
+    if (validValues.length === 0) {
+      // Check if URL params indicate a player should be loaded (for initial page load detection)
+      let hasUrlPlayer = false;
+      if (typeof window !== 'undefined' && propsMode === 'player') {
+        try {
+          const url = new URL(window.location.href);
+          const pid = url.searchParams.get('pid');
+          const name = url.searchParams.get('name');
+          hasUrlPlayer = !!(pid && name);
+        } catch {}
+      }
+      
+      // If we have a selectedPlayer or resolvedPlayerId or URL params but no data, we're likely still loading
+      // Don't show "0/0" - return empty stats that won't display the pill
+      if (propsMode === 'player' && (selectedPlayer || resolvedPlayerId || hasUrlPlayer) && (isLoading || chartData.length === 0)) {
+        console.log('[hitRateStats] Loading state - player exists but no data yet');
+        // Return empty but with a flag that we're loading (chartData.length === 0 means we're waiting)
+        return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: undefined };
+      }
+      console.warn('[hitRateStats] No valid values found! Returning 0/0');
+      return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: propsMode === 'player' ? baseGameData.length : undefined };
+    }
+    
+    // Calculate statistical metrics
+    const mean = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+    const variance = validValues.reduce((sum, val) => {
+      const diff = val - mean;
+      return sum + (diff * diff);
+    }, 0) / validValues.length;
+    const stdDev = Math.sqrt(variance);
+    const adjustedStdDev = Math.max(stdDev, 2); // Minimum stdDev to avoid division issues
+    
+    // Calculate actual hit rates by counting games where stat > bettingLine
+    // This gives real hit rates, not probability-based estimates
+    const total = chartData.length;
+    let overCount = 0;
+    let underCount = 0;
+    
+    if (Number.isFinite(bettingLine)) {
+      // Count actual hits: how many games had stat > bettingLine
+      validValues.forEach(val => {
+        if (val > bettingLine) {
+          overCount++;
+        } else {
+          underCount++;
+        }
+      });
+    } else {
+      // If no betting line, can't calculate hit rates
+      overCount = 0;
+      underCount = total;
+    }
+    
+    const safeReduce = (values: number[]): number => {
+      if (!values.length) return 0;
+      const total = values.reduce((sum, val) => sum + val, 0);
+      return total / values.length;
+    };
+  
+    const primaryValues = chartData
+      .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
+      .filter((v): v is number => Number.isFinite(v));
+  
+    const averages: AverageStatInfo[] = [];
+    const statMeta = currentStatOptions.find(s => s.key === selectedStat);
+    const baseLabel = statMeta ? statMeta.label : selectedStat.toUpperCase();
+    const percentageStats = new Set(['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct']);
+    const baseFormat: 'percent' | undefined = percentageStats.has(selectedStat) ? 'percent' : undefined;
+    const primaryAverage = safeReduce(primaryValues);
+    averages.push({ label: baseLabel, value: primaryAverage, format: baseFormat });
+
+    if (['pra', 'pr', 'ra', 'pa'].includes(selectedStat)) {
+      const parts = chartData.map((d: any) => {
+        const stats = d && (d as any).stats;
+        return stats || {};
+      });
+      const ptsValues = parts.map(p => Number(p.pts)).filter((v): v is number => Number.isFinite(v));
+      const rebValues = parts.map(p => Number(p.reb)).filter((v): v is number => Number.isFinite(v));
+      const astValues = parts.map(p => Number(p.ast)).filter((v): v is number => Number.isFinite(v));
+  
+      if (selectedStat === 'pra') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      } else if (selectedStat === 'pr') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+      } else if (selectedStat === 'ra') {
+        averages.push({ label: 'REB', value: safeReduce(rebValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      } else if (selectedStat === 'pa') {
+        averages.push({ label: 'PTS', value: safeReduce(ptsValues) });
+        averages.push({ label: 'AST', value: safeReduce(astValues) });
+      }
+    } else if (selectedStat === 'fg3m') {
+      const attempts = chartData
+        .map((d: any) => Number((d?.stats as any)?.fg3a))
+        .filter((v): v is number => Number.isFinite(v));
+      averages.push({ label: '3PA', value: safeReduce(attempts) });
+    } else if (selectedStat === 'fg3a') {
+      const made = chartData
+        .map((d: any) => Number((d?.stats as any)?.fg3m))
+        .filter((v): v is number => Number.isFinite(v));
+      averages.push({ label: '3PM', value: safeReduce(made) });
+    }
+  
+    // Track total games before filters for "X/Y games" display (player mode only)
+    const totalBeforeFilters = propsMode === 'player' ? baseGameData.length : undefined;
+    
+    return { overCount, underCount, total, averages, totalBeforeFilters };
+  }, [chartData, bettingLine, selectedStat, currentStatOptions, propsMode, baseGameData.length, selectedPlayer, isLoading]);
+
+  // Custom tooltip content - completely independent to prevent lag when adjusting betting line
+  const customTooltip = useCallback(({ active, payload, label }: any) => {
+    return (
+      <CustomChartTooltip
+        active={active}
+        payload={payload}
+        label={label}
+        propsMode={propsMode}
+        selectedStat={selectedStat}
+        isDark={isDark}
+        gamePropsTeam={gamePropsTeam}
+        selectedTeam={selectedTeam}
+      />
+    );
+  }, [propsMode, selectedStat, isDark, gamePropsTeam, selectedTeam]);
+
+  // Memoized label formatter for chart bars
+  const formatChartLabel = useMemo(() => createChartLabelFormatter(selectedStat), [selectedStat]);
+
+  // Calculate Y-axis domain with appropriate tick increments
+  const yAxisConfig = useMemo(() => {
+    return calculateYAxisConfig({
+      chartData,
+      selectedStat,
+      selectedTimeframe,
+      propsMode,
+    });
+  }, [chartData, selectedStat, selectedTimeframe, propsMode]);
+
+  // Real odds data state
+  const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
+  const [oddsLoading, setOddsLoading] = useState(false);
+  const [oddsError, setOddsError] = useState<string | null>(null);
+
+  // Calculate predicted pace from betting total line
+  useEffect(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
+      setPredictedPace(null);
+      return;
+    }
+
+    // Find Total line from odds data
+    let totalLine: number | null = null;
+    for (const book of realOddsData) {
+      const totalData = (book as any)?.Total;
+      if (totalData && totalData.line && totalData.line !== 'N/A') {
+        const lineValue = parseFloat(totalData.line);
+        if (!isNaN(lineValue) && lineValue > 0) {
+          // Use the first valid total line found (or could average them)
+          totalLine = lineValue;
+          break;
+        }
+      }
+    }
+
+    if (totalLine === null) {
+      setPredictedPace(null);
+      return;
+    }
+
+    // Convert total points to predicted pace
+    // Formula: Pace â‰ˆ Total / (2 * avg_points_per_possession)
+    // Average NBA points per possession is ~1.12
+    // So: Pace â‰ˆ Total / 2.24
+    // We'll use a more accurate formula based on historical data
+    // Typical range: Total 200-240, Pace 95-105
+    // Linear relationship: Pace = (Total - 200) * (10/40) + 95 = (Total - 200) * 0.25 + 95
+    // Or more accurate: Pace = Total / 2.2 (simpler)
+    const calculatedPace = totalLine / 2.2;
+    
+    // Clamp to reasonable NBA pace range (90-110)
+    const clampedPace = Math.max(90, Math.min(110, calculatedPace));
+    
+    console.log('[Dashboard] Calculated predicted pace from total:', { totalLine, calculatedPace, clampedPace });
+    setPredictedPace(clampedPace);
+  }, [realOddsData, selectedTeam, opponentTeam, propsMode]);
+
+  // Calculate season averages (FG%, minutes, game pace) from playerStats
+  useEffect(() => {
+    if (!playerStats || playerStats.length === 0 || propsMode !== 'player') {
+      setSeasonFgPct(null);
+      setAverageUsageRate(null);
+      setAverageMinutes(null);
+      setAverageGamePace(null);
+      return;
+    }
+
+    // Calculate average FG% from all games
+    const fgPctValues = playerStats
+      .map(stats => stats.fg_pct)
+      .filter((pct): pct is number => pct !== null && pct !== undefined && !isNaN(pct));
+
+    if (fgPctValues.length === 0) {
+      setSeasonFgPct(null);
+    } else {
+      const averageFgPct = fgPctValues.reduce((sum, pct) => sum + pct, 0) / fgPctValues.length;
+      // Convert to percentage (multiply by 100)
+      setSeasonFgPct(averageFgPct * 100);
+    }
+
+    // Calculate average minutes from all games
+    const minutesValues = playerStats
+      .map(stats => parseMinutes(stats.min))
+      .filter((min): min is number => min !== null && min !== undefined && !isNaN(min) && min > 0);
+
+    if (minutesValues.length === 0) {
+      setAverageMinutes(null);
+    } else {
+      const avgMinutes = minutesValues.reduce((sum, min) => sum + min, 0) / minutesValues.length;
+      setAverageMinutes(avgMinutes);
+    }
+
+    // Calculate average game pace from all games
+    const paceValues: number[] = [];
+    for (const stats of playerStats) {
+      const game = stats.game;
+      if (!game) continue;
+
+      const homeTeam = game.home_team?.abbreviation;
+      const awayTeam = game.visitor_team?.abbreviation;
+      
+      if (!homeTeam || !awayTeam) continue;
+
+      const homePace = getTeamPace(normalizeAbbr(homeTeam));
+      const awayPace = getTeamPace(normalizeAbbr(awayTeam));
+
+      if (homePace > 0 && awayPace > 0) {
+        const gamePace = (homePace + awayPace) / 2;
+        paceValues.push(gamePace);
+      }
+    }
+
+    if (paceValues.length === 0) {
+      setAverageGamePace(null);
+    } else {
+      const avgPace = paceValues.reduce((sum, pace) => sum + pace, 0) / paceValues.length;
+      setAverageGamePace(avgPace);
+    }
+  }, [playerStats, propsMode]);
+
+
+  // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
+  const lastPlayerStatsLengthRef = useRef(0);
+  const coreDataReadySetRef = useRef(false);
+  
+  useEffect(() => {
+    // Reset when loading starts or no stats yet
+    if (isLoading || playerStats.length === 0) {
+      setCoreDataReady(false);
+      coreDataReadySetRef.current = false;
+      lastPlayerStatsLengthRef.current = 0;
+      return;
+    }
+
+    // Only run when playerStats length actually changes (new player selected)
+    if (playerStats.length === lastPlayerStatsLengthRef.current && coreDataReadySetRef.current) {
+      return;
+    }
+
+    // Update ref to track current stats length
+    lastPlayerStatsLengthRef.current = playerStats.length;
+
+    // If we've already set coreDataReady for this player, don't re-run
+    if (coreDataReadySetRef.current) {
+      return;
+    }
+
+    // Set coreDataReady immediately - odds will render inline without causing refresh
+    setCoreDataReady(true);
+    coreDataReadySetRef.current = true;
+  }, [playerStats.length, isLoading]);
+  
+  // For spread we now use the signed margin directly (wins down, losses up)
+  const adjustedChartData = useMemo(() => chartData, [chartData]);
+
+  // Calculate average usage rate from prefetchedAdvancedStats
+  // Use baseGameData (filtered by timeframe) to match what the chart shows - works automatically without clicking filter
+  useAverageUsageRate({
+    baseGameData,
+    propsMode,
+    selectedPlayer,
+    prefetchedAdvancedStats,
+    setAverageUsageRate,
+    setPrefetchedAdvancedStats,
+  });
+
+  // Calculate slider min/max based on selected filter (use all games for accurate min/max)
+  const sliderConfig = useMemo(() => {
+    return calculateSliderConfig({
+      selectedFilterForAxis,
+      allGamesSecondAxisData,
+    });
+  }, [selectedFilterForAxis, allGamesSecondAxisData]);
+
+  // Filter chart data based on slider range
+  // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
+  const filteredChartData = useMemo(() => {
+    return processFilteredChartData({
+      adjustedChartData,
+      selectedFilterForAxis,
+      allGamesSecondAxisData,
+      sliderRange,
+      propsMode,
+      selectedStat,
+      selectedTimeframe,
+      selectedPlayer,
+      opponentTeam,
+    });
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer, opponentTeam]);
+
+  // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
+  const secondAxisData = useMemo(() => {
+    return processSecondAxisData({
+      filteredChartData,
+      selectedFilterForAxis,
+      propsMode,
+      advancedStatsPerGame,
+      dvpRanksPerGame,
+    });
+  }, [selectedFilterForAxis, filteredChartData, propsMode, advancedStatsPerGame, dvpRanksPerGame]);
+
+  // Set initial slider range when filter is selected
+  useEffect(() => {
+    if (selectedFilterForAxis && sliderConfig && sliderRange === null) {
+      // Initialize with full range
+      setSliderRange({ min: sliderConfig.min, max: sliderConfig.max });
+    }
+  }, [selectedFilterForAxis, sliderConfig, sliderRange]);
+
+  // Prefetch advanced stats (pace, usage_rate) in background when player stats are available
+  // This runs independently of filter selection to ensure usage rate is always available
+  useEffect(() => {
+    if (propsMode !== 'player' || !playerStats || playerStats.length === 0) {
+      return;
+    }
+
+    // Get player ID
+    const playerIdRaw = selectedPlayer?.id;
+    if (!playerIdRaw) {
+      return;
+    }
+    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
+    if (isNaN(playerId)) {
+      return;
+    }
+
+    // Clear prefetch ref when player changes to ensure fresh fetch
+    const currentPlayerKey = `player_${playerId}`;
+    if (!advancedStatsPrefetchRef.current.has(currentPlayerKey)) {
+      // New player - clear old prefetch keys
+      advancedStatsPrefetchRef.current.clear();
+      advancedStatsPrefetchRef.current.add(currentPlayerKey);
+    }
+
+    // Extract game IDs from playerStats - include ALL games (don't filter by minutes)
+    // This ensures we get usage rate for all games, matching what the chart would show
+    const gameIds: number[] = [];
+    const seenGameIds = new Set<number>();
+    playerStats.forEach((stat: any) => {
+      const gameId = stat.game?.id;
+      if (gameId && typeof gameId === 'number' && !seenGameIds.has(gameId)) {
+        gameIds.push(gameId);
+        seenGameIds.add(gameId);
+      }
+    });
+
+    if (gameIds.length === 0) {
+      return;
+    }
+
+    // Prefetch in background (don't block UI)
+    // Use a ref to track if we've already started prefetching for these game IDs
+    const prefetchKey = `advanced_${playerId}_${gameIds.sort().join(',')}`;
+    
+    if (advancedStatsPrefetchRef.current.has(prefetchKey)) {
+      // Already prefetching or prefetched for these games
+      console.log('[Usage Rate Prefetch] Already prefetching/prefetched for player', playerId);
+      return;
+    }
+
+    // Check if we already have prefetched data for all these games
+    const missingGameIds = gameIds.filter(id => prefetchedAdvancedStats[id] === undefined);
+    if (missingGameIds.length === 0 && gameIds.length > 0) {
+      // Already prefetched all games, mark as done
+      advancedStatsPrefetchRef.current.add(prefetchKey);
+      console.log('[Usage Rate Prefetch] Already have all prefetched data for', gameIds.length, 'games');
+      return;
+    }
+    
+    // If we have some but not all, still fetch (will merge with existing)
+    if (missingGameIds.length < gameIds.length) {
+      console.log('[Usage Rate Prefetch] Have', gameIds.length - missingGameIds.length, 'games, fetching', missingGameIds.length, 'missing');
+    }
+
+    // Mark as prefetching
+    advancedStatsPrefetchRef.current.add(prefetchKey);
+    console.log('[Usage Rate Prefetch] Starting prefetch for player', playerId, 'with', gameIds.length, 'games');
+    
+    let isMounted = true;
+    const prefetchAdvancedStats = async () => {
+      try {
+        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
+        
+        if (!isMounted) return;
+        
+        // Map stats by game ID
+        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
+        stats.forEach((stat: any) => {
+          const gameId = stat.game?.id;
+          if (gameId && typeof gameId === 'number') {
+            statsByGame[gameId] = {
+              pace: stat.pace ?? undefined,
+              usage_percentage: stat.usage_percentage ?? undefined,
+            };
+          }
+        });
+        
+        console.log('[Usage Rate Prefetch] Fetched', Object.keys(statsByGame).length, 'games with usage rate data');
+        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
+      } catch (error) {
+        console.error('[Prefetch] Error prefetching advanced stats:', error);
+      }
+    };
+
+    prefetchAdvancedStats();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [playerStats, propsMode, selectedPlayer?.id]);
+
+  // Use prefetched advanced stats when pace or usage_rate is selected (for chart filtering)
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player') {
+      setAdvancedStatsPerGame({});
+      return;
+    }
+
+    // Only use prefetched data if pace or usage_rate is selected
+    if (selectedFilterForAxis === 'pace' || selectedFilterForAxis === 'usage_rate') {
+      // Use prefetched data immediately
+      setAdvancedStatsPerGame(prefetchedAdvancedStats);
+    } else {
+      setAdvancedStatsPerGame({});
+    }
+  }, [selectedFilterForAxis, propsMode, prefetchedAdvancedStats]);
+
+  // Legacy fetch (kept for backward compatibility, but should use prefetched data)
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
+      return;
+    }
+
+    // Only fetch if pace or usage_rate is selected AND we don't have prefetched data
+    if (selectedFilterForAxis !== 'pace' && selectedFilterForAxis !== 'usage_rate') {
+      return;
+    }
+
+    // Check if we already have prefetched data
+    const gameIds: number[] = [];
+    adjustedChartData.forEach((game: any) => {
+      const gameId = game.game?.id || game.stats?.game?.id;
+      if (gameId && typeof gameId === 'number') {
+        gameIds.push(gameId);
+      }
+    });
+
+    const hasAllPrefetched = gameIds.length > 0 && gameIds.every(id => prefetchedAdvancedStats[id] !== undefined);
+    if (hasAllPrefetched) {
+      // Already have prefetched data, skip fetch
+      return;
+    }
+
+    // Get player ID (convert to number if string)
+    const playerIdRaw = selectedPlayer?.id;
+    if (!playerIdRaw) {
+      return;
+    }
+    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
+    if (isNaN(playerId)) {
+      return;
+    }
+
+    if (gameIds.length === 0) {
+      return;
+    }
+
+    // Fetch advanced stats for all games
+    let isMounted = true;
+    const fetchAdvancedStats = async () => {
+      try {
+        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
+        
+        if (!isMounted) return;
+        
+        // Map stats by game ID
+        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
+        stats.forEach((stat: any) => {
+          const gameId = stat.game?.id;
+          if (gameId && typeof gameId === 'number') {
+            statsByGame[gameId] = {
+              pace: stat.pace ?? undefined,
+              usage_percentage: stat.usage_percentage ?? undefined,
+            };
+          }
+        });
+        
+        // Populate both advancedStatsPerGame (for filter) and prefetchedAdvancedStats (for usage rate calculation)
+        setAdvancedStatsPerGame(statsByGame);
+        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
+      } catch (error) {
+        console.error('[Second Axis] Error fetching advanced stats:', error);
+        if (isMounted) {
+          setAdvancedStatsPerGame({});
+        }
+      }
+    };
+
+    fetchAdvancedStats();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPlayer?.id]);
+
+  // Prefetch DvP ranks in background for all possible stat/position combinations
+  // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
+  useEffect(() => {
+    if (propsMode !== 'player' || !playerStats.length || !selectedStat) {
+      if (propsMode === 'player' && playerStats.length && !selectedPosition) {
+        console.log('[DvP Rank Prefetch] Waiting for selectedPosition to be determined...', {
+          playerName: selectedPlayer?.full,
+          hasPlayerStats: playerStats.length > 0,
+          hasRoster: !!playerTeamRoster
+        });
+      }
+      return;
+    }
+    
+    if (!selectedPosition) {
+      console.log('[DvP Rank Prefetch] Skipping - selectedPosition is null', {
+        playerName: selectedPlayer?.full,
+        hasPlayerStats: playerStats.length > 0
+      });
+      return;
+    }
+
+    // Map selected stat to DvP metric
+    const statToDvpMetric: Record<string, string> = {
+      'pts': 'pts',
+      'reb': 'reb',
+      'ast': 'ast',
+      'fg3m': 'fg3m',
+      'stl': 'stl',
+      'blk': 'blk',
+      'to': 'to',
+      'fg_pct': 'fg_pct',
+      'pra': 'pra',
+      'pr': 'pr',
+      'pa': 'pa',
+      'ra': 'ra',
+    };
+    
+    const dvpMetric = statToDvpMetric[selectedStat];
+    if (!dvpMetric) {
+      return;
+    }
+
+    // Use a ref to track if we've already started prefetching for this combination
+    const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+    
+    if (dvpRanksPrefetchRef.current.has(prefetchKey)) {
+      // Already prefetching or prefetched for this combination
+      return;
+    }
+
+    // Check if we already have prefetched data
+    if (prefetchedDvpRanks[prefetchKey]) {
+      // Already prefetched, mark as done
+      dvpRanksPrefetchRef.current.add(prefetchKey);
+      return;
+    }
+
+    // Mark as prefetching
+    dvpRanksPrefetchRef.current.add(prefetchKey);
+    
+    console.log('[DvP Rank Prefetch] Starting prefetch', {
+      prefetchKey,
+      selectedPosition,
+      selectedStat,
+      dvpMetric,
+      playerStatsCount: playerStats.length,
+      playerName: selectedPlayer?.full
+    });
+
+    // Prefetch in background (don't block UI)
+    let isMounted = true;
+    const prefetchDvpRanks = async () => {
+      try {
+        // Map ranks to game IDs based on opponent team and game date
+        // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
+        const ranksByGame: Record<string, number | null> = {};
+        
+        // Build game data from playerStats (all games, not filtered by timeframe)
+        const gamesToProcess = playerStats
+          .filter((stats: any) => {
+            // Only include games where player played (same filter as baseGameData)
+            const minutes = parseMinutes(stats.min);
+            return minutes > 0;
+          })
+          .map((stats: any) => {
+            // Extract opponent and game info from stats
+            let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
+            const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+            const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+            const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+            const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+            
+            const playerTeamNorm = normalizeAbbr(playerTeam);
+            const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+            let opponent = "";
+            
+            if (playerTeamId && homeTeamId && visitorTeamId) {
+              if (playerTeamId === homeTeamId && visitorTeamAbbr) {
+                opponent = visitorTeamAbbr;
+              } else if (playerTeamId === visitorTeamId && homeTeamAbbr) {
+                opponent = homeTeamAbbr;
+              }
+            }
+            if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+              const homeNorm = normalizeAbbr(homeTeamAbbr);
+              const awayNorm = normalizeAbbr(visitorTeamAbbr);
+              if (playerTeamNorm && playerTeamNorm === homeNorm) opponent = awayNorm;
+              else if (playerTeamNorm && playerTeamNorm === awayNorm) opponent = homeNorm;
+            }
+            
+            const numericGameId = typeof stats?.game?.id === 'number' ? stats.game.id : null;
+            const gameIdStr = String(numericGameId || '');
+            const gameDate = stats?.game?.date || '';
+            
+            return { gameIdStr, opponent, gameDate, stats };
+          });
+        
+        // Fetch historical ranks for each game
+        const rankPromises = gamesToProcess.map(async ({ gameIdStr, opponent, gameDate }) => {
+          if (!opponent || opponent === 'N/A' || opponent === 'ALL' || opponent === '') {
+            return { gameIdStr, rank: null };
+          }
+          
+          if (!gameDate) {
+            return { gameIdStr, rank: null, useCurrent: true };
+          }
+          
+          // Try to fetch historical rank for this game date
+          try {
+            const dateStr = new Date(gameDate).toISOString().split('T')[0];
+            const historicalResponse = await fetch(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            );
+            
+            if (historicalResponse.ok) {
+              const historicalData = await historicalResponse.json();
+              if (historicalData.success && historicalData.ranks) {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = historicalData.ranks[normalizedOpp] ?? 
+                            historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
+                if (rank && rank > 0) {
+                  return { gameIdStr, rank };
+                }
+                // If historical lookup returned empty, fall through to current ranks
+              } else {
+                console.log(`[Prefetch] Historical API returned no ranks for ${dateStr} ${selectedPosition}:${dvpMetric}`, {
+                  success: historicalData.success,
+                  hasRanks: !!historicalData.ranks,
+                  note: historicalData.note
+                });
+              }
+            } else {
+              console.warn(`[Prefetch] Historical API error for ${dateStr}: ${historicalResponse.status}`);
+            }
+          } catch (historicalError) {
+            console.warn(`[Prefetch] Historical fetch failed for ${gameIdStr}:`, historicalError);
+          }
+          
+          return { gameIdStr, rank: null, useCurrent: true };
+        });
+        
+        const rankResults = await Promise.all(rankPromises);
+        
+        // Check if we need to fetch current ranks for any games
+        // Also check if historical lookups returned any valid ranks
+        const needsCurrentRanks = rankResults.some(r => r.useCurrent);
+        const hasHistoricalRanks = rankResults.some(r => r.rank !== null);
+        let currentRanks: Record<string, number> = {};
+        
+        // If no historical ranks were found, fetch current ranks for all games as fallback
+        const shouldFetchCurrent = needsCurrentRanks || !hasHistoricalRanks;
+        
+        if (shouldFetchCurrent) {
+          try {
+            const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
+            if (currentResponse.ok) {
+              const currentData = await currentResponse.json();
+              currentRanks = currentData.metrics?.[dvpMetric] || {};
+              console.log(`[Prefetch] Fetched current ranks for ${selectedPosition}:${dvpMetric}:`, {
+                rankCount: Object.keys(currentRanks).length,
+                sampleTeams: Object.keys(currentRanks).slice(0, 5),
+                reason: !hasHistoricalRanks ? 'No historical ranks found, using current as fallback' : 'Some games need current ranks'
+              });
+            } else {
+              console.warn(`[Prefetch] Current ranks API error: ${currentResponse.status}`);
+            }
+          } catch (error) {
+            console.error(`[Prefetch] Failed to fetch current ranks:`, error);
+          }
+        }
+        
+        if (!isMounted) return;
+        
+        // Map ranks to games
+        rankResults.forEach((result, index) => {
+          if (result.rank !== null) {
+            ranksByGame[result.gameIdStr] = result.rank;
+              } else {
+            // Try to use current ranks as fallback
+            const gameData = gamesToProcess[index];
+            if (gameData && gameData.opponent && gameData.opponent !== 'N/A' && gameData.opponent !== 'ALL' && gameData.opponent !== '') {
+              const normalizedOpp = normalizeAbbr(gameData.opponent);
+              // Try multiple variations of the team abbreviation
+              let rank = currentRanks[normalizedOpp] ?? 
+                        currentRanks[normalizedOpp.toUpperCase()] ?? 
+                        currentRanks[normalizedOpp.toLowerCase()] ?? null;
+              
+              // If still not found, try to find a partial match
+              if (rank === null || rank === undefined) {
+                const matchingKey = Object.keys(currentRanks).find(key => 
+                  key.toUpperCase() === normalizedOpp.toUpperCase() ||
+                  normalizedOpp.toUpperCase().includes(key.toUpperCase()) ||
+                  key.toUpperCase().includes(normalizedOpp.toUpperCase())
+                );
+                if (matchingKey) {
+                  rank = currentRanks[matchingKey];
+                }
+              }
+              
+              ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
+          } else {
+            ranksByGame[result.gameIdStr] = null;
+            }
+          }
+        });
+        
+        // Store prefetched data
+        const ranksWithValues = Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined);
+        const sampleRanksWithValues = ranksWithValues.slice(0, 5);
+        const sampleRanksNull = Object.entries(ranksByGame).filter(([_, rank]) => rank === null).slice(0, 5);
+        
+        console.log(`[DvP Rank Prefetch] Stored ranks for ${prefetchKey}:`, {
+          gameCount: Object.keys(ranksByGame).length,
+          ranksWithValues: ranksWithValues.length,
+          sampleRanksWithValues,
+          sampleRanksNull,
+          sampleGameIds: Object.keys(ranksByGame).slice(0, 10)
+        });
+        setPrefetchedDvpRanks(prev => ({
+          ...prev,
+          [prefetchKey]: ranksByGame,
+        }));
+      } catch (error) {
+        // Silent fail for prefetch
+        console.error('[Prefetch] Error prefetching DvP ranks:', error);
+      }
+    };
+
+    prefetchDvpRanks();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [playerStats, propsMode, selectedPosition, selectedStat, selectedPlayer]);
+
+  // Use prefetched DvP ranks when dvp_rank filter is selected
+  useEffect(() => {
+    if (!selectedFilterForAxis || propsMode !== 'player') {
+      setDvpRanksPerGame({});
+      return;
+    }
+
+    if (selectedFilterForAxis === 'dvp_rank') {
+      // Need player position and selected stat to get the right prefetched data
+      if (!selectedPosition || !selectedStat) {
+        console.log('[DvP Rank] Cannot use ranks - missing data:', {
+          hasPosition: !!selectedPosition,
+          hasStat: !!selectedStat,
+          selectedPosition,
+          selectedStat,
+          playerName: selectedPlayer?.full
+        });
+        setDvpRanksPerGame({});
+        return;
+      }
+
+      const statToDvpMetric: Record<string, string> = {
+        'pts': 'pts',
+        'reb': 'reb',
+        'ast': 'ast',
+        'fg3m': 'fg3m',
+        'stl': 'stl',
+        'blk': 'blk',
+        'to': 'to',
+        'fg_pct': 'fg_pct',
+        'pra': 'pra',
+        'pr': 'pr',
+        'pa': 'pa',
+        'ra': 'ra',
+      };
+      
+      const dvpMetric = statToDvpMetric[selectedStat];
+      if (!dvpMetric) {
+        setDvpRanksPerGame({});
+        return;
+      }
+
+      const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+      const prefetched = prefetchedDvpRanks[prefetchKey];
+      
+      if (prefetched) {
+        // Use prefetched data immediately
+        console.log(`[DvP Rank] Using prefetched data for ${prefetchKey}:`, {
+          gameCount: Object.keys(prefetched).length,
+          sampleRanks: Object.entries(prefetched).slice(0, 5),
+          sampleGameIds: Object.keys(prefetched).slice(0, 5),
+          ranksWithValues: Object.entries(prefetched).filter(([_, rank]) => rank !== null && rank !== undefined).length
+        });
+        setDvpRanksPerGame(prefetched);
+      } else {
+        // Fallback to empty (will trigger legacy fetch if needed)
+        console.log(`[DvP Rank] No prefetched data for ${prefetchKey}, waiting for prefetch...`, {
+          availableKeys: Object.keys(prefetchedDvpRanks),
+          selectedPosition,
+          dvpMetric,
+          prefetchKey
+        });
+        setDvpRanksPerGame({});
+      }
+    } else {
+      setDvpRanksPerGame({});
+    }
+  }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
+
+  // Legacy fetch DvP ranks (kept for backward compatibility, but should use prefetched data)
+  // Use filteredChartData to match what's actually displayed
+  useEffect(() => {
+    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !filteredChartData.length) {
+      return;
+    }
+
+    // Need player position and selected stat to fetch DvP ranks
+    if (!selectedPosition || !selectedStat) {
+      return;
+    }
+
+    // Map selected stat to DvP metric
+    const statToDvpMetric: Record<string, string> = {
+      'pts': 'pts',
+      'reb': 'reb',
+      'ast': 'ast',
+      'fg3m': 'fg3m',
+      'stl': 'stl',
+      'blk': 'blk',
+      'to': 'to',
+      'fg_pct': 'fg_pct',
+      'pra': 'pra',
+      'pr': 'pr',
+      'pa': 'pa',
+      'ra': 'ra',
+    };
+    
+    const dvpMetric = statToDvpMetric[selectedStat];
+    if (!dvpMetric) {
+      return;
+    }
+
+    // Check if we already have prefetched data with valid values
+    const prefetchKey = `${selectedPosition}:${dvpMetric}`;
+    const prefetched = prefetchedDvpRanks[prefetchKey];
+    if (prefetched) {
+      // Check if prefetched data has any valid (non-null) values
+      const hasValidValues = Object.values(prefetched).some(v => v !== null && v !== undefined);
+      if (hasValidValues) {
+        // Already have prefetched data with valid values, skip fetch
+        console.log('[DvP Rank Legacy] Skipping - prefetched data has valid values');
+      return;
+      }
+      // Prefetched data exists but all values are null - still fetch to try to get data
+      console.log('[DvP Rank Legacy] Prefetched data exists but all values are null, fetching...');
+    }
+
+    let isMounted = true;
+    const fetchDvpRanks = async () => {
+      try {
+        // Map ranks to game IDs based on opponent team and game date
+        const ranksByGame: Record<string, number | null> = {};
+        
+        // Fetch historical ranks for each game - use filteredChartData to match displayed games
+        const rankPromises = filteredChartData.map(async (game: any) => {
+          const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
+          const opponent = game.opponent || game.tickLabel || '';
+          const gameDate = game.date || game.stats?.game?.date || '';
+          
+          if (!opponent || opponent === 'N/A' || opponent === 'ALL' || opponent === '') {
+            return { gameIdStr, rank: null };
+          }
+          
+          if (!gameDate) {
+            // If no game date, fallback to current ranks
+            return { gameIdStr, rank: null, useCurrent: true };
+          }
+          
+          // Try to fetch historical rank for this game date
+          try {
+            const dateStr = new Date(gameDate).toISOString().split('T')[0];
+            const historicalResponse = await fetch(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            );
+            
+            if (historicalResponse.ok) {
+              const historicalData = await historicalResponse.json();
+              if (historicalData.success && historicalData.ranks && Object.keys(historicalData.ranks).length > 0) {
+                const normalizedOpp = normalizeAbbr(opponent);
+                const rank = historicalData.ranks[normalizedOpp] ?? 
+                            historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
+                // Only return rank if it's not 0 (0 means no data)
+                if (rank && rank > 0) {
+                  return { gameIdStr, rank };
+              }
+              }
+              // If historical API returned empty ranks or no match, fall through to use current ranks
+            }
+          } catch (historicalError) {
+            console.warn(`[Second Axis] Failed to fetch historical rank for game ${gameIdStr}:`, historicalError);
+          }
+          
+          // Fallback: use current ranks if historical lookup fails
+          return { gameIdStr, rank: null, useCurrent: true };
+        });
+        
+        const rankResults = await Promise.all(rankPromises);
+        
+        // Check if we need to fetch current ranks for any games
+        const needsCurrentRanks = rankResults.some(r => r.useCurrent);
+        let currentRanks: Record<string, number> = {};
+        
+        if (needsCurrentRanks) {
+          // Fetch current DvP ranks as fallback
+          console.log('[DvP Rank Legacy] Fetching current ranks...', { selectedPosition, dvpMetric });
+          const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
+          
+          if (currentResponse.ok) {
+            const currentData = await currentResponse.json();
+            currentRanks = currentData.metrics?.[dvpMetric] || {};
+            console.log('[DvP Rank Legacy] Current ranks response:', {
+              hasMetrics: !!currentData.metrics,
+              hasDvpMetric: !!currentData.metrics?.[dvpMetric],
+              rankCount: Object.keys(currentRanks).length,
+              sampleTeams: Object.keys(currentRanks).slice(0, 10),
+              sampleRanks: Object.entries(currentRanks).slice(0, 5)
+            });
+          } else {
+            console.warn('[DvP Rank Legacy] Current ranks API error:', currentResponse.status);
+          }
+        }
+        
+        if (!isMounted) return;
+        
+        // Map ranks to games
+        rankResults.forEach((result) => {
+          if (result.rank !== null) {
+            ranksByGame[result.gameIdStr] = result.rank;
+          } else if (result.useCurrent) {
+            // Use current rank as fallback
+            const game = filteredChartData.find((g: any) => {
+              const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
+              return gameIdStr === result.gameIdStr;
+            });
+            
+            if (game) {
+              const opponent = game.opponent || game.tickLabel || '';
+              if (opponent && opponent !== 'N/A' && opponent !== 'ALL' && opponent !== '') {
+                const normalizedOpp = normalizeAbbr(opponent);
+                // Try multiple variations
+                let rank = currentRanks[normalizedOpp] ?? 
+                          currentRanks[normalizedOpp.toUpperCase()] ?? 
+                          currentRanks[normalizedOpp.toLowerCase()] ?? null;
+                
+                // If still not found, try partial match
+                if (rank === null || rank === undefined) {
+                  const matchingKey = Object.keys(currentRanks).find(key => 
+                    key.toUpperCase() === normalizedOpp.toUpperCase() ||
+                    normalizedOpp.toUpperCase().includes(key.toUpperCase()) ||
+                    key.toUpperCase().includes(normalizedOpp.toUpperCase())
+                  );
+                  if (matchingKey) {
+                    rank = currentRanks[matchingKey];
+                  }
+                }
+                
+                ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
+                
+                // Log when we can't find a match
+                if (rank === null || rank === undefined) {
+                  console.log('[DvP Rank Legacy] No rank found for opponent:', {
+                    gameIdStr: result.gameIdStr,
+                    opponent,
+                    normalizedOpp,
+                    availableTeams: Object.keys(currentRanks).slice(0, 10)
+                  });
+                }
+              } else {
+                ranksByGame[result.gameIdStr] = null;
+              }
+            } else {
+              ranksByGame[result.gameIdStr] = null;
+            }
+          } else {
+            ranksByGame[result.gameIdStr] = null;
+          }
+        });
+        
+        console.log('[DvP Rank Legacy] Fetched ranks:', {
+          gameCount: Object.keys(ranksByGame).length,
+          ranksWithValues: Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined).length,
+          sampleRanks: Object.entries(ranksByGame).slice(0, 5),
+          sampleGamesWithOpponents: filteredChartData.slice(0, 3).map((g: any) => ({
+            gameId: g.xKey || String(g.game?.id || g.stats?.game?.id || ''),
+            opponent: g.opponent || g.tickLabel || 'N/A'
+          }))
+        });
+        setDvpRanksPerGame(ranksByGame);
+      } catch (error) {
+        console.error('[Second Axis] Error fetching DvP ranks:', error);
+        if (isMounted) {
+          setDvpRanksPerGame({});
+        }
+      }
+    };
+
+    fetchDvpRanks();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFilterForAxis, filteredChartData, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks]);
+  
+  // Calculate best line for stat (lowest over line) - exclude alternate lines
+  // This is used to initialize bettingLine when switching stats
+  const bestLineForStat = useMemo(() => {
+    return calculateBestLineForStat({
+      realOddsData,
+      selectedStat,
+    });
+  }, [realOddsData, selectedStat]);
+  
+  // Update bettingLines state when bestLineForStat becomes available
+  // This ensures bettingLine (defined earlier) gets updated when odds data loads
+  useEffect(() => {
+    // Only update if:
+    // 1. bestLineForStat is available
+    // 2. We don't already have a stored line for this stat
+    // 3. The current bettingLine is the default 0.5
+    if (bestLineForStat !== null && !(selectedStat in bettingLines)) {
+      const currentLine = bettingLine;
+      if (Math.abs(currentLine - 0.5) < 0.01) {
+        // Only update if it's still at the default
+        setBettingLines(prev => ({
+          ...prev,
+          [selectedStat]: bestLineForStat
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bestLineForStat, selectedStat]);
+  
+  // Merge line movement data with live odds to get accurate current line
+  const mergedLineMovementData = useMemo(() => {
+    if (!LINE_MOVEMENT_ENABLED || !lineMovementData) return null;
+    
+    // Map selected stat to bookmaker property
+    const statToBookKey: Record<string, string> = {
+      'pts': 'PTS',
+      'reb': 'REB',
+      'ast': 'AST',
+      'fg3m': 'THREES',
+      'pra': 'PRA',
+      'pr': 'PR',
+      'pa': 'PA',
+      'ra': 'RA',
+    };
+    const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
+    
+    // Get current line from live odds (realOddsData) - use first available bookmaker with data
+    let currentLineFromLive: { line: number; bookmaker: string; timestamp: string } | null = null;
+    if (realOddsData && realOddsData.length > 0) {
+      for (const b of realOddsData) {
+        const bookData = (b as any)[bookKey];
+        if (bookData && bookData.line && bookData.line !== 'N/A') {
+          const lineValue = parseFloat(String(bookData.line).replace(/[^0-9.+-]/g, ''));
+          if (!Number.isNaN(lineValue)) {
+            currentLineFromLive = {
+              line: lineValue,
+              bookmaker: b.name,
+              timestamp: new Date().toISOString(),
+            };
+            break;
+          }
+        }
+      }
+    }
+    
+    // Merge: use opening from database, current from live odds (if available)
+    return {
+      ...lineMovementData,
+      currentLine: currentLineFromLive || lineMovementData.currentLine,
+    };
+  }, [lineMovementData, realOddsData, selectedStat]);
+  
+  const derivedOdds = useMemo(() => {
+    if (LINE_MOVEMENT_ENABLED && mergedLineMovementData) {
+      return {
+        openingLine: mergedLineMovementData.openingLine?.line ?? null,
+        currentLine: mergedLineMovementData.currentLine?.line ?? null,
+      };
+    }
+    // Fallback to old snapshot logic for team mode
+    const filtered = filterByMarket(oddsSnapshots, marketKey);
+    return deriveOpeningCurrentMovement(filtered);
+  }, [mergedLineMovementData, oddsSnapshots, marketKey]);
+
+
+  // Prediction state
+  // Hardcode to FanDuel only
+  const selectedBookmakerForPrediction = 'fanduel';
+  
+  // Update intraday movements to use merged data for accurate current line
+  const intradayMovementsFinal = useMemo(() => {
+    return processIntradayMovementsFinal({
+      mergedLineMovementData,
+      realOddsData,
+      selectedStat,
+      intradayMovements,
+      LINE_MOVEMENT_ENABLED,
+    });
+  }, [mergedLineMovementData, intradayMovements, realOddsData, selectedStat]);
+  
+  // Fetch real odds data - fetches player props or team game odds based on mode
+  const fetchOddsData = async (retryCount = 0) => {
+    setOddsLoading(true);
+    setOddsError(null);
+    
+    try {
+      let params;
+      
+      if (propsMode === 'player') {
+        // In player mode, fetch player's props by player name
+        const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
+        if (!playerName || !selectedPlayer) {
+          // Don't clear odds here - let the player ID tracking useEffect handle clearing
+          // This prevents clearing odds when player is temporarily null during state updates
+          setOddsLoading(false);
+          return;
+        }
+        params = new URLSearchParams({ player: playerName });
+      } else {
+        // In team mode, fetch game odds by team
+        if (!gamePropsTeam || gamePropsTeam === 'N/A') {
+          setRealOddsData([]);
+          setOddsLoading(false);
+          return;
+        }
+        params = new URLSearchParams({ team: gamePropsTeam });
+        // Add refresh parameter if this is a retry due to missing metadata
+        if (retryCount > 0) {
+          params.set('refresh', '1');
+        }
+      }
+      
+      const response = await fetch(`/api/odds?${params}`);
+      const data = await response.json();
+      
+      console.log('[fetchOddsData] API response:', {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        homeTeam: data.homeTeam,
+        awayTeam: data.awayTeam,
+        propsMode,
+        gamePropsTeam,
+        hasLoading: !!data.loading
+      });
+      
+      // Handle background loading state
+      if (data.loading) {
+        // Data is loading in background - retry with exponential backoff (max 5 retries)
+        if (retryCount < 5) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // 1s, 2s, 4s, 8s, 10s max
+          setTimeout(() => {
+            fetchOddsData(retryCount + 1);
+          }, delay);
+        } else {
+          // Max retries reached - stop loading
+          setOddsLoading(false);
+          setOddsError('Odds data taking longer than expected to load');
+        }
+        return;
+      }
+      
+      if (!data.success) {
+        // If odds API key is not configured, treat as no-data without error noise
+        if (data.error && /odds api key not configured/i.test(data.error)) {
+          setRealOddsData([]);
+          setOddsError(null);
+          return;
+        }
+        // Also treat 'waiting for refresh' as no error
+        if (data.error && /waiting for refresh/i.test(data.error)) {
+          setRealOddsData([]);
+          setOddsError(null);
+          return;
+        }
+        // Handle rate limit errors gracefully - keep existing data if available
+        if (data.error && (/rate limit/i.test(data.error) || /429/i.test(data.error))) {
+          // If we have cached data, keep showing it instead of error
+          if (realOddsData.length > 0) {
+            console.warn('[fetchOddsData] Rate limit hit, but keeping existing cached data');
+            setOddsError('Rate limit exceeded - showing cached data');
+            setOddsLoading(false);
+            return;
+          }
+          // No cached data - show error but don't clear existing data
+          setOddsError(data.error || 'Rate limit exceeded. Please wait a moment.');
+          setOddsLoading(false);
+          return;
+        }
+        setOddsError(data.error || 'Failed to fetch odds');
+        setRealOddsData([]);
+        return;
+      }
+      
+      // If team mode and metadata is missing, trigger a single refresh; otherwise proceed without metadata
+      if (propsMode === 'team' && (!data.homeTeam || !data.awayTeam) && data.data && data.data.length > 0) {
+        console.log('[fetchOddsData] Missing team metadata - triggering cache refresh...');
+        if (!missingTeamMetaRetryRef.current) {
+          missingTeamMetaRetryRef.current = true;
+          // Trigger a refresh with the refresh parameter
+          const refreshParams = new URLSearchParams();
+          if (gamePropsTeam) refreshParams.set('team', gamePropsTeam);
+          refreshParams.set('refresh', '1');
+          
+          // Retry after a short delay to allow cache to refresh
+          setTimeout(() => {
+            fetchOddsData(retryCount + 1);
+          }, 2000);
+          return;
+        } else {
+          console.log('[fetchOddsData] Metadata still missing after retry, proceeding without team metadata');
+          // Proceed with oddsData even without team metadata
+        }
+      }
+      
+      const oddsData = data.data || [];
+      
+      // Store home/away teams for team mode BEFORE setting state (to avoid multiple updates)
+      if (propsMode === 'team' && data.homeTeam && data.awayTeam) {
+        // Store these in a way we can access in BestOddsTable
+        // We'll add them to each bookmaker as metadata
+        if (oddsData.length > 0) {
+          console.log('[fetchOddsData] Setting game teams:', {
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            gamePropsTeam,
+            bookCount: oddsData.length
+          });
+          oddsData.forEach((book: any) => {
+            if (!book.meta) book.meta = {};
+            book.meta.gameHomeTeam = data.homeTeam;
+            book.meta.gameAwayTeam = data.awayTeam;
+          });
+        } else {
+          console.log('[fetchOddsData] No bookmakers in data, cannot set team metadata');
+        }
+      } else if (propsMode === 'team') {
+        console.log('[fetchOddsData] Not setting team metadata:', {
+          propsMode,
+          hasHomeTeam: !!data.homeTeam,
+          hasAwayTeam: !!data.awayTeam
+        });
+      }
+      
+      console.log('[fetchOddsData] Setting realOddsData:', {
+        length: oddsData.length,
+        sampleBook: oddsData[0] ? {
+          name: oddsData[0].name,
+          hasPRA: !!oddsData[0].PRA,
+          PRA: oddsData[0].PRA,
+          hasPTS: !!oddsData[0].PTS,
+          hasREB: !!oddsData[0].REB,
+          hasAST: !!oddsData[0].AST,
+        } : null
+      });
+      
+      // Update odds in a transition to prevent visible refresh
+      // Only update if data has actually changed (check length and first book name)
+      console.log('[DEBUG fetchOddsData] About to set realOddsData', {
+        oddsDataLength: oddsData.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      startTransition(() => {
+        setRealOddsData(prevOdds => {
+          // Quick check: if length is same and first book is same, likely no change
+          if (prevOdds.length === oddsData.length && 
+              prevOdds.length > 0 && oddsData.length > 0 &&
+              prevOdds[0]?.name === oddsData[0]?.name &&
+              prevOdds[0]?.PTS?.line === oddsData[0]?.PTS?.line) {
+            // Likely the same data, but do a full comparison to be sure
+            const prevStr = JSON.stringify(prevOdds);
+            const newStr = JSON.stringify(oddsData);
+            if (prevStr === newStr) {
+              console.log('[DEBUG fetchOddsData] Odds data unchanged, skipping update');
+              return prevOdds; // No change, return previous to prevent re-render
+            }
+          }
+          console.log('[DEBUG fetchOddsData] Updating realOddsData', {
+            prevLength: prevOdds.length,
+            newLength: oddsData.length
+          });
+          return oddsData;
+        });
+      });
+      
+      const playerName = selectedPlayer?.full || `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
+      const target = propsMode === 'player' ? playerName : gamePropsTeam;
+      console.log(`ðŸ“Š Loaded ${data.data?.length || 0} bookmaker odds for ${target}`);
+      
+      // Debug: Check for PrizePicks in the data
+      const allBookmakers = new Set<string>();
+      const prizepicksEntries: any[] = [];
+      (data.data || []).forEach((book: any) => {
+        const bookName = (book?.meta?.baseName || book?.name || '').toLowerCase();
+        if (bookName) {
+          allBookmakers.add(bookName);
+          if (bookName.includes('prizepicks')) {
+            prizepicksEntries.push({
+              name: book?.meta?.baseName || book?.name,
+              stat: book?.meta?.stat,
+              variantLabel: book?.meta?.variantLabel,
+              isPickem: book?.meta?.isPickem,
+              pts: book?.PTS,
+            });
+          }
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error fetching odds:', error);
+      setOddsError(error instanceof Error ? error.message : 'Failed to load odds');
+      setRealOddsData([]);
+    } finally {
+      setOddsLoading(false);
+    }
+  };
+  
+  // Track if odds are currently being fetched to prevent duplicate calls
+  const isFetchingOddsRef = useRef(false);
+  // Track a single retry for missing team metadata (team mode)
+  const missingTeamMetaRetryRef = useRef(false);
+  // Track last odds fetch key to avoid refetching when data already present
+  const lastOddsFetchKeyRef = useRef<string | null>(null);
+  
+  // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
+  const lastOddsPlayerIdRef = useRef<string | null>(null);
+  
+  // Track last propsMode to detect mode changes
+  const lastPropsModeRef = useRef<'player' | 'team' | null>(null);
+  
+  // Clear odds and reset fetch refs when propsMode changes
+  useEffect(() => {
+    if (lastPropsModeRef.current !== null && lastPropsModeRef.current !== propsMode) {
+      console.log('[DEBUG propsMode change] Clearing odds and resetting refs', {
+        oldMode: lastPropsModeRef.current,
+        newMode: propsMode
+      });
+      setRealOddsData([]);
+      setOddsLoading(false);
+      setOddsError(null);
+      lastOddsFetchKeyRef.current = null;
+      lastOddsPlayerIdRef.current = null;
+      isFetchingOddsRef.current = false;
+      missingTeamMetaRetryRef.current = false;
+    }
+    lastPropsModeRef.current = propsMode;
+  }, [propsMode]);
+  
+  // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
+  useEffect(() => {
+    console.log('[DEBUG fetchOdds useEffect] Triggered', {
+      propsMode,
+      hasSelectedPlayer: !!selectedPlayer,
+      selectedPlayerId: selectedPlayer?.id,
+      selectedPlayerName: selectedPlayer?.full,
+      gamePropsTeam,
+      realOddsDataLength: realOddsData.length,
+      lastOddsPlayerId: lastOddsPlayerIdRef.current,
+      isFetching: isFetchingOddsRef.current
+    });
+    
+    // Reset missing metadata retry on dependency change
+    missingTeamMetaRetryRef.current = false;
+    
+    // For team mode, add a small delay to ensure gamePropsTeam is set
+    if (propsMode === 'team' && !gamePropsTeam) {
+      console.log('[DEBUG fetchOdds useEffect] Team mode but no gamePropsTeam, skipping');
+      return;
+    }
+    
+    // In player mode, prefer player ID; fall back to name so we still fetch odds.
+    if (propsMode === 'player') {
+      if (selectedPlayer) {
+        const currentPlayerKey =
+          selectedPlayer.id?.toString() ||
+          (selectedPlayer.full ? selectedPlayer.full.toLowerCase() : null);
+        if (currentPlayerKey) {
+          // If same player and we already have odds, skip fetching again
+          // BUT: if odds were cleared (length is 0), we need to fetch again
+          if (
+            currentPlayerKey === lastOddsPlayerIdRef.current &&
+            realOddsData.length > 0
+          ) {
+            console.log('[DEBUG fetchOdds useEffect] Same player and odds exist, skipping fetch', {
+              currentPlayerKey,
+              lastOddsPlayerId: lastOddsPlayerIdRef.current,
+              realOddsDataLength: realOddsData.length
+            });
+            return;
+          }
+          // If odds were cleared but player is the same, reset the ref to allow fetching
+          if (currentPlayerKey === lastOddsPlayerIdRef.current && realOddsData.length === 0) {
+            console.log('[DEBUG fetchOdds useEffect] Same player but odds cleared, resetting ref to allow fetch', {
+              currentPlayerKey,
+              realOddsDataLength: realOddsData.length
+            });
+            lastOddsPlayerIdRef.current = null; // Reset to allow fetch
+          }
+          console.log('[DEBUG fetchOdds useEffect] Player key changed or no odds, will fetch', {
+            currentPlayerKey,
+            lastOddsPlayerId: lastOddsPlayerIdRef.current,
+            realOddsDataLength: realOddsData.length
+          });
+          lastOddsPlayerIdRef.current = currentPlayerKey;
+        } else {
+          // No usable key; ensure ref resets so next valid player triggers fetch
+          console.log('[DEBUG fetchOdds useEffect] No usable player key, resetting ref');
+          lastOddsPlayerIdRef.current = null;
+        }
+      } else {
+        console.log('[DEBUG fetchOdds useEffect] No player selected, skipping fetch');
+        lastOddsPlayerIdRef.current = null;
+        return; // No player selected; skip fetch
+      }
+    }
+    
+    // Build fetch key (player or team)
+    const fetchKey = propsMode === 'team'
+      ? `team:${gamePropsTeam || 'na'}`
+      : `player:${selectedPlayer?.id || selectedPlayer?.full || 'na'}`;
+
+    // Skip if already fetching
+    if (isFetchingOddsRef.current) {
+      console.log('[DEBUG fetchOdds useEffect] Already fetching, skipping');
+      return;
+    }
+    
+    // If we already have odds for this key and not loading, skip refetch
+    if (fetchKey === lastOddsFetchKeyRef.current && realOddsData.length > 0 && !oddsLoading) {
+      console.log('[DEBUG fetchOdds useEffect] Odds already loaded for key, skipping fetch', {
+        fetchKey,
+        realOddsDataLength: realOddsData.length
+      });
+      return;
+    }
+    
+    // Debounce: wait 300ms before fetching to avoid rapid successive calls
+    console.log('[DEBUG fetchOdds useEffect] Setting timeout to fetch odds in 300ms');
+    const timeoutId = setTimeout(() => {
+      console.log('[DEBUG fetchOdds useEffect] Timeout fired, starting fetch');
+      isFetchingOddsRef.current = true;
+      lastOddsFetchKeyRef.current = fetchKey;
+      fetchOddsData().finally(() => {
+        // Reset flag after a delay to allow for retries
+        setTimeout(() => {
+          isFetchingOddsRef.current = false;
+        }, 1000);
+      });
+    }, 300);
+    
+    return () => {
+      console.log('[DEBUG fetchOdds useEffect] Cleanup: clearing timeout');
+      clearTimeout(timeoutId);
+      // Don't reset isFetchingOddsRef here - let it be reset by the finally block
+      // This prevents race conditions where cleanup runs before fetch completes
+    };
+  }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
+
+  const americanToDecimal = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
+    const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
+    if (isNaN(n)) return odds;
+    const dec = n > 0 ? (1 + n / 100) : (1 + 100 / Math.abs(n));
+    return dec.toFixed(2);
+  };
+
+  // Ensure positive American odds show a leading '+' and strip any surrounding noise
+  const normalizeAmerican = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
+    const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
+    if (isNaN(n)) return odds;
+    return n > 0 ? `+${n}` : `${n}`;
+  };
+
+  const fmtOdds = (odds: string | undefined | null): string => {
+    if (!odds || odds === 'N/A') return 'N/A';
+    return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
+  };
+
+  // Available bookmakers with valid over/under odds for selected stat
+  const availableBookmakers = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return [];
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return [];
+    
+    const bookmakers = new Map<string, { name: string; displayName: string }>();
+    
+    for (const book of realOddsData) {
+      const statData = (book as any)[bookRowKey];
+      if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
+        const meta = (book as any)?.meta;
+        // Exclude alternate lines (variantLabel indicates alternate)
+        if (!meta?.variantLabel) {
+          const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+          const displayName = meta?.baseName || book?.name || 'Unknown';
+          if (!bookmakers.has(baseName)) {
+            bookmakers.set(baseName, { name: baseName, displayName });
+          }
+        }
+      }
+    }
+    
+    return Array.from(bookmakers.values());
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
+  // Extract FanDuel's line and odds for selected stat
+  const selectedBookmakerData = useMemo(() => {
+    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const bookRowKey = getBookRowKey(selectedStat);
+    if (!bookRowKey) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    // Always use FanDuel, main line only (no alternates)
+    const fanduelBook = realOddsData.find((book: any) => {
+      const baseName = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
+      return baseName === 'fanduel';
+    });
+    
+    if (!fanduelBook) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const meta = (fanduelBook as any)?.meta;
+    // Exclude alternate lines (variantLabel indicates alternate)
+    if (meta?.variantLabel) return { line: null, name: null, overOdds: null, underOdds: null };
+    
+    const statData = (fanduelBook as any)[bookRowKey];
+    if (!statData || statData.line === 'N/A') {
+      return { line: null, name: null, overOdds: null, underOdds: null };
+    }
+    
+    const lineValue = parseFloat(statData.line);
+    const displayName = (meta?.baseName || fanduelBook?.name || 'FanDuel');
+    
+    // Parse odds
+    const overOddsStr = statData.over;
+    const underOddsStr = statData.under;
+    
+    const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
+      ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
+      : null;
+    const underOdds = (underOddsStr && underOddsStr !== 'N/A')
+      ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
+      : null;
+    
+    return {
+      line: Number.isFinite(lineValue) ? lineValue : null,
+      name: displayName,
+      overOdds: Number.isFinite(overOdds) ? overOdds : null,
+      underOdds: Number.isFinite(underOdds) ? underOdds : null,
+    };
+  }, [realOddsData, selectedStat, getBookRowKey]);
+
+  const selectedBookmakerLine = selectedBookmakerData.line;
+  const selectedBookmakerName = selectedBookmakerData.name;
+
+  // Calculate implied odds from FanDuel, with fallback to consensus
+  // Calculate primary line from real bookmakers (not alt lines) - used for prediction
+  // Uses the most common line value (consensus), not the average
+  const primaryMarketLine = useMemo(() => {
+    return calculatePrimaryMarketLine({
+      realOddsData,
+      selectedStat,
+    });
+  }, [realOddsData, selectedStat]);
+  
+  const calculatedImpliedOdds = useMemo(() => {
+    return calculateImpliedOdds({
+      realOddsData,
+      selectedStat,
+    });
+  }, [realOddsData, selectedStat]);
+
+  // Normal distribution CDF (Cumulative Distribution Function) approximation
+  // Returns the probability that a value from a standard normal distribution is <= z
+  const normalCDF = (z: number): number => {
+    // Abramowitz and Stegun approximation (accurate to ~0.0002)
+    const t = 1 / (1 + 0.2316419 * Math.abs(z));
+    const d = 0.3989423 * Math.exp(-z * z / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return z > 0 ? 1 - p : p;
+  };
+
+
+  return (
+    <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+      <DashboardStyles />
+      {/* Main layout container with sidebar, chart, and right panel */}
+      <div className="px-0 dashboard-container" style={{ 
+        marginLeft: sidebarOpen ? 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))' : '0px',
+        width: sidebarOpen ? 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))' : '100%',
+        paddingLeft: 0,
+        transition: 'margin-left 0.3s ease, width 0.3s ease'
+      }}>
+        <div className={`mx-auto w-full ${sidebarOpen ? 'max-w-[1550px]' : 'max-w-[1800px]'}`} style={{ paddingLeft: sidebarOpen ? 0 : '2rem', paddingRight: sidebarOpen ? 0 : '1rem' }}>
+          <div 
+            className="pt-4 min-h-0 lg:h-full dashboard-container"
+            style={{ paddingLeft: 0 }}
+          >
+        {/* Left Sidebar - Extracted to DashboardLeftSidebarWrapper component */}
+        <DashboardLeftSidebarWrapper
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          oddsFormat={oddsFormat}
+          setOddsFormat={setOddsFormat}
+          hasPremium={hasPremium}
+          avatarUrl={avatarUrl}
+          username={username}
+          userEmail={userEmail}
+          isPro={isPro}
+          onSubscriptionClick={handleSidebarSubscription}
+          onSignOutClick={handleLogout}
+        />
+        <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
+          {/* Main content area */}
+          <div 
+            className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 overflow-y-auto overflow-x-hidden overscroll-contain pl-0 pr-2 sm:pl-0 sm:pr-2 md:px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
+              sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
+            }`}
+            style={{
+              scrollbarGutter: 'stable'
+            }}
+          >
+            {/* 1. Filter By Container (Mobile Only) - Extracted to DashboardModeToggle component */}
+            <DashboardModeToggle
+              propsMode={propsMode}
+              isPro={isPro}
+              isDark={isDark}
+              gamePropsTeam={gamePropsTeam}
+              selectedTeam={selectedTeam}
+              selectedStat={selectedStat}
+              selectedTimeframe={selectedTimeframe}
+              setPropsMode={setPropsMode}
+              setSearchQuery={setSearchQuery}
+              setSelectedStat={setSelectedStat}
+              setSelectedTeam={setSelectedTeam}
+              setOriginalPlayerTeam={setOriginalPlayerTeam}
+              setDepthChartTeam={setDepthChartTeam}
+              setGamePropsTeam={setGamePropsTeam}
+            />
+
+            {/* Header (with search bar and team display) */}
+            <DashboardHeader
+              propsMode={propsMode}
+              playerInfo={playerInfo}
+              selectedPlayer={selectedPlayer}
+              gamePropsTeam={gamePropsTeam}
+              selectedTeam={selectedTeam}
+              opponentTeam={opponentTeam}
+              nextGameOpponent={nextGameOpponent}
+              nextGameTipoff={nextGameTipoff}
+              countdown={countdown}
+              isGameInProgress={isGameInProgress}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              searchResults={searchResults}
+              searchBusy={searchBusy}
+              searchError={searchError}
+              showDropdown={showDropdown}
+              setShowDropdown={setShowDropdown}
+              isMobileSearchOpen={isMobileSearchOpen}
+              setIsMobileSearchOpen={setIsMobileSearchOpen}
+              handlePlayerSelectFromSearch={handlePlayerSelectFromSearch}
+              setGamePropsTeam={setGamePropsTeam}
+              setSelectedStat={setSelectedStat}
+              setOpponentTeam={setOpponentTeam}
+              selectedTeamLogoUrl={selectedTeamLogoUrl}
+              setSelectedTeamLogoUrl={setSelectedTeamLogoUrl}
+              selectedTeamLogoAttempt={selectedTeamLogoAttempt}
+              setSelectedTeamLogoAttempt={setSelectedTeamLogoAttempt}
+              opponentTeamLogoUrl={opponentTeamLogoUrl}
+              setOpponentTeamLogoUrl={setOpponentTeamLogoUrl}
+              opponentTeamLogoAttempt={opponentTeamLogoAttempt}
+              setOpponentTeamLogoAttempt={setOpponentTeamLogoAttempt}
+              isPro={isPro}
+              hasPremium={hasPremium}
+              setShowJournalModal={setShowJournalModal}
+              todaysGames={todaysGames}
+            />
+
+            {/* Chart card (fully isolated) */}
+            <ChartContainer
+              isDark={isDark}
+              currentStatOptions={currentStatOptions}
+              selectedStat={selectedStat}
+              onSelectStat={handleStatSelect}
+              bettingLine={bettingLine}
+              onChangeBettingLine={setBettingLine}
+              selectedTimeframe={selectedTimeframe}
+              onSelectTimeframe={setSelectedTimeframe}
+              chartData={filteredChartData}
+              yAxisConfig={yAxisConfig}
+              isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
+              oddsLoading={propsMode === 'player' ? oddsLoading : false}
+              apiError={propsMode === 'team' ? null : apiError}
+              selectedPlayer={selectedPlayer}
+              propsMode={propsMode}
+              gamePropsTeam={gamePropsTeam}
+              customTooltip={customTooltip}
+              currentOpponent={opponentTeam}
+              manualOpponent={manualOpponent}
+              onOpponentChange={setManualOpponent}
+              currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+              homeAway={homeAway}
+              onChangeHomeAway={setHomeAway}
+              realOddsData={realOddsData}
+              fmtOdds={fmtOdds}
+              minMinutesFilter={minMinutesFilter}
+              maxMinutesFilter={maxMinutesFilter}
+              onMinMinutesChange={setMinMinutesFilter}
+              onMaxMinutesChange={setMaxMinutesFilter}
+              excludeBlowouts={excludeBlowouts}
+              excludeBackToBack={excludeBackToBack}
+              onExcludeBlowoutsChange={setExcludeBlowouts}
+              onExcludeBackToBackChange={setExcludeBackToBack}
+              rosterForSelectedTeam={rosterForSelectedTeam}
+              withWithoutMode={withWithoutMode}
+              setWithWithoutMode={setWithWithoutMode}
+              teammateFilterId={teammateFilterId}
+              teammateFilterName={teammateFilterName}
+              setTeammateFilterId={setTeammateFilterId}
+              setTeammateFilterName={setTeammateFilterName}
+              loadingTeammateGames={loadingTeammateGames}
+      clearTeammateFilter={clearTeammateFilter}
+      hitRateStats={hitRateStats}
+      lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+      intradayMovements={intradayMovementsFinal}
+      secondAxisData={secondAxisData}
+      selectedFilterForAxis={selectedFilterForAxis}
+      onSelectFilterForAxis={handleSelectFilterForAxis}
+      sliderConfig={sliderConfig}
+      sliderRange={sliderRange}
+      setSliderRange={setSliderRange}
+            />
+            <DashboardMobileAnalysis
+              propsMode={propsMode}
+              dvpProjectedTab={dvpProjectedTab}
+              setDvpProjectedTab={setDvpProjectedTab}
+              isDark={isDark}
+              opponentTeam={opponentTeam}
+              selectedPosition={selectedPosition}
+              selectedTeam={selectedTeam}
+              selectedPlayer={selectedPlayer}
+              projectedMinutes={projectedMinutes}
+              projectedMinutesLoading={projectedMinutesLoading}
+              predictedPace={predictedPace}
+              seasonFgPct={seasonFgPct}
+              averageUsageRate={averageUsageRate}
+              averageMinutes={averageMinutes}
+              averageGamePace={averageGamePace}
+              selectedTimeframe={selectedTimeframe}
+              resolvedPlayerId={resolvedPlayerId}
+              selectedStat={selectedStat}
+              playerStats={playerStats}
+              teammateFilterId={teammateFilterId}
+              setTeammateFilterId={setTeammateFilterId}
+              setTeammateFilterName={setTeammateFilterName}
+              withWithoutMode={withWithoutMode}
+              setWithWithoutMode={setWithWithoutMode}
+              clearTeammateFilter={clearTeammateFilter}
+              gamePropsTeam={gamePropsTeam}
+              selectedComparison={selectedComparison}
+              setSelectedComparison={setSelectedComparison}
+              teamMatchupLoading={teamMatchupLoading}
+              teamMatchupStats={teamMatchupStats}
+            />
+            {/* 4. Opponent Analysis & Team Matchup Container (Mobile) - Extracted to DashboardMobileAnalysis component */}
+
+            {/* 4.5-10. Remaining Mobile Content - Extracted to DashboardMobileContent component */}
+            <DashboardMobileContent
+              propsMode={propsMode}
+              isDark={isDark}
+              selectedPlayer={selectedPlayer}
+              shotDistanceData={shotDistanceData}
+              opponentTeam={opponentTeam}
+              selectedTeam={selectedTeam}
+              derivedOdds={derivedOdds}
+              intradayMovementsFinal={intradayMovementsFinal}
+              gamePropsTeam={gamePropsTeam}
+              selectedTeamLogoUrl={selectedTeamLogoUrl}
+              opponentTeamLogoUrl={opponentTeamLogoUrl}
+              matchupInfo={matchupInfo}
+              oddsFormat={oddsFormat}
+              realOddsData={realOddsData}
+              fmtOdds={fmtOdds}
+              mergedLineMovementData={mergedLineMovementData}
+              selectedStat={selectedStat}
+              calculatedImpliedOdds={calculatedImpliedOdds}
+              selectedBookmakerName={selectedBookmakerName}
+              selectedBookmakerLine={selectedBookmakerLine}
+              primaryMarketLine={primaryMarketLine}
+              bettingLine={bettingLine}
+              oddsLoading={oddsLoading}
+              oddsError={oddsError}
+              resolvedPlayerId={resolvedPlayerId}
+              depthChartTeam={depthChartTeam}
+              setDepthChartTeam={setDepthChartTeam}
+              teamInjuries={teamInjuries}
+              originalPlayerTeam={originalPlayerTeam}
+              playerTeamRoster={playerTeamRoster}
+              opponentTeamRoster={opponentTeamRoster}
+              rostersLoading={rostersLoading}
+              allTeamRosters={allTeamRosters}
+              rosterCacheLoading={rosterCacheLoading}
+              playerStats={playerStats}
+            />
+
+            {/* Desktop Content - Extracted to DashboardDesktopContent component */}
+            <DashboardDesktopContent
+              propsMode={propsMode}
+              isDark={isDark}
+              selectedTeam={selectedTeam}
+              selectedPlayer={selectedPlayer}
+              derivedOdds={derivedOdds}
+              intradayMovementsFinal={intradayMovementsFinal}
+              opponentTeam={opponentTeam}
+              selectedTeamLogoUrl={selectedTeamLogoUrl}
+              opponentTeamLogoUrl={opponentTeamLogoUrl}
+              matchupInfo={matchupInfo}
+              oddsFormat={oddsFormat}
+              realOddsData={realOddsData}
+              fmtOdds={fmtOdds}
+              mergedLineMovementData={mergedLineMovementData}
+              selectedStat={selectedStat}
+              calculatedImpliedOdds={calculatedImpliedOdds}
+              selectedBookmakerName={selectedBookmakerName}
+              selectedBookmakerLine={selectedBookmakerLine}
+              primaryMarketLine={primaryMarketLine}
+              bettingLine={bettingLine}
+              oddsLoading={oddsLoading}
+              oddsError={oddsError}
+              gamePropsTeam={gamePropsTeam}
+              resolvedPlayerId={resolvedPlayerId}
+              depthChartTeam={depthChartTeam}
+              setDepthChartTeam={setDepthChartTeam}
+              teamInjuries={teamInjuries}
+              originalPlayerTeam={originalPlayerTeam}
+              playerTeamRoster={playerTeamRoster}
+              opponentTeamRoster={opponentTeamRoster}
+              rostersLoading={rostersLoading}
+              allTeamRosters={allTeamRosters}
+              rosterCacheLoading={rosterCacheLoading}
+              playerStats={playerStats}
+            />
+
+          </div>
+
+          <DashboardRightPanel
+            sidebarOpen={sidebarOpen}
+            isDark={isDark}
+            hasPremium={hasPremium}
+            propsMode={propsMode}
+            setPropsMode={setPropsMode}
+            setSearchQuery={setSearchQuery}
+            setSelectedStat={setSelectedStat}
+            gamePropsTeam={gamePropsTeam}
+            setSelectedTeam={setSelectedTeam}
+            setOriginalPlayerTeam={setOriginalPlayerTeam}
+            setDepthChartTeam={setDepthChartTeam}
+            selectedTeam={selectedTeam}
+            setGamePropsTeam={setGamePropsTeam}
+            selectedStat={selectedStat}
+            selectedTimeframe={selectedTimeframe}
+            dvpProjectedTab={dvpProjectedTab}
+            setDvpProjectedTab={setDvpProjectedTab}
+            opponentTeam={opponentTeam}
+            selectedPosition={selectedPosition}
+            selectedPlayer={selectedPlayer}
+            projectedMinutes={projectedMinutes}
+            projectedMinutesLoading={projectedMinutesLoading}
+            predictedPace={predictedPace}
+            seasonFgPct={seasonFgPct}
+            averageUsageRate={averageUsageRate}
+            averageMinutes={averageMinutes}
+            averageGamePace={averageGamePace}
+            resolvedPlayerId={resolvedPlayerId}
+            playerStats={playerStats}
+            teammateFilterId={teammateFilterId}
+            setTeammateFilterId={setTeammateFilterId}
+            setTeammateFilterName={setTeammateFilterName}
+            withWithoutMode={withWithoutMode}
+            setWithWithoutMode={setWithWithoutMode}
+            clearTeammateFilter={clearTeammateFilter}
+            selectedComparison={selectedComparison}
+            setSelectedComparison={setSelectedComparison}
+            teamMatchupLoading={teamMatchupLoading}
+            teamMatchupStats={teamMatchupStats}
+            realOddsData={realOddsData}
+            shotDistanceData={shotDistanceData}
+          />
+          
+          </div>
+        </div>
+      </div>
+      </div>
+      
+      {/* Journal Modals - Extracted to DashboardJournalModals component */}
+      <DashboardJournalModals
+        propsMode={propsMode}
+        selectedPlayer={selectedPlayer}
+        opponentTeam={opponentTeam}
+        gamePropsTeam={gamePropsTeam}
+        selectedTeam={selectedTeam}
+        nextGameOpponent={nextGameOpponent}
+        nextGameDate={nextGameDate}
+        oddsFormat={oddsFormat}
+        showJournalModal={showJournalModal}
+        setShowJournalModal={setShowJournalModal}
+      />
+      
+      {/* Mobile Bottom Navigation - Only visible on mobile */}
+      <MobileBottomNavigation
+        hasPremium={hasPremium}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={showJournalDropdown}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={setShowJournalDropdown}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+        profileDropdownRef={profileDropdownRef}
+        journalDropdownRef={journalDropdownRef}
+        settingsDropdownRef={settingsDropdownRef}
+        onSubscription={handleSidebarSubscription}
+        onLogout={handleLogout}
+        theme={theme}
+        oddsFormat={oddsFormat}
+        setTheme={setTheme}
+        setOddsFormat={setOddsFormat}
+      />
+      
+      {/* Desktop Navigation */}
+      <HeaderNavigation
+        variant="desktop"
+        hasPremium={hasPremium}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={showJournalDropdown}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={setShowJournalDropdown}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+      />
+    </div>
+  );
+}
+
+export default function NBADashboard() {
+  return <NBADashboardWrapper />;
+}
