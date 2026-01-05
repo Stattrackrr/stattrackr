@@ -124,8 +124,6 @@ export function NBADashboardContent() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
   
-  // Debug: Track renders (will log after state is defined)
-  const renderCountRef = useRef(0);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -599,20 +597,9 @@ export function NBADashboardContent() {
   const bettingLine = useMemo(() => {
     // First check if we have a stored line for this stat
     if (selectedStat in bettingLines) {
-      const line = bettingLines[selectedStat];
-      console.log('[DEBUG bettingLine] useMemo returning stored line', {
-        selectedStat,
-        line,
-        timestamp: new Date().toISOString()
-      });
-      return line;
+      return bettingLines[selectedStat];
     }
     // Otherwise default to 0.5 (will be updated by useEffect when bestLineForStat is available)
-    console.log('[DEBUG bettingLine] useMemo returning default 0.5', {
-      selectedStat,
-      bettingLinesKeys: Object.keys(bettingLines),
-      timestamp: new Date().toISOString()
-    });
     return 0.5;
   }, [bettingLines, selectedStat]);
   
@@ -751,59 +738,11 @@ const lineMovementInFlightRef = useRef(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   
-  // Debug: Track renders and state changes (renderCountRef already defined at top of function)
-  const lastUrlRef = useRef<string>('');
-  const lastTimeframeRef = useRef<string>('');
-  const lastPlayerStatsLengthRef = useRef<number>(0);
-  
-  // Debug: Track component renders and key state changes
-  useEffect(() => {
-    renderCountRef.current += 1;
-    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const urlChanged = currentUrl !== lastUrlRef.current;
-    const timeframeChanged = selectedTimeframe !== lastTimeframeRef.current;
-    const statsChanged = playerStats.length !== lastPlayerStatsLengthRef.current;
-    
-    if (urlChanged || timeframeChanged || statsChanged || renderCountRef.current <= 3) {
-      const renderData = {
-        timestamp: new Date().toISOString(),
-        url: currentUrl,
-        urlChanged,
-        selectedPlayer: selectedPlayer?.full || 'none',
-        resolvedPlayerId,
-        selectedTimeframe,
-        timeframeChanged,
-        playerStatsLength: playerStats.length,
-        statsChanged,
-        isLoading,
-        selectedStat,
-        opponentTeam
-      };
-      
-      // Log to both browser console and server terminal
-      console.log(`ðŸŽ¨ [Render #${renderCountRef.current}]`, renderData);
-      serverLogger.log(`ðŸŽ¨ [Render #${renderCountRef.current}]`, { data: renderData });
-      
-      if (urlChanged) lastUrlRef.current = currentUrl;
-      if (timeframeChanged) lastTimeframeRef.current = selectedTimeframe;
-      if (statsChanged) lastPlayerStatsLengthRef.current = playerStats.length;
-    }
-  });
-
   // selection + data
   const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
   const isHandlingPlayerSelectRef = useRef<boolean>(false);
   const [playerStats, setPlayerStats] = useState<BallDontLieStats[]>([]);
-  
-  // Debug: Track playerStats changes
-  useEffect(() => {
-    console.log('[DEBUG playerStats] State changed', {
-      length: playerStats.length,
-      timestamp: new Date().toISOString(),
-      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-    });
-  }, [playerStats]);
   const [isLoading, setIsLoading] = useState(false);
   // Track when core data (stats + DvP) is ready to show the screen
   const [coreDataReady, setCoreDataReady] = useState(false);
@@ -4775,15 +4714,6 @@ const lineMovementInFlightRef = useRef(false);
 
   // Real odds data state
   const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
-  
-  // Debug: Track realOddsData changes
-  useEffect(() => {
-    console.log('[DEBUG realOddsData] State changed', {
-      length: realOddsData.length,
-      timestamp: new Date().toISOString(),
-      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-    });
-  }, [realOddsData]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
 
@@ -4895,7 +4825,7 @@ const lineMovementInFlightRef = useRef(false);
 
 
   // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
-  // Uses existing lastPlayerStatsLengthRef (defined earlier) to track per-player changes
+  const lastPlayerStatsLengthRef = useRef(0);
   const coreDataReadySetRef = useRef(false);
   
   useEffect(() => {
@@ -4925,20 +4855,6 @@ const lineMovementInFlightRef = useRef(false);
     coreDataReadySetRef.current = true;
   }, [playerStats.length, isLoading]);
   
-  // Debug: Track component renders (after all state is defined)
-  useEffect(() => {
-    renderCountRef.current += 1;
-    console.log(`[DEBUG Render] NBADashboardContent render #${renderCountRef.current}`, {
-      timestamp: new Date().toISOString(),
-      playerStatsLength: playerStats?.length || 0,
-      selectedPlayer: selectedPlayer?.full,
-      realOddsDataLength: realOddsData?.length || 0,
-      bettingLine,
-      selectedTimeframe,
-      oddsLoading
-    });
-  });
-
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
 
@@ -6286,15 +6202,6 @@ const lineMovementInFlightRef = useRef(false);
     });
   }, [realOddsData, selectedStat]);
   
-  // Debug: Log when primaryMarketLine changes
-  useEffect(() => {
-    console.log('[primaryMarketLine] Value changed:', { 
-      primaryMarketLine, 
-      realOddsDataLength: realOddsData?.length || 0,
-      selectedStat 
-    });
-  }, [primaryMarketLine, realOddsData, selectedStat]);
-
   const calculatedImpliedOdds = useMemo(() => {
     return calculateImpliedOdds({
       realOddsData,
@@ -6489,7 +6396,6 @@ const lineMovementInFlightRef = useRef(false);
       sliderRange={sliderRange}
       setSliderRange={setSliderRange}
             />
-            {/* 4. Opponent Analysis & Team Matchup Container (Mobile) */}
             <DashboardMobileAnalysis
               propsMode={propsMode}
               dvpProjectedTab={dvpProjectedTab}
