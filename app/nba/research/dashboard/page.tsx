@@ -104,6 +104,7 @@ import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
 import { DashboardMobileAnalysis } from './components/DashboardMobileAnalysis';
 import { DashboardMobileContent } from './components/DashboardMobileContent';
+import { DashboardDesktopContent } from './components/DashboardDesktopContent';
 import NBADashboardWrapper from './components/NBADashboardWrapper';
 import { getReboundRank, getRankColor, createTeamComparisonPieData, getPlayerCurrentTeam, getOpponentTeam } from './utils/teamAnalysisUtils';
 import { getSavedSession, saveSession, getLocalStorage, setLocalStorage, updateSessionProperty } from './utils/storageUtils';
@@ -6657,167 +6658,43 @@ const lineMovementInFlightRef = useRef(false);
               playerStats={playerStats}
             />
 
-            {/* Tracking Stats Container (Desktop) - Team Rankings */}
-            {useMemo(() => {
-              if (propsMode !== 'player' || !selectedTeam || selectedTeam === 'N/A') return null;
-              
-              const playerName = selectedPlayer?.full || 
-                `${selectedPlayer?.firstName || ''} ${selectedPlayer?.lastName || ''}`.trim();
-              
-              return (
-<div className="hidden lg:block">
-                  <Suspense fallback={<div className="h-32 flex items-center justify-center text-gray-500">Loading stats...</div>}>
-                    <TeamTrackingStatsTable
-                      teamAbbr={selectedTeam}
-                      selectedPlayerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-                      selectedPlayerName={playerName || undefined}
-                      season={2025}
-                      isDark={isDark}
-                    />
-                  </Suspense>
-                </div>
-              );
-            }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
-
-            {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
-            {useMemo(() => (
-              propsMode !== 'team' ? (
-                <div className="hidden lg:block">
-                  <OfficialOddsCard
-                    isDark={isDark}
-                    derivedOdds={derivedOdds}
-                    intradayMovements={intradayMovementsFinal}
-                    selectedTeam={selectedTeam}
-                    opponentTeam={opponentTeam}
-                    selectedTeamLogoUrl={selectedTeam && selectedTeam !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)) : ''}
-                    opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-                    matchupInfo={matchupInfo}
-                    oddsFormat={oddsFormat}
-                    books={realOddsData}
-                    fmtOdds={fmtOdds}
-                    lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-                    lineMovementData={mergedLineMovementData}
-                    selectedStat={selectedStat}
-                    calculatedImpliedOdds={calculatedImpliedOdds}
-                    selectedBookmakerName={selectedBookmakerName}
-                    selectedBookmakerLine={selectedBookmakerLine}
-                  propsMode={propsMode}
-                  selectedPlayer={selectedPlayer}
-                  primaryMarketLine={primaryMarketLine}
-                  bettingLine={bettingLine}
-                />
-              </div>
-            ) : null
-            ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine])}
-
-            {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
-            <BestOddsTableDesktop
-                isDark={isDark}
-                oddsLoading={oddsLoading}
-                oddsError={oddsError}
-                realOddsData={realOddsData}
-                selectedTeam={selectedTeam}
-                gamePropsTeam={gamePropsTeam}
-                propsMode={propsMode}
-                opponentTeam={opponentTeam}
-                oddsFormat={oddsFormat}
-                fmtOdds={fmtOdds}
-                playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
-                selectedStat={selectedStat}
-              />
-
-            {/* Unified Depth Chart (Desktop) - optimized for both modes - Always visible with skeleton when loading */}
-            {useMemo(() => {
-              // Determine which team to show based on mode
-              // For Game Props mode, use depthChartTeam for switching, fallback to gamePropsTeam
-              const currentTeam = propsMode === 'player' 
-                ? depthChartTeam 
-                : (depthChartTeam && depthChartTeam !== 'N/A' ? depthChartTeam : gamePropsTeam);
-              
-              // Determine roster data based on mode
-              const currentTeamRoster = propsMode === 'player' 
-                ? (currentTeam === depthChartTeam ? playerTeamRoster : opponentTeamRoster)
-                : (allTeamRosters[currentTeam] || null);
-              const currentOpponentRoster = propsMode === 'player' 
-                ? (currentTeam === depthChartTeam ? opponentTeamRoster : playerTeamRoster)
-                : (opponentTeam ? (allTeamRosters[opponentTeam] || null) : null);
-              
-              // Determine loading state based on mode
-              const currentRostersLoading = propsMode === 'player' 
-                ? rostersLoading 
-                : { player: rosterCacheLoading, opponent: rosterCacheLoading };
-              
-              return (
-<div className="hidden lg:block">
-                  <DepthChartContainer
-                  selectedTeam={currentTeam}
-                  teamInjuries={teamInjuries}
-                  isDark={isDark}
-                  onPlayerSelect={propsMode === 'player' ? (playerName: string) => {
-                    // In depth chart, we only have player names, not full player objects
-                    // For now, just log the selection - full integration would require player lookup
-                    console.log(`Selected player from depth chart: ${playerName}`);
-                  } : () => {}}
-                  selectedPlayerName={propsMode === 'player' && selectedPlayer ? (
-                    (() => {
-                      const fullName = selectedPlayer.full;
-                      const constructedName = `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
-                      return fullName || constructedName;
-                    })()
-                  ) : ''}
-                  opponentTeam={opponentTeam}
-                  originalPlayerTeam={propsMode === 'player' ? originalPlayerTeam : gamePropsTeam}
-                  playerTeamRoster={currentTeamRoster}
-                  opponentTeamRoster={currentOpponentRoster}
-                  rostersLoading={currentRostersLoading}
-                  onTeamSwap={(team) => {
-                    console.log(`ðŸ”„ Depth chart view only team swap: ${team}`);
-                    // Only update the depth chart display team, not the main stats container
-                    if (propsMode === 'player') {
-                      setDepthChartTeam(team);
-                    } else if (propsMode === 'team') {
-                      // In Game Props mode, allow depth chart team switching for roster viewing
-                      // but don't change the main gamePropsTeam or stats
-                      // We need a separate state for depth chart display team in game props mode
-                      setDepthChartTeam(team);
-                    }
-                  }}
-                />
-                </div>
-              );
-            }, [
-              propsMode, 
-              depthChartTeam, 
-              gamePropsTeam, 
-              teamInjuries, 
-              isDark, 
-              selectedPlayer?.full, 
-              selectedPlayer?.firstName, 
-              selectedPlayer?.lastName, 
-              opponentTeam, 
-              originalPlayerTeam, 
-              playerTeamRoster, 
-              opponentTeamRoster, 
-              rostersLoading, 
-              allTeamRosters, 
-              rosterCacheLoading, 
-              todaysGames
-            ])}
-
-            {/* Player Box Score (Desktop) - conditionally rendered inside useMemo */}
-            {useMemo(() => {
-              if (propsMode !== 'player') return null;
-              
-              return (
-                <div className="hidden lg:block">
-                  <PlayerBoxScore
-                    selectedPlayer={selectedPlayer}
-                    playerStats={playerStats}
-                    isDark={isDark}
-                  />
-                </div>
-              );
-            }, [propsMode, selectedPlayer, playerStats, isDark])}
+            {/* Desktop Content - Extracted to DashboardDesktopContent component */}
+            <DashboardDesktopContent
+              propsMode={propsMode}
+              isDark={isDark}
+              selectedTeam={selectedTeam}
+              selectedPlayer={selectedPlayer}
+              derivedOdds={derivedOdds}
+              intradayMovementsFinal={intradayMovementsFinal}
+              opponentTeam={opponentTeam}
+              selectedTeamLogoUrl={selectedTeamLogoUrl}
+              opponentTeamLogoUrl={opponentTeamLogoUrl}
+              matchupInfo={matchupInfo}
+              oddsFormat={oddsFormat}
+              realOddsData={realOddsData}
+              fmtOdds={fmtOdds}
+              mergedLineMovementData={mergedLineMovementData}
+              selectedStat={selectedStat}
+              calculatedImpliedOdds={calculatedImpliedOdds}
+              selectedBookmakerName={selectedBookmakerName}
+              selectedBookmakerLine={selectedBookmakerLine}
+              primaryMarketLine={primaryMarketLine}
+              bettingLine={bettingLine}
+              oddsLoading={oddsLoading}
+              oddsError={oddsError}
+              gamePropsTeam={gamePropsTeam}
+              resolvedPlayerId={resolvedPlayerId}
+              depthChartTeam={depthChartTeam}
+              setDepthChartTeam={setDepthChartTeam}
+              teamInjuries={teamInjuries}
+              originalPlayerTeam={originalPlayerTeam}
+              playerTeamRoster={playerTeamRoster}
+              opponentTeamRoster={opponentTeamRoster}
+              rostersLoading={rostersLoading}
+              allTeamRosters={allTeamRosters}
+              rosterCacheLoading={rosterCacheLoading}
+              playerStats={playerStats}
+            />
 
           </div>
 
