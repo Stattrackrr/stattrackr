@@ -106,13 +106,13 @@ import { DashboardMobileAnalysis } from './components/DashboardMobileAnalysis';
 import { DashboardMobileContent } from './components/DashboardMobileContent';
 import { DashboardDesktopContent } from './components/DashboardDesktopContent';
 import { DashboardModeToggle } from './components/DashboardModeToggle';
+import { DashboardJournalModals } from './components/DashboardJournalModals';
 import NBADashboardWrapper from './components/NBADashboardWrapper';
 import { getReboundRank, getRankColor, createTeamComparisonPieData, getPlayerCurrentTeam, getOpponentTeam } from './utils/teamAnalysisUtils';
 import { getSavedSession, saveSession, getLocalStorage, setLocalStorage, updateSessionProperty } from './utils/storageUtils';
 import { HeaderNavigation, MobileBottomNavigation } from './components/header';
 
 // Lazy load heavy components for better initial bundle size
-const AddToJournalModal = lazy(() => import('@/components/AddToJournalModal').then(mod => ({ default: mod.default })));
 const TeamTrackingStatsTable = lazy(() => import('@/components/TeamTrackingStatsTable').then(mod => ({ default: mod.TeamTrackingStatsTable })));
 import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
@@ -6652,38 +6652,19 @@ const lineMovementInFlightRef = useRef(false);
       </div>
       </div>
       
-      {/* Journal Modals */}
-      {propsMode === 'player' && selectedPlayer && opponentTeam && (
-        <Suspense fallback={null}>
-          <AddToJournalModal
-            isOpen={showJournalModal}
-            onClose={() => setShowJournalModal(false)}
-            playerName={selectedPlayer.full}
-            playerId={String(selectedPlayer.id)}
-            team={selectedTeam}
-            opponent={nextGameOpponent}
-            gameDate={nextGameDate}
-            oddsFormat={oddsFormat}
-          />
-        </Suspense>
-      )}
-      
-      {/* Game Props Journal Modals */}
-      {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && (
-        <Suspense fallback={null}>
-          <AddToJournalModal
-          isOpen={showJournalModal}
-          onClose={() => setShowJournalModal(false)}
-          playerName={TEAM_FULL_NAMES[gamePropsTeam] || gamePropsTeam}
-          playerId={gamePropsTeam}
-          team={gamePropsTeam}
-          opponent={opponentTeam}
-          gameDate={nextGameDate}
-          oddsFormat={oddsFormat}
-          isGameProp={true}
-        />
-        </Suspense>
-      )}
+      {/* Journal Modals - Extracted to DashboardJournalModals component */}
+      <DashboardJournalModals
+        propsMode={propsMode}
+        selectedPlayer={selectedPlayer}
+        opponentTeam={opponentTeam}
+        gamePropsTeam={gamePropsTeam}
+        selectedTeam={selectedTeam}
+        nextGameOpponent={nextGameOpponent}
+        nextGameDate={nextGameDate}
+        oddsFormat={oddsFormat}
+        showJournalModal={showJournalModal}
+        setShowJournalModal={setShowJournalModal}
+      />
       
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <MobileBottomNavigation
