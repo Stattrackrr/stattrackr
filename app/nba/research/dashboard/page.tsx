@@ -81,7 +81,7 @@ import {
 import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { fetchSortedStatsCore } from './utils/playerStatsUtils';
-import { fetchTeamGamesData as fetchTeamGamesDataCore } from './utils/teamGamesUtils';
+import { fetchTeamGamesData as fetchTeamGamesDataCore, cacheAllTeamsInBackground as cacheAllTeamsInBackgroundCore, fetchGameDataForTeam as fetchGameDataForTeamCore } from './utils/teamGamesUtils';
 import { fetchTodaysGamesCore } from './utils/fetchTodaysGamesUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
 import { processBaseGameData } from './utils/baseGameDataUtils';
@@ -1079,44 +1079,16 @@ const lineMovementInFlightRef = useRef(false);
   const [backgroundCacheLoading, setBackgroundCacheLoading] = useState(false);
   const [cacheProgress, setCacheProgress] = useState({ current: 0, total: 0 });
 
-  // Background cache all teams function
+  // Background cache all teams function - now imported from utils
   const cacheAllTeamsInBackground = async () => {
-    if (backgroundCacheLoading) return; // Prevent multiple background loads
-    
-    setBackgroundCacheLoading(true);
-    console.log('ðŸ”„ Starting background cache of all team data...');
-    
-    // List of all NBA teams
-    const allTeams = Object.keys(ABBR_TO_TEAM_ID);
-    const teamsToCache = allTeams.filter(team => !teamGameCache[team]);
-    
-    setCacheProgress({ current: 0, total: teamsToCache.length });
-    
-    for (let i = 0; i < teamsToCache.length; i++) {
-      const teamAbbr = teamsToCache[i];
-      try {
-        // Use a simplified version without UI loading states
-        const games = await fetchTeamGamesData(teamAbbr, false); // false = no UI loading
-        
-        setTeamGameCache(prev => ({
-          ...prev,
-          [teamAbbr]: games
-        }));
-        
-        // Update progress
-        setCacheProgress({ current: i + 1, total: teamsToCache.length });
-        
-        // Small delay between teams to avoid overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-      } catch (error) {
-        console.warn(`Background cache failed for ${teamAbbr}:`, error);
-      }
-    }
-    
-    console.log('âœ… Background cache completed for all teams');
-    setBackgroundCacheLoading(false);
-    setCacheProgress({ current: 0, total: 0 });
+    return await cacheAllTeamsInBackgroundCore({
+      backgroundCacheLoading,
+      teamGameCache,
+      fetchTeamGamesData,
+      onBackgroundCacheLoadingChange: setBackgroundCacheLoading,
+      onCacheProgressChange: setCacheProgress,
+      onTeamGameCacheUpdate: setTeamGameCache,
+    });
   };
 
   // Core function to fetch team games - now imported from utils
@@ -1127,40 +1099,17 @@ const lineMovementInFlightRef = useRef(false);
     });
   };
 
-  // Priority fetch: load requested team immediately, then cache others in background
+  // Priority fetch: load requested team immediately, then cache others in background - now imported from utils
   const fetchGameDataForTeam = async (teamAbbr: string) => {
-    if (!teamAbbr || teamAbbr === 'N/A') return [];
-    
-    // Check cache first
-    if (teamGameCache[teamAbbr]) {
-      console.log(`âš¡ Using cached data for ${teamAbbr}`);
-      
-      // Add 20ms delay to make switching visible
-      setGameStatsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 20));
-      setGameStats(teamGameCache[teamAbbr]);
-      setGameStatsLoading(false);
-      
-      return teamGameCache[teamAbbr];
-    }
-    
-    console.log(`ðŸ€ Priority loading ${teamAbbr}...`);
-    
-    // Load requested team immediately with UI loading state
-    const games = await fetchTeamGamesData(teamAbbr, true);
-    
-    // Cache the result
-    setTeamGameCache(prev => ({
-      ...prev,
-      [teamAbbr]: games
-    }));
-    
-    // Trigger background caching of all other teams (non-blocking)
-    setTimeout(() => {
-      cacheAllTeamsInBackground();
-    }, 500); // Small delay to let UI update first
-    
-    return games;
+    return await fetchGameDataForTeamCore({
+      teamAbbr,
+      teamGameCache,
+      fetchTeamGamesData,
+      onGameStatsLoadingChange: setGameStatsLoading,
+      onGameStatsChange: setGameStats,
+      onTeamGameCacheUpdate: setTeamGameCache,
+      onCacheAllTeams: cacheAllTeamsInBackground,
+    });
   };
 
   // Fetch games function (today ± 7 days) - now imported from utils

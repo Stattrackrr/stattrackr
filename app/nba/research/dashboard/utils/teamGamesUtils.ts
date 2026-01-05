@@ -3,6 +3,24 @@ import { ABBR_TO_TEAM_ID } from './teamUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { BallDontLieGame } from '../types';
 
+export interface CacheAllTeamsOptions {
+  teamGameCache: Record<string, BallDontLieGame[]>;
+  fetchTeamGamesData: (teamAbbr: string, showLoading: boolean) => Promise<BallDontLieGame[]>;
+  onBackgroundCacheLoadingChange?: (loading: boolean) => void;
+  onCacheProgressChange?: (progress: { current: number; total: number }) => void;
+  onTeamGameCacheUpdate?: (updater: (prev: Record<string, BallDontLieGame[]>) => Record<string, BallDontLieGame[]>) => void;
+}
+
+export interface FetchGameDataForTeamOptions {
+  teamAbbr: string;
+  teamGameCache: Record<string, BallDontLieGame[]>;
+  fetchTeamGamesData: (teamAbbr: string, showLoading: boolean) => Promise<BallDontLieGame[]>;
+  onGameStatsLoadingChange?: (loading: boolean) => void;
+  onGameStatsChange?: (games: BallDontLieGame[]) => void;
+  onTeamGameCacheUpdate?: (updater: (prev: Record<string, BallDontLieGame[]>) => Record<string, BallDontLieGame[]>) => void;
+  onCacheAllTeams?: () => void;
+}
+
 /**
  * Core function to fetch team games
  * Returns games data, optionally updating loading state via callbacks
