@@ -80,6 +80,7 @@ import {
 } from './utils/teamStats';
 import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
+import { fetchSortedStatsCore } from './utils/playerStatsUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
 import { processBaseGameData } from './utils/baseGameDataUtils';
 import { processFilteredGameData } from './utils/filteredGameDataUtils';
