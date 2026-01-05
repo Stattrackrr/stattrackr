@@ -1,0 +1,164 @@
+import { currentNbaSeason } from './playerUtils';
+import { ABBR_TO_TEAM_ID } from './teamUtils';
+import { normalizeAbbr } from '@/lib/nbaAbbr';
+import { BallDontLieGame } from '../types';
+
+/**
+ * Core function to fetch team games
+ * Returns games data, optionally updating loading state via callbacks
+ */
+export async function fetchTeamGamesData(
+  teamAbbr: string,
+  options?: {
+    onLoadingChange?: (loading: boolean) => void;
+    onGamesChange?: (games: BallDontLieGame[]) => void;
+  }
+): Promise<BallDontLieGame[]> {
+  if (!teamAbbr || teamAbbr === 'N/A') return [];
+  
+  const { onLoadingChange, onGamesChange } = options || {};
+  
+  if (onLoadingChange) {
+    onLoadingChange(true);
+  }
+  
+  try {
+    const season = currentNbaSeason();
+    const teamId = ABBR_TO_TEAM_ID[normalizeAbbr(teamAbbr)];
+    
+    if (!teamId) {
+      console.warn(`No team ID found for ${teamAbbr}`);
+      return [];
+    }
+    
+    console.log(`🏀 Fetching games for team ${teamAbbr} (ID: ${teamId})`);
+    
+    // Use aggregated, team-scoped fast path (no cursor), one call per season
+    const current = currentNbaSeason();
+    const targetSeasons = [String(current), String(current - 1), String(current - 2)];
+
+    const seasonResults = await Promise.all(
+      targetSeasons.map(async (s) => {
+        try {
+          // Fetch all games for this season (API handles pagination internally)
+          const url = `/api/bdl/games?seasons[]=${s}&team_ids[]=${teamId}&per_page=100`;
+          const res = await fetch(url);
+          const js = await res.json();
+          const arr = Array.isArray(js?.data) ? js.data : [];
+          return arr;
+        } catch {
+          return [] as any[];
+        }
+      })
+    );
+
+    const seasonData = { data: seasonResults.flat() } as any;
+
+    if (seasonData?.data) {
+      console.log(`🔍 FILTERING: Starting with ${seasonData.data.length} total games`);
+      
+      // Filter for games involving our team and only completed games
+      let allTeamGames = seasonData.data.filter((game: any) => {
+        return game.home_team?.id === teamId || game.visitor_team?.id === teamId;
+      });
+      
+      console.log(`🔍 Found ${allTeamGames.length} total games involving ${teamAbbr} (before status filtering)`);
+      
+      // Check what statuses we have
+      const statusCounts = allTeamGames.reduce((acc: any, game: any) => {
+        const status = game.status || 'undefined';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log(`🔍 Game statuses for ${teamAbbr}:`, statusCounts);
+      
+      let games = seasonData.data.filter((game: any) => {
+        const isTeamInvolved = game.home_team?.id === teamId || game.visitor_team?.id === teamId;
+        const isCompleted = game.status === 'Final';
+        const hasScores = game.home_team_score != null && game.visitor_team_score != null;
+        
+        const passes = isTeamInvolved && isCompleted && hasScores;
+        
+        // Debug first few games
+        if (seasonData.data.indexOf(game) < 5) {
+          console.log(`🔎 Game filter debug:`, {
+            id: game.id,
+            date: game.date,
+            home: game.home_team?.abbreviation + ` (ID: ${game.home_team?.id})`,
+            away: game.visitor_team?.abbreviation + ` (ID: ${game.visitor_team?.id})`,
+            status: game.status,
+            targetTeamId: teamId,
+            isTeamInvolved,
+            isCompleted,
+            hasScores,
+            passes
+          });
+        }
+        
+        return passes;
+      });
+      
+      // Sort by date (oldest first for full season display)
+      games = games
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.date || 0).getTime();
+          const dateB = new Date(b.date || 0).getTime();
+          return dateA - dateB; // Oldest first (season progression)
+        });
+      
+      console.log(`🏆 Full 2024-25 season: ${games.length} games`);
+      
+      // Break down games by month/type
+      const gamesByMonth = games.reduce((acc: any, game: any) => {
+        const date = game.date;
+        const month = date ? date.substring(0, 7) : 'unknown'; // YYYY-MM
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log(`📊 Games breakdown by month:`, gamesByMonth);
+      
+      // Check for potential preseason (October before 15th) or playoff games (April after 15th)
+      const preseasonGames = games.filter((g: any) => {
+        const date = g.date;
+        return date && date.startsWith('2024-10') && parseInt(date.split('-')[2]) < 15;
+      });
+      
+      const playoffGames = games.filter((g: any) => {
+        const date = g.date;
+        return date && (date.startsWith('2025-04') && parseInt(date.split('-')[2]) > 15) || date.startsWith('2025-05') || date.startsWith('2025-06');
+      });
+      
+      console.log(`🏆 Potential preseason games: ${preseasonGames.length}`);
+      console.log(`🏆 Potential playoff games: ${playoffGames.length}`);
+      
+      console.log(`📊 Found ${games.length} games for ${teamAbbr}`);
+      if (games.length > 0) {
+        const newest = games[0]?.date;
+        const oldest = games[games.length - 1]?.date;
+        console.log(`📅 Date range: ${oldest} to ${newest}`);
+      }
+      
+      // Games are already in chronological order (oldest to newest)
+      if (onGamesChange) {
+        onGamesChange(games);
+      }
+      return games;
+    }
+    
+    console.warn(`No games found for ${teamAbbr}`);
+    return [];
+  } catch (error) {
+    console.error(`Error fetching game data for ${teamAbbr}:`, error);
+    if (onGamesChange) {
+      onGamesChange([]);
+    }
+    return [];
+  } finally {
+    if (onLoadingChange) {
+      onLoadingChange(false);
+    }
+  }
+}
+
