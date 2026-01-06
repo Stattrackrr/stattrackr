@@ -1,4 +1,5 @@
 import { LINE_MOVEMENT_ENABLED } from '../constants';
+import { filterByMarket, OddsSnapshot } from '@/lib/odds';
 
 export interface LineMovementData {
   lineMovement?: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
@@ -18,7 +19,9 @@ export interface IntradayMovement {
  * Build intraday movement rows from line movement data
  */
 export function processIntradayMovements(
-  lineMovementData: LineMovementData | null
+  lineMovementData: LineMovementData | null,
+  oddsSnapshots: OddsSnapshot[],
+  marketKey: string
 ): IntradayMovement[] {
   if (!LINE_MOVEMENT_ENABLED) {
     return [];
@@ -68,19 +71,47 @@ export function processIntradayMovements(
 
     if (currentLine) {
       const delta = openingLine ? currentLine.line - openingLine.line : 0;
-      const changeStr = delta !== 0 ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '';
-      fallbackRows.push({
-        ts: new Date(currentLine.timestamp).getTime(),
-        timeLabel: formatLabel(currentLine, 'Current'),
-        line: currentLine.line,
-        change: changeStr,
-        direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
-      });
+      const hasDifferentTimestamp = !openingLine || currentLine.timestamp !== openingLine.timestamp;
+      const hasDifferentLine = !openingLine || currentLine.line !== openingLine.line;
+
+      if (hasDifferentTimestamp || hasDifferentLine) {
+        fallbackRows.push({
+          ts: new Date(currentLine.timestamp).getTime(),
+          timeLabel: formatLabel(currentLine, 'Latest'),
+          line: currentLine.line,
+          change: openingLine ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '',
+          direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+        });
+      }
     }
 
-    return fallbackRows.sort((a, b) => b.ts - a.ts);
+    if (fallbackRows.length > 0) {
+      return fallbackRows.sort((a, b) => b.ts - a.ts);
+    }
   }
-
-  return [];
+  
+  // Fallback to old snapshot logic for team mode
+  const items = filterByMarket(oddsSnapshots, marketKey)
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const rows: IntradayMovement[] = [];
+  for (let i = 1; i < items.length; i++) {
+    const prev = items[i - 1];
+    const cur = items[i];
+    const delta = cur.line - prev.line;
+    const dir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+    const dt = new Date(cur.timestamp);
+    const timeLabel = dt.toLocaleString(undefined, {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    });
+    rows.push({
+      ts: cur.timestamp,
+      timeLabel,
+      line: cur.line,
+      change: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`,
+      direction: dir,
+    });
+  }
+  return rows.sort((a, b) => b.ts - a.ts); // Most recent first (descending by timestamp)
 }
 
