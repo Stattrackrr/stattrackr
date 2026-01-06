@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { parseMinutes } from '@/lib/nbaPlayers';
-import { getTeamPace } from '@/lib/nbaPace';
+import { parseMinutes } from '../utils/playerUtils';
+import { getTeamPace } from '../utils/teamStats';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 
 export interface UseSeasonAveragesParams {
