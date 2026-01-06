@@ -19,8 +19,8 @@ export function usePredictedPace({
   setPredictedPace,
 }: UsePredictedPaceParams) {
   useEffect(() => {
-    // Only calculate for team mode
-    if (propsMode !== 'team' || !realOddsData || realOddsData.length === 0) {
+    // Only calculate for player mode (when we have team and opponent)
+    if (!realOddsData || realOddsData.length === 0 || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
       setPredictedPace(null);
       return;
     }
