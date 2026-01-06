@@ -109,6 +109,8 @@ import { useAverageUsageRate } from './hooks/useAverageUsageRate';
 import { useTeammatePrefetch } from './hooks/useTeammatePrefetch';
 import { useAuthHandlers } from './hooks/useAuthHandlers';
 import { useRosterPreloading } from './hooks/useRosterPreloading';
+import { useTeamRosterPrefetch } from './hooks/useTeamRosterPrefetch';
+import { useTeamInjuries } from './hooks/useTeamInjuries';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -712,7 +714,7 @@ const lineMovementInFlightRef = useRef(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  
+
   // selection + data
   const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
@@ -2088,32 +2090,15 @@ const lineMovementInFlightRef = useRef(false);
   // Function to fetch a single team's depth chart (with caching to prevent rate limits)
 
   // Prefetch rosters for current teams (specific to current mode)
-  useEffect(() => {
-    const prefetchTeamRosters = async () => {
-      const playerTeam = propsMode === 'team' ? gamePropsTeam : originalPlayerTeam;
-      const oppTeam = opponentTeam;
-      
-      if (!playerTeam || playerTeam === 'N/A') return;
-      
-      // Fetch player team roster
-      if (playerTeam !== 'N/A') {
-        setRostersLoading(prev => ({ ...prev, player: true }));
-        const playerRoster = await fetchTeamDepthChart(playerTeam);
-        setPlayerTeamRoster(playerRoster);
-        setRostersLoading(prev => ({ ...prev, player: false }));
-      }
-      
-      // Fetch opponent team roster if available
-      if (oppTeam && oppTeam !== 'N/A' && oppTeam !== playerTeam) {
-        setRostersLoading(prev => ({ ...prev, opponent: true }));
-        const opponentRoster = await fetchTeamDepthChart(oppTeam);
-        setOpponentTeamRoster(opponentRoster);
-        setRostersLoading(prev => ({ ...prev, opponent: false }));
-      }
-    };
-    
-    prefetchTeamRosters();
-  }, [originalPlayerTeam, opponentTeam, propsMode, gamePropsTeam]);
+  useTeamRosterPrefetch({
+    propsMode,
+    originalPlayerTeam,
+    gamePropsTeam,
+    opponentTeam,
+    setPlayerTeamRoster,
+    setOpponentTeamRoster,
+    setRostersLoading,
+  });
 
 
   // Comprehensive roster cache - preload ALL team rosters for instant switching
@@ -2172,35 +2157,13 @@ const lineMovementInFlightRef = useRef(false);
   });
 
   // Fetch injuries for depth chart integration (fetch both selected and opponent teams)
-  useEffect(() => {
-    const fetchTeamInjuries = async () => {
-      const teamA = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-      const teamB = opponentTeam;
-      
-      if (!teamA || teamA === 'N/A') {
-        setTeamInjuries({});
-        return;
-      }
-
-      try {
-        const teamsParam = [teamA, teamB]
-          .filter(Boolean)
-          .filter((t, i, arr) => t !== 'N/A' && arr.indexOf(t as string) === i)
-          .join(',');
-        const url = teamsParam ? `/api/injuries?teams=${teamsParam}` : `/api/injuries?teams=${teamA}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.success) {
-          setTeamInjuries(data.injuriesByTeam || {});
-        }
-      } catch (error) {
-        console.warn('Failed to fetch team injuries:', error);
-        setTeamInjuries({});
-      }
-    };
-
-    fetchTeamInjuries();
-  }, [selectedTeam, propsMode, gamePropsTeam, opponentTeam]);
+  useTeamInjuries({
+    propsMode,
+    selectedTeam,
+    gamePropsTeam,
+    opponentTeam,
+    setTeamInjuries,
+  });
 
 
 
@@ -3749,7 +3712,7 @@ const lineMovementInFlightRef = useRef(false);
     setCoreDataReady(true);
     coreDataReadySetRef.current = true;
   }, [playerStats.length, isLoading]);
-  
+
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
 
@@ -5038,7 +5001,7 @@ const lineMovementInFlightRef = useRef(false);
       selectedStat,
     });
   }, [realOddsData, selectedStat]);
-  
+
   const calculatedImpliedOdds = useMemo(() => {
     return calculateImpliedOdds({
       realOddsData,
@@ -5067,15 +5030,15 @@ const lineMovementInFlightRef = useRef(false);
         <DashboardLeftSidebarWrapper
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
-          oddsFormat={oddsFormat}
-          setOddsFormat={setOddsFormat}
-          hasPremium={hasPremium}
-          avatarUrl={avatarUrl}
-          username={username}
-          userEmail={userEmail}
-          isPro={isPro}
-          onSubscriptionClick={handleSidebarSubscription}
-          onSignOutClick={handleLogout}
+            oddsFormat={oddsFormat}
+            setOddsFormat={setOddsFormat}
+            hasPremium={hasPremium}
+            avatarUrl={avatarUrl}
+            username={username}
+            userEmail={userEmail}
+            isPro={isPro}
+            onSubscriptionClick={handleSidebarSubscription}
+            onSignOutClick={handleLogout}
         />
         <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
@@ -5202,28 +5165,28 @@ const lineMovementInFlightRef = useRef(false);
               propsMode={propsMode}
               dvpProjectedTab={dvpProjectedTab}
               setDvpProjectedTab={setDvpProjectedTab}
-              isDark={isDark}
-              opponentTeam={opponentTeam}
+                          isDark={isDark}
+                          opponentTeam={opponentTeam}
               selectedPosition={selectedPosition}
               selectedTeam={selectedTeam}
               selectedPlayer={selectedPlayer}
-              projectedMinutes={projectedMinutes}
+                          projectedMinutes={projectedMinutes}
               projectedMinutesLoading={projectedMinutesLoading}
-              predictedPace={predictedPace}
-              seasonFgPct={seasonFgPct}
-              averageUsageRate={averageUsageRate}
-              averageMinutes={averageMinutes}
-              averageGamePace={averageGamePace}
-              selectedTimeframe={selectedTimeframe}
+                          predictedPace={predictedPace}
+                          seasonFgPct={seasonFgPct}
+                          averageUsageRate={averageUsageRate}
+                          averageMinutes={averageMinutes}
+                          averageGamePace={averageGamePace}
+                          selectedTimeframe={selectedTimeframe}
               resolvedPlayerId={resolvedPlayerId}
-              selectedStat={selectedStat}
-              playerStats={playerStats}
-              teammateFilterId={teammateFilterId}
-              setTeammateFilterId={setTeammateFilterId}
-              setTeammateFilterName={setTeammateFilterName}
-              withWithoutMode={withWithoutMode}
-              setWithWithoutMode={setWithWithoutMode}
-              clearTeammateFilter={clearTeammateFilter}
+                          selectedStat={selectedStat}
+                          playerStats={playerStats}
+                          teammateFilterId={teammateFilterId}
+                          setTeammateFilterId={setTeammateFilterId}
+                          setTeammateFilterName={setTeammateFilterName}
+                          withWithoutMode={withWithoutMode}
+                          setWithWithoutMode={setWithWithoutMode}
+                          clearTeammateFilter={clearTeammateFilter}
               gamePropsTeam={gamePropsTeam}
               selectedComparison={selectedComparison}
               setSelectedComparison={setSelectedComparison}
@@ -5235,79 +5198,79 @@ const lineMovementInFlightRef = useRef(false);
             {/* 4.5-10. Remaining Mobile Content - Extracted to DashboardMobileContent component */}
             <DashboardMobileContent
               propsMode={propsMode}
-              isDark={isDark}
+                  isDark={isDark} 
               selectedPlayer={selectedPlayer}
               shotDistanceData={shotDistanceData}
-              opponentTeam={opponentTeam}
+                  opponentTeam={opponentTeam}
               selectedTeam={selectedTeam}
-              derivedOdds={derivedOdds}
+                  derivedOdds={derivedOdds}
               intradayMovementsFinal={intradayMovementsFinal}
               gamePropsTeam={gamePropsTeam}
               selectedTeamLogoUrl={selectedTeamLogoUrl}
               opponentTeamLogoUrl={opponentTeamLogoUrl}
-              matchupInfo={matchupInfo}
-              oddsFormat={oddsFormat}
+                  matchupInfo={matchupInfo}
+                  oddsFormat={oddsFormat}
               realOddsData={realOddsData}
-              fmtOdds={fmtOdds}
+                  fmtOdds={fmtOdds}
               mergedLineMovementData={mergedLineMovementData}
-              selectedStat={selectedStat}
-              calculatedImpliedOdds={calculatedImpliedOdds}
-              selectedBookmakerName={selectedBookmakerName}
-              selectedBookmakerLine={selectedBookmakerLine}
-              primaryMarketLine={primaryMarketLine}
-              bettingLine={bettingLine}
+                  selectedStat={selectedStat}
+                  calculatedImpliedOdds={calculatedImpliedOdds}
+                  selectedBookmakerName={selectedBookmakerName}
+                  selectedBookmakerLine={selectedBookmakerLine}
+                  primaryMarketLine={primaryMarketLine}
+                  bettingLine={bettingLine}
               oddsLoading={oddsLoading}
               oddsError={oddsError}
               resolvedPlayerId={resolvedPlayerId}
               depthChartTeam={depthChartTeam}
               setDepthChartTeam={setDepthChartTeam}
-              teamInjuries={teamInjuries}
+                    teamInjuries={teamInjuries}
               originalPlayerTeam={originalPlayerTeam}
               playerTeamRoster={playerTeamRoster}
               opponentTeamRoster={opponentTeamRoster}
               rostersLoading={rostersLoading}
               allTeamRosters={allTeamRosters}
               rosterCacheLoading={rosterCacheLoading}
-              playerStats={playerStats}
+                    playerStats={playerStats}
             />
 
             {/* Desktop Content - Extracted to DashboardDesktopContent component */}
             <DashboardDesktopContent
               propsMode={propsMode}
-              isDark={isDark}
-              selectedTeam={selectedTeam}
+                      isDark={isDark}
+                    selectedTeam={selectedTeam}
               selectedPlayer={selectedPlayer}
               derivedOdds={derivedOdds}
               intradayMovementsFinal={intradayMovementsFinal}
-              opponentTeam={opponentTeam}
+                    opponentTeam={opponentTeam}
               selectedTeamLogoUrl={selectedTeamLogoUrl}
               opponentTeamLogoUrl={opponentTeamLogoUrl}
-              matchupInfo={matchupInfo}
-              oddsFormat={oddsFormat}
+                    matchupInfo={matchupInfo}
+                    oddsFormat={oddsFormat}
               realOddsData={realOddsData}
-              fmtOdds={fmtOdds}
+                    fmtOdds={fmtOdds}
               mergedLineMovementData={mergedLineMovementData}
-              selectedStat={selectedStat}
-              calculatedImpliedOdds={calculatedImpliedOdds}
-              selectedBookmakerName={selectedBookmakerName}
-              selectedBookmakerLine={selectedBookmakerLine}
-              primaryMarketLine={primaryMarketLine}
-              bettingLine={bettingLine}
-              oddsLoading={oddsLoading}
-              oddsError={oddsError}
-              gamePropsTeam={gamePropsTeam}
+                    selectedStat={selectedStat}
+                    calculatedImpliedOdds={calculatedImpliedOdds}
+                    selectedBookmakerName={selectedBookmakerName}
+                    selectedBookmakerLine={selectedBookmakerLine}
+                  primaryMarketLine={primaryMarketLine}
+                  bettingLine={bettingLine}
+                oddsLoading={oddsLoading}
+                oddsError={oddsError}
+                gamePropsTeam={gamePropsTeam}
               resolvedPlayerId={resolvedPlayerId}
               depthChartTeam={depthChartTeam}
               setDepthChartTeam={setDepthChartTeam}
-              teamInjuries={teamInjuries}
+                  teamInjuries={teamInjuries}
               originalPlayerTeam={originalPlayerTeam}
               playerTeamRoster={playerTeamRoster}
               opponentTeamRoster={opponentTeamRoster}
               rostersLoading={rostersLoading}
               allTeamRosters={allTeamRosters}
               rosterCacheLoading={rosterCacheLoading}
-              playerStats={playerStats}
-            />
+                    playerStats={playerStats}
+                  />
 
           </div>
 
@@ -5355,9 +5318,9 @@ const lineMovementInFlightRef = useRef(false);
             shotDistanceData={shotDistanceData}
           />
           
+        </div>
           </div>
         </div>
-      </div>
       </div>
       
       {/* Journal Modals - Extracted to DashboardJournalModals component */}
@@ -5369,7 +5332,7 @@ const lineMovementInFlightRef = useRef(false);
         selectedTeam={selectedTeam}
         nextGameOpponent={nextGameOpponent}
         nextGameDate={nextGameDate}
-        oddsFormat={oddsFormat}
+            oddsFormat={oddsFormat}
         showJournalModal={showJournalModal}
         setShowJournalModal={setShowJournalModal}
       />
