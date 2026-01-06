@@ -94,69 +94,8 @@ export const OfficialOddsCard = memo(function OfficialOddsCard({
     );
   };
 
-  // Always render container - show empty state for game props instead of returning null
-  return (
-    <div className="relative z-50 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 overflow-hidden">
-      <div className="p-3 sm:p-4 md:p-6">
-        {/* Show empty state for game props mode */}
-        {propsMode === 'team' ? (
-          <div className="text-center py-8">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Official Odds are only available for Player Props
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Market Predicted Outcomes - Full Width (only show for player props, not game props) */}
-            <div>
-              <div>
-                <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0a1929]/40 p-4 h-full flex flex-col gap-3">
-                  <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                    Market Predicted Outcomes
-                  </div>
-                  
-                  {/* Player Name and Line */}
-                  {selectedPlayer && selectedStat && (
-                    <div className="flex items-center gap-2 text-xs sm:text-sm mb-2">
-                      <span className={mounted && isDark ? 'text-gray-300' : 'text-gray-600'}>
-                        {selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim()}:
-                      </span>
-                      <span className={(mounted && isDark ? 'text-slate-200' : 'text-slate-800') + ' font-mono font-semibold'}>
-                        {selectedStat.toUpperCase()} {primaryMarketLine !== null && primaryMarketLine !== undefined && Number.isFinite(primaryMarketLine) ? primaryMarketLine.toFixed(1) : selectedBookmakerLine !== null && selectedBookmakerLine !== undefined && Number.isFinite(selectedBookmakerLine) ? selectedBookmakerLine.toFixed(1) : (bettingLine !== null && bettingLine !== undefined && Number.isFinite(bettingLine) ? bettingLine.toFixed(1) : 'N/A')}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Bookmaker/Implied Odds Wheel */}
-                  <div className="flex flex-col items-center justify-center">
-                    {calculatedImpliedOdds ? (
-                      <>
-                        {renderWheel(
-                          calculatedImpliedOdds.overImpliedProb ?? 50,
-                          calculatedImpliedOdds.underImpliedProb ?? 50,
-                          'Bookmaker/Implied Odds',
-                          140
-                        )}
-                        <div className="mt-3 text-center">
-                          <div className={`text-xs ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                            Market Prob: <span className="font-semibold">{calculatedImpliedOdds.overImpliedProb?.toFixed(1) ?? 'N/A'}%</span>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className={`text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        No market odds available
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  // Return null - this component is no longer used
+  return null;
 }, (prev, next) => {
   return (
     prev.isDark === next.isDark &&

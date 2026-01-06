@@ -1097,7 +1097,6 @@ export function NBADashboardContent() {
               selectedStat={selectedStat}
               selectedTimeframe={selectedTimeframe}
               setPropsMode={setPropsMode}
-              setSearchQuery={setSearchQuery}
               setSelectedStat={setSelectedStat}
               setSelectedTeam={setSelectedTeam}
               setOriginalPlayerTeam={setOriginalPlayerTeam}
@@ -1117,16 +1116,6 @@ export function NBADashboardContent() {
               nextGameTipoff={nextGameTipoff}
               countdown={countdown}
               isGameInProgress={isGameInProgress}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              searchBusy={searchBusy}
-              searchError={searchError}
-              showDropdown={showDropdown}
-              setShowDropdown={setShowDropdown}
-              isMobileSearchOpen={isMobileSearchOpen}
-              setIsMobileSearchOpen={setIsMobileSearchOpen}
-              handlePlayerSelectFromSearch={handlePlayerSelectFromSearch}
               setGamePropsTeam={setGamePropsTeam}
               setSelectedStat={setSelectedStat}
               setOpponentTeam={setOpponentTeam}
@@ -1138,10 +1127,12 @@ export function NBADashboardContent() {
               setOpponentTeamLogoUrl={setOpponentTeamLogoUrl}
               opponentTeamLogoAttempt={opponentTeamLogoAttempt}
               setOpponentTeamLogoAttempt={setOpponentTeamLogoAttempt}
+              isDark={isDark}
               isPro={isPro}
               hasPremium={hasPremium}
               setShowJournalModal={setShowJournalModal}
               todaysGames={todaysGames}
+              calculatedImpliedOdds={calculatedImpliedOdds}
             />
 
             {/* Chart card (fully isolated) */}

@@ -10,6 +10,7 @@ import { HeaderInfo } from '../utils/headerInfoUtils';
 import { BdlSearchResult } from '../types';
 import { BallDontLieGame } from '../types';
 import { NBAPlayer } from '../types';
+import { ImpliedOddsWheel } from './odds/ImpliedOddsWheel';
 
 interface DashboardHeaderProps {
   // Props mode
@@ -26,19 +27,7 @@ interface DashboardHeaderProps {
   countdown: { hours: number; minutes: number; seconds: number } | null;
   isGameInProgress: boolean;
   
-  // Search state
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  searchResults: BdlSearchResult[];
-  searchBusy: boolean;
-  searchError: string | null;
-  showDropdown: boolean;
-  setShowDropdown: (show: boolean) => void;
-  isMobileSearchOpen: boolean;
-  setIsMobileSearchOpen: (open: boolean) => void;
-  
   // Handlers
-  handlePlayerSelectFromSearch: (player: BdlSearchResult) => Promise<void>;
   setGamePropsTeam: (team: string) => void;
   setSelectedStat: (stat: string) => void;
   setOpponentTeam: (team: string) => void;
@@ -53,6 +42,9 @@ interface DashboardHeaderProps {
   opponentTeamLogoAttempt: number;
   setOpponentTeamLogoAttempt: (attempt: number) => void;
   
+  // Theme
+  isDark: boolean;
+  
   // Premium/Pro
   isPro: boolean;
   hasPremium: boolean;
@@ -62,6 +54,12 @@ interface DashboardHeaderProps {
   
   // Games data
   todaysGames: BallDontLieGame[];
+  
+  // Implied Odds
+  calculatedImpliedOdds: {
+    overImpliedProb?: number;
+    underImpliedProb?: number;
+  } | null;
 }
 
 export function DashboardHeader({
@@ -75,16 +73,6 @@ export function DashboardHeader({
   nextGameTipoff,
   countdown,
   isGameInProgress,
-  searchQuery,
-  setSearchQuery,
-  searchResults,
-  searchBusy,
-  searchError,
-  showDropdown,
-  setShowDropdown,
-  isMobileSearchOpen,
-  setIsMobileSearchOpen,
-  handlePlayerSelectFromSearch,
   setGamePropsTeam,
   setSelectedStat,
   setOpponentTeam,
@@ -96,10 +84,12 @@ export function DashboardHeader({
   setOpponentTeamLogoUrl,
   opponentTeamLogoAttempt,
   setOpponentTeamLogoAttempt,
+  isDark,
   isPro,
   hasPremium,
   setShowJournalModal,
   todaysGames,
+  calculatedImpliedOdds,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);

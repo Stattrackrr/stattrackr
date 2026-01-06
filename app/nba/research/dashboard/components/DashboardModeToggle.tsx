@@ -12,7 +12,6 @@ interface DashboardModeToggleProps {
   selectedStat: string;
   selectedTimeframe: string;
   setPropsMode: (mode: 'player' | 'team') => void;
-  setSearchQuery: (query: string) => void;
   setSelectedStat: (stat: string) => void;
   setSelectedTeam: (team: string) => void;
   setOriginalPlayerTeam: (team: string) => void;
@@ -29,7 +28,6 @@ export function DashboardModeToggle({
   selectedStat,
   selectedTimeframe,
   setPropsMode,
-  setSearchQuery,
   setSelectedStat,
   setSelectedTeam,
   setOriginalPlayerTeam,
@@ -59,7 +57,6 @@ export function DashboardModeToggle({
             }
             
             setPropsMode('player');
-            setSearchQuery(''); // Clear search when switching
             // Always set PTS as default for Player Props
             setSelectedStat('pts');
             
@@ -102,7 +99,6 @@ export function DashboardModeToggle({
         <button
           onClick={() => {
             setPropsMode('team');
-            setSearchQuery(''); // Clear search when switching
             
             // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
             if (selectedTeam && selectedTeam !== 'N/A') {
