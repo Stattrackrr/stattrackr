@@ -85,7 +85,6 @@ import {
 import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { fetchSortedStatsCore } from './utils/playerStatsUtils';
-import { fetchTeamGamesData as fetchTeamGamesDataCore, cacheAllTeamsInBackground as cacheAllTeamsInBackgroundCore, fetchGameDataForTeam as fetchGameDataForTeamCore } from './utils/teamGamesUtils';
 import { fetchTodaysGamesCore } from './utils/fetchTodaysGamesUtils';
 import { fetchBdlPlayerData, parseBdlHeight, resolvePlayerId, parseEspnHeight, fetchEspnPlayerData, fetchEspnPlayerDataCore, fetchAdvancedStatsCore, fetchShotDistanceStatsCore } from './utils/playerDataUtils';
 import { fetchTeamDepthChart, resolveTeammateIdFromName } from './utils/depthChartUtils';
@@ -147,6 +146,8 @@ import { useCountdownTimer } from './hooks/useCountdownTimer';
 import { useSubscriptionCheck } from './hooks/useSubscriptionCheck';
 import { useLineMovement } from './hooks/useLineMovement';
 import { useStatUrlSync } from './hooks/useStatUrlSync';
+import { useOddsCalculations } from './hooks/useOddsCalculations';
+import { useTeamGameFetching } from './hooks/useTeamGameFetching';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -465,43 +466,18 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
   });
 
 
-  // Team game data cache for instant loading
-  const [teamGameCache, setTeamGameCache] = useState<Record<string, any[]>>({});
-  const [backgroundCacheLoading, setBackgroundCacheLoading] = useState(false);
-  const [cacheProgress, setCacheProgress] = useState({ current: 0, total: 0 });
-
-  // Background cache all teams function - now imported from utils
-  const cacheAllTeamsInBackground = async () => {
-    return await cacheAllTeamsInBackgroundCore({
-      backgroundCacheLoading,
-      teamGameCache,
-      fetchTeamGamesData,
-      onBackgroundCacheLoadingChange: setBackgroundCacheLoading,
-      onCacheProgressChange: setCacheProgress,
-      onTeamGameCacheUpdate: setTeamGameCache,
-    });
-  };
-
-  // Core function to fetch team games - now imported from utils
-  const fetchTeamGamesData = async (teamAbbr: string, showLoading: boolean = true) => {
-    return await fetchTeamGamesDataCore(teamAbbr, {
-      onLoadingChange: showLoading ? setGameStatsLoading : undefined,
-      onGamesChange: showLoading ? setGameStats : undefined,
-    });
-  };
-
-  // Priority fetch: load requested team immediately, then cache others in background - now imported from utils
-  const fetchGameDataForTeam = async (teamAbbr: string) => {
-    return await fetchGameDataForTeamCore({
-      teamAbbr,
-      teamGameCache,
-      fetchTeamGamesData,
-      onGameStatsLoadingChange: setGameStatsLoading,
-      onGameStatsChange: setGameStats,
-      onTeamGameCacheUpdate: setTeamGameCache,
-      onCacheAllTeams: cacheAllTeamsInBackground,
-    });
-  };
+  // Team game fetching - extracted to useTeamGameFetching hook
+  const {
+    fetchTeamGamesData,
+    fetchGameDataForTeam,
+    cacheAllTeamsInBackground,
+    teamGameCache,
+    backgroundCacheLoading,
+    cacheProgress,
+  } = useTeamGameFetching({
+    setGameStats,
+    setGameStatsLoading,
+  });
 
   // Fetch games function (today ± 7 days) - now imported from utils
   const fetchTodaysGames = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -1116,48 +1092,12 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setBettingLines,
   });
   
-  // Merge line movement data with live odds to get accurate current line
-  const mergedLineMovementData = useMemo(() => {
-    if (!LINE_MOVEMENT_ENABLED || !lineMovementData) return null;
-    
-    // Map selected stat to bookmaker property
-    const statToBookKey: Record<string, string> = {
-      'pts': 'PTS',
-      'reb': 'REB',
-      'ast': 'AST',
-      'fg3m': 'THREES',
-      'pra': 'PRA',
-      'pr': 'PR',
-      'pa': 'PA',
-      'ra': 'RA',
-    };
-    const bookKey = (selectedStat && statToBookKey[selectedStat]) || 'PTS';
-    
-    // Get current line from live odds (realOddsData) - use first available bookmaker with data
-    let currentLineFromLive: { line: number; bookmaker: string; timestamp: string } | null = null;
-    if (realOddsData && realOddsData.length > 0) {
-      for (const b of realOddsData) {
-        const bookData = (b as any)[bookKey];
-        if (bookData && bookData.line && bookData.line !== 'N/A') {
-          const lineValue = parseFloat(String(bookData.line).replace(/[^0-9.+-]/g, ''));
-          if (!Number.isNaN(lineValue)) {
-            currentLineFromLive = {
-              line: lineValue,
-              bookmaker: b.name,
-              timestamp: new Date().toISOString(),
-            };
-            break;
-          }
-        }
-      }
-    }
-    
-    // Merge: use opening from database, current from live odds (if available)
-    return {
-      ...lineMovementData,
-      currentLine: currentLineFromLive || lineMovementData.currentLine,
-    };
-  }, [lineMovementData, realOddsData, selectedStat]);
+  // Odds calculations - extracted to useOddsCalculations hook
+  const { mergedLineMovementData, availableBookmakers } = useOddsCalculations({
+    lineMovementData,
+    realOddsData,
+    selectedStat,
+  });
   
   const derivedOdds = useMemo(() => {
     if (LINE_MOVEMENT_ENABLED && mergedLineMovementData) {
@@ -1186,39 +1126,12 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
       LINE_MOVEMENT_ENABLED,
     });
   }, [mergedLineMovementData, intradayMovements, realOddsData, selectedStat]);
-  
+
   // Odds fetching logic - extracted to useOddsFetching hook (see hook call above)
 
   const fmtOdds = (odds: string | undefined | null): string => {
     return fmtOddsUtil(odds, oddsFormat);
   };
-
-  // Available bookmakers with valid over/under odds for selected stat
-  const availableBookmakers = useMemo(() => {
-    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return [];
-    
-    const bookRowKey = getBookRowKey(selectedStat);
-    if (!bookRowKey) return [];
-    
-    const bookmakers = new Map<string, { name: string; displayName: string }>();
-    
-    for (const book of realOddsData) {
-      const statData = (book as any)[bookRowKey];
-      if (statData && statData.line !== 'N/A' && statData.over !== 'N/A' && statData.under !== 'N/A') {
-        const meta = (book as any)?.meta;
-        // Exclude alternate lines (variantLabel indicates alternate)
-        if (!meta?.variantLabel) {
-          const baseName = (meta?.baseName || book?.name || '').toLowerCase();
-          const displayName = meta?.baseName || book?.name || 'Unknown';
-          if (!bookmakers.has(baseName)) {
-            bookmakers.set(baseName, { name: baseName, displayName });
-          }
-        }
-      }
-    }
-    
-    return Array.from(bookmakers.values());
-  }, [realOddsData, selectedStat, getBookRowKey]);
 
   // Extract FanDuel's line and odds for selected stat
   const selectedBookmakerData = useMemo(() => {
