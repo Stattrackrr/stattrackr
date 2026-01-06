@@ -112,7 +112,12 @@ export function useAverageUsageRate({
             const avgUsage = usageValues.reduce((sum, usage) => sum + usage, 0) / usageValues.length;
             setAverageUsageRate(avgUsage * 100);
           }
-        } catch (error) {
+        } catch (error: any) {
+          // Handle rate limit errors gracefully - don't throw, just log
+          if (error?.status === 429 || error?.message?.includes('Rate limit')) {
+            console.warn('[Usage Rate] Rate limit hit, skipping fetch. Will retry on next update.');
+            return;
+          }
           console.error('[Usage Rate] Error fetching advanced stats:', error);
         }
       };

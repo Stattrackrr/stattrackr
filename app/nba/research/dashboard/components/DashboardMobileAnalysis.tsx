@@ -2,7 +2,6 @@
 
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { PositionDefenseCard, OpponentAnalysisCard } from './dvp';
-import { ProjectedStatsCard } from './odds';
 import InjuryContainer from '@/components/InjuryContainer';
 import { createTeamComparisonPieData } from '../utils/teamAnalysisUtils';
 import { NBAPlayer } from '../types';
@@ -10,15 +9,13 @@ import { BallDontLieStats } from '../types';
 
 interface DashboardMobileAnalysisProps {
   propsMode: 'player' | 'team';
-  dvpProjectedTab: 'dvp' | 'projected' | 'opponent' | 'injuries';
-  setDvpProjectedTab: (tab: 'dvp' | 'projected' | 'opponent' | 'injuries') => void;
+  dvpProjectedTab: 'dvp' | 'opponent' | 'injuries';
+  setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries') => void;
   isDark: boolean;
   opponentTeam: string | null;
   selectedPosition: 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null;
   selectedTeam: string;
   selectedPlayer: NBAPlayer | null;
-  projectedMinutes: number | null;
-  projectedMinutesLoading: boolean;
   predictedPace: number | null;
   seasonFgPct: number | null;
   averageUsageRate: number | null;
@@ -54,8 +51,6 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
     selectedPosition,
     selectedTeam,
     selectedPlayer,
-    projectedMinutes,
-    projectedMinutesLoading,
     predictedPace,
     seasonFgPct,
     averageUsageRate,
@@ -99,16 +94,6 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
               <span className="xs:hidden">DvP</span>
             </button>
             <button
-              onClick={() => setDvpProjectedTab('projected')}
-              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                dvpProjectedTab === 'projected'
-                  ? 'bg-purple-600 text-white border-purple-600'
-                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              Projected
-            </button>
-            <button
               onClick={() => setDvpProjectedTab('opponent')}
               className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
                 dvpProjectedTab === 'opponent'
@@ -135,22 +120,6 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
           <div className="relative min-h-[250px] sm:min-h-[200px] w-full min-w-0">
             <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
               <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
-            </div>
-            <div className={dvpProjectedTab === 'projected' ? 'block' : 'hidden'}>
-              <ProjectedStatsCard
-                isDark={isDark}
-                selectedPlayer={selectedPlayer}
-                opponentTeam={opponentTeam}
-                currentTeam={selectedTeam}
-                projectedMinutes={projectedMinutes}
-                loading={projectedMinutesLoading}
-                predictedPace={predictedPace}
-                seasonFgPct={seasonFgPct}
-                averageUsageRate={averageUsageRate}
-                averageMinutes={averageMinutes}
-                averageGamePace={averageGamePace}
-                selectedTimeframe={selectedTimeframe}
-              />
             </div>
             <div className={dvpProjectedTab === 'opponent' ? 'block' : 'hidden'}>
               <OpponentAnalysisCard 

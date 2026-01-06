@@ -15,14 +15,21 @@ export async function fetchSortedStatsCore(
   // Use queued fetch to prevent rate limiting
   const { queuedFetch } = await import('@/lib/requestQueue');
   
+  // OPTIMIZATION: When coming from props page, the stats should already be cached
+  // The props page ingestion calls /api/stats which populates the cache
+  // We use the same cache key format, so this should be instant!
+  
   // Fetch stats for a season - fetch both regular and playoffs in parallel
   // This reduces from 4 requests to 2 requests per player (2 seasons x 1 parallel fetch each)
   const grabSeason = async (yr: number) => {
     const fetchRegular = async () => {
       // Use cache for faster loading - stats API has 8 hour cache
+      // This cache is populated by props page ingestion, so clicking from props page should be instant!
       // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
       // This is much faster than fetching 50 pages (5000 games) which was overkill
-      const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=false`;
+      // OPTIMIZATION: Skip DvP on initial load for faster response (DvP can be fetched in background)
+      // OPTIMIZATION: Don't use refresh=1 - use cached data from props page ingestion for instant load
+      const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`;
       const requestId = `stats-${playerId}-${yr}-reg`;
       try {
         const r = await queuedFetch(url, {}, requestId);
@@ -143,7 +150,8 @@ export async function fetchSortedStatsCore(
       // Use cache for faster loading - stats API has 8 hour cache
       // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
       // This is much faster than fetching 50 pages (5000 games) which was overkill
-      const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=true`;
+      // OPTIMIZATION: Skip DvP on initial load for faster response (DvP can be fetched in background)
+      const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`;
       const requestId = `stats-${playerId}-${yr}-po`;
       try {
         const r = await queuedFetch(url, {}, requestId);

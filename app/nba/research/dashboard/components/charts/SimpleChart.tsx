@@ -73,11 +73,17 @@ const SimpleChart = memo(function SimpleChart({
   }, [isDark]);
 
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
+  // OPTIMIZATION: Single pass through array instead of two filters
   const initialBackgroundGradient = useMemo(() => {
     if (!chartData || chartData.length === 0) return '';
     const total = chartData.length;
-    const overCount = chartData.filter(d => d.value > bettingLine).length;
-    const underCount = chartData.filter(d => d.value < bettingLine).length;
+    let overCount = 0;
+    let underCount = 0;
+    for (let i = 0; i < total; i++) {
+      const value = chartData[i].value;
+      if (value > bettingLine) overCount++;
+      else if (value < bettingLine) underCount++;
+    }
     const overPercent = total > 0 ? (overCount / total) * 100 : 0;
     const underPercent = total > 0 ? (underCount / total) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);

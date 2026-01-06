@@ -343,6 +343,8 @@ export function useUrlInitialization({
                   const pid = String(r.id);
                   
                   // Set player info immediately (optimistic UI)
+                  // Don't clear stats here - let handlePlayerSelectFromSearch handle it
+                  // This prevents the double render (clear then load)
                   startTransition(() => {
                     setSelectedPlayer({
                       id: pid,
@@ -359,7 +361,8 @@ export function useUrlInitialization({
                     setOriginalPlayerTeam(currentTeam);
                     setDepthChartTeam(currentTeam);
                     setResolvedPlayerId(pid);
-                    setPlayerStats([]); // Clear old stats, will load new ones
+                    // Don't clear stats here - handlePlayerSelectFromSearch will handle clearing and loading
+                    // This prevents the reset/re-render flicker
                   });
                   
                   // Now load stats in background without blocking

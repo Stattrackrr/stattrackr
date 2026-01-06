@@ -271,6 +271,26 @@ export function useOddsFetching({
     lastPropsModeRef.current = propsMode;
   }, [propsMode, setRealOddsData, setOddsLoading, setOddsError]);
 
+  // Reset fetch refs when player changes (to ensure fresh fetch from props page)
+  useEffect(() => {
+    if (propsMode === 'player' && selectedPlayer) {
+      const currentPlayerKey =
+        selectedPlayer.id?.toString() ||
+        (selectedPlayer.full ? selectedPlayer.full.toLowerCase() : null);
+      
+      // If player changed, reset refs to ensure fresh fetch
+      if (currentPlayerKey && currentPlayerKey !== lastOddsPlayerIdRef.current) {
+        console.log('[DEBUG player change] Resetting odds fetch refs for new player', {
+          currentPlayerKey,
+          lastPlayerKey: lastOddsPlayerIdRef.current
+        });
+        // Don't clear odds data here - let the fetch happen first
+        // But reset the fetch key so it doesn't skip
+        lastOddsFetchKeyRef.current = null;
+      }
+    }
+  }, [propsMode, selectedPlayer]);
+
   // Fetch odds when player/team or mode changes - with debouncing to prevent rate limits
   useEffect(() => {
     console.log('[DEBUG fetchOdds useEffect] Triggered', {
@@ -300,12 +320,10 @@ export function useOddsFetching({
           selectedPlayer.id?.toString() ||
           (selectedPlayer.full ? selectedPlayer.full.toLowerCase() : null);
         if (currentPlayerKey) {
-          // If same player and we already have odds, skip fetching again
-          // BUT: if odds were cleared (length is 0), we need to fetch again
-          if (
-            currentPlayerKey === lastOddsPlayerIdRef.current &&
-            realOddsData.length > 0
-          ) {
+          // Check if we need to fetch - only skip if same player AND we have odds data
+          // This ensures we fetch when coming from props page (odds are empty)
+          const hasOddsForPlayer = currentPlayerKey === lastOddsPlayerIdRef.current && realOddsData.length > 0;
+          if (hasOddsForPlayer) {
             console.log('[DEBUG fetchOdds useEffect] Same player and odds exist, skipping fetch', {
               currentPlayerKey,
               lastOddsPlayerId: lastOddsPlayerIdRef.current,
@@ -313,18 +331,12 @@ export function useOddsFetching({
             });
             return;
           }
-          // If odds were cleared but player is the same, reset the ref to allow fetching
-          if (currentPlayerKey === lastOddsPlayerIdRef.current && realOddsData.length === 0) {
-            console.log('[DEBUG fetchOdds useEffect] Same player but odds cleared, resetting ref to allow fetch', {
-              currentPlayerKey,
-              realOddsDataLength: realOddsData.length
-            });
-            lastOddsPlayerIdRef.current = null; // Reset to allow fetch
-          }
+          // Player changed or no odds - update ref and fetch
           console.log('[DEBUG fetchOdds useEffect] Player key changed or no odds, will fetch', {
             currentPlayerKey,
             lastOddsPlayerId: lastOddsPlayerIdRef.current,
-            realOddsDataLength: realOddsData.length
+            realOddsDataLength: realOddsData.length,
+            playerChanged: currentPlayerKey !== lastOddsPlayerIdRef.current
           });
           lastOddsPlayerIdRef.current = currentPlayerKey;
         } else {
@@ -344,23 +356,51 @@ export function useOddsFetching({
       ? `team:${gamePropsTeam || 'na'}`
       : `player:${selectedPlayer?.id || selectedPlayer?.full || 'na'}`;
 
-    // Skip if already fetching
-    if (isFetchingOddsRef.current) {
-      console.log('[DEBUG fetchOdds useEffect] Already fetching, skipping');
-      return;
-    }
-    
-    // If we already have odds for this key and not loading, skip refetch
-    if (fetchKey === lastOddsFetchKeyRef.current && realOddsData.length > 0 && !oddsLoading) {
-      console.log('[DEBUG fetchOdds useEffect] Odds already loaded for key, skipping fetch', {
+    // CRITICAL: Always fetch if we have no odds data (e.g., coming from props page)
+    // This ensures odds are loaded on initial page load
+    if (realOddsData.length === 0) {
+      console.log('[DEBUG fetchOdds useEffect] No odds data, will fetch immediately', {
         fetchKey,
-        realOddsDataLength: realOddsData.length
+        lastFetchKey: lastOddsFetchKeyRef.current
       });
-      return;
+      // Reset fetch key ref to ensure we don't skip
+      lastOddsFetchKeyRef.current = null;
+    } else {
+      // Skip if already fetching
+      if (isFetchingOddsRef.current) {
+        console.log('[DEBUG fetchOdds useEffect] Already fetching, skipping');
+        return;
+      }
+      
+      // If we already have odds for this key and not loading, skip refetch
+      if (fetchKey === lastOddsFetchKeyRef.current && !oddsLoading) {
+        console.log('[DEBUG fetchOdds useEffect] Odds already loaded for key, skipping fetch', {
+          fetchKey,
+          realOddsDataLength: realOddsData.length
+        });
+        return;
+      }
+      
+      // If we're already fetching for this key, skip
+      if (fetchKey === lastOddsFetchKeyRef.current && isFetchingOddsRef.current) {
+        console.log('[DEBUG fetchOdds useEffect] Already fetching for this key, skipping');
+        return;
+      }
     }
     
-    // Debounce: wait 300ms before fetching to avoid rapid successive calls
-    console.log('[DEBUG fetchOdds useEffect] Setting timeout to fetch odds in 300ms');
+    // For initial load (no odds data), always fetch immediately for faster display
+    // This ensures odds are fetched when coming from props page
+    const isInitialLoad = realOddsData.length === 0;
+    const debounceDelay = isInitialLoad ? 0 : 300; // No debounce for initial load
+    
+    console.log('[DEBUG fetchOdds useEffect] Setting timeout to fetch odds', {
+      fetchKey,
+      lastFetchKey: lastOddsFetchKeyRef.current,
+      realOddsDataLength: realOddsData.length,
+      isInitialLoad,
+      debounceDelay
+    });
+    
     const timeoutId = setTimeout(() => {
       console.log('[DEBUG fetchOdds useEffect] Timeout fired, starting fetch');
       isFetchingOddsRef.current = true;
@@ -371,7 +411,7 @@ export function useOddsFetching({
           isFetchingOddsRef.current = false;
         }, 1000);
       });
-    }, 300);
+    }, debounceDelay);
     
     return () => {
       console.log('[DEBUG fetchOdds useEffect] Cleanup: clearing timeout');
@@ -380,7 +420,7 @@ export function useOddsFetching({
       // This prevents race conditions where cleanup runs before fetch completes
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlayer, gamePropsTeam, propsMode, realOddsData, oddsLoading]);
+  }, [selectedPlayer, gamePropsTeam, propsMode]);
 
   return { fetchOddsData };
 }

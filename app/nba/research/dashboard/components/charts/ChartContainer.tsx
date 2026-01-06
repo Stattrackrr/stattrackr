@@ -257,7 +257,7 @@ const ChartContainer = memo(function ChartContainer({
       )}
       <div className="flex-1 min-h-0 relative">
         <PureChart
-          isLoading={isLoading || (oddsLoading ?? false)}
+          isLoading={isLoading}
           chartData={chartData}
           yAxisConfig={yAxisConfig}
           isDark={isDark}
@@ -277,7 +277,7 @@ const ChartContainer = memo(function ChartContainer({
       
       {/* Mobile-only: X-axis line and team logos strip below chart */}
       {/* Only show logos for L5, L10, and H2H on mobile */}
-      {!isLoading && !(oddsLoading ?? false) && chartData && chartData.length > 0 && (selectedTimeframe === 'last5' || selectedTimeframe === 'last10' || selectedTimeframe === 'h2h') && (
+      {!isLoading && chartData && chartData.length > 0 && (selectedTimeframe === 'last5' || selectedTimeframe === 'last10' || selectedTimeframe === 'h2h') && (
         <div className="sm:hidden pb-3 overflow-x-auto custom-scrollbar">
           {/* X-axis line */}
           <div className="w-full h-0.5 bg-gray-300 dark:bg-gray-600 mb-1" style={{ paddingLeft: '6px', marginRight: '-2px' }}></div>

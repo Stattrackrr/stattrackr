@@ -113,7 +113,12 @@ export function useAdvancedStatsPrefetch({
         
         console.log('[Usage Rate Prefetch] Fetched', Object.keys(statsByGame).length, 'games with usage rate data');
         setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
-      } catch (error) {
+      } catch (error: any) {
+        // Handle rate limit errors gracefully - don't throw, just log
+        if (error?.status === 429 || error?.message?.includes('Rate limit')) {
+          console.warn('[Prefetch] Rate limit hit, skipping prefetch. Will retry later.');
+          return;
+        }
         console.error('[Prefetch] Error prefetching advanced stats:', error);
       }
     };
@@ -204,7 +209,14 @@ export function useAdvancedStatsPrefetch({
         // Populate both advancedStatsPerGame (for filter) and prefetchedAdvancedStats (for usage rate calculation)
         setAdvancedStatsPerGame(statsByGame);
         setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
-      } catch (error) {
+      } catch (error: any) {
+        // Handle rate limit errors gracefully - don't throw, just log
+        if (error?.status === 429 || error?.message?.includes('Rate limit')) {
+          console.warn('[Second Axis] Rate limit hit, skipping fetch. Will retry later.');
+          if (isMounted) {
+            return;
+          }
+        }
         console.error('[Second Axis] Error fetching advanced stats:', error);
         if (isMounted) {
           setAdvancedStatsPerGame({});

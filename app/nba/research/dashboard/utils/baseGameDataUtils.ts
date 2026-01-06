@@ -59,34 +59,7 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
     gamePropsTeam,
   } = params;
 
-  // Debug: Check what seasons are in playerStats
   const currentSeason = currentNbaSeason();
-  const getSeasonYear = (stat: any) => {
-    if (!stat?.game?.date) return null;
-    const d = new Date(stat.game.date);
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    return m >= 9 ? y : y - 1;
-  };
-  const seasonBreakdown: Record<number, number> = {};
-  playerStats.forEach(s => {
-    const seasonYear = getSeasonYear(s);
-    if (seasonYear) {
-      seasonBreakdown[seasonYear] = (seasonBreakdown[seasonYear] || 0) + 1;
-    }
-  });
-  
-  console.log('[DEBUG baseGameData] Recalculating baseGameData', {
-    playerStatsLength: playerStats.length,
-    selectedTimeframe,
-    selectedPlayer: selectedPlayer?.full,
-    propsMode,
-    seasonBreakdown,
-    currentSeason,
-    expectedLastSeason: currentSeason - 1,
-    hasLastSeasonData: seasonBreakdown[currentSeason - 1] > 0,
-    timestamp: new Date().toISOString()
-  });
   
   // Use playerStats directly to prevent double refresh from deferred value
   const statsToUse = playerStats;
@@ -112,7 +85,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         const teamsInGame = [homeTeam, visitorTeam];
         return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
       });
-      console.log(`🎯 Manual Opponent Team: Filtered to ${filteredTeamGames.length} games vs ${manualOpponent}`);
     }
     
     // Special case: H2H filtering for team mode (only if no manual opponent is set)
@@ -128,10 +100,8 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
           const teamsInGame = [homeTeam, visitorTeam];
           return teamsInGame.includes(currentTeam) && teamsInGame.includes(normalizedOpponent);
         }).slice(-6); // Limit to last 6 H2H games (most recent)
-        console.log(`🔥 H2H Team: Filtered to ${filteredTeamGames.length} games vs ${opponentTeam} (max 6)`);
       } else {
         filteredTeamGames = [];
-        console.log(`⚠️ H2H Team: No opponent available for filtering`);
       }
     } else if (selectedTimeframe === 'lastseason') {
       // Filter to last season games only
@@ -146,7 +116,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
         return gameSeasonYear === lastSeason;
       });
-      console.log(`📅 Last Season Team: Filtered to ${filteredTeamGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
     } else if (selectedTimeframe === 'thisseason') {
       // Filter to current season games only
       const currentSeason = currentNbaSeason();
@@ -160,7 +129,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         const gameSeasonYear = gameMonth >= 9 ? gameYear : gameYear - 1;
         return gameSeasonYear === currentSeason;
       });
-      console.log(`📅 This Season Team: Filtered to ${filteredTeamGames.length} games from ${currentSeason}-${(currentSeason + 1) % 100}`);
     }
     
     // Home/Away filter
@@ -214,27 +182,11 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         const name = url.searchParams.get('name');
         hasUrlPlayer = !!(pid && name);
         // Debug: log URL check details
-        console.log('[baseGameData] URL check:', {
-          href: window.location.href,
-          search: window.location.search,
-          pid,
-          name,
-          mode: url.searchParams.get('mode'),
-          hasUrlPlayer,
-        });
       } catch (e) {
         console.warn('[baseGameData] URL check error:', e);
       }
     }
     
-    // Debug: log why we're returning empty
-    console.log('[baseGameData] No playerStats:', {
-      playerStatsLength: playerStats.length,
-      selectedPlayer: selectedPlayer?.full,
-      resolvedPlayerId,
-      isLoading,
-      hasUrlPlayer,
-    });
     // If we have a selectedPlayer OR resolvedPlayerId OR URL params indicate a player, we're either loading or haven't started loading yet
     // This can happen on initial page load when URL params exist but selectedPlayer/fetch hasn't started
     // Return empty array to prevent showing wrong data (0/0), but don't break the memoization
@@ -247,17 +199,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
     return [];
   }
   
-  // Debug: log stats structure at the start of baseGameData processing
-  console.log('[baseGameData] Processing playerStats:', {
-    playerStatsLength: statsToUse.length,
-    selectedPlayer: selectedPlayer?.full,
-    selectedTimeframe,
-    sampleStat: statsToUse[0],
-    hasGame: !!statsToUse[0]?.game,
-    hasGameDate: !!statsToUse[0]?.game?.date,
-    hasTeam: !!statsToUse[0]?.team,
-    hasTeamAbbr: !!statsToUse[0]?.team?.abbreviation,
-  });
   
   // Filter out games where player played 0 minutes FIRST
   // BUT for lastseason, we need to check ALL stats (including 0 minutes) to see if we can infer team from game data
@@ -294,16 +235,12 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       return minutes > 0;
     });
     
-    console.log(`[Last Season Debug] Total last season stats: ${lastSeasonStats.length}, with minutes > 0: ${lastSeasonWithMinutes.length}`);
-    
     // Check if there are any stats with actual data (points, rebounds, etc.) even if minutes are 0
     const lastSeasonWithData = lastSeasonStats.filter(s => {
       const hasAnyStat = (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || 
                         (s.fgm && s.fgm > 0) || (s.fga && s.fga > 0);
       return hasAnyStat;
     });
-    
-    console.log(`[Last Season Debug] Last season stats with actual data (pts/reb/ast > 0): ${lastSeasonWithData.length}`);
     
     if (lastSeasonStats.length > 0 && lastSeasonWithMinutes.length === 0) {
       // Sample a few to see what's wrong
@@ -328,120 +265,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         // Check all numeric fields that might indicate actual play
         hasAnyStat: (s.pts && s.pts > 0) || (s.reb && s.reb > 0) || (s.ast && s.ast > 0) || (s.fgm && s.fgm > 0)
       }));
-      console.log(`[Last Season Debug] Sample last season stats (first 10) - FULL DETAILS:`, samples);
-      
-      // Also check one stat in full detail to see ALL fields
-      if (lastSeasonStats.length > 0) {
-        const firstStat = lastSeasonStats[0];
-        console.log(`[Last Season Debug] FIRST STAT FULL OBJECT (checking for hidden minutes/data):`, {
-          id: firstStat.id,
-          min: firstStat.min,
-          minRaw: firstStat.min,
-          minType: typeof firstStat.min,
-          minutesParsed: parseMinutes(firstStat.min),
-          pts: firstStat.pts,
-          reb: firstStat.reb,
-          ast: firstStat.ast,
-          team: firstStat.team,
-          player: firstStat.player ? { id: firstStat.player.id, name: firstStat.player.first_name + ' ' + firstStat.player.last_name } : null,
-          game: firstStat.game ? {
-            id: firstStat.game.id,
-            date: firstStat.game.date,
-            home_team: firstStat.game.home_team,
-            visitor_team: firstStat.game.visitor_team
-          } : null,
-          // Check for alternative minute fields
-          allKeys: Object.keys(firstStat),
-          // Check if there are any numeric fields > 0
-          numericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number' && v > 0).map(([k, v]) => ({ [k]: v })),
-          // Show which specific stat fields have values
-          statFieldValues: {
-            pts: { value: firstStat.pts, type: typeof firstStat.pts, isPositive: firstStat.pts > 0 },
-            reb: { value: firstStat.reb, type: typeof firstStat.reb, isPositive: firstStat.reb > 0 },
-            ast: { value: firstStat.ast, type: typeof firstStat.ast, isPositive: firstStat.ast > 0 },
-            fgm: { value: firstStat.fgm, type: typeof firstStat.fgm, isPositive: firstStat.fgm > 0 },
-            fga: { value: firstStat.fga, type: typeof firstStat.fga, isPositive: firstStat.fga > 0 },
-            fg3m: { value: firstStat.fg3m, type: typeof firstStat.fg3m, isPositive: firstStat.fg3m > 0 },
-            ftm: { value: firstStat.ftm, type: typeof firstStat.ftm, isPositive: firstStat.ftm > 0 },
-            fta: { value: firstStat.fta, type: typeof firstStat.fta, isPositive: firstStat.fta > 0 }
-          },
-          // Also check ALL numeric fields (including 0) to see the full picture
-          allNumericFields: Object.entries(firstStat).filter(([k, v]) => typeof v === 'number').map(([k, v]) => ({ [k]: v })).slice(0, 20),
-          // Check specific stat fields
-          statFields: {
-            pts: firstStat.pts,
-            reb: firstStat.reb,
-            ast: firstStat.ast,
-            fgm: firstStat.fgm,
-            fga: firstStat.fga,
-            fg3m: firstStat.fg3m,
-            fg3a: firstStat.fg3a,
-            ftm: firstStat.ftm,
-            fta: firstStat.fta,
-            stl: firstStat.stl,
-            blk: firstStat.blk,
-            turnover: firstStat.turnover,
-            pf: firstStat.pf
-          }
-        });
-      }
-      
-      // Also check all teams in last season stats
-      const allTeams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
-      console.log(`[Last Season Debug] ⚠️ All teams in last season stats (${lastSeasonStats.length} total):`, Array.from(allTeams));
-      
-      // Check if ATL appears in the game data (home_team/visitor_team) even if stat.team is wrong
-      const teamsInGames = new Set<string>();
-      const atlGames: any[] = [];
-      lastSeasonStats.forEach(s => {
-        const homeTeam = s?.game?.home_team?.abbreviation;
-        const visitorTeam = s?.game?.visitor_team?.abbreviation;
-        if (homeTeam) teamsInGames.add(homeTeam);
-        if (visitorTeam) teamsInGames.add(visitorTeam);
-        if (homeTeam === 'ATL' || visitorTeam === 'ATL') {
-          atlGames.push({
-            date: s.game?.date,
-            statTeam: s.team?.abbreviation,
-            homeTeam,
-            visitorTeam,
-            min: s.min,
-            pts: s.pts
-          });
-        }
-      });
-      console.log(`[Last Season Debug] ⚠️ Teams appearing in game data (home/visitor):`, Array.from(teamsInGames));
-      console.log(`[Last Season Debug] ⚠️ Games where ATL appears (${atlGames.length} total):`, atlGames.slice(0, 5));
-      
-      // Check if in those ATL games, WAS is the opponent (meaning player was on ATL)
-      const atlGamesWithWasOpponent = atlGames.filter(g => {
-        const opponent = g.homeTeam === 'ATL' ? g.visitorTeam : g.homeTeam;
-        return opponent === 'WAS';
-      });
-      console.log(`[Last Season Debug] ⚠️ Games where ATL vs WAS (player likely on ATL):`, atlGamesWithWasOpponent.length);
-      
-      // Also check: if stat.team is WAS but game has ATL, player was likely on ATL
-      const likelyAtlGames = lastSeasonStats.filter(s => {
-        const homeTeam = s?.game?.home_team?.abbreviation;
-        const visitorTeam = s?.game?.visitor_team?.abbreviation;
-        const statTeam = s?.team?.abbreviation;
-        return (homeTeam === 'ATL' || visitorTeam === 'ATL') && statTeam === 'WAS';
-      });
-      console.log(`[Last Season Debug] ⚠️ Stats where game has ATL but stat.team=WAS (likely player was on ATL):`, likelyAtlGames.length);
-      
-      // If we have stats with actual data but 0 minutes, we might need to include them
-      if (lastSeasonWithData.length > 0) {
-        console.log(`[Last Season Debug] ⚠️ Found ${lastSeasonWithData.length} last season stats with data but 0 minutes - these are being filtered out!`);
-        const dataSamples = lastSeasonWithData.slice(0, 5).map(s => ({
-          date: s.game?.date,
-          team: s.team?.abbreviation,
-          min: s.min,
-          minutes: parseMinutes(s.min),
-          pts: s.pts,
-          reb: s.reb,
-          ast: s.ast
-        }));
-        console.log(`[Last Season Debug] Sample stats with data but 0 minutes:`, dataSamples);
-      }
     }
   }
   
@@ -487,7 +310,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       lastSeasonStatsCount: lastSeasonStats.length
     };
     
-    console.log(`[baseGameData] 📊 Games breakdown for "thisseason" filter:`, breakdown);
     serverLogger.log(`[baseGameData] 📊 Games breakdown: totalStats=${breakdown.totalPlayerStats}, gamesPlayed=${breakdown.totalGamesPlayed}, currentSeason=${breakdown.currentSeason}, currentSeasonGames=${breakdown.expectedCurrentSeasonGames}, lastSeasonGames=${breakdown.expectedLastSeasonGames}`, { data: breakdown });
   }
   
@@ -507,10 +329,8 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
     // If we don't have ANY current season data yet, return empty to prevent showing last season data
     // But if we have some current season data, continue processing (don't return empty)
     if (currentSeasonGames.length === 0) {
-      console.log(`[This Season] Still loading current season data, waiting... (have ${gamesPlayed.length} games but none from current season ${currentSeason})`);
       return [];
     } else {
-      console.log(`[This Season] Have ${currentSeasonGames.length} current season games, showing them even though still loading`);
       // Continue processing - we have current season data to show
     }
   }
@@ -575,24 +395,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       return matches;
     });
     
-    console.log(`🎯 Manual Opponent Player: Filtered to ${filteredGames.length} games vs ${manualOpponent} (${matchCount} matches, ${noMatchCount} non-matches)`);
-    if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
-      console.log(`🔍 Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
-      // Also log a sample stat to see the full structure
-      if (gamesPlayed.length > 0) {
-        const sampleStat = gamesPlayed[0];
-        console.log(`🔍 Sample stat structure:`, {
-          hasTeam: !!sampleStat?.team,
-          teamAbbr: sampleStat?.team?.abbreviation,
-          hasGame: !!sampleStat?.game,
-          homeTeam: sampleStat?.game?.home_team?.abbreviation,
-          visitorTeam: sampleStat?.game?.visitor_team?.abbreviation,
-          homeTeamId: sampleStat?.game?.home_team?.id,
-          visitorTeamId: sampleStat?.game?.visitor_team?.id,
-          gameDate: sampleStat?.game?.date
-        });
-      }
-    }
   }
   
   // Deduplicate by game id and sort DESC before timeframe selection
@@ -648,7 +450,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
     }
     
     filteredGames = result;
-    console.log(`📅 ${selectedTimeframe.toUpperCase()}: Using ${filteredGames.length}/${n} games (current season ${currentSeason}-${(currentSeason + 1) % 100}: ${currentSeasonGames.length}, backfill: ${Math.max(filteredGames.length - currentSeasonGames.length, 0)}, pool (dedup) total: ${pool.length})`);
   } else if (selectedTimeframe === 'h2h' && (!manualOpponent || manualOpponent === 'ALL')) {
     // Filter games to only show those against the current opponent team
     if (opponentTeam && opponentTeam !== '') {
@@ -705,21 +506,15 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         return matches;
       }).slice(0, 6); // Limit to last 6 H2H games
       
-      console.log(`🔥 H2H: Filtered to ${filteredGames.length} games vs ${opponentTeam} (${matchCount} matches, ${noMatchCount} non-matches, max 6)`);
-      if (sampleNoMatches.length > 0 && filteredGames.length === 0) {
-        console.log(`🔍 H2H Sample non-matches (first 3):`, JSON.stringify(sampleNoMatches, null, 2));
-      }
     } else {
       // No opponent team available, show empty
       filteredGames = [];
-      console.log(`⚠️ H2H: No opponent team available for filtering`);
     }
   } else if (selectedTimeframe === 'lastseason') {
     // Filter to last season games only
     const lastSeason = currentNbaSeason() - 1;
     const currentSeason = currentNbaSeason();
     
-    console.log(`🔍 [Last Season] Starting filter - playerStats.length=${playerStats?.length || 0}, gamesPlayed.length=${gamesPlayed.length}`);
     
     // Debug: Log breakdown of all stats by season and team
     const gamesBySeasonYear: Record<number, number> = {};
@@ -798,13 +593,9 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       return minutes > 0;
     });
     
-    console.log(`📅 Last Season: Before minutes filter: ${filteredGames.length}, After minutes filter: ${minutesFiltered.length}`);
-    
     // CRITICAL WORKAROUND: If all last season stats have 0 minutes (API data quality issue),
     // use game data to identify games where the player was actually involved
     if (filteredGames.length > 0 && minutesFiltered.length === 0) {
-      console.warn(`[Last Season Debug] ⚠️ API DATA QUALITY ISSUE: All ${filteredGames.length} last season stats have 0 minutes. Using game data to identify actual games...`);
-      
       // Use game data to identify games where the player's team was involved
       // Strategy: If stat.team doesn't match either team in the game, but we have game data,
       // we can infer the player was on one of the teams in the game
@@ -828,14 +619,9 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         return false;
       });
       
-      console.log(`[Last Season Debug] ✅ Found ${gamesWithPlayerTeam.length} games where player's team appears in game data (workaround for API data quality issue)`);
-      
       // Use the games identified from game data instead of the empty minutesFiltered
       if (gamesWithPlayerTeam.length > 0) {
         filteredGames = gamesWithPlayerTeam;
-        console.log(`[Last Season Debug] ✅ Using ${filteredGames.length} games identified from game data (workaround for 0-minute stats)`);
-      } else {
-        console.warn(`[Last Season Debug] ⚠️ Could not identify any games from game data either. All stats filtered out.`);
       }
     } else {
       filteredGames = minutesFiltered;
@@ -859,27 +645,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       return minutes > 0;
     });
     
-    console.log(`📅 Last Season: Filtered to ${filteredGames.length} games from ${lastSeason}-${(lastSeason + 1) % 100}`);
-    console.log(`📅 Last Season Debug:`, {
-      totalGamesPlayed: gamesPlayed.length,
-      gamesBySeasonYear,
-      gamesByTeam,
-      lastSeasonTeams: Array.from(lastSeasonTeams),
-      currentSeasonTeams: Array.from(currentSeasonTeams),
-      filteredCount: filteredGames.length,
-      sampleFilteredDates: filteredGames.slice(0, 5).map(s => ({ date: s.game?.date, team: s.team?.abbreviation })),
-      // NEW: Check ALL last season stats (including 0 minutes)
-      allLastSeasonStatsCount: allLastSeasonStats.length,
-      allLastSeasonTeams: Array.from(allLastSeasonTeams),
-      allLastSeasonWithMinutesCount: allLastSeasonWithMinutes.length,
-      sampleAllLastSeason: allLastSeasonStats.slice(0, 5).map(s => ({
-        date: s.game?.date,
-        team: s.team?.abbreviation,
-        min: s.min,
-        minutes: parseMinutes(s.min),
-        pts: s.pts
-      }))
-    });
   } else if (selectedTimeframe === 'thisseason') {
     // Filter to current season games only
     const currentSeason = currentNbaSeason();
@@ -953,7 +718,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       filteredGameSeasonYears: filteredGameSeasonYears.filter(Boolean),
       gamesBySeasonYear
     };
-    console.log(`📅 [This Season Filter]`, filterData);
     serverLogger.log(`📅 [This Season Filter]`, { data: filterData });
     
     // If thisseason filter returns empty but we have playerStats, check if current season data is still loading
@@ -985,7 +749,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       // If we're still loading AND we have current season games in the full stats, wait for them
       // Otherwise, if loading is done and still no current season games, log warning
       if (isLoading && currentSeasonInAllStats.length > 0) {
-        console.log(`[This Season] Current season data still loading (${currentSeasonInAllStats.length} games found in full stats), waiting...`);
         // Return empty to prevent showing last season data while current season loads
         filteredGames = [];
       } else if (!isLoading) {
@@ -1054,7 +817,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
     }
   }
   
-  console.log(`📈 Deduplicated: ${sortedByDate.length} → ${uniqueGames.length} unique games`);
   
   // Apply timeframe to unique games - use slice(0, n) to get FIRST n games (most recent)
   // Since uniqueGames is sorted newest-first, slice(0, n) gives us the newest n games
@@ -1070,18 +832,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
   // Reverse for chronological order (left→right oldest→newest)
   const ordered = timeframeGames.slice().reverse();
   
-  // Debug: log before mapping
-  console.log('[baseGameData] Before mapping:', {
-    selectedTimeframe,
-    gamesPlayedCount: gamesPlayed.length,
-    filteredGamesCount: filteredGames.length,
-    uniqueGamesCount: uniqueGames.length,
-    timeframeGamesCount: timeframeGames.length,
-    orderedCount: ordered.length,
-    sampleOrderedStat: ordered[0],
-    hasGame: !!ordered[0]?.game,
-    hasGameDate: !!ordered[0]?.game?.date,
-  });
   
   const result = ordered.map((stats, index) => {
     let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
@@ -1106,12 +856,10 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
         // Otherwise, we can't definitively determine which team, but we'll use the home team as a fallback
         if (homeNorm === 'ATL' || visitorNorm === 'ATL') {
           playerTeam = 'ATL';
-          console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ATL (game: ${homeTeamAbbr} vs ${visitorTeamAbbr})`);
         } else {
           // For other games, we can't be sure, but we'll use the home team as a heuristic
           // (This is a fallback - ideally we'd have better data)
           playerTeam = homeTeamAbbr;
-          console.log(`[baseGameData] 🔧 Corrected team for last season game: ${stats?.team?.abbreviation} → ${homeTeamAbbr} (game: ${homeTeamAbbr} vs ${visitorTeamAbbr}, using home team as fallback)`);
         }
       }
     }
@@ -1154,11 +902,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       xKey: String(gameId),   // unique per game
       tickLabel,              // what we show on the axis
     };
-  });
-  
-  console.log('[baseGameData] Final result:', {
-    resultLength: result.length,
-    selectedTimeframe,
   });
   
   return result;

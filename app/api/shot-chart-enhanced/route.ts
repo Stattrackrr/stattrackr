@@ -472,25 +472,35 @@ export async function GET(request: NextRequest) {
     console.log(`[Shot Chart Enhanced] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
     console.log(`[Shot Chart Enhanced] Supabase config check: URL=${supabaseUrl ? 'SET' : 'MISSING'}, KEY=${supabaseKey ? 'SET' : 'MISSING'}`);
     
-    // Try Supabase cache first (persistent, shared across instances)
-    let cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
+    // OPTIMIZATION: Check in-memory cache FIRST (fastest, for previously selected players)
+    // Then fallback to Supabase cache (persistent, shared across instances)
+    let cached = !bypassCache ? cache.get<any>(cacheKey) : null;
     if (cached) {
-      console.log(`[Shot Chart Enhanced] ✅ Cache HIT in Supabase for key: ${cacheKey}`);
+      console.log(`[Shot Chart Enhanced] ✅ Cache HIT in memory for key: ${cacheKey}`);
     } else {
-      console.log(`[Shot Chart Enhanced] ❌ Cache MISS in Supabase for key: ${cacheKey}`);
-    }
-    
-    // Fallback to in-memory cache
-    if (!cached && !bypassCache) {
-      cached = cache.get<any>(cacheKey);
+      // Fallback to Supabase cache (slower, but persistent)
+      cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
+      if (cached) {
+        console.log(`[Shot Chart Enhanced] ✅ Cache HIT in Supabase for key: ${cacheKey}`);
+        // Store in in-memory cache for faster future access
+        cache.set(cacheKey, cached, CACHE_TTL.PLAYER_STATS);
+      } else {
+        console.log(`[Shot Chart Enhanced] ❌ Cache MISS in both memory and Supabase for key: ${cacheKey}`);
+      }
     }
     
     // Also check for cache without opponent team (in case opponent-specific cache doesn't exist)
     if (!cached && !bypassCache && opponentTeam && opponentTeam !== 'N/A') {
       const cacheKeyNoOpponent = `shot_enhanced_${nbaPlayerId}_none_${season}`;
-      cached = await getNBACache<any>(cacheKeyNoOpponent);
+      // Check in-memory first
+      cached = cache.get<any>(cacheKeyNoOpponent);
       if (!cached) {
-        cached = cache.get<any>(cacheKeyNoOpponent);
+        // Then check Supabase
+        cached = await getNBACache<any>(cacheKeyNoOpponent);
+        if (cached) {
+          // Store in in-memory cache for faster future access
+          cache.set(cacheKeyNoOpponent, cached, CACHE_TTL.PLAYER_STATS);
+        }
       }
     }
     

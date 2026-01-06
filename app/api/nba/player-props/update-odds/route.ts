@@ -357,20 +357,21 @@ async function calculatePlayerAveragesForNewProp(
     const currentSeason = currentNbaSeason();
     const allStats: any[] = [];
 
-    // Fetch stats for current and previous season (regular only for speed)
+    // Fetch stats for current and previous season (regular + playoffs)
+    // Must include playoffs to match dashboard calculations
     for (const season of [currentSeason, currentSeason - 1]) {
-      try {
-        const url = `${baseUrl}/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=false`;
-        const response = await queuedFetch(url, { cache: 'no-store' });
-        if (response.ok || response.status === 429) {
-          const json = await response.json().catch(() => ({}));
-          const data = Array.isArray(json?.data) ? json.data : [];
-          allStats.push(...data);
+      for (const postseason of [false, true]) {
+        try {
+          const url = `${baseUrl}/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}`;
+          const response = await queuedFetch(url, { cache: 'no-store' });
+          if (response.ok || response.status === 429) {
+            const json = await response.json().catch(() => ({}));
+            const data = Array.isArray(json?.data) ? json.data : [];
+            allStats.push(...data);
+          }
+        } catch (e) {
+          // Continue on error
         }
-        // Small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (e) {
-        // Continue on error
       }
     }
 

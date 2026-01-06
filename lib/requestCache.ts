@@ -48,13 +48,26 @@ class RequestCache {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Cache MISS] ${url}`);
     }
-    const request = this.makeRequest<T>(url, options);
+    const request = this.makeRequest<T>(url, options).catch((error: any) => {
+      // Handle rate limit errors gracefully - return null instead of throwing
+      if (error?.message?.includes('429') || error?.message?.includes('Rate limit')) {
+        console.warn(`[RequestCache] Rate limit exceeded for ${url}, returning null`);
+        return null as T;
+      }
+      // Re-throw other errors
+      throw error;
+    });
 
     // Store as pending
     this.pending.set(cacheKey, request);
 
     try {
       const data = await request;
+
+      // If data is null (rate limited), don't cache it
+      if (data === null) {
+        return null as T;
+      }
 
       // Cache the result
       this.cache.set(cacheKey, {
@@ -119,10 +132,42 @@ class RequestCache {
     return `${method}:${url}:${body}`;
   }
 
-  private async makeRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  private async makeRequest<T>(url: string, options?: RequestInit, retries = 0): Promise<T> {
     const response = await fetch(url, options);
 
     if (!response.ok) {
+      // Handle rate limit (429) with retry logic
+      if (response.status === 429) {
+        const errorText = await response.text().catch(() => response.statusText);
+        
+        // Parse reset time from error response if available
+        let resetAt: number | null = null;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.resetAt) {
+            resetAt = new Date(errorData.resetAt).getTime();
+          }
+        } catch {
+          // If we can't parse, use default backoff
+        }
+        
+        // Calculate wait time: use resetAt if available, otherwise exponential backoff
+        const waitTime = resetAt 
+          ? Math.max(0, resetAt - Date.now() + 1000) // Add 1 second buffer
+          : Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
+        
+        // Only retry if we haven't exceeded max retries and wait time is reasonable
+        if (retries < 2 && waitTime < 60000) {
+          console.warn(`[RequestCache] Rate limit hit for ${url}, retrying after ${Math.round(waitTime / 1000)}s...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return this.makeRequest<T>(url, options, retries + 1);
+        }
+        
+        // If we can't retry, return null instead of throwing (will be handled gracefully by calling code)
+        console.warn(`[RequestCache] Rate limit exceeded for ${url} after ${retries} retries, returning null`);
+        return null as T;
+      }
+      
       // Include URL in error message for debugging
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`HTTP ${response.status}: ${response.statusText} - URL: ${url} - ${errorText}`);

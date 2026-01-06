@@ -734,6 +734,8 @@ const ChartControls = function ChartControls({
   // Auto-update selected bookmaker when line changes and matches a bookmaker (uses displayLine for immediate updates)
   // This includes alternate lines (Goblin/Demon variants) so users see the variant when they set a matching line
   useEffect(() => {
+    // Wait for odds to finish loading before trying to match bookmakers
+    if (oddsLoading) return;
     if (!realOddsData || realOddsData.length === 0) return;
     
     const bookRowKey = getBookRowKey(selectedStat);
@@ -766,7 +768,7 @@ const ChartControls = function ChartControls({
       // Clear selection if no bookmaker matches
       setSelectedBookmaker(prev => prev !== null ? null : prev);
     }
-  }, [displayLine, realOddsData, selectedStat]);
+  }, [displayLine, realOddsData, selectedStat, oddsLoading]);
   
    const StatPills = useMemo(() => (
       <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0 w-full max-w-full">
@@ -2114,6 +2116,21 @@ const ChartControls = function ChartControls({
                       if (Number.isFinite(v)) {
                         transientLineRef.current = v;
                         hasManuallySetLineRef.current = true; // Mark as manually set
+                        
+                        // Only update if value actually changed to prevent unnecessary re-renders
+                        if (Math.abs(bettingLine - v) < 0.01) {
+                          // Value hasn't changed, just update displayLine if needed
+                          setDisplayLine(prev => {
+                            if (Math.abs(prev - v) < 0.01) return prev;
+                            return v;
+                          });
+                          // Clear any pending debounce
+                          if (bettingLineDebounceRef.current) {
+                            clearTimeout(bettingLineDebounceRef.current);
+                            bettingLineDebounceRef.current = null;
+                          }
+                          return; // Skip state update since value hasn't changed
+                        }
                         
                         // Update displayLine immediately
                         setDisplayLine(v);

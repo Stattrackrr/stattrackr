@@ -166,6 +166,8 @@ export async function GET(req: NextRequest) {
     const maxPages = Number(searchParams.get("max_pages") || 3); // cap requests
     const postseason = (searchParams.get("postseason") || "false").toLowerCase() === "true";
     const forceRefresh = searchParams.get("refresh") === "1" || searchParams.get("refresh") === "true";
+    // OPTIMIZATION: Allow skipping DvP ranks for faster initial load (can be fetched in background)
+    const skipDvp = searchParams.get("skip_dvp") === "1" || searchParams.get("skip_dvp") === "true";
     
     // Support game_ids parameter for querying specific games (useful for players who changed teams)
     const gameIdsParam = searchParams.get("game_ids");
@@ -347,11 +349,18 @@ export async function GET(req: NextRequest) {
         });
 
         // If we now know the position and haven't fetched ranks yet, do it once (all metrics)
-        if (!dvpRanksByMetric && stampedPosition) {
+        // OPTIMIZATION: Fetch all DvP ranks in parallel instead of sequentially
+        // OPTIMIZATION: Skip DvP on initial load for faster response (can be fetched in background)
+        if (!dvpRanksByMetric && stampedPosition && !skipDvp) {
           dvpRanksByMetric = {};
-          for (const m of DVP_METRICS) {
-            dvpRanksByMetric[m] = await getDvpRanks(m, stampedPosition);
-          }
+          // Fetch all metrics in parallel for faster response
+          const rankPromises = DVP_METRICS.map(m => 
+            getDvpRanks(m, stampedPosition).then(ranks => ({ metric: m, ranks }))
+          );
+          const rankResults = await Promise.all(rankPromises);
+          rankResults.forEach(({ metric, ranks }) => {
+            dvpRanksByMetric[metric] = ranks;
+          });
         }
 
         // Stamp dvp ranks for this batch if ranks are available

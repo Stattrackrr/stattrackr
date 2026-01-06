@@ -36,7 +36,7 @@ import {
 } from './types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getFullTeamName, getTeamAbbr } from '@/lib/teamMapping';
-import { OddsSnapshot, deriveOpeningCurrentMovement, filterByMarket } from '@/lib/odds';
+import { OddsSnapshot } from '@/lib/odds';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import InjuryContainer from '@/components/InjuryContainer';
 import DepthChartContainer from './components/DepthChartContainer';
@@ -44,9 +44,8 @@ import { cachedFetch } from '@/lib/requestCache';
 import StaticBarsChart from './components/charts/StaticBarsChart';
 import { RangeSlider } from './components/charts';
 import SimpleChart from './components/charts/SimpleChart';
-import { CustomChartTooltip } from './components/charts/CustomChartTooltip';
 import { useSubscription } from '@/hooks/useSubscription';
-import { OfficialOddsCard, BestOddsTable, BestOddsTableDesktop, ProjectedStatsCard } from './components/odds';
+import { OfficialOddsCard, BestOddsTable, BestOddsTableDesktop } from './components/odds';
 import { PositionDefenseCard, OpponentAnalysisCard } from './components/dvp';
 import { HomeAwaySelect, OverRatePill } from './components/ui';
 import ChartControls from './components/ChartControls';
@@ -54,12 +53,8 @@ import ChartContainer from './components/ChartContainer';
 import PlayerBoxScore from './components/PlayerBoxScore';
 import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS, LINE_MOVEMENT_ENABLED } from './constants';
 import { updateBettingLinePosition, getUnifiedTooltipStyle } from './utils/chartUtils';
-import { createChartLabelFormatter } from './utils/chartFormatters';
-import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey, americanToDecimal, normalizeAmerican, fmtOdds as fmtOddsUtil } from './utils/oddsUtils';
-import { calculateAvailableBookmakers, calculateSelectedBookmakerData } from './utils/bookmakerUtils';
-import { calculateHitRateStats } from './utils/hitRateStatsUtils';
-import { calculateSelectedPosition } from './utils/positionUtils';
-import { processIntradayMovements } from './utils/intradayMovementsUtils';
+import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey, americanToDecimal, normalizeAmerican } from './utils/oddsUtils';
+import { calculateAvailableBookmakers } from './utils/bookmakerUtils';
 import { 
   TEAM_ID_TO_ABBR, 
   ABBR_TO_TEAM_ID, 
@@ -84,26 +79,9 @@ import {
 } from './utils/teamStats';
 import { getStatValue, getGameStatValue } from './utils/statUtils';
 import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
-import { fetchSortedStatsCore } from './utils/playerStatsUtils';
-import { fetchTodaysGamesCore } from './utils/fetchTodaysGamesUtils';
 import { fetchBdlPlayerData, parseBdlHeight, resolvePlayerId, parseEspnHeight, fetchEspnPlayerData, fetchEspnPlayerDataCore, fetchAdvancedStatsCore, fetchShotDistanceStatsCore } from './utils/playerDataUtils';
 import { fetchTeamDepthChart, resolveTeammateIdFromName } from './utils/depthChartUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
-import { processBaseGameData } from './utils/baseGameDataUtils';
-import { processFilteredGameData } from './utils/filteredGameDataUtils';
-import { processFilteredChartData } from './utils/filteredChartDataUtils';
-import { calculateYAxisConfig } from './utils/yAxisConfigUtils';
-import { processChartData } from './utils/chartDataUtils';
-import { processAllGamesSecondAxisData } from './utils/allGamesSecondAxisDataUtils';
-import { processSecondAxisData } from './utils/secondAxisDataUtils';
-import { calculateSliderConfig } from './utils/sliderConfigUtils';
-import { calculatePrimaryMarketLine } from './utils/primaryMarketLineUtils';
-import { calculateBackToBackGameIds } from './utils/backToBackGameIdsUtils';
-import { calculateHeaderInfo } from './utils/headerInfoUtils';
-import { calculateMatchupInfo } from './utils/matchupInfoUtils';
-import { calculateBestLineForStat } from './utils/bestLineForStatUtils';
-import { calculateImpliedOdds } from './utils/calculatedImpliedOddsUtils';
-import { processIntradayMovementsFinal } from './utils/intradayMovementsFinalUtils';
 import { useTeammateFilterData } from './hooks/useTeammateFilterData';
 import { useAverageUsageRate } from './hooks/useAverageUsageRate';
 import { useTeammatePrefetch } from './hooks/useTeammatePrefetch';
@@ -138,7 +116,6 @@ import { useLast5GamesPrefetch } from './hooks/useLast5GamesPrefetch';
 import { useDropdownClose } from './hooks/useDropdownClose';
 import { useBestLineUpdate } from './hooks/useBestLineUpdate';
 import { useSliderRangeInit } from './hooks/useSliderRangeInit';
-import { useProjectedMinutes } from './hooks/useProjectedMinutes';
 import { useSubscriptionSuccess } from './hooks/useSubscriptionSuccess';
 import { useProfileMenuClose } from './hooks/useProfileMenuClose';
 import { useOddsFormat } from './hooks/useOddsFormat';
@@ -148,6 +125,28 @@ import { useLineMovement } from './hooks/useLineMovement';
 import { useStatUrlSync } from './hooks/useStatUrlSync';
 import { useOddsCalculations } from './hooks/useOddsCalculations';
 import { useTeamGameFetching } from './hooks/useTeamGameFetching';
+import { useTodaysGamesFetching } from './hooks/useTodaysGamesFetching';
+import { useChartConfig } from './hooks/useChartConfig';
+import { useOddsDerivedData } from './hooks/useOddsDerivedData';
+import { useGameDataProcessing } from './hooks/useGameDataProcessing';
+import { useChartDataProcessing } from './hooks/useChartDataProcessing';
+import { useSimpleCalculations } from './hooks/useSimpleCalculations';
+import { useDashboardUIState } from './hooks/useDashboardUIState';
+import { useDashboardModeState } from './hooks/useDashboardModeState';
+import { useDashboardPlayerState } from './hooks/useDashboardPlayerState';
+import { useDashboardTeamState } from './hooks/useDashboardTeamState';
+import { useDashboardOddsState } from './hooks/useDashboardOddsState';
+import { useDashboardProjectedState } from './hooks/useDashboardProjectedState';
+import { useDashboardTeammateState } from './hooks/useDashboardTeammateState';
+import { useDashboardTeamComparisonState } from './hooks/useDashboardTeamComparisonState';
+import { useRosterCalculations } from './hooks/useRosterCalculations';
+import { useBettingLine } from './hooks/useBettingLine';
+import { useFilterSelection } from './hooks/useFilterSelection';
+import { useIntradayMovements } from './hooks/useIntradayMovements';
+import { useDashboardUtils } from './hooks/useDashboardUtils';
+import { useDashboardRefs } from './hooks/useDashboardRefs';
+import { useDashboardStyles } from './hooks/useDashboardStyles';
+import { useDashboardComputedProps } from './hooks/useDashboardComputedProps';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -174,25 +173,42 @@ export function NBADashboardContent() {
   const { isDark, theme, setTheme } = useTheme();
   const { handleLogout, handleSidebarSubscription: handleSidebarSubscriptionBase } = useAuthHandlers();
   
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState(false); // Default to false until verified
-  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
-  const journalDropdownRef = useRef<HTMLDivElement>(null);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const settingsDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Advanced filters (player mode)
-  const [minMinutesFilter, setMinMinutesFilter] = useState<number>(0);
-  const [maxMinutesFilter, setMaxMinutesFilter] = useState<number>(48);
-  const [excludeBlowouts, setExcludeBlowouts] = useState<boolean>(false);
-  const [excludeBackToBack, setExcludeBackToBack] = useState<boolean>(false);
-  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
-  const [isMinutesFilterOpen, setIsMinutesFilterOpen] = useState<boolean>(false);
-  // With/Without filters - states will be defined after roster setup
+  // Dashboard UI state - extracted to useDashboardUIState hook
+  const {
+    userEmail,
+    setUserEmail,
+    username,
+    setUsername,
+    avatarUrl,
+    setAvatarUrl,
+    isPro,
+    setIsPro,
+    showJournalDropdown,
+    setShowJournalDropdown,
+    journalDropdownRef,
+    showProfileDropdown,
+    setShowProfileDropdown,
+    profileDropdownRef,
+    showSettingsDropdown,
+    setShowSettingsDropdown,
+    settingsDropdownRef,
+    minMinutesFilter,
+    setMinMinutesFilter,
+    maxMinutesFilter,
+    setMaxMinutesFilter,
+    excludeBlowouts,
+    setExcludeBlowouts,
+    excludeBackToBack,
+    setExcludeBackToBack,
+    isAdvancedFiltersOpen,
+    setIsAdvancedFiltersOpen,
+    isMinutesFilterOpen,
+    setIsMinutesFilterOpen,
+    showJournalModal,
+    setShowJournalModal,
+    sidebarOpen,
+    setSidebarOpen,
+  } = useDashboardUIState();
 
   // Subscription success check - extracted to useSubscriptionSuccess hook
   useSubscriptionSuccess();
@@ -217,133 +233,188 @@ export function NBADashboardContent() {
     setShowSettingsDropdown,
   });
 
-  const handleSidebarSubscription = () => handleSidebarSubscriptionBase(isPro);
+  // Dashboard mode state - extracted to useDashboardModeState hook
+  const {
+    propsMode,
+    setPropsMode,
+    selectedStat,
+    setSelectedStat,
+    selectedFilterForAxis,
+    setSelectedFilterForAxis,
+    dvpProjectedTab,
+    setDvpProjectedTab,
+    sliderRange,
+    setSliderRange,
+    selectedTimeframe,
+    setSelectedTimeframe,
+  } = useDashboardModeState();
 
-  const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
-  const [selectedStat, setSelectedStat] = useState('pts');
-  const [selectedFilterForAxis, setSelectedFilterForAxis] = useState<string | null>(null); // Second axis filter: 'minutes', 'dvp_rank', 'pace', 'usage_rate', 'fg_pct', null
-  const [dvpProjectedTab, setDvpProjectedTab] = useState<'dvp' | 'projected' | 'opponent' | 'injuries'>('dvp'); // Tab selector for DvP, Projected, Opponent Breakdown, and Injuries
-  const [sliderRange, setSliderRange] = useState<{ min: number; max: number } | null>(null); // Slider range for filtering
-  const [projectedMinutes, setProjectedMinutes] = useState<number | null>(null); // Cached projected minutes (persists across tab switches)
-  const [projectedMinutesLoading, setProjectedMinutesLoading] = useState(false);
-  const [allProjectedMinutes, setAllProjectedMinutes] = useState<Record<string, number>>({}); // Bulk cache: key = "playerName|teamAbbr", value = minutes
-  const [predictedPace, setPredictedPace] = useState<number | null>(null); // Predicted game pace from betting total
-  const [seasonFgPct, setSeasonFgPct] = useState<number | null>(null); // Season average FG%
-  const [averageUsageRate, setAverageUsageRate] = useState<number | null>(null); // Season average usage rate
-  const [averageMinutes, setAverageMinutes] = useState<number | null>(null); // Season average minutes
-  const [averageGamePace, setAverageGamePace] = useState<number | null>(null); // Average game pace from player's games
+  // Dashboard projected state - extracted to useDashboardProjectedState hook
+  const {
+    predictedPace,
+    setPredictedPace,
+    seasonFgPct,
+    setSeasonFgPct,
+    averageUsageRate,
+    setAverageUsageRate,
+    averageMinutes,
+    setAverageMinutes,
+    averageGamePace,
+    setAverageGamePace,
+  } = useDashboardProjectedState();
   
-  const handleSelectFilterForAxis = useCallback((filter: string | null) => {
-    setSelectedFilterForAxis(filter);
-    // Reset slider when filter changes
-    setSliderRange(null);
-  }, []);
+  // Filter selection handler - extracted to useFilterSelection hook
+  const { handleSelectFilterForAxis } = useFilterSelection({
+    setSelectedFilterForAxis,
+    setSliderRange,
+  });
   
-  // Track if stat was set from URL to prevent default stat logic from overriding it
-  const statFromUrlRef = useRef(false);
-  // Track if user manually selected a stat (to prevent default logic from overriding)
-  const userSelectedStatRef = useRef(false);
+  // Dashboard refs - extracted to useDashboardRefs hook
+  const {
+    statFromUrlRef,
+    userSelectedStatRef,
+    hasManuallySetLineRef,
+    lastAutoSetStatRef,
+    lastAutoSetLineRef,
+    searchRef,
+    dvpRanksPrefetchRef,
+    teammateFetchAbortControllerRef,
+    teammateFetchInProgressRef,
+  } = useDashboardRefs();
   
-  const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
-  // Betting lines per stat (independent) - will be populated by odds API
-  const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
-  // Track auto-set state for betting lines (shared across handlers)
-  const hasManuallySetLineRef = useRef(false);
-  const lastAutoSetStatRef = useRef<string | null>(null);
-  const lastAutoSetLineRef = useRef<number | null>(null);
-  
-  // Update betting line for current stat
-  const setBettingLine = (value: number) => {
-    setBettingLines(prev => ({
-      ...prev,
-      [selectedStat]: value
-    }));
-  };
-  
-  // Get current betting line for selected stat (defined early so it can be used in hitRateStats)
-  // Use stored line if available, otherwise default to 0.5
-  // Note: bestLineForStat will update bettingLines state via useEffect when it becomes available
-  const bettingLine = useMemo(() => {
-    // First check if we have a stored line for this stat
-    if (selectedStat in bettingLines) {
-      return bettingLines[selectedStat];
-    }
-    // Otherwise default to 0.5 (will be updated by useEffect when bestLineForStat is available)
-    return 0.5;
-  }, [bettingLines, selectedStat]);
-  
-  // Independent bookmaker lines (not linked to the chart betting line)
-  const [bookOpeningLine, setBookOpeningLine] = useState<number | null>(null);
-  const [bookCurrentLine, setBookCurrentLine] = useState<number | null>(null);
+  // Dashboard odds state - extracted to useDashboardOddsState hook
+  const {
+    bettingLines,
+    setBettingLines,
+    bookOpeningLine,
+    setBookOpeningLine,
+    bookCurrentLine,
+    setBookCurrentLine,
+    oddsSnapshots,
+    setOddsSnapshots,
+    marketKey,
+    lineMovementData,
+    setLineMovementData,
+    lineMovementLoading,
+    setLineMovementLoading,
+    oddsFormat,
+    setOddsFormat,
+    realOddsData,
+    setRealOddsData,
+    oddsLoading,
+    setOddsLoading,
+    oddsError,
+    setOddsError,
+  } = useDashboardOddsState();
 
-  // Odds API placeholders (no fetch yet)
-  const [oddsSnapshots, setOddsSnapshots] = useState<OddsSnapshot[]>([]);
-  const marketKey = 'player_points';
-  
-  // Line movement data from API
-const [lineMovementData, setLineMovementData] = useState<{
-  openingLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
-  currentLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
-  impliedOdds: number | null; // Backward compatibility
-  overImpliedProb?: number | null;
-  underImpliedProb?: number | null;
-  isOverFavorable: boolean | null;
-  lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
-} | null>(null);
-const [lineMovementLoading, setLineMovementLoading] = useState(false);
-
-
-  // Odds display format
-  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
   // Odds format from localStorage - extracted to useOddsFormat hook
   useOddsFormat({ setOddsFormat });
 
-  // Build intraday movement rows from line movement data
-  const intradayMovements = useMemo(() => {
-    return processIntradayMovements(lineMovementData, oddsSnapshots, marketKey);
-  }, [lineMovementData, oddsSnapshots, marketKey]);
+  // Intraday movements - extracted to useIntradayMovements hook
+  const { intradayMovements } = useIntradayMovements({
+    lineMovementData,
+    oddsSnapshots,
+    marketKey,
+  });
 
-  // search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [searchBusy, setSearchBusy] = useState(false);
-  const [searchResults, setSearchResults] = useState<BdlSearchResult[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  // Betting line logic - extracted to useBettingLine hook
+  const { bettingLine, setBettingLine } = useBettingLine({
+    bettingLines,
+    setBettingLines,
+    selectedStat,
+  });
 
-  // selection + data
-  const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
-  const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
-  const [playerStats, setPlayerStats] = useState<BallDontLieStats[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  // Track when core data (stats + DvP) is ready to show the screen
-  const [coreDataReady, setCoreDataReady] = useState(false);
+  // Dashboard player state - extracted to useDashboardPlayerState hook
+  const {
+    selectedPlayer,
+    setSelectedPlayer,
+    resolvedPlayerId,
+    setResolvedPlayerId,
+    playerStats,
+    setPlayerStats,
+    isLoading,
+    setIsLoading,
+    coreDataReady,
+    setCoreDataReady,
+    apiError,
+    setApiError,
+    advancedStats,
+    setAdvancedStats,
+    advancedStatsLoading,
+    setAdvancedStatsLoading,
+    advancedStatsError,
+    setAdvancedStatsError,
+    advancedStatsPerGame,
+    setAdvancedStatsPerGame,
+    dvpRanksPerGame,
+    setDvpRanksPerGame,
+    shotDistanceData,
+    setShotDistanceData,
+    shotDistanceLoading,
+    setShotDistanceLoading,
+    searchQuery,
+    setSearchQuery,
+    showDropdown,
+    setShowDropdown,
+    searchBusy,
+    setSearchBusy,
+    searchResults,
+    setSearchResults,
+    searchError,
+    setSearchError,
+    isMobileSearchOpen,
+    setIsMobileSearchOpen,
+  } = useDashboardPlayerState();
   
-  const [apiError, setApiError] = useState<string | null>(null);
-  
-  // Advanced stats state
-  const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
-  const [advancedStatsLoading, setAdvancedStatsLoading] = useState(false);
-  const [advancedStatsError, setAdvancedStatsError] = useState<string | null>(null);
-  
-  // Advanced stats per game (for second axis - pace and usage_rate)
-  const [advancedStatsPerGame, setAdvancedStatsPerGame] = useState<Record<number, { pace?: number; usage_percentage?: number }>>({});
-  
-  // DvP ranks per game (for second axis - dvp_rank)
-  const [dvpRanksPerGame, setDvpRanksPerGame] = useState<Record<string, number | null>>({});
-  
-  // Prefetched DvP ranks - stored by stat/metric combination (moved to useDvpRankPrefetch hook)
-  
-  // Refs to track prefetch status (prevent duplicate prefetches) - advancedStatsPrefetchRef moved to useAdvancedStatsPrefetch hook
-  const dvpRanksPrefetchRef = useRef<Set<string>>(new Set());
-  
-  // Shot distance stats state
-  const [shotDistanceData, setShotDistanceData] = useState<any | null>(null);
-  const [shotDistanceLoading, setShotDistanceLoading] = useState(false);
-  
-  // Opponent team state
-  const [opponentTeam, setOpponentTeam] = useState<string>('N/A');
+  // Dashboard team state - extracted to useDashboardTeamState hook
+  const {
+    opponentTeam,
+    setOpponentTeam,
+    manualOpponent,
+    setManualOpponent,
+    homeAway,
+    setHomeAway,
+    selectedTeam,
+    setSelectedTeam,
+    originalPlayerTeam,
+    setOriginalPlayerTeam,
+    gamePropsTeam,
+    setGamePropsTeam,
+    gamePropsOpponent,
+    setGamePropsOpponent,
+    depthChartTeam,
+    setDepthChartTeam,
+    teamInjuries,
+    setTeamInjuries,
+    playerTeamRoster,
+    setPlayerTeamRoster,
+    opponentTeamRoster,
+    setOpponentTeamRoster,
+    rostersLoading,
+    setRostersLoading,
+    selectedTeamLogoUrl,
+    setSelectedTeamLogoUrl,
+    opponentTeamLogoUrl,
+    setOpponentTeamLogoUrl,
+    selectedTeamLogoAttempt,
+    setSelectedTeamLogoAttempt,
+    opponentTeamLogoAttempt,
+    setOpponentTeamLogoAttempt,
+    allTeamRosters,
+    setAllTeamRosters,
+    rosterCacheLoading,
+    setRosterCacheLoading,
+    nextGameOpponent,
+    setNextGameOpponent,
+    nextGameDate,
+    setNextGameDate,
+    nextGameTipoff,
+    setNextGameTipoff,
+    isGameInProgress,
+    setIsGameInProgress,
+    countdown,
+    setCountdown,
+  } = useDashboardTeamState();
   
   // Stat URL synchronization - extracted to useStatUrlSync hook (must be after setOpponentTeam is declared)
   const { handleStatSelect } = useStatUrlSync({
@@ -357,56 +428,19 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     userSelectedStatRef,
   });
   
-  // Manual opponent selector (overrides automatic opponent detection)
-  const [manualOpponent, setManualOpponent] = useState<string>('ALL');
-  
-  // Home/Away filter
-  const [homeAway, setHomeAway] = useState<'ALL' | 'HOME' | 'AWAY'>('ALL');
-  
-  // Selected team (player's team - only for Player Props)
-  const [selectedTeam, setSelectedTeam] = useState<string>('N/A');
-  
-  // Original player team (the team of the searched player - never changes during swaps)
-  const [originalPlayerTeam, setOriginalPlayerTeam] = useState<string>('N/A');
-  
-  // Separate team selection for Game Props mode
-  const [gamePropsTeam, setGamePropsTeam] = useState<string>('N/A');
-  const [gamePropsOpponent, setGamePropsOpponent] = useState<string>('N/A');
-  
-  // Depth chart display team (independent of selectedTeam - only affects depth chart)
-  const [depthChartTeam, setDepthChartTeam] = useState<string>('N/A');
-
-  // Injury data state for depth chart integration
-  const [teamInjuries, setTeamInjuries] = useState<Record<string, any[]>>({});
-  
-  // Store both team rosters for instant switching
-  const [playerTeamRoster, setPlayerTeamRoster] = useState<DepthChartData | null>(null);
-  const [opponentTeamRoster, setOpponentTeamRoster] = useState<DepthChartData | null>(null);
-  const [rostersLoading, setRostersLoading] = useState<{player: boolean, opponent: boolean}>({player: false, opponent: false});
-
-  // Logo URLs (stateful to avoid onError flicker loops)
-  const [selectedTeamLogoUrl, setSelectedTeamLogoUrl] = useState<string>('');
-  const [opponentTeamLogoUrl, setOpponentTeamLogoUrl] = useState<string>('');
-  const [selectedTeamLogoAttempt, setSelectedTeamLogoAttempt] = useState<number>(0);
-  const [opponentTeamLogoAttempt, setOpponentTeamLogoAttempt] = useState<number>(0);
-  
-  // Games state
-  const [todaysGames, setTodaysGames] = useState<any[]>([]);
-  const [gamesLoading, setGamesLoading] = useState(false);
-  const gamesFetchInFlightRef = useRef(false);
-  
   // Game stats for team props (separate from player stats)
   const [gameStats, setGameStats] = useState<any[]>([]);
   const [gameStatsLoading, setGameStatsLoading] = useState(false);
 
-  // Determine today's matchup and tipoff time (no fetch; uses existing todaysGames)
-  const matchupInfo = useMemo(() => {
-    return calculateMatchupInfo({
-      selectedTeam,
-      opponentTeam,
-      todaysGames,
-    });
-  }, [selectedTeam, opponentTeam, todaysGames]);
+  // Today's games fetching - extracted to useTodaysGamesFetching hook
+  const {
+    todaysGames,
+    setTodaysGames,
+    gamesLoading,
+    setGamesLoading,
+    fetchTodaysGames,
+  } = useTodaysGamesFetching();
+
   
   // Line movement fetching - extracted to useLineMovement hook
   useLineMovement({
@@ -420,24 +454,30 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setLineMovementLoading,
   });
   
-  // Time filter for opponent breakdown display
-  const [selectedTimeFilter] = useState('last10'); // Using existing selectedTimeframe as reference
+  // Odds fetching - extracted to useOddsFetching hook
+  useOddsFetching({
+    propsMode,
+    selectedPlayer,
+    gamePropsTeam,
+    realOddsData,
+    oddsLoading,
+    setRealOddsData,
+    setOddsLoading,
+    setOddsError,
+  });
   
-  // Team comparison metric selector
-  const [selectedComparison, setSelectedComparison] = useState<'points' | 'rebounds' | 'assists' | 'fg_pct' | 'three_pct'>('points');
-  
-  // State for team matchup stats (fetched from DVP API)
-  const [teamMatchupStats, setTeamMatchupStats] = useState<{currentTeam: any, opponent: any}>({currentTeam: null, opponent: null});
-  const [teamMatchupLoading, setTeamMatchupLoading] = useState(false);
-  
-  // Pie chart display order (only affects visual display, not underlying data)
-  const [pieChartSwapped, setPieChartSwapped] = useState(false);
-  
-  // Journal modal state
-  const [showJournalModal, setShowJournalModal] = useState(false);
-  
-  // Sidebar toggle state for tablets/Macs
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Dashboard team comparison state - extracted to useDashboardTeamComparisonState hook
+  const {
+    selectedTimeFilter,
+    selectedComparison,
+    setSelectedComparison,
+    teamMatchupStats,
+    setTeamMatchupStats,
+    teamMatchupLoading,
+    setTeamMatchupLoading,
+    pieChartSwapped,
+    setPieChartSwapped,
+  } = useDashboardTeamComparisonState();
   
   // Subscription/paywall state
   const { 
@@ -446,17 +486,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     subscription,
     loading: subscriptionLoading
   } = useSubscription();
-  
-  // Debug subscription status - removed (debug code)
-  
-  // Next game info for tracking (separate from chart filter)
-  const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
-  const [nextGameDate, setNextGameDate] = useState<string>('');
-  const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
-  const [isGameInProgress, setIsGameInProgress] = useState(false);
-  
-  // Countdown timer state
-  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   
   // Countdown timer - extracted to useCountdownTimer hook
   useCountdownTimer({
@@ -479,34 +508,12 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setGameStatsLoading,
   });
 
-  // Fetch games function (today ± 7 days) - now imported from utils
-  const fetchTodaysGames = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
-    return await fetchTodaysGamesCore({
-      silent,
-      onLoadingChange: setGamesLoading,
-      onGamesChange: setTodaysGames,
-      isFetchInFlight: () => gamesFetchInFlightRef.current,
-      setFetchInFlight: (inFlight) => { gamesFetchInFlightRef.current = inFlight; },
-    });
-  }, []);
-
   // Last 5 games prefetch - extracted to useLast5GamesPrefetch hook
   useLast5GamesPrefetch({
     selectedTeam,
     propsMode,
   });
 
-  // Projected minutes fetching and lookup - extracted to useProjectedMinutes hook
-  useProjectedMinutes({
-    selectedPlayer,
-    selectedTeam,
-    opponentTeam,
-    propsMode,
-    allProjectedMinutes,
-    setAllProjectedMinutes,
-    setProjectedMinutes,
-    setProjectedMinutesLoading,
-  });
 
 
   // Opponent update logic - extracted to useOpponentUpdate hook
@@ -608,16 +615,19 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
   });
 
 
-  // Comprehensive roster cache - preload ALL team rosters for instant switching
-  const [allTeamRosters, setAllTeamRosters] = useState<Record<string, DepthChartData>>({});
-  const [rosterCacheLoading, setRosterCacheLoading] = useState(false);
-
-  // With/Without filters
-  const [withWithoutMode, setWithWithoutMode] = useState<'with'|'without'>('with');
-  const [teammateFilterId, setTeammateFilterId] = useState<number | null>(null);
-  const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null); // Store name for display
-  const [teammatePlayedGameIds, setTeammatePlayedGameIds] = useState<Set<number>>(new Set());
-  const [loadingTeammateGames, setLoadingTeammateGames] = useState<boolean>(false);
+  // Dashboard teammate state - extracted to useDashboardTeammateState hook
+  const {
+    withWithoutMode,
+    setWithWithoutMode,
+    teammateFilterId,
+    setTeammateFilterId,
+    teammateFilterName,
+    setTeammateFilterName,
+    teammatePlayedGameIds,
+    setTeammatePlayedGameIds,
+    loadingTeammateGames,
+    setLoadingTeammateGames,
+  } = useDashboardTeammateState();
 
   // Teammate filter reset - extracted to useTeammateFilterReset hook
   useTeammateFilterReset({
@@ -630,31 +640,23 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setLoadingTeammateGames,
   });
 
-  const clearTeammateFilter = useCallback(() => {
-    setTeammateFilterId(null);
-    setTeammateFilterName(null);
-    setTeammatePlayedGameIds(new Set());
-    setLoadingTeammateGames(false);
-  }, []);
-
-  const rosterForSelectedTeam = useMemo(() => {
-    if (propsMode !== 'player') return null;
-    const roster = (playerTeamRoster && Object.keys(playerTeamRoster || {}).length ? playerTeamRoster : allTeamRosters[originalPlayerTeam]) as any;
-    return roster || null;
-  }, [propsMode, playerTeamRoster, allTeamRosters, originalPlayerTeam]);
-  
-  // Effect moved below where baseGameData is declared
-
-  // Resolve selected player's exact position from depth chart (after roster states are ready)
-  const selectedPosition = useMemo((): 'PG'|'SG'|'SF'|'PF'|'C' | null => {
-    return calculateSelectedPosition({
-      propsMode,
-      selectedPlayer,
-      playerTeamRoster,
-      allTeamRosters,
-      originalPlayerTeam,
-    });
-  }, [propsMode, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, playerTeamRoster, allTeamRosters, originalPlayerTeam]);
+  // Roster calculations - extracted to useRosterCalculations hook
+  const {
+    rosterForSelectedTeam,
+    selectedPosition,
+    clearTeammateFilter,
+  } = useRosterCalculations({
+    propsMode,
+    playerTeamRoster,
+    allTeamRosters,
+    originalPlayerTeam,
+    selectedPlayer,
+    teammateFilterId,
+    setTeammateFilterId,
+    setTeammateFilterName,
+    setTeammatePlayedGameIds,
+    setLoadingTeammateGames,
+  });
 
   // Preload all team rosters when games are loaded (for instant team switching)
   useRosterPreloading({
@@ -704,12 +706,12 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     gamePropsTeam,
   });
 
-  // Fetch game stats for a player
-  const fetchSortedStats = async (playerId: string) => {
-    return await fetchSortedStatsCore(playerId, selectedTimeframe);
-  };
+  // Dashboard utilities - extracted to useDashboardUtils hook
+  const { fmtOdds, fetchSortedStats } = useDashboardUtils({
+    oddsFormat,
+    selectedTimeframe,
+  });
   
-  // Track current fetch to prevent race conditions
   // Premium stats fetching - extracted to usePremiumStats hook
   const { fetchAdvancedStats, fetchShotDistanceStats } = usePremiumStats({
     hasPremium,
@@ -736,56 +738,54 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setShowDropdown,
   });
 
-  // header info - dynamic based on props mode
-  const headerInfo = useMemo(() => {
-    return calculateHeaderInfo({
-      propsMode,
-      gamePropsTeam,
-      selectedPlayer,
-      selectedTeam,
-    });
-  }, [propsMode, gamePropsTeam, selectedPlayer, selectedTeam]);
-
-  // Keep the old variable name for compatibility
-  const playerInfo = headerInfo;
+  // Simple calculations - extracted to useSimpleCalculations hook
+  const {
+    headerInfo,
+    playerInfo,
+    matchupInfo,
+    bestLineForStat,
+  } = useSimpleCalculations({
+    propsMode,
+    gamePropsTeam,
+    selectedPlayer,
+    selectedTeam,
+    opponentTeam,
+    todaysGames,
+    realOddsData,
+    selectedStat,
+  });
   
-  // Defer heavy baseGameData computation to prevent UI freeze during player selection
-  // This allows the UI to remain responsive while stats are being processed
-  // Removed useDeferredValue to prevent double refresh - use playerStats directly
-  // const deferredPlayerStats = useDeferredValue(playerStats);
-  
-  /* -------- Base game data (structure only, no stat values) ----------
-     This should only recalculate when player/timeframe changes, NOT when stat changes */
-  const baseGameData = useMemo(() => {
-    return processBaseGameData({
-      playerStats,
-      selectedTimeframe,
-      selectedPlayer,
-      propsMode,
-      gameStats,
-      selectedTeam,
-      opponentTeam,
-      manualOpponent,
-      homeAway,
-      isLoading,
-      resolvedPlayerId,
-      teammateFilterId,
-      gamePropsTeam,
-    });
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]);
-  
-  // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
-  // This allows us to filter from ALL games, then apply timeframe
-  const allGamesSecondAxisData = useMemo(() => {
-    return processAllGamesSecondAxisData({
-      playerStats,
-      selectedFilterForAxis,
-      selectedTimeframe,
-      advancedStatsPerGame,
-      dvpRanksPerGame,
-      propsMode,
-    });
-  }, [playerStats, selectedFilterForAxis, selectedTimeframe, advancedStatsPerGame, dvpRanksPerGame, propsMode]);
+  // Game data processing - extracted to useGameDataProcessing hook
+  // Keep this immediate so other hooks (teammate filter, etc.) can use it right away
+  const {
+    baseGameData,
+    allGamesSecondAxisData,
+    backToBackGameIds,
+    filteredGameData,
+  } = useGameDataProcessing({
+    playerStats,
+    selectedTimeframe,
+    selectedPlayer,
+    propsMode,
+    gameStats,
+    selectedTeam,
+    opponentTeam,
+    manualOpponent,
+    homeAway,
+    isLoading,
+    resolvedPlayerId,
+    teammateFilterId,
+    gamePropsTeam,
+    selectedFilterForAxis,
+    advancedStatsPerGame,
+    dvpRanksPerGame,
+    minMinutesFilter,
+    maxMinutesFilter,
+    excludeBlowouts,
+    excludeBackToBack,
+    withWithoutMode,
+    teammatePlayedGameIds,
+  });
   
   // Prefetch teammate game data in background when roster is available (for faster filtering)
   useTeammatePrefetch({
@@ -794,50 +794,32 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     propsMode,
     selectedPlayer,
   });
-  
-  // Precompute back-to-back games (player mode)
-  const backToBackGameIds = useMemo(() => {
-    return calculateBackToBackGameIds({
-      propsMode,
-      playerStats,
-    });
-  }, [propsMode, playerStats]);
 
-  // Apply advanced filters to base data for player mode
-  const filteredGameData = useMemo(() => {
-    return processFilteredGameData({
-      propsMode,
-      baseGameData,
-      minMinutesFilter,
-      maxMinutesFilter,
-      excludeBlowouts,
-      excludeBackToBack,
-      backToBackGameIds,
-      withWithoutMode,
-      teammateFilterId,
-      teammatePlayedGameIds,
-      selectedTimeframe,
-      playerStats,
-      selectedPlayer,
-    });
-  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe, playerStats, selectedPlayer]);
-
-  /* -------- Chart data with current stat values ----------
-     Only recalculate values when selectedStat changes */
-  const chartData = useMemo(() => {
-    const source = propsMode === 'player' ? filteredGameData : baseGameData;
-    return processChartData({
-      source,
-      selectedStat,
-      propsMode,
-      gamePropsTeam,
-      todaysGames,
-    });
-  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
-
-  // Track in-flight requests to prevent duplicates
-  const teammateFetchAbortControllerRef = useRef<AbortController | null>(null);
-  const teammateFetchInProgressRef = useRef<Set<number>>(new Set());
+  // Chart data processing - extracted to useChartDataProcessing hook
+  // Process immediately but use startTransition for state updates to keep UI responsive
+  const {
+    chartData,
+    adjustedChartData,
+    sliderConfig,
+    filteredChartData,
+    secondAxisData,
+  } = useChartDataProcessing({
+    baseGameData,
+    filteredGameData,
+    selectedStat,
+    propsMode,
+    gamePropsTeam,
+    selectedTeam,
+    todaysGames,
+    allGamesSecondAxisData,
+    selectedFilterForAxis,
+    sliderRange,
+    selectedTimeframe,
+    selectedPlayer,
+    opponentTeam,
+    advancedStatsPerGame,
+    dvpRanksPerGame,
+  });
 
   // Load teammate participation for current base games when filter is active
   useTeammateFilterData({
@@ -850,56 +832,27 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     teammateFetchInProgressRef,
   });
 
-  const currentStatOptions = propsMode === 'player' ? PLAYER_STAT_OPTIONS : TEAM_STAT_OPTIONS;
-
-  // Hit rate calculations - using statistical distribution instead of simple counting
-  const hitRateStats = useMemo<HitRateStats>(() => {
-    return calculateHitRateStats({
-      chartData,
-      bettingLine,
-      selectedStat,
-      currentStatOptions,
-      propsMode,
-      baseGameDataLength: baseGameData.length,
-      selectedPlayer,
-      isLoading,
-      resolvedPlayerId,
-    });
-  }, [chartData, bettingLine, selectedStat, currentStatOptions, propsMode, baseGameData.length, selectedPlayer, isLoading, resolvedPlayerId]);
-
-  // Custom tooltip content - completely independent to prevent lag when adjusting betting line
-  const customTooltip = useCallback(({ active, payload, label }: any) => {
-    return (
-      <CustomChartTooltip
-        active={active}
-        payload={payload}
-        label={label}
-        propsMode={propsMode}
-        selectedStat={selectedStat}
-        isDark={isDark}
-        gamePropsTeam={gamePropsTeam}
-        selectedTeam={selectedTeam}
-      />
-    );
-  }, [propsMode, selectedStat, isDark, gamePropsTeam, selectedTeam]);
-
-  // Memoized label formatter for chart bars
-  const formatChartLabel = useMemo(() => createChartLabelFormatter(selectedStat), [selectedStat]);
-
-  // Calculate Y-axis domain with appropriate tick increments
-  const yAxisConfig = useMemo(() => {
-    return calculateYAxisConfig({
-      chartData,
-      selectedStat,
-      selectedTimeframe,
-      propsMode,
-    });
-  }, [chartData, selectedStat, selectedTimeframe, propsMode]);
-
-  // Real odds data state
-  const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);
-  const [oddsLoading, setOddsLoading] = useState(false);
-  const [oddsError, setOddsError] = useState<string | null>(null);
+  // Chart configuration - extracted to useChartConfig hook
+  const {
+    hitRateStats,
+    customTooltip,
+    formatChartLabel,
+    yAxisConfig,
+    currentStatOptions,
+  } = useChartConfig({
+    chartData,
+    bettingLine,
+    selectedStat,
+    propsMode,
+    baseGameDataLength: baseGameData.length,
+    selectedPlayer,
+    isLoading,
+    resolvedPlayerId,
+    selectedTimeframe,
+    isDark,
+    gamePropsTeam,
+    selectedTeam,
+  });
 
   // Player selection handlers - extracted to usePlayerSelection hook
   const { handlePlayerSelectFromLocal, handlePlayerSelectFromSearch } = usePlayerSelection({
@@ -990,9 +943,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setCoreDataReady,
   });
 
-  // For spread we now use the signed margin directly (wins down, losses up)
-  const adjustedChartData = useMemo(() => chartData, [chartData]);
-
   // Advanced stats prefetching logic - extracted to useAdvancedStatsPrefetch hook
   const { prefetchedAdvancedStats, setPrefetchedAdvancedStats } = useAdvancedStatsPrefetch({
     propsMode,
@@ -1014,40 +964,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     setPrefetchedAdvancedStats,
   });
 
-  // Calculate slider min/max based on selected filter (use all games for accurate min/max)
-  const sliderConfig = useMemo(() => {
-    return calculateSliderConfig({
-      selectedFilterForAxis,
-      allGamesSecondAxisData,
-    });
-  }, [selectedFilterForAxis, allGamesSecondAxisData]);
-
-  // Filter chart data based on slider range
-  // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
-  const filteredChartData = useMemo(() => {
-    return processFilteredChartData({
-      adjustedChartData,
-      selectedFilterForAxis,
-      allGamesSecondAxisData,
-      sliderRange,
-      propsMode,
-      selectedStat,
-      selectedTimeframe,
-      selectedPlayer,
-      opponentTeam,
-    });
-  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer, opponentTeam]);
-
-  // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
-  const secondAxisData = useMemo(() => {
-    return processSecondAxisData({
-      filteredChartData,
-      selectedFilterForAxis,
-      propsMode,
-      advancedStatsPerGame,
-      dvpRanksPerGame,
-    });
-  }, [selectedFilterForAxis, filteredChartData, propsMode, advancedStatsPerGame, dvpRanksPerGame]);
 
   // DvP rank prefetching logic - extracted to useDvpRankPrefetch hook
   useDvpRankPrefetch({
@@ -1074,14 +990,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
 
   // DvP rank prefetching logic - extracted to useDvpRankPrefetch hook (see hook call above)
   
-  // Calculate best line for stat (lowest over line) - exclude alternate lines
-  // This is used to initialize bettingLine when switching stats
-  const bestLineForStat = useMemo(() => {
-    return calculateBestLineForStat({
-      realOddsData,
-      selectedStat,
-    });
-  }, [realOddsData, selectedStat]);
   
   // Best line update - extracted to useBestLineUpdate hook
   useBestLineUpdate({
@@ -1099,64 +1007,53 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     selectedStat,
   });
   
-  const derivedOdds = useMemo(() => {
-    if (LINE_MOVEMENT_ENABLED && mergedLineMovementData) {
-      return {
-        openingLine: mergedLineMovementData.openingLine?.line ?? null,
-        currentLine: mergedLineMovementData.currentLine?.line ?? null,
-      };
-    }
-    // Fallback to old snapshot logic for team mode
-    const filtered = filterByMarket(oddsSnapshots, marketKey);
-    return deriveOpeningCurrentMovement(filtered);
-  }, [mergedLineMovementData, oddsSnapshots, marketKey]);
-
+  // Odds derived data - extracted to useOddsDerivedData hook
+  const {
+    derivedOdds,
+    intradayMovementsFinal,
+    selectedBookmakerData,
+    selectedBookmakerLine,
+    selectedBookmakerName,
+    primaryMarketLine,
+    calculatedImpliedOdds,
+  } = useOddsDerivedData({
+    mergedLineMovementData,
+    oddsSnapshots,
+    marketKey,
+    intradayMovements,
+    realOddsData,
+    selectedStat,
+  });
 
   // Prediction state
   // Hardcode to FanDuel only
   const selectedBookmakerForPrediction = 'fanduel';
-  
-  // Update intraday movements to use merged data for accurate current line
-  const intradayMovementsFinal = useMemo(() => {
-    return processIntradayMovementsFinal({
-      mergedLineMovementData,
-      realOddsData,
-      selectedStat,
-      intradayMovements,
-      LINE_MOVEMENT_ENABLED,
-    });
-  }, [mergedLineMovementData, intradayMovements, realOddsData, selectedStat]);
 
-  // Odds fetching logic - extracted to useOddsFetching hook (see hook call above)
+  // Dashboard styles - memoized for performance
+  const {
+    containerStyle,
+    innerContainerStyle,
+    innerContainerClassName,
+    mainContentClassName,
+    mainContentStyle,
+  } = useDashboardStyles({ sidebarOpen });
 
-  const fmtOdds = (odds: string | undefined | null): string => {
-    return fmtOddsUtil(odds, oddsFormat);
-  };
-
-  // Extract FanDuel's line and odds for selected stat
-  const selectedBookmakerData = useMemo(() => {
-    return calculateSelectedBookmakerData(realOddsData, selectedStat);
-  }, [realOddsData, selectedStat]);
-
-  const selectedBookmakerLine = selectedBookmakerData.line;
-  const selectedBookmakerName = selectedBookmakerData.name;
-
-  // Calculate implied odds from FanDuel, with fallback to consensus
-  // Calculate primary line from real bookmakers (not alt lines) - used for prediction
-  // Uses the most common line value (consensus), not the average
-  const primaryMarketLine = useMemo(() => {
-    return calculatePrimaryMarketLine({
-      realOddsData,
-      selectedStat,
-    });
-  }, [realOddsData, selectedStat]);
-
-  const calculatedImpliedOdds = useMemo(() => {
-    return calculateImpliedOdds({
-      realOddsData,
-      selectedStat,
-    });
-  }, [realOddsData, selectedStat]);
+  // Dashboard computed props - memoized for performance
+  const {
+    chartLoadingState,
+    currentTeam,
+    handleSidebarSubscription,
+  } = useDashboardComputedProps({
+    propsMode,
+    gameStatsLoading,
+    isLoading,
+    oddsLoading,
+    apiError,
+    gamePropsTeam,
+    selectedTeam,
+    handleSidebarSubscriptionBase,
+    isPro,
+  });
 
   // Normal distribution CDF (Cumulative Distribution Function) approximation
   // Returns the probability that a value from a standard normal distribution is <= z
@@ -1164,13 +1061,8 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
     <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <DashboardStyles />
       {/* Main layout container with sidebar, chart, and right panel */}
-      <div className="px-0 dashboard-container" style={{ 
-        marginLeft: sidebarOpen ? 'calc(var(--sidebar-width, 0px) + var(--gap, 8px))' : '0px',
-        width: sidebarOpen ? 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 8px)))' : '100%',
-        paddingLeft: 0,
-        transition: 'margin-left 0.3s ease, width 0.3s ease'
-      }}>
-        <div className={`mx-auto w-full ${sidebarOpen ? 'max-w-[1550px]' : 'max-w-[1800px]'}`} style={{ paddingLeft: sidebarOpen ? 0 : '2rem', paddingRight: sidebarOpen ? 0 : '1rem' }}>
+      <div className="px-0 dashboard-container" style={containerStyle}>
+        <div className={innerContainerClassName} style={innerContainerStyle}>
           <div 
             className="pt-4 min-h-0 lg:h-full dashboard-container"
             style={{ paddingLeft: 0 }}
@@ -1192,12 +1084,8 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
         <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}
           <div 
-            className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 overflow-y-auto overflow-x-hidden overscroll-contain pl-0 pr-2 sm:pl-0 sm:pr-2 md:px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
-              sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
-            }`}
-            style={{
-              scrollbarGutter: 'stable'
-            }}
+            className={mainContentClassName}
+            style={mainContentStyle}
           >
             {/* 1. Filter By Container (Mobile Only) - Extracted to DashboardModeToggle component */}
             <DashboardModeToggle
@@ -1266,11 +1154,11 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
               onChangeBettingLine={setBettingLine}
               selectedTimeframe={selectedTimeframe}
               onSelectTimeframe={setSelectedTimeframe}
-              chartData={filteredChartData}
+              chartData={selectedFilterForAxis && sliderRange ? filteredChartData : chartData}
               yAxisConfig={yAxisConfig}
-              isLoading={propsMode === 'team' ? gameStatsLoading : isLoading}
-              oddsLoading={propsMode === 'player' ? oddsLoading : false}
-              apiError={propsMode === 'team' ? null : apiError}
+              isLoading={chartLoadingState.isLoading}
+              oddsLoading={chartLoadingState.oddsLoading}
+              apiError={chartLoadingState.apiError}
               selectedPlayer={selectedPlayer}
               propsMode={propsMode}
               gamePropsTeam={gamePropsTeam}
@@ -1278,7 +1166,7 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
               currentOpponent={opponentTeam}
               manualOpponent={manualOpponent}
               onOpponentChange={setManualOpponent}
-              currentTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+              currentTeam={currentTeam}
               homeAway={homeAway}
               onChangeHomeAway={setHomeAway}
               realOddsData={realOddsData}
@@ -1319,8 +1207,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
               selectedPosition={selectedPosition}
               selectedTeam={selectedTeam}
               selectedPlayer={selectedPlayer}
-                          projectedMinutes={projectedMinutes}
-              projectedMinutesLoading={projectedMinutesLoading}
                           predictedPace={predictedPace}
                           seasonFgPct={seasonFgPct}
                           averageUsageRate={averageUsageRate}
@@ -1444,8 +1330,6 @@ const [lineMovementLoading, setLineMovementLoading] = useState(false);
             opponentTeam={opponentTeam}
             selectedPosition={selectedPosition}
             selectedPlayer={selectedPlayer}
-            projectedMinutes={projectedMinutes}
-            projectedMinutesLoading={projectedMinutesLoading}
             predictedPace={predictedPace}
             seasonFgPct={seasonFgPct}
             averageUsageRate={averageUsageRate}

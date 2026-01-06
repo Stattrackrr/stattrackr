@@ -171,17 +171,33 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
           
           results.forEach(result => {
             if (result.type === 'team') {
-              if (!result.data || result.data.error) {
+              // Handle rate limit (null) gracefully - skip update but don't show error
+              if (result.data === null) {
+                console.warn('[DVP Frontend] Team data rate limited, using cached data if available');
+                return; // Skip this result, continue with cached data
+              }
+              if (!result.data || result.data?.error) {
                 clientLogger.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
-                setError('Unable to load data. Please try again.');
+                // Don't set error if we have cached data - allow fallback to cached data
+                if (!teamCached) {
+                  setError('Unable to load data. Please try again.');
+                }
                 return;
               }
               dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() };
               dvpTeamCache.set(teamCacheKey, dvpData);
             } else if (result.type === 'rank') {
-              if (!result.data || result.data.error) {
+              // Handle rate limit (null) gracefully - skip update but don't show error
+              if (result.data === null) {
+                console.warn('[DVP Frontend] Rank data rate limited, using cached data if available');
+                return; // Skip this result, continue with cached data
+              }
+              if (!result.data || result.data?.error) {
                 clientLogger.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
-                setError('Unable to load data. Please try again.');
+                // Don't set error if we have cached data - allow fallback to cached data
+                if (!rankCached) {
+                  setError('Unable to load data. Please try again.');
+                }
                 return;
               }
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
@@ -189,6 +205,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             }
           });
           
+          // Use data if we have both, OR if we have cached data (even if one fetch failed)
           if (!abort && dvpData && rankData) {
             const map: Record<string, number | null> = {};
             const rmap: Record<string, number | null> = {};
@@ -233,9 +250,37 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             setPerRank(rmap);
             setSample(dvpData.sample);
             setError(null); // Clear any previous errors
+            setLoading(false);
           } else if (!abort) {
-            // If we have cached data but new fetch failed, show error
-            if (promises.length > 0) {
+            // If we have cached data but new fetch failed, try to use what we have
+            // Check if we have at least one data source (team or rank)
+            if (dvpData || rankData) {
+              const map: Record<string, number | null> = {};
+              const rmap: Record<string, number | null> = {};
+              const normalizedOpp = normalizeAbbr(targetOpp);
+              
+              if (dvpData) {
+                for (const m of DVP_METRICS) {
+                  const perGame = dvpData.metrics?.[m.key];
+                  const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
+                  map[m.key] = typeof value === 'number' ? value : null;
+                }
+                setPerStat(map);
+                setSample(dvpData.sample);
+              }
+              
+              if (rankData) {
+                for (const m of DVP_METRICS) {
+                  const ranks = rankData.metrics?.[m.key] || {};
+                  const rank = ranks?.[normalizedOpp] as number | undefined;
+                  rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
+                }
+                setPerRank(rmap);
+              }
+              
+              setLoading(false);
+            } else if (promises.length > 0) {
+              // No data at all - show error only if we tried to fetch
               clientLogger.warn('[DVP Frontend] Missing data after fetch:', { hasDvpData: !!dvpData, hasRankData: !!rankData });
             }
           }
@@ -323,9 +368,23 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
           const results = await Promise.all(promises);
           results.forEach(result => {
             if (result.type === 'team') {
-              dvpTeamCache.set(teamCacheKey, { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() });
+              // Skip if rate limited (null) - don't overwrite cache with null
+              if (result.data === null) {
+                console.warn('[DVP Frontend] Team data rate limited, keeping existing cache');
+                return;
+              }
+              if (result.data?.metrics) {
+                dvpTeamCache.set(teamCacheKey, { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() });
+              }
             } else if (result.type === 'rank') {
-              dvpRankCache.set(rankCacheKey, { metrics: result.data?.metrics, timestamp: Date.now() });
+              // Skip if rate limited (null) - don't overwrite cache with null
+              if (result.data === null) {
+                console.warn('[DVP Frontend] Rank data rate limited, keeping existing cache');
+                return;
+              }
+              if (result.data?.metrics) {
+                dvpRankCache.set(rankCacheKey, { metrics: result.data?.metrics, timestamp: Date.now() });
+              }
             }
           });
         }

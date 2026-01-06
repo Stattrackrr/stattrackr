@@ -327,13 +327,13 @@ export default memo(function StaticBarsChart({
           />
         )}
         <Tooltip 
-          isAnimationActive={false} 
           content={customTooltip}
-          animationDuration={0}
-          wrapperStyle={{ zIndex: 9999 }}
           cursor={compactMobile ? false : { fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
-          trigger={compactMobile ? undefined : 'hover'}
-          active={compactMobile ? false : undefined}
+          trigger={compactMobile ? 'click' : 'hover'}
+          allowEscapeViewBox={{ x: true, y: true }}
+          wrapperStyle={{ zIndex: 9999, pointerEvents: 'none' }}
+          shared={false}
+          itemStyle={{ padding: '4px' }}
         />
         <Bar 
           yAxisId="left"

@@ -89,40 +89,6 @@ export function processChartData({
     }
   }
   
-  // Debug: log chartData computation (especially for steals/blocks)
-  if (selectedStat === 'stl' || selectedStat === 'blk') {
-    const statValues = mapped.map(d => d.value);
-    const nonZeroCount = statValues.filter(v => v > 0).length;
-    console.log(`[chartData] ${selectedStat.toUpperCase()} chartData:`, {
-      propsMode,
-      sourceLength: source.length,
-      chartDataLength: mapped.length,
-      selectedStat,
-      totalValues: statValues.length,
-      nonZeroValues: nonZeroCount,
-      zeroValues: statValues.length - nonZeroCount,
-      minValue: Math.min(...statValues),
-      maxValue: Math.max(...statValues),
-      allValues: statValues, // Show ALL values to debug
-      sampleStats: mapped.slice(0, 5).map(d => ({
-        value: d.value,
-        hasStats: !!(d as any).stats,
-        stl: (d as any).stats?.stl,
-        blk: (d as any).stats?.blk,
-        opponent: (d as any).opponent || (d as any).tickLabel,
-      })),
-    });
-  } else {
-    console.log('[chartData] Computed chartData:', {
-      propsMode,
-      sourceLength: source.length,
-      chartDataLength: mapped.length,
-      selectedStat,
-      sampleChartData: mapped[0],
-      sampleValue: mapped[0]?.value,
-    });
-  }
-  
   return mapped;
 }
 

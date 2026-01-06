@@ -247,7 +247,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
       )}
       <div className="flex-1 min-h-0 relative">
         <SimpleChart
-          isLoading={isLoading || (oddsLoading ?? false)}
+          isLoading={isLoading}
           chartData={chartData}
           yAxisConfig={yAxisConfig}
           isDark={isDark}

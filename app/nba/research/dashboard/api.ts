@@ -1,12 +1,45 @@
 import { AdvancedStats } from './types';
 
 export class BallDontLieAPI {
-  private static async fetchWithErrorHandling(url: string): Promise<any> {
+  private static async fetchWithErrorHandling(url: string, retries = 0): Promise<any> {
     try {
       const response = await fetch(url);
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
+        
+        // Handle rate limit (429) with retry logic
+        if (response.status === 429) {
+          // Parse reset time from error response if available
+          let resetAt: number | null = null;
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.resetAt) {
+              resetAt = new Date(errorData.resetAt).getTime();
+            }
+          } catch {
+            // If we can't parse, use default backoff
+          }
+          
+          // Calculate wait time: use resetAt if available, otherwise exponential backoff
+          const waitTime = resetAt 
+            ? Math.max(0, resetAt - Date.now() + 1000) // Add 1 second buffer
+            : Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
+          
+          // Only retry if we haven't exceeded max retries and wait time is reasonable
+          if (retries < 2 && waitTime < 60000) {
+            console.warn(`[BallDontLieAPI] Rate limit hit, retrying after ${Math.round(waitTime / 1000)}s...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            return this.fetchWithErrorHandling(url, retries + 1);
+          }
+          
+          // If we can't retry, throw a rate limit error
+          throw new ApiError({
+            message: `Rate limit exceeded. Please try again later.`,
+            status: 429,
+          });
+        }
+        
         throw new ApiError({
           message: `API request failed: ${response.status} ${response.statusText} - ${errorText}`,
           status: response.status,
@@ -103,7 +136,7 @@ export class BallDontLieAPI {
 }
 
 // Error class for API errors
-class ApiError extends Error {
+export class ApiError extends Error {
   status?: number;
 
   constructor({ message, status }: { message: string; status?: number }) {

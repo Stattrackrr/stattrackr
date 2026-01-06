@@ -220,6 +220,7 @@ export const PLAYER_STAT_OPTIONS = [
   { key: "ast", label: "AST" },
   { key: "pra", label: "PRA" },
   { key: "pr", label: "PR" },
+  { key: "pa", label: "PA" },
   { key: "ra", label: "RA" },
   { key: "fg3m", label: "3PM/A" },
   { key: "fg3_pct", label: "3P%" }, { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
