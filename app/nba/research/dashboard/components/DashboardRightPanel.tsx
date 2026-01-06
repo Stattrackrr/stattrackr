@@ -21,7 +21,6 @@ interface DashboardRightPanelProps {
   hasPremium: boolean;
   propsMode: 'player' | 'team';
   setPropsMode: (mode: 'player' | 'team') => void;
-  setSearchQuery: (query: string) => void;
   setSelectedStat: (stat: string) => void;
   gamePropsTeam: string;
   setSelectedTeam: (team: string) => void;
@@ -58,6 +57,10 @@ interface DashboardRightPanelProps {
   };
   realOddsData: any[];
   shotDistanceData: any;
+  calculatedImpliedOdds: {
+    overImpliedProb?: number;
+    underImpliedProb?: number;
+  } | null;
 }
 
 export function DashboardRightPanel(props: DashboardRightPanelProps) {
@@ -68,7 +71,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
     hasPremium,
     propsMode,
     setPropsMode,
-    setSearchQuery,
     setSelectedStat,
     gamePropsTeam,
     setSelectedTeam,
@@ -102,6 +104,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
     teamMatchupStats,
     realOddsData,
     shotDistanceData,
+    calculatedImpliedOdds,
   } = props;
 
   const selectedTimeFilter = 'last10'; // Constant value
@@ -127,7 +130,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             return;
           }
           setPropsMode('player');
-          setSearchQuery(''); // Clear search when switching
           // Always set PTS as default for Player Props
           setSelectedStat('pts');
           
@@ -171,7 +173,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
       <button
         onClick={() => {
           setPropsMode('team');
-          setSearchQuery(''); // Clear search when switching
           
           // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
           if (selectedTeam && selectedTeam !== 'N/A') {
@@ -220,6 +221,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
       {propsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
     </p>
   </div>
+
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
   <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
       {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}

@@ -1306,7 +1306,6 @@ export function NBADashboardContent() {
             hasPremium={hasPremium}
             propsMode={propsMode}
             setPropsMode={setPropsMode}
-            setSearchQuery={setSearchQuery}
             setSelectedStat={setSelectedStat}
             gamePropsTeam={gamePropsTeam}
             setSelectedTeam={setSelectedTeam}
@@ -1340,6 +1339,7 @@ export function NBADashboardContent() {
             teamMatchupStats={teamMatchupStats}
             realOddsData={realOddsData}
             shotDistanceData={shotDistanceData}
+            calculatedImpliedOdds={calculatedImpliedOdds}
           />
           
         </div>

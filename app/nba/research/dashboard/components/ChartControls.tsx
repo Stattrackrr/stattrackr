@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, memo, useCallback, startTransition } from 'react';
+import { useState, useMemo, useRef, useEffect, memo, useCallback } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 import { clientLogger } from '@/lib/clientLogger';
@@ -625,9 +625,6 @@ const ChartControls = function ChartControls({
   }, [realOddsData, selectedStat]);
   
   // Auto-set betting line to best available line when odds data loads (only if user hasn't manually set it)
-  // Use a ref to track if we're waiting for odds to stabilize (prevent rapid updates during loading)
-  const oddsStabilizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   useEffect(() => {
     clientLogger.debug('[DEBUG bettingLine useEffect] Triggered', {
       bestLineForStat,
@@ -648,64 +645,48 @@ const ChartControls = function ChartControls({
         bestLineForStat,
         currentBettingLine: bettingLine
       });
-      // Clear any pending timeout
-      if (oddsStabilizeTimeoutRef.current) {
-        clearTimeout(oddsStabilizeTimeoutRef.current);
-      }
       
-      // Wait 100ms for odds to stabilize before updating betting line
-      // This prevents rapid updates when odds are still loading and bestLineForStat is recalculating
-      oddsStabilizeTimeoutRef.current = setTimeout(() => {
-        // Only auto-set if:
-        // 1. The line hasn't been auto-set for this stat yet, OR
-        // 2. The best line has changed from what we last auto-set, OR
-        // 3. The current line is the default 0.5 (meaning no line was stored for this stat)
-        const currentBettingLine = bettingLine;
-        const isDefaultLine = Math.abs(currentBettingLine - 0.5) < 0.01;
-        
-        const shouldAutoSet = 
-          lastAutoSetStatRef.current !== selectedStat ||
-          lastAutoSetLineRef.current === null ||
-          isDefaultLine ||
-          Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
-        
-        if (shouldAutoSet) {
-          // Only update if the current betting line is different from the best line
-          if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
-            // Wrap in startTransition to prevent visible refresh
-            startTransition(() => {
-              onChangeBettingLine(bestLineForStat);
-              setDisplayLine(bestLineForStat);
-            });
-            lastAutoSetLineRef.current = bestLineForStat;
-            lastAutoSetStatRef.current = selectedStat;
-            
-            // Update input field
-            const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-            if (input) {
-              input.value = String(bestLineForStat);
-              transientLineRef.current = bestLineForStat;
-              // Update visual elements
-              if (yAxisConfig) {
-                updateBettingLinePosition(yAxisConfig, bestLineForStat, !!selectedFilterForAxis);
-              }
-              recolorBarsFast(bestLineForStat);
-              updateOverRatePillFast(bestLineForStat);
+      // Only auto-set if:
+      // 1. The line hasn't been auto-set for this stat yet, OR
+      // 2. The best line has changed from what we last auto-set, OR
+      // 3. The current line is the default 0.5 (meaning no line was stored for this stat)
+      const currentBettingLine = bettingLine;
+      const isDefaultLine = Math.abs(currentBettingLine - 0.5) < 0.01;
+      
+      const shouldAutoSet = 
+        lastAutoSetStatRef.current !== selectedStat ||
+        lastAutoSetLineRef.current === null ||
+        isDefaultLine ||
+        Math.abs((lastAutoSetLineRef.current || 0) - bestLineForStat) > 0.01;
+      
+      if (shouldAutoSet) {
+        // Only update if the current betting line is different from the best line
+        if (Math.abs(currentBettingLine - bestLineForStat) > 0.01) {
+          // Update immediately - synchronous update for instant feedback when switching stats
+          onChangeBettingLine(bestLineForStat);
+          setDisplayLine(bestLineForStat);
+          lastAutoSetLineRef.current = bestLineForStat;
+          lastAutoSetStatRef.current = selectedStat;
+          
+          // Update input field
+          const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+          if (input) {
+            input.value = String(bestLineForStat);
+            transientLineRef.current = bestLineForStat;
+            // Update visual elements
+            if (yAxisConfig) {
+              updateBettingLinePosition(yAxisConfig, bestLineForStat, !!selectedFilterForAxis);
             }
-          } else {
-            // Line is already set correctly, just update the refs
-            lastAutoSetLineRef.current = bestLineForStat;
-            lastAutoSetStatRef.current = selectedStat;
+            recolorBarsFast(bestLineForStat);
+            updateOverRatePillFast(bestLineForStat);
           }
+        } else {
+          // Line is already set correctly, just update the refs
+          lastAutoSetLineRef.current = bestLineForStat;
+          lastAutoSetStatRef.current = selectedStat;
         }
-      }, 100); // 100ms debounce to wait for odds to stabilize
-    }
-    
-    return () => {
-      if (oddsStabilizeTimeoutRef.current) {
-        clearTimeout(oddsStabilizeTimeoutRef.current);
       }
-    };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bestLineForStat, selectedStat, oddsLoading, bettingLine]);
   
@@ -1313,6 +1294,8 @@ const ChartControls = function ChartControls({
               const displayPickemVariant = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
               const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
               const shouldShowBookmaker = displayBookmaker !== null;
+              // Show loading state if odds are loading OR if we have odds data but no match yet (still processing)
+              const isProcessingOdds = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker);
               
               return (
                 <div className="hidden sm:block relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={altLinesRef}>
@@ -1321,7 +1304,9 @@ const ChartControls = function ChartControls({
                     className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden"
                   >
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0 overflow-hidden">
-                      {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
+                      {isProcessingOdds ? (
+                        <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                      ) : shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
                         <>
                           {bookmakerInfo.logoUrl ? (
                             <img 
@@ -1883,6 +1868,8 @@ const ChartControls = function ChartControls({
                   const displayPickemVariantMobile = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
                   const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
                   const shouldShowBookmaker = displayBookmaker !== null;
+                  // Show loading state if odds are loading OR if we have odds data but no match yet (still processing)
+                  const isProcessingOddsMobile = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker);
                   
                   return (
                     <div className="sm:hidden relative flex-shrink-0 w-[100px]" ref={altLinesRef}>
@@ -1891,7 +1878,9 @@ const ChartControls = function ChartControls({
                         className="w-full px-2 py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] overflow-hidden"
                       >
                         <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
-                          {shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
+                          {isProcessingOddsMobile ? (
+                            <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                          ) : shouldShowBookmaker && bookmakerInfo && displayBookmaker ? (
                             <>
                               {bookmakerInfo.logoUrl ? (
                                 <img 
@@ -2022,6 +2011,15 @@ const ChartControls = function ChartControls({
                 {selectedStat === 'moneyline' ? (
                   // For moneyline, show odds instead of betting line input
                   (() => {
+                    // Show loading state if odds are loading
+                    if (oddsLoading) {
+                      return (
+                        <div className="px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg">
+                          <div className={`h-5 w-20 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                        </div>
+                      );
+                    }
+                    
                     const bookRowKey = getBookRowKey(selectedStat);
                     const displayBookmaker = (() => {
                       if (!realOddsData || realOddsData.length === 0 || !bookRowKey) return null;

@@ -58,8 +58,8 @@ export const ImpliedOddsWheel = memo(function ImpliedOddsWheel({
     const redEndAngle = redStartAngle + underAngle;
     
     // Adjust font sizes based on size prop
-    const percentFontSize = size <= 80 ? 'text-base' : 'text-xl';
-    const labelFontSize = size <= 80 ? 'text-[10px]' : 'text-xs';
+    const percentFontSize = size <= 90 ? 'text-sm' : 'text-lg';
+    const labelFontSize = size <= 90 ? 'text-[9px]' : 'text-[10px]';
     
     return (
       <svg width={size} height={size} className="transform -rotate-90">
