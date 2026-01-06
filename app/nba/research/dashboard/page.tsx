@@ -618,13 +618,6 @@ const lineMovementInFlightRef = useRef(false);
     return processIntradayMovements(lineMovementData, oddsSnapshots, marketKey);
   }, [lineMovementData, oddsSnapshots, marketKey]);
 
-  // OLD CODE - REMOVED:
-  // if (!LINE_MOVEMENT_ENABLED) {
-  //   return [];
-  // }
-  // if (lineMovementData) {
-      const { lineMovement = [], openingLine, currentLine } = lineMovementData;
-
       if (lineMovement.length > 0) {
         return lineMovement
           .map((movement) => {
