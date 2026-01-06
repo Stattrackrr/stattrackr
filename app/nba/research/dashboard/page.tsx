@@ -615,10 +615,14 @@ const lineMovementInFlightRef = useRef(false);
 
   // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
-    if (!LINE_MOVEMENT_ENABLED) {
-      return [];
-    }
-    if (lineMovementData) {
+    return processIntradayMovements(lineMovementData, oddsSnapshots, marketKey);
+  }, [lineMovementData, oddsSnapshots, marketKey]);
+
+  // OLD CODE - REMOVED:
+  // if (!LINE_MOVEMENT_ENABLED) {
+  //   return [];
+  // }
+  // if (lineMovementData) {
       const { lineMovement = [], openingLine, currentLine } = lineMovementData;
 
       if (lineMovement.length > 0) {
