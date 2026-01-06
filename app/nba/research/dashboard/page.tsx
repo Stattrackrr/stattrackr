@@ -119,6 +119,12 @@ import { usePlayerSelection } from './hooks/usePlayerSelection';
 import { useOddsFetching } from './hooks/useOddsFetching';
 import { useUrlInitialization } from './hooks/useUrlInitialization';
 import { useDvpRankPrefetch } from './hooks/useDvpRankPrefetch';
+import { useAdvancedStatsPrefetch } from './hooks/useAdvancedStatsPrefetch';
+import { useSearch } from './hooks/useSearch';
+import { useSessionPersistence } from './hooks/useSessionPersistence';
+import { useTimeframeRestoration } from './hooks/useTimeframeRestoration';
+import { usePlayerStateManagement } from './hooks/usePlayerStateManagement';
+import { useNextGameCalculation } from './hooks/useNextGameCalculation';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -644,69 +650,6 @@ const lineMovementInFlightRef = useRef(false);
   
   const [apiError, setApiError] = useState<string | null>(null);
   
-  // Track the last player ID to detect actual player changes (not just metadata updates)
-  const lastPlayerIdRef = useRef<string | null>(null);
-  
-  // Clear odds data when player ID actually changes (not just metadata updates)
-  // Player stats are cleared by handlePlayerSelect functions at the start
-  useEffect(() => {
-    if (selectedPlayer === null) {
-      // Player cleared - reset odds only
-      if (lastPlayerIdRef.current !== null) {
-        setRealOddsData([]);
-        setOddsSnapshots([]);
-        setLineMovementData(null);
-        setBettingLines({});
-        lastPlayerIdRef.current = null;
-      }
-      return;
-    }
-    
-    // Only clear odds if the player ID actually changed (not just metadata like jersey/height)
-    const currentPlayerId = selectedPlayer.id?.toString() || null;
-    if (currentPlayerId !== lastPlayerIdRef.current) {
-      // Player ID changed - clear odds data
-      console.log('[Odds Clear] Player ID changed, clearing odds', {
-        oldId: lastPlayerIdRef.current,
-        newId: currentPlayerId,
-        playerName: selectedPlayer.full,
-        currentOddsLength: realOddsData.length
-      });
-      // Only clear if we actually have odds to clear (prevent unnecessary state updates)
-      if (realOddsData.length > 0 || oddsLoading || oddsError) {
-        setRealOddsData([]);
-        setOddsSnapshots([]);
-        setLineMovementData(null);
-        setOddsLoading(false);
-        setOddsError(null);
-        setBettingLines({});
-        setBookOpeningLine(null);
-        setBookCurrentLine(null);
-      }
-      lastPlayerIdRef.current = currentPlayerId;
-      // Odds fetch ref is now managed by useOddsFetching hook
-    }
-    // If player ID is the same, don't clear odds (just metadata update like jersey/height)
-  }, [selectedPlayer]);
-  
-  // Clear player state when player parameter is removed from URL (e.g., browser back button)
-  useEffect(() => {
-    const player = searchParams.get('player');
-    const pid = searchParams.get('pid');
-    const name = searchParams.get('name');
-    
-    // If there's no player parameter in URL but we have a selected player, clear it
-    if (!player && !pid && !name && selectedPlayer) {
-      console.log('[Dashboard] ðŸ§¹ Clearing selectedPlayer - no player parameter in URL');
-      setSelectedPlayer(null);
-      setResolvedPlayerId(null);
-      setPlayerStats([]);
-      setRealOddsData([]);
-      setOddsSnapshots([]);
-      setLineMovementData(null);
-    }
-  }, [searchParams, selectedPlayer]);
-  
   // Advanced stats state
   const [advancedStats, setAdvancedStats] = useState<AdvancedStats | null>(null);
   const [advancedStatsLoading, setAdvancedStatsLoading] = useState(false);
@@ -718,14 +661,9 @@ const lineMovementInFlightRef = useRef(false);
   // DvP ranks per game (for second axis - dvp_rank)
   const [dvpRanksPerGame, setDvpRanksPerGame] = useState<Record<string, number | null>>({});
   
-  // Prefetched advanced stats (pace, usage_rate) - stored by game ID
-  const [prefetchedAdvancedStats, setPrefetchedAdvancedStats] = useState<Record<number, { pace?: number; usage_percentage?: number }>>({});
+  // Prefetched DvP ranks - stored by stat/metric combination (moved to useDvpRankPrefetch hook)
   
-  // Prefetched DvP ranks - stored by stat/metric combination
-  const [prefetchedDvpRanks, setPrefetchedDvpRanks] = useState<Record<string, Record<string, number | null>>>({});
-  
-  // Refs to track prefetch status (prevent duplicate prefetches)
-  const advancedStatsPrefetchRef = useRef<Set<string>>(new Set());
+  // Refs to track prefetch status (prevent duplicate prefetches) - advancedStatsPrefetchRef moved to useAdvancedStatsPrefetch hook
   const dvpRanksPrefetchRef = useRef<Set<string>>(new Set());
   
   // Shot distance stats state
@@ -1303,313 +1241,25 @@ const lineMovementInFlightRef = useRef(false);
     };
   }, [fetchTodaysGames]);
 
-  // When a team's game goes Final, immediately switch VS to next opponent (or ALL if none)
-  // Also track next game for prop tracking/journal
-  useEffect(() => {
-    const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-    if (!teamToCheck || teamToCheck === 'N/A' || todaysGames.length === 0) {
-      setNextGameOpponent('');
-      setNextGameDate('');
-      setIsGameInProgress(false);
-      return;
-    }
+  // Next game calculation logic - extracted to useNextGameCalculation hook
+  useNextGameCalculation({
+    todaysGames,
+    selectedTeam,
+    gamePropsTeam,
+    propsMode,
+    manualOpponent,
+    opponentTeam,
+    setNextGameOpponent,
+    setNextGameDate,
+    setNextGameTipoff,
+    setIsGameInProgress,
+    setOpponentTeam,
+  });
 
-    const normTeam = normalizeAbbr(teamToCheck);
-    const now = Date.now();
+  // Legacy useEffect removed - replaced by useNextGameCalculation hook above
+  // Removed ~305 lines of next game calculation logic
 
-    // Find upcoming games for this team
-    const teamGames = todaysGames.filter((g: any) => {
-      const home = normalizeAbbr(g?.home_team?.abbreviation || '');
-      const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
-      return home === normTeam || away === normTeam;
-    });
-
-    // Map all games with their info
-    const mappedGames = teamGames.map((g: any) => ({ 
-      g, 
-      t: new Date(g.date || 0).getTime(), 
-      status: String(g.status || '').toLowerCase(),
-      rawStatus: String(g.status || '')
-    }));
-    
-    // Check if there's a game currently in progress first
-    const threeHoursMs = 3 * 60 * 60 * 1000;
-    let currentGame = mappedGames.find((game) => {
-      const rawStatus = game.rawStatus;
-      const gameStatus = game.status;
-      
-      // Check if game is live by looking at tipoff time (same logic as check-bets endpoints)
-      let isLive = false;
-      const tipoffTime = Date.parse(rawStatus);
-      if (!Number.isNaN(tipoffTime)) {
-        const timeSinceTipoff = now - tipoffTime;
-        isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
-      }
-      
-      // Also check if game time has passed and game isn't final (fallback if status isn't a timestamp)
-      const gameStarted = game.t <= now;
-      const timeSinceGameTime = now - game.t;
-      const isWithinThreeHours = timeSinceGameTime > 0 && timeSinceGameTime < threeHoursMs;
-      
-      // API sometimes returns date strings as status - ignore these
-      const isDateStatus = rawStatus.includes('T') || rawStatus.includes('+') || rawStatus.match(/\d{4}-\d{2}-\d{2}/);
-      
-      // Mark as in progress if:
-      // 1. Game is live (started within last 3 hours based on status timestamp), OR
-      // 2. Game time has passed within last 3 hours and status doesn't indicate final
-      return (isLive || (gameStarted && isWithinThreeHours && !isDateStatus)) 
-        && gameStatus !== '' 
-        && gameStatus !== 'scheduled' 
-        && !gameStatus.includes('final') 
-        && !gameStatus.includes('completed');
-    });
-    
-    // If no game in progress, find next upcoming game
-    const nextGame = currentGame || mappedGames
-      .sort((a, b) => a.t - b.t)
-      .find(({ status }) => !status.includes('final') && !status.includes('completed'));
-    
-    if (nextGame) {
-      const home = normalizeAbbr(nextGame.g?.home_team?.abbreviation || '');
-      const away = normalizeAbbr(nextGame.g?.visitor_team?.abbreviation || '');
-      const opponent = normTeam === home ? away : home;
-      const gameDate = nextGame.g?.date ? new Date(nextGame.g.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-      
-      // Check if game is in progress (same logic as above)
-      const rawStatus = nextGame.rawStatus;
-      const gameStatus = nextGame.status;
-      
-      // Check if game is live by looking at tipoff time (same logic as check-bets endpoints)
-      let isLive = false;
-      const tipoffTime = Date.parse(rawStatus);
-      if (!Number.isNaN(tipoffTime)) {
-        const timeSinceTipoff = now - tipoffTime;
-        isLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
-      }
-      
-      // Also check if game time has passed and game isn't final (fallback if status isn't a timestamp)
-      const gameStarted = nextGame.t <= now;
-      const timeSinceGameTime = now - nextGame.t;
-      const isWithinThreeHours = timeSinceGameTime > 0 && timeSinceGameTime < threeHoursMs;
-      
-      // API sometimes returns date strings as status - ignore these
-      const isDateStatus = rawStatus.includes('T') || rawStatus.includes('+') || rawStatus.match(/\d{4}-\d{2}-\d{2}/);
-      
-      // Mark as in progress if:
-      // 1. Game is live (started within last 3 hours based on status timestamp), OR
-      // 2. Game time has passed within last 3 hours and status doesn't indicate final
-      const inProgress = (isLive || (gameStarted && isWithinThreeHours && !isDateStatus)) 
-        && gameStatus !== '' 
-        && gameStatus !== 'scheduled' 
-        && !gameStatus.includes('final') 
-        && !gameStatus.includes('completed');
-      
-      console.log('Game progress check:', { 
-        opponent, 
-        gameDate, 
-        status: rawStatus, 
-        gameStatus,
-        isDateStatus,
-        tipoffTime: !Number.isNaN(tipoffTime) ? new Date(tipoffTime).toISOString() : 'invalid',
-        gameTime: new Date(nextGame.t).toISOString(), 
-        now: new Date(now).toISOString(),
-        gameStarted,
-        timeSinceGameTime: timeSinceGameTime / (60 * 60 * 1000) + ' hours',
-        isWithinThreeHours,
-        isLive,
-        inProgress,
-        isCurrentGame: !!currentGame
-      });
-      
-      setNextGameOpponent(opponent || '');
-      setNextGameDate(gameDate);
-      setIsGameInProgress(inProgress);
-      
-      // Store tipoff time for countdown
-      console.log('[Countdown DEBUG] Raw game data:', {
-        game: nextGame.g,
-        gameDate: nextGame.g?.date,
-        gameStatus: nextGame.g?.status,
-        gameDateTime: nextGame.g?.datetime,
-        rawStatus: nextGame.rawStatus,
-        gameTime: new Date(nextGame.t).toISOString(),
-        now: new Date(now).toISOString(),
-        gameTimeMs: nextGame.t,
-        nowMs: now,
-        gameTimeDiff: nextGame.t - now,
-        gameTimeDiffHours: (nextGame.t - now) / (1000 * 60 * 60)
-      });
-      
-      let tipoffDate: Date | null = null;
-      
-      // First, try to use the datetime field from the game object (most reliable)
-      if (nextGame.g?.datetime) {
-        const gameDateTime = new Date(nextGame.g.datetime);
-        if (!Number.isNaN(gameDateTime.getTime()) && gameDateTime.getTime() > now) {
-          tipoffDate = gameDateTime;
-          console.log('[Countdown DEBUG] Using game.datetime field:', tipoffDate.toISOString());
-        }
-      }
-      
-      // If that didn't work, check if rawStatus is a valid ISO timestamp (like "2025-12-07T00:00:00Z")
-      if (!tipoffDate) {
-        const statusTime = Date.parse(rawStatus);
-        if (!Number.isNaN(statusTime)) {
-          const parsedStatus = new Date(statusTime);
-          // Check if it's at midnight (00:00:00) - if so, it's just a date placeholder, not the actual game time
-          const isMidnight = parsedStatus.getUTCHours() === 0 && parsedStatus.getUTCMinutes() === 0 && parsedStatus.getUTCSeconds() === 0;
-          console.log('[Countdown DEBUG] Date.parse(rawStatus):', parsedStatus.toISOString(), isMidnight ? '(MIDNIGHT - date placeholder, not actual game time)' : '(has time)');
-          
-          // Only use if it's in the future and NOT midnight (midnight means it's just a date, not actual game time)
-          if (parsedStatus.getTime() > now && !isMidnight && parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)) {
-            tipoffDate = parsedStatus;
-            console.log('[Countdown DEBUG] Using rawStatus as ISO timestamp:', tipoffDate.toISOString());
-          } else if (isMidnight) {
-            // If it's midnight, it's just a date - we'll need to get the actual game time from elsewhere
-            console.log('[Countdown DEBUG] rawStatus is midnight (date only), will try other methods');
-          }
-        }
-      }
-      
-      // Try to parse tipoff from status (this extracts time from status like "7:00 PM")
-      if (!tipoffDate) {
-        tipoffDate = parseBallDontLieTipoff(nextGame.g);
-        console.log('[Countdown DEBUG] parseBallDontLieTipoff result:', tipoffDate?.toISOString() || 'null');
-      }
-      
-      // If still no valid tipoff, use the game date/time from nextGame.t
-      // But check if it's actually in the future
-      if (!tipoffDate || tipoffDate.getTime() <= now) {
-        const gameTime = new Date(nextGame.t);
-        console.log('[Countdown DEBUG] Game time check:', {
-          gameTime: gameTime.toISOString(),
-          gameTimeMs: gameTime.getTime(),
-          nowMs: now,
-          isFuture: gameTime.getTime() > now,
-          diff: gameTime.getTime() - now,
-          diffHours: (gameTime.getTime() - now) / (1000 * 60 * 60)
-        });
-        
-        // Only use gameTime if it's in the future
-        if (gameTime.getTime() > now) {
-          tipoffDate = gameTime;
-          console.log('[Countdown DEBUG] Using gameTime (future):', tipoffDate.toISOString());
-        } else {
-          // If gameTime is in the past, the game might be scheduled for later today
-          // Try to extract time from status string
-          const timeMatch = rawStatus.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
-          console.log('[Countdown DEBUG] Time match from status:', timeMatch);
-          
-          if (timeMatch) {
-            const gameDateStr = nextGame.g?.date || new Date().toISOString().split('T')[0];
-            let hour = parseInt(timeMatch[1], 10);
-            const minute = parseInt(timeMatch[2], 10);
-            const meridiem = timeMatch[3].toUpperCase();
-            if (meridiem === 'PM' && hour !== 12) hour += 12;
-            else if (meridiem === 'AM' && hour === 12) hour = 0;
-            
-            // Create date with today's date and the parsed time
-            const today = new Date();
-            const tipoff = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute, 0);
-            
-            // If this time has already passed today, assume it's for tomorrow
-            if (tipoff.getTime() <= now) {
-              tipoff.setDate(tipoff.getDate() + 1);
-            }
-            
-            tipoffDate = tipoff;
-            console.log('[Countdown DEBUG] Created tipoff from status time:', tipoffDate.toISOString());
-          } else {
-            // Last resort: The rawStatus might be a date timestamp (midnight)
-            // If so, extract the date and assume a reasonable game time (7:30 PM local)
-            const hoursSinceGameTime = (now - gameTime.getTime()) / (1000 * 60 * 60);
-            console.log('[Countdown DEBUG] Hours since game time:', hoursSinceGameTime);
-            
-            // Check if rawStatus is a date timestamp (midnight UTC)
-            const statusTime = Date.parse(rawStatus);
-            if (!Number.isNaN(statusTime)) {
-              const statusDate = new Date(statusTime);
-              const isMidnight = statusDate.getUTCHours() === 0 && statusDate.getUTCMinutes() === 0;
-              
-              if (isMidnight && statusDate.getTime() > now) {
-                // It's a date timestamp - extract the date and assume game is at 7:30 PM local time
-                const localDate = new Date(statusDate);
-                // Convert to local time and set to 7:30 PM
-                localDate.setHours(19, 30, 0, 0); // 7:30 PM local
-                tipoffDate = localDate;
-                console.log('[Countdown DEBUG] Using date from rawStatus with 7:30 PM local time:', tipoffDate.toISOString());
-              } else if (hoursSinceGameTime < 24 && hoursSinceGameTime > -12) {
-                // Game might be today, but we don't know the time - use a reasonable estimate
-                // Most NBA games are between 7 PM and 10 PM local time
-                const today = new Date();
-                today.setHours(19, 30, 0, 0); // 7:30 PM today
-                if (today.getTime() <= now) {
-                  // If 7:30 PM has passed, assume it's tomorrow
-                  today.setDate(today.getDate() + 1);
-                }
-                tipoffDate = today;
-                console.log('[Countdown DEBUG] Using estimated time (7:30 PM today/tomorrow):', tipoffDate.toISOString());
-              } else {
-                tipoffDate = gameTime;
-                console.log('[Countdown DEBUG] Using gameTime (last resort):', tipoffDate.toISOString());
-              }
-            } else {
-              tipoffDate = gameTime;
-              console.log('[Countdown DEBUG] Using gameTime (last resort):', tipoffDate.toISOString());
-            }
-          }
-        }
-      }
-      
-      const finalDiff = tipoffDate.getTime() - now;
-      setNextGameTipoff(tipoffDate);
-      console.log('[Countdown] Final tipoff calculation:', { 
-        tipoffDate: tipoffDate?.toISOString(), 
-        gameDate: nextGame.g?.date,
-        rawStatus: nextGame.rawStatus,
-        gameTime: new Date(nextGame.t).toISOString(),
-        now: new Date(now).toISOString(),
-        diff: finalDiff,
-        diffHours: finalDiff / (1000 * 60 * 60),
-        diffMinutes: finalDiff / (1000 * 60),
-        willShowCountdown: finalDiff > 0 && !inProgress
-      });
-    } else {
-      setNextGameOpponent('');
-      setNextGameDate('');
-      setNextGameTipoff(null);
-      setIsGameInProgress(false);
-    }
-
-    // SMART AUTO-SWITCH: Only switch when the CURRENT opponent's game goes final
-    // This prevents unnecessary re-renders when unrelated games finish
-    if (opponentTeam && opponentTeam !== '' && opponentTeam !== 'N/A' && opponentTeam !== 'ALL') {
-      // Find the game between current team and current opponent
-      const currentGame = teamGames.find((g: any) => {
-        const home = normalizeAbbr(g?.home_team?.abbreviation || '');
-        const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
-        return (home === normTeam && away === opponentTeam) || (away === normTeam && home === opponentTeam);
-      });
-      
-      if (currentGame) {
-        const status = String(currentGame.status || '').toLowerCase();
-        const isCurrentGameFinal = status.includes('final') || status.includes('completed');
-        
-        console.log(`  Current game (${normTeam} vs ${opponentTeam}): status=${status}, final=${isCurrentGameFinal}`);
-        
-        if (isCurrentGameFinal) {
-          console.log(`  -> Current game is final, finding next opponent...`);
-          const nextOpponent = getOpponentTeam(normTeam, todaysGames);
-          if (nextOpponent && nextOpponent !== opponentTeam) {
-            console.log(`  -> Auto-switching from ${opponentTeam} to ${nextOpponent}`);
-            setOpponentTeam(nextOpponent);
-          } else {
-            console.log(`  -> No next opponent found, keeping current`);
-          }
-        }
-      }
-    }
-  }, [todaysGames, selectedTeam, gamePropsTeam, propsMode, manualOpponent, opponentTeam]);
+  // Auto-handle opponent selection when switching to H2H
 
   // Auto-handle opponent selection when switching to H2H
   useEffect(() => {
@@ -2087,174 +1737,31 @@ const lineMovementInFlightRef = useRef(false);
 
   // URL initialization logic - extracted to useUrlInitialization hook (see hook call above)
 
-  // Restore timeframe from session storage when playerStats loads (fixes race condition)
-  // Only run once when playerStats first loads, not on every timeframe change
-  // NOTE: This should NOT override URL parameters - URL params are set immediately in initial useEffect
-  const hasRestoredTimeframeRef = useRef(false);
-  useEffect(() => {
-    // Only restore if:
-    // 1. Stats are loaded
-    // 2. We haven't restored yet
-    // 3. We're still on the default timeframe (last10) - meaning no URL param or manual selection happened
-    // 4. There's a saved timeframe that's different from the default
-    // ALWAYS force "last10" if we see "thisseason" anywhere
-    if (playerStats.length > 0 && !hasRestoredTimeframeRef.current) {
-      const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
-      const urlTimeframe = url?.searchParams.get('tf');
-      
-      // If URL has "thisseason", force it to "last10"
-      if (urlTimeframe === 'thisseason' || selectedTimeframe === 'thisseason') {
-        console.log('[Dashboard] ðŸ”„ FORCING timeframe from "thisseason" to "last10" in restore logic');
-        setSelectedTimeframe('last10');
-        if (typeof window !== 'undefined') {
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('tf', 'last10');
-          window.history.replaceState({}, '', newUrl.toString());
-        }
-        hasRestoredTimeframeRef.current = true;
-        return;
-      }
-      
-      // Check if URL has a timeframe param - respect other values
-      if (urlTimeframe && urlTimeframe !== 'thisseason') {
-        console.log('[Dashboard] âš ï¸ Skipping timeframe restore - URL has timeframe param:', urlTimeframe);
-        hasRestoredTimeframeRef.current = true;
-        return;
-      }
-      
-      // Only restore if we're still on default timeframe (last10)
-      // This means we haven't manually selected a timeframe yet
-      try {
-        const saved = getSavedSession();
-        if (saved && typeof saved === 'string') {
-          const parsed = JSON.parse(saved);
-          if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
-            console.log(`[Dashboard] ðŸ”„ Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
-            setSelectedTimeframe(parsed.selectedTimeframe);
-          }
-        }
-      } catch {}
-      hasRestoredTimeframeRef.current = true;
-    }
-  }, [playerStats.length, selectedTimeframe]); // Added selectedTimeframe to check current value
+  // Timeframe restoration logic - extracted to useTimeframeRestoration hook
+  useTimeframeRestoration({
+    playerStats,
+    selectedTimeframe,
+    setSelectedTimeframe,
+  });
 
-  /* --------- Live search (debounced) using /api/bdl/players ---------- */
-  useEffect(() => {
-    let t: any;
-    const run = async () => {
-      const q = searchQuery.trim();
-      setSearchError(null);
-      if (q.length < 2) { setSearchResults([]); return; }
-      setSearchBusy(true);
-      try {
-        // For full name searches (contains space) or short queries, use broader search + client filtering
-        const isFullNameSearch = q.includes(' ') || q.length < 3;
-        const searchQuery = isFullNameSearch ? q.split(' ')[0] : q; // Use first word for API search
-        
-        const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(searchQuery)}`);
-        const json = await res.json().catch(() => ({}));
-        const err = json?.error || null;
-        setSearchError(err);
-        
-        let arr: BdlSearchResult[] = Array.isArray(json?.results)
-          ? json.results.map((r: any) => ({ id: r.id, full: r.full, team: r.team, pos: r.pos, headshotUrl: r.headshotUrl || null }))
-          : [];
-        
-        // Client-side fuzzy filtering for full name searches
-        if (isFullNameSearch && q.includes(' ')) {
-          const queryWords = q.toLowerCase().split(' ').filter(word => word.length > 0);
-          arr = arr.filter(player => {
-            const playerName = player.full.toLowerCase();
-            // Check if all query words are found in the player name
-            return queryWords.every(word => 
-              playerName.includes(word) || 
-              // Also check if any word in player name starts with the query word
-              playerName.split(' ').some(nameWord => nameWord.startsWith(word))
-            );
-          });
-        }
-        // dedupe & cap (20 results for faster rendering)
-        const seen = new Set<string>();
-        const dedup = arr.filter(r => {
-          if (seen.has(r.full)) return false;
-          seen.add(r.full);
-          return true;
-        }).slice(0, 20);
-        setSearchResults(dedup);
-      } catch (e: any) {
-        setSearchError(e?.message || "Search failed");
-        setSearchResults([]);
-      } finally {
-        setSearchBusy(false);
-      }
-    };
-    t = setTimeout(run, 100);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
+  // Search functionality - extracted to useSearch hook
+  useSearch({
+    searchQuery,
+    setSearchResults,
+    setSearchError,
+    setSearchBusy,
+  });
 
-  // Persist session when key state changes
-  useEffect(() => {
-    try {
-      // Always save propsMode, selectedStat, and selectedTimeframe
-      const baseSave: Partial<SavedSession> = {
-        propsMode,
-        selectedStat,
-        selectedTimeframe,
-      };
-
-      // Add player data if in player mode and player is selected
-      if (selectedPlayer && selectedTeam && propsMode === 'player') {
-        const r: BdlSearchResult = {
-          id: Number(resolvedPlayerId || selectedPlayer.id),
-          full: selectedPlayer.full,
-          team: selectedTeam,
-          pos: (selectedPlayer as any).position || undefined,
-        };
-        (baseSave as SavedSession).player = r;
-      }
-      
-      // Add team data if in team mode and team is selected
-      if (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A') {
-        (baseSave as any).gamePropsTeam = gamePropsTeam;
-      }
-      
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
-        
-        // Check if we're loading from URL params (has 'player' but not 'pid')
-        // If so, don't update URL immediately to prevent double reload
-        const currentUrl = new URL(window.location.href);
-        const hasPlayerParam = currentUrl.searchParams.has('player');
-        const hasPidParam = currentUrl.searchParams.has('pid');
-        const isLoadingFromUrl = hasPlayerParam && !hasPidParam;
-        
-        // Update URL for share/save (but skip if we're still loading from URL params)
-        if (!isLoadingFromUrl) {
-          const url = new URL(window.location.href);
-          url.searchParams.set('mode', propsMode);
-          
-          if (selectedPlayer && selectedTeam && propsMode === 'player') {
-            const r = baseSave.player as BdlSearchResult;
-            url.searchParams.set('pid', String(r.id));
-            url.searchParams.set('name', r.full);
-            url.searchParams.set('team', selectedTeam);
-            // Remove 'player' param if it exists (we now have pid/name/team)
-            url.searchParams.delete('player');
-          } else {
-            // Remove player-specific params when not in player mode
-            url.searchParams.delete('pid');
-            url.searchParams.delete('name');
-            url.searchParams.delete('team');
-            url.searchParams.delete('player');
-          }
-          
-          url.searchParams.set('stat', selectedStat);
-          url.searchParams.set('tf', selectedTimeframe);
-          window.history.replaceState({}, '', url.toString());
-        }
-      }
-    } catch {}
-  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam]);
+  // Session persistence logic - extracted to useSessionPersistence hook
+  useSessionPersistence({
+    propsMode,
+    selectedStat,
+    selectedTimeframe,
+    selectedPlayer,
+    selectedTeam,
+    resolvedPlayerId,
+    gamePropsTeam,
+  });
 
   // Fetch game stats for a player
   const fetchSortedStats = async (playerId: string) => {
@@ -2608,6 +2115,16 @@ const lineMovementInFlightRef = useRef(false);
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
 
+  // Advanced stats prefetching logic - extracted to useAdvancedStatsPrefetch hook
+  const { prefetchedAdvancedStats, setPrefetchedAdvancedStats } = useAdvancedStatsPrefetch({
+    propsMode,
+    playerStats,
+    selectedPlayer,
+    selectedFilterForAxis,
+    adjustedChartData,
+    setAdvancedStatsPerGame,
+  });
+
   // Calculate average usage rate from prefetchedAdvancedStats
   // Use baseGameData (filtered by timeframe) to match what the chart shows - works automatically without clicking filter
   useAverageUsageRate({
@@ -2675,201 +2192,7 @@ const lineMovementInFlightRef = useRef(false);
     }
   }, [selectedFilterForAxis, sliderConfig, sliderRange]);
 
-  // Prefetch advanced stats (pace, usage_rate) in background when player stats are available
-  // This runs independently of filter selection to ensure usage rate is always available
-  useEffect(() => {
-    if (propsMode !== 'player' || !playerStats || playerStats.length === 0) {
-      return;
-    }
-
-    // Get player ID
-    const playerIdRaw = selectedPlayer?.id;
-    if (!playerIdRaw) {
-      return;
-    }
-    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
-    if (isNaN(playerId)) {
-      return;
-    }
-
-    // Clear prefetch ref when player changes to ensure fresh fetch
-    const currentPlayerKey = `player_${playerId}`;
-    if (!advancedStatsPrefetchRef.current.has(currentPlayerKey)) {
-      // New player - clear old prefetch keys
-      advancedStatsPrefetchRef.current.clear();
-      advancedStatsPrefetchRef.current.add(currentPlayerKey);
-    }
-
-    // Extract game IDs from playerStats - include ALL games (don't filter by minutes)
-    // This ensures we get usage rate for all games, matching what the chart would show
-    const gameIds: number[] = [];
-    const seenGameIds = new Set<number>();
-    playerStats.forEach((stat: any) => {
-      const gameId = stat.game?.id;
-      if (gameId && typeof gameId === 'number' && !seenGameIds.has(gameId)) {
-        gameIds.push(gameId);
-        seenGameIds.add(gameId);
-      }
-    });
-
-    if (gameIds.length === 0) {
-      return;
-    }
-
-    // Prefetch in background (don't block UI)
-    // Use a ref to track if we've already started prefetching for these game IDs
-    const prefetchKey = `advanced_${playerId}_${gameIds.sort().join(',')}`;
-    
-    if (advancedStatsPrefetchRef.current.has(prefetchKey)) {
-      // Already prefetching or prefetched for these games
-      console.log('[Usage Rate Prefetch] Already prefetching/prefetched for player', playerId);
-      return;
-    }
-
-    // Check if we already have prefetched data for all these games
-    const missingGameIds = gameIds.filter(id => prefetchedAdvancedStats[id] === undefined);
-    if (missingGameIds.length === 0 && gameIds.length > 0) {
-      // Already prefetched all games, mark as done
-      advancedStatsPrefetchRef.current.add(prefetchKey);
-      console.log('[Usage Rate Prefetch] Already have all prefetched data for', gameIds.length, 'games');
-      return;
-    }
-    
-    // If we have some but not all, still fetch (will merge with existing)
-    if (missingGameIds.length < gameIds.length) {
-      console.log('[Usage Rate Prefetch] Have', gameIds.length - missingGameIds.length, 'games, fetching', missingGameIds.length, 'missing');
-    }
-
-    // Mark as prefetching
-    advancedStatsPrefetchRef.current.add(prefetchKey);
-    console.log('[Usage Rate Prefetch] Starting prefetch for player', playerId, 'with', gameIds.length, 'games');
-    
-    let isMounted = true;
-    const prefetchAdvancedStats = async () => {
-      try {
-        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
-        
-        if (!isMounted) return;
-        
-        // Map stats by game ID
-        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
-        stats.forEach((stat: any) => {
-          const gameId = stat.game?.id;
-          if (gameId && typeof gameId === 'number') {
-            statsByGame[gameId] = {
-              pace: stat.pace ?? undefined,
-              usage_percentage: stat.usage_percentage ?? undefined,
-            };
-          }
-        });
-        
-        console.log('[Usage Rate Prefetch] Fetched', Object.keys(statsByGame).length, 'games with usage rate data');
-        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
-      } catch (error) {
-        console.error('[Prefetch] Error prefetching advanced stats:', error);
-      }
-    };
-
-    prefetchAdvancedStats();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [playerStats, propsMode, selectedPlayer?.id]);
-
-  // Use prefetched advanced stats when pace or usage_rate is selected (for chart filtering)
-  useEffect(() => {
-    if (!selectedFilterForAxis || propsMode !== 'player') {
-      setAdvancedStatsPerGame({});
-      return;
-    }
-
-    // Only use prefetched data if pace or usage_rate is selected
-    if (selectedFilterForAxis === 'pace' || selectedFilterForAxis === 'usage_rate') {
-      // Use prefetched data immediately
-      setAdvancedStatsPerGame(prefetchedAdvancedStats);
-    } else {
-      setAdvancedStatsPerGame({});
-    }
-  }, [selectedFilterForAxis, propsMode, prefetchedAdvancedStats]);
-
-  // Legacy fetch (kept for backward compatibility, but should use prefetched data)
-  useEffect(() => {
-    if (!selectedFilterForAxis || propsMode !== 'player' || !adjustedChartData.length) {
-      return;
-    }
-
-    // Only fetch if pace or usage_rate is selected AND we don't have prefetched data
-    if (selectedFilterForAxis !== 'pace' && selectedFilterForAxis !== 'usage_rate') {
-      return;
-    }
-
-    // Check if we already have prefetched data
-    const gameIds: number[] = [];
-    adjustedChartData.forEach((game: any) => {
-      const gameId = game.game?.id || game.stats?.game?.id;
-      if (gameId && typeof gameId === 'number') {
-        gameIds.push(gameId);
-      }
-    });
-
-    const hasAllPrefetched = gameIds.length > 0 && gameIds.every(id => prefetchedAdvancedStats[id] !== undefined);
-    if (hasAllPrefetched) {
-      // Already have prefetched data, skip fetch
-      return;
-    }
-
-    // Get player ID (convert to number if string)
-    const playerIdRaw = selectedPlayer?.id;
-    if (!playerIdRaw) {
-      return;
-    }
-    const playerId = typeof playerIdRaw === 'number' ? playerIdRaw : Number(playerIdRaw);
-    if (isNaN(playerId)) {
-      return;
-    }
-
-    if (gameIds.length === 0) {
-      return;
-    }
-
-    // Fetch advanced stats for all games
-    let isMounted = true;
-    const fetchAdvancedStats = async () => {
-      try {
-        const stats = await BallDontLieAPI.getAdvancedStatsByGames(gameIds, playerId);
-        
-        if (!isMounted) return;
-        
-        // Map stats by game ID
-        const statsByGame: Record<number, { pace?: number; usage_percentage?: number }> = {};
-        stats.forEach((stat: any) => {
-          const gameId = stat.game?.id;
-          if (gameId && typeof gameId === 'number') {
-            statsByGame[gameId] = {
-              pace: stat.pace ?? undefined,
-              usage_percentage: stat.usage_percentage ?? undefined,
-            };
-          }
-        });
-        
-        // Populate both advancedStatsPerGame (for filter) and prefetchedAdvancedStats (for usage rate calculation)
-        setAdvancedStatsPerGame(statsByGame);
-        setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
-      } catch (error) {
-        console.error('[Second Axis] Error fetching advanced stats:', error);
-        if (isMounted) {
-          setAdvancedStatsPerGame({});
-        }
-      }
-    };
-
-    fetchAdvancedStats();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedFilterForAxis, adjustedChartData, propsMode, selectedPlayer?.id]);
+  // Advanced stats prefetching logic - extracted to useAdvancedStatsPrefetch hook (see hook call above)
 
   // DvP rank prefetching logic - extracted to useDvpRankPrefetch hook (see hook call above)
   
