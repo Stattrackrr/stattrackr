@@ -105,6 +105,7 @@ import { processIntradayMovementsFinal } from './utils/intradayMovementsFinalUti
 import { useTeammateFilterData } from './hooks/useTeammateFilterData';
 import { useAverageUsageRate } from './hooks/useAverageUsageRate';
 import { useTeammatePrefetch } from './hooks/useTeammatePrefetch';
+import { useAuthHandlers } from './hooks/useAuthHandlers';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -129,6 +130,7 @@ import Image from 'next/image';
 export function NBADashboardContent() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
+  const { handleLogout, handleSidebarSubscription: handleSidebarSubscriptionBase } = useAuthHandlers();
   
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -310,43 +312,7 @@ export function NBADashboardContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
-
-  const handleSidebarSubscription = async () => {
-    if (!isPro) {
-      router.push('/subscription');
-      return;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/subscription');
-        return;
-      }
-
-      const response = await fetch('/api/portal-client', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        router.push('/subscription');
-      }
-    } catch (error) {
-      clientLogger.error('Portal error:', error);
-      router.push('/subscription');
-    }
-  };
+  const handleSidebarSubscription = () => handleSidebarSubscriptionBase(isPro);
 
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
   const [selectedStat, setSelectedStat] = useState('pts');
