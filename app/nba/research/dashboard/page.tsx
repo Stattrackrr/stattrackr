@@ -113,6 +113,8 @@ import { useRosterPreloading } from './hooks/useRosterPreloading';
 import { useTeamRosterPrefetch } from './hooks/useTeamRosterPrefetch';
 import { useTeamInjuries } from './hooks/useTeamInjuries';
 import { usePremiumStats } from './hooks/usePremiumStats';
+import { useSeasonAverages } from './hooks/useSeasonAverages';
+import { usePredictedPace } from './hooks/usePredictedPace';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
