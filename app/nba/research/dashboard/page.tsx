@@ -59,6 +59,7 @@ import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseNa
 import { calculateAvailableBookmakers, calculateSelectedBookmakerData } from './utils/bookmakerUtils';
 import { calculateHitRateStats } from './utils/hitRateStatsUtils';
 import { calculateSelectedPosition } from './utils/positionUtils';
+import { processIntradayMovements } from './utils/intradayMovementsUtils';
 import { 
   TEAM_ID_TO_ABBR, 
   ABBR_TO_TEAM_ID, 
