@@ -203,4 +203,33 @@ export const partitionAltLineItems = (lines: AltLineItem[]): { primary: AltLineI
   // Keep alternate empty (no separation needed)
   // Milestones are excluded as requested
   return { primary: overUnderLines, alternate: [] as AltLineItem[], milestones: [] as AltLineItem[] };
-};
+}
+
+/**
+ * Convert American odds to decimal format
+ */
+export function americanToDecimal(odds: string | undefined | null): string {
+  if (!odds || odds === 'N/A') return 'N/A';
+  const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
+  if (isNaN(n)) return odds;
+  const dec = n > 0 ? (1 + n / 100) : (1 + 100 / Math.abs(n));
+  return dec.toFixed(2);
+}
+
+/**
+ * Normalize American odds format (ensure positive odds show leading '+')
+ */
+export function normalizeAmerican(odds: string | undefined | null): string {
+  if (!odds || odds === 'N/A') return 'N/A';
+  const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
+  if (isNaN(n)) return odds;
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
+/**
+ * Format odds based on the selected odds format
+ */
+export function fmtOdds(odds: string | undefined | null, oddsFormat: 'american' | 'decimal'): string {
+  if (!odds || odds === 'N/A') return 'N/A';
+  return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
+}

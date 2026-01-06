@@ -55,7 +55,8 @@ import PlayerBoxScore from './components/PlayerBoxScore';
 import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS, LINE_MOVEMENT_ENABLED } from './constants';
 import { updateBettingLinePosition, getUnifiedTooltipStyle } from './utils/chartUtils';
 import { createChartLabelFormatter } from './utils/chartFormatters';
-import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey } from './utils/oddsUtils';
+import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey, americanToDecimal, normalizeAmerican, fmtOdds as fmtOddsUtil } from './utils/oddsUtils';
+import { calculateAvailableBookmakers, calculateSelectedBookmakerData } from './utils/bookmakerUtils';
 import { 
   TEAM_ID_TO_ABBR, 
   ABBR_TO_TEAM_ID, 
@@ -5243,25 +5244,8 @@ const lineMovementInFlightRef = useRef(false);
     };
   }, [selectedPlayer, selectedTeam, gamePropsTeam, propsMode]);
 
-  const americanToDecimal = (odds: string | undefined | null): string => {
-    if (!odds || odds === 'N/A') return 'N/A';
-    const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
-    if (isNaN(n)) return odds;
-    const dec = n > 0 ? (1 + n / 100) : (1 + 100 / Math.abs(n));
-    return dec.toFixed(2);
-  };
-
-  // Ensure positive American odds show a leading '+' and strip any surrounding noise
-  const normalizeAmerican = (odds: string | undefined | null): string => {
-    if (!odds || odds === 'N/A') return 'N/A';
-    const n = parseInt(odds.replace(/[^+\-\d]/g, ''), 10);
-    if (isNaN(n)) return odds;
-    return n > 0 ? `+${n}` : `${n}`;
-  };
-
   const fmtOdds = (odds: string | undefined | null): string => {
-    if (!odds || odds === 'N/A') return 'N/A';
-    return oddsFormat === 'decimal' ? americanToDecimal(odds) : normalizeAmerican(odds);
+    return fmtOddsUtil(odds, oddsFormat);
   };
 
   // Available bookmakers with valid over/under odds for selected stat
@@ -5293,49 +5277,8 @@ const lineMovementInFlightRef = useRef(false);
 
   // Extract FanDuel's line and odds for selected stat
   const selectedBookmakerData = useMemo(() => {
-    if (!realOddsData || realOddsData.length === 0 || !selectedStat) return { line: null, name: null, overOdds: null, underOdds: null };
-    
-    const bookRowKey = getBookRowKey(selectedStat);
-    if (!bookRowKey) return { line: null, name: null, overOdds: null, underOdds: null };
-    
-    // Always use FanDuel, main line only (no alternates)
-    const fanduelBook = realOddsData.find((book: any) => {
-      const baseName = ((book as any)?.meta?.baseName || book?.name || '').toLowerCase();
-      return baseName === 'fanduel';
-    });
-    
-    if (!fanduelBook) return { line: null, name: null, overOdds: null, underOdds: null };
-    
-    const meta = (fanduelBook as any)?.meta;
-    // Exclude alternate lines (variantLabel indicates alternate)
-    if (meta?.variantLabel) return { line: null, name: null, overOdds: null, underOdds: null };
-    
-    const statData = (fanduelBook as any)[bookRowKey];
-    if (!statData || statData.line === 'N/A') {
-      return { line: null, name: null, overOdds: null, underOdds: null };
-    }
-    
-    const lineValue = parseFloat(statData.line);
-    const displayName = (meta?.baseName || fanduelBook?.name || 'FanDuel');
-    
-    // Parse odds
-    const overOddsStr = statData.over;
-    const underOddsStr = statData.under;
-    
-    const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
-      ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
-      : null;
-    const underOdds = (underOddsStr && underOddsStr !== 'N/A')
-      ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
-      : null;
-    
-    return {
-      line: Number.isFinite(lineValue) ? lineValue : null,
-      name: displayName,
-      overOdds: Number.isFinite(overOdds) ? overOdds : null,
-      underOdds: Number.isFinite(underOdds) ? underOdds : null,
-    };
-  }, [realOddsData, selectedStat, getBookRowKey]);
+    return calculateSelectedBookmakerData(realOddsData, selectedStat);
+  }, [realOddsData, selectedStat]);
 
   const selectedBookmakerLine = selectedBookmakerData.line;
   const selectedBookmakerName = selectedBookmakerData.name;
@@ -5359,15 +5302,6 @@ const lineMovementInFlightRef = useRef(false);
 
   // Normal distribution CDF (Cumulative Distribution Function) approximation
   // Returns the probability that a value from a standard normal distribution is <= z
-  const normalCDF = (z: number): number => {
-    // Abramowitz and Stegun approximation (accurate to ~0.0002)
-    const t = 1 / (1 + 0.2316419 * Math.abs(z));
-    const d = 0.3989423 * Math.exp(-z * z / 2);
-    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-    return z > 0 ? 1 - p : p;
-  };
-
-
   return (
     <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <DashboardStyles />
