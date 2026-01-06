@@ -77,20 +77,29 @@ export function calculateSelectedBookmakerData(
   }
   
   const statData = (fanduelBook as any)[bookRowKey];
-  if (!statData || statData.line === 'N/A' || statData.over === 'N/A' || statData.under === 'N/A') {
+  if (!statData || statData.line === 'N/A') {
     return { line: null, name: null, overOdds: null, underOdds: null };
   }
   
   const lineValue = parseFloat(statData.line);
-  if (isNaN(lineValue)) {
-    return { line: null, name: null, overOdds: null, underOdds: null };
-  }
+  const displayName = (meta?.baseName || fanduelBook?.name || 'FanDuel');
+  
+  // Parse odds
+  const overOddsStr = statData.over;
+  const underOddsStr = statData.under;
+  
+  const overOdds = (overOddsStr && overOddsStr !== 'N/A') 
+    ? (typeof overOddsStr === 'string' ? parseFloat(overOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(overOddsStr)))
+    : null;
+  const underOdds = (underOddsStr && underOddsStr !== 'N/A')
+    ? (typeof underOddsStr === 'string' ? parseFloat(underOddsStr.replace(/[^0-9.+-]/g, '')) : parseFloat(String(underOddsStr)))
+    : null;
   
   return {
-    line: lineValue,
-    name: meta?.baseName || fanduelBook?.name || 'FanDuel',
-    overOdds: statData.over,
-    underOdds: statData.under,
+    line: Number.isFinite(lineValue) ? lineValue : null,
+    name: displayName,
+    overOdds: Number.isFinite(overOdds) ? overOdds : null,
+    underOdds: Number.isFinite(underOdds) ? underOdds : null,
   };
 }
 
