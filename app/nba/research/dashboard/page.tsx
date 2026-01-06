@@ -83,7 +83,8 @@ import { currentNbaSeason, parseMinutes } from './utils/playerUtils';
 import { fetchSortedStatsCore } from './utils/playerStatsUtils';
 import { fetchTeamGamesData as fetchTeamGamesDataCore, cacheAllTeamsInBackground as cacheAllTeamsInBackgroundCore, fetchGameDataForTeam as fetchGameDataForTeamCore } from './utils/teamGamesUtils';
 import { fetchTodaysGamesCore } from './utils/fetchTodaysGamesUtils';
-import { fetchBdlPlayerData, parseBdlHeight } from './utils/playerDataUtils';
+import { fetchBdlPlayerData, parseBdlHeight, resolvePlayerId, parseEspnHeight, fetchEspnPlayerData, fetchEspnPlayerDataCore, fetchAdvancedStatsCore, fetchShotDistanceStatsCore } from './utils/playerDataUtils';
+import { fetchTeamDepthChart, resolveTeammateIdFromName } from './utils/depthChartUtils';
 import { getEasternOffsetMinutes, parseBallDontLieTipoff } from './utils/dateUtils';
 import { processBaseGameData } from './utils/baseGameDataUtils';
 import { processFilteredGameData } from './utils/filteredGameDataUtils';
@@ -2115,19 +2116,6 @@ const lineMovementInFlightRef = useRef(false);
   }, [propsMode, gamePropsTeam, selectedTeam, opponentTeam]);
 
   // Function to fetch a single team's depth chart (with caching to prevent rate limits)
-  const fetchTeamDepthChart = async (team: string): Promise<DepthChartData | null> => {
-    try {
-      if (!team || team === 'N/A') return null;
-      const url = `/api/depth-chart?team=${encodeURIComponent(team)}`;
-      // Use cachedFetch to prevent duplicate requests and respect rate limits
-      const js = await cachedFetch(url, undefined, 300000); // Cache for 5 minutes
-      if (!js || !js.success) return null;
-      return js?.depthChart as DepthChartData | null;
-    } catch (error) {
-      console.warn(`Failed to fetch depth chart for ${team}:`, error);
-      return null;
-    }
-  };
 
   // Prefetch rosters for current teams (specific to current mode)
   useEffect(() => {
@@ -2192,27 +2180,6 @@ const lineMovementInFlightRef = useRef(false);
     return roster || null;
   }, [propsMode, playerTeamRoster, allTeamRosters, originalPlayerTeam]);
   
-  // Resolve BDL player id from a name if depth chart item lacks an id
-  const resolveTeammateIdFromName = useCallback(async (name: string): Promise<number | null> => {
-    try {
-      if (!name) return null;
-      const q = new URLSearchParams();
-      q.set('endpoint', '/players');
-      q.set('search', name);
-      q.set('per_page', '100');
-      const url = `/api/balldontlie?${q.toString()}`;
-      const res = await fetch(url, { cache: 'no-store' }).catch(() => null);
-      const js = await res?.json().catch(() => ({})) as any;
-      const arr = Array.isArray(js?.data) ? js.data : [];
-      if (arr.length === 0) return null;
-      // Prefer exact full-name match
-      const exact = arr.find((p: any) => `${p.first_name} ${p.last_name}`.trim().toLowerCase() === name.trim().toLowerCase());
-      const chosen = exact || arr[0];
-      return typeof chosen?.id === 'number' ? chosen.id : null;
-    } catch {
-      return null;
-    }
-  }, []);
   // Effect moved below where baseGameData is declared
 
   // Resolve selected player's exact position from depth chart (after roster states are ready)
@@ -2921,95 +2888,10 @@ const lineMovementInFlightRef = useRef(false);
     } catch {}
   }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam]);
 
-  // Resolve playerId with best match (if needed)
-  const resolvePlayerId = async (fullName: string, teamAbbr?: string): Promise<string | null> => {
-    try {
-      const params = new URLSearchParams({ q: fullName });
-      if (teamAbbr) params.set('team', teamAbbr);
-      const res = await fetch(`/api/bdl/players?${params.toString()}`);
-      const j = await res.json().catch(() => ({}));
-      const best = j?.best;
-      return best?.id ? String(best.id) : null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Parse ESPN height format (total inches or "6'10") into feet and inches
-  const parseEspnHeight = (height: any): { feet?: number; inches?: number } => {
-    console.log('ðŸ€ ESPN height data:', height, 'Type:', typeof height);
-    
-    if (!height) return {};
-    
-    // If it's a number (total inches)
-    if (typeof height === 'number' || /^\d+$/.test(String(height))) {
-      const totalInches = parseInt(String(height), 10);
-      const feet = Math.floor(totalInches / 12);
-      const inches = totalInches % 12;
-      console.log(`ðŸ€ Converted ${totalInches}" to ${feet}'${inches}"`);
-      return { feet, inches };
-    }
-    
-    // Convert to string for other formats
-    const heightStr = String(height);
-    
-    // ESPN format is like "6'10" or "6'10\"" or "6-10"
-    const match = heightStr.match(/(\d+)['-](\d+)/);
-    if (match) {
-      const feet = parseInt(match[1], 10);
-      const inches = parseInt(match[2], 10);
-      console.log(`ðŸ€ Parsed height: ${feet}'${inches}"`);
-      return { feet, inches };
-    }
-    
-    console.log(`âŒ Could not parse height: "${heightStr}"`);
-    return {};
-  };
-
-  // Fetch ESPN player data (jersey, height, etc.)
-  const fetchEspnPlayerData = async (playerName: string, team?: string): Promise<EspnPlayerData | null> => {
-    return await fetchEspnPlayerDataCore(playerName, team);
-  };
-
-
   // Fetch game stats for a player
   const fetchSortedStats = async (playerId: string) => {
     return await fetchSortedStatsCore(playerId, selectedTimeframe);
   };
-  
-  // Core function to fetch advanced stats (without UI state updates)
-  const fetchAdvancedStatsCore = async (playerId: string) => {
-    const playerIdNum = parseInt(playerId);
-    if (isNaN(playerIdNum)) {
-      throw new Error('Invalid player ID');
-    }
-    
-    const season = currentNbaSeason();
-    let stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season));
-    
-    if (stats.length === 0) {
-      // If no current season stats, try previous season
-      stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season - 1));
-    }
-    
-    return stats.length > 0 ? stats[0] : null;
-  };
-
-  // Core function to fetch ESPN player data (without UI state updates) 
-  const fetchEspnPlayerDataCore = async (playerName: string, team?: string) => {
-    try {
-      const params = new URLSearchParams({ name: playerName });
-      if (team) params.set('team', team.toLowerCase());
-      const res = await fetch(`/api/espn/player?${params.toString()}`);
-      const json = await res.json();
-      return json.data || null;
-    } catch (error) {
-      console.warn('Failed to fetch ESPN player data:', error);
-      return null;
-    }
-  };
-
-
   
   // Track current fetch to prevent race conditions
   const advancedStatsFetchRef = useRef<string | null>(null);
@@ -3128,14 +3010,11 @@ const lineMovementInFlightRef = useRef(false);
     setShotDistanceLoading(true);
     
     try {
-      const season = currentNbaSeason();
-      const response = await fetch(`/api/bdl/shot-distance?player_id=${playerId}&season=${season}`);
-      const data = await response.json();
+      const shotData = await fetchShotDistanceStatsCore(playerId);
       
       // Only update if this is still the current fetch (prevent race conditions)
       if (shotDistanceFetchRef.current === playerId) {
-        if (data && Array.isArray(data.data) && data.data.length > 0) {
-          const shotData = data.data[0].stats;
+        if (shotData) {
           setShotDistanceData(shotData);
           // Save to sessionStorage for persistence across refreshes
           if (typeof window !== 'undefined') {

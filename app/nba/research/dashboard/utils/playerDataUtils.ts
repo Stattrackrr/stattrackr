@@ -1,4 +1,6 @@
-import { EspnPlayerData } from '../types';
+import { EspnPlayerData, AdvancedStats } from '../types';
+import { BallDontLieAPI } from '../api';
+import { currentNbaSeason } from './playerUtils';
 
 /**
  * Resolve playerId with best match (if needed)
@@ -129,5 +131,45 @@ export function parseBdlHeight(height: string | number | null | undefined): { fe
   }
   
   return {};
+}
+
+/**
+ * Core function to fetch advanced stats (without UI state updates)
+ */
+export async function fetchAdvancedStatsCore(playerId: string): Promise<AdvancedStats | null> {
+  const playerIdNum = parseInt(playerId);
+  if (isNaN(playerIdNum)) {
+    throw new Error('Invalid player ID');
+  }
+  
+  const season = currentNbaSeason();
+  let stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season));
+  
+  if (stats.length === 0) {
+    // If no current season stats, try previous season
+    stats = await BallDontLieAPI.getAdvancedStats([playerIdNum], String(season - 1));
+  }
+  
+  return stats.length > 0 ? stats[0] : null;
+}
+
+/**
+ * Core function to fetch shot distance stats (without UI state updates)
+ */
+export async function fetchShotDistanceStatsCore(playerId: string): Promise<any | null> {
+  try {
+    const season = currentNbaSeason();
+    const response = await fetch(`/api/bdl/shot-distance?player_id=${playerId}&season=${season}`);
+    const data = await response.json();
+    
+    if (data && Array.isArray(data.data) && data.data.length > 0) {
+      return data.data[0].stats;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch shot distance stats:', error);
+    return null;
+  }
 }
 
