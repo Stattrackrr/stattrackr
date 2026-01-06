@@ -3385,110 +3385,25 @@ const lineMovementInFlightRef = useRef(false);
   const [oddsError, setOddsError] = useState<string | null>(null);
 
   // Calculate predicted pace from betting total line
-  useEffect(() => {
-    if (!realOddsData || realOddsData.length === 0 || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
-      setPredictedPace(null);
-      return;
-    }
-
-    // Find Total line from odds data
-    let totalLine: number | null = null;
-    for (const book of realOddsData) {
-      const totalData = (book as any)?.Total;
-      if (totalData && totalData.line && totalData.line !== 'N/A') {
-        const lineValue = parseFloat(totalData.line);
-        if (!isNaN(lineValue) && lineValue > 0) {
-          // Use the first valid total line found (or could average them)
-          totalLine = lineValue;
-          break;
-        }
-      }
-    }
-
-    if (totalLine === null) {
-      setPredictedPace(null);
-      return;
-    }
-
-    // Convert total points to predicted pace
-    // Formula: Pace â‰ˆ Total / (2 * avg_points_per_possession)
-    // Average NBA points per possession is ~1.12
-    // So: Pace â‰ˆ Total / 2.24
-    // We'll use a more accurate formula based on historical data
-    // Typical range: Total 200-240, Pace 95-105
-    // Linear relationship: Pace = (Total - 200) * (10/40) + 95 = (Total - 200) * 0.25 + 95
-    // Or more accurate: Pace = Total / 2.2 (simpler)
-    const calculatedPace = totalLine / 2.2;
-    
-    // Clamp to reasonable NBA pace range (90-110)
-    const clampedPace = Math.max(90, Math.min(110, calculatedPace));
-    
-    console.log('[Dashboard] Calculated predicted pace from total:', { totalLine, calculatedPace, clampedPace });
-    setPredictedPace(clampedPace);
-  }, [realOddsData, selectedTeam, opponentTeam, propsMode]);
+  // Calculate predicted pace from betting total line
+  usePredictedPace({
+    propsMode,
+    realOddsData,
+    selectedTeam,
+    opponentTeam,
+    setPredictedPace,
+  });
 
   // Calculate season averages (FG%, minutes, game pace) from playerStats
-  useEffect(() => {
-    if (!playerStats || playerStats.length === 0 || propsMode !== 'player') {
-      setSeasonFgPct(null);
-      setAverageUsageRate(null);
-      setAverageMinutes(null);
-      setAverageGamePace(null);
-      return;
-    }
+  useSeasonAverages({
+    propsMode,
+    playerStats,
+    setSeasonFgPct,
+    setAverageUsageRate,
+    setAverageMinutes,
+    setAverageGamePace,
+  });
 
-    // Calculate average FG% from all games
-    const fgPctValues = playerStats
-      .map(stats => stats.fg_pct)
-      .filter((pct): pct is number => pct !== null && pct !== undefined && !isNaN(pct));
-
-    if (fgPctValues.length === 0) {
-      setSeasonFgPct(null);
-    } else {
-      const averageFgPct = fgPctValues.reduce((sum, pct) => sum + pct, 0) / fgPctValues.length;
-      // Convert to percentage (multiply by 100)
-      setSeasonFgPct(averageFgPct * 100);
-    }
-
-    // Calculate average minutes from all games
-    const minutesValues = playerStats
-      .map(stats => parseMinutes(stats.min))
-      .filter((min): min is number => min !== null && min !== undefined && !isNaN(min) && min > 0);
-
-    if (minutesValues.length === 0) {
-      setAverageMinutes(null);
-    } else {
-      const avgMinutes = minutesValues.reduce((sum, min) => sum + min, 0) / minutesValues.length;
-      setAverageMinutes(avgMinutes);
-    }
-
-    // Calculate average game pace from all games
-    const paceValues: number[] = [];
-    for (const stats of playerStats) {
-      const game = stats.game;
-      if (!game) continue;
-
-      const homeTeam = game.home_team?.abbreviation;
-      const awayTeam = game.visitor_team?.abbreviation;
-      
-      if (!homeTeam || !awayTeam) continue;
-
-      const homePace = getTeamPace(normalizeAbbr(homeTeam));
-      const awayPace = getTeamPace(normalizeAbbr(awayTeam));
-
-      if (homePace > 0 && awayPace > 0) {
-        const gamePace = (homePace + awayPace) / 2;
-        paceValues.push(gamePace);
-      }
-    }
-
-    if (paceValues.length === 0) {
-      setAverageGamePace(null);
-    } else {
-      const avgPace = paceValues.reduce((sum, pace) => sum + pace, 0) / paceValues.length;
-      setAverageGamePace(avgPace);
-    }
-  }, [playerStats, propsMode]);
 
 
   // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
