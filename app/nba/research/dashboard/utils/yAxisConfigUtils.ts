@@ -126,3 +126,4 @@ export function calculateYAxisConfig({
   return { domain: [minYAxis, maxYAxis], ticks, dataMin: minValue, dataMax: maxValue };
 }
 
+

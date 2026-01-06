@@ -458,10 +458,25 @@ const ChartControls = function ChartControls({
     setDisplayLine(bettingLine);
   }, [selectedStat]);
   
+  // Track last bettingLine to prevent unnecessary updates
+  const lastBettingLineRef = useRef(bettingLine);
+  
   // Sync displayLine with bettingLine when it changes externally
   useEffect(() => {
+    // Skip if bettingLine hasn't actually changed
+    if (Math.abs(lastBettingLineRef.current - bettingLine) < 0.01) {
+      return;
+    }
+    lastBettingLineRef.current = bettingLine;
+    
     if (!hasManuallySetLineRef.current) {
-      setDisplayLine(bettingLine);
+      // Only update if displayLine is actually different to prevent infinite loops
+      setDisplayLine(prev => {
+        if (Math.abs(prev - bettingLine) < 0.01) {
+          return prev; // No change needed
+        }
+        return bettingLine;
+      });
       
       // Also update the input field if it exists (for URL-based line changes, especially for steals/blocks)
       // Use setTimeout to ensure the input element exists after render
@@ -483,7 +498,7 @@ const ChartControls = function ChartControls({
         }
       }, 0);
     }
-  }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
+  }, [bettingLine]); // Only depend on bettingLine - other values are stable or don't need to trigger re-runs
   
   // Helper function to get bookmaker info
   const normalizeBookNameForLookup = (name: string) => {

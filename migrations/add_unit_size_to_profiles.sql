@@ -20,3 +20,4 @@ COMMENT ON COLUMN profiles.unit_size IS 'The dollar amount that represents 1 uni
 
 
 
+

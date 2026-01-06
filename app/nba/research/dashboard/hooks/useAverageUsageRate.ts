@@ -150,3 +150,4 @@ export function useAverageUsageRate({
   }, [prefetchedAdvancedStats, baseGameData, propsMode, selectedPlayer?.id, setAverageUsageRate, setPrefetchedAdvancedStats]);
 }
 
+

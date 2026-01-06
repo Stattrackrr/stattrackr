@@ -68,3 +68,4 @@ export function calculateSliderConfig({
   return { min, max, values };
 }
 
+

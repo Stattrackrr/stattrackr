@@ -125,6 +125,28 @@ import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { useTimeframeRestoration } from './hooks/useTimeframeRestoration';
 import { usePlayerStateManagement } from './hooks/usePlayerStateManagement';
 import { useNextGameCalculation } from './hooks/useNextGameCalculation';
+import { useLastSeasonStatsFetch } from './hooks/useLastSeasonStatsFetch';
+import { useTeamLogos } from './hooks/useTeamLogos';
+import { useTeamMatchupStats } from './hooks/useTeamMatchupStats';
+import { useOpponentUpdate } from './hooks/useOpponentUpdate';
+import { useGamesLoading } from './hooks/useGamesLoading';
+import { useH2hOpponentSelection } from './hooks/useH2hOpponentSelection';
+import { useTeamModeGameData } from './hooks/useTeamModeGameData';
+import { usePremiumStatsRestoration } from './hooks/usePremiumStatsRestoration';
+import { useTeammateFilterReset } from './hooks/useTeammateFilterReset';
+import { useCoreDataReady } from './hooks/useCoreDataReady';
+import { useLast5GamesPrefetch } from './hooks/useLast5GamesPrefetch';
+import { useDropdownClose } from './hooks/useDropdownClose';
+import { useBestLineUpdate } from './hooks/useBestLineUpdate';
+import { useSliderRangeInit } from './hooks/useSliderRangeInit';
+import { useProjectedMinutes } from './hooks/useProjectedMinutes';
+import { useSubscriptionSuccess } from './hooks/useSubscriptionSuccess';
+import { useProfileMenuClose } from './hooks/useProfileMenuClose';
+import { useOddsFormat } from './hooks/useOddsFormat';
+import { useCountdownTimer } from './hooks/useCountdownTimer';
+import { useSubscriptionCheck } from './hooks/useSubscriptionCheck';
+import { useLineMovement } from './hooks/useLineMovement';
+import { useStatUrlSync } from './hooks/useStatUrlSync';
 import { DashboardStyles } from './components/DashboardStyles';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardRightPanel } from './components/DashboardRightPanel';
@@ -171,165 +193,28 @@ export function NBADashboardContent() {
   const [isMinutesFilterOpen, setIsMinutesFilterOpen] = useState<boolean>(false);
   // With/Without filters - states will be defined after roster setup
 
-  // Check for success parameter from checkout
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('success') === 'true') {
-      alert('âœ… Subscription successful! Welcome to Pro! Your Player Props features are now unlocked.');
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
+  // Subscription success check - extracted to useSubscriptionSuccess hook
+  useSubscriptionSuccess();
 
   // Get user info and subscription status on mount
   // Cache subscription status to avoid frequent checks
-  useEffect(() => {
-    let isMounted = true;
-    let subscriptionCheckInterval: NodeJS.Timeout | null = null;
-    let lastSubscriptionStatus: { isActive: boolean; isPro: boolean } | null = null;
-    
-    const checkSubscription = async (skipCache = false) => {
-      // Get session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        if (isMounted) {
-          // No session - redirect to login with return path (non-blocking)
-          setTimeout(() => {
-            router.push('/login?redirect=/nba/research/dashboard');
-          }, 0);
-        }
-        return;
-      }
+  // Subscription check - extracted to useSubscriptionCheck hook
+  useSubscriptionCheck({
+    setUserEmail,
+    setUsername,
+    setAvatarUrl,
+    setIsPro,
+  });
 
-      if (!isMounted) return;
-
-      setUserEmail(session.user.email || null);
-      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-      setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
-      
-      try {
-        // Check Pro access - query database directly
-        const { data: profile } = await (supabase
-          .from('profiles') as any)
-          .select('subscription_status, subscription_tier')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (!isMounted) return;
-        
-        let isActive = false;
-        let isProTier = false;
-        
-        if (profile) {
-          // Use profiles table if available
-          const profileData = profile as any;
-          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-          isProTier = profileData.subscription_tier === 'pro';
-        } else {
-          // Fallback to user_metadata for dev testing
-          const metadata = session.user.user_metadata || {};
-          isActive = metadata.subscription_status === 'active';
-          isProTier = metadata.subscription_plan === 'pro';
-        }
-        
-        const proStatus = isActive && isProTier;
-        
-        // Cache active subscription status (to prevent logouts on errors)
-        // But always update if subscription expires (isActive becomes false)
-        if (isActive) {
-          lastSubscriptionStatus = { isActive: true, isPro: proStatus };
-        } else {
-          // Subscription expired - clear cache and update immediately
-          lastSubscriptionStatus = null;
-        }
-        
-        // Always update if status changed, subscription expired, or if this is the first check
-        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          clientLogger.debug('ðŸ” Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
-          
-          if (isMounted) {
-            setIsPro(proStatus);
-          }
-          
-          if (isActive) {
-            lastSubscriptionStatus = { isActive, isPro: proStatus };
-          }
-        }
-      } catch (error) {
-        clientLogger.error('Error checking subscription:', error);
-        // If we have a cached active subscription, keep it (never log out active subscribers)
-        if (lastSubscriptionStatus?.isActive && isMounted) {
-          clientLogger.debug('ðŸ” Using cached active subscription status due to error');
-          setIsPro(lastSubscriptionStatus.isPro);
-        }
-      }
-    };
-    
-    // Initial check
-    checkSubscription(true);
-    
-    // Periodic check every 5 minutes (instead of on every token refresh)
-    subscriptionCheckInterval = setInterval(() => {
-      if (isMounted) {
-        checkSubscription();
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    // Set up listener only for SIGNED_OUT and SIGNED_IN (not TOKEN_REFRESHED)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        if (isMounted) {
-          lastSubscriptionStatus = null;
-          setIsPro(false);
-          router.push('/login?redirect=/nba/research/dashboard');
-        }
-      }
-      // Only check on SIGNED_IN (not TOKEN_REFRESHED to avoid frequent checks)
-      else if (event === 'SIGNED_IN' && isMounted && session?.user) {
-        checkSubscription(true);
-      }
-    });
-    
-    return () => {
-      isMounted = false;
-      if (subscriptionCheckInterval) {
-        clearInterval(subscriptionCheckInterval);
-      }
-      subscription?.unsubscribe();
-    };
-  }, [router]);
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (
-        journalDropdownRef.current &&
-        !journalDropdownRef.current.contains(target) &&
-        !target.closest('[data-journal-button]')
-      ) {
-        setShowJournalDropdown(false);
-      }
-      if (
-        profileDropdownRef.current &&
-        !profileDropdownRef.current.contains(target) &&
-        !target.closest('[data-profile-button]')
-      ) {
-        setShowProfileDropdown(false);
-      }
-      if (
-        settingsDropdownRef.current &&
-        !settingsDropdownRef.current.contains(target) &&
-        !target.closest('[data-settings-button]')
-      ) {
-        setShowSettingsDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Profile menu close - extracted to useProfileMenuClose hook
+  useProfileMenuClose({
+    journalDropdownRef,
+    profileDropdownRef,
+    settingsDropdownRef,
+    setShowJournalDropdown,
+    setShowProfileDropdown,
+    setShowSettingsDropdown,
+  });
 
   const handleSidebarSubscription = () => handleSidebarSubscriptionBase(isPro);
 
@@ -357,215 +242,7 @@ export function NBADashboardContent() {
   const statFromUrlRef = useRef(false);
   // Track if user manually selected a stat (to prevent default logic from overriding)
   const userSelectedStatRef = useRef(false);
-  // Store the initial stat from URL immediately on mount (before any navigation)
-  const initialStatFromUrlRef = useRef<string | null>(null);
-  const hasCapturedInitialStatRef = useRef(false);
   
-  // Wrapper for setSelectedStat that marks it as a user selection and updates URL immediately
-  const handleStatSelect = useCallback((stat: string) => {
-    userSelectedStatRef.current = true; // Mark as user selection
-    setSelectedStat(stat);
-    clientLogger.debug(`[Dashboard] ðŸ‘¤ User selected stat: "${stat}"`);
-    
-    // Update URL immediately to prevent race conditions
-    if (typeof window !== 'undefined' && router) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('stat', stat);
-      router.replace(url.pathname + url.search, { scroll: false });
-      clientLogger.debug(`[Dashboard] ðŸ”„ Immediately updated URL stat parameter to: "${stat}"`);
-      
-      // Mark that URL was updated by user, so useSearchParams doesn't override it
-      statFromUrlRef.current = true;
-      
-      // Reset the user selection flag after a short delay to allow URL to update
-      // This prevents useSearchParams from reading the old URL value
-      setTimeout(() => {
-        userSelectedStatRef.current = false;
-        clientLogger.debug(`[Dashboard] âœ… Reset user selection flag after URL update`);
-      }, 100); // 100ms should be enough for router.replace to complete
-    }
-  }, [router]);
-  
-  // Use Next.js useSearchParams to read URL parameters
-  const searchParams = useSearchParams();
-  
-  // Capture stat from URL IMMEDIATELY on mount (before any other code runs)
-  useEffect(() => {
-    if (hasCapturedInitialStatRef.current) return;
-    hasCapturedInitialStatRef.current = true;
-    
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href);
-        const stat = url.searchParams.get('stat');
-        if (stat) {
-          const normalizedStat = (() => {
-            const statUpper = stat.toUpperCase();
-            if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
-              return 'fg3m';
-            }
-            return stat.toLowerCase();
-          })();
-          initialStatFromUrlRef.current = normalizedStat;
-          clientLogger.debug(`[Dashboard] ðŸŽ¯ Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
-          statFromUrlRef.current = true;
-          // Set it immediately
-          setSelectedStat(normalizedStat);
-        }
-      } catch (e) {
-        clientLogger.error('[Dashboard] Error capturing initial stat from URL:', e);
-      }
-    }
-  }, []); // Run only once on mount
-  
-  // Track if we've used the initial stat from mount (only use it once)
-  const hasUsedInitialStatRef = useRef(false);
-  
-  // Watch for stat parameter in URL and set it immediately
-  useEffect(() => {
-    const stat = searchParams.get('stat');
-    
-    // Only use initial stat from mount on the VERY FIRST render, then always respect URL
-    if (!hasUsedInitialStatRef.current && initialStatFromUrlRef.current) {
-      hasUsedInitialStatRef.current = true;
-      // Clear the initial stat ref so we don't use it again
-      const initialStat = initialStatFromUrlRef.current;
-      initialStatFromUrlRef.current = null; // Clear it so we don't reset to it later
-      console.log(`[Dashboard] ðŸŽ¯ useSearchParams: Using initial stat from mount: "${initialStat}"`);
-      statFromUrlRef.current = true;
-      setSelectedStat(initialStat);
-      
-      // Store in session storage
-      updateSessionProperty('selectedStat', initialStat);
-      return; // Use initial stat on first render only
-    }
-    
-    // After first render, always respect the current URL parameter
-    // BUT skip if user just manually selected a stat (to prevent override)
-    if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] â­ï¸ useSearchParams: Skipping - user just manually selected stat`);
-      return;
-    }
-    
-    if (stat) {
-      const normalizedStat = (() => {
-        const statUpper = stat.toUpperCase();
-        if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
-          return 'fg3m';
-        }
-        return stat.toLowerCase();
-      })();
-      
-      // Only update if it's different from current stat to avoid unnecessary re-renders
-      if (normalizedStat !== selectedStat) {
-        console.log(`[Dashboard] ðŸŽ¯ useSearchParams: Updating stat from URL: "${stat}" -> "${normalizedStat}" (current: "${selectedStat}")`);
-        statFromUrlRef.current = true;
-        setSelectedStat(normalizedStat);
-        
-        // Store in session storage
-        updateSessionProperty('selectedStat', normalizedStat);
-      }
-    } else {
-      console.log(`[Dashboard] âš ï¸ useSearchParams: No stat parameter found in URL`);
-    }
-  }, [searchParams, selectedStat]);
-  
-  // Sync selectedStat to URL when it changes (but don't trigger if it came from URL or user just selected)
-  useEffect(() => {
-    // Skip if stat was just set from URL (to avoid circular updates)
-    if (statFromUrlRef.current) {
-      statFromUrlRef.current = false; // Reset flag for next user interaction
-      return;
-    }
-    
-    // Skip if user just manually selected a stat (handleStatSelect already updated URL)
-    if (userSelectedStatRef.current) {
-      userSelectedStatRef.current = false; // Reset after one check
-      return;
-    }
-    
-    // Skip if this is the initial mount and we haven't processed URL yet
-    if (!hasUsedInitialStatRef.current) {
-      return;
-    }
-    
-    // Update URL with current stat (only for non-user-initiated changes)
-    if (typeof window !== 'undefined' && router) {
-      const url = new URL(window.location.href);
-      const currentStat = url.searchParams.get('stat');
-      
-      // Only update if different to avoid unnecessary navigation
-      if (currentStat !== selectedStat) {
-        url.searchParams.set('stat', selectedStat);
-        // Use replace to avoid adding to history
-        router.replace(url.pathname + url.search, { scroll: false });
-        console.log(`[Dashboard] ðŸ”„ Updated URL stat parameter to: "${selectedStat}"`);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStat]); // router is stable, don't need it in deps
-  
-  // Ensure correct default stat is set when propsMode changes (but not when user clicks stats)
-  useEffect(() => {
-    console.log(`[Dashboard] ðŸ”„ Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}", userSelectedStat=${userSelectedStatRef.current}`);
-    
-    // Skip if user manually selected a stat (don't override user choice)
-    if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - user manually selected stat`);
-      userSelectedStatRef.current = false; // Reset after one check
-      return;
-    }
-    
-    // Skip if we have an initial stat from URL (don't override it, even if URL was changed)
-    // But only if we haven't used it yet - after first use, always respect URL
-    if (initialStatFromUrlRef.current && !hasUsedInitialStatRef.current) {
-      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
-      return;
-    }
-    
-    // Check if there's a stat in the URL - if so, don't override it
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      const urlStat = url.searchParams.get('stat');
-      if (urlStat) {
-        console.log(`[Dashboard] â­ï¸ Skipping default stat logic - stat "${urlStat}" found in URL`);
-        return;
-      }
-    }
-    
-    // Skip if stat was set from URL (don't override it)
-    if (statFromUrlRef.current) {
-      console.log(`[Dashboard] â­ï¸ Skipping default stat logic - stat was set from URL (ref flag)`);
-      statFromUrlRef.current = false; // Reset flag after skipping once
-      return;
-    }
-    
-    if (propsMode === 'player') {
-      // Force non-Pro users back to Game Props mode
-      if (!isPro) {
-        setPropsMode('team');
-        setSelectedStat('total_pts');
-        return;
-      }
-      
-      // Clear opponent when switching to player mode (player props don't have opponents)
-      setOpponentTeam('');
-      
-      // Set default stat ONLY if current stat is invalid for player mode
-      // Don't reset if user has a valid stat selected
-      const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
-      if (!playerStatExists && selectedStat !== 'pts') {
-        console.log(`[Dashboard] âš ï¸ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
-        setSelectedStat('pts');
-      }
-    } else if (propsMode === 'team') {
-      // Only change if current stat is invalid for team mode
-      const teamStatExists = TEAM_STAT_OPTIONS.find(s => s.key === selectedStat);
-      if (!teamStatExists && selectedStat !== 'total_pts') {
-        setSelectedStat('total_pts');
-      }
-    }
-  }, [propsMode, isPro]); // Removed selectedStat from deps - only run when propsMode changes, not on every stat change
   const [selectedTimeframe, setSelectedTimeframe] = useState('last10');
   // Betting lines per stat (independent) - will be populated by odds API
   const [bettingLines, setBettingLines] = useState<Record<string, number>>({});
@@ -613,18 +290,12 @@ const [lineMovementData, setLineMovementData] = useState<{
   lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
 } | null>(null);
 const [lineMovementLoading, setLineMovementLoading] = useState(false);
-const lastLineMovementRequestRef = useRef<{ key: string; fetchedAt: number } | null>(null);
-const lineMovementInFlightRef = useRef(false);
 
 
   // Odds display format
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
-  useEffect(() => {
-    try {
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('oddsFormat') : null;
-      if (saved === 'decimal' || saved === 'american') setOddsFormat(saved as any);
-    } catch {}
-  }, []);
+  // Odds format from localStorage - extracted to useOddsFormat hook
+  useOddsFormat({ setOddsFormat });
 
   // Build intraday movement rows from line movement data
   const intradayMovements = useMemo(() => {
@@ -672,6 +343,18 @@ const lineMovementInFlightRef = useRef(false);
   
   // Opponent team state
   const [opponentTeam, setOpponentTeam] = useState<string>('N/A');
+  
+  // Stat URL synchronization - extracted to useStatUrlSync hook (must be after setOpponentTeam is declared)
+  const { handleStatSelect } = useStatUrlSync({
+    selectedStat,
+    setSelectedStat,
+    propsMode,
+    isPro,
+    setPropsMode,
+    setOpponentTeam,
+    statFromUrlRef,
+    userSelectedStatRef,
+  });
   
   // Manual opponent selector (overrides automatic opponent detection)
   const [manualOpponent, setManualOpponent] = useState<string>('ALL');
@@ -724,101 +407,17 @@ const lineMovementInFlightRef = useRef(false);
     });
   }, [selectedTeam, opponentTeam, todaysGames]);
   
-  // Fetch line movement data when game, player, and stat change
-  useEffect(() => {
-    if (!LINE_MOVEMENT_ENABLED) {
-      // Only update state if it's not already set to these values to prevent infinite loops
-      setLineMovementLoading(prev => prev ? false : prev);
-      setLineMovementData(prev => prev !== null ? null : prev);
-      return;
-    }
-    const fetchLineMovement = async () => {
-      console.log('ðŸ“Š Line Movement Fetch Check:', { propsMode, selectedPlayer: selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat });
-      
-      // Only fetch for player mode
-      if (propsMode !== 'player' || !selectedPlayer || !selectedTeam || !opponentTeam || opponentTeam === '' || opponentTeam === 'N/A') {
-        console.log('â¸ï¸ Skipping line movement fetch - missing requirements');
-        // Only update if not already null to prevent infinite loops
-        setLineMovementData(prev => prev !== null ? null : prev);
-        return;
-      }
-      
-      const playerName = selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
-      
-      // Get the game date from todaysGames if available
-      const teamA = normalizeAbbr(selectedTeam);
-      const teamB = normalizeAbbr(opponentTeam);
-      const game = todaysGames.find((g: any) => {
-        const home = normalizeAbbr(g?.home_team?.abbreviation || '');
-        const away = normalizeAbbr(g?.visitor_team?.abbreviation || '');
-        return (home === teamA && away === teamB) || (home === teamB && away === teamA);
-      });
-      
-      // Extract game date or use today's date
-      const gameDate = game?.date ? new Date(game.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-      
-      const requestKey = JSON.stringify({
-        mode: propsMode,
-        playerId: selectedPlayer.id,
-        team: selectedTeam,
-        opponent: opponentTeam,
-        stat: selectedStat,
-        gameDate,
-      });
-
-      const nowTs = Date.now();
-      const TTL_MS = 5 * 60 * 1000; // 5 minutes
-      if (
-        lastLineMovementRequestRef.current &&
-        lastLineMovementRequestRef.current.key === requestKey &&
-        nowTs - lastLineMovementRequestRef.current.fetchedAt < TTL_MS
-      ) {
-        console.log('â© Skipping duplicate line movement fetch', requestKey);
-        return;
-      }
-
-      if (lineMovementInFlightRef.current) {
-        console.log('â³ Line movement fetch already in-flight, skipping new request');
-        return;
-      }
-
-      lastLineMovementRequestRef.current = { key: requestKey, fetchedAt: nowTs };
-      lineMovementInFlightRef.current = true;
-
-      console.log(`ðŸŽ¯ Fetching line movement for: ${playerName} (date: ${gameDate}, stat: ${selectedStat})`);
-      
-      setLineMovementLoading(true);
-      try {
-        const url = `/api/odds/line-movement?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(selectedStat)}&date=${gameDate}`;
-        console.log('ðŸ“¡ Fetching:', url);
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.warn('âŒ Line movement fetch failed:', response.status);
-          setLineMovementData(null);
-          return;
-        }
-        const result = await response.json();
-        console.log('âœ… Line movement data received:', result);
-        // Extract the nested data object from the API response
-        setLineMovementData(result.hasOdds ? (result.data as typeof lineMovementData) : null);
-      } catch (error) {
-        console.error('Error fetching line movement:', error);
-        setLineMovementData(null);
-        lastLineMovementRequestRef.current = null;
-      } finally {
-        setLineMovementLoading(false);
-        lineMovementInFlightRef.current = false;
-        if (lastLineMovementRequestRef.current) {
-          lastLineMovementRequestRef.current = {
-            key: requestKey,
-            fetchedAt: Date.now(),
-          };
-        }
-      }
-    };
-    
-    fetchLineMovement();
-  }, [propsMode, selectedPlayer, selectedTeam, opponentTeam, selectedStat, todaysGames]);
+  // Line movement fetching - extracted to useLineMovement hook
+  useLineMovement({
+    propsMode,
+    selectedPlayer,
+    selectedTeam,
+    opponentTeam,
+    selectedStat,
+    todaysGames,
+    setLineMovementData,
+    setLineMovementLoading,
+  });
   
   // Time filter for opponent breakdown display
   const [selectedTimeFilter] = useState('last10'); // Using existing selectedTimeframe as reference
@@ -847,14 +446,7 @@ const lineMovementInFlightRef = useRef(false);
     loading: subscriptionLoading
   } = useSubscription();
   
-  // Debug subscription status
-  useEffect(() => {
-    console.log('[Dashboard] Subscription status:', {
-      hasPremium,
-      subscription,
-      loading: subscriptionLoading
-    });
-  }, [hasPremium, subscription, subscriptionLoading]);
+  // Debug subscription status - removed (debug code)
   
   // Next game info for tracking (separate from chart filter)
   const [nextGameOpponent, setNextGameOpponent] = useState<string>('');
@@ -865,42 +457,12 @@ const lineMovementInFlightRef = useRef(false);
   // Countdown timer state
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   
-  // Update countdown every second
-  useEffect(() => {
-    if (!nextGameTipoff || isGameInProgress) {
-      setCountdown(null);
-      if (!nextGameTipoff) {
-        console.log('[Countdown] No tipoff time available');
-      }
-      if (isGameInProgress) {
-        console.log('[Countdown] Game in progress, hiding countdown');
-      }
-      return;
-    }
-    
-    const updateCountdown = () => {
-      const now = new Date().getTime();
-      const tipoff = nextGameTipoff.getTime();
-      const diff = tipoff - now;
-      
-      if (diff <= 0) {
-        setCountdown(null);
-        console.log('[Countdown] Game time has passed');
-        return;
-      }
-      
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      setCountdown({ hours, minutes, seconds });
-    };
-    
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    
-    return () => clearInterval(interval);
-  }, [nextGameTipoff, isGameInProgress]);
+  // Countdown timer - extracted to useCountdownTimer hook
+  useCountdownTimer({
+    nextGameTipoff,
+    isGameInProgress,
+    setCountdown,
+  });
 
 
   // Team game data cache for instant loading
@@ -952,294 +514,39 @@ const lineMovementInFlightRef = useRef(false);
     });
   }, []);
 
-  // Prefetch "Last 5 Games" tracking stats when selectedTeam changes (for instant load when user clicks "Last 5 Games")
-  useEffect(() => {
-    if (!selectedTeam || selectedTeam === 'N/A' || propsMode !== 'player') return;
-    
-    const prefetchLast5Games = async () => {
-      const season = 2025;
-      const cacheKeyPassing = `tracking_stats_${selectedTeam}_${season}_passing_last5`;
-      const cacheKeyRebounding = `tracking_stats_${selectedTeam}_${season}_rebounding_last5`;
-      
-      // Check if already cached and fresh (30 minutes TTL)
-      try {
-        const cachedPassing = sessionStorage.getItem(cacheKeyPassing);
-        const cachedRebounding = sessionStorage.getItem(cacheKeyRebounding);
-        
-        if (cachedPassing && cachedRebounding) {
-          try {
-            const passingData = JSON.parse(cachedPassing);
-            const reboundingData = JSON.parse(cachedRebounding);
-            const cacheTimestamp = passingData.__timestamp || 0;
-            const cacheAge = Date.now() - cacheTimestamp;
-            const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-            
-            if (cacheAge < CACHE_TTL_MS) {
-              console.log(`[Dashboard] âœ… Last 5 Games data already cached for ${selectedTeam} (${Math.round(cacheAge / 1000)}s old)`);
-              return; // Already cached and fresh
-            }
-          } catch (e) {
-            // Invalid cache, continue to prefetch
-          }
-        }
-      } catch (e) {
-        // Ignore storage errors
-      }
-      
-      // Prefetch in background (non-blocking)
-      console.log(`[Dashboard] ðŸš€ Prefetching Last 5 Games data for ${selectedTeam}...`);
-      const baseParams = `team=${encodeURIComponent(selectedTeam)}&season=${season}&lastNGames=5`;
-      
-      Promise.all([
-        fetch(`/api/tracking-stats/team?${baseParams}&category=passing`).then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch(`/api/tracking-stats/team?${baseParams}&category=rebounding`).then(r => r.ok ? r.json() : null).catch(() => null)
-      ]).then(([passingResult, reboundingResult]) => {
-        if (passingResult && reboundingResult && !passingResult.error && !reboundingResult.error) {
-          try {
-            sessionStorage.setItem(cacheKeyPassing, JSON.stringify({
-              players: passingResult.players || [],
-              __timestamp: Date.now()
-            }));
-            sessionStorage.setItem(cacheKeyRebounding, JSON.stringify({
-              players: reboundingResult.players || [],
-              __timestamp: Date.now()
-            }));
-            console.log(`[Dashboard] âœ… Prefetched Last 5 Games data for ${selectedTeam} (${passingResult.players?.length || 0} passing, ${reboundingResult.players?.length || 0} rebounding)`);
-          } catch (e) {
-            // Ignore storage errors
-          }
-        }
-      }).catch(err => {
-        console.warn(`[Dashboard] âš ï¸ Failed to prefetch Last 5 Games for ${selectedTeam}:`, err);
-      });
-    };
-    
-    // Small delay to not block initial render
-    const timer = setTimeout(prefetchLast5Games, 1000);
-    return () => clearTimeout(timer);
-  }, [selectedTeam, propsMode]);
+  // Last 5 games prefetch - extracted to useLast5GamesPrefetch hook
+  useLast5GamesPrefetch({
+    selectedTeam,
+    propsMode,
+  });
 
-  // Fetch and cache ALL projected minutes once (bulk load)
-  useEffect(() => {
-    const CACHE_KEY = 'nba_all_projected_minutes';
-    const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-    // Check sessionStorage cache first
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const cacheAge = Date.now() - (parsed.timestamp || 0);
-          if (cacheAge < CACHE_TTL_MS && parsed.data) {
-            console.log(`[Dashboard] âœ… Loaded ${Object.keys(parsed.data).length} projected minutes from cache`);
-            setAllProjectedMinutes(parsed.data);
-            return; // Use cached data
-          }
-        }
-      } catch (e) {
-        console.warn('[Dashboard] Failed to load projected minutes cache:', e);
-      }
-    }
-
-    // Fetch all projections
-    let abort = false;
-    const fetchAllProjections = async () => {
-      try {
-        console.log('[Dashboard] Fetching all projected minutes from SportsLine...');
-        const response = await fetch('/api/nba/projections');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch projections: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (abort) return;
-
-        // Normalize player name for matching
-        const normalizePlayerName = (name: string): string => {
-          return name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-        };
-
-        // Build cache map: key = "normalizedPlayerName|normalizedTeam", value = minutes
-        const cache: Record<string, number> = {};
-        if (data.playerMinutes && Array.isArray(data.playerMinutes)) {
-          for (const proj of data.playerMinutes) {
-            const normalizedName = normalizePlayerName(proj.player);
-            const normalizedTeam = normalizeAbbr(proj.team);
-            const key = `${normalizedName}|${normalizedTeam}`;
-            cache[key] = proj.minutes;
-          }
-        }
-
-        if (!abort) {
-          console.log(`[Dashboard] âœ… Cached ${Object.keys(cache).length} projected minutes`);
-          setAllProjectedMinutes(cache);
-
-          // Save to sessionStorage
-          if (typeof window !== 'undefined') {
-            try {
-              sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                data: cache,
-                timestamp: Date.now()
-              }));
-            } catch (e) {
-              console.warn('[Dashboard] Failed to save projected minutes cache:', e);
-            }
-          }
-        }
-      } catch (err: any) {
-        if (!abort) {
-          console.error('[Dashboard] Error fetching all projected minutes:', err);
-        }
-      }
-    };
-
-    fetchAllProjections();
-
-    return () => {
-      abort = true;
-    };
-  }, []); // Only run once on mount
-
-  // Look up projected minutes from cache when player/team changes
-  useEffect(() => {
-    if (!selectedPlayer || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A' || propsMode !== 'player') {
-      setProjectedMinutes(null);
-      setProjectedMinutesLoading(false);
-      return;
-    }
-
-    setProjectedMinutesLoading(true);
-
-    // Normalize player name for matching
-    const normalizePlayerName = (name: string): string => {
-      return name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-    };
-
-    const getNameVariations = (fullName: string): string[] => {
-      const normalized = normalizePlayerName(fullName);
-      const parts = normalized.split(' ');
-      const variations = [normalized];
-      if (parts.length > 1) {
-        variations.push(`${parts[1]} ${parts[0]}`);
-        variations.push(`${parts[0][0]} ${parts[1]}`);
-        variations.push(`${parts[0]} ${parts[1][0]}`);
-      }
-      return Array.from(new Set(variations));
-    };
-
-    // Look up from cache
-    const playerFullName = selectedPlayer.full || `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
-    const nameVariations = getNameVariations(playerFullName);
-    const normalizedCurrentTeam = normalizeAbbr(selectedTeam);
-
-    // Try exact match first
-    const normalizedName = normalizePlayerName(playerFullName);
-    const exactKey = `${normalizedName}|${normalizedCurrentTeam}`;
-    let minutes = allProjectedMinutes[exactKey];
-
-    // If no exact match, try variations
-    if (minutes === undefined) {
-      for (const variation of nameVariations) {
-        const variationKey = `${variation}|${normalizedCurrentTeam}`;
-        if (allProjectedMinutes[variationKey] !== undefined) {
-          minutes = allProjectedMinutes[variationKey];
-          break;
-        }
-      }
-
-      // If still no match, try fuzzy search (check if any key contains the variation)
-      if (minutes === undefined) {
-        for (const variation of nameVariations) {
-          const matchingKey = Object.keys(allProjectedMinutes).find(key => {
-            const [namePart, teamPart] = key.split('|');
-            return (namePart.includes(variation) || variation.includes(namePart)) &&
-                   teamPart === normalizedCurrentTeam;
-          });
-          if (matchingKey) {
-            minutes = allProjectedMinutes[matchingKey];
-            break;
-          }
-        }
-      }
-    }
-
-    if (minutes !== undefined) {
-      console.log('[Dashboard] Found projected minutes from cache:', minutes);
-      setProjectedMinutes(minutes);
-    } else {
-      console.log('[Dashboard] No projected minutes found in cache for player');
-      setProjectedMinutes(null);
-    }
-
-    setProjectedMinutesLoading(false);
-  }, [selectedPlayer, selectedTeam, opponentTeam, propsMode, allProjectedMinutes]);
+  // Projected minutes fetching and lookup - extracted to useProjectedMinutes hook
+  useProjectedMinutes({
+    selectedPlayer,
+    selectedTeam,
+    opponentTeam,
+    propsMode,
+    allProjectedMinutes,
+    setAllProjectedMinutes,
+    setProjectedMinutes,
+    setProjectedMinutesLoading,
+  });
 
 
-  // Update opponent when games or selected team changes
-  useEffect(() => {
-    console.log(`%cðŸ” === OPPONENT USEEFFECT TRIGGERED ===%c`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
-    console.log(`%cDependency changes: propsMode=${propsMode}, manualOpponent="${manualOpponent}"`, 'color: #555', '');
-    
-    // If manual opponent is set and not ALL, use that instead of automatic detection
-    if (manualOpponent && manualOpponent !== '' && manualOpponent !== 'ALL') {
-      console.log(`%cðŸŽ¯ MANUAL OPPONENT OVERRIDE: ${manualOpponent}%c`, 'color: #f39c12; font-weight: bold; font-size: 12px', '');
-      setOpponentTeam(normalizeAbbr(manualOpponent));
-      console.log(`%cðŸ” === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
-      return;
-    }
-    
-    // Otherwise, use automatic opponent detection
-    const teamToCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-    console.log(`%cTeam to check: %c${teamToCheck}%c (mode: ${propsMode})`, 'color: #555', 'color: #e74c3c; font-weight: bold', 'color: #555');
-    console.log(`%cGames available: %c${todaysGames.length}`, 'color: #555', 'color: #f39c12; font-weight: bold');
-    
-    if (teamToCheck && teamToCheck !== 'N/A' && todaysGames.length > 0) {
-      const opponent = getOpponentTeam(teamToCheck, todaysGames);
-      console.log(`%cðŸŽ¯ SETTING OPPONENT: ${opponent}%c (for ${teamToCheck})`, 'color: #27ae60; font-weight: bold; font-size: 12px', 'color: #555');
-      setOpponentTeam(normalizeAbbr(opponent));
-    } else {
-      console.log(`%câ¸ï¸ SKIPPING OPPONENT UPDATE%c - Insufficient data`, 'color: #f39c12; font-weight: bold', 'color: #555');
-      console.log(`  teamToCheck: ${teamToCheck}, todaysGames: ${todaysGames.length}`);
-      if (propsMode === 'team' && (!gamePropsTeam || gamePropsTeam === 'N/A')) {
-        console.log(`  -> Clearing opponent (team mode with no team selected)`);
-        setOpponentTeam('');
-      }
-    }
-    console.log(`%cðŸ” === OPPONENT USEEFFECT END ===%c\n`, 'color: #16a085; font-weight: bold; font-size: 14px', '');
-  }, [selectedTeam, gamePropsTeam, todaysGames, propsMode, manualOpponent]);
+  // Opponent update logic - extracted to useOpponentUpdate hook
+  useOpponentUpdate({
+    selectedTeam,
+    gamePropsTeam,
+    todaysGames,
+    propsMode,
+    manualOpponent,
+    setOpponentTeam,
+  });
 
-  // Load games on mount and refresh every 3 hours (reduced churn)
-  useEffect(() => {
-    fetchTodaysGames();
-    const id = setInterval(() => {
-      fetchTodaysGames({ silent: true });
-    }, 60 * 1000);
-    return () => {
-      clearInterval(id);
-    };
-  }, [fetchTodaysGames]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchTodaysGames({ silent: true });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [fetchTodaysGames]);
+  // Games loading logic - extracted to useGamesLoading hook
+  useGamesLoading({
+    fetchTodaysGames,
+  });
 
   // Next game calculation logic - extracted to useNextGameCalculation hook
   useNextGameCalculation({
@@ -1259,400 +566,57 @@ const lineMovementInFlightRef = useRef(false);
   // Legacy useEffect removed - replaced by useNextGameCalculation hook above
   // Removed ~305 lines of next game calculation logic
 
-  // Auto-handle opponent selection when switching to H2H
+  // H2H opponent selection - extracted to useH2hOpponentSelection hook
+  useH2hOpponentSelection({
+    selectedTimeframe,
+    manualOpponent,
+    opponentTeam,
+    nextGameOpponent,
+    setManualOpponent,
+    setOpponentTeam,
+  });
 
-  // Auto-handle opponent selection when switching to H2H
-  useEffect(() => {
-    if (selectedTimeframe === 'h2h') {
-      // When switching to H2H, only clear manual opponent if it's currently ALL
-      if (manualOpponent === 'ALL') {
-        setManualOpponent('');
-      }
-      
-      // If opponentTeam is not set (empty, N/A, or ALL), use the nextGameOpponent that's already calculated
-      if ((!opponentTeam || opponentTeam === 'N/A' || opponentTeam === 'ALL' || opponentTeam === '') && nextGameOpponent && nextGameOpponent !== '') {
-        console.log(`ðŸ”„ H2H: Setting opponent to next game opponent: ${nextGameOpponent}`);
-        setOpponentTeam(nextGameOpponent);
-      }
-    }
-    // Don't auto-switch away from manual selections when leaving H2H
-  }, [selectedTimeframe, manualOpponent, opponentTeam, nextGameOpponent]);
+  // Team mode game data fetching - extracted to useTeamModeGameData hook
+  useTeamModeGameData({
+    propsMode,
+    gamePropsTeam,
+    fetchGameDataForTeam,
+    setGameStats,
+  });
 
-  // Fetch game data when in team mode and team is selected
-  useEffect(() => {
-    if (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A') {
-      console.log(`ðŸ€ Fetching game data for team mode: ${gamePropsTeam}`);
-      fetchGameDataForTeam(gamePropsTeam);
-    } else if (propsMode === 'player') {
-      // Clear game data when switching back to player mode
-      setGameStats([]);
-    } else if (propsMode === 'team' && gamePropsTeam === 'N/A') {
-      // Clear game data when no team selected in Game Props
-      setGameStats([]);
-    }
-  }, [propsMode, gamePropsTeam]);
+  // Last season stats fetch workaround - extracted to useLastSeasonStatsFetch hook
+  useLastSeasonStatsFetch({
+    selectedTimeframe,
+    selectedPlayer,
+    playerStats,
+    setPlayerStats,
+  });
 
-  // Track if we've already attempted to fetch stats by game_id for this player/timeframe
-  const lastSeasonGameIdFetchRef = useRef<{ playerId: string; attempted: boolean }>({ playerId: '', attempted: false });
+  // Legacy useEffect removed - replaced by useLastSeasonStatsFetch hook above
+  // Removed ~291 lines of last season stats fetch workaround logic
 
-  // WORKAROUND: When viewing last season and all stats have 0 minutes, fetch stats by game_id
-  // for games where the player was on their previous team
-  useEffect(() => {
-    console.log(`[useEffect lastseason] Triggered:`, {
-      selectedTimeframe,
-      hasSelectedPlayer: !!selectedPlayer?.id,
-      playerStatsLength: playerStats.length,
-      refPlayerId: lastSeasonGameIdFetchRef.current.playerId,
-      refAttempted: lastSeasonGameIdFetchRef.current.attempted
-    });
-    
-    if (selectedTimeframe !== 'lastseason' || !selectedPlayer?.id || playerStats.length === 0) {
-      // Reset ref when not viewing last season
-      if (selectedTimeframe !== 'lastseason') {
-        lastSeasonGameIdFetchRef.current = { playerId: '', attempted: false };
-      }
-      return;
-    }
-    
-    const playerId = String(selectedPlayer.id);
-    const lastSeason = currentNbaSeason() - 1;
-    const getSeasonYear = (stat: any) => {
-      if (!stat?.game?.date) return null;
-      const d = new Date(stat.game.date);
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      return m >= 9 ? y : y - 1;
-    };
-    
-    const lastSeasonStats = playerStats.filter(s => getSeasonYear(s) === lastSeason);
-    if (lastSeasonStats.length === 0) {
-      console.log(`[useEffect lastseason] â­ï¸ No last season stats found, skipping`);
-      return;
-    }
-    
-    // Skip if we've already attempted for this player AND we have valid stats
-    // But if we still have 0-minute stats, try again (maybe the fetch failed)
-    const parseMin = (minStr: string): number => {
-      if (!minStr) return 0;
-      const str = String(minStr).trim();
-      if (!str || str === '0' || str === '00' || str === '0:00') return 0;
-      const parts = str.split(':');
-      if (parts.length === 2) {
-        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-      }
-      const num = parseFloat(str);
-      return isNaN(num) ? 0 : num;
-    };
-    
-    const withMinutes = lastSeasonStats.filter(s => {
-      const min = parseMin(s.min || '');
-      return min > 0;
-    });
-    
-    // Check if we have valid stats (even if minutes are 0)
-    const hasValidLastSeasonStats = lastSeasonStats.some(s => {
-      const min = parseMin(s.min || '');
-      return min > 0 || (s.pts > 0 || s.reb > 0 || s.ast > 0);
-    });
-    
-    // Skip if we've already attempted AND we have valid stats
-    if (lastSeasonGameIdFetchRef.current.playerId === playerId && 
-        lastSeasonGameIdFetchRef.current.attempted && 
-        hasValidLastSeasonStats) {
-      console.log(`[useEffect lastseason] â­ï¸ Already attempted for player ${playerId} and have valid stats, skipping`);
-      return;
-    }
-    
-    // Reset ref if it's a different player
-    if (lastSeasonGameIdFetchRef.current.playerId !== playerId) {
-      lastSeasonGameIdFetchRef.current = { playerId, attempted: false };
-    }
-    
-    // If all last season stats have 0 minutes, fetch by game_id
-    if (withMinutes.length === 0) {
-      // Mark as attempted NOW to prevent duplicate fetches
-      lastSeasonGameIdFetchRef.current = { playerId, attempted: true };
-      
-      console.log(`[useEffect lastseason] ðŸ”§ Detected API data quality issue: all ${lastSeasonStats.length} last season stats have 0 minutes. Fetching by game_id...`);
-      
-      // Identify ALL games where ATL appears - player was on ATL for those games
-      // We know from the logs that there are 4 games where ATL appears
-      const atlGames = lastSeasonStats.filter(s => {
-        const homeTeam = s.game?.home_team?.abbreviation;
-        const visitorTeam = s.game?.visitor_team?.abbreviation;
-        return (homeTeam === 'ATL' || visitorTeam === 'ATL') && s.game?.id;
-      });
-      
-      console.log(`[useEffect lastseason] ðŸ” Found ${atlGames.length} games where ATL appears (player was on ATL):`, atlGames.map(s => ({
-        gameId: s.game?.id,
-        date: s.game?.date,
-        homeTeam: s.game?.home_team?.abbreviation,
-        visitorTeam: s.game?.visitor_team?.abbreviation,
-        statTeam: s.team?.abbreviation
-      })));
-      
-      // Get unique game IDs for games where ATL appears
-      const gameIds = Array.from(new Set(
-        atlGames
-          .map(s => s.game?.id)
-          .filter((id): id is number => typeof id === 'number' && !isNaN(id))
-      ));
-      
-      console.log(`[useEffect lastseason] ðŸ” Unique game IDs to fetch: ${gameIds.length}`, gameIds);
-      
-      if (gameIds.length > 0) {
-        console.log(`[useEffect lastseason] ðŸ”§ Found ${gameIds.length} games with player's previous team, fetching stats by game_id...`);
-        console.log(`[useEffect lastseason] ðŸ”§ Game IDs to fetch:`, gameIds);
-        
-        // Fetch stats by game_id in batches (async, don't block)
-        const fetchStatsByGameId = async () => {
-          const { queuedFetch } = await import('@/lib/requestQueue');
-          const batchSize = 50;
-          const gameBatches: number[][] = [];
-          for (let i = 0; i < gameIds.length; i += batchSize) {
-            gameBatches.push(gameIds.slice(i, i + batchSize));
-          }
-          
-          const statsByGameId: BallDontLieStats[] = [];
-          for (const batch of gameBatches) {
-            try {
-              const gameIdsStr = batch.join(',');
-              const url = `/api/stats?player_id=${playerId}&game_ids=${gameIdsStr}&per_page=100&max_pages=1`;
-              const requestId = `stats-${playerId}-games-${batch[0]}-${Date.now()}`;
-              console.log(`[useEffect lastseason] ðŸ”§ Fetching stats for game IDs: ${gameIdsStr}`);
-              const r = await queuedFetch(url, {}, requestId);
-              const j = await r.json().catch(() => ({}));
-              
-              console.log(`[useEffect lastseason] ðŸ”§ API response:`, {
-                hasData: !!j?.data,
-                dataIsArray: Array.isArray(j?.data),
-                dataLength: Array.isArray(j?.data) ? j.data.length : 0,
-                error: j?.error,
-                fullResponse: j
-              });
-              
-              const batchStats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
-              
-              console.log(`[useEffect lastseason] ðŸ”§ Raw batch stats (${batchStats.length}):`, batchStats.slice(0, 3).map(s => ({
-                gameId: s.game?.id,
-                date: s.game?.date,
-                team: s.team?.abbreviation,
-                min: s.min,
-                pts: s.pts,
-                reb: s.reb,
-                ast: s.ast
-              })));
-              
-              // WORKAROUND: Even if stats have 0 minutes, if we know from game data that the player
-              // was on ATL for these games, include them. The API has data quality issues for players
-              // who changed teams, but we can still use the game data to show the player played.
-              // We'll include stats if:
-              // 1. They have actual minutes/data (normal case), OR
-              // 2. The game has ATL as a participant (we know player was on ATL)
-              // WORKAROUND: The BallDon'tLie API returns placeholder stats (0 minutes, 0 values) 
-              // for players who changed teams, even when querying by game_id.
-              // However, we know these are the correct games (we identified them by finding games where ATL appears).
-              // So we'll include ALL stats returned from the game_id query, even if they have 0 minutes,
-              // because at least we know these are the correct games where the player was on ATL.
-              const validStats = batchStats.filter(s => {
-                const gameId = s.game?.id;
-                const min = parseMin(s.min || '');
-                const hasActualData = min > 0 || (s.pts > 0 || s.reb > 0 || s.ast > 0);
-                
-                // Since we're querying by game_id for games we identified as ATL games,
-                // include ALL stats returned, even if they have 0 minutes (API data quality issue)
-                const isIdentifiedAtlGame = gameId && gameIds.includes(gameId);
-                
-                if (isIdentifiedAtlGame) {
-                  console.log(`[useEffect lastseason] âœ… Including stat from identified ATL game (even with 0 minutes):`, {
-                    gameId,
-                    date: s.game?.date,
-                    team: s.team?.abbreviation,
-                    homeTeam: s.game?.home_team?.abbreviation,
-                    visitorTeam: s.game?.visitor_team?.abbreviation,
-                    min: s.min,
-                    pts: s.pts,
-                    reb: s.reb,
-                    ast: s.ast
-                  });
-                  return true; // Always include stats from identified ATL games
-                }
-                
-                // For other games, only include if they have actual data
-                if (!hasActualData) {
-                  console.log(`[useEffect lastseason] ðŸ” Filtered out stat (not identified ATL game, no data):`, {
-                    gameId,
-                    min: s.min,
-                    parsedMin: min,
-                    pts: s.pts
-                  });
-                }
-                return hasActualData;
-              });
-              
-              statsByGameId.push(...validStats);
-              console.log(`[useEffect lastseason] ðŸ”§ Fetched ${validStats.length} valid stats from ${batch.length} games (raw: ${batchStats.length})`);
-            } catch (error: any) {
-              console.warn(`[useEffect lastseason] âš ï¸ Error fetching stats by game_id for batch:`, error?.message || error);
-            }
-          }
-          
-          if (statsByGameId.length > 0) {
-            console.log(`[useEffect lastseason] âœ… Successfully fetched ${statsByGameId.length} stats by game_id. Updating playerStats...`);
-            
-            // CORRECT THE TEAM: For stats from identified ATL games, fix the team abbreviation
-            // The API returns stat.team=WAS, but we know the player was on ATL for these games
-            const correctedStats = statsByGameId.map(stat => {
-              const gameId = stat.game?.id;
-              if (gameId && gameIds.includes(gameId)) {
-                // This is one of our identified ATL games - correct the team to ATL
-                const homeTeam = stat.game?.home_team?.abbreviation;
-                const visitorTeam = stat.game?.visitor_team?.abbreviation;
-                
-                // We know the player was on ATL for these games, so set team to ATL
-                const correctTeam = 'ATL';
-                const correctTeamId = homeTeam === 'ATL' 
-                  ? stat.game?.home_team?.id 
-                  : (visitorTeam === 'ATL' 
-                    ? stat.game?.visitor_team?.id 
-                    : stat.team?.id);
-                
-                // Ensure team.id is always a number (required by BallDontLieStats type)
-                // Use the team ID from game data if available, otherwise fall back to original or 0
-                const teamId: number = correctTeamId ?? stat.team?.id ?? 0;
-                
-                console.log(`[useEffect lastseason] ðŸ”§ Correcting team for game ${gameId}: ${stat.team?.abbreviation} â†’ ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam}, teamId: ${teamId})`);
-                
-                return {
-                  ...stat,
-                  team: {
-                    ...(stat.team || {}),
-                    abbreviation: correctTeam,
-                    id: teamId,
-                    full_name: 'Atlanta Hawks',
-                    name: 'Hawks'
-                  }
-                };
-              }
-              return stat;
-            });
-            
-            // Merge with existing stats
-            // Keep all current season stats, and for last season:
-            // - Keep all original last season stats (they have game data even if team is wrong)
-            // - Add/update with the corrected stats from game_id fetch
-            const currentSeasonStats = playerStats.filter(s => getSeasonYear(s) === currentNbaSeason());
-            const lastSeasonStatsOriginal = playerStats.filter(s => getSeasonYear(s) === lastSeason);
-            
-            console.log(`[useEffect lastseason] ðŸ“Š Before merge: current=${currentSeasonStats.length}, lastSeason original=${lastSeasonStatsOriginal.length}, corrected stats=${correctedStats.length}`);
-            
-            // Create a map of game_id -> corrected stat for quick lookup
-            const correctedStatsMap = new Map(correctedStats.map(s => [s.game?.id, s]));
-            
-            // For each original last season stat, use the corrected version if available, otherwise keep original
-            const lastSeasonStatsCorrected = lastSeasonStatsOriginal.map(stat => {
-              const gameId = stat.game?.id;
-              if (gameId && correctedStatsMap.has(gameId)) {
-                console.log(`[useEffect lastseason] ðŸ”„ Replacing stat for game ${gameId} with corrected version`);
-                return correctedStatsMap.get(gameId)!;
-              }
-              return stat;
-            });
-            
-            // Also add any corrected stats that weren't in the original (shouldn't happen, but just in case)
-            const correctedGameIds = new Set(correctedStats.map(s => s.game?.id).filter(Boolean));
-            const originalGameIds = new Set(lastSeasonStatsOriginal.map(s => s.game?.id).filter(Boolean));
-            const newStats = correctedStats.filter(s => {
-              const gameId = s.game?.id;
-              return gameId && !originalGameIds.has(gameId);
-            });
-            
-            if (newStats.length > 0) {
-              console.log(`[useEffect lastseason] âž• Adding ${newStats.length} new stats that weren't in original`);
-            }
-            
-            // Combine: current season + corrected last season stats + any new stats
-            const updatedStats = [...currentSeasonStats, ...lastSeasonStatsCorrected, ...newStats];
-            
-            console.log(`[useEffect lastseason] ðŸ“Š After merge: current=${currentSeasonStats.length}, lastSeason=${lastSeasonStatsCorrected.length}, new=${newStats.length}, total=${updatedStats.length}`);
-            
-            setPlayerStats(updatedStats);
-          } else {
-            console.warn(`[useEffect lastseason] âš ï¸ No valid stats found when querying by game_id`);
-          }
-        };
-        
-        // Fetch asynchronously (don't block the UI)
-        fetchStatsByGameId().catch(err => {
-          console.error(`[useEffect lastseason] âŒ Error in fetchStatsByGameId:`, err);
-        });
-      }
-    }
-  }, [selectedTimeframe, selectedPlayer?.id, playerStats]);
+  // Team logo management - extracted to useTeamLogos hook
+  useTeamLogos({
+    propsMode,
+    selectedTeam,
+    gamePropsTeam,
+    opponentTeam,
+    setSelectedTeamLogoUrl,
+    setSelectedTeamLogoAttempt,
+    setOpponentTeamLogoUrl,
+    setOpponentTeamLogoAttempt,
+    getEspnLogoUrl,
+  });
 
-
-  // Keep logo URL in sync with selectedTeam/gamePropsTeam and opponentTeam
-  useEffect(() => {
-    const teamToUse = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-    if (teamToUse && teamToUse !== 'N/A') {
-      setSelectedTeamLogoAttempt(0);
-      setSelectedTeamLogoUrl(getEspnLogoUrl(teamToUse));
-    } else {
-      setSelectedTeamLogoUrl('');
-      setSelectedTeamLogoAttempt(0);
-    }
-  }, [selectedTeam, gamePropsTeam, propsMode]);
-
-  useEffect(() => {
-    if (opponentTeam) {
-      setOpponentTeamLogoAttempt(0);
-      setOpponentTeamLogoUrl(getEspnLogoUrl(opponentTeam));
-    } else {
-      setOpponentTeamLogoUrl('');
-      setOpponentTeamLogoAttempt(0);
-    }
-  }, [opponentTeam]);
-
-  // Fetch team matchup stats for pie chart comparison - DEFERRED to not block stats display
-  useEffect(() => {
-    const fetchTeamMatchupStats = async () => {
-      const currentTeam = propsMode === 'team' ? gamePropsTeam : selectedTeam;
-      
-      if (!currentTeam || currentTeam === 'N/A' || !opponentTeam || opponentTeam === 'N/A') {
-        setTeamMatchupStats({currentTeam: null, opponent: null});
-        return;
-      }
-      
-      setTeamMatchupLoading(true);
-      try {
-        // Fetch stats for both teams
-        const [currentTeamResponse, opponentResponse] = await Promise.all([
-          fetch(`/api/dvp/team-totals?team=${currentTeam}&games=82`),
-          fetch(`/api/dvp/team-totals?team=${opponentTeam}&games=82`)
-        ]);
-        
-        const [currentTeamData, opponentData] = await Promise.all([
-          currentTeamResponse.json(),
-          opponentResponse.json()
-        ]);
-        
-        setTeamMatchupStats({
-          currentTeam: currentTeamData.success ? currentTeamData.perGame : null,
-          opponent: opponentData.success ? opponentData.perGame : null
-        });
-      } catch (error) {
-        console.error('Failed to fetch team matchup stats:', error);
-        setTeamMatchupStats({currentTeam: null, opponent: null});
-      } finally {
-        setTeamMatchupLoading(false);
-      }
-    };
-    
-    // Defer by 3 seconds to let stats load first
-    const timeoutId = setTimeout(fetchTeamMatchupStats, 3000);
-    
-    return () => clearTimeout(timeoutId);
-  }, [propsMode, gamePropsTeam, selectedTeam, opponentTeam]);
+  // Team matchup stats fetching - extracted to useTeamMatchupStats hook
+  useTeamMatchupStats({
+    propsMode,
+    selectedTeam,
+    gamePropsTeam,
+    opponentTeam,
+    setTeamMatchupStats,
+    setTeamMatchupLoading,
+  });
 
   // Function to fetch a single team's depth chart (with caching to prevent rate limits)
 
@@ -1679,15 +643,16 @@ const lineMovementInFlightRef = useRef(false);
   const [teammatePlayedGameIds, setTeammatePlayedGameIds] = useState<Set<number>>(new Set());
   const [loadingTeammateGames, setLoadingTeammateGames] = useState<boolean>(false);
 
-  // Reset teammate filters whenever the primary context changes (new player/team tab)
-  useEffect(() => {
-    // Always clear when leaving player mode or switching players
-    setTeammateFilterId(null);
-    setTeammateFilterName(null);
-    setTeammatePlayedGameIds(new Set());
-    setWithWithoutMode('with');
-    setLoadingTeammateGames(false);
-  }, [propsMode, selectedPlayer?.id]);
+  // Teammate filter reset - extracted to useTeammateFilterReset hook
+  useTeammateFilterReset({
+    propsMode,
+    selectedPlayer,
+    setTeammateFilterId,
+    setTeammateFilterName,
+    setTeammatePlayedGameIds,
+    setWithWithoutMode,
+    setLoadingTeammateGames,
+  });
 
   const clearTeammateFilter = useCallback(() => {
     setTeammateFilterId(null);
@@ -1779,60 +744,21 @@ const lineMovementInFlightRef = useRef(false);
     setShotDistanceLoading,
   });
   
-  // Restore stats from sessionStorage when player ID is set (for page refresh)
-  useEffect(() => {
-    if (resolvedPlayerId && hasPremium && typeof window !== 'undefined') {
-      // Only restore if stats aren't already loaded
-      if (!advancedStats) {
-        try {
-          const cachedAdvancedStats = sessionStorage.getItem(`advanced_stats_${resolvedPlayerId}`);
-          if (cachedAdvancedStats) {
-            const stats = JSON.parse(cachedAdvancedStats);
-            setAdvancedStats(stats);
-            console.log('âœ… Restored advanced stats from cache for player', resolvedPlayerId);
-          }
-        } catch (e) {
-          console.error('Error restoring advanced stats:', e);
-        }
-      }
-      
-      if (!shotDistanceData) {
-        try {
-          const cachedShotData = sessionStorage.getItem(`shot_distance_${resolvedPlayerId}`);
-          if (cachedShotData) {
-            const shotData = JSON.parse(cachedShotData);
-            setShotDistanceData(shotData);
-            console.log('âœ… Restored shot chart data from cache for player', resolvedPlayerId);
-          }
-        } catch (e) {
-          console.error('Error restoring shot chart data:', e);
-        }
-      }
-    }
-  }, [resolvedPlayerId, hasPremium]); // Restore when player ID or premium status changes
+  // Premium stats restoration - extracted to usePremiumStatsRestoration hook
+  usePremiumStatsRestoration({
+    resolvedPlayerId,
+    hasPremium,
+    advancedStats,
+    shotDistanceData,
+    setAdvancedStats,
+    setShotDistanceData,
+  });
   
-  // Close dropdown on outside click
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Don't close if clicking inside the search container (includes dropdown)
-      // The button handlers will close the dropdown themselves
-      if (searchRef.current && searchRef.current.contains(target)) {
-        return; // Click is inside search container
-      }
-      // Click is outside - close dropdown
-      setShowDropdown(false);
-    };
-    // Use a slight delay to ensure button onClick handlers fire first
-    const handleClick = (e: MouseEvent) => {
-      // Use requestAnimationFrame to defer the check until after button handlers
-      requestAnimationFrame(() => {
-        onClick(e);
-      });
-    };
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
+  // Dropdown close - extracted to useDropdownClose hook
+  useDropdownClose({
+    searchRef,
+    setShowDropdown,
+  });
 
   // header info - dynamic based on props mode
   const headerInfo = useMemo(() => {
@@ -2081,36 +1007,12 @@ const lineMovementInFlightRef = useRef(false);
 
 
 
-  // Set coreDataReady when stats are loaded; wait for odds (with fallback) to avoid visible refresh
-  const lastPlayerStatsLengthRef = useRef(0);
-  const coreDataReadySetRef = useRef(false);
-  
-  useEffect(() => {
-    // Reset when loading starts or no stats yet
-    if (isLoading || playerStats.length === 0) {
-      setCoreDataReady(false);
-      coreDataReadySetRef.current = false;
-      lastPlayerStatsLengthRef.current = 0;
-      return;
-    }
-
-    // Only run when playerStats length actually changes (new player selected)
-    if (playerStats.length === lastPlayerStatsLengthRef.current && coreDataReadySetRef.current) {
-      return;
-    }
-
-    // Update ref to track current stats length
-    lastPlayerStatsLengthRef.current = playerStats.length;
-
-    // If we've already set coreDataReady for this player, don't re-run
-    if (coreDataReadySetRef.current) {
-      return;
-    }
-
-    // Set coreDataReady immediately - odds will render inline without causing refresh
-    setCoreDataReady(true);
-    coreDataReadySetRef.current = true;
-  }, [playerStats.length, isLoading]);
+  // Core data ready tracking - extracted to useCoreDataReady hook
+  useCoreDataReady({
+    isLoading,
+    playerStats,
+    setCoreDataReady,
+  });
 
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
@@ -2184,13 +1086,13 @@ const lineMovementInFlightRef = useRef(false);
     setDvpRanksPerGame,
   });
 
-  // Set initial slider range when filter is selected
-  useEffect(() => {
-    if (selectedFilterForAxis && sliderConfig && sliderRange === null) {
-      // Initialize with full range
-      setSliderRange({ min: sliderConfig.min, max: sliderConfig.max });
-    }
-  }, [selectedFilterForAxis, sliderConfig, sliderRange]);
+  // Slider range initialization - extracted to useSliderRangeInit hook
+  useSliderRangeInit({
+    selectedFilterForAxis,
+    sliderConfig,
+    sliderRange,
+    setSliderRange,
+  });
 
   // Advanced stats prefetching logic - extracted to useAdvancedStatsPrefetch hook (see hook call above)
 
@@ -2205,25 +1107,14 @@ const lineMovementInFlightRef = useRef(false);
     });
   }, [realOddsData, selectedStat]);
   
-  // Update bettingLines state when bestLineForStat becomes available
-  // This ensures bettingLine (defined earlier) gets updated when odds data loads
-  useEffect(() => {
-    // Only update if:
-    // 1. bestLineForStat is available
-    // 2. We don't already have a stored line for this stat
-    // 3. The current bettingLine is the default 0.5
-    if (bestLineForStat !== null && !(selectedStat in bettingLines)) {
-      const currentLine = bettingLine;
-      if (Math.abs(currentLine - 0.5) < 0.01) {
-        // Only update if it's still at the default
-        setBettingLines(prev => ({
-          ...prev,
-          [selectedStat]: bestLineForStat
-        }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bestLineForStat, selectedStat]);
+  // Best line update - extracted to useBestLineUpdate hook
+  useBestLineUpdate({
+    bestLineForStat,
+    selectedStat,
+    bettingLine,
+    bettingLines,
+    setBettingLines,
+  });
   
   // Merge line movement data with live odds to get accurate current line
   const mergedLineMovementData = useMemo(() => {
