@@ -36,7 +36,7 @@ export function processChartData({
   const mapped = source.map(game => {
     const statValue = propsMode === 'team' 
       ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam) 
-      : getStatValue((game as any).stats, selectedStat);
+      : (game as any).stats ? getStatValue((game as any).stats, selectedStat) : 0;
     
     // For steals/blocks, ensure we return 0 instead of null/undefined
     // This is important because these stats can legitimately be 0

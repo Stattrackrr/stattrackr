@@ -286,9 +286,13 @@ export function useDvpRankPrefetch({
     return () => {
       isMounted = false;
     };
-  }, [playerStats, propsMode, selectedPosition, selectedStat, selectedPlayer, playerTeamRoster, prefetchedDvpRanks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerStats, propsMode, selectedPosition, selectedStat, selectedPlayer?.id, playerTeamRoster]);
 
   // Use prefetched DvP ranks when dvp_rank filter is selected
+  // Only depend on player ID, not the whole object, to prevent recalculation on metadata updates
+  const playerId = selectedPlayer?.id?.toString() || null;
+  
   useEffect(() => {
     if (!selectedFilterForAxis || propsMode !== 'player') {
       setDvpRanksPerGame({});
@@ -355,7 +359,7 @@ export function useDvpRankPrefetch({
     } else {
       setDvpRanksPerGame({});
     }
-  }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks, selectedPlayer, setDvpRanksPerGame]);
+  }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks, playerId, setDvpRanksPerGame]);
 
   // Legacy fetch DvP ranks (kept for backward compatibility, but should use prefetched data)
   // Use filteredChartData to match what's actually displayed

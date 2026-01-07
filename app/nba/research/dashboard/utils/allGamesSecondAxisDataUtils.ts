@@ -12,6 +12,7 @@ export interface AllGamesSecondAxisDataItem {
   gameId: string;
   value: number | null;
   gameDate: string;
+  stats: BallDontLieStats; // Include stats for filtering
 }
 
 export interface AllGamesSecondAxisDataParams {
@@ -86,6 +87,7 @@ export function processAllGamesSecondAxisData({
         gameId: gameIdStr,
         value,
         gameDate,
+        stats, // Include stats for filtering
       };
     });
 

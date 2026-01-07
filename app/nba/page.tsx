@@ -3824,7 +3824,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
                                   )}
                                 </td>
                                 
@@ -3883,7 +3893,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
                                   )}
                                 </td>
                                 
@@ -3942,7 +3962,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
                                   )}
                                 </td>
                                 
@@ -4001,7 +4031,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
                                   )}
                                 </td>
                                 
@@ -4060,7 +4100,17 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
                                   )}
                                 </td>
                                 
@@ -4379,6 +4429,16 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           
                           // Helper to get stat box color based on hit rate
                           const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
+                            // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box
+                            if (!isStreak && (!hitRate || hitRate.total === 0)) {
+                              return {
+                                background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                borderWidth: '2px',
+                                boxShadow: 'none',
+                              };
+                            }
+                            
                             let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                             let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                             let glowColor: string | null = null;
@@ -4537,7 +4597,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 {/* L5 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L5</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  <div className={`text-sm font-bold ${
+                                    (!prop.last5HitRate || prop.last5HitRate.total === 0)
+                                      ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
+                                      : (mounted && isDark ? 'text-white' : 'text-gray-900')
+                                  }`}>
                                     {getHitRatePercent(prop.last5HitRate)}
                                   </div>
                                 </div>
@@ -4545,7 +4609,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 {/* L10 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last10HitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L10</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  <div className={`text-sm font-bold ${
+                                    (!prop.last10HitRate || prop.last10HitRate.total === 0)
+                                      ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
+                                      : (mounted && isDark ? 'text-white' : 'text-gray-900')
+                                  }`}>
                                     {getHitRatePercent(prop.last10HitRate)}
                                   </div>
                                 </div>
@@ -4553,7 +4621,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 {/* H2H */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.h2hHitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>H2H</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  <div className={`text-sm font-bold ${
+                                    (!prop.h2hHitRate || prop.h2hHitRate.total === 0)
+                                      ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
+                                      : (mounted && isDark ? 'text-white' : 'text-gray-900')
+                                  }`}>
                                     {getHitRatePercent(prop.h2hHitRate)}
                                   </div>
                                 </div>
@@ -4569,7 +4641,11 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                 {/* SZN */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.seasonHitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>SZN</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  <div className={`text-sm font-bold ${
+                                    (!prop.seasonHitRate || prop.seasonHitRate.total === 0)
+                                      ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
+                                      : (mounted && isDark ? 'text-white' : 'text-gray-900')
+                                  }`}>
                                     {getHitRatePercent(prop.seasonHitRate)}
                                   </div>
                                 </div>
