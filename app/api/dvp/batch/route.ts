@@ -35,20 +35,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate team is not "N/A" or empty
-    if (team === 'N/A' || team.trim() === '' || team.trim() === 'N/A') {
-      return NextResponse.json(
-        { 
-          error: 'Invalid team parameter. Team cannot be "N/A"',
-          team: 'N/A',
-          games,
-          metrics: {},
-          sample_games: 0,
-        },
-        { status: 400 }
-      );
-    }
-
     if (!metricsParam) {
       return NextResponse.json(
         { error: 'Missing required parameter: metrics' },
@@ -59,20 +45,6 @@ export async function GET(request: NextRequest) {
     const metrics = metricsParam.split(',').map(m => m.trim());
     const seasonYear = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
     const teamAbbr = normalizeAbbr(team);
-    
-    // Additional validation after normalization
-    if (!teamAbbr || teamAbbr === 'N/A' || teamAbbr === '') {
-      return NextResponse.json(
-        { 
-          error: 'Invalid team abbreviation',
-          team: teamAbbr || team,
-          games,
-          metrics: {},
-          sample_games: 0,
-        },
-        { status: 400 }
-      );
-    }
     
     const bpTeamAbbr = OUR_TO_BP_ABBR[teamAbbr] || teamAbbr;
     const pos = positionParam.toUpperCase() || 'ALL';

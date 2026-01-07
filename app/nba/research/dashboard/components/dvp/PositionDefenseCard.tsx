@@ -93,16 +93,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
         }
         return;
       }
-      
-      // Validate team is not "N/A" or invalid
-      if (targetOpp === 'N/A' || targetOpp.trim() === '' || targetOpp.trim() === 'N/A') {
-        setPerStat({});
-        setPerRank({});
-        setSample(0);
-        setLoading(false);
-        setError(null); // Don't show error for invalid team, just don't load
-        return;
-      }
 
       // Check if we have both team DVP and rank data cached
       const teamCacheKey = `${targetOpp}:82`;
