@@ -693,9 +693,6 @@ const ChartControls = function ChartControls({
     }
     
     if (bestLineForStat !== null && !hasManuallySetLineRef.current && !hasUrlLine) {
-        bestLineForStat,
-        currentBettingLine: bettingLine
-      });
       
       // Only auto-set if:
       // 1. The line hasn't been auto-set for this stat yet, OR

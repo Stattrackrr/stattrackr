@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { clientLogger } from '@/lib/clientLogger';
 
 interface Props {
   children: ReactNode;
@@ -30,8 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Use clientLogger which suppresses logs in production
-    clientLogger.error('Error Boundary caught an error:', error, errorInfo);
-    // In production: clientLogger.error is completely silent
+    console.error('Error Boundary caught an error:', error, errorInfo);
   }
 
   handleReset = () => {

@@ -228,24 +228,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               const ranks = rankData.metrics?.[m.key] || {};
               const rank = ranks?.[normalizedOpp] as number | undefined;
               
-              // Debug logging for first metric only
-              if (m.key === 'pts') {
-                // Debug logging removed
-                if (false) {
-                  console.log(`[DVP Frontend] Rank lookup for ${m.key}:`, {
-                  normalizedOpp,
-                  rank,
-                  availableTeamKeys: Object.keys(ranks).slice(0, 10),
-                  rankDataStructure: {
-                    hasMetrics: !!rankData.metrics,
-                    metricKeys: Object.keys(rankData.metrics || {}),
-                    ranksType: typeof ranks,
-                    ranksIsObject: ranks && typeof ranks === 'object',
-                    ranksKeysCount: Object.keys(ranks).length
-                  }
-                });
-              }
-              
               // Accept 0 as a valid rank (means team has null value)
               rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }

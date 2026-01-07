@@ -681,14 +681,6 @@ export default function NBALandingPage() {
         const data = await response.json();
         const games = Array.isArray(data?.data) ? data.data : [];
         
-        // Debug logging removed('[NBA Landing] Games found (± window):', games.length, games.slice(0, 3).map((g: any) => ({
-          id: g.id,
-          date: g.date,
-          status: g.status,
-          home: g.home_team?.abbreviation,
-          away: g.visitor_team?.abbreviation
-        })));
-        
         setTodaysGames(games);
         
         // Cache games for dashboard (same format as dashboard uses)
@@ -938,12 +930,6 @@ export default function NBALandingPage() {
         // Debug logging removed(`[NBA Landing] API response status: ${cacheResponse.status}`);
         if (cacheResponse.ok) {
           const cacheData = await cacheResponse.json();
-          // Debug logging removed(`[NBA Landing] API response data:`, { 
-            success: cacheData.success, 
-            dataLength: cacheData.data?.length, 
-            isArray: Array.isArray(cacheData.data),
-            stale: cacheData.stale 
-          });
           if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
             // Debug logging removed(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
           
@@ -967,10 +953,6 @@ export default function NBALandingPage() {
           // Sample a prop to see its bookmakerLines
           if (cacheData.data.length > 0) {
             const sampleProp = cacheData.data[0] as PlayerProp;
-            // Debug logging removed(`[NBA Landing] 📊 Sample prop: ${sampleProp.playerName} ${sampleProp.statType} - bookmakerLines:`, 
-              sampleProp.bookmakerLines?.length || 0, 
-              sampleProp.bookmakerLines?.map(b => b.bookmaker).join(', ') || 'none'
-            );
           }
           
           // Merge in any calculated stats from sessionStorage
@@ -1049,7 +1031,6 @@ export default function NBALandingPage() {
             return;
           } else {
             console.warn(`[NBA Landing] ⚠️ No cached data available - cache is being populated`);
-            // Debug logging removed(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data, cached: cacheData.cached, message: cacheData.message });
             // Don't clear existing props - keep them visible
             if (!propsLoadedRef.current) {
               setPlayerProps([]);
@@ -1491,11 +1472,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
       // Merge all data and filter (like dashboard does)
       const allStats = [...currSeason, ...prev1Season];
-      // Debug logging removed(`[calculatePlayerAverages] Merged stats for ${playerName}:`, {
-        currSeason: currSeason.length,
-        prev1Season: prev1Season.length,
-        total: allStats.length,
-      });
       
       const validStats = allStats.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
       // Debug logging removed(`[calculatePlayerAverages] Valid stats after filter: ${validStats.length} out of ${allStats.length}`);
@@ -1603,22 +1579,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       // Log sample stat structure to debug stat extraction
       if (gamesWithMinutes.length > 0) {
         const sample = gamesWithMinutes[0];
-        // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} sample stat:`, {
-          hasPts: sample.pts !== undefined && sample.pts !== null,
-          hasReb: sample.reb !== undefined && sample.reb !== null,
-          hasAst: sample.ast !== undefined && sample.ast !== null,
-          hasStl: sample.stl !== undefined && sample.stl !== null,
-          hasBlk: sample.blk !== undefined && sample.blk !== null,
-          hasFg3m: sample.fg3m !== undefined && sample.fg3m !== null,
-          pts: sample.pts,
-          reb: sample.reb,
-          ast: sample.ast,
-          stl: sample.stl,
-          blk: sample.blk,
-          fg3m: sample.fg3m,
-          statType,
-          statMapKey: statType === 'PTS' ? 'pts' : statType === 'REB' ? 'reb' : statType === 'AST' ? 'ast' : statType === 'STL' ? 'stl' : statType === 'BLK' ? 'blk' : statType === 'THREES' ? 'fg3m' : statType.toLowerCase(),
-        });
       }
       
       const gamesWithStats = gamesWithMinutes
@@ -1705,21 +1665,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         last5HitRate = { hits, total: last5Values.length };
       }
       
-      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} L5:`, {
-        totalGames: gamesWithStats.length,
-        last5Games: last5Games.length,
-        last5Values,
-        last5Sum,
-        last5Avg: last5Avg?.toFixed(2),
-        dates: last5Games.map((g: any) => g.game?.date),
-        minutes: last5Games.map((g: any) => g.min),
-        opponents: last5Games.map((g: any) => {
-          const home = g.game?.home_team?.abbreviation;
-          const visitor = g.game?.visitor_team?.abbreviation;
-          const playerTeam = g.team?.abbreviation;
-          return { home, visitor, playerTeam };
-        }),
-      });
 
       // Last 10 average: Take first 10 games (newest) from gamesWithStats, calculate average
       const last10Games = gamesWithStats.slice(0, 10);
@@ -1734,15 +1679,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         last10HitRate = { hits, total: last10Values.length };
       }
       
-      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} L10:`, {
-        totalGames: gamesWithStats.length,
-        last10Games: last10Games.length,
-        last10Values,
-        last10Sum,
-        last10Avg: last10Avg?.toFixed(2),
-        dates: last10Games.map((g: any) => g.game?.date),
-        minutes: last10Games.map((g: any) => g.min),
-      });
 
       // H2H average - COPY EXACT LOGIC FROM DASHBOARD (lines 9634-9669)
       let h2hAvg: number | null = null;
@@ -1776,13 +1712,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         
         // Debug: log opponent normalization
         if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
-          // Debug logging removed(`[calculatePlayerAverages][H2H Normalization] ${playerName} ${statType}:`, {
-            originalOpponent: opponent,
-            correctOpponent,
-            normalizedOpponent,
-            playerTeam,
-            teamFullToAbbrLookup: TEAM_FULL_TO_ABBR[correctOpponent],
-          });
         }
         
         // FIXED to handle players who changed teams
@@ -1821,37 +1750,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           ? h2hStats.reduce((sum: number, val: number) => sum + val, 0) / h2hStats.length
           : null;
         
-        // Debug: log H2H calculation result
-        if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
-          // Debug logging removed(`[calculatePlayerAverages][H2H Result] ${playerName} ${statType} vs ${opponent}:`, {
-            normalizedOpponent,
-            playerTeam,
-            h2hStatsCount: h2hStats.length,
-            h2hAvg: h2hAvg?.toFixed(2),
-            totalGamesAvailable: gamesWithStats.length,
-            sampleOpponents: gamesWithStats.slice(0, 5).map((g: any) => {
-              const homeTeamId = g?.game?.home_team?.id ?? (g?.game as any)?.home_team_id;
-              const visitorTeamId = g?.game?.visitor_team?.id ?? (g?.game as any)?.visitor_team_id;
-              const homeTeamAbbr = g?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
-              const visitorTeamAbbr = g?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
-              const pt = g?.team?.abbreviation || (playerTeam ? (TEAM_FULL_TO_ABBR[playerTeam] || playerTeam) : "");
-              const ptNorm = normalizeAbbr(pt);
-              const ptId = ABBR_TO_TEAM_ID[ptNorm];
-              let opp = "";
-              if (ptId && homeTeamId && visitorTeamId) {
-                if (ptId === homeTeamId && visitorTeamAbbr) opp = normalizeAbbr(visitorTeamAbbr);
-                else if (ptId === visitorTeamId && homeTeamAbbr) opp = normalizeAbbr(homeTeamAbbr);
-              }
-              if (!opp && homeTeamAbbr && visitorTeamAbbr) {
-                const hNorm = normalizeAbbr(homeTeamAbbr);
-                const vNorm = normalizeAbbr(visitorTeamAbbr);
-                if (ptNorm === hNorm) opp = vNorm;
-                else if (ptNorm === vNorm) opp = hNorm;
-              }
-              return { date: g?.game?.date, playerTeam: ptNorm, opponent: opp, home: homeTeamAbbr, visitor: visitorTeamAbbr };
-            }),
-          });
-        }
       }
       
       // Calculate H2H hit rate (how many times hit over the line)
@@ -1977,16 +1875,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         streak,
       };
       
-      // Debug logging removed(`[calculatePlayerAverages] ${playerName} (${statType}):`, {
-        totalGames: gamesWithStats.length,
-        last5: last5Avg?.toFixed(1),
-        last10: last10Avg?.toFixed(1),
-        h2h: h2hAvg?.toFixed(1),
-        last5HitRate: last5HitRate ? `${last5HitRate.hits}/${last5HitRate.total}` : null,
-        last10HitRate: last10HitRate ? `${last10HitRate.hits}/${last10HitRate.total}` : null,
-        h2hHitRate: h2hHitRate ? `${h2hHitRate.hits}/${h2hHitRate.total}` : null,
-        opponent,
-      });
       
       return result;
     } catch (error) {

@@ -93,13 +93,6 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           return;
         }
 
-        // Debug logging removed('[OpponentAnalysisCard] Response for', targetOpp, ':', {
-          success: defensiveStatsResponse.success,
-          hasPerGame: !!defensiveStatsResponse.perGame,
-          sampleGames: defensiveStatsResponse.sample_games,
-          error: defensiveStatsResponse.error,
-          fullResponse: defensiveStatsResponse,
-        });
 
         if (defensiveStatsResponse.success === true) {
           const perGame = defensiveStatsResponse.perGame || {};
