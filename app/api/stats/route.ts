@@ -129,7 +129,9 @@ async function bdlFetch(url: URL, timeoutMs: number = 30000) {
   // Add timeout to prevent hanging requests (30s per page is reasonable)
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
-      reject(new Error(`BDL API timeout after ${timeoutMs/1000}s: ${url.toString()}`));
+      // SECURITY: Don't expose full URL in error messages (could contain sensitive params)
+      const urlPath = url.pathname + url.search.replace(/[?&]api[_-]?key=[^&]*/gi, '').replace(/[?&]token=[^&]*/gi, '');
+      reject(new Error(`BDL API timeout after ${timeoutMs/1000}s: ${urlPath}`));
     }, timeoutMs);
   });
 
@@ -149,7 +151,9 @@ async function bdlFetch(url: URL, timeoutMs: number = 30000) {
   } catch (error: any) {
     // If it's a timeout, make it clear
     if (error.message?.includes('timeout')) {
-      const timeoutError: any = new Error(`BDL API request timed out after ${timeoutMs/1000}s: ${url.toString()}`);
+      // SECURITY: Don't expose full URL in error messages (could contain sensitive params)
+      const urlPath = url.pathname + url.search.replace(/[?&]api[_-]?key=[^&]*/gi, '').replace(/[?&]token=[^&]*/gi, '');
+      const timeoutError: any = new Error(`BDL API request timed out after ${timeoutMs/1000}s: ${urlPath}`);
       timeoutError.isTimeout = true;
       throw timeoutError;
     }

@@ -10,6 +10,11 @@ if (!BALLDONTLIE_API_KEY) {
   throw new Error('BALLDONTLIE_API_KEY environment variable is required');
 }
 
+// SECURITY: Validate API key format (should not be empty or just whitespace)
+if (!BALLDONTLIE_API_KEY.trim()) {
+  throw new Error('BALLDONTLIE_API_KEY environment variable is invalid');
+}
+
 /**
  * Get live stats for a player in a specific game
  * Query params: playerId, gameId

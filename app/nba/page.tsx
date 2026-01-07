@@ -660,8 +660,9 @@ export default function NBALandingPage() {
                         const data = await response.json();
                         if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
                           setTodaysGames(data.data);
-                          sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
-                          sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
+                          const dataString = JSON.stringify(data.data);
+                          safeSetSessionStorage(cacheKey, dataString);
+                          safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
                         }
                       }
                     }).catch(() => {});
@@ -693,14 +694,11 @@ export default function NBALandingPage() {
         
         // Cache games for dashboard (same format as dashboard uses)
         if (typeof window !== 'undefined' && games.length > 0) {
-          try {
-            const cacheKey = `dashboard-games-${start}-${end}`;
-            sessionStorage.setItem(cacheKey, JSON.stringify(games));
-            sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
-            clientLogger.debug(`✅ Cached ${games.length} games for dashboard pre-fetch`);
-          } catch (e) {
-            // Ignore storage errors
-          }
+          const cacheKey = `dashboard-games-${start}-${end}`;
+          const gamesString = JSON.stringify(games);
+          safeSetSessionStorage(cacheKey, gamesString);
+          safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
+          clientLogger.debug(`✅ Cached ${games.length} games for dashboard pre-fetch`);
         }
       } catch (error) {
         clientLogger.error('Error fetching games:', error);
@@ -2076,9 +2074,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const saveFiltersToStorage = (bookmakers: Set<string>, propTypes: Set<string>, games: Set<number>) => {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('nba_filters_bookmakers', JSON.stringify(Array.from(bookmakers)));
-      localStorage.setItem('nba_filters_propTypes', JSON.stringify(Array.from(propTypes)));
-      localStorage.setItem('nba_filters_games', JSON.stringify(Array.from(games)));
+      try {
+        localStorage.setItem('nba_filters_bookmakers', JSON.stringify(Array.from(bookmakers)));
+        localStorage.setItem('nba_filters_propTypes', JSON.stringify(Array.from(propTypes)));
+        localStorage.setItem('nba_filters_games', JSON.stringify(Array.from(games)));
+      } catch (e: any) {
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+          clientLogger.warn('[NBA Landing] localStorage quota exceeded when saving filters');
+        } else {
+          clientLogger.warn('[NBA Landing] Failed to save filters to localStorage:', e);
+        }
+      }
     } catch (e) {
       console.warn('[NBA Landing] Failed to save filters to localStorage:', e);
     }
@@ -2836,7 +2842,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               setOddsFormat={(format) => {
                 const formatValue = typeof format === 'function' ? format(oddsFormat) : format;
                 setOddsFormat(formatValue);
-                localStorage.setItem('oddsFormat', formatValue);
+                try {
+                  localStorage.setItem('oddsFormat', formatValue);
+                } catch (e: any) {
+                  if (e.name === 'QuotaExceededError' || e.code === 22) {
+                    clientLogger.warn('[NBA Landing] localStorage quota exceeded when saving odds format');
+                  } else {
+                    clientLogger.warn('[NBA Landing] Failed to save odds format to localStorage:', e);
+                  }
+                }
               }}
               hasPremium={isPro}
               avatarUrl={avatarUrl}
