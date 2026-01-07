@@ -190,51 +190,97 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     }
   }
 
-  // Fetch the HTML page
-  const response = await fetch(BETTINGPROS_URL, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    throw new Error(`BettingPros ${response.status}: ${response.statusText}`);
-  }
-
-  const html = await response.text();
+  // Fetch the HTML page with timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
   
-  if (!html || html.length < 1000) {
-    throw new Error('BettingPros returned empty or invalid HTML');
-  }
-  
-  let bpData;
   try {
-    bpData = extractStatsFromHTML(html);
-  } catch (extractError: any) {
-    console.error('[BettingPros] Error extracting data from HTML:', extractError.message);
-    // Try to use cached data if available (even if expired)
-    const staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
-      console.warn('[BettingPros] Using stale cached data due to extraction error');
-      return staleCache;
+    const response = await fetch(BETTINGPROS_URL, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // Try to use stale cache if available
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn(`[BettingPros] HTTP ${response.status}, using stale cached data`);
+        return staleCache;
+      }
+      throw new Error(`BettingPros ${response.status}: ${response.statusText}`);
     }
-    throw new Error(`Failed to extract BettingPros data: ${extractError.message}`);
+
+    const html = await response.text();
+
+    if (!html || html.length < 1000) {
+      // Try to use stale cache if available
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn('[BettingPros] Empty/invalid HTML, using stale cached data');
+        return staleCache;
+      }
+      throw new Error('BettingPros returned empty or invalid HTML');
+    }
+    
+    let bpData;
+    try {
+      bpData = extractStatsFromHTML(html);
+    } catch (extractError: any) {
+      console.error('[BettingPros] Error extracting data from HTML:', extractError.message);
+      // Try to use cached data if available (even if expired)
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn('[BettingPros] Using stale cached data due to extraction error');
+        return staleCache;
+      }
+      throw new Error(`Failed to extract BettingPros data: ${extractError.message}`);
+    }
+    
+    // Validate the extracted data structure
+    if (!bpData || typeof bpData !== 'object') {
+      // Try to use stale cache if available
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn('[BettingPros] Invalid data structure, using stale cached data');
+        return staleCache;
+      }
+      throw new Error('Extracted BettingPros data is not a valid object');
+    }
+    
+    if (!bpData.teamStats || typeof bpData.teamStats !== 'object') {
+      // Try to use stale cache if available
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn('[BettingPros] Missing teamStats, using stale cached data');
+        return staleCache;
+      }
+      throw new Error('BettingPros data missing teamStats property');
+    }
+    
+    // Cache for 1 hour (3600000 ms)
+    cache.set(cacheKey, bpData, 3600000);
+    
+    return bpData;
+  } catch (fetchError: any) {
+    clearTimeout(timeoutId);
+    
+    // If it's a timeout or network error, try to use stale cache
+    if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout') || fetchError.message?.includes('fetch')) {
+      const staleCache = cache.get<any>(cacheKey);
+      if (staleCache) {
+        console.warn('[BettingPros] Fetch failed (timeout/network), using stale cached data:', fetchError.message);
+        return staleCache;
+      }
+    }
+    
+    // Re-throw if no cache available
+    throw fetchError;
   }
-  
-  // Validate the extracted data structure
-  if (!bpData || typeof bpData !== 'object') {
-    throw new Error('Extracted BettingPros data is not a valid object');
-  }
-  
-  if (!bpData.teamStats || typeof bpData.teamStats !== 'object') {
-    throw new Error('BettingPros data missing teamStats property');
-  }
-  
-  // Cache for 1 hour (3600000 ms)
-  cache.set(cacheKey, bpData, 3600000);
-  
-  return bpData;
 }

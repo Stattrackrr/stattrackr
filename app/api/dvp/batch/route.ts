@@ -63,6 +63,15 @@ export async function GET(request: NextRequest) {
       bpData = await fetchBettingProsData(forceRefresh);
     } catch (fetchError: any) {
       console.error('[DVP Batch] Error fetching BettingPros data:', fetchError);
+      
+      // If we have cached data (even stale), try to return partial data instead of error
+      const cacheKey = `dvp_batch:${teamAbbr}:${seasonYear}:${metrics.join(',')}:${pos}`;
+      const cachedData = cache.get<any>(cacheKey);
+      if (cachedData) {
+        console.warn('[DVP Batch] Using cached data due to fetch error');
+        return NextResponse.json(cachedData);
+      }
+      
       const isProduction = process.env.NODE_ENV === 'production';
       return NextResponse.json(
         {
