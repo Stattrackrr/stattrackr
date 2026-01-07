@@ -156,8 +156,28 @@ export async function GET(request: NextRequest) {
     };
 
     for (const result of results) {
+      if (result.error) {
+        console.warn(`[DVP Rank Batch] Skipping ${result.metric} due to error: ${result.error}`);
+        continue;
+      }
+      if (!result.ranks || Object.keys(result.ranks).length === 0) {
+        console.warn(`[DVP Rank Batch] Skipping ${result.metric} - empty ranks`);
+        continue;
+      }
       response.metrics[result.metric] = result.ranks;
     }
+    
+    // Debug: log final response structure
+    console.log(`[DVP Rank Batch] Final response structure:`, {
+      pos: response.pos,
+      games: response.games,
+      metricKeys: Object.keys(response.metrics),
+      totalMetrics: Object.keys(response.metrics).length,
+      sampleMetric: response.metrics.pts ? {
+        teamCount: Object.keys(response.metrics.pts).length,
+        sampleTeams: Object.keys(response.metrics.pts).slice(0, 5)
+      } : null
+    });
 
     // Cache the response
     cache.set(cacheKey, response, CACHE_TTL.ADVANCED_STATS);
