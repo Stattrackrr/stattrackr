@@ -200,7 +200,7 @@ export default function LoginPage() {
               isDark={true}
             />
             <p className="text-xl text-slate-300 mb-8">
-              Track results. Master your game.
+              Advanced NBA Sports Analytics & Data Analysis Platform
             </p>
           </div>
 

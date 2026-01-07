@@ -1,7 +1,7 @@
 {
   "name": "StatTrackr",
   "short_name": "StatTrackr",
-  "description": "Track results. Master your game.",
+  "description": "NBA Sports Analytics & Data Analysis Platform - Track player statistics, team performance metrics, and defensive analytics.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

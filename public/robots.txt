@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Site category: Sports Analytics & Data Analysis
+# This is a sports statistics and analytics platform, not a gambling site
+# Content focuses on NBA data analysis, player statistics, and team performance metrics
+
+Sitemap: https://www.stattrackr.co/sitemap.xml
+
