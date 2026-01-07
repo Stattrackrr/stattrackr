@@ -93,6 +93,16 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
         }
         return;
       }
+      
+      // Validate team is not "N/A" or invalid
+      if (targetOpp === 'N/A' || targetOpp.trim() === '' || targetOpp.trim() === 'N/A') {
+        setPerStat({});
+        setPerRank({});
+        setSample(0);
+        setLoading(false);
+        setError(null); // Don't show error for invalid team, just don't load
+        return;
+      }
 
       // Check if we have both team DVP and rank data cached
       const teamCacheKey = `${targetOpp}:82`;
@@ -149,7 +159,12 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
               60 // Cache for 60 minutes
-            ).then(data => ({ type: 'team', data }))
+            )
+            .then(data => ({ type: 'team', data }))
+            .catch((error: any) => {
+              clientLogger.error('[DVP Frontend] Team fetch error:', error);
+              return { type: 'team', data: { error: error.message || 'Failed to fetch team data' } };
+            })
           );
         }
         
@@ -159,7 +174,12 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
               undefined,
               60 // Cache for 60 minutes
-            ).then(data => ({ type: 'rank', data }))
+            )
+            .then(data => ({ type: 'rank', data }))
+            .catch((error: any) => {
+              clientLogger.error('[DVP Frontend] Rank fetch error:', error);
+              return { type: 'rank', data: { error: error.message || 'Failed to fetch rank data' } };
+            })
           );
         }
         
