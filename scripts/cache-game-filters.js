@@ -780,7 +780,13 @@ async function getDvpRanks(opponentAbbr, season) {
     }
     
     const jsonStr = html.substring(jsonStart, jsonEnd);
-    const bpData = eval('(' + jsonStr + ')');
+    let bpData;
+    try {
+      bpData = JSON.parse(jsonStr);
+    } catch (error) {
+      console.error('Error parsing JSON:', error.message);
+      throw new Error(`Failed to parse JSON: ${error.message}`);
+    }
     
     // Map team abbreviations
     const OUR_TO_BP_ABBR = { 'NOP': 'NOR', 'PHX': 'PHO', 'UTA': 'UTH' };

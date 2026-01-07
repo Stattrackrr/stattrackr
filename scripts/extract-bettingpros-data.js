@@ -42,8 +42,8 @@ const jsonStr = html.substring(jsonStart, jsonEnd);
 console.log(`📏 Extracted JSON string: ${jsonStr.length} characters\n`);
 
 try {
-  // Parse the JSON
-  const statsData = eval('(' + jsonStr + ')');
+  // Parse the JSON safely
+  const statsData = JSON.parse(jsonStr);
   
   console.log('✅ Successfully parsed JSON data\n');
   console.log('📊 Data structure:');

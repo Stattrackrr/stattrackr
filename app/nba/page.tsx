@@ -231,6 +231,14 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
   );
 }
 
+// Constants
+const SEARCH_DEBOUNCE_MS = 300;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_STORAGE_MAX_SIZE = 4 * 1024 * 1024; // 4MB (conservative limit, most browsers allow 5-10MB)
+const BATCH_DELAY_MS = 500;
+const ODDS_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
+
 export default function NBALandingPage() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
@@ -247,7 +255,7 @@ export default function NBALandingPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 300); // 300ms delay
+    }, SEARCH_DEBOUNCE_MS);
     
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -618,6 +626,7 @@ export default function NBALandingPage() {
   }, [router]);
 
   // Fetch games (today plus nearby) to keep props-linked games selected across date boundaries
+  // OPTIMIZATION: Pre-fetch games immediately and cache them for dashboard
   useEffect(() => {
     const fetchTodaysGames = async () => {
       try {
@@ -625,8 +634,48 @@ export default function NBALandingPage() {
         
         const today = new Date();
         const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-        // Include a wider window (next 2 days) so future games with props stay selectable
-        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2).toISOString().split('T')[0];
+        // Include a wider window (next 7 days) to match dashboard cache key format
+        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+
+        // Check sessionStorage first (same cache key format as dashboard for instant load)
+        if (typeof window !== 'undefined') {
+          try {
+            const cacheKey = `dashboard-games-${start}-${end}`;
+            const cachedData = sessionStorage.getItem(cacheKey);
+            const cachedTimestamp = sessionStorage.getItem(`${cacheKey}-timestamp`);
+            const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+            
+            if (cachedData && cachedTimestamp) {
+              const age = Date.now() - parseInt(cachedTimestamp, 10);
+              if (age < CACHE_TTL_MS) {
+                try {
+                  const parsed = JSON.parse(cachedData);
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    clientLogger.debug(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
+                    setTodaysGames(parsed);
+                    setGamesLoading(false);
+                    // Still fetch in background to update if needed (non-blocking)
+                    fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' }).then(async (response) => {
+                      if (response.ok) {
+                        const data = await response.json();
+                        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+                          setTodaysGames(data.data);
+                          sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
+                          sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
+                        }
+                      }
+                    }).catch(() => {});
+                    return;
+                  }
+                } catch (e) {
+                  clientLogger.warn('Failed to parse cached games data, fetching fresh');
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore sessionStorage errors, continue to fetch
+          }
+        }
 
         const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
         const data = await response.json();
@@ -641,6 +690,18 @@ export default function NBALandingPage() {
         })));
         
         setTodaysGames(games);
+        
+        // Cache games for dashboard (same format as dashboard uses)
+        if (typeof window !== 'undefined' && games.length > 0) {
+          try {
+            const cacheKey = `dashboard-games-${start}-${end}`;
+            sessionStorage.setItem(cacheKey, JSON.stringify(games));
+            sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
+            clientLogger.debug(`✅ Cached ${games.length} games for dashboard pre-fetch`);
+          } catch (e) {
+            // Ignore storage errors
+          }
+        }
       } catch (error) {
         clientLogger.error('Error fetching games:', error);
         setTodaysGames([]);
@@ -704,7 +765,7 @@ export default function NBALandingPage() {
       
       // Small delay between batches to avoid rate limiting
       if (i + batchSize < teams.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
       }
     }
     
@@ -715,12 +776,34 @@ export default function NBALandingPage() {
   // Initialize to false - will be set to true when props are loaded
   // Note: We removed initialState check to prevent hydration mismatch
   
+  // Helper function to safely set sessionStorage with size check
+  const safeSetSessionStorage = (key: string, value: string): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+      // Check size before storing (rough estimate: 1 char ≈ 1 byte for JSON)
+      const estimatedSize = value.length;
+      if (estimatedSize > SESSION_STORAGE_MAX_SIZE) {
+        clientLogger.warn(`[NBA Landing] Data too large for sessionStorage (${estimatedSize} bytes):`, key);
+        return false;
+      }
+      sessionStorage.setItem(key, value);
+      return true;
+    } catch (e: any) {
+      // Handle QuotaExceededError specifically
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn(`[NBA Landing] SessionStorage quota exceeded for key:`, key);
+      } else {
+        clientLogger.warn(`[NBA Landing] Failed to set sessionStorage:`, key, e);
+      }
+      return false;
+    }
+  };
+
   // Fetch player props with good win chances from BDL
   useEffect(() => {
     // Cache keys (defined outside functions so they're accessible to both fetchPlayerProps and checkOddsUpdate)
     const CACHE_KEY = 'nba-player-props-cache';
     const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
-    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache TTL
     
     const fetchPlayerProps = async () => {
       try {
@@ -753,12 +836,9 @@ export default function NBALandingPage() {
               if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
                 setPlayerProps(data.data);
                 if (typeof window !== 'undefined') {
-                  try {
-                    sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
-                    sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-                  } catch (e) {
-                    // Ignore storage errors
-                  }
+                  const dataString = JSON.stringify(data.data);
+                  safeSetSessionStorage(CACHE_KEY, dataString);
+                  safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
                 }
               }
             }
@@ -777,7 +857,50 @@ export default function NBALandingPage() {
                 const parsed = JSON.parse(cachedData);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   clientLogger.debug(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
-                  setPlayerProps(parsed);
+                  
+                  // Merge in any calculated stats from sessionStorage
+                  let propsWithMergedStats = parsed;
+                  try {
+                    const CALCULATED_STATS_KEY = 'nba-player-props-calculated-stats';
+                    const stored = sessionStorage.getItem(CALCULATED_STATS_KEY);
+                    if (stored) {
+                      const calculatedStats = JSON.parse(stored);
+                      if (Array.isArray(calculatedStats)) {
+                        const calculatedMap = new Map<string, PlayerProp>();
+                        calculatedStats.forEach((prop: PlayerProp) => {
+                          const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                          calculatedMap.set(key, prop);
+                        });
+                        
+                        // Merge calculated stats into props
+                        propsWithMergedStats = parsed.map((prop: PlayerProp) => {
+                          const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                          const calculated = calculatedMap.get(key);
+                          if (calculated) {
+                            return {
+                              ...prop,
+                              h2hAvg: calculated.h2hAvg ?? prop.h2hAvg,
+                              seasonAvg: calculated.seasonAvg ?? prop.seasonAvg,
+                              h2hHitRate: calculated.h2hHitRate ?? prop.h2hHitRate,
+                              seasonHitRate: calculated.seasonHitRate ?? prop.seasonHitRate,
+                            };
+                          }
+                          return prop;
+                        });
+                        
+                        // Also update the calculated stats state
+                        setPropsWithCalculatedStats(calculatedMap);
+                        calculatedStats.forEach((prop: PlayerProp) => {
+                          const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                          calculatedKeysRef.current.add(key);
+                        });
+                      }
+                    }
+                  } catch (e) {
+                    // Ignore errors
+                  }
+                  
+                  setPlayerProps(propsWithMergedStats);
                   propsLoadedRef.current = true; // Mark as loaded
                   initialFetchCompletedRef.current = true; // Mark initial fetch as completed
                   setPropsLoading(false);
@@ -787,8 +910,9 @@ export default function NBALandingPage() {
                       const data = await response.json();
                       if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
                         setPlayerProps(data.data);
-                        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
-                        sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                        const dataString = JSON.stringify(data.data);
+                        safeSetSessionStorage(CACHE_KEY, dataString);
+                        safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
                       }
                     }
                   }).catch(() => {});
@@ -851,19 +975,62 @@ export default function NBALandingPage() {
               sampleProp.bookmakerLines?.map(b => b.bookmaker).join(', ') || 'none'
             );
           }
-            setPlayerProps(cacheData.data);
+          
+          // Merge in any calculated stats from sessionStorage
+          let propsWithMergedStats = cacheData.data;
+          if (typeof window !== 'undefined') {
+            try {
+              const CALCULATED_STATS_KEY = 'nba-player-props-calculated-stats';
+              const stored = sessionStorage.getItem(CALCULATED_STATS_KEY);
+              if (stored) {
+                const calculatedStats = JSON.parse(stored);
+                if (Array.isArray(calculatedStats)) {
+                  const calculatedMap = new Map<string, PlayerProp>();
+                  calculatedStats.forEach((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    calculatedMap.set(key, prop);
+                  });
+                  
+                  // Merge calculated stats into props
+                  propsWithMergedStats = cacheData.data.map((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    const calculated = calculatedMap.get(key);
+                    if (calculated) {
+                      return {
+                        ...prop,
+                        h2hAvg: calculated.h2hAvg ?? prop.h2hAvg,
+                        seasonAvg: calculated.seasonAvg ?? prop.seasonAvg,
+                        h2hHitRate: calculated.h2hHitRate ?? prop.h2hHitRate,
+                        seasonHitRate: calculated.seasonHitRate ?? prop.seasonHitRate,
+                      };
+                    }
+                    return prop;
+                  });
+                  
+                  // Also update the calculated stats state
+                  setPropsWithCalculatedStats(calculatedMap);
+                  calculatedStats.forEach((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    calculatedKeysRef.current.add(key);
+                  });
+                }
+              }
+            } catch (e) {
+              // Ignore errors
+            }
+          }
+          
+            setPlayerProps(propsWithMergedStats);
             propsLoadedRef.current = true; // Mark as loaded
             initialFetchCompletedRef.current = true; // Mark initial fetch as completed
             setPropsProcessing(false); // Reset processing state when we have data
             
             // Save to sessionStorage for instant load on back navigation
             if (typeof window !== 'undefined') {
-              try {
-                sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData.data));
-                sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+              const dataString = JSON.stringify(cacheData.data);
+              if (safeSetSessionStorage(CACHE_KEY, dataString)) {
+                safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
                 clientLogger.debug(`[NBA Landing] 💾 Cached ${cacheData.data.length} player props to sessionStorage`);
-              } catch (e) {
-                clientLogger.warn('[NBA Landing] ⚠️ Failed to cache to sessionStorage:', e);
               }
             }
             
@@ -937,20 +1104,17 @@ export default function NBALandingPage() {
             clientLogger.debug('[NBA Landing] 🔄 Odds updated, refreshing player props in background...');
             // Fetch new props in background and update when ready
             fetch('/api/nba/player-props', { cache: 'default' }).then(async (response) => {
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-                  setPlayerProps(data.data);
-                  if (typeof window !== 'undefined') {
-                    try {
-                      sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
-                      sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-                    } catch (e) {
-                      clientLogger.warn('[NBA Landing] ⚠️ Failed to update sessionStorage:', e);
+                  if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                      setPlayerProps(data.data);
+                      if (typeof window !== 'undefined') {
+                        const dataString = JSON.stringify(data.data);
+                        safeSetSessionStorage(CACHE_KEY, dataString);
+                        safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                      }
                     }
                   }
-                }
-              }
             }).catch(() => {});
           }
           
@@ -962,15 +1126,16 @@ export default function NBALandingPage() {
     };
     
     // Check every 10 minutes for odds updates (reduced from 2 minutes)
-    const oddsCheckInterval = setInterval(checkOddsUpdate, 10 * 60 * 1000);
+    const oddsCheckInterval = setInterval(checkOddsUpdate, ODDS_CHECK_INTERVAL_MS);
     
     // Initial check after 30 seconds (give odds refresh time to complete)
-    setTimeout(() => {
+    const initialCheckTimeout = setTimeout(() => {
       checkOddsUpdate();
-    }, 30 * 1000);
+    }, INITIAL_ODDS_CHECK_DELAY_MS);
     
     return () => {
       clearInterval(oddsCheckInterval);
+      clearTimeout(initialCheckTimeout);
     };
   }, []);
 
@@ -1102,9 +1267,68 @@ export default function NBALandingPage() {
 // Debug helpers
 const DEBUG_H2H_PLAYER = (process.env.NEXT_PUBLIC_DEBUG_H2H_PLAYER || '').toLowerCase().trim();
 
-// Simple in-memory cache to reduce duplicate /api/stats calls per player/season/postseason
-const playerStatsCache = new Map<string, any[]>();
-const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
+// LRU Cache implementation for player stats
+class LRUCache<T> {
+  private cache = new Map<string, T>();
+  private readonly maxSize: number;
+  private accessOrder = new Map<string, number>();
+
+  constructor(maxSize: number = 100) {
+    this.maxSize = maxSize;
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  get(key: string): T | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      // Update access time for LRU
+      this.accessOrder.set(key, Date.now());
+    }
+    return value;
+  }
+
+  set(key: string, value: T): void {
+    // If cache is full, evict least recently used
+    if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
+      this.evictLRU();
+    }
+    this.cache.set(key, value);
+    this.accessOrder.set(key, Date.now());
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+    this.accessOrder.delete(key);
+  }
+
+  private evictLRU(): void {
+    if (this.accessOrder.size === 0) return;
+    
+    // Find least recently used key
+    let lruKey: string | null = null;
+    let lruTime = Infinity;
+    
+    for (const [key, time] of this.accessOrder.entries()) {
+      if (time < lruTime) {
+        lruTime = time;
+        lruKey = key;
+      }
+    }
+    
+    if (lruKey) {
+      this.cache.delete(lruKey);
+      this.accessOrder.delete(lruKey);
+    }
+  }
+}
+
+// LRU caches to reduce duplicate /api/stats calls per player/season/postseason
+// Limited to 100 entries each to prevent memory leaks
+const playerStatsCache = new LRUCache<any[]>(100);
+const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
 // Calculate L5, L10, H2H averages and hit rates
   const calculatePlayerAverages = async (
@@ -1150,12 +1374,14 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         const cacheKey = `${playerId}-${yr}-all`;
 
         // Return cached data if available
-        if (playerStatsCache.has(cacheKey)) {
-          return playerStatsCache.get(cacheKey)!;
+        const cached = playerStatsCache.get(cacheKey);
+        if (cached) {
+          return cached;
         }
         // If a fetch is already in flight, await it
-        if (playerStatsPromiseCache.has(cacheKey)) {
-          return playerStatsPromiseCache.get(cacheKey)!;
+        const pendingPromise = playerStatsPromiseCache.get(cacheKey);
+        if (pendingPromise) {
+          return pendingPromise;
         }
 
         const fetchSingle = async (postseason: boolean, suffix: string): Promise<any[]> => {
@@ -1164,8 +1390,9 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
           const singleCacheKey = `${playerId}-${yr}-${postseason ? 'po' : 'reg'}`;
           
           // Return cached data if available
-          if (playerStatsCache.has(singleCacheKey)) {
-            return playerStatsCache.get(singleCacheKey)!;
+          const cachedSingle = playerStatsCache.get(singleCacheKey);
+          if (cachedSingle) {
+            return cachedSingle;
           }
           
           for (let attempt = 0; attempt <= retries; attempt++) {
@@ -1442,8 +1669,22 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
         };
       }
 
-      // Season average: Calculate average from all games in gamesWithStats
-      const seasonValues = gamesWithStats.map((g: any) => g.statValue);
+      // Filter to current season games only (same logic as server-side)
+      const getSeasonYear = (stats: any) => {
+        if (!stats?.game?.date) return null;
+        const gameDate = new Date(stats.game.date);
+        const gameYear = gameDate.getFullYear();
+        const gameMonth = gameDate.getMonth();
+        return gameMonth >= 9 ? gameYear : gameYear - 1;
+      };
+
+      const currentSeasonGames = gamesWithStats.filter((stats: any) => {
+        const gameSeasonYear = getSeasonYear(stats);
+        return gameSeasonYear === currentSeason;
+      });
+
+      // Season average: Calculate average from current season games only
+      const seasonValues = currentSeasonGames.map((g: any) => g.statValue);
       const seasonSum = seasonValues.reduce((sum: number, val: number) => sum + val, 0);
       const seasonAvg = seasonValues.length > 0 ? seasonSum / seasonValues.length : null;
       
@@ -1785,7 +2026,8 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     }
   };
 
-  const getStatLabel = (statType: string) => {
+  // Memoize getStatLabel to prevent recreation on every render
+  const getStatLabel = useCallback((statType: string) => {
     const labels: Record<string, string> = {
       'PTS': 'Points',
       'REB': 'Rebounds',
@@ -1799,7 +2041,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
       'RA': 'Rebounds + Assists',
     };
     return labels[statType] || statType;
-  };
+  }, []);
 
   // Extract unique bookmakers and prop types from playerProps
   const availableBookmakers = useMemo(() => {
@@ -2291,6 +2533,157 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
     const start = (currentPageSafe - 1) * pageSize;
     return displaySortedProps.slice(start, start + pageSize);
   }, [displaySortedProps, currentPageSafe]);
+
+  // Calculate missing stats for props that don't have seasonAvg or h2hAvg
+  // This is a fallback for props that were cached without these stats
+  const [propsWithCalculatedStats, setPropsWithCalculatedStats] = useState<Map<string, PlayerProp>>(new Map());
+  const calculatedKeysRef = useRef<Set<string>>(new Set());
+  const calculatingRef = useRef<Set<string>>(new Set());
+  
+  // Load calculated stats from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const CALCULATED_STATS_KEY = 'nba-player-props-calculated-stats';
+      const stored = sessionStorage.getItem(CALCULATED_STATS_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const statsMap = new Map<string, PlayerProp>();
+          parsed.forEach((prop: PlayerProp) => {
+            const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+            statsMap.set(key, prop);
+            calculatedKeysRef.current.add(key);
+          });
+          setPropsWithCalculatedStats(statsMap);
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }, []);
+  
+  useEffect(() => {
+    let isCancelled = false;
+    const abortControllers = new Map<string, AbortController>();
+    
+    const calculateMissingStats = async () => {
+      const propsToCalculate = paginatedPlayerProps.filter(prop => {
+        const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+        const needsCalculation = (prop.h2hAvg === null || prop.h2hAvg === undefined || prop.seasonAvg === null || prop.seasonAvg === undefined) &&
+          prop.playerName && prop.statType && prop.opponent && prop.line !== undefined;
+        return needsCalculation && !calculatedKeysRef.current.has(key) && !calculatingRef.current.has(key);
+      });
+      
+      if (propsToCalculate.length === 0 || isCancelled) return;
+      
+      // Calculate stats for props that are missing them
+      const calculations = propsToCalculate.map(async (prop) => {
+        if (isCancelled) return;
+        
+        const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+        const abortController = new AbortController();
+        abortControllers.set(key, abortController);
+        
+        // Mark as calculating
+        calculatingRef.current.add(key);
+        
+        try {
+          const stats = await calculatePlayerAverages(
+            prop.playerName,
+            prop.statType,
+            prop.opponent,
+            prop.team,
+            prop.line
+          );
+          
+          // Check if cancelled before updating state
+          if (isCancelled) return;
+          
+          // Only update if we got valid stats
+          if (stats.h2h !== null || stats.seasonAvg !== null) {
+            const updatedProp = {
+              ...prop,
+              h2hAvg: stats.h2h ?? prop.h2hAvg,
+              seasonAvg: stats.seasonAvg ?? prop.seasonAvg,
+              h2hHitRate: stats.h2hHitRate ?? prop.h2hHitRate,
+              seasonHitRate: stats.seasonHitRate ?? prop.seasonHitRate,
+            };
+            
+            // Update local state
+            setPropsWithCalculatedStats(prev => {
+              const newMap = new Map(prev);
+              newMap.set(key, updatedProp);
+              
+              // Save calculated stats to sessionStorage
+              if (typeof window !== 'undefined' && !isCancelled) {
+                const CALCULATED_STATS_KEY = 'nba-player-props-calculated-stats';
+                const statsArray = Array.from(newMap.values());
+                const statsString = JSON.stringify(statsArray);
+                safeSetSessionStorage(CALCULATED_STATS_KEY, statsString);
+              }
+              
+              return newMap;
+            });
+            
+            // Update main playerProps state and persist to cache
+            setPlayerProps(prev => {
+              const updated = prev.map(p => {
+                const propKey = `${p.playerName}|${p.statType}|${p.opponent}|${p.line}`;
+                if (propKey === key) {
+                  return updatedProp;
+                }
+                return p;
+              });
+              
+              // Save to sessionStorage
+              if (typeof window !== 'undefined' && !isCancelled) {
+                const CACHE_KEY = 'nba-player-props-cache';
+                const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+                const dataString = JSON.stringify(updated);
+                safeSetSessionStorage(CACHE_KEY, dataString);
+                safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
+              }
+              
+              return updated;
+            });
+            
+            calculatedKeysRef.current.add(key);
+          }
+        } catch (error) {
+          clientLogger.warn(`[Props Page] Failed to calculate stats for ${prop.playerName} ${prop.statType}:`, error);
+        } finally {
+          calculatingRef.current.delete(key);
+          abortControllers.delete(key);
+        }
+      });
+      
+      await Promise.all(calculations);
+    };
+    
+    calculateMissingStats();
+    
+    // Cleanup function
+    return () => {
+      isCancelled = true;
+      // Cancel all in-flight calculations
+      abortControllers.forEach((controller) => {
+        controller.abort();
+      });
+      abortControllers.clear();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginatedPlayerProps]);
+  
+  // Merge calculated stats into paginated props
+  const finalPaginatedProps = useMemo(() => {
+    return paginatedPlayerProps.map(prop => {
+      const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+      const calculated = propsWithCalculatedStats.get(key);
+      return calculated || prop;
+    });
+  }, [paginatedPlayerProps, propsWithCalculatedStats]);
 
   const toggleBookmaker = (bookmaker: string) => {
     setSelectedBookmakers(prev => {
@@ -3367,7 +3760,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                           </tr>
                         </thead>
                         <tbody>
-                          {paginatedPlayerProps.map((prop, idx) => {
+                          {finalPaginatedProps.map((prop, idx) => {
                             const bdlId = getPlayerIdFromName(prop.playerName); // BDL ID for stats API
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
                             const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
@@ -3418,9 +3811,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   
                                   // Store in sessionStorage so it persists even if console is cleared
                                   if (typeof window !== 'undefined') {
-                                    try {
-                                      sessionStorage.setItem('last_prop_click', JSON.stringify(clickData));
-                                    } catch {}
+                                    safeSetSessionStorage('last_prop_click', JSON.stringify(clickData));
                                   }
                                   
                                   const normalizedStat = normalizeStatForDashboard(prop.statType);
@@ -3436,9 +3827,7 @@ const playerStatsPromiseCache = new Map<string, Promise<any[]>>();
                                   
                                   // Store final URL for debugging
                                   if (typeof window !== 'undefined') {
-                                    try {
-                                      sessionStorage.setItem('last_prop_url', finalUrl);
-                                    } catch {}
+                                    safeSetSessionStorage('last_prop_url', finalUrl);
                                   }
                                   
                                   // Clear saved dashboard session to avoid flashing previous player/stat on navigation

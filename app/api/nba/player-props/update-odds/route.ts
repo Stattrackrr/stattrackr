@@ -280,43 +280,81 @@ async function processNewProps(newProps: any[], oddsCache: OddsCache): Promise<a
 /**
  * Get player position from depth chart (simplified version)
  */
+// Cache depth chart responses per team to avoid duplicate requests
+const depthChartCache = new Map<string, { data: any; timestamp: number }>();
+const DEPTH_CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to find player in depth chart
+function findPlayerInDepthChart(depthChart: any, playerName: string): 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null {
+  const normalize = (s: string) => {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, ' ')
+      .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+  
+  const normalizedPlayerName = normalize(playerName);
+  const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
+  
+  for (const pos of positions) {
+    const players = depthChart[pos] || [];
+    for (const player of players) {
+      const playerNameFromChart = typeof player === 'string' ? player : (player?.name || player?.displayName || '');
+      const normalizedChartName = normalize(playerNameFromChart);
+      if (normalizedChartName === normalizedPlayerName || 
+          normalizedChartName.includes(normalizedPlayerName) ||
+          normalizedPlayerName.includes(normalizedChartName)) {
+        return pos;
+      }
+    }
+  }
+  
+  return null;
+}
+
 async function getPlayerPositionFromDepthChart(baseUrl: string, playerName: string, team: string): Promise<'PG' | 'SG' | 'SF' | 'PF' | 'C' | null> {
-  if (!team) return null;
+  if (!team) {
+    return null;
+  }
   
   try {
     const teamAbbr = TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim();
-    const url = `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`;
-    const response = await queuedFetch(url, { cache: 'no-store' });
     
-    if (!response.ok) return null;
+    // Check cache first
+    const cacheKey = teamAbbr;
+    const cached = depthChartCache.get(cacheKey);
+    const cacheAge = cached ? Date.now() - cached.timestamp : null;
+    const isCacheValid = cached && cacheAge !== null && cacheAge < DEPTH_CHART_CACHE_TTL;
     
-    const data = await response.json();
-    if (!data?.success || !data.depthChart) return null;
-    
-    const normalize = (s: string) => {
-      return String(s || '')
-        .toLowerCase()
-        .replace(/[^a-z\s]/g, ' ')
-        .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    };
-    
-    const normalizedPlayerName = normalize(playerName);
-    const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
-    
-    for (const pos of positions) {
-      const players = data.depthChart[pos] || [];
-      for (const player of players) {
-        const playerNameFromChart = typeof player === 'string' ? player : (player?.name || player?.displayName || '');
-        const normalizedChartName = normalize(playerNameFromChart);
-        if (normalizedChartName === normalizedPlayerName || 
-            normalizedChartName.includes(normalizedPlayerName) ||
-            normalizedPlayerName.includes(normalizedChartName)) {
-          return pos;
-        }
+    if (isCacheValid) {
+      // Use cached data
+      const data = cached.data;
+      if (data?.success && data.depthChart) {
+        const position = findPlayerInDepthChart(data.depthChart, playerName);
+        return position;
       }
     }
+    
+    const url = `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`;
+    const response = await queuedFetch(url, { cache: 'default' });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json();
+    if (!data?.success || !data.depthChart) {
+      return null;
+    }
+    
+    // Cache the response
+    depthChartCache.set(cacheKey, { data, timestamp: Date.now() });
+    
+    // Find player in depth chart
+    const position = findPlayerInDepthChart(data.depthChart, playerName);
+    return position;
   } catch (error) {
     // Silent fail
   }

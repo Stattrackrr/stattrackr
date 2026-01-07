@@ -21,6 +21,7 @@ export interface UseUrlInitializationParams {
   setApiError: (error: string | null) => void;
   playerStats: any[];
   handlePlayerSelectFromSearch: (result: BdlSearchResult) => Promise<void>;
+  fetchTodaysGames?: (options?: { silent?: boolean }) => void;
   statFromUrlRef: React.MutableRefObject<boolean>;
 }
 
@@ -44,11 +45,23 @@ export function useUrlInitialization({
   setApiError,
   playerStats,
   handlePlayerSelectFromSearch,
+  fetchTodaysGames,
   statFromUrlRef,
 }: UseUrlInitializationParams) {
   // On mount: restore from sessionStorage and URL once
   useEffect(() => {
     console.log(`[Dashboard] 🚀 Mount useEffect running - checking URL and session storage`);
+    
+    // OPTIMIZATION: Pre-fetch games immediately if coming from props page
+    // This ensures games are available when player is selected, reducing wait time
+    if (fetchTodaysGames && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const hasPlayerParam = url.searchParams.has('player') || url.searchParams.has('pid') || url.searchParams.has('name');
+      if (hasPlayerParam) {
+        console.log('[Dashboard] 🏀 Pre-fetching games immediately (player param detected)');
+        fetchTodaysGames({ silent: true }); // Silent to avoid loading state flicker
+      }
+    }
     let initialPropsMode: 'player' | 'team' = 'player';
     let shouldLoadDefaultPlayer = true;
     

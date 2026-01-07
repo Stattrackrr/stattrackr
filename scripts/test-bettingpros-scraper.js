@@ -51,7 +51,7 @@ https.get(url, {
           }
           const jsonStr = data.substring(startIdx, endIdx);
           try {
-            const statsData = eval('(' + jsonStr + ')');
+            const statsData = JSON.parse(jsonStr);
             console.log('✅ Successfully parsed JSON data\n');
             console.log('📊 Data structure:');
             console.log(`   - avgGamesPlayed: ${statsData.avgGamesPlayed}`);
@@ -100,8 +100,8 @@ https.get(url, {
       
       // Try to parse it
       try {
-        // Use eval to parse the JavaScript object (safe in this context)
-        const statsData = eval('(' + statsMatch[1] + ')');
+        // Use JSON.parse to safely parse the data
+        const statsData = JSON.parse(statsMatch[1]);
         
         console.log('✅ Successfully parsed JSON data\n');
         console.log('📊 Data structure:');

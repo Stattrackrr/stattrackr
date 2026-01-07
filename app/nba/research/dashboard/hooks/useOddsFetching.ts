@@ -34,6 +34,8 @@ export function useOddsFetching({
   const lastOddsFetchKeyRef = useRef<string | null>(null);
   // Track the last player ID (or name fallback) to prevent unnecessary odds fetches
   const lastOddsPlayerIdRef = useRef<string | null>(null);
+  // Track timeout IDs for cleanup (must be at top level, not inside useEffect)
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
   // Track last propsMode to detect mode changes
   const lastPropsModeRef = useRef<'player' | 'team' | null>(null);
 
@@ -393,6 +395,10 @@ export function useOddsFetching({
       debounceDelay
     });
     
+    // Clear any existing timeouts before starting new ones
+    timeoutIdsRef.current.forEach(id => clearTimeout(id));
+    timeoutIdsRef.current = [];
+    
     // For initial load, fetch immediately without setTimeout
     if (isInitialLoad) {
       console.log('[DEBUG fetchOdds useEffect] Initial load - fetching immediately');
@@ -400,11 +406,16 @@ export function useOddsFetching({
       lastOddsFetchKeyRef.current = fetchKey;
       fetchOddsData().finally(() => {
         // Reset flag after a delay to allow for retries
-        setTimeout(() => {
+        const resetTimeout = setTimeout(() => {
           isFetchingOddsRef.current = false;
         }, 1000);
+        timeoutIdsRef.current.push(resetTimeout);
       });
-      return;
+      return () => {
+        // Cleanup any pending timeouts
+        timeoutIdsRef.current.forEach(id => clearTimeout(id));
+        timeoutIdsRef.current = [];
+      };
     }
     
     // For subsequent loads, use debounce
@@ -414,15 +425,18 @@ export function useOddsFetching({
       lastOddsFetchKeyRef.current = fetchKey;
       fetchOddsData().finally(() => {
         // Reset flag after a delay to allow for retries
-        setTimeout(() => {
+        const resetTimeout = setTimeout(() => {
           isFetchingOddsRef.current = false;
         }, 1000);
+        timeoutIdsRef.current.push(resetTimeout);
       });
     }, debounceDelay);
+    timeoutIdsRef.current.push(timeoutId);
     
     return () => {
-      console.log('[DEBUG fetchOdds useEffect] Cleanup: clearing timeout');
-      clearTimeout(timeoutId);
+      console.log('[DEBUG fetchOdds useEffect] Cleanup: clearing timeouts');
+      timeoutIdsRef.current.forEach(id => clearTimeout(id));
+      timeoutIdsRef.current = [];
       // Don't reset isFetchingOddsRef here - let it be reset by the finally block
       // This prevents race conditions where cleanup runs before fetch completes
     };

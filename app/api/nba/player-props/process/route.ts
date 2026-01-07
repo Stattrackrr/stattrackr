@@ -439,87 +439,120 @@ async function calculatePlayerAverages(
   }
 }
 
-// Get player position
-async function getPlayerPosition(baseUrl: string, playerName: string, team: string): Promise<'PG' | 'SG' | 'SF' | 'PF' | 'C' | null> {
-  if (!team) return null;
+// Cache depth chart responses per team to avoid duplicate requests
+const depthChartCache = new Map<string, { data: any; timestamp: number }>();
+const DEPTH_CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to find player in depth chart
+function findPlayerInDepthChart(depthChart: any, playerName: string): 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null {
+  const normalize = (s: string) => {
+    return String(s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, ' ')
+      .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
   
-  try {
-    const teamAbbr = TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim();
-    const url = `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`;
-    const response = await queuedFetch(url, { cache: 'no-store' });
-    
-    if (!response.ok) {
-      console.warn(`[getPlayerPosition] Depth chart API not ok for ${teamAbbr}: ${response.status}`);
-      // Try fallback to BDL player search
-      return await getPlayerPositionFallback(baseUrl, playerName, teamAbbr);
+  const normalizedPlayerName = normalize(playerName);
+  const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
+  
+  // Try exact and partial matches
+  for (const pos of positions) {
+    const players = depthChart[pos] || [];
+    for (const player of players) {
+      const playerNameFromChart = typeof player === 'string' ? player : (player?.name || player?.displayName || player?.fullName || String(player || ''));
+      if (!playerNameFromChart) continue;
+      
+      const normalizedChartName = normalize(playerNameFromChart);
+      if (normalizedChartName === normalizedPlayerName || 
+          normalizedChartName.includes(normalizedPlayerName) ||
+          normalizedPlayerName.includes(normalizedChartName)) {
+        return pos;
+      }
     }
-    
-    const data = await response.json();
-    if (!data?.success || !data.depthChart) {
-      console.warn(`[getPlayerPosition] No depth chart data for ${teamAbbr}`);
-      return await getPlayerPositionFallback(baseUrl, playerName, teamAbbr);
-    }
-    
-    const normalize = (s: string) => {
-      return String(s || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z\s]/g, ' ')
-        .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    };
-    
-    const normalizedPlayerName = normalize(playerName);
-    const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
-    
-    // Try exact and partial matches
+  }
+  
+  // Try matching by first and last name separately
+  const nameParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
+  if (nameParts.length >= 2) {
+    const firstName = nameParts[0];
+    const lastName = nameParts[nameParts.length - 1];
     for (const pos of positions) {
-      const players = data.depthChart[pos] || [];
+      const players = depthChart[pos] || [];
       for (const player of players) {
         const playerNameFromChart = typeof player === 'string' ? player : (player?.name || player?.displayName || player?.fullName || String(player || ''));
         if (!playerNameFromChart) continue;
         
         const normalizedChartName = normalize(playerNameFromChart);
-        if (normalizedChartName === normalizedPlayerName || 
-            normalizedChartName.includes(normalizedPlayerName) ||
-            normalizedPlayerName.includes(normalizedChartName)) {
-          return pos;
-        }
-      }
-    }
-    
-    // Try matching by first and last name separately
-    const nameParts = normalizedPlayerName.split(' ').filter(p => p.length > 0);
-    if (nameParts.length >= 2) {
-      const firstName = nameParts[0];
-      const lastName = nameParts[nameParts.length - 1];
-      for (const pos of positions) {
-        const players = data.depthChart[pos] || [];
-        for (const player of players) {
-          const playerNameFromChart = typeof player === 'string' ? player : (player?.name || player?.displayName || player?.fullName || String(player || ''));
-          if (!playerNameFromChart) continue;
-          
-          const normalizedChartName = normalize(playerNameFromChart);
-          const chartParts = normalizedChartName.split(' ').filter(p => p.length > 0);
-          if (chartParts.length >= 2) {
-            const chartFirst = chartParts[0];
-            const chartLast = chartParts[chartParts.length - 1];
-            if ((firstName === chartFirst && lastName === chartLast) ||
-                (firstName.includes(chartFirst) && lastName.includes(chartLast)) ||
-                (chartFirst.includes(firstName) && chartLast.includes(lastName))) {
-              return pos;
-            }
+        const chartParts = normalizedChartName.split(' ').filter(p => p.length > 0);
+        if (chartParts.length >= 2) {
+          const chartFirst = chartParts[0];
+          const chartLast = chartParts[chartParts.length - 1];
+          if ((firstName === chartFirst && lastName === chartLast) ||
+              (firstName.includes(chartFirst) && lastName.includes(chartLast)) ||
+              (chartFirst.includes(firstName) && chartLast.includes(lastName))) {
+            return pos;
           }
         }
       }
+    }
+  }
+  
+  return null;
+}
+
+// Get player position
+async function getPlayerPosition(baseUrl: string, playerName: string, team: string): Promise<'PG' | 'SG' | 'SF' | 'PF' | 'C' | null> {
+  if (!team) {
+    console.log(`[getPlayerPosition] ⚠️ No team provided for ${playerName}`);
+    return null;
+  }
+  
+  try {
+    const teamAbbr = TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim();
+    
+    // Check cache first
+    const cacheKey = teamAbbr;
+    const cached = depthChartCache.get(cacheKey);
+    const cacheAge = cached ? Date.now() - cached.timestamp : null;
+    const isCacheValid = cached && cacheAge !== null && cacheAge < DEPTH_CHART_CACHE_TTL;
+    
+    if (isCacheValid) {
+      // Use cached data
+      const data = cached.data;
+      if (data?.success && data.depthChart) {
+        const position = findPlayerInDepthChart(data.depthChart, playerName);
+        return position;
+      }
+    }
+    
+    const url = `${baseUrl}/api/depth-chart?team=${encodeURIComponent(teamAbbr)}`;
+    const response = await queuedFetch(url, { cache: 'default' });
+    
+    if (!response.ok) {
+      return await getPlayerPositionFallback(baseUrl, playerName, teamAbbr);
+    }
+    
+    const data = await response.json();
+    if (!data?.success || !data.depthChart) {
+      return await getPlayerPositionFallback(baseUrl, playerName, teamAbbr);
+    }
+    
+    // Cache the response
+    depthChartCache.set(cacheKey, { data, timestamp: Date.now() });
+    
+    // Find player in depth chart
+    const position = findPlayerInDepthChart(data.depthChart, playerName);
+    if (position) {
+      return position;
     }
     
     // Fallback to BDL player search
     return await getPlayerPositionFallback(baseUrl, playerName, teamAbbr);
   } catch (error) {
-    console.warn(`[getPlayerPosition] Error for ${playerName} on ${team}:`, error);
     return await getPlayerPositionFallback(baseUrl, playerName, TEAM_FULL_TO_ABBR[team] || team.toUpperCase().trim());
   }
 }
@@ -556,7 +589,6 @@ async function getPlayerPositionFallback(baseUrl: string, playerName: string, te
           const rawPos = String(cand?.position || cand?.pos || '').toUpperCase().trim();
           const mapped = posMap[rawPos] || null;
           if (mapped) {
-            console.log(`[getPlayerPosition] ✅ Fallback matched ${playerName} via BDL (${cName}) -> ${mapped}`);
             return mapped;
           }
         }
@@ -1002,6 +1034,13 @@ async function processPlayerPropsCore(request: NextRequest) {
     const MAX_RUNTIME_MS = 4 * 60 * 1000; // 4 minutes (leave 1 min buffer)
     const startTime = Date.now();
     
+    console.log(`[Player Props Process] 🚀 Starting processing:`, {
+      totalProps: uniqueProps.length,
+      startIndex,
+      remaining: uniqueProps.length - startIndex,
+      batches: Math.ceil((uniqueProps.length - startIndex) / BATCH_SIZE),
+    });
+    
     for (let i = startIndex; i < uniqueProps.length; i += BATCH_SIZE) {
       // Check if we're approaching timeout
       const elapsed = Date.now() - startTime;
@@ -1033,6 +1072,9 @@ async function processPlayerPropsCore(request: NextRequest) {
       // Process props sequentially within batch to reduce rate limiting
       // Instead of parallel processing, process one at a time
       const batchResults: any[] = [];
+      const batchStartTime = Date.now();
+      const depthChartCallCount = { count: 0 };
+      
       for (const prop of batch) {
         try {
           // Try to determine player's actual team by trying both teams for position lookup
@@ -1041,17 +1083,22 @@ async function processPlayerPropsCore(request: NextRequest) {
           let actualTeam = prop.team;
           let actualOpponent = prop.opponent;
           
+          const cacheSizeBefore = depthChartCache.size;
           // Try home team first
           position = await getPlayerPosition(baseUrl, prop.playerName, prop.team);
+          const cacheSizeAfter = depthChartCache.size;
+          if (cacheSizeAfter > cacheSizeBefore) depthChartCallCount.count++;
           
           // If not found, try the opponent team (player might be on away team)
           if (!position) {
+            const cacheSizeBeforeOpponent = depthChartCache.size;
             position = await getPlayerPosition(baseUrl, prop.playerName, prop.opponent);
+            const cacheSizeAfterOpponent = depthChartCache.size;
+            if (cacheSizeAfterOpponent > cacheSizeBeforeOpponent) depthChartCallCount.count++;
             if (position) {
               // Player is actually on the "opponent" team, so swap them
               actualTeam = prop.opponent;
               actualOpponent = prop.team;
-              console.log(`[Player Props Process] ✅ Found ${prop.playerName} on ${actualTeam} (was incorrectly assigned to ${prop.team})`);
             }
           }
           
@@ -1072,19 +1119,10 @@ async function processPlayerPropsCore(request: NextRequest) {
           
           const dvp = await getDvpRating(baseUrl, actualOpponent, position, prop.statType);
           
-          // Log if position or DvP is missing for debugging
-          if (!position) {
-            console.warn(`[Player Props Process] ⚠️ No position found for ${prop.playerName} (tried ${prop.team} and ${prop.opponent}) - DvP will be null`);
-          }
-          if (!dvp.rank && position) {
-            console.warn(`[Player Props Process] ⚠️ No DvP rank for ${prop.playerName} vs ${actualOpponent} (${position})`);
-          }
-          
           // Store stat value arrays for hit rate recalculation when line changes
           // We need to recalculate these in calculatePlayerAverages to store them
-          // For now, we'll store them separately by calling a modified version
-          // Actually, let's store them in the prop for now - we'll modify calculatePlayerAverages to return them
-          batchResults.push({
+          
+          const processedProp = {
             ...prop,
             team: actualTeam, // Use the correctly determined team
             opponent: actualOpponent, // Use the correctly determined opponent
@@ -1094,7 +1132,9 @@ async function processPlayerPropsCore(request: NextRequest) {
             dvpStatValue: dvp.statValue,
             // Note: Stat value arrays will be added in update-odds endpoint
             // For now, hit rates will be preserved (slightly inaccurate if line changes)
-          });
+          };
+          
+          batchResults.push(processedProp);
         } catch (error) {
           console.error(`[Player Props Process] Error calculating stats for ${prop.playerName} ${prop.statType}:`, error);
           // Return prop with null stats instead of completely missing stats

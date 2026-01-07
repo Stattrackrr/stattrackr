@@ -10,9 +10,13 @@ export interface UseGamesLoadingParams {
 export function useGamesLoading({
   fetchTodaysGames,
 }: UseGamesLoadingParams) {
-  // Load games on mount and refresh every minute
+  // Load games IMMEDIATELY on mount (before any other effects run)
+  // This ensures games are available when player is selected from props page
   useEffect(() => {
+    // Fetch games immediately (non-blocking, but starts right away)
     fetchTodaysGames();
+    
+    // Also refresh every minute
     const id = setInterval(() => {
       fetchTodaysGames({ silent: true });
     }, 60 * 1000);

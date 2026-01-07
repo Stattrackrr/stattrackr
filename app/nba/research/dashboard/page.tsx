@@ -914,6 +914,7 @@ export function NBADashboardContent() {
     setApiError,
     playerStats,
     handlePlayerSelectFromSearch,
+    fetchTodaysGames, // Pass fetchTodaysGames to pre-fetch games when player param detected
     statFromUrlRef,
   });
 

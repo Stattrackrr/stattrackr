@@ -132,20 +132,23 @@ export function extractStatsFromHTML(html: string): any {
     // Try direct JSON parse first (in case they've changed to JSON format)
     parsed = JSON.parse(jsonStr);
   } catch (jsonError: any) {
-    // JSON parse failed - likely JavaScript object literal syntax
-    // Use Function constructor (safer than eval) to parse JS object literal
+    // JSON parse failed - try to fix common issues and retry
     try {
-      // Create a function that returns the object literal
-      // This safely evaluates JavaScript object syntax
-      const func = new Function('return ' + jsonStr);
-      parsed = func();
+      // Try to fix common JavaScript object literal issues
+      // Remove trailing commas, fix unquoted keys, etc.
+      let fixedJsonStr = jsonStr
+        .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":') // Quote unquoted keys
+        .replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
+      
+      // Try parsing the fixed string
+      parsed = JSON.parse(fixedJsonStr);
       
       // Validate it's an object (not array or primitive)
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('Function constructor did not return a valid object');
+        throw new Error('Parsed data is not a valid object');
       }
-    } catch (funcError: any) {
-      // If Function constructor also fails, log detailed error
+    } catch (fixError: any) {
+      // If JSON parsing also fails, log detailed error
       const errorPos = parseInt(jsonError.message.match(/position (\d+)/)?.[1] || '0', 10);
       const startPos = Math.max(0, errorPos - 200);
       const endPos = Math.min(jsonStr.length, errorPos + 200);
