@@ -209,6 +209,16 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
                 }
                 return;
               }
+              // Debug: log rank data structure
+              console.log('[DVP Frontend] Rank data received:', {
+                hasData: !!result.data,
+                hasMetrics: !!result.data?.metrics,
+                metricKeys: result.data?.metrics ? Object.keys(result.data.metrics) : [],
+                sampleMetric: result.data?.metrics?.pts ? {
+                  teamCount: Object.keys(result.data.metrics.pts).length,
+                  sampleTeams: Object.keys(result.data.metrics.pts).slice(0, 5)
+                } : null
+              });
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
               dvpRankCache.set(rankCacheKey, rankData);
             }
@@ -219,6 +229,20 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             const map: Record<string, number | null> = {};
             const rmap: Record<string, number | null> = {};
             const normalizedOpp = normalizeAbbr(targetOpp);
+            
+            // Debug: log rank data structure before extraction
+            console.log('[DVP Frontend] Extracting ranks:', {
+              hasRankData: !!rankData,
+              hasMetrics: !!rankData.metrics,
+              metricKeys: rankData.metrics ? Object.keys(rankData.metrics) : [],
+              normalizedOpp,
+              targetPos,
+              sampleRankData: rankData.metrics?.pts ? {
+                teamKeys: Object.keys(rankData.metrics.pts).slice(0, 10),
+                oppRank: rankData.metrics.pts[normalizedOpp],
+                oppRankType: typeof rankData.metrics.pts[normalizedOpp]
+              } : null
+            });
             
             for (const m of DVP_METRICS) {
               const perGame = dvpData.metrics?.[m.key];
@@ -232,6 +256,13 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }
             
+            // Debug: log extracted ranks
+            console.log('[DVP Frontend] Extracted ranks result:', {
+              normalizedOpp,
+              targetPos,
+              ranks: Object.entries(rmap).filter(([_, v]) => v !== null),
+              allRanks: rmap
+            });
             
             setPerStat(map);
             setPerRank(rmap);
