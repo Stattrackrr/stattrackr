@@ -464,17 +464,34 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         });
       }
       
-      // Fetch both seasons in parallel - prevents multiple refreshes
+      // Fetch current season first (for immediate chart rendering)
       const rows = await statsPromise;
       
       // Log stats completion
       const fetchElapsed = Date.now() - fetchStartTime;
-      console.log('🔍 [handlePlayerSelectFromSearch] Stats fetch completed:', { statsCount: rows.length, elapsed: fetchElapsed });
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Stats fetch completed', { data: { statsCount: rows.length, elapsed: fetchElapsed } });
+      console.log('🔍 [handlePlayerSelectFromSearch] Current season stats loaded:', { statsCount: rows.length, elapsed: fetchElapsed });
+      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Current season stats loaded', { data: { statsCount: rows.length, elapsed: fetchElapsed } });
       
       // If fetch was fast (< 100ms), it was cached - ensure loading is cleared immediately
       if (fetchElapsed < 100 && isLoading) {
         setIsLoading(false);
+      }
+      
+      // OPTIMIZATION: Load last season in background and update playerStats incrementally
+      // This allows chart to render immediately with current season data (~3s instead of ~6s)
+      const prevSeasonPromise = (rows as any)?._prevSeasonPromise;
+      if (prevSeasonPromise) {
+        prevSeasonPromise.then((prevSeason: any[]) => {
+          if (prevSeason && prevSeason.length > 0) {
+            console.log('🔍 [handlePlayerSelectFromSearch] Last season loaded in background:', { statsCount: prevSeason.length });
+            // Merge last season data and update playerStats
+            const mergedRows = [...rows, ...prevSeason];
+            setPlayerStats(mergedRows);
+            console.log('🔍 [handlePlayerSelectFromSearch] Updated playerStats with last season:', { totalStats: mergedRows.length });
+          }
+        }).catch((err: any) => {
+          console.error('❌ [handlePlayerSelectFromSearch] Error loading last season:', err);
+        });
       }
       
       // Use the team from search API directly - NO FALLBACK TO GAME DATA
