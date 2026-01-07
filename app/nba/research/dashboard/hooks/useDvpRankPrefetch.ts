@@ -164,12 +164,13 @@ export function useDvpRankPrefetch({
           // Try to fetch historical rank for this game date
           try {
             const dateStr = new Date(gameDate).toISOString().split('T')[0];
-            const historicalResponse = await fetch(
-              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            const historicalData = await cachedFetch<any>(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`,
+              undefined,
+              60 * 60 * 1000 // Cache for 1 hour
             );
             
-            if (historicalResponse.ok) {
-              const historicalData = await historicalResponse.json();
+            if (historicalData) {
               if (historicalData.success && historicalData.ranks) {
                 const normalizedOpp = normalizeAbbr(opponent);
                 const rank = historicalData.ranks[normalizedOpp] ?? 
@@ -185,6 +186,7 @@ export function useDvpRankPrefetch({
                   note: historicalData.note
                 });
               }
+            }
           } catch (historicalError) {
             console.warn(`[Prefetch] Historical fetch failed for ${gameIdStr}:`, historicalError);
           }
