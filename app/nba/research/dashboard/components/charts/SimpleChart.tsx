@@ -530,7 +530,8 @@ const SimpleChart = memo(function SimpleChart({
   }, []);
 
   // Loading state
-  if (isLoading || !chartData || chartData.length === 0) {
+  // Chart is independent - only depends on its own data, not global isLoading
+  if (!chartData || chartData.length === 0) {
     return (
       <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
         <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">

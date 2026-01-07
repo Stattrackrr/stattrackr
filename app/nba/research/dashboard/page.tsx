@@ -891,6 +891,9 @@ export function NBADashboardContent() {
     lastAutoSetLineRef,
     hasManuallySetLineRef,
     statFromUrlRef,
+    resolvedPlayerId,
+    playerStats,
+    selectedPlayer,
   });
 
   // URL initialization logic - extracted to useUrlInitialization hook

@@ -28,9 +28,13 @@ export default memo(function PureChart({
     return `${numValue}`;
   }, [selectedStat]);
 
+  // Chart is independent - only depends on its own data, not global isLoading
+  // This allows chart to render immediately when data is available, regardless of other components
+  const hasChartData = chartData && chartData.length > 0;
+  
   return (
     <div className="h-full w-full">
-      {isLoading || !chartData || chartData.length === 0 ? (
+      {!hasChartData ? (
         <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
           {/* Chart bars skeleton - vertical bars like the actual chart */}
           <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
@@ -78,13 +82,16 @@ export default memo(function PureChart({
     </div>
   );
 }, (prev, next) => {
-  // Simplified comparison - only check the most critical props
-  // Using === for chartData might be too strict when component is extracted
+  // Chart is independent - only compare chart data and config, not global isLoading
+  // This prevents chart from re-rendering when other components are loading
   return (
-    prev.isLoading === next.isLoading &&
     prev.chartData === next.chartData &&
     prev.selectedStat === next.selectedStat &&
-    prev.selectedTimeframe === next.selectedTimeframe
+    prev.selectedTimeframe === next.selectedTimeframe &&
+    prev.yAxisConfig === next.yAxisConfig &&
+    prev.bettingLine === next.bettingLine &&
+    prev.secondAxisData === next.secondAxisData &&
+    prev.selectedFilterForAxis === next.selectedFilterForAxis
   );
 });
 

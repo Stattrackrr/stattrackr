@@ -35,7 +35,8 @@ export function useTeammateFilterData({
   useEffect(() => {
     const run = async () => {
       if (!teammateFilterId) {
-        setTeammatePlayedGameIds(new Set());
+        // Only update if not already empty to prevent infinite loops
+        setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
         return;
       }
       
@@ -54,7 +55,8 @@ export function useTeammateFilterData({
         // Get all games from baseGameData to check
         const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
         if (!games.length) {
-          setTeammatePlayedGameIds(new Set());
+          // Only update if not already empty to prevent infinite loops
+          setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
           return;
         }
         
@@ -177,7 +179,7 @@ export function useTeammateFilterData({
         if (e.name !== 'AbortError') {
           console.error('[Teammate Filter] ❌ Error in teammate filter logic:', e);
         }
-        setTeammatePlayedGameIds(new Set());
+        setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
       } finally {
         // Cleanup is handled in inner finally
       }
@@ -190,8 +192,10 @@ export function useTeammateFilterData({
         teammateFetchAbortControllerRef.current.abort();
       }
     };
-  }, [withWithoutMode, teammateFilterId, baseGameData, setTeammatePlayedGameIds, setLoadingTeammateGames, teammateFetchAbortControllerRef, teammateFetchInProgressRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teammateFilterId, withWithoutMode]);
 }
+
 
 
 

@@ -45,8 +45,11 @@ export function usePlayerStateManagement({
 
   // Clear odds data when player ID actually changes (not just metadata updates)
   // Player stats are cleared by handlePlayerSelect functions at the start
+  // Extract player ID to avoid dependency on object reference changes
+  const currentPlayerId = selectedPlayer?.id?.toString() || null;
+  
   useEffect(() => {
-    if (selectedPlayer === null) {
+    if (selectedPlayer === null || currentPlayerId === null) {
       // Player cleared - reset odds only
       if (lastPlayerIdRef.current !== null) {
         setRealOddsData([]);
@@ -59,7 +62,7 @@ export function usePlayerStateManagement({
     }
     
     // Only clear odds if the player ID actually changed (not just metadata like jersey/height)
-    const currentPlayerId = selectedPlayer.id?.toString() || null;
+    // This prevents clearing when only metadata (jersey/height) is updated
     if (currentPlayerId !== lastPlayerIdRef.current) {
       // Player ID changed - clear odds data
       console.log('[Odds Clear] Player ID changed, clearing odds', {
@@ -75,7 +78,26 @@ export function usePlayerStateManagement({
         setLineMovementData(null);
         setOddsLoading(false);
         setOddsError(null);
-        setBettingLines({});
+        // Preserve betting line from URL if it exists (important for props page navigation)
+        setBettingLines(prev => {
+          // Check URL for line parameter
+          if (typeof window !== 'undefined') {
+            try {
+              const url = new URL(window.location.href);
+              const urlLine = url.searchParams.get('line');
+              const urlStat = url.searchParams.get('stat');
+              if (urlLine && urlStat) {
+                const lineValue = parseFloat(urlLine);
+                const normalizedStat = urlStat.toLowerCase();
+                if (!isNaN(lineValue) && normalizedStat) {
+                  // Preserve the URL line for the URL stat
+                  return { [normalizedStat]: Math.abs(lineValue) };
+                }
+              }
+            } catch {}
+          }
+          return {};
+        });
         setBookOpeningLine(null);
         setBookCurrentLine(null);
       }
@@ -83,7 +105,9 @@ export function usePlayerStateManagement({
       // Odds fetch ref is now managed by useOddsFetching hook
     }
     // If player ID is the same, don't clear odds (just metadata update like jersey/height)
-  }, [selectedPlayer, realOddsData, oddsLoading, oddsError, setRealOddsData, setOddsSnapshots, setLineMovementData, setOddsLoading, setOddsError, setBettingLines, setBookOpeningLine, setBookCurrentLine]);
+    // This effect should only run when player ID changes, not when object reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlayerId, realOddsData, oddsLoading, oddsError]);
 
   // Clear player state when player parameter is removed from URL (e.g., browser back button)
   useEffect(() => {

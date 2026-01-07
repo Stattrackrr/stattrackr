@@ -126,36 +126,53 @@ export function DashboardDesktopContent({
         );
       }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
 
-      {/* Under-chart container (Desktop) - memoized element to avoid parent re-evals */}
-      {useMemo(() => (
-        propsMode !== 'team' ? (
+      {/* Under-chart container (Desktop) - Always render with skeleton when loading */}
+      {useMemo(() => {
+        // Always render the container - show skeleton when player is loading or missing
+        const showSkeleton = !selectedPlayer || !selectedTeam || selectedTeam === 'N/A' || !opponentTeam;
+        
+        return propsMode !== 'team' ? (
           <div className="hidden lg:block">
-            <OfficialOddsCard
-              isDark={isDark}
-              derivedOdds={derivedOdds}
-              intradayMovements={intradayMovementsFinal}
-              selectedTeam={selectedTeam}
-              opponentTeam={opponentTeam}
-              selectedTeamLogoUrl={selectedTeam && selectedTeam !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)) : ''}
-              opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-              matchupInfo={matchupInfo}
-              oddsFormat={oddsFormat}
-              books={realOddsData}
-              fmtOdds={fmtOdds}
-              lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-              lineMovementData={mergedLineMovementData}
-              selectedStat={selectedStat}
-              calculatedImpliedOdds={calculatedImpliedOdds}
-              selectedBookmakerName={selectedBookmakerName}
-              selectedBookmakerLine={selectedBookmakerLine}
-              propsMode={propsMode}
-              selectedPlayer={selectedPlayer}
-              primaryMarketLine={primaryMarketLine}
-              bettingLine={bettingLine}
-            />
+            {showSkeleton ? (
+              <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-center py-8">
+                  <div className="space-y-3 w-full max-w-md">
+                    <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                      <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <OfficialOddsCard
+                isDark={isDark}
+                derivedOdds={derivedOdds}
+                intradayMovements={intradayMovementsFinal}
+                selectedTeam={selectedTeam}
+                opponentTeam={opponentTeam}
+                selectedTeamLogoUrl={selectedTeam && selectedTeam !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)) : ''}
+                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                matchupInfo={matchupInfo}
+                oddsFormat={oddsFormat}
+                books={realOddsData}
+                fmtOdds={fmtOdds}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                lineMovementData={mergedLineMovementData}
+                selectedStat={selectedStat}
+                calculatedImpliedOdds={calculatedImpliedOdds}
+                selectedBookmakerName={selectedBookmakerName}
+                selectedBookmakerLine={selectedBookmakerLine}
+                propsMode={propsMode}
+                selectedPlayer={selectedPlayer}
+                primaryMarketLine={primaryMarketLine}
+                bettingLine={bettingLine}
+              />
+            )}
           </div>
-        ) : null
-      ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
+        ) : null;
+      }, [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
 
       {/* BEST ODDS (Desktop) - Memoized to prevent re-renders from betting line changes */}
       <BestOddsTableDesktop

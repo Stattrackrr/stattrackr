@@ -200,11 +200,11 @@ export default function LeftSidebar({
 
   const sports = [
     { name: "NBA", href: "/nba" },
+    { name: "Soccer", href: "#", comingSoon: true },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
     // { name: "TENNIS", href: "/tennis/research/dashboard" },
-    // { name: "SOCCER", href: "/soccer/research/dashboard" },
   ];
 
   return (
@@ -284,13 +284,24 @@ export default function LeftSidebar({
             <ul className="mt-1 space-y-1 pl-2">
               {sports.map((sport) => (
                 <li key={sport.name}>
-                  <Link
-                    href={sport.href}
-                    onClick={() => setShowSportsDropdown(false)}
-                    className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
-                  >
-                    {sport.name}
-                  </Link>
+                  {sport.comingSoon ? (
+                    <div
+                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between"
+                    >
+                      <span>{sport.name}</span>
+                      <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                        Coming Soon
+                      </span>
+                    </div>
+                  ) : (
+                    <Link
+                      href={sport.href}
+                      onClick={() => setShowSportsDropdown(false)}
+                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+                    >
+                      {sport.name}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

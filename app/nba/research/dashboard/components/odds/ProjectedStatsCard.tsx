@@ -35,20 +35,8 @@ export default memo(function ProjectedStatsCard({
     setMounted(true);
   }, []);
 
-  if (!selectedPlayer || !currentTeam || !opponentTeam) {
-    return (
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
-        </div>
-        <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} p-4`}>
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-            Select a player to view projected stats
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Always render the container - show skeleton when loading or data missing
+  const showSkeleton = loading || !selectedPlayer || !currentTeam || !opponentTeam;
 
   return (
     <div className="mb-6">
@@ -56,9 +44,28 @@ export default memo(function ProjectedStatsCard({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projected</h3>
       </div>
       <div className={`rounded-xl border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} shadow-sm`}>
-        {loading ? (
-          <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            Loading projections...
+        {showSkeleton ? (
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Skeleton for Projected Minutes */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'} p-4`}>
+                <div className={`h-3 w-24 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-3`}></div>
+                <div className={`h-8 w-16 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-2`} style={{ animationDelay: '0.1s' }}></div>
+                <div className={`h-3 w-20 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'}`} style={{ animationDelay: '0.2s' }}></div>
+              </div>
+              {/* Skeleton for Predicted Game Pace */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'} p-4`}>
+                <div className={`h-3 w-28 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-3`} style={{ animationDelay: '0.15s' }}></div>
+                <div className={`h-8 w-16 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-2`} style={{ animationDelay: '0.25s' }}></div>
+                <div className={`h-3 w-20 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'}`} style={{ animationDelay: '0.35s' }}></div>
+              </div>
+              {/* Skeleton for Average Usage Rate */}
+              <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'} p-4`}>
+                <div className={`h-3 w-32 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-3`} style={{ animationDelay: '0.2s' }}></div>
+                <div className={`h-8 w-16 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'} mb-2`} style={{ animationDelay: '0.3s' }}></div>
+                <div className={`h-3 w-24 rounded animate-pulse ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'}`} style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="p-4">
@@ -158,6 +165,7 @@ export default memo(function ProjectedStatsCard({
   prev.averageGamePace === next.averageGamePace &&
   prev.selectedTimeframe === next.selectedTimeframe
 );
+
 
 
 

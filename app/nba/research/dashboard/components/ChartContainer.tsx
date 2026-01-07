@@ -261,16 +261,15 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
   );
 }, (prev, next) => {
   // Memo comparison for ChartContainer - skip if key props haven't changed
-  // Since ChartContainer has many props, we'll do a shallow comparison
-  // For function props, we rely on stable references from useCallback
+  // Chart is independent - don't re-render when isLoading changes (other components loading)
+  // Only re-render when chart data or config changes
   return (
     prev.isDark === next.isDark &&
     prev.selectedStat === next.selectedStat &&
     prev.bettingLine === next.bettingLine &&
     prev.selectedTimeframe === next.selectedTimeframe &&
     prev.propsMode === next.propsMode &&
-    prev.isLoading === next.isLoading &&
-    prev.oddsLoading === next.oddsLoading &&
+    // Removed isLoading and oddsLoading - chart is independent
     prev.chartData === next.chartData &&
     prev.yAxisConfig === next.yAxisConfig &&
     prev.currentOpponent === next.currentOpponent &&

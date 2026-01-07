@@ -152,34 +152,54 @@ export function DashboardMobileContent({
         );
       }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
 
-      {/* 6. Official Odds Card Container (Mobile) - Line Movement */}
-      {useMemo(() => (
-        <div className="lg:hidden">
-          <OfficialOddsCard
-            isDark={isDark}
-            derivedOdds={derivedOdds}
-            intradayMovements={intradayMovementsFinal}
-            selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-            opponentTeam={opponentTeam}
-            selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
-            opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
-            matchupInfo={matchupInfo}
-            oddsFormat={oddsFormat}
-            books={realOddsData}
-            fmtOdds={fmtOdds}
-            lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-            lineMovementData={mergedLineMovementData}
-            selectedStat={selectedStat}
-            calculatedImpliedOdds={calculatedImpliedOdds}
-            selectedBookmakerName={selectedBookmakerName}
-            selectedBookmakerLine={selectedBookmakerLine}
-            propsMode={propsMode}
-            selectedPlayer={selectedPlayer}
-            primaryMarketLine={primaryMarketLine}
-            bettingLine={bettingLine}
-          />
-        </div>
-      ), [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
+      {/* 6. Official Odds Card Container (Mobile) - Always render with skeleton when loading */}
+      {useMemo(() => {
+        // Always render the container - show skeleton when player is loading or missing
+        const currentTeamForCheck = propsMode === 'team' ? gamePropsTeam : selectedTeam;
+        const showSkeleton = propsMode === 'player' && (!selectedPlayer || !currentTeamForCheck || currentTeamForCheck === 'N/A' || !opponentTeam);
+        
+        return (
+          <div className="lg:hidden">
+            {showSkeleton ? (
+              <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-center py-8">
+                  <div className="space-y-3 w-full max-w-md">
+                    <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                      <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <OfficialOddsCard
+                isDark={isDark}
+                derivedOdds={derivedOdds}
+                intradayMovements={intradayMovementsFinal}
+                selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
+                opponentTeam={opponentTeam}
+                selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
+                opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
+                matchupInfo={matchupInfo}
+                oddsFormat={oddsFormat}
+                books={realOddsData}
+                fmtOdds={fmtOdds}
+                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
+                lineMovementData={mergedLineMovementData}
+                selectedStat={selectedStat}
+                calculatedImpliedOdds={calculatedImpliedOdds}
+                selectedBookmakerName={selectedBookmakerName}
+                selectedBookmakerLine={selectedBookmakerLine}
+                propsMode={propsMode}
+                selectedPlayer={selectedPlayer}
+                primaryMarketLine={primaryMarketLine}
+                bettingLine={bettingLine}
+              />
+            )}
+          </div>
+        );
+      }, [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
 
       {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
       <BestOddsTable

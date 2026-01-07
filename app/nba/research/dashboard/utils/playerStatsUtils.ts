@@ -27,8 +27,8 @@ export async function fetchSortedStatsCore(
       // This cache is populated by props page ingestion, so clicking from props page should be instant!
       // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
       // This is much faster than fetching 50 pages (5000 games) which was overkill
-      // OPTIMIZATION: Skip DvP on initial load for faster response (DvP can be fetched in background)
       // OPTIMIZATION: Don't use refresh=1 - use cached data from props page ingestion for instant load
+      // OPTIMIZATION: Skip DvP on initial load for faster chart rendering (DvP fetched in background via useDvpRankPrefetch)
       const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`;
       const requestId = `stats-${playerId}-${yr}-reg`;
       try {
@@ -150,7 +150,7 @@ export async function fetchSortedStatsCore(
       // Use cache for faster loading - stats API has 8 hour cache
       // Fetch 3-5 pages to get this season and last season (max ~82 games per season = 1 page, but 3-5 pages covers edge cases)
       // This is much faster than fetching 50 pages (5000 games) which was overkill
-      // OPTIMIZATION: Skip DvP on initial load for faster response (DvP can be fetched in background)
+      // OPTIMIZATION: Skip DvP on initial load for faster chart rendering (DvP fetched in background via useDvpRankPrefetch)
       const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`;
       const requestId = `stats-${playerId}-${yr}-po`;
       try {

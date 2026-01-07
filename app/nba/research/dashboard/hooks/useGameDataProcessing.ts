@@ -56,7 +56,9 @@ export function useGameDataProcessing({
   teammatePlayedGameIds,
 }: UseGameDataProcessingParams) {
   /* -------- Base game data (structure only, no stat values) ----------
-     This should only recalculate when player/timeframe changes, NOT when stat changes */
+     This should only recalculate when player/timeframe changes, NOT when stat changes
+     Only depend on player ID, not the whole object, to prevent recalculation on metadata updates */
+  const playerId = selectedPlayer?.id?.toString() || null;
   const baseGameData = useMemo(() => {
     return processBaseGameData({
       playerStats,
@@ -73,7 +75,7 @@ export function useGameDataProcessing({
       teammateFilterId,
       gamePropsTeam,
     });
-  }, [playerStats, selectedTimeframe, selectedPlayer, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]);
+  }, [playerStats, selectedTimeframe, playerId, propsMode, gameStats, selectedTeam, opponentTeam, manualOpponent, homeAway, isLoading, resolvedPlayerId, teammateFilterId]);
 
   // Calculate allGamesSecondAxisData from playerStats directly (all games, no timeframe filter)
   // This allows us to filter from ALL games, then apply timeframe
@@ -97,6 +99,7 @@ export function useGameDataProcessing({
   }, [propsMode, playerStats]);
 
   // Apply advanced filters to base data for player mode
+  // Only depend on player ID, not the whole object, to prevent recalculation on metadata updates
   const filteredGameData = useMemo(() => {
     return processFilteredGameData({
       propsMode,
@@ -113,7 +116,7 @@ export function useGameDataProcessing({
       playerStats,
       selectedPlayer,
     });
-  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe, playerStats, selectedPlayer]);
+  }, [propsMode, baseGameData, minMinutesFilter, maxMinutesFilter, excludeBlowouts, excludeBackToBack, backToBackGameIds, withWithoutMode, teammateFilterId, teammatePlayedGameIds, selectedTimeframe, playerStats, playerId]);
 
   return {
     baseGameData,

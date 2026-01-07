@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 import { createClient } from '@/lib/supabase/server';
+import { calculateUniversalBetResult } from '@/lib/betResultUtils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -1425,30 +1426,21 @@ export async function GET(request: Request) {
           // Evaluate game prop using game data
           const actualValue = evaluateGameProp(game, bet.stat_type, bet.team || '');
           
-          // Determine result
+          // Determine result using shared utility function
           const line = Number(bet.line);
-          const isWholeNumber = line % 1 === 0;
           let result: 'win' | 'loss';
           
-          // Special handling for different bet types
-          if (bet.stat_type === 'moneyline') {
-            // For moneyline: evaluateGameProp returns 1 if team won, 0 if lost
-            result = actualValue === 1 ? 'win' : 'loss';
-          } else if (bet.stat_type === 'spread') {
-            // For spreads: actualValue < 0 means team covered, actualValue > 0 means didn't cover
-            // The line is just for reference - the key is whether actualValue is negative
-            result = actualValue < 0 ? 'win' : 'loss';
-          } else {
-            // For other props (totals, etc.), use standard over/under logic
-            if (bet.over_under === 'over') {
-              result = (isWholeNumber ? actualValue >= line : actualValue > line) ? 'win' : 'loss';
-            } else if (bet.over_under === 'under') {
-              result = (isWholeNumber ? actualValue <= line : actualValue < line) ? 'win' : 'loss';
-            } else {
-              console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
-              continue;
-            }
+          if (!bet.over_under || (bet.over_under !== 'over' && bet.over_under !== 'under')) {
+            console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
+            continue;
           }
+          
+          result = calculateUniversalBetResult(
+            actualValue,
+            line,
+            bet.over_under,
+            bet.stat_type || ''
+          );
 
           // Log the evaluation for debugging
           console.log(`[check-journal-bets] Evaluating bet ${bet.id}: Game prop ${bet.over_under} ${line} ${bet.stat_type}`);
@@ -1585,24 +1577,23 @@ export async function GET(request: Request) {
             continue;
         }
 
-        // Determine result
-        // For whole number lines (e.g., "4"): "over 4" means >= 4, "under 4" means <= 4
-        // For decimal lines (e.g., "3.5"): "over 3.5" means > 3.5, "under 4.5" means < 4.5
-        // Ensure line is a number (handle string/decimal types from database)
+        // Determine result using shared utility function
         const line = Number(bet.line);
-        const isWholeNumber = line % 1 === 0;
-        let result: 'win' | 'loss';
         
-        if (bet.over_under === 'over') {
-          result = (isWholeNumber ? actualValue >= line : actualValue > line) ? 'win' : 'loss';
-        } else if (bet.over_under === 'under') {
-          result = (isWholeNumber ? actualValue <= line : actualValue < line) ? 'win' : 'loss';
-        } else {
+        if (!bet.over_under || (bet.over_under !== 'over' && bet.over_under !== 'under')) {
           console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
           continue;
         }
+        
+        const result = calculateUniversalBetResult(
+          actualValue,
+          line,
+          bet.over_under,
+          bet.stat_type || ''
+        );
 
         // Log the evaluation for debugging
+        const isWholeNumber = line % 1 === 0;
         console.log(`[check-journal-bets] Evaluating bet ${bet.id}: ${bet.player_name} ${bet.over_under} ${line} ${bet.stat_type}`);
         console.log(`[check-journal-bets]   Actual value: ${actualValue}, Line: ${line}, Is whole number: ${isWholeNumber}`);
         console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);

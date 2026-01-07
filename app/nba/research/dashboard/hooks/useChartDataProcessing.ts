@@ -72,6 +72,8 @@ export function useChartDataProcessing({
 
   // Filter chart data based on slider range
   // IMPORTANT: Filter from ALL games first (using allGamesSecondAxisData from playerStats), then apply timeframe
+  // Only depend on player ID, not the whole object, to prevent recalculation on metadata updates
+  const playerId = selectedPlayer?.id?.toString() || null;
   const filteredChartData = useMemo(() => {
     return processFilteredChartData({
       adjustedChartData,
@@ -84,7 +86,7 @@ export function useChartDataProcessing({
       selectedPlayer,
       opponentTeam,
     });
-  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, selectedPlayer, opponentTeam]);
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, playerId, opponentTeam]);
 
   // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
   const secondAxisData = useMemo(() => {

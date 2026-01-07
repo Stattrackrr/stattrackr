@@ -22,6 +22,9 @@ export function useLastSeasonStatsFetch({
 }: UseLastSeasonStatsFetchParams) {
   const lastSeasonGameIdFetchRef = useRef<{ playerId: string; attempted: boolean }>({ playerId: '', attempted: false });
 
+  // Extract player ID to avoid dependency on object reference changes
+  const playerId = selectedPlayer?.id?.toString() || null;
+
   useEffect(() => {
     console.log(`[useEffect lastseason] Triggered:`, {
       selectedTimeframe,
@@ -31,15 +34,13 @@ export function useLastSeasonStatsFetch({
       refAttempted: lastSeasonGameIdFetchRef.current.attempted
     });
     
-    if (selectedTimeframe !== 'lastseason' || !selectedPlayer?.id || playerStats.length === 0) {
+    if (selectedTimeframe !== 'lastseason' || !playerId || playerStats.length === 0) {
       // Reset ref when not viewing last season
       if (selectedTimeframe !== 'lastseason') {
         lastSeasonGameIdFetchRef.current = { playerId: '', attempted: false };
       }
       return;
     }
-    
-    const playerId = String(selectedPlayer.id);
     const lastSeason = currentNbaSeason() - 1;
     const getSeasonYear = (stat: any) => {
       if (!stat?.game?.date) return null;
@@ -317,6 +318,6 @@ export function useLastSeasonStatsFetch({
     } else {
       console.log(`[useEffect lastseason] ✅ Last season stats have minutes, no fetch needed`);
     }
-  }, [selectedTimeframe, selectedPlayer?.id, playerStats, setPlayerStats]);
+  }, [selectedTimeframe, playerId, playerStats, setPlayerStats]);
 }
 

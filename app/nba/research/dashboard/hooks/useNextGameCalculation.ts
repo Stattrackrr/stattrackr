@@ -152,8 +152,17 @@ export function useNextGameCalculation({
       // Calculate tipoff time from various sources
       let tipoffDate: Date | null = null;
       
-      // First, try to parse rawStatus as ISO timestamp
-      if (rawStatus) {
+      // First, try to use the datetime field from the game object (most reliable)
+      if (nextGame.g?.datetime) {
+        const gameDateTime = new Date(nextGame.g.datetime);
+        if (!Number.isNaN(gameDateTime.getTime()) && gameDateTime.getTime() > now) {
+          tipoffDate = gameDateTime;
+          console.log('[Countdown DEBUG] Using game.datetime field:', tipoffDate.toISOString());
+        }
+      }
+      
+      // Second, try to parse rawStatus as ISO timestamp
+      if (!tipoffDate && rawStatus) {
         const parsedStatus = Date.parse(rawStatus);
         if (!Number.isNaN(parsedStatus)) {
           const isMidnight = new Date(parsedStatus).getUTCHours() === 0 && new Date(parsedStatus).getUTCMinutes() === 0;

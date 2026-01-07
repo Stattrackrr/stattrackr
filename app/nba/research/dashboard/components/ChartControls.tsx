@@ -280,6 +280,50 @@ const ChartControls = function ChartControls({
   const bettingLineDebounceRef = useRef<NodeJS.Timeout | null>(null);
   // Track current line value for immediate bookmaker detection (updates instantly, separate from debounced bettingLine)
   const [displayLine, setDisplayLine] = useState(bettingLine);
+  
+  // Cache URL line check to avoid expensive URL parsing on every render
+  const urlLineCacheRef = useRef<{ line: number | null; stat: string | null; timestamp: number } | null>(null);
+  
+  // Helper to check if current line came from URL (cached to avoid repeated URL parsing)
+  const checkUrlLine = useCallback((currentLine: number, currentStat: string): boolean => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check cache first (only re-check if stat changed or cache is old)
+    const now = Date.now();
+    const cache = urlLineCacheRef.current;
+    if (cache && cache.stat === currentStat && (now - cache.timestamp) < 1000) {
+      // Use cached value if stat matches and cache is fresh (< 1 second)
+      return cache.line !== null && Math.abs(currentLine - cache.line) < 0.01;
+    }
+    
+    // Parse URL only when needed
+    try {
+      const url = new URL(window.location.href);
+      const urlLine = url.searchParams.get('line');
+      const urlStat = url.searchParams.get('stat');
+      if (urlLine && urlStat) {
+        const lineValue = parseFloat(urlLine);
+        const normalizedStat = urlStat.toLowerCase();
+        if (!isNaN(lineValue) && normalizedStat === currentStat) {
+          // Cache the result
+          urlLineCacheRef.current = {
+            line: Math.abs(lineValue),
+            stat: normalizedStat,
+            timestamp: now
+          };
+          return Math.abs(currentLine - Math.abs(lineValue)) < 0.01;
+        }
+      }
+    } catch {}
+    
+    // Cache null result to avoid re-parsing
+    urlLineCacheRef.current = {
+      line: null,
+      stat: currentStat,
+      timestamp: now
+    };
+    return false;
+  }, []);
 
   // Helper: resolve teammate ID from name + team using Ball Don't Lie /players endpoint
   const resolveTeammateIdFromNameLocal = async (name: string, teamAbbr?: string): Promise<number | null> => {
@@ -469,7 +513,11 @@ const ChartControls = function ChartControls({
     }
     lastBettingLineRef.current = bettingLine;
     
-    if (!hasManuallySetLineRef.current) {
+    // Check if line came from URL - if so, always update displayLine even if manually set
+    const hasUrlLine = checkUrlLine(bettingLine, selectedStat);
+    
+    // Update displayLine if not manually set, OR if it came from URL (to ensure it displays immediately)
+    if (!hasManuallySetLineRef.current || hasUrlLine) {
       // Only update if displayLine is actually different to prevent infinite loops
       setDisplayLine(prev => {
         if (Math.abs(prev - bettingLine) < 0.01) {
@@ -498,7 +546,7 @@ const ChartControls = function ChartControls({
         }
       }, 0);
     }
-  }, [bettingLine]); // Only depend on bettingLine - other values are stable or don't need to trigger re-runs
+  }, [bettingLine, selectedStat]); // Added selectedStat to dependency array for URL line check
   
   // Helper function to get bookmaker info
   const normalizeBookNameForLookup = (name: string) => {
@@ -640,7 +688,16 @@ const ChartControls = function ChartControls({
       return;
     }
     
-    if (bestLineForStat !== null && !hasManuallySetLineRef.current) {
+    // Check if current line came from URL - if so, don't override it
+    const hasUrlLine = checkUrlLine(bettingLine, selectedStat);
+    
+    // If line came from URL, mark it as manually set to prevent auto-override
+    if (hasUrlLine && !hasManuallySetLineRef.current) {
+      clientLogger.debug('[DEBUG bettingLine useEffect] Line came from URL, marking as manually set');
+      hasManuallySetLineRef.current = true;
+    }
+    
+    if (bestLineForStat !== null && !hasManuallySetLineRef.current && !hasUrlLine) {
       clientLogger.debug('[DEBUG bettingLine useEffect] Will update betting line', {
         bestLineForStat,
         currentBettingLine: bettingLine
@@ -695,6 +752,8 @@ const ChartControls = function ChartControls({
     hasManuallySetLineRef.current = false;
     lastAutoSetLineRef.current = null;
     lastAutoSetStatRef.current = null;
+    // Clear URL line cache when stat changes to force re-check
+    urlLineCacheRef.current = null;
   }, [selectedStat]);
   
   // Reset manual flag when odds data loads (new player fetched)
@@ -703,14 +762,20 @@ const ChartControls = function ChartControls({
     const prevLength = prevOddsDataLengthRef.current;
     
     // If data changed from empty to having data, reset manual flag to allow auto-fetch
+    // BUT preserve it if line came from URL (to prevent overriding URL line)
     if (prevLength === 0 && currentLength > 0) {
-      hasManuallySetLineRef.current = false;
-      lastAutoSetLineRef.current = null;
-      lastAutoSetStatRef.current = null;
+      // Check if line came from URL - if so, don't reset manual flag
+      const hasUrlLine = checkUrlLine(bettingLine, selectedStat);
+      
+      if (!hasUrlLine) {
+        hasManuallySetLineRef.current = false;
+        lastAutoSetLineRef.current = null;
+        lastAutoSetStatRef.current = null;
+      }
     }
     
     prevOddsDataLengthRef.current = currentLength;
-  }, [realOddsData]);
+  }, [realOddsData, selectedStat, bettingLine]);
   
   // Auto-update selected bookmaker when line changes and matches a bookmaker (uses displayLine for immediate updates)
   // This includes alternate lines (Goblin/Demon variants) so users see the variant when they set a matching line
@@ -721,6 +786,9 @@ const ChartControls = function ChartControls({
     
     const bookRowKey = getBookRowKey(selectedStat);
     if (!bookRowKey) return;
+    
+    // Check if line came from URL - if so, prioritize PRIMARY lines over alt lines
+    const hasUrlLine = checkUrlLine(displayLine, selectedStat);
     
     // Find ALL bookmaker entries that have a line matching the current display line
     // This includes alternate lines (Goblin/Demon variants) - prioritize exact matches including variants
@@ -733,14 +801,26 @@ const ChartControls = function ChartControls({
     });
     
     if (matchingBooks.length > 0) {
-      // Prioritize entries with variant labels (Goblin/Demon) if they match the line
-      // This way when a user sets a line that matches a Goblin/Demon variant, it shows that variant
-      const variantMatch = matchingBooks.find((book: any) => {
-        const meta = (book as any)?.meta;
-        return meta?.variantLabel && (meta.variantLabel === 'Goblin' || meta.variantLabel === 'Demon');
-      });
+      let bookToSelect: any;
       
-      const bookToSelect = variantMatch || matchingBooks[0];
+      if (hasUrlLine) {
+        // When line comes from URL, prioritize PRIMARY lines (no variantLabel) over alt lines
+        // This ensures we show the main market line, not alt lines
+        const primaryMatch = matchingBooks.find((book: any) => {
+          const meta = (book as any)?.meta;
+          return !meta?.variantLabel; // No variant label = primary line
+        });
+        bookToSelect = primaryMatch || matchingBooks[0];
+      } else {
+        // For user-selected lines, prioritize variant matches (Goblin/Demon) if they match
+        // This way when a user sets a line that matches a Goblin/Demon variant, it shows that variant
+        const variantMatch = matchingBooks.find((book: any) => {
+          const meta = (book as any)?.meta;
+          return meta?.variantLabel && (meta.variantLabel === 'Goblin' || meta.variantLabel === 'Demon');
+        });
+        bookToSelect = variantMatch || matchingBooks[0];
+      }
+      
       const bookName = (bookToSelect as any)?.meta?.baseName || bookToSelect?.name;
       
       // Only update if it's different from current selection
@@ -1294,8 +1374,15 @@ const ChartControls = function ChartControls({
               const displayPickemVariant = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
               const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
               const shouldShowBookmaker = displayBookmaker !== null;
-              // Show loading state if odds are loading OR if we have odds data but no match yet (still processing)
-              const isProcessingOdds = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker);
+              
+              // Check if line came from URL - if so, keep loading until we match it to a bookmaker
+              const hasUrlLine = checkUrlLine(displayLine, selectedStat);
+              
+              // Show loading state if:
+              // 1. Odds are loading, OR
+              // 2. We have odds data but no match yet (still processing), OR
+              // 3. We have a URL line but haven't matched it to a bookmaker yet (to prevent showing "Alt Lines")
+              const isProcessingOdds = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker) || (hasUrlLine && !displayBookmaker);
               
               return (
                 <div className="hidden sm:block relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={altLinesRef}>
@@ -1868,8 +1955,15 @@ const ChartControls = function ChartControls({
                   const displayPickemVariantMobile = displayBookmaker ? (displayBookmaker.variantLabel ?? null) : null;
                   const bookmakerInfo = displayBookmaker ? getBookmakerInfo(displayBookmaker.bookmaker) : null;
                   const shouldShowBookmaker = displayBookmaker !== null;
-                  // Show loading state if odds are loading OR if we have odds data but no match yet (still processing)
-                  const isProcessingOddsMobile = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker);
+                  
+                  // Check if line came from URL - if so, keep loading until we match it to a bookmaker
+                  const hasUrlLineMobile = checkUrlLine(displayLine, selectedStat);
+                  
+                  // Show loading state if:
+                  // 1. Odds are loading, OR
+                  // 2. We have odds data but no match yet (still processing), OR
+                  // 3. We have a URL line but haven't matched it to a bookmaker yet (to prevent showing "Alt Lines")
+                  const isProcessingOddsMobile = oddsLoading || (realOddsData && realOddsData.length > 0 && !displayBookmaker) || (hasUrlLineMobile && !displayBookmaker);
                   
                   return (
                     <div className="sm:hidden relative flex-shrink-0 w-[100px]" ref={altLinesRef}>

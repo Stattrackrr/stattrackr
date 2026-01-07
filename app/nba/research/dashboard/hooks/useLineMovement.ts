@@ -40,9 +40,8 @@ export function useLineMovement({
 
   useEffect(() => {
     if (!LINE_MOVEMENT_ENABLED) {
-      // Only update state if it's not already set to these values to prevent infinite loops
-      setLineMovementLoading(prev => prev ? false : prev);
-      setLineMovementData(prev => prev !== null ? null : prev);
+      setLineMovementLoading(false);
+      setLineMovementData(null);
       return;
     }
     const fetchLineMovement = async () => {
@@ -51,8 +50,8 @@ export function useLineMovement({
       // Only fetch for player mode
       if (propsMode !== 'player' || !selectedPlayer || !selectedTeam || !opponentTeam || opponentTeam === '' || opponentTeam === 'N/A') {
         console.log('⏭️ Skipping line movement fetch - missing requirements');
-        // Only update if not already null to prevent infinite loops
-        setLineMovementData(prev => prev !== null ? null : prev);
+        setLineMovementData(null);
+        setLineMovementLoading(false);
         return;
       }
       
@@ -131,6 +130,7 @@ export function useLineMovement({
     };
     
     fetchLineMovement();
-  }, [propsMode, selectedPlayer, selectedTeam, opponentTeam, selectedStat, todaysGames, setLineMovementData, setLineMovementLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propsMode, selectedPlayer?.id, selectedPlayer?.full, selectedTeam, opponentTeam, selectedStat, todaysGames]);
 }
 
