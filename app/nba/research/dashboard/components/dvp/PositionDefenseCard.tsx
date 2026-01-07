@@ -243,6 +243,15 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
                 oppRankType: typeof rankData.metrics.pts[normalizedOpp]
               } : null
             });
+            // Also log the actual rank values for each metric
+            if (rankData.metrics) {
+              console.log('[DVP Frontend] Rank values for', normalizedOpp, ':', 
+                Object.entries(rankData.metrics).map(([metric, ranks]: [string, any]) => {
+                  const rank = ranks?.[normalizedOpp];
+                  return `${metric}: ${rank !== undefined ? rank : 'undefined'}`;
+                }).join(', ')
+              );
+            }
             
             for (const m of DVP_METRICS) {
               const perGame = dvpData.metrics?.[m.key];
@@ -257,12 +266,18 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             }
             
             // Debug: log extracted ranks
+            const nonNullRanks = Object.entries(rmap).filter(([_, v]) => v !== null);
             console.log('[DVP Frontend] Extracted ranks result:', {
               normalizedOpp,
               targetPos,
-              ranks: Object.entries(rmap).filter(([_, v]) => v !== null),
+              nonNullRanksCount: nonNullRanks.length,
+              ranks: nonNullRanks,
               allRanks: rmap
             });
+            // Log each rank value explicitly
+            console.log('[DVP Frontend] Rank values:', 
+              Object.entries(rmap).map(([metric, rank]) => `${metric}=${rank}`).join(', ')
+            );
             
             setPerStat(map);
             setPerRank(rmap);
