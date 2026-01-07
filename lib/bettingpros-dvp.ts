@@ -156,7 +156,7 @@ export function extractStatsFromHTML(html: string): any {
       
       console.error('[BettingPros] All parsing methods failed:', {
         jsonError: jsonError.message,
-        funcError: funcError.message,
+        fixError: fixError.message,
         position: errorPos,
         context: context,
         jsonLength: jsonStr.length,

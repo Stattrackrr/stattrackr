@@ -367,7 +367,9 @@ const ChartControls = function ChartControls({
     if (!input) return;
     const val = Number.isFinite(bettingLine) ? bettingLine : 0;
     input.value = String(val);
-    updateBettingLinePosition(yAxisConfig, val, !!selectedFilterForAxis);
+    if (yAxisConfig) {
+      updateBettingLinePosition(val, yAxisConfig);
+    }
   }, [bettingLine, yAxisConfig, selectedFilterForAxis]);
 
   // Fast recolor (no React) when the transient input value changes while holding +/-
@@ -458,7 +460,11 @@ const ChartControls = function ChartControls({
     }
     // Always reposition overlay after the chart finishes its layout for new timeframe
     if (typeof window !== 'undefined') {
-      requestAnimationFrame(() => updateBettingLinePosition(yAxisConfig, commit ?? bettingLine, !!selectedFilterForAxis));
+      requestAnimationFrame(() => {
+        if (yAxisConfig) {
+          updateBettingLinePosition(commit ?? bettingLine, yAxisConfig);
+        }
+      });
     }
   }, [selectedTimeframe, selectedFilterForAxis]);
   // Dropdown state for timeframe selector (moved outside useMemo to follow hooks rules)
@@ -519,7 +525,7 @@ const ChartControls = function ChartControls({
     // Update displayLine if not manually set, OR if it came from URL (to ensure it displays immediately)
     if (!hasManuallySetLineRef.current || hasUrlLine) {
       // Only update if displayLine is actually different to prevent infinite loops
-      setDisplayLine(prev => {
+      setDisplayLine((prev: number) => {
         if (Math.abs(prev - bettingLine) < 0.01) {
           return prev; // No change needed
         }
@@ -540,7 +546,7 @@ const ChartControls = function ChartControls({
         
         // Update betting line overlay position (important for steals/blocks from URL)
         if (yAxisConfig && Number.isFinite(bettingLine)) {
-          updateBettingLinePosition(yAxisConfig, bettingLine, !!selectedFilterForAxis);
+          updateBettingLinePosition(bettingLine, yAxisConfig);
           recolorBarsFast(bettingLine);
           updateOverRatePillFast(bettingLine);
         }
@@ -732,7 +738,7 @@ const ChartControls = function ChartControls({
             transientLineRef.current = bestLineForStat;
             // Update visual elements
             if (yAxisConfig) {
-              updateBettingLinePosition(yAxisConfig, bestLineForStat, !!selectedFilterForAxis);
+              updateBettingLinePosition(bestLineForStat, yAxisConfig);
             }
             recolorBarsFast(bestLineForStat);
             updateOverRatePillFast(bestLineForStat);
@@ -1054,7 +1060,9 @@ const ChartControls = function ChartControls({
                       if (input) {
                         input.value = String(altLine.line);
                         transientLineRef.current = altLine.line;
-                        updateBettingLinePosition(yAxisConfig, altLine.line, !!selectedFilterForAxis);
+                        if (yAxisConfig) {
+                          updateBettingLinePosition(altLine.line, yAxisConfig);
+                        }
                         recolorBarsFast(altLine.line);
                         updateOverRatePillFast(altLine.line);
                       }
@@ -1628,7 +1636,9 @@ const ChartControls = function ChartControls({
                       if (input) {
                         input.value = String(altLine.line);
                         transientLineRef.current = altLine.line;
-                        updateBettingLinePosition(yAxisConfig, altLine.line, !!selectedFilterForAxis);
+                        if (yAxisConfig) {
+                          updateBettingLinePosition(altLine.line, yAxisConfig);
+                        }
                         recolorBarsFast(altLine.line);
                         updateOverRatePillFast(altLine.line);
                       }
@@ -2189,7 +2199,9 @@ const ChartControls = function ChartControls({
                       setDisplayLine(v);
                       
                       // Update visual elements immediately (no lag)
-                      updateBettingLinePosition(yAxisConfig, v, !!selectedFilterForAxis);
+                      if (yAxisConfig) {
+                        updateBettingLinePosition(v, yAxisConfig);
+                      }
                       recolorBarsFast(v);
                       updateOverRatePillFast(v);
                       try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
@@ -2212,7 +2224,7 @@ const ChartControls = function ChartControls({
                         // Only update if value actually changed to prevent unnecessary re-renders
                         if (Math.abs(bettingLine - v) < 0.01) {
                           // Value hasn't changed, just update displayLine if needed
-                          setDisplayLine(prev => {
+                          setDisplayLine((prev: number) => {
                             if (Math.abs(prev - v) < 0.01) return prev;
                             return v;
                           });

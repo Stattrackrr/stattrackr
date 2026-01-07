@@ -356,15 +356,18 @@ export async function GET(req: NextRequest) {
         // OPTIMIZATION: Fetch all DvP ranks in parallel instead of sequentially
         // OPTIMIZATION: Skip DvP on initial load for faster response (can be fetched in background)
         if (!dvpRanksByMetric && stampedPosition && !skipDvp) {
-          dvpRanksByMetric = {};
           // Fetch all metrics in parallel for faster response
+          // TypeScript: stampedPosition is guaranteed to be non-null here due to the if condition
+          const position = stampedPosition;
           const rankPromises = DVP_METRICS.map(m => 
-            getDvpRanks(m, stampedPosition).then(ranks => ({ metric: m, ranks }))
+            getDvpRanks(m, position).then(ranks => ({ metric: m, ranks }))
           );
           const rankResults = await Promise.all(rankPromises);
+          const ranksMap: Record<string, DvpRankMap> = {};
           rankResults.forEach(({ metric, ranks }) => {
-            dvpRanksByMetric[metric] = ranks;
+            ranksMap[metric] = ranks;
           });
+          dvpRanksByMetric = ranksMap;
         }
 
         // Stamp dvp ranks for this batch if ranks are available

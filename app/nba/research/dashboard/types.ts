@@ -1,5 +1,8 @@
 // Types for NBA Dashboard
 
+// Re-export NBAPlayer from lib for convenience
+export type { NBAPlayer } from '@/lib/nbaPlayers';
+
 export type OddsFormat = 'american' | 'decimal';
 
 export type BookRow = {

@@ -1450,6 +1450,7 @@ export async function GET(request: Request) {
           );
 
           // Log the evaluation for debugging
+          const isWholeNumber = line % 1 === 0;
           console.log(`[check-journal-bets] Evaluating bet ${bet.id}: Game prop ${bet.over_under} ${line} ${bet.stat_type}`);
           console.log(`[check-journal-bets]   Actual value: ${actualValue}, Line: ${line}, Is whole number: ${isWholeNumber}`);
           console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);

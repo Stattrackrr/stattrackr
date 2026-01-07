@@ -48,27 +48,15 @@ export function calculateHitRateStats({
     filteredOut: chartData.length - validValues.length,
   });
   
-  if (validValues.length === 0) {
-    // Check if URL params indicate a player should be loaded (for initial page load detection)
-    let hasUrlPlayer = false;
-    if (typeof window !== 'undefined' && propsMode === 'player') {
-      try {
-        const url = new URL(window.location.href);
-        const pid = url.searchParams.get('pid');
-        const name = url.searchParams.get('name');
-        hasUrlPlayer = !!(pid && name);
-      } catch {}
-    }
-    
-    // If we have a selectedPlayer or resolvedPlayerId or URL params but no data, we're likely still loading
-    // Don't show "0/0" - return empty stats that won't display the pill
-    if (propsMode === 'player' && (selectedPlayer || resolvedPlayerId || hasUrlPlayer) && (isLoading || chartData.length === 0)) {
-      console.log('[hitRateStats] Loading state - player exists but no data yet');
-      // Return empty but with a flag that we're loading (chartData.length === 0 means we're waiting)
-      return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: undefined };
-    }
-    console.warn('[hitRateStats] No valid values found! Returning 0/0');
-    return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: propsMode === 'player' ? baseGameDataLength : undefined };
+  // Check if URL params indicate a player should be loaded (for initial page load detection)
+  let hasUrlPlayer = false;
+  if (typeof window !== 'undefined' && propsMode === 'player') {
+    try {
+      const url = new URL(window.location.href);
+      const pid = url.searchParams.get('pid');
+      const name = url.searchParams.get('name');
+      hasUrlPlayer = !!(pid && name);
+    } catch {}
   }
 
   if (validValues.length === 0) {

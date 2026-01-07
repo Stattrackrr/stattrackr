@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, ReferenceLine, Cell, Tooltip, LabelList
 } from 'recharts';
-import { updateBettingLinePosition } from '../../utils/chartUtils';
+import { updateBettingLinePosition } from './chartUtils';
 import StaticLabelList from './StaticLabelList';
 import CustomXAxisTick from './CustomXAxisTick';
 import StaticBettingLineOverlay from './StaticBettingLineOverlay';
