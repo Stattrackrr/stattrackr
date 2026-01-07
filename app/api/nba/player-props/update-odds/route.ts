@@ -976,6 +976,32 @@ export const maxDuration = 300; // 5 minutes max (processing can take time with 
  * Performance: ~2000ms for 144 props (all in-memory calculations)
  */
 export async function POST(request: NextRequest) {
+  // Authentication check - require cron secret or admin auth
+  const { searchParams } = new URL(request.url);
+  const secret = searchParams.get('secret');
+  const cronSecret = process.env.CRON_SECRET;
+  
+  let isAuthorized = false;
+  
+  // Check for cron secret
+  if (secret && cronSecret && secret === cronSecret) {
+    isAuthorized = true;
+  } else {
+    // Check for admin auth
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const authResult = await authorizeAdminRequest(request);
+    if (authResult.authorized) {
+      isAuthorized = true;
+    }
+  }
+  
+  if (!isAuthorized) {
+    return NextResponse.json({
+      success: false,
+      error: 'Unauthorized - Must provide valid cron secret or admin authentication',
+    }, { status: 401 });
+  }
+  
   const startTime = Date.now();
   try {
     console.log('[Player Props Update Odds] 🔄 Starting odds update for player props...');

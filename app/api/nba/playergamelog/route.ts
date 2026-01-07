@@ -50,8 +50,34 @@ export async function GET(req: NextRequest) {
     const season = searchParams.get('season') || '2025-26';
     const seasonType = searchParams.get('season_type') || 'Regular Season';
     
+    // Input validation
     if (!playerId) {
       return NextResponse.json({ error: 'player_id is required' }, { status: 400 });
+    }
+
+    // Validate playerId format (should be numeric, max 10 digits)
+    if (!/^\d{1,10}$/.test(playerId)) {
+      return NextResponse.json(
+        { error: 'Invalid player_id format. Must be numeric (1-10 digits)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate season format (YYYY-YY)
+    if (season && !/^\d{4}-\d{2}$/.test(season)) {
+      return NextResponse.json(
+        { error: 'Invalid season format. Use YYYY-YY (e.g., 2025-26)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate seasonType (whitelist allowed values)
+    const allowedSeasonTypes = ['Regular Season', 'Playoffs', 'Pre Season'];
+    if (seasonType && !allowedSeasonTypes.includes(seasonType)) {
+      return NextResponse.json(
+        { error: `Invalid season_type. Must be one of: ${allowedSeasonTypes.join(', ')}` },
+        { status: 400 }
+      );
     }
     
     const url = `playergamelog?PlayerID=${playerId}&Season=${encodeURIComponent(season)}&SeasonType=${encodeURIComponent(seasonType)}`;

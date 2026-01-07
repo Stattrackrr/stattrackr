@@ -918,9 +918,11 @@ async function resolveParlayBet(
 }
 
 export async function GET(request: Request) {
-  // Allow bypass in development for testing
+  // SECURITY: Only allow bypass in development AND with explicit environment variable
+  // This prevents accidental bypass if NODE_ENV is misconfigured
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const bypassAuth = isDevelopment && request.headers.get('x-bypass-auth') === 'true';
+  const allowDevBypass = process.env.ALLOW_DEV_BYPASS === 'true';
+  const bypassAuth = isDevelopment && allowDevBypass && request.headers.get('x-bypass-auth') === 'true';
   
   if (!bypassAuth) {
     let isAuthorized = false;

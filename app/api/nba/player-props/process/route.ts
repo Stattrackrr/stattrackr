@@ -731,10 +731,35 @@ async function getDvpRating(
  */
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - require cron secret or admin auth
+    const { searchParams } = new URL(request.url);
+    const secret = searchParams.get('secret');
+    const cronSecret = process.env.CRON_SECRET;
+    
+    let isAuthorized = false;
+    
+    // Check for cron secret
+    if (secret && cronSecret && secret === cronSecret) {
+      isAuthorized = true;
+    } else {
+      // Check for admin auth
+      const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+      const authResult = await authorizeAdminRequest(request);
+      if (authResult.authorized) {
+        isAuthorized = true;
+      }
+    }
+    
+    if (!isAuthorized) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Must provide valid cron secret or admin authentication',
+      }, { status: 401 });
+    }
+    
     console.log('[Player Props Process] 📥 Processing request received');
     
     // Check if this is a background/async request (from cron or manual trigger)
-    const { searchParams } = new URL(request.url);
     const asyncMode = searchParams.get('async') === '1' || request.headers.get('x-async') === 'true';
     
     // If async mode, start processing in background and return immediately
@@ -1223,18 +1248,32 @@ async function processPlayerPropsCore(request: NextRequest) {
 /**
  * GET endpoint for manual triggering
  * Allows manual cache refresh via URL
+ * Requires authentication (cron secret or admin)
  */
 export async function GET(request: NextRequest) {
-  // Check for authorization (optional - can be called manually)
+  // Authentication check - require cron secret or admin auth
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
   const cronSecret = process.env.CRON_SECRET;
   
-  // If secret is provided, validate it
-  if (secret && cronSecret && secret !== cronSecret) {
+  let isAuthorized = false;
+  
+  // Check for cron secret
+  if (secret && cronSecret && secret === cronSecret) {
+    isAuthorized = true;
+  } else {
+    // Check for admin auth
+    const { authorizeAdminRequest } = await import('@/lib/adminAuth');
+    const authResult = await authorizeAdminRequest(request);
+    if (authResult.authorized) {
+      isAuthorized = true;
+    }
+  }
+  
+  if (!isAuthorized) {
     return NextResponse.json({
       success: false,
-      error: 'Unauthorized',
+      error: 'Unauthorized - Must provide valid cron secret or admin authentication',
     }, { status: 401 });
   }
   

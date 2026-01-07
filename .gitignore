@@ -42,3 +42,10 @@ next-env.d.ts
 
 # vendor directories (Python dependencies)
 /vendor/
+
+# backup and corrupted files
+*.backup
+*.corrupted
+*_backup_*.tsx
+*_backup_*.ts
+*_backup_*.js

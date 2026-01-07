@@ -21,9 +21,34 @@ export async function GET(request: NextRequest) {
     const gameId = searchParams.get('gameId');
     const gameDate = searchParams.get('gameDate');
 
+    // Input validation
     if (!playerId || (!gameId && !gameDate)) {
       return NextResponse.json(
         { error: 'playerId and gameId or gameDate required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate playerId format (should be numeric, max 10 digits)
+    if (!/^\d{1,10}$/.test(playerId)) {
+      return NextResponse.json(
+        { error: 'Invalid playerId format. Must be numeric (1-10 digits)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate gameId format if provided (should be numeric, max 10 digits)
+    if (gameId && !/^\d{1,10}$/.test(gameId)) {
+      return NextResponse.json(
+        { error: 'Invalid gameId format. Must be numeric (1-10 digits)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate gameDate format if provided (YYYY-MM-DD)
+    if (gameDate && !/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) {
+      return NextResponse.json(
+        { error: 'Invalid gameDate format. Use YYYY-MM-DD' },
         { status: 400 }
       );
     }

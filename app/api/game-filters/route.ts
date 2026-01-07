@@ -11,9 +11,35 @@ export async function GET(request: NextRequest) {
     const playerId = searchParams.get('player_id'); // BDL player ID
     const season = searchParams.get('season');
 
+    // Input validation
     if (!playerId || !season) {
       return NextResponse.json(
         { error: 'player_id and season are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate playerId format (should be numeric, max 10 digits)
+    if (!/^\d{1,10}$/.test(playerId)) {
+      return NextResponse.json(
+        { error: 'Invalid player_id format. Must be numeric (1-10 digits)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate season format (should be a 4-digit year)
+    if (!/^\d{4}$/.test(season)) {
+      return NextResponse.json(
+        { error: 'Invalid season format. Must be a 4-digit year (e.g., 2025)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate season range (reasonable bounds)
+    const seasonNum = parseInt(season, 10);
+    if (seasonNum < 2000 || seasonNum > 2100) {
+      return NextResponse.json(
+        { error: 'Invalid season. Must be between 2000 and 2100' },
         { status: 400 }
       );
     }
