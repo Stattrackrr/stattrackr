@@ -158,7 +158,7 @@ export default function PricingPage() {
     },
     {
       name: 'Pro',
-      description: 'For serious bettors and analysts',
+      description: 'For serious sports analysts and researchers',
       price: { monthly: 9.99, semiannual: 50.94, annual: 95.88 },
       features: [
         'Everything in Free',
@@ -262,7 +262,7 @@ export default function PricingPage() {
               StatTrackr
             </h1>
             <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">
-              Analytics & Betting Insights
+              Advanced Sports Analytics & Insights
             </p>
           </div>
         </div>
@@ -593,10 +593,10 @@ export default function PricingPage() {
         {/* Header */}
         <div className="text-center mb-12 mt-12 lg:mt-8">
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Stop Guessing. Start Winning.
+            Advanced Sports Analytics & Data Analysis
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Every bet deserves research — turn your guesses into data-driven insights and build your edge, backed by thousands of users.
+            Transform raw statistics into actionable insights with our comprehensive NBA analytics platform. Data-driven research and analysis tools for sports statistics.
           </p>
           <div className="mt-6">
             <button
@@ -615,7 +615,7 @@ export default function PricingPage() {
         {/* Feature Highlights Section */}
         <div className="mb-16 mx-auto">
           <h2 className="text-3xl font-bold text-center text-white mb-12">
-            Everything You Need to Win
+            Comprehensive Sports Analytics Tools
           </h2>
           
           {/* Tab Switcher */}
@@ -661,7 +661,7 @@ export default function PricingPage() {
                   : 'bg-slate-800/60 text-gray-300 hover:bg-slate-700/60'
               }`}
             >
-              <span className="hidden sm:inline">Betting Calendar</span>
+              <span className="hidden sm:inline">Performance Calendar</span>
               <span className="sm:hidden">Calendar</span>
             </button>
           </div>
@@ -754,7 +754,7 @@ export default function PricingPage() {
                       <svg className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span><strong className="text-white">Position-Specific Rankings:</strong> Understand how each team performs defensively against different positions across all key statistical categories. An accurate DvP system is crucial because it reveals the true defensive weaknesses teams have against specific positions - helping you identify the most exploitable matchups before placing your bets</span>
+                      <span><strong className="text-white">Position-Specific Rankings:</strong> Understand how each team performs defensively against different positions across all key statistical categories. An accurate DvP system is crucial because it reveals the true defensive weaknesses teams have against specific positions - helping you identify the most favorable matchups for statistical analysis</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -770,43 +770,43 @@ export default function PricingPage() {
                     </li>
                   </ul>
                   <p className="text-gray-400 mt-2 text-sm italic">
-                    Find the soft spots in NBA defenses and target them for maximum profit.
+                    Find the statistical advantages in NBA matchups through comprehensive defensive analytics.
                   </p>
                 </>
               )}
               {activeTab === 'journal' && (
                 <>
-                  <h3 className="text-2xl font-bold mb-2">Track Your Betting Performance</h3>
+                  <h3 className="text-2xl font-bold mb-2">Track Your Performance Analytics</h3>
                   <p className="text-gray-300 mb-3 leading-relaxed text-sm">
-                    Log every bet and analyze your results to identify what's working and what's not. Our journal helps you become a more disciplined and profitable bettor.
+                    Log and analyze your research results to identify patterns and trends. Our journal helps you become a more data-driven analyst with comprehensive performance tracking.
                   </p>
                   <ul className="space-y-2 text-gray-300 text-sm">
                     <li className="flex items-start gap-2">
                       <svg className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
-                      <span><strong className="text-white">Performance Metrics:</strong> Track win rate, ROI, units won, and more to measure your success</span>
+                      <span><strong className="text-white">Performance Metrics:</strong> Track success rate, return on investment, and more to measure your analytical performance</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                       </svg>
-                      <span><strong className="text-white">Bet Type Analysis:</strong> See which bet types (props, spreads, totals) are most profitable for you</span>
+                      <span><strong className="text-white">Analysis Categories:</strong> See which statistical categories and metrics provide the most valuable insights</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <svg className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
-                      <span><strong className="text-white">Trend Identification:</strong> Spot patterns in your betting to double down on what works</span>
+                      <span><strong className="text-white">Trend Identification:</strong> Spot patterns in your research to identify the most effective analytical approaches</span>
                     </li>
                   </ul>
                   <p className="text-gray-400 mt-2 text-sm italic">
-                    Data-driven betting starts with tracking. Build your edge through analysis.
+                    Data-driven analysis starts with tracking. Build your expertise through comprehensive performance analytics.
                   </p>
                   <div className="mt-4 p-3 bg-purple-900/30 border border-purple-500/30 rounded-lg">
                     <p className="text-xs text-purple-200 font-semibold mb-1">💡 Why StatTrackr beats spreadsheets:</p>
                     <p className="text-xs text-gray-300">
-                      No more manual formulas, data entry errors, or time wasted formatting cells. Our journal automatically calculates ROI, win rates, and trends—giving you instant insights that would take hours to build on other platforms.
+                      No more manual formulas, data entry errors, or time wasted formatting cells. Our journal automatically calculates performance metrics, success rates, and trends—giving you instant insights that would take hours to build on other platforms.
                     </p>
                   </div>
                 </>
@@ -1731,7 +1731,7 @@ export default function PricingPage() {
                   </h3>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  Advanced sports analytics and betting insights for serious bettors.
+                  Advanced sports analytics and data insights for serious researchers and analysts.
                 </p>
               </div>
 
