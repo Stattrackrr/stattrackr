@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import cache, { CACHE_TTL } from "@/lib/cache";
+import { getNBACache, setNBACache } from "@/lib/nbaCache";
 import { normalizeAbbr } from "@/lib/nbaAbbr";
 import { currentNbaSeason } from "@/lib/nbaConstants";
 import { checkRateLimit, apiRateLimiter } from "@/lib/rateLimit";
@@ -52,10 +53,34 @@ export async function GET(request: NextRequest) {
     // Cache key
     const cacheKey = `dvp_batch:${teamAbbr}:${seasonYear}:${metrics.join(',')}:${pos}`;
     
-    // Check cache
+    // Check cache (in-memory first, then Supabase)
     if (!forceRefresh) {
-      const hit = cache.get<any>(cacheKey);
-      if (hit) return NextResponse.json(hit);
+      // Try in-memory cache first (fastest)
+      let hit = cache.get<any>(cacheKey);
+      if (hit) {
+        return NextResponse.json(hit, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          }
+        });
+      }
+      
+      // Try Supabase cache (persistent across cold starts)
+      try {
+        const supabaseHit = await getNBACache<any>(cacheKey, { quiet: true });
+        if (supabaseHit) {
+          // Store in in-memory cache for faster future access
+          cache.set(cacheKey, supabaseHit, CACHE_TTL.ADVANCED_STATS);
+          return NextResponse.json(supabaseHit, {
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            }
+          });
+        }
+      } catch (error) {
+        // Supabase cache failed, continue with fetch
+        console.warn('[DVP Batch] Supabase cache check failed, continuing with fetch:', error);
+      }
     }
 
     // Fetch BettingPros data (with caching)
@@ -169,8 +194,18 @@ export async function GET(request: NextRequest) {
       source: 'bettingpros',
     };
 
+    // Store in in-memory cache (fast, but lost on cold start)
     cache.set(cacheKey, result, CACHE_TTL.ADVANCED_STATS);
-    return NextResponse.json(result);
+    // Store in Supabase cache (persistent across cold starts)
+    setNBACache(cacheKey, 'dvp_batch', result, CACHE_TTL.ADVANCED_STATS, true).catch(err => {
+      console.warn('[DVP Batch] Failed to store in Supabase cache:', err);
+    });
+    
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+      }
+    });
   } catch (error: any) {
     console.error('Error in batch DVP endpoint:', error);
     return NextResponse.json(

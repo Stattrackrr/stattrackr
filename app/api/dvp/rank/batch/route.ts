@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, apiRateLimiter } from '@/lib/rateLimit';
+import cache, { CACHE_TTL } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
 /**
  * Batched DVP Rank API endpoint
@@ -43,6 +45,37 @@ export async function GET(request: NextRequest) {
 
     const metrics = metricsParam.split(',').map(m => m.trim());
     const forceRefresh = searchParams.get('refresh') === '1';
+
+    // Cache key for batch results
+    const cacheKey = `dvp_rank_batch:${pos}:${metrics.join(',')}:${games}`;
+    
+    // Check cache first (in-memory, then Supabase)
+    if (!forceRefresh) {
+      // Try in-memory cache first
+      let hit = cache.get<any>(cacheKey);
+      if (hit) {
+        return NextResponse.json(hit, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          }
+        });
+      }
+      
+      // Try Supabase cache
+      try {
+        const supabaseHit = await getNBACache<any>(cacheKey, { quiet: true });
+        if (supabaseHit) {
+          cache.set(cacheKey, supabaseHit, CACHE_TTL.ADVANCED_STATS);
+          return NextResponse.json(supabaseHit, {
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('[DVP Rank Batch] Supabase cache check failed, continuing with fetch:', error);
+      }
+    }
 
     // Fetch all metric rankings in parallel
     const results = await Promise.all(
@@ -115,7 +148,17 @@ export async function GET(request: NextRequest) {
       response.metrics[result.metric] = result.ranks;
     }
 
-    return NextResponse.json(response);
+    // Cache the response
+    cache.set(cacheKey, response, CACHE_TTL.ADVANCED_STATS);
+    setNBACache(cacheKey, 'dvp_rank_batch', response, CACHE_TTL.ADVANCED_STATS, true).catch(err => {
+      console.warn('[DVP Rank Batch] Failed to store in Supabase cache:', err);
+    });
+
+    return NextResponse.json(response, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+      }
+    });
   } catch (error: any) {
     console.error('Error in batch rank endpoint:', error);
     return NextResponse.json(
