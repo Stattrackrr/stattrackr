@@ -289,39 +289,7 @@ export async function fetchSortedStatsCore(
     });
   }
   
-  // Debug: log the structure of received stats
-  if (rows.length > 0) {
-    const sampleStat = rows[0];
-    console.log('[fetchSortedStatsCore] Received stats structure:', {
-      playerId,
-      totalRows: rows.length,
-      currSeason: currSeason.length,
-      prevSeason: prevSeason.length,
-      hasGame: !!sampleStat?.game,
-      hasGameDate: !!sampleStat?.game?.date,
-      hasTeam: !!sampleStat?.team,
-      hasTeamAbbr: !!sampleStat?.team?.abbreviation,
-      sampleStatKeys: Object.keys(sampleStat || {}),
-      // Log actual stat values to verify all fields are present
-      statValues: {
-        pts: sampleStat?.pts,
-        reb: sampleStat?.reb,
-        ast: sampleStat?.ast,
-        stl: sampleStat?.stl,
-        blk: sampleStat?.blk,
-        fg3m: sampleStat?.fg3m,
-        fgm: sampleStat?.fgm,
-        fga: sampleStat?.fga,
-        ftm: sampleStat?.ftm,
-        fta: sampleStat?.fta,
-        turnover: sampleStat?.turnover,
-        pf: sampleStat?.pf,
-        oreb: sampleStat?.oreb,
-        dreb: sampleStat?.dreb,
-      },
-    });
-    
-    // Check stat coverage across all rows
+  // Check stat coverage across all rows
     const statCoverage = {
       hasPts: rows.filter(s => s.pts !== undefined && s.pts !== null).length,
       hasReb: rows.filter(s => s.reb !== undefined && s.reb !== null).length,
