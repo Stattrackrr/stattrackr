@@ -66,26 +66,30 @@ export async function GET(request: NextRequest) {
       console.error('[DVP Batch] Error fetching BettingPros data:', fetchError);
       
       // If we have cached data (even stale), try to return partial data instead of error
-      const cacheKey = `dvp_batch:${teamAbbr}:${seasonYear}:${metrics.join(',')}:${pos}`;
       const cachedData = cache.get<any>(cacheKey);
       if (cachedData) {
         console.warn('[DVP Batch] Using cached data due to fetch error');
         return NextResponse.json(cachedData);
       }
       
-      const isProduction = process.env.NODE_ENV === 'production';
-      return NextResponse.json(
-        {
-          error: isProduction
-            ? 'Failed to fetch DVP data. Please try again later.'
-            : `Failed to fetch BettingPros data: ${fetchError.message}`,
-          team: teamAbbr,
-          games,
-          metrics: {},
-          sample_games: 0,
-        },
-        { status: 500 }
-      );
+      // No cache available - return empty data structure instead of error
+      // This allows frontend to handle gracefully
+      const emptyMetrics: Record<string, Record<string, number | null>> = {};
+      for (const metric of metrics) {
+        emptyMetrics[metric] = {
+          PG: null,
+          SG: null,
+          SF: null,
+          PF: null,
+          C: null,
+        };
+      }
+      return NextResponse.json({
+        team: teamAbbr,
+        games,
+        metrics: emptyMetrics,
+        sample_games: 0,
+      });
     }
     
     if (!bpData || !bpData.teamStats) {
@@ -102,19 +106,23 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(cachedData);
       }
       
-      const isProduction = process.env.NODE_ENV === 'production';
-      return NextResponse.json(
-        {
-          error: isProduction
-            ? 'DVP data is currently unavailable. Please try again later.'
-            : 'Invalid BettingPros data structure',
-          team: teamAbbr,
-          games,
-          metrics: {},
-          sample_games: 0,
-        },
-        { status: 500 }
-      );
+      // No cache available - return empty data structure instead of error
+      const emptyMetrics: Record<string, Record<string, number | null>> = {};
+      for (const metric of metrics) {
+        emptyMetrics[metric] = {
+          PG: null,
+          SG: null,
+          SF: null,
+          PF: null,
+          C: null,
+        };
+      }
+      return NextResponse.json({
+        team: teamAbbr,
+        games,
+        metrics: emptyMetrics,
+        sample_games: 0,
+      });
     }
     
     const teamStats = bpData.teamStats[bpTeamAbbr];
