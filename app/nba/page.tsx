@@ -2070,18 +2070,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       }
       if (!(window as any).__gameMatchDebug.has(debugKey)) {
         (window as any).__gameMatchDebug.add(debugKey);
-        // Debug logging removed('[getGameForProp] No game match found:', {
-          propTeam: prop.team,
-          propOpponent: prop.opponent,
-          normalizedPropTeam: propTeam,
-          normalizedPropOpponent: propOpponent,
-          availableGames: todaysGames.slice(0, 3).map(g => ({
-            home: g.home_team?.abbreviation,
-            away: g.visitor_team?.abbreviation,
-            date: g.date,
-            status: g.status
-          }))
-        });
+        // Debug logging removed
       }
     }
     
@@ -3719,12 +3708,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   // Set timeframe to "thisseason" to show current season data when clicking from player props
                                   const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=last10`;
                                   
-                                  // Debug logging removed('[PropClick] Navigating to dashboard', {
-                                    ...clickData,
-                                    normalizedStat,
-                                    finalUrl,
-                                    fullProp: prop,
-                                  });
+                                  // Debug logging removed
                                   
                                   // Store final URL for debugging
                                   if (typeof window !== 'undefined') {

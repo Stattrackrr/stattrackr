@@ -26,27 +26,9 @@ export function calculateHitRateStats({
   isLoading,
   resolvedPlayerId,
 }: CalculateHitRateStatsParams): HitRateStats {
-  // Debug: log chartData values before filtering
-  console.log('[hitRateStats] Processing chartData:', {
-    chartDataLength: chartData.length,
-    sampleChartData: chartData[0],
-    sampleValue: chartData[0]?.value,
-    sampleValueType: typeof chartData[0]?.value,
-    allValues: chartData.map(d => d.value),
-    allValueTypes: chartData.map(d => typeof d.value),
-  });
-  
   const validValues = chartData
     .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
     .filter((v): v is number => Number.isFinite(v));
-  
-  // Debug: log filtering results
-  console.log('[hitRateStats] Valid values:', {
-    validValuesLength: validValues.length,
-    validValues,
-    chartDataLength: chartData.length,
-    filteredOut: chartData.length - validValues.length,
-  });
   
   // Check if URL params indicate a player should be loaded (for initial page load detection)
   let hasUrlPlayer = false;
@@ -63,11 +45,9 @@ export function calculateHitRateStats({
     // If we have a selectedPlayer or resolvedPlayerId or URL params but no data, we're likely still loading
     // Don't show "0/0" - return empty stats that won't display the pill
     if (propsMode === 'player' && (selectedPlayer || resolvedPlayerId || hasUrlPlayer) && (isLoading || chartData.length === 0)) {
-      console.log('[hitRateStats] Loading state - player exists but no data yet');
       // Return empty but with a flag that we're loading (chartData.length === 0 means we're waiting)
       return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: undefined };
     }
-    console.warn('[hitRateStats] No valid values found! Returning 0/0');
     return { overCount: 0, underCount: 0, total: 0, averages: [], totalBeforeFilters: propsMode === 'player' ? baseGameDataLength : undefined };
   }
 

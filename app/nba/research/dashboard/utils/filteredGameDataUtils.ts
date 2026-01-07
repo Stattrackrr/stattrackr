@@ -195,8 +195,6 @@ export function processFilteredGameData(params: FilteredGameDataParams): BaseGam
       
       // Take the first N (most recent) games, then reverse so oldest is on the left
       filtered = sortedByDate.slice(0, n).reverse();
-      
-      console.log(`[Teammate Filter] Last N with teammate: ${allFiltered.length} total games -> ${teammateFiltered.length} after teammate filter -> ${filtered.length} last N games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games)`);
     } else {
       // Not a valid "last N" timeframe, just apply teammate filter normally
       filtered = filtered.filter((g: any) => {
@@ -221,21 +219,7 @@ export function processFilteredGameData(params: FilteredGameDataParams): BaseGam
       if (withWithoutMode === 'without' && didPlay) return false;
       return true;
     });
-    console.log(`[Teammate Filter] Filtering results: ${beforeCount} games -> ${filtered.length} games (mode: ${withWithoutMode}, teammate played in ${teammatePlayedGameIds.size} games, timeframe: ${selectedTimeframe})`);
   }
-  
-  // Debug: log filtering results
-  console.log('[filteredGameData] Filtering results:', {
-    baseGameDataLength: baseGameData.length,
-    filteredLength: filtered.length,
-    minMinutesFilter,
-    maxMinutesFilter,
-    excludeBlowouts,
-    excludeBackToBack,
-    teammateFilterId,
-    withWithoutMode,
-    sampleFiltered: filtered[0],
-  });
   
   return filtered;
 }

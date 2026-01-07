@@ -224,19 +224,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
       }
       
-      // Debug: log what we're setting as playerStats
-      console.log('[Dashboard] Setting playerStats:', {
-        playerId: pid,
-        playerName: player.full,
-        rowsCount: rows.length,
-        sampleRow: rows[0],
-        hasGame: !!rows[0]?.game,
-        hasGameDate: !!rows[0]?.game?.date,
-        hasTeam: !!rows[0]?.team,
-        hasTeamAbbr: !!rows[0]?.team?.abbreviation,
-        sampleRowKeys: rows[0] ? Object.keys(rows[0]) : [],
-      });
-      
       // Batch remaining state updates in startTransition
       startTransition(() => {
         // Reset betting-line auto-set trackers so odds can re-apply for the new player

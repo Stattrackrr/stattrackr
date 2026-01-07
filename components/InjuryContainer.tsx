@@ -326,10 +326,7 @@ const InjuryContainer = memo(function InjuryContainer({
             return normalizedGameId && gamesWithInjuredPlayerById.has(normalizedGameId);
           });
 
-          // Debug logging removed(`[Injury Impact] Sample game dates from selected player:`, playerStats.slice(0, 5).map((s: any) => {
-            const date = s.game?.date;
-            return date ? new Date(date).toISOString().split('T')[0] : null;
-          }).filter(Boolean));
+          // Debug logging removed
           
           // Check if there's any overlap at all (by date)
           const selectedPlayerGameDates = new Set<string>(playerStats.map((s: any) => {
