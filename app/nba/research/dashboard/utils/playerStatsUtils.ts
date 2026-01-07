@@ -289,18 +289,6 @@ export async function fetchSortedStatsCore(
     });
   }
   
-  // Check stat coverage across all rows
-    const statCoverage = {
-      hasPts: rows.filter(s => s.pts !== undefined && s.pts !== null).length,
-      hasReb: rows.filter(s => s.reb !== undefined && s.reb !== null).length,
-      hasAst: rows.filter(s => s.ast !== undefined && s.ast !== null).length,
-      hasStl: rows.filter(s => s.stl !== undefined && s.stl !== null).length,
-      hasBlk: rows.filter(s => s.blk !== undefined && s.blk !== null).length,
-      hasFg3m: rows.filter(s => s.fg3m !== undefined && s.fg3m !== null).length,
-    };
-    console.log(`[fetchSortedStatsCore] Stat coverage across ${rows.length} stats:`, statCoverage);
-  }
-  
   const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
   
   // Debug: log if we're filtering out all stats
