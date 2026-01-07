@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, memo } from 'react';
 import { ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
 import { normalizeAbbr, getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { cachedFetch } from '@/lib/requestCache';
-import { clientLogger } from '@/lib/clientLogger';
 
 // Defense vs Position metrics (static, defined once)
 const DVP_METRICS = [
@@ -152,7 +151,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             )
             .then(data => ({ type: 'team', data }))
             .catch((error: any) => {
-              clientLogger.error('[DVP Frontend] Team fetch error:', error);
+              console.error('[DVP Frontend] Team fetch error:', error);
               return { type: 'team', data: { error: error.message || 'Failed to fetch team data' } };
             })
           );
@@ -167,7 +166,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             )
             .then(data => ({ type: 'rank', data }))
             .catch((error: any) => {
-              clientLogger.error('[DVP Frontend] Rank fetch error:', error);
+              console.error('[DVP Frontend] Rank fetch error:', error);
               return { type: 'rank', data: { error: error.message || 'Failed to fetch rank data' } };
             })
           );
@@ -187,7 +186,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
                 return; // Skip this result, continue with cached data
               }
               if (!result.data || result.data?.error) {
-                clientLogger.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
+                console.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
                 // Don't set error if we have cached data - allow fallback to cached data
                 if (!teamCached) {
                   setError('Unable to load data. Please try again.');
@@ -203,7 +202,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
                 return; // Skip this result, continue with cached data
               }
               if (!result.data || result.data?.error) {
-                clientLogger.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
+                console.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
                 // Don't set error if we have cached data - allow fallback to cached data
                 if (!rankCached) {
                   setError('Unable to load data. Please try again.');
@@ -231,7 +230,9 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               
               // Debug logging for first metric only
               if (m.key === 'pts') {
-                clientLogger.debug(`[DVP Frontend] Rank lookup for ${m.key}:`, {
+                // Debug logging removed
+                if (false) {
+                  console.log(`[DVP Frontend] Rank lookup for ${m.key}:`, {
                   normalizedOpp,
                   rank,
                   availableTeamKeys: Object.keys(ranks).slice(0, 10),
@@ -249,12 +250,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }
             
-            // Debug: log what we're setting
-            clientLogger.debug(`[DVP Frontend] Setting ranks:`, {
-              rmap,
-              sampleRanks: Object.entries(rmap).slice(0, 3),
-              allKeys: Object.keys(rmap)
-            });
             
             setPerStat(map);
             setPerRank(rmap);
@@ -291,7 +286,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
               setLoading(false);
             } else if (promises.length > 0) {
               // No data at all - show error only if we tried to fetch
-              clientLogger.warn('[DVP Frontend] Missing data after fetch:', { hasDvpData: !!dvpData, hasRankData: !!rankData });
             }
           }
         } else if (!abort && (teamCached || rankCached)) {
@@ -322,7 +316,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
           setLoading(false);
         }
       } catch (e: any) {
-        clientLogger.error('[DVP Frontend] Error:', e);
+        console.error('[DVP Frontend] Error:', e);
         if (!abort) setError('Unable to load data. Please try again.');
       } finally {
         if (!abort) setLoading(false);

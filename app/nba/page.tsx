@@ -15,7 +15,6 @@ import { BOOKMAKER_INFO } from '@/lib/bookmakers';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
-import { clientLogger } from '@/lib/clientLogger';
 import Image from 'next/image';
 
 interface Game {
@@ -291,7 +290,7 @@ export default function NBALandingPage() {
         games: savedGames ? new Set<number>(JSON.parse(savedGames)) : new Set<number>()
       };
     } catch (e) {
-      clientLogger.warn('[NBA Landing] Failed to load filters from localStorage:', e);
+      console.warn('[NBA Landing] Failed to load filters from localStorage:', e);
       return {
         bookmakers: new Set<string>(),
         propTypes: new Set<string>(),
@@ -441,7 +440,7 @@ export default function NBALandingPage() {
         
         // Update URL without page reload
         window.history.replaceState({}, '', url.toString());
-        clientLogger.debug('[NBA Landing] 🧹 Cleared player-related URL parameters');
+        // Debug logging removed('[NBA Landing] 🧹 Cleared player-related URL parameters');
       }
       
       // Also clear any dashboard session storage to prevent stale state
@@ -602,7 +601,7 @@ export default function NBALandingPage() {
           setIsPro(proStatus);
         }
       } catch (error) {
-        clientLogger.error('Error checking subscription:', error);
+        console.error('Error checking subscription:', error);
       }
     };
     
@@ -651,7 +650,7 @@ export default function NBALandingPage() {
                 try {
                   const parsed = JSON.parse(cachedData);
                   if (Array.isArray(parsed) && parsed.length > 0) {
-                    clientLogger.debug(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
+                    // Debug logging removed(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
                     setTodaysGames(parsed);
                     setGamesLoading(false);
                     // Still fetch in background to update if needed (non-blocking)
@@ -669,7 +668,7 @@ export default function NBALandingPage() {
                     return;
                   }
                 } catch (e) {
-                  clientLogger.warn('Failed to parse cached games data, fetching fresh');
+                  console.warn('Failed to parse cached games data, fetching fresh');
                 }
               }
             }
@@ -682,7 +681,7 @@ export default function NBALandingPage() {
         const data = await response.json();
         const games = Array.isArray(data?.data) ? data.data : [];
         
-        clientLogger.debug('[NBA Landing] Games found (± window):', games.length, games.slice(0, 3).map((g: any) => ({
+        // Debug logging removed('[NBA Landing] Games found (± window):', games.length, games.slice(0, 3).map((g: any) => ({
           id: g.id,
           date: g.date,
           status: g.status,
@@ -698,10 +697,10 @@ export default function NBALandingPage() {
           const gamesString = JSON.stringify(games);
           safeSetSessionStorage(cacheKey, gamesString);
           safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
-          clientLogger.debug(`✅ Cached ${games.length} games for dashboard pre-fetch`);
+          // Debug logging removed(`✅ Cached ${games.length} games for dashboard pre-fetch`);
         }
       } catch (error) {
-        clientLogger.error('Error fetching games:', error);
+        console.error('Error fetching games:', error);
         setTodaysGames([]);
       } finally {
         setGamesLoading(false);
@@ -733,7 +732,7 @@ export default function NBALandingPage() {
   const preloadTeamData = async (teams: string[], season: number) => {
     if (!teams || teams.length === 0) return;
     
-    clientLogger.debug(`[NBA Landing] 🚀 Starting background pre-load for ${teams.length} teams...`);
+    // Debug logging removed(`[NBA Landing] 🚀 Starting background pre-load for ${teams.length} teams...`);
     
     // Pre-load league-wide data first (only need to fetch once)
     const leagueWidePromises = [
@@ -767,7 +766,7 @@ export default function NBALandingPage() {
       }
     }
     
-    clientLogger.debug(`[NBA Landing] ✅ Finished pre-loading team data for ${teams.length} teams`);
+    // Debug logging removed(`[NBA Landing] ✅ Finished pre-loading team data for ${teams.length} teams`);
   };
 
   // Track if props are loaded (to prevent clearing on refresh)
@@ -781,7 +780,7 @@ export default function NBALandingPage() {
       // Check size before storing (rough estimate: 1 char ≈ 1 byte for JSON)
       const estimatedSize = value.length;
       if (estimatedSize > SESSION_STORAGE_MAX_SIZE) {
-        clientLogger.warn(`[NBA Landing] Data too large for sessionStorage (${estimatedSize} bytes):`, key);
+        console.warn(`[NBA Landing] Data too large for sessionStorage (${estimatedSize} bytes):`, key);
         return false;
       }
       sessionStorage.setItem(key, value);
@@ -789,9 +788,9 @@ export default function NBALandingPage() {
     } catch (e: any) {
       // Handle QuotaExceededError specifically
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn(`[NBA Landing] SessionStorage quota exceeded for key:`, key);
+        console.warn(`[NBA Landing] SessionStorage quota exceeded for key:`, key);
       } else {
-        clientLogger.warn(`[NBA Landing] Failed to set sessionStorage:`, key, e);
+        console.warn(`[NBA Landing] Failed to set sessionStorage:`, key, e);
       }
       return false;
     }
@@ -815,9 +814,9 @@ export default function NBALandingPage() {
           try {
             sessionStorage.removeItem(CACHE_KEY);
             sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-            clientLogger.debug('[NBA Landing] 🧹 Cleared sessionStorage for force refresh');
+            // Debug logging removed('[NBA Landing] 🧹 Cleared sessionStorage for force refresh');
           } catch (e) {
-            clientLogger.warn('[NBA Landing] Failed to clear sessionStorage:', e);
+            console.warn('[NBA Landing] Failed to clear sessionStorage:', e);
           }
         }
         
@@ -826,7 +825,7 @@ export default function NBALandingPage() {
         
         // If we already have props from initialization, just refresh in background
         if (propsLoadedRef.current && playerProps.length > 0) {
-          clientLogger.debug(`[NBA Landing] ✅ Props already loaded from initialization (${playerProps.length} props), refreshing in background...`);
+          // Debug logging removed(`[NBA Landing] ✅ Props already loaded from initialization (${playerProps.length} props), refreshing in background...`);
           // Refresh in background without showing loading state
           fetch(cacheUrl, { cache: forceRefresh ? 'no-store' : 'default' }).then(async (response) => {
             if (response.ok) {
@@ -854,7 +853,7 @@ export default function NBALandingPage() {
               try {
                 const parsed = JSON.parse(cachedData);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                  clientLogger.debug(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
+                  // Debug logging removed(`[NBA Landing] ✅ Using cached player props from sessionStorage (${parsed.length} props, ${Math.round(age / 1000)}s old)`);
                   
                   // Merge in any calculated stats from sessionStorage
                   let propsWithMergedStats = parsed;
@@ -917,10 +916,10 @@ export default function NBALandingPage() {
                   return; // Use cached data immediately, update in background
                 }
               } catch (e) {
-                clientLogger.warn('[NBA Landing] ⚠️ Failed to parse cached data, fetching fresh');
+                console.warn('[NBA Landing] ⚠️ Failed to parse cached data, fetching fresh');
               }
             } else {
-              clientLogger.debug(`[NBA Landing] ⏰ Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
+              // Debug logging removed(`[NBA Landing] ⏰ Cache expired (${Math.round(age / 1000)}s old), fetching fresh`);
             }
           }
         }
@@ -936,25 +935,25 @@ export default function NBALandingPage() {
         const cacheResponse = await fetch(cacheUrl, {
           cache: forceRefresh ? 'no-store' : 'default'
         });
-        clientLogger.debug(`[NBA Landing] API response status: ${cacheResponse.status}`);
+        // Debug logging removed(`[NBA Landing] API response status: ${cacheResponse.status}`);
         if (cacheResponse.ok) {
           const cacheData = await cacheResponse.json();
-          clientLogger.debug(`[NBA Landing] API response data:`, { 
+          // Debug logging removed(`[NBA Landing] API response data:`, { 
             success: cacheData.success, 
             dataLength: cacheData.data?.length, 
             isArray: Array.isArray(cacheData.data),
             stale: cacheData.stale 
           });
           if (cacheData.success && cacheData.data && Array.isArray(cacheData.data) && cacheData.data.length > 0) {
-            clientLogger.debug(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
+            // Debug logging removed(`[NBA Landing] ✅ Using cached player props data (${cacheData.data.length} props)`);
           
           // Debug: Check which stat types are present
           const statTypes = new Set(cacheData.data.map((p: PlayerProp) => p.statType));
-          clientLogger.debug(`[NBA Landing] 📊 Stat types in cache:`, Array.from(statTypes).sort());
+          // Debug logging removed(`[NBA Landing] 📊 Stat types in cache:`, Array.from(statTypes).sort());
           const stlCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'STL').length;
           const blkCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'BLK').length;
           const threesCount = cacheData.data.filter((p: PlayerProp) => p.statType === 'THREES').length;
-          clientLogger.debug(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
+          // Debug logging removed(`[NBA Landing] 📊 STL props: ${stlCount}, BLK props: ${blkCount}, THREES props: ${threesCount}`);
           
           // Debug: Check bookmakerLines counts
           const propsWithMultipleBookmakers = cacheData.data.filter((p: PlayerProp) => 
@@ -963,12 +962,12 @@ export default function NBALandingPage() {
           const propsWithOneBookmaker = cacheData.data.filter((p: PlayerProp) => 
             p.bookmakerLines && Array.isArray(p.bookmakerLines) && p.bookmakerLines.length === 1
           );
-          clientLogger.debug(`[NBA Landing] 📊 Bookmakers: ${propsWithMultipleBookmakers.length} props with multiple, ${propsWithOneBookmaker.length} props with single`);
+          // Debug logging removed(`[NBA Landing] 📊 Bookmakers: ${propsWithMultipleBookmakers.length} props with multiple, ${propsWithOneBookmaker.length} props with single`);
           
           // Sample a prop to see its bookmakerLines
           if (cacheData.data.length > 0) {
             const sampleProp = cacheData.data[0] as PlayerProp;
-            clientLogger.debug(`[NBA Landing] 📊 Sample prop: ${sampleProp.playerName} ${sampleProp.statType} - bookmakerLines:`, 
+            // Debug logging removed(`[NBA Landing] 📊 Sample prop: ${sampleProp.playerName} ${sampleProp.statType} - bookmakerLines:`, 
               sampleProp.bookmakerLines?.length || 0, 
               sampleProp.bookmakerLines?.map(b => b.bookmaker).join(', ') || 'none'
             );
@@ -1028,7 +1027,7 @@ export default function NBALandingPage() {
               const dataString = JSON.stringify(cacheData.data);
               if (safeSetSessionStorage(CACHE_KEY, dataString)) {
                 safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
-                clientLogger.debug(`[NBA Landing] 💾 Cached ${cacheData.data.length} player props to sessionStorage`);
+                // Debug logging removed(`[NBA Landing] 💾 Cached ${cacheData.data.length} player props to sessionStorage`);
               }
             }
             
@@ -1040,17 +1039,17 @@ export default function NBALandingPage() {
             });
             
             if (uniqueTeams.size > 0) {
-              clientLogger.debug(`[NBA Landing] 🚀 Pre-loading team data for ${uniqueTeams.size} teams in background...`);
+              // Debug logging removed(`[NBA Landing] 🚀 Pre-loading team data for ${uniqueTeams.size} teams in background...`);
               preloadTeamData(Array.from(uniqueTeams), currentNbaSeason()).catch(err => {
-                clientLogger.warn('[NBA Landing] ⚠️ Error pre-loading team data:', err);
+                console.warn('[NBA Landing] ⚠️ Error pre-loading team data:', err);
               });
             }
             
             setPropsLoading(false);
             return;
           } else {
-            clientLogger.warn(`[NBA Landing] ⚠️ No cached data available - cache is being populated`);
-            clientLogger.debug(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data, cached: cacheData.cached, message: cacheData.message });
+            console.warn(`[NBA Landing] ⚠️ No cached data available - cache is being populated`);
+            // Debug logging removed(`[NBA Landing] Response structure:`, { success: cacheData.success, hasData: !!cacheData.data, dataType: typeof cacheData.data, cached: cacheData.cached, message: cacheData.message });
             // Don't clear existing props - keep them visible
             if (!propsLoadedRef.current) {
               setPlayerProps([]);
@@ -1064,7 +1063,7 @@ export default function NBALandingPage() {
             return;
           }
         } else {
-          clientLogger.warn(`[NBA Landing] Cache API error: ${cacheResponse.status} ${cacheResponse.statusText}`);
+          console.warn(`[NBA Landing] Cache API error: ${cacheResponse.status} ${cacheResponse.statusText}`);
           // Don't clear existing props on error - keep them visible
           if (!propsLoadedRef.current) {
             setPlayerProps([]);
@@ -1074,7 +1073,7 @@ export default function NBALandingPage() {
           return;
         }
       } catch (error) {
-        clientLogger.error('[NBA Landing] Error fetching player props:', error);
+        console.error('[NBA Landing] Error fetching player props:', error);
         // Don't clear existing props on error - keep them visible
         if (!propsLoadedRef.current) {
           setPlayerProps([]);
@@ -1099,7 +1098,7 @@ export default function NBALandingPage() {
           
           if (currentTimestamp && currentTimestamp !== lastOddsTimestamp && lastOddsTimestamp !== null) {
             // Odds have been updated - refresh player props in background (don't clear existing)
-            clientLogger.debug('[NBA Landing] 🔄 Odds updated, refreshing player props in background...');
+            // Debug logging removed('[NBA Landing] 🔄 Odds updated, refreshing player props in background...');
             // Fetch new props in background and update when ready
             fetch('/api/nba/player-props', { cache: 'default' }).then(async (response) => {
                   if (response.ok) {
@@ -1159,7 +1158,7 @@ export default function NBALandingPage() {
     const upperStat = statType.toUpperCase();
     const metric = mapping[upperStat] || null;
     if (!metric) {
-      clientLogger.warn(`[mapStatTypeToDvpMetric] No mapping for statType: ${statType} (${upperStat})`);
+      console.warn(`[mapStatTypeToDvpMetric] No mapping for statType: ${statType} (${upperStat})`);
     }
     return metric;
   };
@@ -1171,17 +1170,17 @@ export default function NBALandingPage() {
     statType: string
   ): Promise<{ rank: number | null; statValue: number | null }> => {
     if (!opponent) {
-      clientLogger.warn(`[getDvpRating] No opponent provided for ${statType}`);
+      console.warn(`[getDvpRating] No opponent provided for ${statType}`);
       return { rank: null, statValue: null };
     }
     if (!position) {
-      clientLogger.warn(`[getDvpRating] No position provided for ${opponent} ${statType}`);
+      console.warn(`[getDvpRating] No position provided for ${opponent} ${statType}`);
       return { rank: null, statValue: null };
     }
     
     const metric = mapStatTypeToDvpMetric(statType);
     if (!metric) {
-      clientLogger.warn(`[getDvpRating] No metric mapping for statType: ${statType}`);
+      console.warn(`[getDvpRating] No metric mapping for statType: ${statType}`);
       return { rank: null, statValue: null };
     }
     
@@ -1197,20 +1196,20 @@ export default function NBALandingPage() {
       
       // Fetch rank instead of perGame value (API uses 'pos' parameter)
       const url = `/api/dvp/rank?pos=${position}&metric=${metric}`;
-          clientLogger.debug(`[getDvpRating] Fetching rank: ${url} (opponent: "${opponent}" -> teamAbbr: "${teamAbbr}")`);
+          // Debug logging removed(`[getDvpRating] Fetching rank: ${url} (opponent: "${opponent}" -> teamAbbr: "${teamAbbr}")`);
       
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        clientLogger.warn(`[getDvpRating] Rank API not ok: ${response.status} for ${url}`, errorText);
+        console.warn(`[getDvpRating] Rank API not ok: ${response.status} for ${url}`, errorText);
         return { rank: null, statValue: null };
       }
       
       const data = await response.json();
-      clientLogger.debug(`[getDvpRating] Rank response for ${opponent} (${teamAbbr}) ${position} ${statType}:`, data);
+      // Debug logging removed(`[getDvpRating] Rank response for ${opponent} (${teamAbbr}) ${position} ${statType}:`, data);
       
       if (!data.success) {
-        clientLogger.warn(`[getDvpRating] Rank API returned success: false`, data);
+        console.warn(`[getDvpRating] Rank API returned success: false`, data);
         return { rank: null, statValue: null };
       }
       
@@ -1244,20 +1243,20 @@ export default function NBALandingPage() {
       }
       
       if (rank === null || rank === undefined) {
-        clientLogger.warn(`[getDvpRating] No rank value for ${teamAbbr} in response. Available teams:`, Object.keys(ranks).slice(0, 5));
+        console.warn(`[getDvpRating] No rank value for ${teamAbbr} in response. Available teams:`, Object.keys(ranks).slice(0, 5));
         return { rank: null, statValue };
       }
       
       const rankValue = typeof rank === 'number' ? rank : parseInt(String(rank), 10);
       if (isNaN(rankValue) || rankValue <= 0) {
-        clientLogger.warn(`[getDvpRating] Invalid rank value: ${rank} for ${teamAbbr}`);
+        console.warn(`[getDvpRating] Invalid rank value: ${rank} for ${teamAbbr}`);
         return { rank: null, statValue };
       }
       
-      clientLogger.debug(`[getDvpRating] ✅ Extracted rank: ${rankValue}, statValue: ${statValue} for ${opponent} (${teamAbbr}) ${position} ${statType}`);
+      // Debug logging removed(`[getDvpRating] ✅ Extracted rank: ${rankValue}, statValue: ${statValue} for ${opponent} (${teamAbbr}) ${position} ${statType}`);
       return { rank: rankValue, statValue };
     } catch (error) {
-      clientLogger.error(`[getDvpRating] Error for ${opponent} ${position} ${statType}:`, error);
+      console.error(`[getDvpRating] Error for ${opponent} ${position} ${statType}:`, error);
       return { rank: null, statValue: null };
     }
   };
@@ -1350,7 +1349,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       const shouldDebugH2H = !DEBUG_H2H_PLAYER || playerName.toLowerCase() === DEBUG_H2H_PLAYER;
       const playerId = getPlayerIdFromName(playerName);
       if (!playerId) {
-        clientLogger.warn(`[calculatePlayerAverages] No player ID found for: ${playerName}`);
+        console.warn(`[calculatePlayerAverages] No player ID found for: ${playerName}`);
         return { 
           last5: null, 
           last10: null, 
@@ -1397,7 +1396,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             try {
               const url = `/api/stats?player_id=${playerId}&season=${yr}&per_page=100&max_pages=3&postseason=${postseason}`;
               const requestId = `stats-${playerId}-${yr}-${suffix}`;
-              clientLogger.debug(`[calculatePlayerAverages] Fetching ${suffix}: ${url} (attempt ${attempt + 1}/${retries + 1})`);
+              // Debug logging removed(`[calculatePlayerAverages] Fetching ${suffix}: ${url} (attempt ${attempt + 1}/${retries + 1})`);
               const r = await queuedFetch(url, {}, requestId);
             
               // Try to parse response even on 429 - API might return cached data
@@ -1406,13 +1405,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 j = await r.json();
               } catch (e) {
                 const text = await r.text().catch(() => '');
-                clientLogger.warn(`[calculatePlayerAverages] Failed to parse response for ${playerId}, season ${yr}, ${suffix}:`, text);
+                console.warn(`[calculatePlayerAverages] Failed to parse response for ${playerId}, season ${yr}, ${suffix}:`, text);
               }
               
               // Check if we got cached data even on 429
               const data = Array.isArray(j?.data) ? j.data : [];
               if (data.length > 0) {
-                clientLogger.debug(`[calculatePlayerAverages] Got ${data.length} stats (${r.status === 429 ? 'cached' : 'fresh'}) for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
+                // Debug logging removed(`[calculatePlayerAverages] Got ${data.length} stats (${r.status === 429 ? 'cached' : 'fresh'}) for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
                 playerStatsCache.set(singleCacheKey, data);
                 return data;
               }
@@ -1420,15 +1419,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               if (r.status === 429) {
                 if (attempt < retries) {
                   const waitTime = (attempt + 1) * 2000;
-                  clientLogger.debug(`[calculatePlayerAverages] Rate limited, waiting ${waitTime}ms before retry...`);
+                  // Debug logging removed(`[calculatePlayerAverages] Rate limited, waiting ${waitTime}ms before retry...`);
                   await new Promise(resolve => setTimeout(resolve, waitTime));
                   continue;
                 }
-                clientLogger.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, ${suffix} - no cached data available`);
+                console.warn(`[calculatePlayerAverages] Rate limited for ${playerId}, season ${yr}, ${suffix} - no cached data available`);
                 return [];
               }
               if (!r.ok) {
-                clientLogger.warn(`[calculatePlayerAverages] API error ${r.status} for ${playerId}, season ${yr}, ${suffix}`);
+                console.warn(`[calculatePlayerAverages] API error ${r.status} for ${playerId}, season ${yr}, ${suffix}`);
                 return [];
               }
               
@@ -1440,7 +1439,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   const j = await error.response.json();
                   const data = Array.isArray(j?.data) ? j.data : [];
                   if (data.length > 0) {
-                    clientLogger.debug(`[calculatePlayerAverages] Got ${data.length} cached stats from 429 error for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
+                    // Debug logging removed(`[calculatePlayerAverages] Got ${data.length} cached stats from 429 error for ${playerName} (${playerId}), season ${yr}, ${suffix}`);
                     playerStatsCache.set(singleCacheKey, data);
                     return data;
                   }
@@ -1451,11 +1450,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               
               if (attempt < retries) {
                 const waitTime = (attempt + 1) * 1000;
-                clientLogger.debug(`[calculatePlayerAverages] Error on attempt ${attempt + 1}, retrying in ${waitTime}ms...`);
+                // Debug logging removed(`[calculatePlayerAverages] Error on attempt ${attempt + 1}, retrying in ${waitTime}ms...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
                 continue;
               }
-              clientLogger.error(`[calculatePlayerAverages] Error fetching stats for ${playerId}, ${suffix}:`, error);
+              console.error(`[calculatePlayerAverages] Error fetching stats for ${playerId}, ${suffix}:`, error);
               return [];
             }
           }
@@ -1492,14 +1491,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
       // Merge all data and filter (like dashboard does)
       const allStats = [...currSeason, ...prev1Season];
-      clientLogger.debug(`[calculatePlayerAverages] Merged stats for ${playerName}:`, {
+      // Debug logging removed(`[calculatePlayerAverages] Merged stats for ${playerName}:`, {
         currSeason: currSeason.length,
         prev1Season: prev1Season.length,
         total: allStats.length,
       });
       
       const validStats = allStats.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
-      clientLogger.debug(`[calculatePlayerAverages] Valid stats after filter: ${validStats.length} out of ${allStats.length}`);
+      // Debug logging removed(`[calculatePlayerAverages] Valid stats after filter: ${validStats.length} out of ${allStats.length}`);
       
       // CRITICAL: Deduplicate by game ID first (regular/postseason might have duplicates)
       const uniqueStatsMap = new Map();
@@ -1516,7 +1515,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         }
       }
       const uniqueStats = Array.from(uniqueStatsMap.values());
-      clientLogger.debug(`[calculatePlayerAverages] Deduplicated: ${validStats.length} → ${uniqueStats.length} unique games`);
+      // Debug logging removed(`[calculatePlayerAverages] Deduplicated: ${validStats.length} → ${uniqueStats.length} unique games`);
       
       // Sort by date (newest first) - same as dashboard
       uniqueStats.sort((a, b) => {
@@ -1526,7 +1525,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       });
       
       if (uniqueStats.length === 0) {
-        clientLogger.warn(`[calculatePlayerAverages] No valid stats for ${playerName} (${playerId})`, {
+        console.warn(`[calculatePlayerAverages] No valid stats for ${playerName} (${playerId})`, {
           allStatsLength: allStats.length,
           sampleStat: allStats[0],
           hasGame: !!allStats[0]?.game,
@@ -1599,12 +1598,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         return minutes > 0;
       });
       
-      clientLogger.debug(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithMinutes.length} games with minutes > 0`);
+      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithMinutes.length} games with minutes > 0`);
       
       // Log sample stat structure to debug stat extraction
       if (gamesWithMinutes.length > 0) {
         const sample = gamesWithMinutes[0];
-        clientLogger.debug(`[calculatePlayerAverages] ${playerName} ${statType} sample stat:`, {
+        // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} sample stat:`, {
           hasPts: sample.pts !== undefined && sample.pts !== null,
           hasReb: sample.reb !== undefined && sample.reb !== null,
           hasAst: sample.ast !== undefined && sample.ast !== null,
@@ -1635,7 +1634,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           // Note: 0 is a valid stat value (player had 0 points/rebounds/etc), so we keep it
           const isValid = Number.isFinite(stats.statValue);
           if (!isValid) {
-            clientLogger.warn(`[calculatePlayerAverages] Invalid stat value for ${playerName} ${statType}:`, {
+            console.warn(`[calculatePlayerAverages] Invalid stat value for ${playerName} ${statType}:`, {
               statValue: stats.statValue,
               gameDate: stats?.game?.date,
               rawStat: stats[statType.toLowerCase()] || stats[statType] || 'missing',
@@ -1651,7 +1650,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           return dateB - dateA; // Newest first
         });
       
-      clientLogger.debug(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithStats.length} games with valid stat values (from ${gamesWithMinutes.length} games with minutes)`);
+      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType}: ${gamesWithStats.length} games with valid stat values (from ${gamesWithMinutes.length} games with minutes)`);
 
       if (gamesWithStats.length === 0) {
         return { 
@@ -1706,7 +1705,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         last5HitRate = { hits, total: last5Values.length };
       }
       
-      clientLogger.debug(`[calculatePlayerAverages] ${playerName} ${statType} L5:`, {
+      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} L5:`, {
         totalGames: gamesWithStats.length,
         last5Games: last5Games.length,
         last5Values,
@@ -1735,7 +1734,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         last10HitRate = { hits, total: last10Values.length };
       }
       
-      clientLogger.debug(`[calculatePlayerAverages] ${playerName} ${statType} L10:`, {
+      // Debug logging removed(`[calculatePlayerAverages] ${playerName} ${statType} L10:`, {
         totalGames: gamesWithStats.length,
         last10Games: last10Games.length,
         last10Values,
@@ -1777,7 +1776,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         
         // Debug: log opponent normalization
         if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
-          clientLogger.debug(`[calculatePlayerAverages][H2H Normalization] ${playerName} ${statType}:`, {
+          // Debug logging removed(`[calculatePlayerAverages][H2H Normalization] ${playerName} ${statType}:`, {
             originalOpponent: opponent,
             correctOpponent,
             normalizedOpponent,
@@ -1824,7 +1823,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         
         // Debug: log H2H calculation result
         if (shouldDebugH2H && process.env.NODE_ENV !== 'production') {
-          clientLogger.debug(`[calculatePlayerAverages][H2H Result] ${playerName} ${statType} vs ${opponent}:`, {
+          // Debug logging removed(`[calculatePlayerAverages][H2H Result] ${playerName} ${statType} vs ${opponent}:`, {
             normalizedOpponent,
             playerTeam,
             h2hStatsCount: h2hStats.length,
@@ -1935,7 +1934,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           };
         });
 
-        clientLogger.warn('[calculatePlayerAverages][H2H Missing]', {
+        console.warn('[calculatePlayerAverages][H2H Missing]', {
           playerName,
           statType,
           opponent,
@@ -1978,7 +1977,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         streak,
       };
       
-      clientLogger.debug(`[calculatePlayerAverages] ${playerName} (${statType}):`, {
+      // Debug logging removed(`[calculatePlayerAverages] ${playerName} (${statType}):`, {
         totalGames: gamesWithStats.length,
         last5: last5Avg?.toFixed(1),
         last10: last10Avg?.toFixed(1),
@@ -1991,7 +1990,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       
       return result;
     } catch (error) {
-      clientLogger.error(`[calculatePlayerAverages] Error for ${playerName} (${statType}):`, error);
+      console.error(`[calculatePlayerAverages] Error for ${playerName} (${statType}):`, error);
       return { 
         last5: null, 
         last10: null, 
@@ -2080,9 +2079,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         localStorage.setItem('nba_filters_games', JSON.stringify(Array.from(games)));
       } catch (e: any) {
         if (e.name === 'QuotaExceededError' || e.code === 22) {
-          clientLogger.warn('[NBA Landing] localStorage quota exceeded when saving filters');
+          console.warn('[NBA Landing] localStorage quota exceeded when saving filters');
         } else {
-          clientLogger.warn('[NBA Landing] Failed to save filters to localStorage:', e);
+          console.warn('[NBA Landing] Failed to save filters to localStorage:', e);
         }
       }
     } catch (e) {
@@ -2183,7 +2182,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       }
       if (!(window as any).__gameMatchDebug.has(debugKey)) {
         (window as any).__gameMatchDebug.add(debugKey);
-        clientLogger.debug('[getGameForProp] No game match found:', {
+        // Debug logging removed('[getGameForProp] No game match found:', {
           propTeam: prop.team,
           propOpponent: prop.opponent,
           normalizedPropTeam: propTeam,
@@ -2231,7 +2230,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       try {
         localStorage.setItem('nba_filters_deselected_games', JSON.stringify(Array.from(deselected)));
       } catch (e) {
-        clientLogger.warn('[NBA Landing] Failed to save deselected games:', e);
+        console.warn('[NBA Landing] Failed to save deselected games:', e);
       }
     }
   };
@@ -2658,7 +2657,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             calculatedKeysRef.current.add(key);
           }
         } catch (error) {
-          clientLogger.warn(`[Props Page] Failed to calculate stats for ${prop.playerName} ${prop.statType}:`, error);
+          console.warn(`[Props Page] Failed to calculate stats for ${prop.playerName} ${prop.statType}:`, error);
         } finally {
           calculatingRef.current.delete(key);
           abortControllers.delete(key);
@@ -2846,9 +2845,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   localStorage.setItem('oddsFormat', formatValue);
                 } catch (e: any) {
                   if (e.name === 'QuotaExceededError' || e.code === 22) {
-                    clientLogger.warn('[NBA Landing] localStorage quota exceeded when saving odds format');
+                    console.warn('[NBA Landing] localStorage quota exceeded when saving odds format');
                   } else {
-                    clientLogger.warn('[NBA Landing] Failed to save odds format to localStorage:', e);
+                    console.warn('[NBA Landing] Failed to save odds format to localStorage:', e);
                   }
                 }
               }}
@@ -3821,7 +3820,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     line: prop.line,
                                     timestamp: Date.now(),
                                   };
-                                  clientLogger.debug('🔵 [PropClick] CLICKED!', clickData);
+                                  // Debug logging removed('🔵 [PropClick] CLICKED!', clickData);
                                   
                                   // Store in sessionStorage so it persists even if console is cleared
                                   if (typeof window !== 'undefined') {
@@ -3832,7 +3831,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   // Set timeframe to "thisseason" to show current season data when clicking from player props
                                   const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=last10`;
                                   
-                                  clientLogger.debug('[PropClick] Navigating to dashboard', {
+                                  // Debug logging removed('[PropClick] Navigating to dashboard', {
                                     ...clickData,
                                     normalizedStat,
                                     finalUrl,
@@ -3849,7 +3848,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     try {
                                       window.sessionStorage.removeItem('nba_dashboard_session_v1');
                                     } catch (e) {
-                                      clientLogger.warn('Failed to clear dashboard session storage', e);
+                                      console.warn('Failed to clear dashboard session storage', e);
                                     }
                                   }
                                   

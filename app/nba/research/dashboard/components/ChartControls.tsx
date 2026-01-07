@@ -3,7 +3,6 @@
 import { useState, useMemo, useRef, useEffect, memo, useCallback } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
-import { clientLogger } from '@/lib/clientLogger';
 import { HomeAwaySelect, OverRatePill } from './ui';
 import { SECOND_AXIS_FILTER_OPTIONS } from '../constants';
 import { updateBettingLinePosition } from '../utils/chartUtils';
@@ -680,17 +679,8 @@ const ChartControls = function ChartControls({
   
   // Auto-set betting line to best available line when odds data loads (only if user hasn't manually set it)
   useEffect(() => {
-    clientLogger.debug('[DEBUG bettingLine useEffect] Triggered', {
-      bestLineForStat,
-      oddsLoading,
-      selectedStat,
-      hasManuallySet: hasManuallySetLineRef.current,
-      timestamp: new Date().toISOString()
-    });
-    
     // Don't update betting line if odds are still loading (prevents double refresh on initial load)
     if (oddsLoading) {
-      clientLogger.debug('[DEBUG bettingLine useEffect] Odds still loading, skipping update');
       return;
     }
     
@@ -699,12 +689,10 @@ const ChartControls = function ChartControls({
     
     // If line came from URL, mark it as manually set to prevent auto-override
     if (hasUrlLine && !hasManuallySetLineRef.current) {
-      clientLogger.debug('[DEBUG bettingLine useEffect] Line came from URL, marking as manually set');
       hasManuallySetLineRef.current = true;
     }
     
     if (bestLineForStat !== null && !hasManuallySetLineRef.current && !hasUrlLine) {
-      clientLogger.debug('[DEBUG bettingLine useEffect] Will update betting line', {
         bestLineForStat,
         currentBettingLine: bettingLine
       });

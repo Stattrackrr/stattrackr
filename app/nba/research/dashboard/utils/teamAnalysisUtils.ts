@@ -2,7 +2,6 @@
 
 import { BallDontLieStats } from '../types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
-import { clientLogger } from '@/lib/clientLogger';
 import { teamReboundPct } from './teamStats';
 
 // Get rebound percentage rank for a team (higher rebound % = better for overs)
@@ -166,44 +165,20 @@ export const getPlayerCurrentTeam = (playerStats: BallDontLieStats[]): string =>
   for (const stat of sortedStats.slice(0, 10)) {
     const teamAbbr = stat?.team?.abbreviation;
     if (teamAbbr) {
-      clientLogger.log(`🏀 Player's most recent team from game data: ${teamAbbr} (date: ${stat?.game?.date})`);
       return teamAbbr;
     }
   }
-  
-  clientLogger.warn(`⚠️ No valid team found in player stats`);
   return 'N/A';
 };
 
 // Get opponent team from games schedule
 export const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string => {
-  // Removed console.clear() to preserve debug logs
-  clientLogger.debug(`🔍 === OPPONENT DETECTION START ===`);
-  clientLogger.debug(`Searching for opponent of: ${currentTeam}`);
-  clientLogger.debug(`Total games available: ${todaysGames.length}`);
-  
   if (!currentTeam || currentTeam === 'N/A' || !todaysGames.length) {
-    clientLogger.debug(`⏸️ EARLY RETURN - Insufficient data`);
-    clientLogger.debug(`  currentTeam: ${currentTeam}, games: ${todaysGames.length}`);
     return '';
   }
   
   // Normalize the current team for comparison
   const normCurrentTeam = normalizeAbbr(currentTeam);
-  clientLogger.debug(`Normalized input team: ${normCurrentTeam}`);
-  
-  // Create a table of all games
-  const gameTable = todaysGames.map((game, i) => ({
-    '#': i,
-    'Home (Raw)': game.home_team?.abbreviation || '?',
-    'Away (Raw)': game.visitor_team?.abbreviation || '?',
-    'Home (Norm)': normalizeAbbr(game.home_team?.abbreviation || ''),
-    'Away (Norm)': normalizeAbbr(game.visitor_team?.abbreviation || ''),
-    'Date': game.date,
-    'Status': game.status || 'unknown'
-  }));
-  
-  clientLogger.debug(`📊 ALL GAMES:`, gameTable);
   
   let matchingGames = [];
   
@@ -220,33 +195,18 @@ export const getOpponentTeam = (currentTeam: string, todaysGames: any[]): string
       
       matchingGames.push({ homeTeam, visitorTeam, date: game.date, status: game.status, isFinal });
       
-      clientLogger.debug(`✅ MATCH FOUND [${i}] ${homeTeam} vs ${visitorTeam}`);
-      clientLogger.debug(`   ${normCurrentTeam} is ${matchType}, opponent is ${opponent}, status: ${status}, isFinal: ${isFinal}`);
-      
       // Skip final games and look for upcoming games
       if (!isFinal) {
         if (homeTeam === normCurrentTeam && visitorTeam) {
-          clientLogger.debug(`🎯 RETURNING: ${visitorTeam} (${normCurrentTeam} is HOME)`);
-          clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
           return visitorTeam;
         }
         if (visitorTeam === normCurrentTeam && homeTeam) {
-          clientLogger.debug(`🎯 RETURNING: ${homeTeam} (${normCurrentTeam} is AWAY)`);
-          clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
           return homeTeam;
         }
-      } else {
-        clientLogger.debug(`   ⏭️ Skipping - this is a FINAL game, looking for upcoming...`);
       }
     }
   }
-  
-  clientLogger.warn(`❌ NO OPPONENT FOUND for ${normCurrentTeam}`);
-  clientLogger.debug(`   Searched ${todaysGames.length} games, found ${matchingGames.length} matches`);
-  if (matchingGames.length > 0) {
-    clientLogger.debug(`Matching games:`, matchingGames);
-  }
-  clientLogger.debug(`🔍 === OPPONENT DETECTION END ===\n`);
   return '';
 };
+
 

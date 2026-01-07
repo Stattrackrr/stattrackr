@@ -29,25 +29,16 @@ class RequestCache {
     // Check if we have a valid cached response
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < ttl) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Cache HIT] ${url}`);
-      }
       return cached.data;
     }
 
     // Check if there's already a pending request for this URL
     const pending = this.pending.get(cacheKey);
     if (pending) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Deduplicating] ${url}`);
-      }
       return pending;
     }
 
     // Create new request
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Cache MISS] ${url}`);
-    }
     const request = this.makeRequest<T>(url, options).catch((error: any) => {
       // Handle rate limit errors gracefully - return null instead of throwing
       if (error?.message?.includes('429') || error?.message?.includes('Rate limit')) {

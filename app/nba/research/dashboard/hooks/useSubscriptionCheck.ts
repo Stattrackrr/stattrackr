@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { clientLogger } from '@/lib/clientLogger';
 
 export interface UseSubscriptionCheckParams {
   setUserEmail: (email: string | null) => void;
@@ -83,7 +82,7 @@ export function useSubscriptionCheck({
         
         // Always update if status changed, subscription expired, or if this is the first check
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          clientLogger.debug('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
+          // Debug logging removed('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
           
           if (isMounted) {
             setIsPro(proStatus);
@@ -94,10 +93,10 @@ export function useSubscriptionCheck({
           }
         }
       } catch (error) {
-        clientLogger.error('Error checking subscription:', error);
+        console.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          clientLogger.debug('🔐 Using cached active subscription status due to error');
+          // Debug logging removed('🔐 Using cached active subscription status due to error');
           setIsPro(lastSubscriptionStatus.isPro);
         }
       }

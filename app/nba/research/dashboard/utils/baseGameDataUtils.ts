@@ -8,7 +8,6 @@
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { currentNbaSeason, parseMinutes } from './playerUtils';
 import { TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from './teamUtils';
-import serverLogger from '@/lib/serverLogger';
 import { BallDontLieStats, BallDontLieGame, NBAPlayer } from '../types';
 
 export interface BaseGameDataItem {
@@ -310,7 +309,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       lastSeasonStatsCount: lastSeasonStats.length
     };
     
-    serverLogger.log(`[baseGameData] 📊 Games breakdown: totalStats=${breakdown.totalPlayerStats}, gamesPlayed=${breakdown.totalGamesPlayed}, currentSeason=${breakdown.currentSeason}, currentSeasonGames=${breakdown.expectedCurrentSeasonGames}, lastSeasonGames=${breakdown.expectedLastSeasonGames}`, { data: breakdown });
   }
   
   // If timeframe is "thisseason" and we're still loading, check if we have current season data yet
@@ -718,7 +716,6 @@ export function processBaseGameData(params: BaseGameDataParams): BaseGameDataIte
       filteredGameSeasonYears: filteredGameSeasonYears.filter(Boolean),
       gamesBySeasonYear
     };
-    serverLogger.log(`📅 [This Season Filter]`, { data: filterData });
     
     // If thisseason filter returns empty but we have playerStats, check if current season data is still loading
     // If we're still loading (isLoading is true), return empty array to prevent showing last season data

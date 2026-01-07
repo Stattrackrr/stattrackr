@@ -2,7 +2,6 @@ import { useEffect, useRef, startTransition } from 'react';
 import { BdlSearchResult, SavedSession, SESSION_KEY } from '../types';
 import { getSavedSession } from '../utils/storageUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
-import serverLogger from '@/lib/serverLogger';
 
 export interface UseUrlInitializationParams {
   propsMode: 'player' | 'team';
@@ -266,7 +265,6 @@ export function useUrlInitialization({
             const searchForPlayer = async () => {
               try {
                 console.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
-                serverLogger.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
                 
                 // OPTIMIZATION: Try all search variations in parallel instead of sequentially
                 // This reduces search time from ~1.8s to ~0.6s (fastest response wins)
@@ -342,7 +340,6 @@ export function useUrlInitialization({
                   }
                   
                   console.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
-                  serverLogger.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full}`, { data: { id: playerResult.id, team: playerResult.team } });
                   const r: BdlSearchResult = {
                     id: playerResult.id,
                     full: playerResult.full,
@@ -380,7 +377,6 @@ export function useUrlInitialization({
                   
                   // Now load stats in background without blocking
                   console.log(`[Dashboard] 🚀 [Props Page] Loading stats in background for:`, r);
-                  serverLogger.log(`[Dashboard] 🚀 [Props Page] Loading stats in background`, { data: r });
                   handlePlayerSelectFromSearch(r).catch(err => {
                     console.error('[Dashboard] ❌ [Props Page] Error loading player stats:', err);
                     setApiError(`Failed to load stats: ${err instanceof Error ? err.message : 'Unknown error'}`);

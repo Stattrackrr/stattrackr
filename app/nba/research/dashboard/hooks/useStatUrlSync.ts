@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { clientLogger } from '@/lib/clientLogger';
 import { updateSessionProperty } from '../utils/storageUtils';
 import { PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS } from '../constants';
 
@@ -53,13 +52,13 @@ export function useStatUrlSync({
             return stat.toLowerCase();
           })();
           initialStatFromUrlRef.current = normalizedStat;
-          clientLogger.debug(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
+          // Debug logging removed(`[Dashboard] 🎯 Captured initial stat from URL on mount: "${stat}" -> "${normalizedStat}"`);
           statFromUrlRef.current = true;
           // Set it immediately
           setSelectedStat(normalizedStat);
         }
       } catch (e) {
-        clientLogger.error('[Dashboard] Error capturing initial stat from URL:', e);
+        console.error('[Dashboard] Error capturing initial stat from URL:', e);
       }
     }
   }, [setSelectedStat, statFromUrlRef]);
@@ -214,14 +213,14 @@ export function useStatUrlSync({
   const handleStatSelect = useCallback((stat: string) => {
     userSelectedStatRef.current = true; // Mark as user selection
     setSelectedStat(stat);
-    clientLogger.debug(`[Dashboard] 👤 User selected stat: "${stat}"`);
+    // Debug logging removed(`[Dashboard] 👤 User selected stat: "${stat}"`);
     
     // Update URL immediately to prevent race conditions
     if (typeof window !== 'undefined' && router) {
       const url = new URL(window.location.href);
       url.searchParams.set('stat', stat);
       router.replace(url.pathname + url.search, { scroll: false });
-      clientLogger.debug(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
+      // Debug logging removed(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
       
       // Mark that URL was updated by user, so useSearchParams doesn't override it
       statFromUrlRef.current = true;
@@ -230,7 +229,7 @@ export function useStatUrlSync({
       // This prevents useSearchParams from reading the old URL value
       setTimeout(() => {
         userSelectedStatRef.current = false;
-        clientLogger.debug(`[Dashboard] ✅ Reset user selection flag after URL update`);
+        // Debug logging removed(`[Dashboard] ✅ Reset user selection flag after URL update`);
       }, 100); // 100ms should be enough for router.replace to complete
     }
   }, [setSelectedStat, router, statFromUrlRef, userSelectedStatRef]);

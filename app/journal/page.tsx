@@ -2,7 +2,6 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import React, { useEffect, useState, useMemo, Suspense, useRef } from "react";
-import { clientLogger } from '@/lib/clientLogger';
 import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
@@ -44,7 +43,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    clientLogger.error('Journal page error:', error, errorInfo);
+    console.error('Journal page error:', error, errorInfo);
   }
 
   render() {
@@ -439,7 +438,7 @@ function JournalContent() {
           router.push('/subscription');
         }
       } catch (error) {
-        clientLogger.error('Portal error:', error);
+        console.error('Portal error:', error);
         router.push('/subscription');
       }
     } else {
@@ -463,9 +462,9 @@ function JournalContent() {
       localStorage.setItem('journal-dateRange', dateRange);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving dateRange');
+        console.warn('[Journal] localStorage quota exceeded when saving dateRange');
       } else {
-        clientLogger.warn('[Journal] Failed to save dateRange to localStorage:', e);
+        console.warn('[Journal] Failed to save dateRange to localStorage:', e);
       }
     }
   }, [dateRange]);
@@ -475,9 +474,9 @@ function JournalContent() {
       localStorage.setItem('journal-currency', currency);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving currency');
+        console.warn('[Journal] localStorage quota exceeded when saving currency');
       } else {
-        clientLogger.warn('[Journal] Failed to save currency to localStorage:', e);
+        console.warn('[Journal] Failed to save currency to localStorage:', e);
       }
     }
   }, [currency]);
@@ -487,9 +486,9 @@ function JournalContent() {
       localStorage.setItem('journal-viewMode', viewMode);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving viewMode');
+        console.warn('[Journal] localStorage quota exceeded when saving viewMode');
       } else {
-        clientLogger.warn('[Journal] Failed to save viewMode to localStorage:', e);
+        console.warn('[Journal] Failed to save viewMode to localStorage:', e);
       }
     }
   }, [viewMode]);
@@ -499,9 +498,9 @@ function JournalContent() {
       localStorage.setItem('journal-sport', sport);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving sport');
+        console.warn('[Journal] localStorage quota exceeded when saving sport');
       } else {
-        clientLogger.warn('[Journal] Failed to save sport to localStorage:', e);
+        console.warn('[Journal] Failed to save sport to localStorage:', e);
       }
     }
   }, [sport]);
@@ -511,9 +510,9 @@ function JournalContent() {
       localStorage.setItem('journal-betType', betTypeFilter);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving betTypeFilter');
+        console.warn('[Journal] localStorage quota exceeded when saving betTypeFilter');
       } else {
-        clientLogger.warn('[Journal] Failed to save betTypeFilter to localStorage:', e);
+        console.warn('[Journal] Failed to save betTypeFilter to localStorage:', e);
       }
     }
   }, [betTypeFilter]);
@@ -523,9 +522,9 @@ function JournalContent() {
       localStorage.setItem('journal-bookmaker', bookmaker);
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22) {
-        clientLogger.warn('[Journal] localStorage quota exceeded when saving bookmaker');
+        console.warn('[Journal] localStorage quota exceeded when saving bookmaker');
       } else {
-        clientLogger.warn('[Journal] Failed to save bookmaker to localStorage:', e);
+        console.warn('[Journal] Failed to save bookmaker to localStorage:', e);
       }
     }
   }, [bookmaker]);
@@ -643,7 +642,7 @@ function JournalContent() {
               .single();
             
             if (unitProfileFallback) {
-              clientLogger.debug('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
+              // Debug logging removed('[INITIAL LOAD] Fallback profile data loaded:', unitProfileFallback);
               const fallback = unitProfileFallback as {
                 unit_size?: number | null;
                 bankroll?: number | null;
@@ -654,23 +653,23 @@ function JournalContent() {
               };
               if (fallback.unit_size !== null && fallback.unit_size !== undefined) {
                 const unitSizeValue = parseFloat(fallback.unit_size.toString());
-                clientLogger.debug('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+                // Debug logging removed('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
                 setUnitSize(unitSizeValue);
                 if (!mobileUnitSize) {
                   setMobileUnitSize(unitSizeValue.toString());
                 }
               } else {
-                clientLogger.debug('[INITIAL LOAD] No unit_size in profile');
+                // Debug logging removed('[INITIAL LOAD] No unit_size in profile');
               }
               if (fallback.bankroll !== null && fallback.bankroll !== undefined) {
                 const bankrollValue = parseFloat(fallback.bankroll.toString());
-                clientLogger.debug('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+                // Debug logging removed('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
                 setBankroll(bankrollValue);
                 if (!mobileBankroll) {
                   setMobileBankroll(fallback.bankroll.toString());
                 }
               } else {
-                clientLogger.debug('[INITIAL LOAD] No bankroll in profile');
+                // Debug logging removed('[INITIAL LOAD] No bankroll in profile');
               }
               if (fallback.bankroll_currency) {
                 setMobileBankrollCurrency(fallback.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
@@ -689,7 +688,7 @@ function JournalContent() {
           }
           
           if (unitProfile) {
-            clientLogger.debug('[INITIAL LOAD] Profile data loaded:', unitProfile);
+            // Debug logging removed('[INITIAL LOAD] Profile data loaded:', unitProfile);
             const profile = unitProfile as {
               unit_size?: number | null;
               bankroll?: number | null;
@@ -701,23 +700,23 @@ function JournalContent() {
             };
             if (profile.unit_size !== null && profile.unit_size !== undefined) {
               const unitSizeValue = parseFloat(profile.unit_size.toString());
-              clientLogger.debug('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
+              // Debug logging removed('[INITIAL LOAD] Setting unitSize to:', unitSizeValue);
               setUnitSize(unitSizeValue);
               if (!mobileUnitSize) {
                 setMobileUnitSize(unitSizeValue.toString());
               }
             } else {
-              clientLogger.debug('[INITIAL LOAD] No unit_size found in profile');
+              // Debug logging removed('[INITIAL LOAD] No unit_size found in profile');
             }
             if (profile.bankroll !== null && profile.bankroll !== undefined) {
               const bankrollValue = parseFloat(profile.bankroll.toString());
-              clientLogger.debug('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
+              // Debug logging removed('[INITIAL LOAD] Setting bankroll to:', bankrollValue);
               setBankroll(bankrollValue);
               if (!mobileBankroll) {
                 setMobileBankroll(profile.bankroll.toString());
               }
             } else {
-              clientLogger.debug('[INITIAL LOAD] No bankroll found in profile');
+              // Debug logging removed('[INITIAL LOAD] No bankroll found in profile');
             }
             if (profile.bankroll_set_date) {
               setBankrollSetDate(profile.bankroll_set_date);
@@ -737,7 +736,7 @@ function JournalContent() {
           }
         } catch (unitError) {
           // Silently fail - unit settings are optional and shouldn't block subscription check
-          clientLogger.debug('Could not load unit settings (optional):', unitError);
+          // Debug logging removed('Could not load unit settings (optional):', unitError);
         }
         
         const proStatus = isActive && isPro;
@@ -753,7 +752,7 @@ function JournalContent() {
         
         // Always update if status changed, subscription expired, or if this is the first check
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          clientLogger.debug('🔐 Journal Pro Status Check:', { isActive, isPro, proStatus, profile, metadata: session.user.user_metadata });
+          // Debug logging removed('🔐 Journal Pro Status Check:', { isActive, isPro, proStatus, profile, metadata: session.user.user_metadata });
           
           if (isMounted) {
             setHasProAccess(proStatus);
@@ -779,7 +778,7 @@ function JournalContent() {
         if (!isMounted) return;
 
         if (error) {
-          clientLogger.error('Error fetching bets:', error);
+          console.error('Error fetching bets:', error);
           setBets([]);
         } else {
           setBets(data || []);
@@ -798,12 +797,12 @@ function JournalContent() {
               // Silently handle 401 (Unauthorized) - expected if user is not logged in
               // Only log other errors in development
               if (response.status !== 401) {
-                clientLogger.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
+                console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
               }
               return;
             }
             const data = await response.json();
-            clientLogger.debug('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
+            // Debug logging removed('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
             
             // Refresh bets after check completes to show updated results
             if (isMounted) {
@@ -820,13 +819,13 @@ function JournalContent() {
           .catch((error) => {
             // Silently handle errors - this is a non-blocking background operation
             // Only log in development for debugging
-            clientLogger.debug('[Journal] check-journal-bets error (non-critical):', error);
+            // Debug logging removed('[Journal] check-journal-bets error (non-critical):', error);
           });
       } catch (error) {
-        clientLogger.error('Error checking subscription:', error);
+        console.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          clientLogger.debug('🔐 Using cached active subscription status due to error');
+          // Debug logging removed('🔐 Using cached active subscription status due to error');
           setHasProAccess(lastSubscriptionStatus.isPro);
           setIsPro(lastSubscriptionStatus.isPro);
         }
@@ -855,20 +854,20 @@ function JournalContent() {
       if (isMounted) {
         try {
           // Trigger check-journal-bets to update completed games
-          clientLogger.debug('[Journal] Periodic refresh: calling /api/check-journal-bets...');
+          // Debug logging removed('[Journal] Periodic refresh: calling /api/check-journal-bets...');
           const response = await fetch('/api/check-journal-bets', {
             credentials: 'include', // Include cookies for authentication
           });
           
           // Silently handle 401 (Unauthorized) - expected if user is not logged in
           if (!response.ok && response.status !== 401) {
-            clientLogger.warn('[Journal] Periodic refresh failed:', response.status);
+            console.warn('[Journal] Periodic refresh failed:', response.status);
             return;
           }
           
           if (response.ok) {
             const data = await response.json();
-            clientLogger.debug('[Journal] Periodic refresh response:', data);
+            // Debug logging removed('[Journal] Periodic refresh response:', data);
           }
           
           // Then refresh bets from database
@@ -884,7 +883,7 @@ function JournalContent() {
             }
           }
         } catch (error) {
-          clientLogger.debug('Error refreshing bets (non-critical):', error);
+          // Debug logging removed('Error refreshing bets (non-critical):', error);
         }
       }
     }, 10 * 60 * 1000); // 10 minutes
@@ -3421,9 +3420,9 @@ function JournalContent() {
                         localStorage.setItem('theme', e.target.value);
                       } catch (e: any) {
                         if (e.name === 'QuotaExceededError' || e.code === 22) {
-                          clientLogger.warn('[Journal] localStorage quota exceeded when saving theme');
+                          console.warn('[Journal] localStorage quota exceeded when saving theme');
                         } else {
-                          clientLogger.warn('[Journal] Failed to save theme to localStorage:', e);
+                          console.warn('[Journal] Failed to save theme to localStorage:', e);
                         }
                       }
                     }}
@@ -3445,9 +3444,9 @@ function JournalContent() {
                         localStorage.setItem('oddsFormat', newFormat);
                       } catch (e: any) {
                         if (e.name === 'QuotaExceededError' || e.code === 22) {
-                          clientLogger.warn('[Journal] localStorage quota exceeded when saving oddsFormat');
+                          console.warn('[Journal] localStorage quota exceeded when saving oddsFormat');
                         } else {
-                          clientLogger.warn('[Journal] Failed to save oddsFormat to localStorage:', e);
+                          console.warn('[Journal] Failed to save oddsFormat to localStorage:', e);
                         }
                       }
                     }}
@@ -3523,9 +3522,9 @@ function JournalContent() {
                         localStorage.setItem('oddsFormat', oddsFormat);
                       } catch (e: any) {
                         if (e.name === 'QuotaExceededError' || e.code === 22) {
-                          clientLogger.warn('[Journal] localStorage quota exceeded when saving settings');
+                          console.warn('[Journal] localStorage quota exceeded when saving settings');
                         } else {
-                          clientLogger.warn('[Journal] Failed to save settings to localStorage:', e);
+                          console.warn('[Journal] Failed to save settings to localStorage:', e);
                         }
                       }
                       

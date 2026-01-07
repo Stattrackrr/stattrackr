@@ -37,9 +37,6 @@ class ServerCache {
     // Update access time for LRU
     this.accessOrder.set(key, now);
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🎯 Cache HIT for key: ${key}`);
-    }
     return entry.data;
   }
   
@@ -63,9 +60,6 @@ class ServerCache {
     this.cache.set(key, entry);
     this.accessOrder.set(key, now);
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`💾 Cache SET for key: ${key} (TTL: ${ttlMinutes}m, size: ${this.cache.size}/${this.maxSize})`);
-    }
   }
   
   /**
@@ -74,9 +68,6 @@ class ServerCache {
   delete(key: string): boolean {
     const deleted = this.cache.delete(key);
     this.accessOrder.delete(key);
-    if (deleted && process.env.NODE_ENV === 'development') {
-      console.log(`🗑️ Cache DELETE for key: ${key}`);
-    }
     return deleted;
   }
   
@@ -86,9 +77,6 @@ class ServerCache {
   clear(): void {
     this.cache.clear();
     this.accessOrder.clear();
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🧹 Cache CLEARED');
-    }
   }
   
   /**

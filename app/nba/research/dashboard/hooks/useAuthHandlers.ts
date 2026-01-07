@@ -1,6 +1,5 @@
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { clientLogger } from '@/lib/clientLogger';
 
 /**
  * Custom hook for authentication-related handlers
@@ -41,7 +40,7 @@ export function useAuthHandlers() {
         router.push('/subscription');
       }
     } catch (error) {
-      clientLogger.error('Portal error:', error);
+      console.error('Portal error:', error);
       router.push('/subscription');
     }
   };

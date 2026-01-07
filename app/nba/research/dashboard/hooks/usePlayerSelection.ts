@@ -7,7 +7,6 @@ import { getOpponentTeam } from '../utils/teamAnalysisUtils';
 import { resolvePlayerId, fetchBdlPlayerData, parseBdlHeight, fetchEspnPlayerData, parseEspnHeight } from '../utils/playerDataUtils';
 import { SAMPLE_PLAYERS } from '@/lib/nbaPlayers';
 import { DepthChartData } from '../types';
-import serverLogger from '@/lib/serverLogger';
 
 export interface UsePlayerSelectionParams {
   // State setters
@@ -408,7 +407,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
       };
       console.log('🔍 [handlePlayerSelectFromSearch] Called with:', callData);
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Called with', { data: callData });
       setApiError(null);
     
     // Clear premium stats immediately when switching players
@@ -431,7 +429,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       // If data is cached, this will return instantly and we won't show loading
       // Only set loading if we actually need to wait for network
       console.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch', { data: { pid, name: r.full } });
       
       // Start fetch immediately - if cached, this is instant
       const fetchStartTime = Date.now();
@@ -470,7 +467,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       // Log stats completion
       const fetchElapsed = Date.now() - fetchStartTime;
       console.log('🔍 [handlePlayerSelectFromSearch] Current season stats loaded:', { statsCount: rows.length, elapsed: fetchElapsed });
-      serverLogger.log('🔍 [handlePlayerSelectFromSearch] Current season stats loaded', { data: { statsCount: rows.length, elapsed: fetchElapsed } });
       
       // If fetch was fast (< 100ms), it was cached - ensure loading is cleared immediately
       if (fetchElapsed < 100 && isLoading) {

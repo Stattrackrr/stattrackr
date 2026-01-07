@@ -164,8 +164,6 @@ import { HeaderNavigation, MobileBottomNavigation } from './components/header';
 const TeamTrackingStatsTable = lazy(() => import('@/components/TeamTrackingStatsTable').then(mod => ({ default: mod.TeamTrackingStatsTable })));
 import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
-import serverLogger from '@/lib/serverLogger';
-import { clientLogger } from '@/lib/clientLogger';
 import Image from 'next/image';
 
 export function NBADashboardContent() {

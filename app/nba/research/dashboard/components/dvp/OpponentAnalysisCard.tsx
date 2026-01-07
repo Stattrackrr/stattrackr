@@ -3,7 +3,6 @@
 import { useState, useEffect, memo } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { cachedFetch } from '@/lib/requestCache';
-import { clientLogger } from '@/lib/clientLogger';
 
 // DVP cache TTL constant (shared with PositionDefenseCard)
 const DVP_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
@@ -72,7 +71,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           );
         } catch (fetchError: any) {
           // Handle HTTP errors (like 500, 400, etc.) and timeouts
-          clientLogger.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
+          console.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
           if (!abort) {
             setError('Unable to load data. Please try again.');
             setTeamStats(null);
@@ -84,7 +83,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
 
         // Check if response is valid
         if (!defensiveStatsResponse) {
-          clientLogger.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
+          console.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
           if (!abort) {
             setError('Unable to load data. Please try again.');
             setTeamStats(null);
@@ -94,7 +93,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           return;
         }
 
-        clientLogger.debug('[OpponentAnalysisCard] Response for', targetOpp, ':', {
+        // Debug logging removed('[OpponentAnalysisCard] Response for', targetOpp, ':', {
           success: defensiveStatsResponse.success,
           hasPerGame: !!defensiveStatsResponse.perGame,
           sampleGames: defensiveStatsResponse.sample_games,
@@ -144,7 +143,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                 }
               }
             } catch (rankError: any) {
-              clientLogger.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
+              console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
               // Continue without ranks if ranking fetch fails
             }
           })();
@@ -155,7 +154,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
             setError(null);
           }
         } else {
-          clientLogger.error('Failed to fetch defensive stats:', defensiveStatsResponse);
+          console.error('Failed to fetch defensive stats:', defensiveStatsResponse);
           if (!abort) {
             setTeamStats(null);
             setTeamRanks({});
@@ -163,7 +162,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
           }
         }
       } catch (error: any) {
-        clientLogger.error('Failed to fetch opponent analysis data:', error);
+        console.error('Failed to fetch opponent analysis data:', error);
         if (!abort) {
           setTeamStats(null);
           setTeamRanks({});
