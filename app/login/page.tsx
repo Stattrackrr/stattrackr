@@ -208,25 +208,25 @@ export default function LoginPage() {
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <TrendingUp className="w-8 h-8 text-emerald-400 mb-3" />
               <h3 className="font-semibold mb-2">Performance Analytics</h3>
-              <p className="text-sm text-slate-400">Track your P&L, ROI, and win rates with detailed charts</p>
+              <p className="text-sm text-slate-400">Track performance metrics, success rates, and trends with detailed charts</p>
             </div>
             
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <BarChart3 className="w-8 h-8 text-blue-400 mb-3" />
-              <h3 className="font-semibold mb-2">NBA Player Props</h3>
-              <p className="text-sm text-slate-400">Research NBA player prop and game prop performance</p>
+              <h3 className="font-semibold mb-2">NBA Player Statistics</h3>
+              <p className="text-sm text-slate-400">Research NBA player performance and game statistics</p>
             </div>
             
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <PieChart className="w-8 h-8 text-purple-400 mb-3" />
-              <h3 className="font-semibold mb-2">Market Analysis</h3>
-              <p className="text-sm text-slate-400">Analyze profits by market type and optimize strategy</p>
+              <h3 className="font-semibold mb-2">Statistical Analysis</h3>
+              <p className="text-sm text-slate-400">Analyze performance by category and identify trends</p>
             </div>
             
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <Database className="w-8 h-8 text-orange-400 mb-3" />
-              <h3 className="font-semibold mb-2">Expert Picks Database</h3>
-              <p className="text-sm text-slate-400">Access curated picks with historical performance data</p>
+              <h3 className="font-semibold mb-2">Expert Insights Database</h3>
+              <p className="text-sm text-slate-400">Access curated analysis with historical performance data</p>
             </div>
           </div>
         </div>
