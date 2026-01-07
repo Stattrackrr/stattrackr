@@ -9,7 +9,7 @@ import { processFilteredGameData } from '../utils/filteredGameDataUtils';
 export interface UseGameDataProcessingParams {
   playerStats: any[];
   selectedTimeframe: string;
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   propsMode: 'player' | 'team';
   gameStats: any[];
   selectedTeam: string;

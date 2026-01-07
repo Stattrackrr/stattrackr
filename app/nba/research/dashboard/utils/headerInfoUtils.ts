@@ -20,7 +20,7 @@ export interface HeaderInfo {
 export interface HeaderInfoParams {
   propsMode: 'player' | 'team';
   gamePropsTeam?: string;
-  selectedPlayer: NBAPlayer | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string; teamAbbr?: string; jersey?: string; heightFeet?: number; heightInches?: number; rawHeight?: string } | null;
   selectedTeam: string | null;
 }
 

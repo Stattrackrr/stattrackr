@@ -79,7 +79,7 @@ export function usePlayerStateManagement({
         setOddsLoading(false);
         setOddsError(null);
         // Preserve betting line from URL if it exists (important for props page navigation)
-        setBettingLines(prev => {
+        setBettingLines((prev: Record<string, number>) => {
           // Check URL for line parameter
           if (typeof window !== 'undefined') {
             try {

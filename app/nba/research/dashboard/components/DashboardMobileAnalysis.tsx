@@ -119,12 +119,12 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
           {/* Content based on selected tab - always render container, just show/hide content */}
           <div className="relative min-h-[250px] sm:min-h-[200px] w-full min-w-0">
             <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
-              <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+              <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam || ''} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
             </div>
             <div className={dvpProjectedTab === 'opponent' ? 'block' : 'hidden'}>
               <OpponentAnalysisCard 
                 isDark={isDark} 
-                opponentTeam={opponentTeam} 
+                opponentTeam={opponentTeam || ''} 
                 selectedTimeFilter={selectedTimeFilter}
                 propsMode={propsMode}
                 playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
@@ -134,7 +134,7 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
             <div className={dvpProjectedTab === 'injuries' ? 'block' : 'hidden'}>
               <InjuryContainer
                 selectedTeam={selectedTeam}
-                opponentTeam={opponentTeam}
+                opponentTeam={opponentTeam || ''}
                 isDark={isDark}
                 selectedPlayer={selectedPlayer}
                 playerStats={playerStats}

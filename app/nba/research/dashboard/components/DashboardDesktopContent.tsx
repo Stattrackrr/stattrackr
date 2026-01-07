@@ -151,7 +151,7 @@ export function DashboardDesktopContent({
                 derivedOdds={derivedOdds}
                 intradayMovements={intradayMovementsFinal}
                 selectedTeam={selectedTeam}
-                opponentTeam={opponentTeam}
+                opponentTeam={opponentTeam || ''}
                 selectedTeamLogoUrl={selectedTeam && selectedTeam !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)) : ''}
                 opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
                 matchupInfo={matchupInfo}
@@ -167,7 +167,7 @@ export function DashboardDesktopContent({
                 propsMode={propsMode}
                 selectedPlayer={selectedPlayer}
                 primaryMarketLine={primaryMarketLine}
-                bettingLine={bettingLine}
+                bettingLine={bettingLine ?? undefined}
               />
             )}
           </div>
@@ -183,7 +183,7 @@ export function DashboardDesktopContent({
         selectedTeam={selectedTeam}
         gamePropsTeam={gamePropsTeam}
         propsMode={propsMode}
-        opponentTeam={opponentTeam}
+        opponentTeam={opponentTeam || ''}
         oddsFormat={oddsFormat}
         fmtOdds={fmtOdds}
         playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
@@ -229,7 +229,7 @@ export function DashboardDesktopContent({
                   return fullName || constructedName;
                 })()
               ) : ''}
-              opponentTeam={opponentTeam}
+              opponentTeam={opponentTeam || ''}
               originalPlayerTeam={propsMode === 'player' ? originalPlayerTeam : gamePropsTeam}
               playerTeamRoster={currentTeamRoster}
               opponentTeamRoster={currentOpponentRoster}

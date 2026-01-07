@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { OddsSnapshot, BookRow } from '@/lib/odds';
+import { OddsSnapshot } from '@/lib/odds';
+import { BookRow } from '../types';
 
 export interface LineMovementData {
   openingLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;

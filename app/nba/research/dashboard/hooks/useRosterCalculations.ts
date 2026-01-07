@@ -9,7 +9,7 @@ export interface UseRosterCalculationsParams {
   playerTeamRoster: DepthChartData | null;
   allTeamRosters: Record<string, DepthChartData>;
   originalPlayerTeam: string;
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   teammateFilterId: number | null;
   setTeammateFilterId: (id: number | null) => void;
   setTeammateFilterName: (name: string | null) => void;

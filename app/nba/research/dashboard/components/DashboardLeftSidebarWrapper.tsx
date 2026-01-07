@@ -1,12 +1,13 @@
 'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
+import { Dispatch, SetStateAction } from "react";
 
 interface DashboardLeftSidebarWrapperProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   oddsFormat: 'american' | 'decimal';
-  setOddsFormat: (format: 'american' | 'decimal') => void;
+  setOddsFormat: Dispatch<SetStateAction<'american' | 'decimal'>>;
   hasPremium: boolean;
   avatarUrl: string | null;
   username: string | null;

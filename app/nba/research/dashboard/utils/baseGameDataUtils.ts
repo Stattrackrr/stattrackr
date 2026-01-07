@@ -25,7 +25,7 @@ export interface BaseGameDataItem {
 export interface BaseGameDataParams {
   playerStats: BallDontLieStats[];
   selectedTimeframe: string;
-  selectedPlayer: NBAPlayer | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string; teamAbbr?: string } | null;
   propsMode: 'player' | 'team';
   gameStats: BallDontLieGame[];
   selectedTeam: string;

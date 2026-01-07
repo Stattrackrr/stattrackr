@@ -118,12 +118,12 @@ export function DashboardMobileContent({
             isDark={isDark} 
             shotData={shotDistanceData}
             playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-            opponentTeam={opponentTeam}
+            opponentTeam={opponentTeam || undefined}
           />
           {/* Play Type Analysis */}
           <PlayTypeAnalysis
             playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
-            opponentTeam={opponentTeam}
+            opponentTeam={opponentTeam || undefined}
             season={currentNbaSeason()}
             isDark={isDark}
           />
@@ -178,7 +178,7 @@ export function DashboardMobileContent({
                 derivedOdds={derivedOdds}
                 intradayMovements={intradayMovementsFinal}
                 selectedTeam={propsMode === 'team' ? gamePropsTeam : selectedTeam}
-                opponentTeam={opponentTeam}
+                opponentTeam={opponentTeam || ''}
                 selectedTeamLogoUrl={(propsMode === 'team' ? gamePropsTeam : selectedTeam) && (propsMode === 'team' ? gamePropsTeam : selectedTeam) !== 'N/A' ? (selectedTeamLogoUrl || getEspnLogoUrl(propsMode === 'team' ? gamePropsTeam : selectedTeam)) : ''}
                 opponentTeamLogoUrl={opponentTeam && opponentTeam !== '' ? (opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)) : ''}
                 matchupInfo={matchupInfo}
@@ -194,7 +194,7 @@ export function DashboardMobileContent({
                 propsMode={propsMode}
                 selectedPlayer={selectedPlayer}
                 primaryMarketLine={primaryMarketLine}
-                bettingLine={bettingLine}
+                bettingLine={bettingLine ?? undefined}
               />
             )}
           </div>
@@ -210,7 +210,7 @@ export function DashboardMobileContent({
         selectedTeam={selectedTeam}
         gamePropsTeam={gamePropsTeam}
         propsMode={propsMode}
-        opponentTeam={opponentTeam}
+        opponentTeam={opponentTeam || ''}
         oddsFormat={oddsFormat}
         fmtOdds={fmtOdds}
         playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
@@ -255,7 +255,7 @@ export function DashboardMobileContent({
                   return fullName || constructedName;
                 })()
               ) : ''}
-              opponentTeam={opponentTeam}
+              opponentTeam={opponentTeam || ''}
               originalPlayerTeam={propsMode === 'player' ? originalPlayerTeam : gamePropsTeam}
               playerTeamRoster={currentTeamRoster}
               opponentTeamRoster={currentOpponentRoster}

@@ -24,7 +24,7 @@ export interface FilteredChartDataParams {
   propsMode: 'player' | 'team';
   selectedStat: string;
   selectedTimeframe: string;
-  selectedPlayer: NBAPlayer | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string; teamAbbr?: string } | null;
   opponentTeam: string | null;
 }
 

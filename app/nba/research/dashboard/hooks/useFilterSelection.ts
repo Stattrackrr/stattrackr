@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 
 export interface UseFilterSelectionParams {
   setSelectedFilterForAxis: React.Dispatch<React.SetStateAction<string | null>>;
-  setSliderRange: React.Dispatch<React.SetStateAction<[number, number] | null>>;
+  setSliderRange: React.Dispatch<React.SetStateAction<{ min: number; max: number } | null>>;
 }
 
 export function useFilterSelection({

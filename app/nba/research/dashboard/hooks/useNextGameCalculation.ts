@@ -27,7 +27,6 @@ export function useNextGameCalculation({
   propsMode,
   manualOpponent,
   opponentTeam,
-  teamGames,
   setNextGameOpponent,
   setNextGameDate,
   setNextGameTipoff,

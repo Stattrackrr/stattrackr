@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, Dispatch, SetStateAction } from 'react';
 import { startTransition } from 'react';
 import { NBAPlayer } from '@/lib/nbaPlayers';
 import { BdlSearchResult } from '../types';
@@ -29,7 +29,7 @@ export interface UsePlayerSelectionParams {
   setSelectedTeam: (team: string) => void;
   setOriginalPlayerTeam: (team: string) => void;
   setDepthChartTeam: (team: string) => void;
-  setSelectedPlayer: (player: NBAPlayer | null) => void;
+  setSelectedPlayer: Dispatch<SetStateAction<NBAPlayer | null>>;
   setBettingLines: (lines: (prev: Record<string, number>) => Record<string, number>) => void;
   setShowDropdown: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -355,7 +355,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
             ? Number(bdlJersey) 
             : 0;
           
-          setSelectedPlayer(prev => {
+          setSelectedPlayer((prev: NBAPlayer | null): NBAPlayer | null => {
             if (!prev) return prev;
             const currentJersey = typeof prev.jersey === 'number' ? prev.jersey : (typeof prev.jersey === 'string' ? Number(prev.jersey) || 0 : 0);
             const currentHeightFeet = prev.heightFeet;
@@ -384,7 +384,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
                 jersey: finalJerseyNumber || prev.jersey || '',
                 heightFeet: finalHeightFeet ?? prev.heightFeet ?? undefined,
                 heightInches: finalHeightInches ?? prev.heightInches ?? undefined,
-              };
+              } as NBAPlayer;
             }
             
             return prev;
@@ -580,7 +580,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         
         // Update player with synchronous metadata if found
         if (jerseyNumber || heightFeetData || playerPosition !== r.pos) {
-          setSelectedPlayer(prev => {
+          setSelectedPlayer((prev: NBAPlayer | null): NBAPlayer | null => {
             if (!prev) return prev;
             return {
               ...prev,
@@ -588,7 +588,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
               heightFeet: heightFeetData ?? prev.heightFeet ?? undefined,
               heightInches: heightInchesData ?? prev.heightInches ?? undefined,
               position: playerPosition || prev.position || undefined,
-            };
+            } as NBAPlayer;
           });
         }
       }).catch(err => {
@@ -614,7 +614,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
           ? Number(bdlJersey) 
           : 0;
         
-        setSelectedPlayer(prev => {
+        setSelectedPlayer((prev: NBAPlayer | null): NBAPlayer | null => {
           if (!prev) return prev;
           
           // Get current values from player state
@@ -650,7 +650,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
               jersey: finalJerseyNumber || prev.jersey || '',
               heightFeet: finalHeightFeet ?? prev.heightFeet ?? undefined,
               heightInches: finalHeightInches ?? prev.heightInches ?? undefined,
-            };
+            } as NBAPlayer;
           }
           
           return prev;

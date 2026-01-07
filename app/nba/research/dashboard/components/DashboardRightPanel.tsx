@@ -266,12 +266,12 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
           {/* Content based on selected tab - always render container, just show/hide content */}
           <div className="relative min-h-[180px] xl:min-h-[200px] w-full min-w-0">
             <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
-              <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
+              <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam || ''} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
             </div>
             <div className={dvpProjectedTab === 'opponent' ? 'block' : 'hidden'}>
               <OpponentAnalysisCard 
                 isDark={isDark} 
-                opponentTeam={opponentTeam} 
+                opponentTeam={opponentTeam || ''} 
                 selectedTimeFilter={selectedTimeFilter}
                 propsMode={propsMode}
                 playerId={resolvedPlayerId || (selectedPlayer?.id ? String(selectedPlayer.id) : null)}
@@ -281,7 +281,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             <div className={dvpProjectedTab === 'injuries' ? 'block' : 'hidden'}>
               <InjuryContainer
                 selectedTeam={selectedTeam}
-                opponentTeam={opponentTeam}
+                opponentTeam={opponentTeam || ''}
                 isDark={isDark}
                 selectedPlayer={selectedPlayer}
                 playerStats={playerStats}
@@ -828,14 +828,14 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
           isDark={isDark} 
           shotData={shotDistanceData}
           playerId={selectedPlayer?.id ? String(selectedPlayer.id) : undefined}
-          opponentTeam={opponentTeam}
+          opponentTeam={opponentTeam || undefined}
         />
       </Suspense>
       {/* Play Type Analysis */}
       <Suspense fallback={<div className="h-32 flex items-center justify-center text-gray-500">Loading analysis...</div>}>
         <PlayTypeAnalysis
           playerId={selectedPlayer?.id ? String(selectedPlayer.id) : ''}
-          opponentTeam={opponentTeam}
+          opponentTeam={opponentTeam || undefined}
           season={currentNbaSeason()}
           isDark={isDark}
         />

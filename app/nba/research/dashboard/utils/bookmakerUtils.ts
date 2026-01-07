@@ -98,8 +98,8 @@ export function calculateSelectedBookmakerData(
   return {
     line: Number.isFinite(lineValue) ? lineValue : null,
     name: displayName,
-    overOdds: Number.isFinite(overOdds) ? overOdds : null,
-    underOdds: Number.isFinite(underOdds) ? underOdds : null,
+    overOdds: Number.isFinite(overOdds) ? String(overOdds) : null,
+    underOdds: Number.isFinite(underOdds) ? String(underOdds) : null,
   };
 }
 

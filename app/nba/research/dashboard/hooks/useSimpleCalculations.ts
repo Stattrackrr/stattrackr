@@ -8,7 +8,7 @@ import { calculateBestLineForStat } from '../utils/bestLineForStatUtils';
 export interface UseSimpleCalculationsParams {
   propsMode: 'player' | 'team';
   gamePropsTeam: string;
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   selectedTeam: string;
   opponentTeam: string;
   todaysGames: any[];

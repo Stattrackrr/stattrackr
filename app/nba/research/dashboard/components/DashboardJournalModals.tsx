@@ -36,12 +36,12 @@ export function DashboardJournalModals({
   return (
     <>
       {/* Journal Modals */}
-      {propsMode === 'player' && selectedPlayer && opponentTeam && (
+      {propsMode === 'player' && selectedPlayer && opponentTeam && nextGameOpponent && nextGameDate && (
         <Suspense fallback={null}>
           <AddToJournalModal
             isOpen={showJournalModal}
             onClose={() => setShowJournalModal(false)}
-            playerName={selectedPlayer.full}
+            playerName={selectedPlayer.full || ''}
             playerId={String(selectedPlayer.id)}
             team={selectedTeam}
             opponent={nextGameOpponent}
@@ -52,7 +52,7 @@ export function DashboardJournalModals({
       )}
       
       {/* Game Props Journal Modals */}
-      {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && (
+      {propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && nextGameDate && (
         <Suspense fallback={null}>
           <AddToJournalModal
             isOpen={showJournalModal}

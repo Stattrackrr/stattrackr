@@ -16,7 +16,7 @@ export interface LineMovementData {
 
 export interface UseLineMovementParams {
   propsMode: 'player' | 'team';
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   selectedTeam: string;
   opponentTeam: string;
   selectedStat: string;

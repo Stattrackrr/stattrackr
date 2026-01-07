@@ -811,7 +811,7 @@ export function NBADashboardContent() {
     gamePropsTeam,
     selectedTeam,
     todaysGames,
-    allGamesSecondAxisData,
+    allGamesSecondAxisData: allGamesSecondAxisData || [],
     selectedFilterForAxis,
     sliderRange,
     selectedTimeframe,
@@ -1117,18 +1117,18 @@ export function NBADashboardContent() {
               selectedTeam={selectedTeam}
               opponentTeam={opponentTeam}
               nextGameOpponent={nextGameOpponent}
-              nextGameTipoff={nextGameTipoff}
+              nextGameTipoff={nextGameTipoff ? nextGameTipoff.toISOString() : null}
               countdown={countdown}
               isGameInProgress={isGameInProgress}
               setGamePropsTeam={setGamePropsTeam}
               setSelectedStat={setSelectedStat}
               setOpponentTeam={setOpponentTeam}
               selectedTeamLogoUrl={selectedTeamLogoUrl}
-              setSelectedTeamLogoUrl={setSelectedTeamLogoUrl}
+              setSelectedTeamLogoUrl={(url: string | null) => setSelectedTeamLogoUrl(url || '')}
               selectedTeamLogoAttempt={selectedTeamLogoAttempt}
               setSelectedTeamLogoAttempt={setSelectedTeamLogoAttempt}
               opponentTeamLogoUrl={opponentTeamLogoUrl}
-              setOpponentTeamLogoUrl={setOpponentTeamLogoUrl}
+              setOpponentTeamLogoUrl={(url: string | null) => setOpponentTeamLogoUrl(url || '')}
               opponentTeamLogoAttempt={opponentTeamLogoAttempt}
               setOpponentTeamLogoAttempt={setOpponentTeamLogoAttempt}
               isDark={isDark}

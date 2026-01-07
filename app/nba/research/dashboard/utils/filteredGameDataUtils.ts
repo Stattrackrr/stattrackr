@@ -23,7 +23,7 @@ export interface FilteredGameDataParams {
   teammatePlayedGameIds: Set<string | number>;
   selectedTimeframe: string;
   playerStats: BallDontLieStats[];
-  selectedPlayer: NBAPlayer | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string; teamAbbr?: string } | null;
 }
 
 /**

@@ -5,7 +5,7 @@
  * to enable filtering games by whether a specific teammate played.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import { currentNbaSeason } from '../utils/playerUtils';
 import { BaseGameDataItem } from '../utils/baseGameDataUtils';
 
@@ -13,7 +13,7 @@ export interface UseTeammateFilterDataParams {
   teammateFilterId: number | null;
   baseGameData: BaseGameDataItem[];
   withWithoutMode: 'with' | 'without' | null;
-  setTeammatePlayedGameIds: (ids: Set<number>) => void;
+  setTeammatePlayedGameIds: Dispatch<SetStateAction<Set<number>>>;
   setLoadingTeammateGames: (loading: boolean) => void;
   teammateFetchAbortControllerRef: React.MutableRefObject<AbortController | null>;
   teammateFetchInProgressRef: React.MutableRefObject<Set<number>>;
@@ -36,7 +36,7 @@ export function useTeammateFilterData({
     const run = async () => {
       if (!teammateFilterId) {
         // Only update if not already empty to prevent infinite loops
-        setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
+        setTeammatePlayedGameIds((prev: Set<number>) => prev.size === 0 ? prev : new Set<number>());
         return;
       }
       
@@ -56,7 +56,7 @@ export function useTeammateFilterData({
         const games = (baseGameData || []).map((g: any) => g?.stats?.game?.id || g?.game?.id).filter(Boolean);
         if (!games.length) {
           // Only update if not already empty to prevent infinite loops
-          setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
+          setTeammatePlayedGameIds((prev: Set<number>) => prev.size === 0 ? prev : new Set<number>());
           return;
         }
         
@@ -179,7 +179,7 @@ export function useTeammateFilterData({
         if (e.name !== 'AbortError') {
           console.error('[Teammate Filter] ❌ Error in teammate filter logic:', e);
         }
-        setTeammatePlayedGameIds(prev => prev.size === 0 ? prev : new Set());
+        setTeammatePlayedGameIds((prev: Set<number>) => prev.size === 0 ? prev : new Set<number>());
       } finally {
         // Cleanup is handled in inner finally
       }

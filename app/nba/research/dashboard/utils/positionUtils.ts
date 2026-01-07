@@ -3,7 +3,7 @@ import { NBAPlayer } from '@/lib/nbaPlayers';
 
 export interface CalculateSelectedPositionParams {
   propsMode: 'player' | 'team';
-  selectedPlayer: NBAPlayer | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   playerTeamRoster: DepthChartData | null;
   allTeamRosters: Record<string, DepthChartData>;
   originalPlayerTeam: string;

@@ -14,7 +14,7 @@ export interface UseChartConfigParams {
   selectedStat: string;
   propsMode: 'player' | 'team';
   baseGameDataLength: number;
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   isLoading: boolean;
   resolvedPlayerId: string | null;
   selectedTimeframe: string;

@@ -18,7 +18,7 @@ export interface UseChartDataProcessingParams {
   selectedFilterForAxis: string | null;
   sliderRange: { min: number; max: number } | null;
   selectedTimeframe: string;
-  selectedPlayer: { id: number; full?: string; firstName?: string; lastName?: string } | null;
+  selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   opponentTeam: string;
   advancedStatsPerGame: Record<number, { pace?: number; usage_percentage?: number }>;
   dvpRanksPerGame: Record<string, number | null>;
