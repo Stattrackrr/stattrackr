@@ -65,12 +65,37 @@ export async function GET(request: NextRequest) {
       try {
         const supabaseHit = await getNBACache<any>(cacheKey, { quiet: true });
         if (supabaseHit) {
-          cache.set(cacheKey, supabaseHit, CACHE_TTL.ADVANCED_STATS);
-          return NextResponse.json(supabaseHit, {
-            headers: {
-              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-            }
-          });
+          // Validate that cached data has metrics with non-empty ranks
+          const hasValidMetrics = supabaseHit.metrics && 
+            Object.keys(supabaseHit.metrics).length > 0 &&
+            Object.values(supabaseHit.metrics).some((ranks: any) => 
+              ranks && typeof ranks === 'object' && Object.keys(ranks).length > 0
+            );
+          
+          if (hasValidMetrics) {
+            console.log(`[DVP Rank Batch] ✅ Supabase cache HIT for ${cacheKey}`, {
+              metricKeys: Object.keys(supabaseHit.metrics),
+              sampleMetric: supabaseHit.metrics.pts ? {
+                teamCount: Object.keys(supabaseHit.metrics.pts).length,
+                sampleTeams: Object.keys(supabaseHit.metrics.pts).slice(0, 5)
+              } : null
+            });
+            cache.set(cacheKey, supabaseHit, CACHE_TTL.ADVANCED_STATS);
+            return NextResponse.json(supabaseHit, {
+              headers: {
+                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+              }
+            });
+          } else {
+            console.warn(`[DVP Rank Batch] ⚠️ Cached data has empty metrics, forcing refresh for ${cacheKey}`, {
+              hasMetrics: !!supabaseHit.metrics,
+              metricKeys: supabaseHit.metrics ? Object.keys(supabaseHit.metrics) : [],
+              sampleMetric: supabaseHit.metrics?.pts ? {
+                teamCount: Object.keys(supabaseHit.metrics.pts).length
+              } : null
+            });
+            // Continue to fetch fresh data instead of returning empty cache
+          }
         }
       } catch (error) {
         console.warn('[DVP Rank Batch] Supabase cache check failed, continuing with fetch:', error);
