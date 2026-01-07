@@ -1589,7 +1589,7 @@ export default function PricingPage() {
               </div>
               {openFAQ === 2 && (
                 <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  Yes! StatTrackr is fully optimized for mobile devices. Access all features, analytics, and your bet journal seamlessly from your smartphone or tablet.
+                  Yes! StatTrackr is fully optimized for mobile devices. Access all features, analytics, and your performance journal seamlessly from your smartphone or tablet.
                 </p>
               )}
             </div>
@@ -1612,7 +1612,7 @@ export default function PricingPage() {
               </div>
               {openFAQ === 3 && (
                 <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  A Discord community is coming soon! We're building a space where users can share insights, discuss strategies, and connect with other bettors. Stay tuned for the announcement.
+                  A Discord community is coming soon! We're building a space where users can share insights, discuss strategies, and connect with other analysts. Stay tuned for the announcement.
                 </p>
               )}
             </div>
@@ -1659,7 +1659,7 @@ export default function PricingPage() {
               </div>
               {openFAQ === 5 && (
                 <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  No, the journal is a tracking tool only. It does not handle real money or connect to your bookmaker. You manually enter the bets you've placed with your bookmaker to track performance, analyze trends, and improve your betting strategy over time.
+                  No, the journal is a tracking tool only. It does not handle real money or connect to any external services. You manually enter your research data to track performance, analyze trends, and improve your analytical approach over time.
                 </p>
               )}
             </div>
@@ -1682,7 +1682,7 @@ export default function PricingPage() {
               </div>
               {openFAQ === 6 && (
                 <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  No tool can guarantee a 100% win rate in sports betting. However, StatTrackr provides you with comprehensive data, advanced analytics, and insights to help you make more informed betting decisions and identify high-value opportunities that can significantly improve your success rate.
+                  No tool can guarantee perfect results in sports analytics. However, StatTrackr provides you with comprehensive data, advanced analytics, and insights to help you make more informed analytical decisions and identify high-value opportunities that can significantly improve your research quality.
                 </p>
               )}
             </div>
@@ -1705,7 +1705,7 @@ export default function PricingPage() {
               </div>
               {openFAQ === 7 && (
                 <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  Currently, StatTrackr exclusively supports NBA basketball with comprehensive stats, analytics, and betting insights. We're actively developing support for additional sports leagues and will announce them as they become available.
+                  Currently, StatTrackr exclusively supports NBA basketball with comprehensive stats, analytics, and research insights. We're actively developing support for additional sports leagues and will announce them as they become available.
                 </p>
               )}
             </div>
