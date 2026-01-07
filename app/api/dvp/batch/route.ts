@@ -91,10 +91,32 @@ export async function GET(request: NextRequest) {
       console.error('[DVP Batch] Error fetching BettingPros data:', fetchError);
       
       // If we have cached data (even stale), try to return partial data instead of error
-      const cachedData = cache.get<any>(cacheKey);
+      // Check in-memory cache first
+      let cachedData = cache.get<any>(cacheKey);
       if (cachedData) {
-        console.warn('[DVP Batch] Using cached data due to fetch error');
-        return NextResponse.json(cachedData);
+        console.warn('[DVP Batch] Using in-memory cached data due to fetch error');
+        return NextResponse.json(cachedData, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          }
+        });
+      }
+      
+      // Check Supabase cache as fallback (persistent across cold starts)
+      try {
+        const supabaseCached = await getNBACache<any>(cacheKey, { quiet: true });
+        if (supabaseCached) {
+          console.warn('[DVP Batch] Using Supabase cached data due to fetch error');
+          // Store in in-memory cache for faster future access
+          cache.set(cacheKey, supabaseCached, CACHE_TTL.ADVANCED_STATS);
+          return NextResponse.json(supabaseCached, {
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            }
+          });
+        }
+      } catch (supabaseError) {
+        console.warn('[DVP Batch] Supabase cache check failed in error handler:', supabaseError);
       }
       
       // No cache available - return empty data structure instead of error
@@ -125,10 +147,31 @@ export async function GET(request: NextRequest) {
       });
       
       // Try to use cached data if available
-      const cachedData = cache.get<any>(cacheKey);
+      // Check in-memory cache first
+      let cachedData = cache.get<any>(cacheKey);
       if (cachedData) {
-        console.warn('[DVP Batch] Using cached data due to invalid BettingPros structure');
-        return NextResponse.json(cachedData);
+        console.warn('[DVP Batch] Using in-memory cached data due to invalid BettingPros structure');
+        return NextResponse.json(cachedData, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          }
+        });
+      }
+      
+      // Check Supabase cache as fallback
+      try {
+        const supabaseCached = await getNBACache<any>(cacheKey, { quiet: true });
+        if (supabaseCached) {
+          console.warn('[DVP Batch] Using Supabase cached data due to invalid BettingPros structure');
+          cache.set(cacheKey, supabaseCached, CACHE_TTL.ADVANCED_STATS);
+          return NextResponse.json(supabaseCached, {
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            }
+          });
+        }
+      } catch (supabaseError) {
+        console.warn('[DVP Batch] Supabase cache check failed in error handler:', supabaseError);
       }
       
       // No cache available - return empty data structure instead of error
