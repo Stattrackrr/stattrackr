@@ -55,10 +55,23 @@ export async function GET(req: NextRequest) {
     if (!forceRefresh) {
       const supabaseCache = await getNBACache<any>(cacheKey);
       if (supabaseCache) {
-        console.log(`[DVP Rank API] ✅ Supabase cache HIT for ${cacheKey}`);
-        // Also update in-memory cache for faster subsequent access
-        cache.set(cacheKey, supabaseCache, CACHE_TTL.ADVANCED_STATS);
-        return NextResponse.json(supabaseCache);
+        // Validate that cached data has ranks
+        const hasRanks = supabaseCache.ranks && Object.keys(supabaseCache.ranks).length > 0;
+        console.log(`[DVP Rank API] ✅ Supabase cache HIT for ${cacheKey}`, {
+          hasRanks,
+          rankCount: supabaseCache.ranks ? Object.keys(supabaseCache.ranks).length : 0,
+          sampleTeams: supabaseCache.ranks ? Object.keys(supabaseCache.ranks).slice(0, 5) : []
+        });
+        
+        // If cached data has empty ranks, force refresh to recalculate
+        if (!hasRanks) {
+          console.warn(`[DVP Rank API] ⚠️ Cached data has empty ranks, forcing refresh for ${cacheKey}`);
+          // Continue to fetch fresh data instead of returning empty cache
+        } else {
+          // Also update in-memory cache for faster subsequent access
+          cache.set(cacheKey, supabaseCache, CACHE_TTL.ADVANCED_STATS);
+          return NextResponse.json(supabaseCache);
+        }
       }
     }
     
