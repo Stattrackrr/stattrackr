@@ -273,19 +273,31 @@ function JournalContent() {
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
   const [dateRange, setDateRange] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('journal-dateRange') as 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly') || 'all';
+      try {
+        return (localStorage.getItem('journal-dateRange') as 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly') || 'all';
+      } catch (e) {
+        return 'all';
+      }
     }
     return 'all';
   });
   const [currency, setCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('journal-currency') as 'USD' | 'AUD' | 'GBP' | 'EUR') || 'USD';
+      try {
+        return (localStorage.getItem('journal-currency') as 'USD' | 'AUD' | 'GBP' | 'EUR') || 'USD';
+      } catch (e) {
+        return 'USD';
+      }
     }
     return 'USD';
   });
   const [viewMode, setViewMode] = useState<'money' | 'units'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('journal-viewMode') as 'money' | 'units') || 'money';
+      try {
+        return (localStorage.getItem('journal-viewMode') as 'money' | 'units') || 'money';
+      } catch (e) {
+        return 'money';
+      }
     }
     return 'money';
   });
@@ -338,20 +350,32 @@ function JournalContent() {
  };
   const [sport, setSport] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('journal-sport') || 'All';
+      try {
+        return localStorage.getItem('journal-sport') || 'All';
+      } catch (e) {
+        return 'All';
+      }
     }
     return 'All';
   });
   const [betTypeFilter, setBetTypeFilter] = useState<'All' | 'Straight' | 'Parlay'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('journal-betType') as 'All' | 'Straight' | 'Parlay') || 'All';
+      try {
+        return (localStorage.getItem('journal-betType') as 'All' | 'Straight' | 'Parlay') || 'All';
+      } catch (e) {
+        return 'All';
+      }
     }
     return 'All';
   });
   const [bookmaker, setBookmaker] = useState(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('journal-bookmaker') || 'All';
-      return stored !== 'All' ? stored.toLowerCase() : 'All';
+      try {
+        const stored = localStorage.getItem('journal-bookmaker') || 'All';
+        return stored !== 'All' ? stored.toLowerCase() : 'All';
+      } catch (e) {
+        return 'All';
+      }
     }
     return 'All';
   });
@@ -435,27 +459,75 @@ function JournalContent() {
   
   // Save all filter preferences to localStorage
   useEffect(() => {
-    localStorage.setItem('journal-dateRange', dateRange);
+    try {
+      localStorage.setItem('journal-dateRange', dateRange);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving dateRange');
+      } else {
+        clientLogger.warn('[Journal] Failed to save dateRange to localStorage:', e);
+      }
+    }
   }, [dateRange]);
   
   useEffect(() => {
-    localStorage.setItem('journal-currency', currency);
+    try {
+      localStorage.setItem('journal-currency', currency);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving currency');
+      } else {
+        clientLogger.warn('[Journal] Failed to save currency to localStorage:', e);
+      }
+    }
   }, [currency]);
   
   useEffect(() => {
-    localStorage.setItem('journal-viewMode', viewMode);
+    try {
+      localStorage.setItem('journal-viewMode', viewMode);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving viewMode');
+      } else {
+        clientLogger.warn('[Journal] Failed to save viewMode to localStorage:', e);
+      }
+    }
   }, [viewMode]);
   
   useEffect(() => {
-    localStorage.setItem('journal-sport', sport);
+    try {
+      localStorage.setItem('journal-sport', sport);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving sport');
+      } else {
+        clientLogger.warn('[Journal] Failed to save sport to localStorage:', e);
+      }
+    }
   }, [sport]);
   
   useEffect(() => {
-    localStorage.setItem('journal-betType', betTypeFilter);
+    try {
+      localStorage.setItem('journal-betType', betTypeFilter);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving betTypeFilter');
+      } else {
+        clientLogger.warn('[Journal] Failed to save betTypeFilter to localStorage:', e);
+      }
+    }
   }, [betTypeFilter]);
   
   useEffect(() => {
-    localStorage.setItem('journal-bookmaker', bookmaker);
+    try {
+      localStorage.setItem('journal-bookmaker', bookmaker);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        clientLogger.warn('[Journal] localStorage quota exceeded when saving bookmaker');
+      } else {
+        clientLogger.warn('[Journal] Failed to save bookmaker to localStorage:', e);
+      }
+    }
   }, [bookmaker]);
   
   
@@ -3345,7 +3417,15 @@ function JournalContent() {
                     value={theme}
                     onChange={(e) => {
                       setTheme(e.target.value as 'Light' | 'Dark');
-                      localStorage.setItem('theme', e.target.value);
+                      try {
+                        localStorage.setItem('theme', e.target.value);
+                      } catch (e: any) {
+                        if (e.name === 'QuotaExceededError' || e.code === 22) {
+                          clientLogger.warn('[Journal] localStorage quota exceeded when saving theme');
+                        } else {
+                          clientLogger.warn('[Journal] Failed to save theme to localStorage:', e);
+                        }
+                      }
                     }}
                     className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   >
@@ -3361,7 +3441,15 @@ function JournalContent() {
                     onChange={(e) => {
                       const newFormat = e.target.value as 'american' | 'decimal';
                       setOddsFormat(newFormat);
-                      localStorage.setItem('oddsFormat', newFormat);
+                      try {
+                        localStorage.setItem('oddsFormat', newFormat);
+                      } catch (e: any) {
+                        if (e.name === 'QuotaExceededError' || e.code === 22) {
+                          clientLogger.warn('[Journal] localStorage quota exceeded when saving oddsFormat');
+                        } else {
+                          clientLogger.warn('[Journal] Failed to save oddsFormat to localStorage:', e);
+                        }
+                      }
                     }}
                     className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   >
@@ -3430,8 +3518,16 @@ function JournalContent() {
                   onClick={async () => {
                     try {
                       // Save to localStorage
-                      localStorage.setItem('theme', theme);
-                      localStorage.setItem('oddsFormat', oddsFormat);
+                      try {
+                        localStorage.setItem('theme', theme);
+                        localStorage.setItem('oddsFormat', oddsFormat);
+                      } catch (e: any) {
+                        if (e.name === 'QuotaExceededError' || e.code === 22) {
+                          clientLogger.warn('[Journal] localStorage quota exceeded when saving settings');
+                        } else {
+                          clientLogger.warn('[Journal] Failed to save settings to localStorage:', e);
+                        }
+                      }
                       
                       // Save journal preferences to database
                       const { data: { user } } = await supabase.auth.getUser();
