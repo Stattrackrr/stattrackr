@@ -185,6 +185,19 @@ export async function GET(request: NextRequest) {
       console.warn('[DVP Rank Batch] Failed to store in Supabase cache:', err);
     });
 
+    // Final debug log before returning
+    console.log(`[DVP Rank Batch] ✅ Returning final response for ${pos}:`, {
+      pos: response.pos,
+      games: response.games,
+      metricsCount: Object.keys(response.metrics).length,
+      metricKeys: Object.keys(response.metrics),
+      sampleMetricData: response.metrics.pts ? {
+        teamCount: Object.keys(response.metrics.pts).length,
+        sampleTeams: Object.keys(response.metrics.pts).slice(0, 5),
+        sampleRanks: Object.fromEntries(Object.entries(response.metrics.pts).slice(0, 5))
+      } : 'pts not found'
+    });
+
     return NextResponse.json(response, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
