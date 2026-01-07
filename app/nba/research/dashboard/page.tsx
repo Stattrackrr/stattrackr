@@ -97,6 +97,7 @@ import { useOddsFetching } from './hooks/useOddsFetching';
 import { useUrlInitialization } from './hooks/useUrlInitialization';
 import { useDvpRankPrefetch } from './hooks/useDvpRankPrefetch';
 import { useAdvancedStatsPrefetch } from './hooks/useAdvancedStatsPrefetch';
+import { useAggressivePrefetch } from './hooks/useAggressivePrefetch';
 import { useSearch } from './hooks/useSearch';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { useTimeframeRestoration } from './hooks/useTimeframeRestoration';
@@ -966,6 +967,15 @@ export function NBADashboardContent() {
     setPrefetchedAdvancedStats,
   });
 
+
+  // Aggressive prefetching - prefetch all critical data in parallel when player is selected
+  // This makes production feel instant by warming up APIs before they're needed
+  useAggressivePrefetch({
+    resolvedPlayerId,
+    selectedPlayer,
+    originalPlayerTeam,
+    opponentTeam,
+  });
 
   // DvP rank prefetching logic - extracted to useDvpRankPrefetch hook
   useDvpRankPrefetch({

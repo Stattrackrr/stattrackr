@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
@@ -86,10 +87,35 @@ export async function GET(req: NextRequest) {
     // Try cache first unless forced refresh - check cache BEFORE rate limiting
     const cacheKey = getCacheKey.depthChart(inputTeam);
     if (!forceRefresh) {
-      const hit = cache.get<any>(cacheKey);
+      // Try in-memory cache first (fastest)
+      let hit = cache.get<any>(cacheKey);
       if (hit) {
         // Return cached data even if rate limited
-        return NextResponse.json(hit, { status: 200 });
+        return NextResponse.json(hit, { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN cache, 1hr stale
+          }
+        });
+      }
+      
+      // Try Supabase cache (persistent across cold starts)
+      try {
+        const supabaseHit = await getNBACache<any>(cacheKey, { quiet: true });
+        if (supabaseHit) {
+          hit = supabaseHit;
+          // Store in in-memory cache for faster future access
+          cache.set(cacheKey, hit, CACHE_TTL.DEPTH_CHART);
+          return NextResponse.json(hit, { 
+            status: 200,
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            }
+          });
+        }
+      } catch (error) {
+        // Supabase cache failed, continue with fetch
+        console.warn('[Depth Chart API] Supabase cache check failed, continuing with fetch:', error);
       }
     }
     
@@ -753,8 +779,18 @@ export async function GET(req: NextRequest) {
     } catch {}
 
     const payload = { success: ok, team: team?.abbreviation, depthChart, highlight, debug, changed, __hash: newHash };
+    // Store in in-memory cache (fast, but lost on cold start)
     cache.set(cacheKey, payload, CACHE_TTL.DEPTH_CHART);
-    return NextResponse.json(payload, { status: ok ? 200 : 206 });
+    // Store in Supabase cache (persistent across cold starts)
+    setNBACache(cacheKey, 'depth_chart', payload, CACHE_TTL.DEPTH_CHART, true).catch(err => {
+      console.warn('[Depth Chart API] Failed to store in Supabase cache:', err);
+    });
+    return NextResponse.json(payload, { 
+      status: ok ? 200 : 206,
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN cache, 1hr stale
+      }
+    });
   } catch (e: any) {
     console.error('[Depth Chart] Error:', e);
     const isProduction = process.env.NODE_ENV === 'production';

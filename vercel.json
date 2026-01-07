@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/prefetch-daily-advanced-stats",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/warmup?warmup=true",
+      "schedule": "*/5 * * * *"
     }
   ],
   "functions": {

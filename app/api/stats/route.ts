@@ -6,6 +6,7 @@ import { BdlPlayerStats, BdlPaginatedResponse } from "@/lib/types/apiResponses";
 import { TEAM_ID_TO_ABBR } from "@/lib/nbaConstants";
 import { checkRateLimit } from "@/lib/rateLimit";
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { fetchBettingProsData, OUR_TO_BP_METRIC, OUR_TO_BP_ABBR } from '@/lib/bettingpros-dvp';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 
@@ -193,7 +194,26 @@ export async function GET(req: NextRequest) {
     const cacheKey = gameIds && gameIds.length > 0
       ? `${getCacheKey.playerStats(playerId, season)}_games_${gameIds.sort((a, b) => a - b).join('_')}`
       : `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
-    const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+    
+    // Try in-memory cache first (fastest)
+    let cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
+    let cacheSource = 'memory';
+    
+    // If not in memory, try Supabase cache (persistent across cold starts)
+    if (!cachedData && !forceRefresh) {
+      try {
+        const supabaseCache = await getNBACache<{ data: BdlPlayerStats[] }>(cacheKey, { quiet: true });
+        if (supabaseCache && Array.isArray(supabaseCache.data) && supabaseCache.data.length > 0) {
+          cachedData = supabaseCache;
+          cacheSource = 'supabase';
+          // Store in in-memory cache for faster future access
+          cache.set(cacheKey, cachedData, CACHE_TTL.PLAYER_STATS);
+        }
+      } catch (error) {
+        // Supabase cache failed, continue with fetch
+        console.warn('[Stats API] Supabase cache check failed, continuing with fetch:', error);
+      }
+    }
     
     // Dashboard stats chart always bypasses cache (refresh=1) - other features can use cache
     if (forceRefresh) {
@@ -202,7 +222,7 @@ export async function GET(req: NextRequest) {
       // Only use cache if it has actual data (not empty arrays) AND not forcing refresh
       // Debug: log cached data structure to verify game/team are included
       if (cachedData.data.length > 0) {
-        console.log('[Stats API] ✅ Using cached data:', {
+        console.log(`[Stats API] ✅ Using cached data (${cacheSource}):`, {
           playerId,
           season,
           postseason,
@@ -214,8 +234,13 @@ export async function GET(req: NextRequest) {
           sampleStatKeys: Object.keys(cachedData.data[0] || {}),
         });
       }
-      // Return cached data immediately - no rate limit check needed for cached responses
-      return NextResponse.json(cachedData, { status: 200 });
+      // Return cached data immediately with HTTP cache headers for CDN caching
+      return NextResponse.json(cachedData, { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN cache, 1hr stale
+        }
+      });
     }
     
     // If cache exists but is empty, log it and continue to fetch fresh data
@@ -511,7 +536,12 @@ export async function GET(req: NextRequest) {
       const responseData = { data: all };
       // Only cache if we have actual data (don't cache empty arrays)
       if (all.length > 0) {
+        // Store in in-memory cache (fast, but lost on cold start)
         cache.set(cacheKey, responseData, CACHE_TTL.PLAYER_STATS);
+        // Store in Supabase cache (persistent across cold starts)
+        setNBACache(cacheKey, 'player_stats', responseData, CACHE_TTL.PLAYER_STATS, true).catch(err => {
+          console.warn('[Stats API] Failed to store in Supabase cache:', err);
+        });
       } else {
         console.log(`[Stats API] Not caching empty array for player ${playerId}, season ${season}, postseason ${postseason}`);
       }
@@ -533,7 +563,12 @@ export async function GET(req: NextRequest) {
       });
       
       const all = await Promise.race([fetchPromise, timeoutPromise]);
-      return NextResponse.json({ data: all }, { status: 200 });
+      return NextResponse.json({ data: all }, { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN cache, 1hr stale
+        }
+      });
     } catch (error: any) {
       // On timeout, try to return cached data
       if (error.message?.includes('timeout')) {
