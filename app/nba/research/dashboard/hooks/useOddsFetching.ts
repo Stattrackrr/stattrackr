@@ -1,6 +1,7 @@
 import { useEffect, useRef, startTransition } from 'react';
 import { BookRow } from '../types';
 import { NBAPlayer } from '@/lib/nbaPlayers';
+import { cachedFetch } from '@/lib/requestCache';
 
 export interface UseOddsFetchingParams {
   propsMode: 'player' | 'team';
@@ -70,8 +71,11 @@ export function useOddsFetching({
         }
       }
       
-      const response = await fetch(`/api/odds?${params}`);
-      const data = await response.json();
+      const data = await cachedFetch<any>(
+        `/api/odds?${params}`,
+        undefined,
+        5 * 60 * 1000 // Cache for 5 minutes (odds update frequently)
+      );
       
       // Handle background loading state
       if (data.loading) {

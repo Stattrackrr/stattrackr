@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
+import { cachedFetch } from '@/lib/requestCache';
 import { NBAPlayer } from '../types';
 
 export interface UseProjectedMinutesParams {
@@ -54,12 +55,11 @@ export function useProjectedMinutes({
     const fetchAllProjections = async () => {
       try {
         console.log('[Dashboard] Fetching all projected minutes from SportsLine...');
-        const response = await fetch('/api/nba/projections');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch projections: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await cachedFetch<any>(
+          '/api/nba/projections',
+          undefined,
+          60 * 60 * 1000 // Cache for 60 minutes
+        );
         if (abort) return;
 
         // Normalize player name for matching

@@ -1,6 +1,7 @@
 /**
  * Global request deduplication and caching utility
  * Prevents duplicate API calls when multiple components request the same data simultaneously
+ * Uses sessionStorage to persist cache across page refreshes
  */
 
 type CacheEntry<T> = {
@@ -10,10 +11,79 @@ type CacheEntry<T> = {
 
 type PendingRequest<T> = Promise<T>;
 
+const STORAGE_KEY = 'requestCache';
+const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit for sessionStorage
+
 class RequestCache {
   private cache: Map<string, CacheEntry<any>> = new Map();
   private pending: Map<string, PendingRequest<any>> = new Map();
   private defaultTTL: number = 60000; // 1 minute default TTL
+  private storageEnabled: boolean = false;
+
+  constructor() {
+    // Initialize from sessionStorage if available
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      try {
+        this.storageEnabled = true;
+        this.loadFromStorage();
+      } catch (e) {
+        // Storage might be disabled or full
+        this.storageEnabled = false;
+      }
+    }
+  }
+
+  /**
+   * Load cache from sessionStorage
+   */
+  private loadFromStorage(): void {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const now = Date.now();
+        for (const [key, entry] of Object.entries(parsed)) {
+          const cacheEntry = entry as CacheEntry<any>;
+          // Only load entries that haven't expired (check against default TTL)
+          if (now - cacheEntry.timestamp < this.defaultTTL) {
+            this.cache.set(key, cacheEntry);
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  /**
+   * Save cache to sessionStorage (debounced to avoid excessive writes)
+   */
+  private saveToStorageDebounced = (() => {
+    let timeout: NodeJS.Timeout | null = null;
+    return () => {
+      if (!this.storageEnabled) return;
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        try {
+          const toStore: Record<string, CacheEntry<any>> = {};
+          const now = Date.now();
+          // Only store entries that haven't expired
+          for (const [key, entry] of this.cache.entries()) {
+            if (now - entry.timestamp < this.defaultTTL) {
+              toStore[key] = entry;
+            }
+          }
+          const serialized = JSON.stringify(toStore);
+          // Check size before storing
+          if (serialized.length < MAX_STORAGE_SIZE) {
+            sessionStorage.setItem(STORAGE_KEY, serialized);
+          }
+        } catch (e) {
+          // Storage might be full or disabled
+        }
+      }, 500); // Debounce by 500ms
+    };
+  })();
 
   /**
    * Fetch data with automatic deduplication and caching
@@ -26,7 +96,7 @@ class RequestCache {
   ): Promise<T> {
     const cacheKey = this.getCacheKey(url, options);
 
-    // Check if we have a valid cached response
+    // Check if we have a valid cached response (in-memory first)
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < ttl) {
       return cached.data;
@@ -61,10 +131,14 @@ class RequestCache {
       }
 
       // Cache the result
-      this.cache.set(cacheKey, {
+      const cacheEntry: CacheEntry<T> = {
         data,
         timestamp: Date.now(),
-      });
+      };
+      this.cache.set(cacheKey, cacheEntry);
+
+      // Persist to sessionStorage (debounced)
+      this.saveToStorageDebounced();
 
       return data;
     } finally {
@@ -97,6 +171,9 @@ class RequestCache {
         this.cache.delete(key);
       }
     }
+    
+    // Update storage after invalidation
+    this.saveToStorageDebounced();
   }
 
   /**
@@ -105,6 +182,13 @@ class RequestCache {
   clear(): void {
     this.cache.clear();
     this.pending.clear();
+    if (this.storageEnabled && typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
   }
 
   /**

@@ -1,4 +1,5 @@
 import { BallDontLieGame } from '../types';
+import { cachedFetch } from '@/lib/requestCache';
 
 export interface FetchTodaysGamesOptions {
   silent?: boolean;
@@ -63,16 +64,13 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
                 }
                 setFetchInFlight?.(false);
                 // Still fetch in background to update if needed (non-blocking)
-                fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' }).then(async (response) => {
-                  if (response.ok) {
-                    const data = await response.json();
-                    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-                      if (onGamesChange) {
-                        onGamesChange(data.data);
-                      }
-                      sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
-                      sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
+                cachedFetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, undefined, 30 * 60 * 1000).then(async (data: any) => {
+                  if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+                    if (onGamesChange) {
+                      onGamesChange(data.data);
                     }
+                    sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
+                    sessionStorage.setItem(`${cacheKey}-timestamp`, Date.now().toString());
                   }
                 }).catch(() => {});
                 return parsed;
@@ -88,8 +86,11 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
     }
 
     try {
-      const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
-      const data = await response.json();
+      const data = await cachedFetch<{ data: BallDontLieGame[] }>(
+        `/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`,
+        undefined,
+        30 * 60 * 1000 // Cache for 30 minutes
+      );
       const arr = Array.isArray(data?.data) ? data.data : [];
       if (arr.length > 0) {
         console.log(`✅ Fetched ${arr.length} games from ${start} to ${end}`);

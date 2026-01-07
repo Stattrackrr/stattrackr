@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { DepthChartData, BallDontLieGame } from '../types';
 import { fetchTeamDepthChart } from '../utils/depthChartUtils';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
+import { cachedFetch } from '@/lib/requestCache';
 
 export interface UseRosterPreloadingParams {
   todaysGames: BallDontLieGame[];
@@ -72,8 +73,11 @@ export function useRosterPreloading({
       try {
         const teamsParam = Array.from(allTeams).join(',');
         if (teamsParam) {
-          const res = await fetch(`/api/injuries?teams=${teamsParam}`);
-          const data = await res.json();
+          const data = await cachedFetch<{ success: boolean; injuriesByTeam?: Record<string, any> }>(
+            `/api/injuries?teams=${teamsParam}`,
+            undefined,
+            300000 // Cache for 5 minutes
+          );
           if (data?.success) {
             setTeamInjuries((prev: any) => ({ ...prev, ...(data.injuriesByTeam || {}) }));
           }

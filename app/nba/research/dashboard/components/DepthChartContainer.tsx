@@ -2,6 +2,7 @@
 
 import { useState, useEffect, memo } from 'react';
 import { getTeamLogoUrl } from '@/lib/nbaLogos';
+import { cachedFetch } from '@/lib/requestCache';
 
 interface DepthChartData {
   PG: any[];
@@ -319,12 +320,15 @@ const DepthChartContainer = memo(function DepthChartContainer({
       // No preloaded data and not currently loading - fetch it
       const fetchDepthChart = async () => {
         try {
-          const response = await fetch(`/api/depth-chart?team=${selectedTeam}`);
-          const data = await response.json();
-          if (data.success && data.depthChart) {
+          const data = await cachedFetch<{ success: boolean; depthChart?: DepthChartData; error?: string }>(
+            `/api/depth-chart?team=${selectedTeam}`,
+            undefined,
+            300000 // Cache for 5 minutes
+          );
+          if (data?.success && data.depthChart) {
             setDepthChart(data.depthChart);
           } else {
-            setDepthError(data.error || 'Failed to load depth chart');
+            setDepthError(data?.error || 'Failed to load depth chart');
             setDepthChart(null);
           }
         } catch (error: any) {

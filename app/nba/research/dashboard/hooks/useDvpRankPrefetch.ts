@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { parseMinutes } from '../utils/playerUtils';
 import { TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '../utils/teamUtils';
+import { cachedFetch } from '@/lib/requestCache';
 
 export interface UseDvpRankPrefetchParams {
   propsMode: 'player' | 'team';
@@ -184,9 +185,6 @@ export function useDvpRankPrefetch({
                   note: historicalData.note
                 });
               }
-            } else {
-              console.warn(`[Prefetch] Historical API error for ${dateStr}: ${historicalResponse.status}`);
-            }
           } catch (historicalError) {
             console.warn(`[Prefetch] Historical fetch failed for ${gameIdStr}:`, historicalError);
           }
@@ -207,17 +205,18 @@ export function useDvpRankPrefetch({
         
         if (shouldFetchCurrent) {
           try {
-            const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
-            if (currentResponse.ok) {
-              const currentData = await currentResponse.json();
+            const currentData = await cachedFetch<any>(
+              `/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`,
+              undefined,
+              60 * 60 * 1000 // Cache for 60 minutes
+            );
+            if (currentData) {
               currentRanks = currentData.metrics?.[dvpMetric] || {};
               console.log(`[Prefetch] Fetched current ranks for ${selectedPosition}:${dvpMetric}:`, {
                 rankCount: Object.keys(currentRanks).length,
                 sampleTeams: Object.keys(currentRanks).slice(0, 5),
                 reason: !hasHistoricalRanks ? 'No historical ranks found, using current as fallback' : 'Some games need current ranks'
               });
-            } else {
-              console.warn(`[Prefetch] Current ranks API error: ${currentResponse.status}`);
             }
           } catch (error) {
             console.error(`[Prefetch] Failed to fetch current ranks:`, error);
@@ -433,23 +432,22 @@ export function useDvpRankPrefetch({
           // Try to fetch historical rank for this game date
           try {
             const dateStr = new Date(gameDate).toISOString().split('T')[0];
-            const historicalResponse = await fetch(
-              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`
+            const historicalData = await cachedFetch<any>(
+              `/api/dvp/rank/historical?date=${dateStr}&pos=${selectedPosition}&metric=${dvpMetric}`,
+              undefined,
+              24 * 60 * 60 * 1000 // Cache for 24 hours (historical data doesn't change)
             );
             
-            if (historicalResponse.ok) {
-              const historicalData = await historicalResponse.json();
-              if (historicalData.success && historicalData.ranks && Object.keys(historicalData.ranks).length > 0) {
-                const normalizedOpp = normalizeAbbr(opponent);
-                const rank = historicalData.ranks[normalizedOpp] ?? 
-                            historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
-                // Only return rank if it's not 0 (0 means no data)
-                if (rank && rank > 0) {
-                  return { gameIdStr, rank };
+            if (historicalData && historicalData.success && historicalData.ranks && Object.keys(historicalData.ranks).length > 0) {
+              const normalizedOpp = normalizeAbbr(opponent);
+              const rank = historicalData.ranks[normalizedOpp] ?? 
+                          historicalData.ranks[normalizedOpp.toUpperCase()] ?? null;
+              // Only return rank if it's not 0 (0 means no data)
+              if (rank && rank > 0) {
+                return { gameIdStr, rank };
               }
-              }
-              // If historical API returned empty ranks or no match, fall through to use current ranks
             }
+            // If historical API returned empty ranks or no match, fall through to use current ranks
           } catch (historicalError) {
             console.warn(`[Second Axis] Failed to fetch historical rank for game ${gameIdStr}:`, historicalError);
           }
@@ -467,10 +465,13 @@ export function useDvpRankPrefetch({
         if (needsCurrentRanks) {
           // Fetch current DvP ranks as fallback
           console.log('[DvP Rank Legacy] Fetching current ranks...', { selectedPosition, dvpMetric });
-          const currentResponse = await fetch(`/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`);
+          const currentData = await cachedFetch<any>(
+            `/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`,
+            undefined,
+            60 * 60 * 1000 // Cache for 60 minutes
+          );
           
-          if (currentResponse.ok) {
-            const currentData = await currentResponse.json();
+          if (currentData) {
             currentRanks = currentData.metrics?.[dvpMetric] || {};
             console.log('[DvP Rank Legacy] Current ranks response:', {
               hasMetrics: !!currentData.metrics,
@@ -479,8 +480,6 @@ export function useDvpRankPrefetch({
               sampleTeams: Object.keys(currentRanks).slice(0, 10),
               sampleRanks: Object.entries(currentRanks).slice(0, 5)
             });
-          } else {
-            console.warn('[DvP Rank Legacy] Current ranks API error:', currentResponse.status);
           }
         }
         

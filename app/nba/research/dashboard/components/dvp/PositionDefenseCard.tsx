@@ -147,7 +147,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             cachedFetch<any>(
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
-              60 // Cache for 60 minutes
+              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
             )
             .then(data => ({ type: 'team', data }))
             .catch((error: any) => {
@@ -162,7 +162,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             cachedFetch<any>(
               `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
               undefined,
-              60 // Cache for 60 minutes
+              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
             )
             .then(data => ({ type: 'rank', data }))
             .catch((error: any) => {
@@ -335,7 +335,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             cachedFetch<any>(
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
-              DVP_CACHE_TTL
+              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
             ).then(data => ({ type: 'team', data }))
           );
         }
@@ -345,7 +345,7 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             cachedFetch<any>(
               `/api/dvp/rank/batch?pos=${p}&metrics=${metricsStr}&games=10`,
               undefined,
-              DVP_CACHE_TTL
+              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
             ).then(data => ({ type: 'rank', data }))
           );
         }
