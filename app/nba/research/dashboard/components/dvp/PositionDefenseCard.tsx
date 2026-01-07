@@ -216,8 +216,10 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
                 metricKeys: result.data?.metrics ? Object.keys(result.data.metrics) : [],
                 sampleMetric: result.data?.metrics?.pts ? {
                   teamCount: Object.keys(result.data.metrics.pts).length,
-                  sampleTeams: Object.keys(result.data.metrics.pts).slice(0, 5)
-                } : null
+                  sampleTeams: Object.keys(result.data.metrics.pts).slice(0, 5),
+                  fullPtsData: result.data.metrics.pts // Log the full object to see structure
+                } : null,
+                fullData: result.data // Log full response to debug
               });
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
               dvpRankCache.set(rankCacheKey, rankData);

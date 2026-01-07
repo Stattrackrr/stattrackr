@@ -108,13 +108,24 @@ export async function GET(request: NextRequest) {
 
           const data = await response.json();
           
-          // Debug logging
+          // Debug logging - always log to see what we're getting
+          console.log(`[DVP Rank Batch] Response for ${metric} (${pos}):`, {
+            success: data.success,
+            hasRanks: !!data.ranks,
+            rankCount: data.ranks ? Object.keys(data.ranks).length : 0,
+            sampleKeys: data.ranks ? Object.keys(data.ranks).slice(0, 10) : [],
+            sampleRanks: data.ranks ? Object.fromEntries(Object.entries(data.ranks).slice(0, 5)) : {},
+            fullResponse: data // Log full response to debug
+          });
+          
           if (!data.ranks || Object.keys(data.ranks || {}).length === 0) {
-            console.error(`[DVP Rank Batch] No ranks returned for ${metric} (${pos}):`, {
+            console.error(`[DVP Rank Batch] ⚠️ No ranks returned for ${metric} (${pos}):`, {
               success: data.success,
               hasRanks: !!data.ranks,
               rankCount: data.ranks ? Object.keys(data.ranks).length : 0,
-              sampleKeys: data.ranks ? Object.keys(data.ranks).slice(0, 5) : []
+              sampleKeys: data.ranks ? Object.keys(data.ranks).slice(0, 5) : [],
+              error: data.error,
+              fullData: data
             });
           }
           
