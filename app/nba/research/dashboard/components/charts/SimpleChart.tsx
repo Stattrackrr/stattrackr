@@ -498,21 +498,35 @@ const SimpleChart = memo(function SimpleChart({
     updateBettingLinePositionRef.current = updateBettingLinePosition;
   }, [updateBettingLinePosition]);
 
-  // Track last betting line value to prevent unnecessary updates
+  // Track last betting line value and yAxisConfig to detect changes
   const lastBettingLineRef = useRef<number | null>(null);
+  const lastYAxisConfigRef = useRef(yAxisConfig);
   
-  // Update betting line position when bettingLine prop changes (after debounce)
-  // Only update if the value actually changed to prevent re-renders on release
+  // Update betting line position when bettingLine prop or yAxisConfig changes
+  // yAxisConfig changes when timeframe changes, so we need to recalculate position
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
-    // Skip update if value hasn't changed (prevents re-render on release when value is same)
-    if (lastBettingLineRef.current === bettingLine) return;
-    lastBettingLineRef.current = bettingLine;
-    updateBettingLinePosition(bettingLine);
-    // Retry to ensure DOM is ready
-    const timeout = setTimeout(() => updateBettingLinePosition(bettingLine), 50);
-    return () => clearTimeout(timeout);
-  }, [bettingLine, updateBettingLinePosition, chartData]);
+    
+    // Check if yAxisConfig changed (timeframe change)
+    const yAxisConfigChanged = lastYAxisConfigRef.current !== yAxisConfig;
+    if (yAxisConfigChanged) {
+      lastYAxisConfigRef.current = yAxisConfig;
+    }
+    
+    // Check if bettingLine value changed
+    const bettingLineChanged = lastBettingLineRef.current !== bettingLine;
+    if (bettingLineChanged) {
+      lastBettingLineRef.current = bettingLine;
+    }
+    
+    // Recalculate position if either changed
+    if (yAxisConfigChanged || bettingLineChanged) {
+      updateBettingLinePosition(bettingLine);
+      // Retry to ensure DOM is ready
+      const timeout = setTimeout(() => updateBettingLinePosition(bettingLine), 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [bettingLine, updateBettingLinePosition, chartData, yAxisConfig]);
 
   // Update betting line position instantly during dragging (via transient-line event)
   useEffect(() => {
