@@ -105,7 +105,7 @@ export default memo(function StaticBarsChart({
     return margin;
   }, [compactMobile, isMobileSB]);
   
-  const hideLogosAndLabels = selectedTimeframe === 'lastseason';
+  const hideLogosAndLabels = selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason';
 
   // Merge second axis data with main data
   const mergedData = useMemo(() => {
