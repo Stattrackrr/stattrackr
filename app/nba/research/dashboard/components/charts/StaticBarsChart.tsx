@@ -291,9 +291,9 @@ export default memo(function StaticBarsChart({
       >
         <XAxis
           dataKey="xKey"
-          tick={hideLogosAndLabels ? false : <CustomXAxisTick data={data} />}
-          axisLine={xAxisLineStyle}
-          height={CHART_CONFIG.xAxis.height}
+          tick={hideLogosAndLabels ? false : <CustomXAxisTick data={data} hideLogo={hideLogosAndLabels} />}
+          axisLine={hideLogosAndLabels ? false : xAxisLineStyle}
+          height={hideLogosAndLabels ? 0 : CHART_CONFIG.xAxis.height}
           interval={CHART_CONFIG.xAxis.interval}
           allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
           hide={!!compactMobile || hideLogosAndLabels}

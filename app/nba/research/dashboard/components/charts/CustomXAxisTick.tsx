@@ -3,12 +3,17 @@
 import { memo, useState } from 'react';
 import { getEspnLogoCandidates } from '../../constants';
 
-export default memo(function CustomXAxisTick({ x, y, payload, data }: any) {
+export default memo(function CustomXAxisTick({ x, y, payload, data, hideLogo }: any) {
   const [logoError, setLogoError] = useState(false);
   const [logoAttempt, setLogoAttempt] = useState(0);
   
   const dataPoint = data?.find((d: any) => d.xKey === payload.value);
   const teamAbbr = dataPoint?.tickLabel || payload.value;
+  
+  // If hideLogo is true, don't render anything (logos will be hidden)
+  if (hideLogo) {
+    return null;
+  }
   
   const logoCandidates = getEspnLogoCandidates(teamAbbr);
   const logoUrl = logoCandidates[logoAttempt] || logoCandidates[0];
@@ -49,7 +54,7 @@ export default memo(function CustomXAxisTick({ x, y, payload, data }: any) {
       />
     </g>
   );
-}, (prev, next) => prev.x === next.x && prev.y === next.y && prev.payload?.value === next.payload?.value);
+}, (prev, next) => prev.x === next.x && prev.y === next.y && prev.payload?.value === next.payload?.value && prev.hideLogo === next.hideLogo);
 
 
 
