@@ -12,16 +12,13 @@ export default function NBADashboardWrapper() {
     setMounted(true);
   }, []);
 
+  // Render immediately without loading screen - dashboard will show its own loading states
   if (!mounted) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#050d1a]">
-        Loading dashboard...
-      </div>
-    );
+    return null; // Return null instead of loading screen for instant render
   }
 
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#050d1a]">Loading dashboard...</div>}>
+    <Suspense fallback={null}>
       <NBADashboardContent />
     </Suspense>
   );

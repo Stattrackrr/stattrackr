@@ -22,9 +22,722 @@ interface JournalBet {
   currency: string;
   opponent?: string;
   team?: string;
+  stat_type?: string | null;
+  player_id?: string | null;
+  player_name?: string | null;
+  over_under?: 'over' | 'under' | null;
+  line?: number | null;
+  parlay_legs?: Array<{
+    playerName?: string;
+    playerId?: string;
+    statType?: string;
+    overUnder?: 'over' | 'under';
+    line?: number;
+    won?: boolean | null;
+  }> | null;
 }
 
 type TabType = 'tracked' | 'journal';
+
+interface Insight {
+  id: string;
+  type: 'loss' | 'win' | 'comparison' | 'streak';
+  category: 'stat' | 'player' | 'parlay' | 'over_under' | 'opponent' | 'bet_type';
+  message: string;
+  priority: number; // Higher = more important (for sorting)
+  color: 'red' | 'green' | 'yellow' | 'blue';
+}
+
+// Helper function to check if bet is a parlay
+function isParlay(bet: JournalBet): boolean {
+  return bet.selection?.startsWith('Parlay:') || (bet.parlay_legs && bet.parlay_legs.length > 0) || false;
+}
+
+// Helper function to extract player name from bet
+function getPlayerName(bet: JournalBet): string | null {
+  if (bet.player_name) return bet.player_name;
+  // Try to parse from selection text
+  if (bet.selection && !isParlay(bet)) {
+    // Pattern: "PlayerName Stat Over/Under Line"
+    const match = bet.selection.match(/^([^0-9]+?)\s+(over|under|Over|Under)/i);
+    if (match) return match[1].trim();
+  }
+  return null;
+}
+
+// Helper function to format stat name for display
+function formatStatName(stat: string): string {
+  const statMap: Record<string, string> = {
+    'pts': 'Points',
+    'reb': 'Rebounds',
+    'ast': 'Assists',
+    'stl': 'Steals',
+    'blk': 'Blocks',
+    'fg3m': '3-Pointers Made',
+    'pr': 'Points + Rebounds',
+    'pra': 'Points + Rebounds + Assists',
+    'ra': 'Rebounds + Assists',
+    'pa': 'Points + Assists',
+  };
+  return statMap[stat.toLowerCase()] || stat.charAt(0).toUpperCase() + stat.slice(1).toLowerCase();
+}
+
+// Message templates with personality
+const messageTemplates = {
+  statOverUnderWin: [
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${overUnder} ${stat} is your bread and butter - ${winRate}% success rate`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `Keep doing ${overUnder} ${stat}! You're hitting ${winRate}% (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${winRate}% (${wins}/${total}) of your bets on the ${overUnder} for ${stat} win`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `You win ${winRate}% of bets when you bet ${overUnder} on ${stat}`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${overUnder} ${stat} bets are working for you - ${winRate}% win rate (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `You win ${winRate}% of bets when you do ${overUnder} on ${stat} (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `When you bet ${overUnder} on ${stat}, you win ${winRate}% of the time. Keep it up!`,
+  ],
+  statOverUnderLoss: [
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `Bruh, ${overUnder} ${stat} is killing you. Only ${winRate}% win rate (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `Maybe stop betting ${overUnder} on ${stat}? You're only winning ${winRate}% of the time`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${overUnder} ${stat} bets are rough - ${winRate}% success rate. Maybe try the opposite?`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `Only ${winRate}% (${wins}/${total}) of your bets on the ${overUnder} for ${stat} win`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${overUnder} ${stat} bets aren't your thing - only ${winRate}% win rate (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `${overUnder} ${stat} is not working out - ${winRate}% (${wins}/${total}) win rate`,
+    (winRate: number, wins: number, total: number, overUnder: string, stat: string) => 
+      `You're losing ${100 - winRate}% of your ${overUnder} ${stat} bets. That's not sustainable`,
+  ],
+  financialLoss: [
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `Bruh, you wagered $${wagered.toFixed(2)} on ${stat} but only got $${returned.toFixed(2)} back? Come on man, that's ${Math.abs(roi)}% down`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `What are you doing with ${stat}? $${wagered.toFixed(2)} in, $${returned.toFixed(2)} out. That's not it chief`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `In ${total} ${stat} bets you lost $${Math.abs(profit).toFixed(2)}. You wagered $${wagered.toFixed(2)} and only got $${returned.toFixed(2)} back`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} bets are bleeding money - $${wagered.toFixed(2)} wagered, $${returned.toFixed(2)} returned (${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} straight bets: $${wagered.toFixed(2)} wagered, $${returned.toFixed(2)} returned. You're down $${Math.abs(profit).toFixed(2)} in ${total} bets`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `Oof, ${stat} is rough. In ${total} bets you lost $${Math.abs(profit).toFixed(2)} (${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `You've put $${wagered.toFixed(2)} into ${stat} bets and only got $${returned.toFixed(2)} back. Time to rethink this?`,
+  ],
+  financialWin: [
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} are printing money for you. In ${total} bets you profited $${profit.toFixed(2)}. Keep it up!`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} is printing money for you - $${wagered.toFixed(2)} wagered, $${returned.toFixed(2)} returned (+${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `In ${total} ${stat} bets you profited $${profit.toFixed(2)}. $${wagered.toFixed(2)} wagered, $${returned.toFixed(2)} returned. Keep it up!`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `Keep betting ${stat}! You're up $${profit.toFixed(2)} in ${total} bets (+${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} is your money maker - $${profit.toFixed(2)} profit in ${total} bets (+${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number, stat: string, total: number, profit: number) => 
+      `${stat} bets are working - $${returned.toFixed(2)} returned from $${wagered.toFixed(2)} wagered (+${roi}% ROI)`,
+  ],
+  comparison: [
+    (difference: number, straightRate: number, parlayRate: number, better: string) => 
+      `Your ${better} bet win percentage is ${difference}% better than your ${better === 'straight' ? 'parlay' : 'straight'} win % (${straightRate}% vs ${parlayRate}%)`,
+    (difference: number, straightRate: number, parlayRate: number, better: string) => 
+      `You perform ${difference}% better on ${better} bets (${straightRate}%) vs ${better === 'straight' ? 'parlays' : 'straight bets'} (${parlayRate}%)`,
+    (difference: number, straightRate: number, parlayRate: number, better: string) => 
+      `${better === 'straight' ? 'Straight' : 'Parlay'} bets are your thing - ${difference}% better win rate than ${better === 'straight' ? 'parlays' : 'straights'}`,
+    (difference: number, straightRate: number, parlayRate: number, better: string) => 
+      `Stick with ${better} bets! You're winning ${difference}% more often than ${better === 'straight' ? 'parlays' : 'straight bets'}`,
+  ],
+  overallFinancialLoss: [
+    (wagered: number, returned: number, roi: number) => 
+      `You've wagered $${wagered.toFixed(2)} in total and returned $${returned.toFixed(2)} (${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number) => 
+      `Overall you're down $${Math.abs(returned - wagered).toFixed(2)} (${roi}% ROI). Time to reassess your strategy?`,
+    (wagered: number, returned: number, roi: number) => 
+      `You've lost $${Math.abs(returned - wagered).toFixed(2)} total (${roi}% ROI). Maybe take a step back and analyze your patterns`,
+  ],
+  overallFinancialWin: [
+    (wagered: number, returned: number, roi: number) => 
+      `You've wagered $${wagered.toFixed(2)} in total and returned $${returned.toFixed(2)} (+${roi}% ROI)`,
+    (wagered: number, returned: number, roi: number) => 
+      `You're up $${(returned - wagered).toFixed(2)} overall (+${roi}% ROI). Keep it up!`,
+    (wagered: number, returned: number, roi: number) => 
+      `Overall performance: +$${(returned - wagered).toFixed(2)} profit (+${roi}% ROI). Nice work!`,
+  ],
+  playerWin: [
+    (winRate: number, wins: number, total: number, player: string) => 
+      `You win ${winRate}% (${wins}/${total}) on ${player}`,
+    (winRate: number, wins: number, total: number, player: string) => 
+      `${player} is your guy - ${winRate}% win rate (${wins}/${total})`,
+    (winRate: number, wins: number, total: number, player: string) => 
+      `You're crushing it with ${player} - ${winRate}% (${wins}/${total}) win rate`,
+    (winRate: number, wins: number, total: number, player: string) => 
+      `${player} bets are printing money - ${winRate}% success rate (${wins}/${total})`,
+  ],
+  playerLoss: [
+    (losses: number, total: number, lossRate: number, player: string) => 
+      `You lose ${losses} out of ${total} bets on ${player} (${lossRate}% loss rate)`,
+    (losses: number, total: number, lossRate: number, player: string) => 
+      `${player} is not your friend - ${losses} losses out of ${total} bets (${lossRate}% loss rate)`,
+    (losses: number, total: number, lossRate: number, player: string) => 
+      `Bruh, ${player} is killing you. ${losses} losses out of ${total} bets`,
+    (losses: number, total: number, lossRate: number, player: string) => 
+      `Maybe stop betting on ${player}? You're losing ${lossRate}% of the time (${losses}/${total})`,
+  ],
+  statLossCount: [
+    (losses: number, total: number, lossRate: number, stat: string) => 
+      `You lose ${losses} out of ${total} bets on ${stat} (${lossRate}% loss rate)`,
+    (losses: number, total: number, lossRate: number, stat: string) => 
+      `${stat} is rough - ${losses} losses out of ${total} bets (${lossRate}% loss rate)`,
+    (losses: number, total: number, lossRate: number, stat: string) => 
+      `You're losing ${lossRate}% of your ${stat} bets (${losses}/${total}). Time to reassess?`,
+  ],
+  overUnderWin: [
+    (wins: number, losses: number, winRate: number, type: string) => 
+      `You're ${wins}-${losses} on ${type} bets (${winRate}% win rate)`,
+    (wins: number, losses: number, winRate: number, type: string) => 
+      `${type} bets are working - ${wins}-${losses} record (${winRate}% win rate)`,
+    (wins: number, losses: number, winRate: number, type: string) => 
+      `Keep betting ${type}! You're ${wins}-${losses} (${winRate}% win rate)`,
+  ],
+  overUnderLoss: [
+    (losses: number, wins: number, winRate: number, type: string) => 
+      `You're ${losses}-${wins} on ${type} bets (${winRate}% win rate)`,
+    (losses: number, wins: number, winRate: number, type: string) => 
+      `${type} bets aren't working - ${losses}-${wins} record (${winRate}% win rate)`,
+    (losses: number, wins: number, winRate: number, type: string) => 
+      `Maybe stop betting ${type}? You're ${losses}-${wins} (${winRate}% win rate)`,
+  ],
+  parlayLoss: [
+    (losses: number, total: number) => 
+      `You lose ${losses} out of ${total} parlays`,
+    (losses: number, total: number) => 
+      `Parlays are rough - ${losses} losses out of ${total} bets`,
+    (losses: number, total: number) => 
+      `Bruh, parlays aren't it. You lost ${losses} out of ${total}`,
+    (losses: number, total: number) => 
+      `Maybe stick to straight bets? You lost ${losses} out of ${total} parlays`,
+  ],
+};
+
+// Helper to get deterministic message from template (based on insight ID for stability)
+function getDeterministicMessage(insightId: string, templateKey: keyof typeof messageTemplates, ...args: any[]): string {
+  const templates = messageTemplates[templateKey];
+  // Use insight ID to deterministically select a message (stable across refreshes)
+  let hash = 0;
+  for (let i = 0; i < insightId.length; i++) {
+    hash = ((hash << 5) - hash) + insightId.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  const index = Math.abs(hash) % templates.length;
+  return templates[index](...args);
+}
+
+// Generate insights from journal bets
+function generateInsights(bets: JournalBet[]): Insight[] {
+  const insights: Insight[] = [];
+  const MIN_BETS_FOR_INSIGHTS = 10;
+  
+  // Filter to only settled bets (win/loss, not pending/void)
+  const settledBets = bets.filter(b => b.result === 'win' || b.result === 'loss');
+  
+  if (settledBets.length < MIN_BETS_FOR_INSIGHTS) {
+    return insights; // Not enough data
+  }
+  
+  // Separate parlay vs straight bets
+  const parlayBets = settledBets.filter(isParlay);
+  const straightBets = settledBets.filter(b => !isParlay(b));
+  
+  // Helper to calculate profit/loss for a bet
+  const getBetProfit = (bet: JournalBet): number => {
+    if (bet.result === 'win') {
+      return bet.stake * (bet.odds - 1);
+    } else if (bet.result === 'loss') {
+      return -bet.stake;
+    }
+    return 0;
+  };
+  
+  // Helper to calculate total wagered
+  const getTotalWagered = (betList: JournalBet[]): number => {
+    return betList.reduce((sum, bet) => sum + bet.stake, 0);
+  };
+  
+  // Helper to calculate total returned
+  const getTotalReturned = (betList: JournalBet[]): number => {
+    return betList.reduce((sum, bet) => {
+      if (bet.result === 'win') {
+        return sum + (bet.stake * bet.odds);
+      }
+      return sum;
+    }, 0);
+  };
+  
+  // === STRAIGHT BET INSIGHTS ===
+  
+  // By stat type + over/under combination (e.g., "OVER for Rebounds")
+  const statOverUnderGroups: Record<string, Record<string, { wins: number; losses: number; bets: JournalBet[] }>> = {};
+  straightBets.forEach(bet => {
+    if (bet.stat_type && bet.over_under) {
+      if (!statOverUnderGroups[bet.stat_type]) {
+        statOverUnderGroups[bet.stat_type] = {};
+      }
+      if (!statOverUnderGroups[bet.stat_type][bet.over_under]) {
+        statOverUnderGroups[bet.stat_type][bet.over_under] = { wins: 0, losses: 0, bets: [] };
+      }
+      if (bet.result === 'win') statOverUnderGroups[bet.stat_type][bet.over_under].wins++;
+      else statOverUnderGroups[bet.stat_type][bet.over_under].losses++;
+      statOverUnderGroups[bet.stat_type][bet.over_under].bets.push(bet);
+    }
+  });
+  
+  // Generate insights for stat + over/under combinations
+  Object.entries(statOverUnderGroups).forEach(([stat, overUnderData]) => {
+    Object.entries(overUnderData).forEach(([overUnder, data]) => {
+      const total = data.wins + data.losses;
+      if (total >= 3) {
+        const winRate = Math.round((data.wins / total) * 100);
+        const statName = formatStatName(stat);
+        const overUnderLabel = overUnder.charAt(0).toUpperCase() + overUnder.slice(1);
+        
+        // High win rate insight
+        if (winRate >= 60 && total >= 3) {
+          insights.push({
+            id: `stat-overunder-win-${stat}-${overUnder}`,
+            type: 'win',
+            category: 'stat',
+            message: getDeterministicMessage(`stat-overunder-win-${stat}-${overUnder}`, 'statOverUnderWin', winRate, data.wins, total, overUnderLabel, statName),
+            priority: winRate * 10 + total * 5,
+            color: 'green',
+          });
+        }
+        // Low win rate insight - lowered thresholds to show more losses
+        if (winRate < 50 && total >= 3 && data.losses >= 2) {
+          insights.push({
+            id: `stat-overunder-loss-${stat}-${overUnder}`,
+            type: 'loss',
+            category: 'stat',
+            message: getDeterministicMessage(`stat-overunder-loss-${stat}-${overUnder}`, 'statOverUnderLoss', winRate, data.wins, total, overUnderLabel, statName),
+            priority: data.losses * 15 + total * 5,
+            color: 'red',
+          });
+        }
+      }
+    });
+  });
+  
+  // By stat type (overall)
+  const statGroups: Record<string, { wins: number; losses: number; bets: JournalBet[]; wagered: number; returned: number }> = {};
+  straightBets.forEach(bet => {
+    if (bet.stat_type) {
+      if (!statGroups[bet.stat_type]) {
+        statGroups[bet.stat_type] = { wins: 0, losses: 0, bets: [], wagered: 0, returned: 0 };
+      }
+      if (bet.result === 'win') statGroups[bet.stat_type].wins++;
+      else statGroups[bet.stat_type].losses++;
+      statGroups[bet.stat_type].bets.push(bet);
+      statGroups[bet.stat_type].wagered += bet.stake;
+      if (bet.result === 'win') {
+        statGroups[bet.stat_type].returned += bet.stake * bet.odds;
+      }
+    }
+  });
+  
+  // Financial insights by stat
+  Object.entries(statGroups).forEach(([stat, data]) => {
+    const total = data.wins + data.losses;
+    if (total >= 5 && data.wagered >= 50) {
+      const statName = formatStatName(stat);
+      const profit = data.returned - data.wagered;
+      const roi = Math.round((profit / data.wagered) * 100);
+      
+      // Negative ROI insight - lowered threshold to show more losses
+      if (profit < 0 && Math.abs(profit) >= 10) {
+        insights.push({
+          id: `stat-financial-loss-${stat}`,
+          type: 'loss',
+          category: 'stat',
+          message: getDeterministicMessage(`stat-financial-loss-${stat}`, 'financialLoss', data.wagered, data.returned, roi, statName, total, profit),
+          priority: Math.abs(profit) * 3 + total * 3 + data.losses * 5,
+          color: 'red',
+        });
+      }
+      // Positive ROI insight
+      if (profit > 0 && profit >= 20) {
+        insights.push({
+          id: `stat-financial-win-${stat}`,
+          type: 'win',
+          category: 'stat',
+          message: getDeterministicMessage(`stat-financial-win-${stat}`, 'financialWin', data.wagered, data.returned, roi, statName, total, profit),
+          priority: profit * 2 + total * 3,
+          color: 'green',
+        });
+      }
+      
+      // Also show loss insights for stats with many losses even if ROI isn't terrible
+      if (data.losses >= 4 && total >= 6) {
+        const lossRate = Math.round((data.losses / total) * 100);
+        if (lossRate >= 40) {
+          insights.push({
+            id: `stat-loss-count-${stat}`,
+            type: 'loss',
+            category: 'stat',
+            message: getDeterministicMessage(`stat-loss-count-${stat}`, 'statLossCount', data.losses, total, lossRate, statName),
+            priority: data.losses * 12 + total * 3,
+            color: 'red',
+          });
+        }
+      }
+    }
+  });
+  
+  // By player
+  const playerGroups: Record<string, { wins: number; losses: number; bets: JournalBet[] }> = {};
+  straightBets.forEach(bet => {
+    const playerName = getPlayerName(bet);
+    if (playerName) {
+      if (!playerGroups[playerName]) {
+        playerGroups[playerName] = { wins: 0, losses: 0, bets: [] };
+      }
+      if (bet.result === 'win') playerGroups[playerName].wins++;
+      else playerGroups[playerName].losses++;
+      playerGroups[playerName].bets.push(bet);
+    }
+  });
+  
+  // Find worst player (most losses) - lowered threshold
+  Object.entries(playerGroups).forEach(([player, data]) => {
+    const total = data.wins + data.losses;
+    if (total >= 3 && data.losses >= 2) {
+      const lossRate = Math.round((data.losses / total) * 100);
+      // Show if loss rate is 40% or more
+      if (lossRate >= 40) {
+        insights.push({
+          id: `player-loss-${player}`,
+          type: 'loss',
+          category: 'player',
+          message: getDeterministicMessage(`player-loss-${player}`, 'playerLoss', data.losses, total, lossRate, player),
+          priority: data.losses * 12 + total,
+          color: 'red',
+        });
+      }
+    }
+    // Find best player (high win rate)
+    if (total >= 5 && data.wins >= 3) {
+      const winRate = Math.round((data.wins / total) * 100);
+      if (winRate >= 60) {
+        insights.push({
+          id: `player-win-${player}`,
+          type: 'win',
+          category: 'player',
+          message: getDeterministicMessage(`player-win-${player}`, 'playerWin', winRate, data.wins, total, player),
+          priority: winRate * 10 + total,
+          color: 'green',
+        });
+      }
+    }
+  });
+  
+  // By over/under - lowered thresholds
+  const overBets = straightBets.filter(b => b.over_under === 'over');
+  const underBets = straightBets.filter(b => b.over_under === 'under');
+  
+  if (overBets.length >= 4) {
+    const overWins = overBets.filter(b => b.result === 'win').length;
+    const overLosses = overBets.filter(b => b.result === 'loss').length;
+    const overWinRate = Math.round((overWins / overBets.length) * 100);
+    // Only show as loss if win rate is below 50% (actually losing)
+    if (overLosses > overWins && overWinRate < 50) {
+      insights.push({
+        id: 'over-loss',
+        type: 'loss',
+        category: 'over_under',
+        message: getDeterministicMessage('over-loss', 'overUnderLoss', overLosses, overWins, overWinRate, 'Over'),
+        priority: overLosses * 12,
+        color: 'red',
+      });
+    } else if (overWins > overLosses && overWinRate >= 60) {
+      // Show as win if win rate is 60% or higher
+      insights.push({
+        id: 'over-win',
+        type: 'win',
+        category: 'over_under',
+        message: getDeterministicMessage('over-win', 'overUnderWin', overWins, overLosses, overWinRate, 'Over'),
+        priority: overWins * 10,
+        color: 'green',
+      });
+    }
+  }
+  
+  if (underBets.length >= 4) {
+    const underWins = underBets.filter(b => b.result === 'win').length;
+    const underLosses = underBets.filter(b => b.result === 'loss').length;
+    const underWinRate = Math.round((underWins / underBets.length) * 100);
+    // Only show as loss if win rate is below 50% (actually losing)
+    if (underLosses > underWins && underWinRate < 50) {
+      insights.push({
+        id: 'under-loss',
+        type: 'loss',
+        category: 'over_under',
+        message: getDeterministicMessage('under-loss', 'overUnderLoss', underLosses, underWins, underWinRate, 'Under'),
+        priority: underLosses * 12,
+        color: 'red',
+      });
+    } else if (underWins > underLosses && underWinRate >= 60) {
+      // Show as win if win rate is 60% or higher
+      insights.push({
+        id: 'under-win',
+        type: 'win',
+        category: 'over_under',
+        message: getDeterministicMessage('under-win', 'overUnderWin', underWins, underLosses, underWinRate, 'Under'),
+        priority: underWins * 10,
+        color: 'green',
+      });
+    }
+  }
+  
+  // === PARLAY INSIGHTS ===
+  
+  if (parlayBets.length >= 3) {
+    const parlayWins = parlayBets.filter(b => b.result === 'win').length;
+    const parlayLosses = parlayBets.filter(b => b.result === 'loss').length;
+    const parlayWinRate = Math.round((parlayWins / parlayBets.length) * 100);
+    
+    if (parlayLosses >= 2 && parlayLosses > parlayWins) {
+      insights.push({
+        id: 'parlay-loss',
+        type: 'loss',
+        category: 'parlay',
+        message: getDeterministicMessage('parlay-loss', 'parlayLoss', parlayLosses, parlayBets.length),
+        priority: parlayLosses * 15,
+        color: 'red',
+      });
+    }
+    
+    // Analyze parlay legs by stat
+    const parlayStatGroups: Record<string, { wins: number; losses: number }> = {};
+    parlayBets.forEach(bet => {
+      if (bet.parlay_legs) {
+        bet.parlay_legs.forEach(leg => {
+          if (leg.statType && leg.won !== null && leg.won !== undefined) {
+            if (!parlayStatGroups[leg.statType]) {
+              parlayStatGroups[leg.statType] = { wins: 0, losses: 0 };
+            }
+            if (leg.won) parlayStatGroups[leg.statType].wins++;
+            else parlayStatGroups[leg.statType].losses++;
+          }
+        });
+      }
+    });
+    
+    Object.entries(parlayStatGroups).forEach(([stat, data]) => {
+      const total = data.wins + data.losses;
+      if (total >= 5 && data.losses >= 3) {
+        const statName = formatStatName(stat);
+        insights.push({
+          id: `parlay-stat-loss-${stat}`,
+          type: 'loss',
+          category: 'parlay',
+          message: `Your parlay legs on ${statName} lose ${data.losses} out of ${total}`,
+          priority: data.losses * 8 + total,
+          color: 'red',
+        });
+      }
+    });
+  }
+  
+  // === COMPARISON INSIGHTS ===
+  
+  if (straightBets.length >= 5 && parlayBets.length >= 3) {
+    const straightWins = straightBets.filter(b => b.result === 'win').length;
+    const straightWinRate = Math.round((straightWins / straightBets.length) * 100);
+    const parlayWins = parlayBets.filter(b => b.result === 'win').length;
+    const parlayWinRate = Math.round((parlayWins / parlayBets.length) * 100);
+    const difference = Math.abs(straightWinRate - parlayWinRate);
+    
+    if (difference >= 10) {
+      if (straightWinRate > parlayWinRate) {
+        insights.push({
+          id: 'comparison-straight-better',
+          type: 'comparison',
+          category: 'bet_type',
+          message: getDeterministicMessage('comparison-straight-better', 'comparison', difference, straightWinRate, parlayWinRate, 'straight'),
+          priority: difference * 10 + straightBets.length + parlayBets.length,
+          color: 'blue',
+        });
+      } else {
+        insights.push({
+          id: 'comparison-parlay-better',
+          type: 'comparison',
+          category: 'bet_type',
+          message: getDeterministicMessage('comparison-parlay-better', 'comparison', difference, straightWinRate, parlayWinRate, 'parlay'),
+          priority: difference * 10 + straightBets.length + parlayBets.length,
+          color: 'blue',
+        });
+      }
+    }
+  }
+  
+  // === ADDITIONAL FINANCIAL INSIGHTS ===
+  
+  // Overall financial performance
+  const totalWagered = getTotalWagered(settledBets);
+  const totalReturned = getTotalReturned(settledBets);
+  const totalProfit = totalReturned - totalWagered;
+  const overallROI = Math.round((totalProfit / totalWagered) * 100);
+  
+  if (settledBets.length >= 15 && totalWagered >= 100) {
+    if (totalProfit < -50) {
+      insights.push({
+        id: 'overall-financial-loss',
+        type: 'loss',
+        category: 'bet_type',
+        message: getDeterministicMessage('overall-financial-loss', 'overallFinancialLoss', totalWagered, totalReturned, overallROI),
+        priority: Math.abs(totalProfit) * 3,
+        color: 'red',
+      });
+    } else if (totalProfit > 50) {
+      insights.push({
+        id: 'overall-financial-win',
+        type: 'win',
+        category: 'bet_type',
+        message: getDeterministicMessage('overall-financial-win', 'overallFinancialWin', totalWagered, totalReturned, overallROI),
+        priority: totalProfit * 3,
+        color: 'green',
+      });
+    }
+  }
+  
+  // Sort by priority (highest first)
+  const sortedInsights = insights.sort((a, b) => b.priority - a.priority);
+  
+  // Separate insights by color
+  const redInsights = sortedInsights.filter(i => i.color === 'red');
+  const blueInsights = sortedInsights.filter(i => i.color === 'blue');
+  const greenInsights = sortedInsights.filter(i => i.color === 'green');
+  const yellowInsights = sortedInsights.filter(i => i.color === 'yellow');
+  
+  // Strategy: Round-robin selection to ensure good color distribution
+  const finalInsights: Insight[] = [];
+  const usedIds = new Set<string>();
+  
+  const addInsight = (insight: Insight) => {
+    if (!usedIds.has(insight.id) && finalInsights.length < 15) {
+      finalInsights.push(insight);
+      usedIds.add(insight.id);
+    }
+  };
+  
+  // Ensure we have at least 2 of each important color (if available)
+  const guaranteedRed = redInsights.slice(0, Math.min(2, redInsights.length));
+  const guaranteedBlue = blueInsights.slice(0, Math.min(2, blueInsights.length));
+  const guaranteedGreen = greenInsights.slice(0, Math.min(2, greenInsights.length));
+  
+  // Get remaining insights (after guaranteed ones)
+  const remainingRed = redInsights.slice(guaranteedRed.length);
+  const remainingBlue = blueInsights.slice(guaranteedBlue.length);
+  const remainingGreen = greenInsights.slice(guaranteedGreen.length);
+  
+  // Create color groups with all insights (guaranteed + remaining)
+  const colorGroups: Array<{ color: string; insights: Insight[] }> = [
+    { color: 'red', insights: [...guaranteedRed, ...remainingRed] },
+    { color: 'green', insights: [...guaranteedGreen, ...remainingGreen] },
+    { color: 'blue', insights: [...guaranteedBlue, ...remainingBlue] },
+    { color: 'yellow', insights: yellowInsights }
+  ].filter(group => group.insights.length > 0);
+  
+  // Create deterministic seed from all insight IDs
+  let seed = 0;
+  sortedInsights.forEach(insight => {
+    for (let i = 0; i < insight.id.length; i++) {
+      seed = ((seed << 5) - seed) + insight.id.charCodeAt(i);
+      seed = seed & seed;
+    }
+  });
+  
+  // Shuffle color group order deterministically
+  const shuffledColorGroups = [...colorGroups];
+  for (let i = shuffledColorGroups.length - 1; i > 0; i--) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const j = Math.abs(seed) % (i + 1);
+    [shuffledColorGroups[i], shuffledColorGroups[j]] = [shuffledColorGroups[j], shuffledColorGroups[i]];
+  }
+  
+  // Round-robin selection: interleave insights by color
+  const colorIndices = new Map<string, number>();
+  shuffledColorGroups.forEach(group => {
+    colorIndices.set(group.color, 0);
+  });
+  
+  let maxRounds = 0;
+  shuffledColorGroups.forEach(group => {
+    maxRounds = Math.max(maxRounds, group.insights.length);
+  });
+  
+  // Interleave by taking one from each color group in round-robin fashion
+  for (let round = 0; round < maxRounds && finalInsights.length < 15; round++) {
+    // Shuffle the order we check colors each round (for better distribution)
+    const roundColorOrder = [...shuffledColorGroups];
+    for (let i = roundColorOrder.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      const j = Math.abs(seed) % (i + 1);
+      [roundColorOrder[i], roundColorOrder[j]] = [roundColorOrder[j], roundColorOrder[i]];
+    }
+    
+    // Take one insight from each color group in this round
+    for (const group of roundColorOrder) {
+      if (finalInsights.length >= 15) break;
+      
+      const index = colorIndices.get(group.color) || 0;
+      if (index < group.insights.length) {
+        addInsight(group.insights[index]);
+        colorIndices.set(group.color, index + 1);
+      }
+    }
+  }
+  
+  // Final shuffle to break up any remaining patterns
+  // Use a more aggressive shuffle that prevents adjacent similar colors
+  const finalShuffled: Insight[] = [];
+  const remaining = [...finalInsights];
+  
+  // Enhanced shuffle: avoid placing same color next to each other when possible
+  while (remaining.length > 0) {
+    if (finalShuffled.length === 0) {
+      // First item: pick randomly
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      const firstIndex = Math.abs(seed) % remaining.length;
+      finalShuffled.push(remaining.splice(firstIndex, 1)[0]);
+    } else {
+      // Find items with different color than last item
+      const lastColor = finalShuffled[finalShuffled.length - 1].color;
+      const differentColor = remaining.filter(i => i.color !== lastColor);
+      const sameColor = remaining.filter(i => i.color === lastColor);
+      
+      // Prefer different color, but allow same if needed
+      const candidates = differentColor.length > 0 ? differentColor : sameColor;
+      
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      const candidateIndex = Math.abs(seed) % candidates.length;
+      const selected = candidates[candidateIndex];
+      
+      // Remove from remaining
+      const indexInRemaining = remaining.indexOf(selected);
+      finalShuffled.push(remaining.splice(indexInRemaining, 1)[0]);
+    }
+  }
+  
+  return finalShuffled;
+}
 
 interface RightSidebarProps {
   oddsFormat?: 'american' | 'decimal';
@@ -282,8 +995,7 @@ export default function RightSidebar({
       .from('bets')
       .select('*')
       .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(15);
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Failed to fetch journal bets:', error);
@@ -735,7 +1447,7 @@ export default function RightSidebar({
           <>
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium">
-                Last 15 bets
+                Insights
               </div>
               <button
                 onClick={fetchJournalBets}
@@ -917,146 +1629,123 @@ export default function RightSidebar({
             </div>
           </div>
         ) : (
-          journalBets.length === 0 ? (
-            <div className="p-4 text-center text-black dark:text-white opacity-70">
-              <div className="text-sm">No bets in journal yet</div>
-              <div className="text-xs mt-2">Add bets from the research pages to track your betting history</div>
-            </div>
-          ) : (
-            <div className="p-3 space-y-2">
-              {journalBets.slice(0, 15).map((bet) => {
-                const profit = bet.result === 'win' ? bet.stake * (bet.odds - 1) : 0;
-                const loss = bet.result === 'loss' ? bet.stake : 0;
-                const canDelete = bet.status === 'pending' && bet.result === 'pending';
-                
-                return (
-                  <div
-                    key={bet.id}
-                    className={`bg-white dark:bg-slate-800 rounded-lg p-3 border-2 relative group ${
-                      bet.result === 'win' 
-                        ? 'border-green-500 dark:border-green-400' 
-                        : bet.result === 'loss' 
-                        ? 'border-red-500 dark:border-red-400' 
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    
-                    {/* Selection + Date */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-bold text-black dark:text-white flex-1 truncate">
-                        {bet.selection}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                        {new Date(bet.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                    
-                    {/* Market/Sport + Opponent */}
-                    {(bet.market || bet.opponent) && (
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        {bet.market}{bet.opponent && ` • vs ${bet.opponent}`}
-                      </div>
-                    )}
-                    
-                    {/* Stake, Odds, Currency */}
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <div className="text-gray-600 dark:text-gray-400">
-                        Stake: <span className="font-semibold text-black dark:text-white">{bet.currency} ${bet.stake.toFixed(2)}</span>
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400">
-                        Odds: <span className="font-semibold text-black dark:text-white">{formatOdds(bet.odds, oddsFormat)}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Result + Return */}
-                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs">
-                      {bet.status === 'pending' && bet.result === 'pending' ? (
-                        <span className="px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded font-medium">
-                          SCHEDULED
-                        </span>
-                      ) : bet.status === 'live' && bet.result === 'pending' ? (
-                        <span className="px-2 py-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded font-medium">
-                          LIVE
-                        </span>
-                      ) : (
-                        <span className={`px-2 py-1 rounded font-medium ${
-                          bet.result === 'win' 
-                            ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
-                            : bet.result === 'loss' 
-                            ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                            : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {bet.result === 'win' ? 'W' : bet.result === 'loss' ? 'L' : bet.result.toUpperCase()}
-                        </span>
-                      )}
-                      
-                      <div className="flex items-center gap-2">
-                        {bet.result === 'win' && (
-                          <span className="font-semibold text-green-600 dark:text-green-400">
-                            +{bet.currency} ${profit.toFixed(2)}
-                          </span>
-                        )}
-                        {bet.result === 'loss' && (
-                          <span className="font-semibold text-red-600 dark:text-red-400">
-                            -{bet.currency} ${loss.toFixed(2)}
-                          </span>
-                        )}
-                        {bet.result === 'void' && (
-                          <span className="font-semibold text-gray-600 dark:text-gray-400">
-                            {bet.currency} $0.00
-                          </span>
-                        )}
-                        {bet.result === 'pending' && bet.status !== 'pending' && bet.status !== 'live' && (
-                          <span className="font-semibold text-yellow-600 dark:text-yellow-400">
-                            Pending
-                          </span>
-                        )}
-                        
-                        {canDelete && (
-                          <>
-                            <button
-                              onClick={() => setConfirmRemoveJournalId(bet.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
-                              title="Remove bet"
-                            >
-                              <X className="w-4 h-4 text-red-500" />
-                            </button>
-                            {confirmRemoveJournalId === bet.id && (
-                              <div className="absolute bottom-2 right-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Remove bet?</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => removeJournalBet(bet.id)}
-                                    className="flex-1 text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                  >
-                                    Yes
-                                  </button>
-                                  <button
-                                    onClick={() => setConfirmRemoveJournalId(null)}
-                                    className="flex-1 text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                  >
-                                    No
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {journalBets.length > 15 && (
-                <div className="text-center pt-2">
-                  <a href="/journal" className="text-xs text-purple-600 dark:text-purple-400 hover:underline">
-                    View all {journalBets.length} bets →
-                  </a>
+          (() => {
+            const insights = generateInsights(journalBets);
+            const settledBets = journalBets.filter(b => b.result === 'win' || b.result === 'loss');
+            
+            if (journalBets.length === 0) {
+              return (
+                <div className="p-4 text-center text-black dark:text-white opacity-70">
+                  <div className="text-sm">No bets in journal yet</div>
+                  <div className="text-xs mt-2">Add bets from the research pages to track your betting history</div>
                 </div>
-              )}
-            </div>
-          )
+              );
+            }
+            
+            if (settledBets.length < 10) {
+              return (
+                <div className="p-4 text-center text-black dark:text-white opacity-70">
+                  <div className="text-sm">Add more bets to see insights</div>
+                  <div className="text-xs mt-2">You need at least 10 settled bets to generate insights</div>
+                  <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                    You have {settledBets.length} settled {settledBets.length === 1 ? 'bet' : 'bets'}
+                  </div>
+                </div>
+              );
+            }
+            
+            if (insights.length === 0) {
+              return (
+                <div className="p-4 text-center text-black dark:text-white opacity-70">
+                  <div className="text-sm">No insights available yet</div>
+                  <div className="text-xs mt-2">Keep betting to see patterns and insights</div>
+                </div>
+              );
+            }
+            
+            return (
+              <div className="p-4 space-y-3">
+                {insights.map((insight) => {
+                  const getColorClasses = () => {
+                    switch (insight.color) {
+                      case 'red':
+                        return {
+                          border: 'border-l-4 border-red-500 dark:border-red-400',
+                          bg: 'bg-red-50/80 dark:bg-red-950/30',
+                          text: 'text-red-900 dark:text-red-100',
+                          iconBg: 'bg-red-100 dark:bg-red-900/50',
+                        };
+                      case 'green':
+                        return {
+                          border: 'border-l-4 border-green-500 dark:border-green-400',
+                          bg: 'bg-green-50/80 dark:bg-green-950/30',
+                          text: 'text-green-900 dark:text-green-100',
+                          iconBg: 'bg-green-100 dark:bg-green-900/50',
+                        };
+                      case 'blue':
+                        return {
+                          border: 'border-l-4 border-blue-500 dark:border-blue-400',
+                          bg: 'bg-blue-50/80 dark:bg-blue-950/30',
+                          text: 'text-blue-900 dark:text-blue-100',
+                          iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+                        };
+                      case 'yellow':
+                        return {
+                          border: 'border-l-4 border-yellow-500 dark:border-yellow-400',
+                          bg: 'bg-yellow-50/80 dark:bg-yellow-950/30',
+                          text: 'text-yellow-900 dark:text-yellow-100',
+                          iconBg: 'bg-yellow-100 dark:bg-yellow-900/50',
+                        };
+                      default:
+                        return {
+                          border: 'border-l-4 border-gray-300 dark:border-gray-600',
+                          bg: 'bg-gray-50/80 dark:bg-gray-900/30',
+                          text: 'text-gray-900 dark:text-gray-100',
+                          iconBg: 'bg-gray-100 dark:bg-gray-800',
+                        };
+                    }
+                  };
+                  
+                  const getIcon = () => {
+                    switch (insight.type) {
+                      case 'loss':
+                        return '📉';
+                      case 'win':
+                        return '📈';
+                      case 'comparison':
+                        return '⚖️';
+                      case 'streak':
+                        return '🔥';
+                      default:
+                        return '💡';
+                    }
+                  };
+                  
+                  const colors = getColorClasses();
+                  
+                  return (
+                    <div
+                      key={insight.id}
+                      className={`rounded-r-lg ${colors.bg} ${colors.border} shadow-sm hover:shadow-md transition-shadow`}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-full ${colors.iconBg} flex items-center justify-center text-xl`}>
+                            {getIcon()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold leading-relaxed ${colors.text}`}>
+                              {insight.message}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()
         )}
       </div>
       
