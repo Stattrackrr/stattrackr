@@ -15,6 +15,8 @@ import { BOOKMAKER_INFO } from '@/lib/bookmakers';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
+import { cachedFetch } from '@/lib/requestCache';
+import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import Image from 'next/image';
 
 interface Game {
@@ -268,6 +270,7 @@ export default function NBALandingPage() {
   const propsLoadedRef = useRef(false); // Track if props are already loaded to prevent redundant fetches
   const initialFetchCompletedRef = useRef(false); // Track if initial fetch has completed
   const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
+  const [navigatingToPlayer, setNavigatingToPlayer] = useState(false); // Track when navigating to dashboard
   const [isMobile, setIsMobile] = useState(false);
   // Load filter selections from localStorage on mount
   const loadFiltersFromStorage = () => {
@@ -2631,6 +2634,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   return (
     <div className={`min-h-screen lg:h-screen ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'} transition-colors lg:overflow-x-auto lg:overflow-y-hidden`}>
+      {/* Loading bar at top when navigating to dashboard - must be at root level */}
+      <LoadingBar isLoading={navigatingToPlayer} isDark={isDark} showImmediately={navigatingToPlayer} mobileOffset={0} />
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -3724,7 +3729,60 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     }
                                   }
                                   
-                                  router.push(finalUrl);
+                                  // Show loading bar immediately on props page
+                                  setNavigatingToPlayer(true);
+                                  
+                                  // OPTIMIZATION: Start prefetching stats immediately (before navigation)
+                                  // This makes the dashboard feel instant when it loads
+                                  const playerId = getPlayerIdFromName(prop.playerName);
+                                  if (playerId && typeof window !== 'undefined') {
+                                    // Mark that we're coming from props page (for dashboard)
+                                    try {
+                                      sessionStorage.setItem('from_props_page', 'true');
+                                    } catch (e) {
+                                      // Ignore storage errors
+                                    }
+                                    
+                                    // Prefetch stats immediately (non-blocking)
+                                    // This will populate the cache so dashboard loads instantly
+                                    const currentSeason = new Date().getFullYear();
+                                    const prefetchPromises = [
+                                      cachedFetch(
+                                        `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
+                                        undefined,
+                                        60 * 60 * 1000 // 1 hour cache
+                                      ).catch(() => null),
+                                      cachedFetch(
+                                        `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
+                                        undefined,
+                                        60 * 60 * 1000 // 1 hour cache
+                                      ).catch(() => null),
+                                      cachedFetch(
+                                        `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
+                                        undefined,
+                                        60 * 60 * 1000 // 1 hour cache
+                                      ).catch(() => null),
+                                      cachedFetch(
+                                        `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
+                                        undefined,
+                                        60 * 60 * 1000 // 1 hour cache
+                                      ).catch(() => null),
+                                    ];
+                                    
+                                    // Wait for prefetch to complete, then navigate
+                                    Promise.allSettled(prefetchPromises).then(() => {
+                                      // Small delay to ensure loading bar is visible
+                                      setTimeout(() => {
+                                        router.push(finalUrl);
+                                        // Hide loading bar after navigation starts
+                                        setTimeout(() => setNavigatingToPlayer(false), 100);
+                                      }, 100);
+                                    });
+                                  } else {
+                                    // If no player ID, navigate immediately
+                                    router.push(finalUrl);
+                                    setTimeout(() => setNavigatingToPlayer(false), 100);
+                                  }
                                 }}
                               >
                                 {/* Player Column */}

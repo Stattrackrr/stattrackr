@@ -59,6 +59,9 @@ interface DashboardHeaderProps {
     overImpliedProb?: number;
     underImpliedProb?: number;
   } | null;
+  
+  // Navigation callback
+  onNavigateBackToProps?: () => void;
 }
 
 export function DashboardHeader({
@@ -89,6 +92,7 @@ export function DashboardHeader({
   setShowJournalModal,
   todaysGames,
   calculatedImpliedOdds,
+  onNavigateBackToProps,
 }: DashboardHeaderProps) {
   const router = useRouter();
 
@@ -132,6 +136,11 @@ export function DashboardHeader({
                 {selectedPlayer && (
                   <button
                     onClick={() => {
+                      // Show loading bar immediately
+                      if (onNavigateBackToProps) {
+                        onNavigateBackToProps();
+                      }
+                      
                       // Clear dashboard session storage before navigating
                       try {
                         sessionStorage.removeItem('nba_dashboard_session_v1');
@@ -141,8 +150,17 @@ export function DashboardHeader({
                         // Ignore errors
                       }
                       
-                      // Use native browser back for instant navigation (same as browser back button)
-                      window.history.back();
+                      // Small delay to ensure loading bar is visible, then navigate
+                      setTimeout(() => {
+                        // Use native browser back for instant navigation (same as browser back button)
+                        window.history.back();
+                        // Hide loading bar after navigation starts
+                        setTimeout(() => {
+                          if (onNavigateBackToProps) {
+                            onNavigateBackToProps();
+                          }
+                        }, 100);
+                      }, 100);
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
@@ -362,6 +380,11 @@ export function DashboardHeader({
                 {selectedPlayer && (
                   <button
                     onClick={() => {
+                      // Show loading bar immediately
+                      if (onNavigateBackToProps) {
+                        onNavigateBackToProps();
+                      }
+                      
                       // Clear dashboard session storage before navigating
                       try {
                         sessionStorage.removeItem('nba_dashboard_session_v1');
@@ -371,8 +394,17 @@ export function DashboardHeader({
                         // Ignore errors
                       }
                       
-                      // Use native browser back for instant navigation (same as browser back button)
-                      window.history.back();
+                      // Small delay to ensure loading bar is visible, then navigate
+                      setTimeout(() => {
+                        // Use native browser back for instant navigation (same as browser back button)
+                        window.history.back();
+                        // Hide loading bar after navigation starts
+                        setTimeout(() => {
+                          if (onNavigateBackToProps) {
+                            onNavigateBackToProps();
+                          }
+                        }, 100);
+                      }, 100);
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >

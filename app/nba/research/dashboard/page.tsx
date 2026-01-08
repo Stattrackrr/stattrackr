@@ -99,6 +99,7 @@ import { useDvpRankPrefetch } from './hooks/useDvpRankPrefetch';
 import { useAdvancedStatsPrefetch } from './hooks/useAdvancedStatsPrefetch';
 import { useAggressivePrefetch } from './hooks/useAggressivePrefetch';
 import { useSearch } from './hooks/useSearch';
+import { LoadingBar } from './components/LoadingBar';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { useTimeframeRestoration } from './hooks/useTimeframeRestoration';
 import { usePlayerStateManagement } from './hooks/usePlayerStateManagement';
@@ -1069,9 +1070,15 @@ export function NBADashboardContent() {
 
   // Normal distribution CDF (Cumulative Distribution Function) approximation
   // Returns the probability that a value from a standard normal distribution is <= z
+  
+  // Track when navigating back to props page (for showing loading bar)
+  const [navigatingBackToProps, setNavigatingBackToProps] = useState(false);
+  
   return (
     <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
       <DashboardStyles />
+      {/* Loading bar at top when navigating back to props page */}
+      <LoadingBar isLoading={navigatingBackToProps} isDark={isDark} showImmediately={navigatingBackToProps} mobileOffset={2} />
       {/* Main layout container with sidebar, chart, and right panel */}
       <div className="px-0 dashboard-container" style={containerStyle}>
         <div className={innerContainerClassName} style={innerContainerStyle}>
@@ -1145,6 +1152,11 @@ export function NBADashboardContent() {
               setShowJournalModal={setShowJournalModal}
               todaysGames={todaysGames}
               calculatedImpliedOdds={calculatedImpliedOdds}
+              onNavigateBackToProps={() => {
+                setNavigatingBackToProps(true);
+                // Auto-hide after navigation completes (fallback)
+                setTimeout(() => setNavigatingBackToProps(false), 2000);
+              }}
             />
 
             {/* Chart card (fully isolated) */}
