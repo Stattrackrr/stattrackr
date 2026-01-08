@@ -1,56 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron/prefetch-lineups",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/auto-ingest",
-      "schedule": "0 */3 * * *"
-    },
-    {
-      "path": "/api/check-bets",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/odds/refresh",
-      "schedule": "*/30 * * * *"
+      "path": "/api/check-journal-bets",
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/odds/cleanup",
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/cron/refresh-nba-stats",
-      "schedule": "0 8 * * *"
-    },
-    {
       "path": "/api/cron/cleanup-odds-snapshots",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-player-odds",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/check-journal-bets",
-      "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-dvp-cache",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-defensive-stats",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/prefetch-daily-advanced-stats",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/warmup?warmup=true",
-      "schedule": "*/5 * * * *"
     }
   ],
   "functions": {
