@@ -645,7 +645,7 @@ const SimpleChart = memo(function SimpleChart({
               height={40}
               interval={0}
               allowDuplicatedCategory={false}
-              axisLine={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : { stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
+              axisLine={{ stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
               tickLine={false}
               hide={false}
             />
