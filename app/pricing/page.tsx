@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 
 export default function PricingPage() {
   const router = useRouter();
@@ -229,7 +230,12 @@ export default function PricingPage() {
   if (isCheckingSubscription) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="flex flex-col items-center gap-3">
+          <StatTrackrLogo className="w-20 h-20" />
+          <span className="font-bold text-4xl text-white">
+            StatTrackr
+          </span>
+        </div>
       </div>
     );
   }
