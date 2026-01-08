@@ -85,7 +85,10 @@ export default memo(function StaticBarsChart({
     fontSize: compactMobile ? 11 : 12,
     fontWeight: 'normal'
   }), [compactMobile]);
-  const xAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
+  const xAxisLineStyle = useMemo(() => ({ 
+    stroke: isDark ? '#6b7280' : '#9ca3af', 
+    strokeWidth: compactMobile ? 3 : 2 
+  }), [isDark, compactMobile]);
   const yAxisLineStyle = useMemo(() => ({ stroke: isDark ? '#4b5563' : '#d1d5db' }), [isDark]);
 
   const computedBarCategoryGap = useMemo(() => {

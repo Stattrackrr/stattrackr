@@ -645,7 +645,7 @@ const SimpleChart = memo(function SimpleChart({
               height={40}
               interval={0}
               allowDuplicatedCategory={false}
-              axisLine={{ stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
+              axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: isMobile ? 3 : 2 }}
               tickLine={false}
               hide={false}
             />
