@@ -469,6 +469,11 @@ const SimpleChart = memo(function SimpleChart({
   // Update container margin when second axis or mobile state changes
   useEffect(() => {
     updateBettingLineContainerMargin();
+    // Also update on initial mount with a small delay to ensure DOM is ready
+    const timeout = setTimeout(() => {
+      updateBettingLineContainerMargin();
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [updateBettingLineContainerMargin]);
 
   // Function to update betting line position via DOM (no re-renders)
@@ -602,8 +607,8 @@ const SimpleChart = memo(function SimpleChart({
         id="simple-chart-betting-line-container"
         className="absolute pointer-events-none"
         style={{
-          left: '32px', // yAxis width
-          right: '14px', // Updated via DOM when second axis changes
+          left: isMobile ? '0px' : '32px', // Full width on mobile, yAxis width on desktop
+          right: isMobile ? '0px' : '14px', // Full width on mobile, updated via DOM when second axis changes on desktop
           top: '22px', // margin.top
           bottom: '57px', // margin.bottom + extra space for alignment
           zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
