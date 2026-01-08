@@ -8,6 +8,7 @@ export default function NavigationLoader() {
   const [isLoading, setIsLoading] = useState(false);
   const currentPathRef = useRef(pathname);
   const loadingStartTimeRef = useRef<number | null>(null);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     // Only run in browser
@@ -21,7 +22,8 @@ export default function NavigationLoader() {
       if (link) {
         const href = link.getAttribute('href');
         // Only show loading for internal navigation (not external links or hash links)
-        if (href && href.startsWith('/') && !href.startsWith('#') && href !== pathname) {
+        // Don't show on NBA pages - they have their own loading screens
+        if (href && href.startsWith('/') && !href.startsWith('#') && href !== pathname && !pathname.startsWith('/nba')) {
           setIsLoading(true);
           loadingStartTimeRef.current = Date.now();
         }
@@ -37,6 +39,13 @@ export default function NavigationLoader() {
   }, [pathname]);
 
   useEffect(() => {
+    // Skip showing loader on initial page load - let page-specific loading screens handle it
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      currentPathRef.current = pathname;
+      return;
+    }
+
     // When pathname changes, navigation is complete
     if (pathname !== currentPathRef.current) {
       currentPathRef.current = pathname;
