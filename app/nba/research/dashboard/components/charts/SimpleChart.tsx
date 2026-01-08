@@ -21,6 +21,7 @@ interface SimpleChartProps {
   isDark: boolean;
   bettingLine: number;
   selectedStat: string;
+  selectedTimeframe?: string;
   secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
   selectedFilterForAxis?: string | null;
   [key: string]: any; // Accept other props for compatibility
@@ -33,6 +34,7 @@ const SimpleChart = memo(function SimpleChart({
   isDark,
   bettingLine,
   selectedStat,
+  selectedTimeframe,
   secondAxisData,
   selectedFilterForAxis,
 }: SimpleChartProps) {
@@ -620,12 +622,13 @@ const SimpleChart = memo(function SimpleChart({
           >
             <XAxis
               dataKey="xKey"
-              tick={<CustomXAxisTick data={mergedChartData} />}
-              height={40}
+              tick={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : <CustomXAxisTick data={mergedChartData} hideLogo={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'} />}
+              height={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? 0 : 40}
               interval={0}
               allowDuplicatedCategory={false}
-              axisLine={{ stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
+              axisLine={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : { stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
               tickLine={false}
+              hide={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'}
             />
             <YAxis
               domain={yAxisConfig.domain}
@@ -688,7 +691,8 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.isLoading !== nextProps.isLoading ||
     prevProps.isDark !== nextProps.isDark ||
     prevProps.secondAxisData !== nextProps.secondAxisData ||
-    prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis;
+    prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis ||
+    prevProps.selectedTimeframe !== nextProps.selectedTimeframe;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {
