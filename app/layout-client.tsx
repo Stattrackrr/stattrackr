@@ -5,6 +5,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { TrackedBetsProvider } from "@/contexts/TrackedBetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import NavigationLoader from "@/components/NavigationLoader";
+import '@/lib/disableConsoleInProduction';
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   // Global error handlers

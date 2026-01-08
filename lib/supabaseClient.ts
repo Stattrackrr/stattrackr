@@ -128,12 +128,14 @@ const sessionOnlyStorage = isBrowser
   : undefined
 
 if (supabaseUrl !== 'https://placeholder.supabase.co') {
-  console.log('✅ Supabase client initialized:', {
-    url: supabaseUrl,
-    keyLength: supabaseAnonKey.length,
-    namespace: isBrowser ? tabNamespace : 'server',
-  });
-} else if (isBrowser) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('✅ Supabase client initialized:', {
+      url: supabaseUrl,
+      keyLength: supabaseAnonKey.length,
+      namespace: isBrowser ? tabNamespace : 'server',
+    });
+  }
+} else if (isBrowser && process.env.NODE_ENV === 'development') {
   console.warn('⚠️ Supabase URL not configured. Please set NEXT_PUBLIC_SUPABASE_URL in your .env.local file.');
 }
 
