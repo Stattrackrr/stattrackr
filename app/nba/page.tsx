@@ -2633,10 +2633,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return mounted && isDark ? 'text-gray-400' : 'text-gray-600';
   };
 
-  // Show loading screen with logo during initial load
+  // Show loading screen with logo during initial load - must be first thing rendered
+  // Use fixed position with highest z-index to ensure it's above NavigationLoader
   if (!mounted || propsLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#050d1a]' : 'bg-gray-50'}`}>
+      <div className={`fixed inset-0 z-[10000] flex items-center justify-center ${isDark ? 'bg-[#050d1a]' : 'bg-gray-50'}`} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
         <div className="flex flex-col items-center gap-3">
           <StatTrackrLogo className="w-20 h-20" />
           <span className={`font-bold text-4xl ${isDark ? 'text-white' : 'text-black'}`}>
