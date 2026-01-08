@@ -26,6 +26,59 @@ export default function PricingPage() {
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const isLoggedIn = Boolean(user);
 
+  // Prefetch player props cache while logo is showing
+  useEffect(() => {
+    if (!isCheckingSubscription) return; // Only fetch while logo is showing
+    
+    const prefetchPlayerProps = async () => {
+      try {
+        const CACHE_KEY = 'nba-player-props-cache';
+        const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+        const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+        
+        // Check if we already have fresh data
+        if (typeof window !== 'undefined') {
+          const cachedData = sessionStorage.getItem(CACHE_KEY);
+          const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+          
+          if (cachedData && cachedTimestamp) {
+            const age = Date.now() - parseInt(cachedTimestamp, 10);
+            if (age < CACHE_TTL_MS) {
+              return; // Already have fresh data
+            }
+          }
+        }
+
+        // Fetch player props cache
+        const response = await fetch('/api/nba/player-props', {
+          cache: 'no-store', // Force server fetch to warm up cache
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            // Store in sessionStorage for instant access when navigating to props page
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+                sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+              } catch (e) {
+                // Failed to store in sessionStorage
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Silently fail - this is just a prefetch
+      }
+    };
+
+    prefetchPlayerProps();
+  }, [isCheckingSubscription]);
+
   useEffect(() => {
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
