@@ -17,6 +17,7 @@ import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
 import { cachedFetch } from '@/lib/requestCache';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
+import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import Image from 'next/image';
 
 interface Game {
@@ -2631,6 +2632,20 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     if (confidence === 'Medium') return mounted && isDark ? 'text-yellow-400' : 'text-yellow-600';
     return mounted && isDark ? 'text-gray-400' : 'text-gray-600';
   };
+
+  // Show loading screen with logo during initial load
+  if (!mounted || propsLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#050d1a]' : 'bg-gray-50'}`}>
+        <div className="flex flex-col items-center gap-3">
+          <StatTrackrLogo logoSize="w-20 h-20" />
+          <span className={`font-bold text-4xl ${isDark ? 'text-white' : 'text-black'}`}>
+            StatTrackr
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen lg:h-screen ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'} transition-colors lg:overflow-x-auto lg:overflow-y-hidden`}>
