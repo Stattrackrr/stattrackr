@@ -35,10 +35,13 @@ export default function NavigationLoader() {
       if (link) {
         const href = link.getAttribute('href');
         // Only show loading for internal navigation (not external links or hash links)
-        // Don't show on NBA pages - they have their own loading screens
-        if (href && href.startsWith('/') && !href.startsWith('#') && href !== pathname && !pathname.startsWith('/nba')) {
-          setIsLoading(true);
-          loadingStartTimeRef.current = Date.now();
+        // Don't show when navigating to/from NBA pages - they have their own loading screens
+        if (href && href.startsWith('/') && !href.startsWith('#') && href !== pathname) {
+          // Don't show if navigating to NBA pages or currently on NBA pages
+          if (!href.startsWith('/nba') && !pathname.startsWith('/nba')) {
+            setIsLoading(true);
+            loadingStartTimeRef.current = Date.now();
+          }
         }
       }
     };
