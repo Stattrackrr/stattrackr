@@ -11,6 +11,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { formatOdds } from '@/lib/currencyUtils';
+import { generateInsights, type Insight } from '@/components/RightSidebar';
+import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
+import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3, Minus, X } from 'lucide-react';
 
 export default function JournalPage() {
   return (
@@ -390,10 +393,6 @@ function JournalContent() {
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
-  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
-  const journalDropdownRef = useRef<HTMLDivElement>(null);
-  const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
-  const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -412,6 +411,10 @@ function JournalContent() {
   const [savingMobileUnitSize, setSavingMobileUnitSize] = useState(false);
   const [showMobileSuccessMessage, setShowMobileSuccessMessage] = useState(false);
   const [showUnitSizeModal, setShowUnitSizeModal] = useState(false);
+  const [showMobileInsights, setShowMobileInsights] = useState(false);
+  const [expandedMobileInsights, setExpandedMobileInsights] = useState<Set<string>>(new Set());
+  const [mobileInsightFilter, setMobileInsightFilter] = useState<'all' | 'red' | 'green' | 'info' | 'yellow' | 'pain'>('all');
+  const [mobileInsightBetTypeFilter, setMobileInsightBetTypeFilter] = useState<'all' | 'straight' | 'parlay'>('all');
   const { theme, setTheme } = useTheme();
   
   const handleSubscriptionClick = async () => {
@@ -534,14 +537,6 @@ function JournalContent() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (journalDropdownRef.current && !journalDropdownRef.current.contains(target) && 
-          !target.closest('[data-journal-button]')) {
-        setShowJournalDropdown(false);
-      }
-      if (dashboardDropdownRef.current && !dashboardDropdownRef.current.contains(target) && 
-          !target.closest('[data-dashboard-button]')) {
-        setShowDashboardDropdown(false);
-      }
       if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(target) &&
           !target.closest('[data-timeframe-button]')) {
         setShowTimeframeDropdown(false);
@@ -770,9 +765,12 @@ function JournalContent() {
         setUserEmail(session.user.email || null);
 
         // Fetch bets immediately (don't wait for check-journal-bets)
+        // OPTIMIZATION: Explicitly filter by user_id and order by date DESC for better index usage
+        // RLS handles security, but explicit filter helps query planner
         const { data, error } = await supabase
           .from('bets')
           .select('*')
+          .eq('user_id', session.user.id)
           .order('date', { ascending: false });
 
         if (!isMounted) return;
@@ -806,13 +804,17 @@ function JournalContent() {
             
             // Refresh bets after check completes to show updated results
             if (isMounted) {
-              const { data: refreshedBets } = await supabase
-                .from('bets')
-                .select('*')
-                .order('date', { ascending: false });
+              const { data: { session: refreshSession } } = await supabase.auth.getSession();
+              if (refreshSession?.user) {
+                const { data: refreshedBets } = await supabase
+                  .from('bets')
+                  .select('*')
+                  .eq('user_id', refreshSession.user.id)
+                  .order('date', { ascending: false });
               
-              if (isMounted && refreshedBets) {
-                setBets(refreshedBets);
+                if (isMounted && refreshedBets) {
+                  setBets(refreshedBets);
+                }
               }
             }
           })
@@ -876,6 +878,7 @@ function JournalContent() {
             const { data, error } = await supabase
               .from('bets')
               .select('*')
+              .eq('user_id', session.user.id)
               .order('date', { ascending: false });
             
             if (!error && data && isMounted) {
@@ -1277,6 +1280,21 @@ function JournalContent() {
     return data;
   }, [filteredBets, currency]);
 
+  // Calculate X-axis ticks for max 10 ticks
+  const xAxisTicks = useMemo(() => {
+    if (chartData.length <= 10) {
+      return chartData.map(d => d.bet);
+    }
+    const maxBet = chartData[chartData.length - 1]?.bet || 0;
+    const tickCount = 10;
+    const step = maxBet / (tickCount - 1);
+    const ticks: number[] = [];
+    for (let i = 0; i < tickCount; i++) {
+      ticks.push(Math.round(i * step));
+    }
+    return ticks;
+  }, [chartData]);
+
   // Navigation functions
   const navigatePrevious = () => {
     const newDate = new Date(calendarDate);
@@ -1660,7 +1678,7 @@ function JournalContent() {
                  </div>
                  
                  {/* Currency */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white dark:bg-[#0a1929] border border-slate-300 dark:border-gray-600 rounded-xl px-2 md:px-3 py-1">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white">Currency</span>
                    <select
                      value={currency}
@@ -1676,7 +1694,7 @@ function JournalContent() {
                  </div>
                  
                  {/* View Mode Toggle (Money/Units) */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white dark:bg-[#0a1929] border border-slate-300 dark:border-gray-600 rounded-xl px-2 md:px-3 py-1">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white">View</span>
                    <div className="flex rounded-lg overflow-hidden border border-slate-300 dark:border-gray-600">
                      <button
@@ -1712,7 +1730,7 @@ function JournalContent() {
                  </div>
                  
                  {/* Filters */}
-                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white/70 dark:bg-[#0a1929]/60 border border-slate-200 dark:border-gray-700 rounded-xl px-2 md:px-3 py-1 flex-1 relative z-30">
+                 <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 bg-white dark:bg-[#0a1929] border border-slate-300 dark:border-gray-600 rounded-xl px-2 md:px-3 py-1 flex-1 relative z-30">
                    <span className="text-xs md:text-sm font-medium text-slate-600 dark:text-white whitespace-nowrap">Filters</span>
                    <select
                      value={sport}
@@ -1747,7 +1765,7 @@ function JournalContent() {
                      <button
                        data-timeframe-button
                        onClick={() => setShowTimeframeDropdown((prev) => !prev)}
-                      className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-transparent bg-white dark:bg-[#0a1929] px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-[#0f1f35] transition-colors"
+                      className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-slate-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white hover:bg-slate-50 dark:hover:bg-[#0f1f35] transition-colors"
                      >
                        <span className="hidden sm:inline">Timeframe</span>
                        <span className="capitalize">{dateRange}</span>
@@ -1885,6 +1903,7 @@ function JournalContent() {
                           stroke={isDark ? '#ffffff' : '#000000'}
                           label={{ value: 'Number of Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
                           tick={{ fill: isDark ? '#ffffff' : '#000000' }}
+                          ticks={xAxisTicks}
                         />
                         <YAxis 
                           stroke={isDark ? '#ffffff' : '#000000'}
@@ -2469,6 +2488,17 @@ function JournalContent() {
               </div>
             </div>
             
+            {/* Mobile Insights Button */}
+            <div className="w-full">
+              <button
+                onClick={() => setShowMobileInsights(true)}
+                className="w-full px-3 py-1.5 rounded-lg text-sm font-medium bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white border border-slate-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-[#0f1f35] flex items-center justify-center gap-2"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Insights</span>
+              </button>
+            </div>
+            
             {/* Filters Section */}
             <div className="flex flex-col items-center gap-2 w-full">
               <span className="text-sm font-medium text-slate-600 dark:text-white">Filters</span>
@@ -2524,7 +2554,7 @@ function JournalContent() {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     dateRange === range
                       ? 'bg-purple-600 text-white shadow-md'
-                      : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600 hover:bg-white hover:text-slate-700 dark:hover:bg-gray-800 dark:hover:text-white'
+                      : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-gray-600 hover:bg-white hover:text-slate-700 dark:hover:bg-[#0f1f35] dark:hover:text-white'
                   }`}
                 >
                   {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -2538,7 +2568,7 @@ function JournalContent() {
           <div className="grid grid-cols-2 gap-2 border-t border-slate-200 dark:border-gray-700/50 p-3">
             {/* Bankroll - Only show in units mode, placed first */}
             {viewMode === 'units' && currentBankroll !== null && (
-              <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+              <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
                 <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Bankroll</span>
                 <span className="text-base font-semibold text-slate-900 dark:text-white">
                   {formatCurrency(currentBankroll)}
@@ -2547,7 +2577,7 @@ function JournalContent() {
             )}
             
             {/* Total P&L */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total P&L {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
               <div className={`text-base font-semibold ${
                 stats.totalPL > 0 ? 'text-green-600 dark:text-green-400' :
@@ -2559,25 +2589,25 @@ function JournalContent() {
             </div>
             
             {/* Total Staked */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Total Staked {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
               <span className="text-base font-semibold text-slate-900 dark:text-white">{formatValue(stats.totalStaked)}</span>
             </div>
             
             {/* Average Stake */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Avg Stake {viewMode === 'units' ? '(units)' : `(${currency})`}</span>
               <span className="text-base font-semibold text-slate-900 dark:text-white">{formatValue(stats.avgStake)}</span>
             </div>
             
             {/* WIN % */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">WIN %</span>
               <span className="text-base font-semibold text-slate-900 dark:text-white">{stats.winRate.toFixed(1)}%</span>
             </div>
             
             {/* ROI */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">ROI</span>
               <span className={`text-base font-semibold ${
                 stats.roi > 0 ? 'text-green-600 dark:text-green-400' :
@@ -2589,7 +2619,7 @@ function JournalContent() {
             </div>
             
             {/* Record */}
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
+            <div className="bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-3">
               <span className="text-sm font-medium text-slate-500 dark:text-white mb-1">Record</span>
               <div className="text-base font-semibold flex items-center gap-1">
                 <span className="text-green-600 dark:text-green-400">{stats.wins}</span>
@@ -2603,7 +2633,7 @@ function JournalContent() {
         </div>
 
         {/* 2. Profit/Loss Chart */}
-        <div className="chart-container-no-focus bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4">
+        <div className="chart-container-no-focus bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-4">
           <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-3">Profit/Loss Over Time</h3>
           <div className="w-full h-64 relative">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -2624,6 +2654,7 @@ function JournalContent() {
                   stroke={isDark ? '#ffffff' : '#000000'}
                   label={{ value: 'Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
                   tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 10 }}
+                  ticks={xAxisTicks}
                 />
                 <YAxis 
                   stroke={isDark ? '#ffffff' : '#000000'}
@@ -2659,7 +2690,7 @@ function JournalContent() {
         </div>
 
         {/* 3. Betting Calendar */}
-        <div className="bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 flex flex-col">
+        <div className="bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Betting Calendar</h3>
             <div className="flex gap-1.5">
@@ -2999,7 +3030,7 @@ function JournalContent() {
         </div>
 
         {/* 6. Bet History */}
-        <div className="bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 mb-4">
+        <div className="bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Bet History</h3>
             <div className="flex items-center gap-2">
@@ -3208,6 +3239,485 @@ function JournalContent() {
         </div>
       )}
       
+      {/* Mobile Insights Modal - Full Screen */}
+      {showMobileInsights && (
+        <div className="lg:hidden fixed inset-0 z-[100] bg-white dark:bg-[#0a1929] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Insights</h2>
+            <button
+              onClick={() => setShowMobileInsights(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-slate-600 dark:text-slate-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {(() => {
+              // Convert bets to JournalBet format for insights
+              const journalBetsForInsights: InsightsJournalBet[] = bets.map(bet => ({
+                id: bet.id,
+                date: bet.date,
+                sport: bet.sport,
+                market: bet.market,
+                selection: bet.selection,
+                stake: bet.stake,
+                odds: bet.odds,
+                result: bet.result as 'win' | 'loss' | 'void' | 'pending',
+                status: bet.status,
+                currency: bet.currency,
+                opponent: bet.opponent,
+                team: bet.team,
+                stat_type: bet.stat_type,
+                player_id: bet.player_id,
+                player_name: bet.player_name,
+                over_under: bet.over_under,
+                line: bet.line,
+                actual_value: bet.actual_value,
+                game_date: bet.game_date,
+                parlay_legs: bet.parlay_legs,
+              }));
+              
+              const insights = generateInsights(journalBetsForInsights);
+              const settledBets = journalBetsForInsights.filter(b => b.result === 'win' || b.result === 'loss');
+              
+              if (journalBetsForInsights.length === 0) {
+                return (
+                  <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
+                    <div className="text-sm">No bets in journal yet</div>
+                    <div className="text-xs mt-2">Add bets from the research pages to track your betting history</div>
+                  </div>
+                );
+              }
+              
+              if (settledBets.length < 10) {
+                return (
+                  <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
+                    <div className="text-sm">Add more bets to see insights</div>
+                    <div className="text-xs mt-2">You need at least 10 settled bets to generate insights</div>
+                    <div className="text-xs mt-1 text-slate-500 dark:text-slate-500">
+                      You have {settledBets.length} settled {settledBets.length === 1 ? 'bet' : 'bets'}
+                    </div>
+                  </div>
+                );
+              }
+              
+              if (insights.length === 0) {
+                return (
+                  <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
+                    <div className="text-sm">No insights available yet</div>
+                    <div className="text-xs mt-2">Keep betting to see patterns and insights</div>
+                  </div>
+                );
+              }
+              
+              // Filter insights - same logic as desktop right sidebar
+              const filteredInsights = insights.filter(insight => {
+                // Exclude pain insights from "all" filter - they only show when "pain" is explicitly selected
+                if (mobileInsightFilter === 'all' && insight.type === 'pain') {
+                  return false;
+                }
+                
+                if (mobileInsightFilter !== 'all') {
+                  if (mobileInsightFilter === 'info') {
+                    // Information filter includes both neutral and comparison insights (both use blue color now)
+                    if (insight.color !== 'blue' || (insight.type !== 'neutral' && insight.type !== 'comparison')) return false;
+                  } else if (mobileInsightFilter === 'pain') {
+                    // Pain filter only shows pain type insights
+                    if (insight.type !== 'pain') return false;
+                  } else {
+                    if (insight.color !== mobileInsightFilter) return false;
+                  }
+                }
+                // Filter by bet type (straight vs parlay)
+                if (mobileInsightBetTypeFilter !== 'all') {
+                  if (mobileInsightBetTypeFilter === 'parlay' && insight.category !== 'parlay') {
+                    return false;
+                  }
+                  if (mobileInsightBetTypeFilter === 'straight' && insight.category === 'parlay') {
+                    return false;
+                  }
+                }
+                
+                return true;
+              });
+              
+              // Sort insights - when showing "All", interleave by color to ensure mixed display
+              // When filtering by specific type, respect user's sort preference
+              let sortedFilteredInsights: Insight[];
+              
+              if (mobileInsightFilter === 'all') {
+                // When showing all, interleave insights by color for better mix
+                // Combine orange (neutral) and blue (comparison) into 'info' group
+                const colorGroups: Record<string, Insight[]> = {
+                  'red': [],
+                  'green': [],
+                  'info': [], // Combined neutral and comparison
+                  'yellow': []
+                };
+                
+                // Group by color while maintaining priority within each color
+                // Combine neutral and comparison insights (both blue) into 'info' group
+                filteredInsights.forEach(insight => {
+                  if (insight.color === 'blue' && (insight.type === 'neutral' || insight.type === 'comparison')) {
+                    if (!colorGroups['info']) colorGroups['info'] = [];
+                    colorGroups['info'].push(insight);
+                  } else {
+                    if (!colorGroups[insight.color]) colorGroups[insight.color] = [];
+                    colorGroups[insight.color].push(insight);
+                  }
+                });
+                
+                // Sort each color group by priority
+                Object.keys(colorGroups).forEach(color => {
+                  colorGroups[color].sort((a, b) => b.priority - a.priority);
+                });
+                
+                // Interleave: take one from each color group in round-robin fashion
+                const interleaved: Insight[] = [];
+                const maxLength = Math.max(...Object.values(colorGroups).map(g => g.length));
+                
+                for (let i = 0; i < maxLength; i++) {
+                  // Define color order for interleaving (red, green, info, yellow)
+                  const colorOrder = ['red', 'green', 'info', 'yellow'];
+                  
+                  // Shuffle the color order each round for better distribution
+                  const shuffledColors = [...colorOrder];
+                  if (i > 0) {
+                    // Rotate colors each round
+                    for (let j = 0; j < i % 4; j++) {
+                      shuffledColors.push(shuffledColors.shift()!);
+                    }
+                  }
+                  
+                  // Take one insight from each color if available
+                  for (const color of shuffledColors) {
+                    if (colorGroups[color] && colorGroups[color].length > i) {
+                      interleaved.push(colorGroups[color][i]);
+                    }
+                  }
+                }
+                
+                sortedFilteredInsights = interleaved;
+              } else {
+                // When filtering by specific type, always sort by priority
+                sortedFilteredInsights = [...filteredInsights].sort((a, b) => {
+                  return b.priority - a.priority;
+                });
+              }
+              
+              return (
+                <div>
+                  {/* Filters and Sorting */}
+                  <div className="p-4 border-b border-slate-200 dark:border-gray-700 space-y-3">
+                    <div className="grid grid-cols-5 gap-2">
+                      <button
+                        onClick={() => setMobileInsightFilter('all')}
+                        className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                          mobileInsightFilter === 'all'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setMobileInsightFilter('green')}
+                        className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                          mobileInsightFilter === 'green'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                        }`}
+                      >
+                        Wins
+                      </button>
+                      <button
+                        onClick={() => setMobileInsightFilter('red')}
+                        className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                          mobileInsightFilter === 'red'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
+                        }`}
+                      >
+                        Losses
+                      </button>
+                      <button
+                        onClick={() => setMobileInsightFilter('info')}
+                        className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                          mobileInsightFilter === 'info'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                        }`}
+                      >
+                        Info
+                      </button>
+                      <button
+                        onClick={() => setMobileInsightFilter('pain')}
+                        className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                          mobileInsightFilter === 'pain'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50'
+                        }`}
+                      >
+                        Pain
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setMobileInsightBetTypeFilter('all')}
+                          className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                            mobileInsightBetTypeFilter === 'all'
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => setMobileInsightBetTypeFilter('straight')}
+                          className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                            mobileInsightBetTypeFilter === 'straight'
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          Straight
+                        </button>
+                        <button
+                          onClick={() => setMobileInsightBetTypeFilter('parlay')}
+                          className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                            mobileInsightBetTypeFilter === 'parlay'
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          Parlays
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {filteredInsights.length !== insights.length && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Showing {filteredInsights.length} of {insights.length} insights
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Insights List */}
+                  <div className="p-4 space-y-3">
+                    {sortedFilteredInsights.length === 0 ? (
+                      <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                        <div className="text-sm">No insights match your filters</div>
+                        <button
+                          onClick={() => {
+                            setMobileInsightFilter('all');
+                            setMobileInsightBetTypeFilter('all');
+                          }}
+                          className="text-xs mt-2 text-purple-500 dark:text-purple-400 hover:underline"
+                        >
+                          Clear filters
+                        </button>
+                      </div>
+                    ) : (
+                      sortedFilteredInsights.map((insight) => {
+                        const getColorClasses = () => {
+                      switch (insight.color) {
+                        case 'red':
+                          return {
+                            border: 'border-red-500 dark:border-red-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-red-50 dark:bg-red-950/20',
+                            iconColor: 'text-red-600 dark:text-red-400',
+                          };
+                        case 'green':
+                          return {
+                            border: 'border-green-500 dark:border-green-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-green-50 dark:bg-green-950/20',
+                            iconColor: 'text-green-600 dark:text-green-400',
+                          };
+                        case 'blue':
+                          return {
+                            border: 'border-blue-500 dark:border-blue-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-blue-50 dark:bg-blue-950/20',
+                            iconColor: 'text-blue-600 dark:text-blue-400',
+                          };
+                        case 'yellow':
+                          return {
+                            border: 'border-yellow-500 dark:border-yellow-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-yellow-50 dark:bg-yellow-950/20',
+                            iconColor: 'text-yellow-600 dark:text-yellow-400',
+                          };
+                        case 'orange':
+                          return {
+                            border: 'border-orange-500 dark:border-orange-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-orange-50 dark:bg-orange-950/20',
+                            iconColor: 'text-orange-600 dark:text-orange-400',
+                          };
+                        default:
+                          return {
+                            border: 'border-gray-500 dark:border-gray-400',
+                            text: 'text-slate-900 dark:text-white',
+                            iconBg: 'bg-gray-50 dark:bg-gray-800',
+                            iconColor: 'text-gray-600 dark:text-gray-400',
+                          };
+                      }
+                    };
+                    
+                        const getIcon = () => {
+                          const colors = getColorClasses();
+                          const iconClass = `w-5 h-5 ${colors.iconColor}`;
+                          switch (insight.type) {
+                            case 'loss':
+                              return <TrendingDown className={iconClass} />;
+                            case 'win':
+                              return <TrendingUp className={iconClass} />;
+                            case 'comparison':
+                              return <BarChart3 className={iconClass} />;
+                            case 'streak':
+                              return <TrendingUp className={iconClass} />;
+                            case 'neutral':
+                              return <Minus className={iconClass} />;
+                            case 'pain':
+                              return <span className={iconClass} style={{ fontSize: '20px' }}>😢</span>;
+                            default:
+                              return <Lightbulb className={iconClass} />;
+                          }
+                            };
+                        
+                        const colors = getColorClasses();
+                        const isExpanded = expandedMobileInsights.has(insight.id);
+                        const isPainInsight = insight.type === 'pain';
+                        
+                        return (
+                          <div
+                            key={insight.id}
+                            className={`rounded-lg bg-slate-50 dark:bg-[#0a1929] border-2 ${colors.border} shadow-sm`}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className={`flex-shrink-0 w-10 h-10 rounded-md ${colors.iconBg} flex items-center justify-center`}>
+                                  {getIcon()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                              {isPainInsight ? (
+                                <div className="space-y-1">
+                                  <p className={`text-sm font-medium leading-relaxed ${colors.text}`}>
+                                    {insight.message}
+                                  </p>
+                                  {insight.potentialProfit !== undefined && (
+                                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                                      If they had hit, you would have made {formatValue(insight.potentialProfit, { showSign: true })} more profit.
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className={`text-sm font-medium leading-relaxed ${colors.text}`}>
+                                      {insight.message}
+                                    </p>
+                                    {insight.stats && (
+                                      <button
+                                        onClick={() => {
+                                          setExpandedMobileInsights(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(insight.id)) {
+                                              next.delete(insight.id);
+                                            } else {
+                                              next.add(insight.id);
+                                            }
+                                            return next;
+                                          });
+                                        }}
+                                        className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronUp className="w-4 h-4" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                  
+                                  {isExpanded && insight.stats && (
+                                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                      {insight.stats.winRate !== undefined && (
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="opacity-75">Win Rate:</span>
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-20 bg-current/20 rounded-full h-1.5">
+                                              <div
+                                                className={`h-1.5 rounded-full transition-all ${
+                                                  insight.stats.winRate >= 60 ? 'bg-green-500' :
+                                                  insight.stats.winRate >= 50 ? 'bg-yellow-500' :
+                                                  'bg-red-500'
+                                                }`}
+                                                style={{ width: `${insight.stats.winRate}%` }}
+                                              />
+                                            </div>
+                                            <span className="font-bold">{insight.stats.winRate}%</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                      {insight.stats.profit !== undefined && (
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="opacity-75">Profit:</span>
+                                          <span className="font-bold">{formatValue(insight.stats.profit, { showSign: true })}</span>
+                                        </div>
+                                      )}
+                                      {insight.stats.wagered !== undefined && (
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="opacity-75">Wagered:</span>
+                                          <span className="font-bold">{formatValue(insight.stats.wagered)}</span>
+                                        </div>
+                                      )}
+                                      {insight.stats.returned !== undefined && (
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="opacity-75">Returned:</span>
+                                          <span className="font-bold">{formatValue(insight.stats.returned)}</span>
+                                        </div>
+                                      )}
+                                      {insight.stats.roi !== undefined && (
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="opacity-75">ROI:</span>
+                                          <span className={`font-bold ${insight.stats.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            {insight.stats.roi >= 0 ? '+' : ''}{insight.stats.roi}%
+                                          </span>
+                                        </div>
+                                      )}
+                                      {insight.recommendation && (
+                                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                          <p className="text-xs text-slate-600 dark:text-slate-400 italic">
+                                            {insight.recommendation}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+      
       {/* Mobile Bottom Navigation - Always visible on mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
         {/* Profile Dropdown Menu - Shows above bottom nav */}
@@ -3237,63 +3747,6 @@ function JournalContent() {
           </div>
         )}
         
-        {/* Dashboard Dropdown Menu - Shows above bottom nav */}
-        {showDashboardDropdown && (
-          <div ref={dashboardDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowDashboardDropdown(false);
-                  if (!isPro) {
-                    router.push('/subscription');
-                    return;
-                  }
-                  router.push('/nba/research/dashboard?mode=player');
-                }}
-                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors flex items-center gap-2 ${
-                  !isPro
-                    ? 'text-gray-400 dark:text-gray-500'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span>Player Props</span>
-                {!isPro && (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-              <button
-                onClick={() => {
-                  setShowDashboardDropdown(false);
-                  router.push('/nba/research/dashboard?mode=team');
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Game Props
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Journal Dropdown Menu - Shows above bottom nav */}
-        {showJournalDropdown && (
-          <div ref={journalDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowJournalDropdown(false);
-                  router.push('/journal');
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                View Journal
-              </button>
-            </div>
-          </div>
-        )}
-        
         {/* Settings Dropdown Menu - Shows above bottom nav */}
         {showSettingsDropdown && (
           <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
@@ -3312,10 +3765,10 @@ function JournalContent() {
         )}
         
         <div className="grid grid-cols-4 h-16">
-          {/* Dashboard */}
+          {/* Props */}
           <button
-            data-dashboard-button
-            onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
+            data-props-button
+            onClick={() => router.push('/nba')}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3323,13 +3776,13 @@ function JournalContent() {
               <circle cx="12" cy="12" r="6" strokeWidth={2} />
               <circle cx="12" cy="12" r="2" strokeWidth={2} />
             </svg>
-            <span className="text-xs font-medium">Dashboard</span>
+            <span className="text-xs font-medium">Props</span>
           </button>
           
           {/* Journal */}
           <button
             data-journal-button
-            onClick={() => setShowJournalDropdown(!showJournalDropdown)}
+            onClick={() => router.push('/journal')}
             className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

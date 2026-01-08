@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTrackedBets } from "../contexts/TrackedBetsContext";
-import { Plus, X, TrendingUp, History, Target, RefreshCw, Search } from "lucide-react";
+import { Plus, X, TrendingUp, History, Target, RefreshCw, Search, ChevronDown, ChevronUp, Filter, TrendingDown, Minus, BarChart3, Lightbulb } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { formatOdds } from "@/lib/currencyUtils";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
@@ -27,6 +27,8 @@ interface JournalBet {
   player_name?: string | null;
   over_under?: 'over' | 'under' | null;
   line?: number | null;
+  actual_value?: number | null;
+  game_date?: string | null;
   parlay_legs?: Array<{
     playerName?: string;
     playerId?: string;
@@ -39,13 +41,27 @@ interface JournalBet {
 
 type TabType = 'tracked' | 'journal';
 
-interface Insight {
+export interface Insight {
   id: string;
-  type: 'loss' | 'win' | 'comparison' | 'streak';
+  type: 'loss' | 'win' | 'comparison' | 'streak' | 'neutral' | 'pain';
   category: 'stat' | 'player' | 'parlay' | 'over_under' | 'opponent' | 'bet_type';
   message: string;
   priority: number; // Higher = more important (for sorting)
-  color: 'red' | 'green' | 'yellow' | 'blue';
+  color: 'red' | 'green' | 'yellow' | 'blue' | 'orange';
+  // Additional data for expanded view
+  stats?: {
+    wins?: number;
+    losses?: number;
+    total?: number;
+    winRate?: number;
+    profit?: number;
+    wagered?: number;
+    returned?: number;
+    roi?: number;
+  };
+  relatedBets?: JournalBet[];
+  recommendation?: string;
+  potentialProfit?: number; // For pain points - what could have been
 }
 
 // Helper function to check if bet is a parlay
@@ -68,18 +84,44 @@ function getPlayerName(bet: JournalBet): string | null {
 // Helper function to format stat name for display
 function formatStatName(stat: string): string {
   const statMap: Record<string, string> = {
+    // Basic stats
     'pts': 'Points',
     'reb': 'Rebounds',
     'ast': 'Assists',
     'stl': 'Steals',
     'blk': 'Blocks',
     'fg3m': '3-Pointers Made',
+    // Combined stats
     'pr': 'Points + Rebounds',
     'pra': 'Points + Rebounds + Assists',
     'ra': 'Rebounds + Assists',
     'pa': 'Points + Assists',
+    // Game props (if they ever appear in player bets somehow)
+    'moneyline': 'Moneyline',
+    'spread': 'Spread',
+    'total_pts': 'Total Points',
+    'home_total': 'Home Total',
+    'away_total': 'Away Total',
+    'first_half_total': '1st Half Total',
+    'second_half_total': '2nd Half Total',
+    'q1_total': 'Q1 Total',
+    'q2_total': 'Q2 Total',
+    'q3_total': 'Q3 Total',
+    'q4_total': 'Q4 Total',
+    'q1_moneyline': 'Q1 Moneyline',
+    'q2_moneyline': 'Q2 Moneyline',
+    'q3_moneyline': 'Q3 Moneyline',
+    'q4_moneyline': 'Q4 Moneyline',
   };
-  return statMap[stat.toLowerCase()] || stat.charAt(0).toUpperCase() + stat.slice(1).toLowerCase();
+  const lowerStat = stat.toLowerCase();
+  if (statMap[lowerStat]) {
+    return statMap[lowerStat];
+  }
+  // Fallback: try to format nicely
+  return stat
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 // Message templates with personality
@@ -238,11 +280,12 @@ function getDeterministicMessage(insightId: string, templateKey: keyof typeof me
     hash = hash & hash; // Convert to 32-bit integer
   }
   const index = Math.abs(hash) % templates.length;
-  return templates[index](...args);
+  const templateFn = templates[index] as (...args: any[]) => string;
+  return templateFn(...args);
 }
 
 // Generate insights from journal bets
-function generateInsights(bets: JournalBet[]): Insight[] {
+export function generateInsights(bets: JournalBet[]): Insight[] {
   const insights: Insight[] = [];
   const MIN_BETS_FOR_INSIGHTS = 10;
   
@@ -284,6 +327,9 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   
   // === STRAIGHT BET INSIGHTS ===
   
+  // Track which stat+over/under combinations have insights to avoid duplicates at overall stat level
+  const statOverUnderWithInsights = new Set<string>();
+  
   // By stat type + over/under combination (e.g., "OVER for Rebounds")
   const statOverUnderGroups: Record<string, Record<string, { wins: number; losses: number; bets: JournalBet[] }>> = {};
   straightBets.forEach(bet => {
@@ -309,8 +355,57 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         const statName = formatStatName(stat);
         const overUnderLabel = overUnder.charAt(0).toUpperCase() + overUnder.slice(1);
         
+        const wagered = data.bets.reduce((sum, bet) => sum + bet.stake, 0);
+        const returned = data.bets.reduce((sum, bet) => {
+          if (bet.result === 'win') return sum + (bet.stake * bet.odds);
+          return sum;
+        }, 0);
+        const profit = returned - wagered;
+        const roi = wagered > 0 ? Math.round((profit / wagered) * 100) : 0;
+        
+        // Neutral/Orange insight - close to even (win rate 45-55%, or small profit/loss)
+        // Check this FIRST and mark that we have an insight for this stat
+        if (winRate >= 45 && winRate <= 55 && total >= 4) {
+          const isCloseToEven = Math.abs(winRate - 50) <= 5 && Math.abs(profit) < wagered * 0.1; // Within 10% of even
+          
+          if (isCloseToEven) {
+            statOverUnderWithInsights.add(`${stat}-${overUnder}`);
+            insights.push({
+              id: `stat-overunder-neutral-${stat}-${overUnder}`,
+              type: 'neutral',
+              category: 'stat',
+              message: `${overUnderLabel} ${statName} bets are basically breaking even - ${winRate}% win rate (${data.wins}/${total}). Not losing money, but not generating significant returns either.`,
+              priority: total * 3,
+              color: 'blue',
+              stats: {
+                wins: data.wins,
+                losses: data.losses,
+                total: total,
+                winRate: winRate,
+                profit: profit,
+                wagered: wagered,
+                returned: returned,
+                roi: roi,
+              },
+              relatedBets: data.bets,
+              recommendation: `${overUnderLabel} ${statName} bets are close to break-even. Consider whether the time and risk is worth the minimal returns, or try to identify patterns that could improve results.`,
+            });
+            // Don't create additional insights for this stat+over/under combo
+            return; // This exits the forEach iteration for this stat+over/under combination
+          }
+        }
+        
         // High win rate insight
         if (winRate >= 60 && total >= 3) {
+          statOverUnderWithInsights.add(`${stat}-${overUnder}`);
+          const wagered = data.bets.reduce((sum, bet) => sum + bet.stake, 0);
+          const returned = data.bets.reduce((sum, bet) => {
+            if (bet.result === 'win') return sum + (bet.stake * bet.odds);
+            return sum;
+          }, 0);
+          const profit = returned - wagered;
+          const roi = wagered > 0 ? Math.round((profit / wagered) * 100) : 0;
+          
           insights.push({
             id: `stat-overunder-win-${stat}-${overUnder}`,
             type: 'win',
@@ -318,10 +413,23 @@ function generateInsights(bets: JournalBet[]): Insight[] {
             message: getDeterministicMessage(`stat-overunder-win-${stat}-${overUnder}`, 'statOverUnderWin', winRate, data.wins, total, overUnderLabel, statName),
             priority: winRate * 10 + total * 5,
             color: 'green',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: total,
+              winRate: winRate,
+              profit: profit,
+              wagered: wagered,
+              returned: returned,
+              roi: roi,
+            },
+            relatedBets: data.bets,
+            recommendation: `Consider focusing more on ${overUnderLabel} ${statName} bets as you're seeing strong results here.`,
           });
         }
         // Low win rate insight - lowered thresholds to show more losses
-        if (winRate < 50 && total >= 3 && data.losses >= 2) {
+        if (winRate < 45 && total >= 3 && data.losses >= 2) {
+          statOverUnderWithInsights.add(`${stat}-${overUnder}`);
           insights.push({
             id: `stat-overunder-loss-${stat}-${overUnder}`,
             type: 'loss',
@@ -329,6 +437,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
             message: getDeterministicMessage(`stat-overunder-loss-${stat}-${overUnder}`, 'statOverUnderLoss', winRate, data.wins, total, overUnderLabel, statName),
             priority: data.losses * 15 + total * 5,
             color: 'red',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: total,
+              winRate: winRate,
+              profit: profit,
+              wagered: wagered,
+              returned: returned,
+              roi: roi,
+            },
+            relatedBets: data.bets,
+            recommendation: `You might want to reconsider ${overUnderLabel} ${statName} bets or analyze why they're not performing well.`,
           });
         }
       }
@@ -353,6 +473,7 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   });
   
   // Financial insights by stat
+  // Only create overall stat insights if we don't already have over/under insights for this stat
   Object.entries(statGroups).forEach(([stat, data]) => {
     const total = data.wins + data.losses;
     if (total >= 5 && data.wagered >= 50) {
@@ -360,8 +481,39 @@ function generateInsights(bets: JournalBet[]): Insight[] {
       const profit = data.returned - data.wagered;
       const roi = Math.round((profit / data.wagered) * 100);
       
+      // Check if we already have over/under insights for this stat
+      // If so, skip overall stat insights to avoid duplicates
+      const hasOverUnderInsight = statOverUnderWithInsights.has(`${stat}-over`) || statOverUnderWithInsights.has(`${stat}-under`);
+      if (hasOverUnderInsight) {
+        return; // Skip creating overall stat insight since we have more specific over/under insights
+      }
+      
+      // Neutral ROI insight - close to break-even
+      if (Math.abs(roi) >= -10 && Math.abs(roi) <= 10 && total >= 5 && Math.abs(profit) < data.wagered * 0.15) {
+        insights.push({
+          id: `stat-financial-neutral-${stat}`,
+          type: 'neutral',
+          category: 'stat',
+          message: `${statName} bets are basically break-even. You've wagered $${data.wagered.toFixed(2)} and returned $${data.returned.toFixed(2)} (${roi >= 0 ? '+' : ''}${roi}% ROI). Not terrible, but not profitable either.`,
+          priority: total * 2 + Math.abs(profit),
+          color: 'blue',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            winRate: Math.round((data.wins / total) * 100),
+            profit: profit,
+            wagered: data.wagered,
+            returned: data.returned,
+            roi: roi,
+          },
+          relatedBets: data.bets,
+          recommendation: `${statName} bets are hovering around break-even. The minimal returns may not justify the risk and time. Consider refining your approach or focusing on more profitable categories.`,
+        });
+      }
+      
       // Negative ROI insight - lowered threshold to show more losses
-      if (profit < 0 && Math.abs(profit) >= 10) {
+      if (profit < 0 && Math.abs(profit) >= 10 && Math.abs(roi) > 10) {
         insights.push({
           id: `stat-financial-loss-${stat}`,
           type: 'loss',
@@ -369,10 +521,21 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage(`stat-financial-loss-${stat}`, 'financialLoss', data.wagered, data.returned, roi, statName, total, profit),
           priority: Math.abs(profit) * 3 + total * 3 + data.losses * 5,
           color: 'red',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            profit: profit,
+            wagered: data.wagered,
+            returned: data.returned,
+            roi: roi,
+          },
+          relatedBets: data.bets,
+          recommendation: `${statName} bets are losing money. Consider reducing stakes or analyzing why they're underperforming.`,
         });
       }
       // Positive ROI insight
-      if (profit > 0 && profit >= 20) {
+      if (profit > 0 && profit >= 20 && roi > 10) {
         insights.push({
           id: `stat-financial-win-${stat}`,
           type: 'win',
@@ -380,13 +543,28 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage(`stat-financial-win-${stat}`, 'financialWin', data.wagered, data.returned, roi, statName, total, profit),
           priority: profit * 2 + total * 3,
           color: 'green',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            profit: profit,
+            wagered: data.wagered,
+            returned: data.returned,
+            roi: roi,
+          },
+          relatedBets: data.bets,
+          recommendation: `${statName} is one of your most profitable categories. Consider increasing focus here.`,
         });
       }
       
       // Also show loss insights for stats with many losses even if ROI isn't terrible
-      if (data.losses >= 4 && total >= 6) {
+      // Skip if we already have over/under insights for this stat to avoid duplicates
+      if (!hasOverUnderInsight && data.losses >= 4 && total >= 6) {
         const lossRate = Math.round((data.losses / total) * 100);
         if (lossRate >= 40) {
+          const profit = data.returned - data.wagered;
+          const roi = data.wagered > 0 ? Math.round((profit / data.wagered) * 100) : 0;
+          
           insights.push({
             id: `stat-loss-count-${stat}`,
             type: 'loss',
@@ -394,6 +572,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
             message: getDeterministicMessage(`stat-loss-count-${stat}`, 'statLossCount', data.losses, total, lossRate, statName),
             priority: data.losses * 12 + total * 3,
             color: 'red',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: total,
+              winRate: Math.round((data.wins / total) * 100),
+              profit: profit,
+              wagered: data.wagered,
+              returned: data.returned,
+              roi: roi,
+            },
+            relatedBets: data.bets,
+            recommendation: `${statName} bets have a high loss rate. Review your betting strategy for this category.`,
           });
         }
       }
@@ -417,8 +607,43 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   // Find worst player (most losses) - lowered threshold
   Object.entries(playerGroups).forEach(([player, data]) => {
     const total = data.wins + data.losses;
+    const wagered = data.bets.reduce((sum, bet) => sum + bet.stake, 0);
+    const returned = data.bets.reduce((sum, bet) => {
+      if (bet.result === 'win') return sum + (bet.stake * bet.odds);
+      return sum;
+    }, 0);
+    const profit = returned - wagered;
+    const winRate = Math.round((data.wins / total) * 100);
+    const lossRate = Math.round((data.losses / total) * 100);
+    const roi = wagered > 0 ? Math.round((profit / wagered) * 100) : 0;
+    
+    if (total >= 4) {
+      // Neutral player insight - close to break-even
+      if ((winRate >= 45 && winRate <= 55) && Math.abs(profit) < wagered * 0.12) {
+        insights.push({
+          id: `player-neutral-${player}`,
+          type: 'neutral',
+          category: 'player',
+          message: `${player} bets are basically break-even. ${winRate}% win rate (${data.wins}W-${data.losses}L) with ${roi >= 0 ? '+' : ''}${roi}% ROI. Not losing, but not making meaningful gains either.`,
+          priority: total * 2,
+          color: 'blue',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            winRate: winRate,
+            profit: profit,
+            wagered: wagered,
+            returned: returned,
+            roi: roi,
+          },
+          relatedBets: data.bets,
+          recommendation: `${player} bets are hovering around break-even. The minimal returns may not justify continued focus. Consider whether this player fits your strategy.`,
+        });
+      }
+    }
+    
     if (total >= 3 && data.losses >= 2) {
-      const lossRate = Math.round((data.losses / total) * 100);
       // Show if loss rate is 40% or more
       if (lossRate >= 40) {
         insights.push({
@@ -428,6 +653,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage(`player-loss-${player}`, 'playerLoss', data.losses, total, lossRate, player),
           priority: data.losses * 12 + total,
           color: 'red',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            winRate: winRate,
+            profit: profit,
+            wagered: wagered,
+            returned: returned,
+            roi: roi,
+          },
+          relatedBets: data.bets,
+          recommendation: `Consider avoiding ${player} bets or reviewing your approach to betting on this player.`,
         });
       }
     }
@@ -435,6 +672,13 @@ function generateInsights(bets: JournalBet[]): Insight[] {
     if (total >= 5 && data.wins >= 3) {
       const winRate = Math.round((data.wins / total) * 100);
       if (winRate >= 60) {
+        const wagered = data.bets.reduce((sum, bet) => sum + bet.stake, 0);
+        const returned = data.bets.reduce((sum, bet) => {
+          if (bet.result === 'win') return sum + (bet.stake * bet.odds);
+          return sum;
+        }, 0);
+        const profit = returned - wagered;
+        
         insights.push({
           id: `player-win-${player}`,
           type: 'win',
@@ -442,6 +686,17 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage(`player-win-${player}`, 'playerWin', winRate, data.wins, total, player),
           priority: winRate * 10 + total,
           color: 'green',
+          stats: {
+            wins: data.wins,
+            losses: data.losses,
+            total: total,
+            winRate: winRate,
+            profit: profit,
+            wagered: wagered,
+            returned: returned,
+          },
+          relatedBets: data.bets,
+          recommendation: `${player} is performing well for you. Consider continuing to focus on this player.`,
         });
       }
     }
@@ -455,6 +710,11 @@ function generateInsights(bets: JournalBet[]): Insight[] {
     const overWins = overBets.filter(b => b.result === 'win').length;
     const overLosses = overBets.filter(b => b.result === 'loss').length;
     const overWinRate = Math.round((overWins / overBets.length) * 100);
+    const overWagered = getTotalWagered(overBets);
+    const overReturned = getTotalReturned(overBets);
+    const overProfit = overReturned - overWagered;
+    const overROI = overWagered > 0 ? Math.round((overProfit / overWagered) * 100) : 0;
+    
     // Only show as loss if win rate is below 50% (actually losing)
     if (overLosses > overWins && overWinRate < 50) {
       insights.push({
@@ -464,6 +724,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         message: getDeterministicMessage('over-loss', 'overUnderLoss', overLosses, overWins, overWinRate, 'Over'),
         priority: overLosses * 12,
         color: 'red',
+        stats: {
+          wins: overWins,
+          losses: overLosses,
+          total: overBets.length,
+          winRate: overWinRate,
+          profit: overProfit,
+          wagered: overWagered,
+          returned: overReturned,
+          roi: overROI,
+        },
+        relatedBets: overBets,
+        recommendation: 'Over bets are underperforming. Consider focusing on Under bets or reviewing your Over betting strategy.',
       });
     } else if (overWins > overLosses && overWinRate >= 60) {
       // Show as win if win rate is 60% or higher
@@ -474,6 +746,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         message: getDeterministicMessage('over-win', 'overUnderWin', overWins, overLosses, overWinRate, 'Over'),
         priority: overWins * 10,
         color: 'green',
+        stats: {
+          wins: overWins,
+          losses: overLosses,
+          total: overBets.length,
+          winRate: overWinRate,
+          profit: overProfit,
+          wagered: overWagered,
+          returned: overReturned,
+          roi: overROI,
+        },
+        relatedBets: overBets,
+        recommendation: 'Over bets are working well for you! Consider focusing more on Over betting opportunities.',
       });
     }
   }
@@ -482,6 +766,11 @@ function generateInsights(bets: JournalBet[]): Insight[] {
     const underWins = underBets.filter(b => b.result === 'win').length;
     const underLosses = underBets.filter(b => b.result === 'loss').length;
     const underWinRate = Math.round((underWins / underBets.length) * 100);
+    const underWagered = getTotalWagered(underBets);
+    const underReturned = getTotalReturned(underBets);
+    const underProfit = underReturned - underWagered;
+    const underROI = underWagered > 0 ? Math.round((underProfit / underWagered) * 100) : 0;
+    
     // Only show as loss if win rate is below 50% (actually losing)
     if (underLosses > underWins && underWinRate < 50) {
       insights.push({
@@ -491,6 +780,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         message: getDeterministicMessage('under-loss', 'overUnderLoss', underLosses, underWins, underWinRate, 'Under'),
         priority: underLosses * 12,
         color: 'red',
+        stats: {
+          wins: underWins,
+          losses: underLosses,
+          total: underBets.length,
+          winRate: underWinRate,
+          profit: underProfit,
+          wagered: underWagered,
+          returned: underReturned,
+          roi: underROI,
+        },
+        relatedBets: underBets,
+        recommendation: 'Under bets are underperforming. Consider focusing on Over bets or reviewing your Under betting strategy.',
       });
     } else if (underWins > underLosses && underWinRate >= 60) {
       // Show as win if win rate is 60% or higher
@@ -501,6 +802,18 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         message: getDeterministicMessage('under-win', 'overUnderWin', underWins, underLosses, underWinRate, 'Under'),
         priority: underWins * 10,
         color: 'green',
+        stats: {
+          wins: underWins,
+          losses: underLosses,
+          total: underBets.length,
+          winRate: underWinRate,
+          profit: underProfit,
+          wagered: underWagered,
+          returned: underReturned,
+          roi: underROI,
+        },
+        relatedBets: underBets,
+        recommendation: 'Under bets are working well for you! Consider focusing more on Under betting opportunities.',
       });
     }
   }
@@ -511,6 +824,10 @@ function generateInsights(bets: JournalBet[]): Insight[] {
     const parlayWins = parlayBets.filter(b => b.result === 'win').length;
     const parlayLosses = parlayBets.filter(b => b.result === 'loss').length;
     const parlayWinRate = Math.round((parlayWins / parlayBets.length) * 100);
+    const parlayWagered = getTotalWagered(parlayBets);
+    const parlayReturned = getTotalReturned(parlayBets);
+    const parlayProfit = parlayReturned - parlayWagered;
+    const parlayROI = parlayWagered > 0 ? Math.round((parlayProfit / parlayWagered) * 100) : 0;
     
     if (parlayLosses >= 2 && parlayLosses > parlayWins) {
       insights.push({
@@ -520,39 +837,523 @@ function generateInsights(bets: JournalBet[]): Insight[] {
         message: getDeterministicMessage('parlay-loss', 'parlayLoss', parlayLosses, parlayBets.length),
         priority: parlayLosses * 15,
         color: 'red',
+        stats: {
+          wins: parlayWins,
+          losses: parlayLosses,
+          total: parlayBets.length,
+          winRate: parlayWinRate,
+          profit: parlayProfit,
+          wagered: parlayWagered,
+          returned: parlayReturned,
+          roi: parlayROI,
+        },
+        relatedBets: parlayBets,
+        recommendation: 'Parlays are losing money. Consider reducing parlay frequency or focusing on straight bets which may have better returns.',
       });
     }
     
-    // Analyze parlay legs by stat
-    const parlayStatGroups: Record<string, { wins: number; losses: number }> = {};
+    // Analyze parlay legs by player - track which players appear in winning vs losing parlays
+    const parlayPlayerGroups: Record<string, { wins: number; losses: number; legWins: number; legLosses: number; totalAppearances: number }> = {};
     parlayBets.forEach(bet => {
+      const parlayResult = bet.result === 'win';
+      if (bet.parlay_legs) {
+        bet.parlay_legs.forEach(leg => {
+          const playerName = leg.playerName;
+          if (playerName) {
+            if (!parlayPlayerGroups[playerName]) {
+              parlayPlayerGroups[playerName] = { wins: 0, losses: 0, legWins: 0, legLosses: 0, totalAppearances: 0 };
+            }
+            // Track if this player's parlay won or lost
+            if (parlayResult) {
+              parlayPlayerGroups[playerName].wins++;
+            } else {
+              parlayPlayerGroups[playerName].losses++;
+            }
+            // Track individual leg results
+            if (leg.won) {
+              parlayPlayerGroups[playerName].legWins++;
+            } else if (leg.won === false) {
+              parlayPlayerGroups[playerName].legLosses++;
+            }
+            parlayPlayerGroups[playerName].totalAppearances++;
+          }
+        });
+      }
+    });
+    
+    // Generate insights for players in parlays
+    Object.entries(parlayPlayerGroups).forEach(([player, data]) => {
+      const totalParlays = data.wins + data.losses;
+      if (totalParlays >= 3) {
+        const parlayWinRate = Math.round((data.wins / totalParlays) * 100);
+        const legWinRate = data.totalAppearances > 0 ? Math.round((data.legWins / data.totalAppearances) * 100) : 0;
+        
+        // High win rate when this player is in parlays
+        if (parlayWinRate >= 60 && totalParlays >= 3) {
+          insights.push({
+            id: `parlay-player-win-${player}`,
+            type: 'win',
+            category: 'parlay',
+            message: `When ${player} is in your parlays, you win ${parlayWinRate}% of the time (${data.wins}W-${data.losses}L)`,
+            priority: parlayWinRate * 5 + totalParlays * 3,
+            color: 'green',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${player} is a strong parlay performer for you. Consider including them more frequently in your parlay combinations.`,
+          });
+        }
+        
+        // Low win rate when this player is in parlays
+        if (parlayWinRate < 40 && data.losses >= 2 && totalParlays >= 3) {
+          insights.push({
+            id: `parlay-player-loss-${player}`,
+            type: 'loss',
+            category: 'parlay',
+            message: `When ${player} is in your parlays, you lose ${100 - parlayWinRate}% of the time (${data.wins}W-${data.losses}L)`,
+            priority: data.losses * 10 + totalParlays * 3,
+            color: 'red',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${player} is underperforming in your parlays. Consider removing them from parlay combinations or betting on them as straight bets instead.`,
+          });
+        }
+        
+        // Neutral win rate (break-even)
+        if (parlayWinRate >= 40 && parlayWinRate <= 60 && totalParlays >= 4) {
+          insights.push({
+            id: `parlay-player-neutral-${player}`,
+            type: 'neutral',
+            category: 'parlay',
+            message: `When ${player} is in your parlays, you win ${parlayWinRate}% of the time (${data.wins}W-${data.losses}L). Their individual leg win rate is ${legWinRate}%`,
+            priority: totalParlays * 2,
+            color: 'blue',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${player} has a neutral impact on your parlay performance. Consider whether their inclusion adds value or if you'd be better off with other players.`,
+          });
+        }
+      }
+    });
+    
+    // Analyze parlay legs by stat
+    const parlayStatGroups: Record<string, { wins: number; losses: number; legWins: number; legLosses: number }> = {};
+    parlayBets.forEach(bet => {
+      const parlayResult = bet.result === 'win';
       if (bet.parlay_legs) {
         bet.parlay_legs.forEach(leg => {
           if (leg.statType && leg.won !== null && leg.won !== undefined) {
             if (!parlayStatGroups[leg.statType]) {
-              parlayStatGroups[leg.statType] = { wins: 0, losses: 0 };
+              parlayStatGroups[leg.statType] = { wins: 0, losses: 0, legWins: 0, legLosses: 0 };
             }
-            if (leg.won) parlayStatGroups[leg.statType].wins++;
-            else parlayStatGroups[leg.statType].losses++;
+            // Track if parlay with this stat won or lost
+            if (parlayResult) {
+              parlayStatGroups[leg.statType].wins++;
+            } else {
+              parlayStatGroups[leg.statType].losses++;
+            }
+            // Track individual leg results
+            if (leg.won) {
+              parlayStatGroups[leg.statType].legWins++;
+            } else {
+              parlayStatGroups[leg.statType].legLosses++;
+            }
           }
         });
       }
     });
     
     Object.entries(parlayStatGroups).forEach(([stat, data]) => {
-      const total = data.wins + data.losses;
-      if (total >= 5 && data.losses >= 3) {
+      const totalParlays = data.wins + data.losses;
+      const totalLegs = data.legWins + data.legLosses;
+      
+      if (totalParlays >= 3) {
+        const parlayWinRate = Math.round((data.wins / totalParlays) * 100);
         const statName = formatStatName(stat);
-        insights.push({
-          id: `parlay-stat-loss-${stat}`,
-          type: 'loss',
-          category: 'parlay',
-          message: `Your parlay legs on ${statName} lose ${data.losses} out of ${total}`,
-          priority: data.losses * 8 + total,
-          color: 'red',
+        
+        // High win rate when this stat is in parlays
+        if (parlayWinRate >= 60 && totalParlays >= 3) {
+          insights.push({
+            id: `parlay-stat-win-${stat}`,
+            type: 'win',
+            category: 'parlay',
+            message: `When ${statName} is in your parlays, you win ${parlayWinRate}% of the time (${data.wins}W-${data.losses}L)`,
+            priority: parlayWinRate * 5 + totalParlays * 3,
+            color: 'green',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${statName} is performing well in your parlays. Consider including it more frequently in your parlay combinations.`,
+          });
+        }
+        
+        // Low win rate when this stat is in parlays
+        if (parlayWinRate < 40 && data.losses >= 2 && totalParlays >= 3) {
+          const legWinRate = totalLegs > 0 ? Math.round((data.legWins / totalLegs) * 100) : 0;
+          
+          insights.push({
+            id: `parlay-stat-loss-${stat}`,
+            type: 'loss',
+            category: 'parlay',
+            message: `When ${statName} is in your parlays, you lose ${100 - parlayWinRate}% of the time (${data.wins}W-${data.losses}L). Individual ${statName} legs win ${legWinRate}% of the time`,
+            priority: data.losses * 10 + totalParlays * 3,
+            color: 'red',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${statName} legs are frequently losing in your parlays (${legWinRate}% leg win rate). Consider removing ${statName} from parlay combinations or betting ${statName} as straight bets instead.`,
+          });
+        }
+        
+        // Neutral win rate
+        if (parlayWinRate >= 40 && parlayWinRate <= 60 && totalParlays >= 4) {
+          const legWinRate = totalLegs > 0 ? Math.round((data.legWins / totalLegs) * 100) : 0;
+          
+          insights.push({
+            id: `parlay-stat-neutral-${stat}`,
+            type: 'neutral',
+            category: 'parlay',
+            message: `When ${statName} is in your parlays, you win ${parlayWinRate}% of the time (${data.wins}W-${data.losses}L). Individual ${statName} legs win ${legWinRate}% of the time`,
+            priority: totalParlays * 2,
+            color: 'blue',
+            stats: {
+              wins: data.wins,
+              losses: data.losses,
+              total: totalParlays,
+              winRate: parlayWinRate,
+            },
+            recommendation: `${statName} has a neutral impact on your parlay performance. Consider whether it adds value to your parlay combinations.`,
+          });
+        }
+      }
+    });
+    
+    // Analyze parlay legs by stat + over/under combination
+    const parlayStatOverUnderGroups: Record<string, Record<string, { wins: number; losses: number; legWins: number; legLosses: number }>> = {};
+    parlayBets.forEach(bet => {
+      const parlayResult = bet.result === 'win';
+      if (bet.parlay_legs) {
+        bet.parlay_legs.forEach(leg => {
+          if (leg.statType && leg.overUnder) {
+            if (!parlayStatOverUnderGroups[leg.statType]) {
+              parlayStatOverUnderGroups[leg.statType] = {};
+            }
+            if (!parlayStatOverUnderGroups[leg.statType][leg.overUnder]) {
+              parlayStatOverUnderGroups[leg.statType][leg.overUnder] = { wins: 0, losses: 0, legWins: 0, legLosses: 0 };
+            }
+            // Track if parlay with this stat+over/under won or lost
+            if (parlayResult) {
+              parlayStatOverUnderGroups[leg.statType][leg.overUnder].wins++;
+            } else {
+              parlayStatOverUnderGroups[leg.statType][leg.overUnder].losses++;
+            }
+            // Track individual leg results
+            if (leg.won) {
+              parlayStatOverUnderGroups[leg.statType][leg.overUnder].legWins++;
+            } else if (leg.won === false) {
+              parlayStatOverUnderGroups[leg.statType][leg.overUnder].legLosses++;
+            }
+          }
         });
       }
     });
+    
+    // Generate insights for stat+over/under combinations in parlays
+    Object.entries(parlayStatOverUnderGroups).forEach(([stat, overUnderData]) => {
+      Object.entries(overUnderData).forEach(([overUnder, data]) => {
+        const totalParlays = data.wins + data.losses;
+        const totalLegs = data.legWins + data.legLosses;
+        
+        if (totalParlays >= 3) {
+          const parlayWinRate = Math.round((data.wins / totalParlays) * 100);
+          const legWinRate = totalLegs > 0 ? Math.round((data.legWins / totalLegs) * 100) : 0;
+          const statName = formatStatName(stat);
+          const overUnderLabel = overUnder.charAt(0).toUpperCase() + overUnder.slice(1);
+          
+          // High win rate when this stat+over/under is in parlays
+          if (parlayWinRate >= 60 && totalParlays >= 3) {
+            insights.push({
+              id: `parlay-stat-overunder-win-${stat}-${overUnder}`,
+              type: 'win',
+              category: 'parlay',
+              message: `When ${overUnderLabel} ${statName} is in your parlays, you win ${parlayWinRate}% of the time (${data.wins}W-${data.losses}L)`,
+              priority: parlayWinRate * 5 + totalParlays * 3,
+              color: 'green',
+              stats: {
+                wins: data.wins,
+                losses: data.losses,
+                total: totalParlays,
+                winRate: parlayWinRate,
+              },
+              recommendation: `${overUnderLabel} ${statName} is a strong parlay performer. Consider including it more frequently in your parlay combinations.`,
+            });
+          }
+          
+          // Low win rate when this stat+over/under is in parlays
+          if (parlayWinRate < 40 && data.losses >= 2 && totalParlays >= 3) {
+            insights.push({
+              id: `parlay-stat-overunder-loss-${stat}-${overUnder}`,
+              type: 'loss',
+              category: 'parlay',
+              message: `When ${overUnderLabel} ${statName} is in your parlays, you lose ${100 - parlayWinRate}% of the time (${data.wins}W-${data.losses}L)`,
+              priority: data.losses * 10 + totalParlays * 3,
+              color: 'red',
+              stats: {
+                wins: data.wins,
+                losses: data.losses,
+                total: totalParlays,
+                winRate: parlayWinRate,
+              },
+              recommendation: `${overUnderLabel} ${statName} is underperforming in your parlays (${legWinRate}% individual leg win rate). Consider removing it from parlay combinations.`,
+            });
+          }
+        }
+      });
+    });
+  }
+  
+  // === PAIN POINTS INSIGHTS (Near Misses) ===
+  // These are excluded from "all" filter and only show when "pain" filter is selected
+  
+  const painInsights: Insight[] = [];
+  
+  // 1. Parlays that lost by exactly 1 leg
+  const parlaysLostByOneLeg: JournalBet[] = [];
+  parlayBets.forEach(bet => {
+    if (bet.result === 'loss' && bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs.length > 1) {
+      // Filter out legs where won is null/undefined
+      const legs = bet.parlay_legs.filter(leg => leg && typeof leg === 'object' && (leg.won === true || leg.won === false));
+      if (legs.length === 0) {
+        // If no leg data, skip this bet for "lost by 1 leg" analysis
+        return;
+      }
+      const wonLegs = legs.filter(leg => leg.won === true).length;
+      const totalLegs = legs.length;
+      
+      // Lost by exactly 1 leg (e.g., 2 leg parlay with 1 won = lost by 1, or 3 leg parlay with 2 won = lost by 1)
+      if (totalLegs > 0 && totalLegs - wonLegs === 1) {
+        parlaysLostByOneLeg.push(bet);
+      }
+    }
+  });
+  
+  console.log(`[Pain Insights] Found ${parlaysLostByOneLeg.length} parlays lost by 1 leg out of ${parlayBets.filter(b => b.result === 'loss').length} total lost parlays`);
+  
+  if (parlaysLostByOneLeg.length >= 1) {
+    const totalWagered = getTotalWagered(parlaysLostByOneLeg);
+    let potentialProfit = 0;
+    parlaysLostByOneLeg.forEach(bet => {
+      // Calculate what profit would have been if it won
+      const potentialReturn = bet.stake * bet.odds;
+      potentialProfit += potentialReturn - bet.stake;
+    });
+    
+    painInsights.push({
+      id: 'pain-parlays-lost-by-one',
+      type: 'pain',
+      category: 'parlay',
+      message: `Your parlays have lost by 1 leg ${parlaysLostByOneLeg.length} time${parlaysLostByOneLeg.length > 1 ? 's' : ''}`,
+      priority: parlaysLostByOneLeg.length * 20,
+      color: 'orange',
+      stats: {
+        losses: parlaysLostByOneLeg.length,
+        total: parlaysLostByOneLeg.length,
+        wagered: totalWagered,
+      },
+      relatedBets: parlaysLostByOneLeg,
+      potentialProfit: potentialProfit,
+      recommendation: `If these ${parlaysLostByOneLeg.length} parlay${parlaysLostByOneLeg.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more. That's tough.`,
+    });
+  }
+  
+  // 2. Straight bets where player missed by small margins (0.5, 1, 1.5, etc.)
+  const closeMisses: Array<{ bet: JournalBet; margin: number; potentialProfit: number }> = [];
+  
+  straightBets.forEach(bet => {
+    if (bet.result === 'loss' && bet.actual_value !== null && bet.actual_value !== undefined && 
+        bet.line !== null && bet.line !== undefined && bet.stat_type && bet.over_under) {
+      const actual = bet.actual_value;
+      const line = bet.line;
+      let margin: number | null = null;
+      
+      if (bet.over_under === 'over') {
+        margin = line - actual; // How much they missed by
+      } else if (bet.over_under === 'under') {
+        margin = actual - line; // How much they missed by
+      }
+      
+      // Only track misses by 2 or less (very close)
+      if (margin !== null && margin > 0 && margin <= 2) {
+        const potentialReturn = bet.stake * bet.odds;
+        const potentialProfit = potentialReturn - bet.stake;
+        closeMisses.push({ bet, margin, potentialProfit });
+      }
+    }
+  });
+  
+  // Group close misses by player
+  const playerCloseMisses: Record<string, Array<{ bet: JournalBet; margin: number; potentialProfit: number }>> = {};
+  closeMisses.forEach(miss => {
+    const playerName = miss.bet.player_name || getPlayerName(miss.bet) || 'Unknown';
+    if (!playerCloseMisses[playerName]) {
+      playerCloseMisses[playerName] = [];
+    }
+    playerCloseMisses[playerName].push(miss);
+  });
+  
+  // Generate insights for players with multiple close misses
+  Object.entries(playerCloseMisses).forEach(([player, misses]) => {
+    if (misses.length >= 2) {
+      const totalPotentialProfit = misses.reduce((sum, m) => sum + m.potentialProfit, 0);
+      const avgMargin = misses.reduce((sum, m) => sum + m.margin, 0) / misses.length;
+      const statName = misses[0].bet.stat_type ? formatStatName(misses[0].bet.stat_type) : 'stat';
+      
+      // Count misses by specific margins
+      const missesByHalf = misses.filter(m => m.margin <= 0.5).length;
+      const missesByOne = misses.filter(m => m.margin > 0.5 && m.margin <= 1).length;
+      const missesByOneAndHalf = misses.filter(m => m.margin > 1 && m.margin <= 1.5).length;
+      
+      let marginText = '';
+      if (missesByHalf > 0) {
+        marginText = '0.5';
+      } else if (missesByOne > 0) {
+        marginText = '1';
+      } else {
+        marginText = '2';
+      }
+      
+      painInsights.push({
+        id: `pain-player-close-${player}`,
+        type: 'pain',
+        category: 'player',
+        message: `${player} has missed ${statName} by ${marginText} ${misses.length} time${misses.length > 1 ? 's' : ''}`,
+        priority: misses.length * 15 + (missesByHalf > 0 ? 50 : 0),
+        color: 'orange',
+        stats: {
+          losses: misses.length,
+          total: misses.length,
+        },
+        relatedBets: misses.map(m => m.bet),
+        potentialProfit: totalPotentialProfit,
+        recommendation: `If ${player} had hit these ${misses.length} bet${misses.length > 1 ? 's' : ''}, you would have made $${totalPotentialProfit.toFixed(2)} more. Average miss: ${avgMargin.toFixed(1)}.`,
+      });
+    }
+  });
+  
+  // Also create a general close misses insight if we have enough
+  if (closeMisses.length >= 3) {
+    const totalPotentialProfit = closeMisses.reduce((sum, m) => sum + m.potentialProfit, 0);
+    const avgMargin = closeMisses.reduce((sum, m) => sum + m.margin, 0) / closeMisses.length;
+    const missesByHalf = closeMisses.filter(m => m.margin <= 0.5).length;
+    
+    painInsights.push({
+      id: 'pain-general-close-misses',
+      type: 'pain',
+      category: 'bet_type',
+      message: `You've had ${closeMisses.length} straight bet${closeMisses.length > 1 ? 's' : ''} miss by 2 or less`,
+      priority: closeMisses.length * 10 + (missesByHalf > 0 ? 30 : 0),
+      color: 'orange',
+      stats: {
+        losses: closeMisses.length,
+        total: closeMisses.length,
+      },
+      relatedBets: closeMisses.map(m => m.bet),
+      potentialProfit: totalPotentialProfit,
+      recommendation: `If these ${closeMisses.length} close calls had hit, you would have made $${totalPotentialProfit.toFixed(2)} more. Average miss: ${avgMargin.toFixed(1)}.`,
+    });
+  }
+  
+  // Fallback: If we have lost parlays but no pain insights generated yet, show basic pain insight
+  // This will show ANY lost parlays, even if we don't have leg data
+  if (painInsights.length === 0 && parlayBets.length > 0) {
+    const lostParlays = parlayBets.filter(b => b.result === 'loss');
+    if (lostParlays.length >= 1) {
+      const totalWagered = getTotalWagered(lostParlays);
+      let potentialProfit = 0;
+      lostParlays.forEach(bet => {
+        const potentialReturn = bet.stake * bet.odds;
+        potentialProfit += potentialReturn - bet.stake;
+      });
+      
+      painInsights.push({
+        id: 'pain-parlays-lost-basic',
+        type: 'pain',
+        category: 'parlay',
+        message: `You've lost ${lostParlays.length} parlay${lostParlays.length > 1 ? 's' : ''}`,
+        priority: lostParlays.length * 10,
+        color: 'orange',
+        stats: {
+          losses: lostParlays.length,
+          total: lostParlays.length,
+          wagered: totalWagered,
+        },
+        relatedBets: lostParlays,
+        potentialProfit: potentialProfit,
+        recommendation: `If these ${lostParlays.length} parlay${lostParlays.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more.`,
+      });
+    }
+  }
+  
+  // Fallback: If we have lost straight bets with actual_value but no close misses, show basic pain insight
+  if (painInsights.length === 0 && straightBets.length > 0) {
+    const lostStraightBets = straightBets.filter(b => b.result === 'loss' && b.actual_value !== null && b.actual_value !== undefined);
+    if (lostStraightBets.length >= 3) {
+      const totalWagered = getTotalWagered(lostStraightBets);
+      let potentialProfit = 0;
+      lostStraightBets.forEach(bet => {
+        const potentialReturn = bet.stake * bet.odds;
+        potentialProfit += potentialReturn - bet.stake;
+      });
+      
+      painInsights.push({
+        id: 'pain-straight-lost-basic',
+        type: 'pain',
+        category: 'bet_type',
+        message: `You've lost ${lostStraightBets.length} straight bet${lostStraightBets.length > 1 ? 's' : ''}`,
+        priority: lostStraightBets.length * 5,
+        color: 'orange',
+        stats: {
+          losses: lostStraightBets.length,
+          total: lostStraightBets.length,
+          wagered: totalWagered,
+        },
+        relatedBets: lostStraightBets.slice(0, 10), // Limit to avoid too many
+        potentialProfit: potentialProfit,
+        recommendation: `If these ${lostStraightBets.length} bet${lostStraightBets.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more.`,
+      });
+    }
+  }
+  
+  // Add pain insights to main insights array (but they'll be filtered out from "all")
+  insights.push(...painInsights);
+  
+  // Debug logging for pain insights
+  if (painInsights.length > 0) {
+    console.log(`[Pain Insights] Generated ${painInsights.length} pain insights:`, painInsights.map(i => ({ id: i.id, type: i.type, message: i.message, category: i.category, color: i.color })));
+  } else {
+    const lostParlays = parlayBets.filter(b => b.result === 'loss');
+    const lostWithActualValue = straightBets.filter(b => b.result === 'loss' && b.actual_value !== null && b.actual_value !== undefined);
+    console.log(`[Pain Insights] No pain insights generated. Lost parlays: ${lostParlays.length}, Lost straight bets with actual_value: ${lostWithActualValue.length}, Total parlay bets: ${parlayBets.length}, Total straight bets: ${straightBets.length}`);
+    if (lostParlays.length > 0) {
+      console.log(`[Pain Insights] Sample lost parlay:`, lostParlays[0]);
+    }
   }
   
   // === COMPARISON INSIGHTS ===
@@ -565,6 +1366,16 @@ function generateInsights(bets: JournalBet[]): Insight[] {
     const difference = Math.abs(straightWinRate - parlayWinRate);
     
     if (difference >= 10) {
+      const straightWagered = getTotalWagered(straightBets);
+      const straightReturned = getTotalReturned(straightBets);
+      const straightProfit = straightReturned - straightWagered;
+      const straightROI = straightWagered > 0 ? Math.round((straightProfit / straightWagered) * 100) : 0;
+      
+      const parlayWagered = getTotalWagered(parlayBets);
+      const parlayReturned = getTotalReturned(parlayBets);
+      const parlayProfit = parlayReturned - parlayWagered;
+      const parlayROI = parlayWagered > 0 ? Math.round((parlayProfit / parlayWagered) * 100) : 0;
+      
       if (straightWinRate > parlayWinRate) {
         insights.push({
           id: 'comparison-straight-better',
@@ -573,6 +1384,17 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage('comparison-straight-better', 'comparison', difference, straightWinRate, parlayWinRate, 'straight'),
           priority: difference * 10 + straightBets.length + parlayBets.length,
           color: 'blue',
+          stats: {
+            wins: straightBets.filter(b => b.result === 'win').length,
+            losses: straightBets.filter(b => b.result === 'loss').length,
+            total: straightBets.length,
+            winRate: straightWinRate,
+            profit: straightProfit,
+            wagered: straightWagered,
+            returned: straightReturned,
+            roi: straightROI,
+          },
+          recommendation: `Straight bets are significantly outperforming parlays (${straightWinRate}% vs ${parlayWinRate}% win rate). Consider focusing more on straight bets.`,
         });
       } else {
         insights.push({
@@ -582,6 +1404,17 @@ function generateInsights(bets: JournalBet[]): Insight[] {
           message: getDeterministicMessage('comparison-parlay-better', 'comparison', difference, straightWinRate, parlayWinRate, 'parlay'),
           priority: difference * 10 + straightBets.length + parlayBets.length,
           color: 'blue',
+          stats: {
+            wins: parlayBets.filter(b => b.result === 'win').length,
+            losses: parlayBets.filter(b => b.result === 'loss').length,
+            total: parlayBets.length,
+            winRate: parlayWinRate,
+            profit: parlayProfit,
+            wagered: parlayWagered,
+            returned: parlayReturned,
+            roi: parlayROI,
+          },
+          recommendation: `Parlays are significantly outperforming straight bets (${parlayWinRate}% vs ${straightWinRate}% win rate). Consider incorporating more parlays into your strategy.`,
         });
       }
     }
@@ -622,9 +1455,12 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   
   // Separate insights by color
   const redInsights = sortedInsights.filter(i => i.color === 'red');
-  const blueInsights = sortedInsights.filter(i => i.color === 'blue');
   const greenInsights = sortedInsights.filter(i => i.color === 'green');
   const yellowInsights = sortedInsights.filter(i => i.color === 'yellow');
+  // Combine neutral and comparison insights (both use blue color) into info group
+  const infoInsights = sortedInsights.filter(i => i.color === 'blue' && (i.type === 'neutral' || i.type === 'comparison'));
+  // Orange insights (pain points) - these are excluded from "all" filter but kept in the array for when "pain" filter is selected
+  const orangeInsights = sortedInsights.filter(i => i.color === 'orange' && i.type === 'pain');
   
   // Strategy: Round-robin selection to ensure good color distribution
   const finalInsights: Insight[] = [];
@@ -638,20 +1474,23 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   };
   
   // Ensure we have at least 2 of each important color (if available)
+  // NOTE: Orange (pain) insights are NOT added to finalInsights here - they're kept in the sortedInsights array
+  // and will be available when the "pain" filter is selected. This way they don't appear in "all" view.
   const guaranteedRed = redInsights.slice(0, Math.min(2, redInsights.length));
-  const guaranteedBlue = blueInsights.slice(0, Math.min(2, blueInsights.length));
+  const guaranteedInfo = infoInsights.slice(0, Math.min(2, infoInsights.length));
   const guaranteedGreen = greenInsights.slice(0, Math.min(2, greenInsights.length));
   
   // Get remaining insights (after guaranteed ones)
   const remainingRed = redInsights.slice(guaranteedRed.length);
-  const remainingBlue = blueInsights.slice(guaranteedBlue.length);
+  const remainingInfo = infoInsights.slice(guaranteedInfo.length);
   const remainingGreen = greenInsights.slice(guaranteedGreen.length);
   
   // Create color groups with all insights (guaranteed + remaining)
+  // Orange (pain) insights are NOT included here - they stay in the original sortedInsights array
   const colorGroups: Array<{ color: string; insights: Insight[] }> = [
     { color: 'red', insights: [...guaranteedRed, ...remainingRed] },
     { color: 'green', insights: [...guaranteedGreen, ...remainingGreen] },
-    { color: 'blue', insights: [...guaranteedBlue, ...remainingBlue] },
+    { color: 'info', insights: [...guaranteedInfo, ...remainingInfo] },
     { color: 'yellow', insights: yellowInsights }
   ].filter(group => group.insights.length > 0);
   
@@ -707,8 +1546,12 @@ function generateInsights(bets: JournalBet[]): Insight[] {
   
   // Final shuffle to break up any remaining patterns
   // Use a more aggressive shuffle that prevents adjacent similar colors
+  // IMPORTANT: Include orange (pain) insights so they're available when "pain" filter is selected
+  // They won't show in "all" due to filter logic, but need to be in the returned array
   const finalShuffled: Insight[] = [];
-  const remaining = [...finalInsights];
+  // Include all finalInsights PLUS orange (pain) insights (they're excluded from finalInsights above)
+  // orangeInsights is already defined above, so just reuse it
+  const remaining = [...finalInsights, ...orangeInsights];
   
   // Enhanced shuffle: avoid placing same color next to each other when possible
   while (remaining.length > 0) {
@@ -807,6 +1650,11 @@ export default function RightSidebar({
   const [advancedTeamDropdownOpen, setAdvancedTeamDropdownOpen] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const PROPS_PER_PAGE = 15;
+  
+  // Insights filtering and UI state
+  const [insightFilter, setInsightFilter] = useState<'all' | 'red' | 'green' | 'info' | 'yellow' | 'pain'>('all');
+  const [insightBetTypeFilter, setInsightBetTypeFilter] = useState<'all' | 'straight' | 'parlay'>('all');
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
 
   // Handle image loading errors
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, team: string) => {
@@ -1663,86 +2511,437 @@ export default function RightSidebar({
               );
             }
             
+            // Filter insights
+            const filteredInsights = insights.filter(insight => {
+              // Exclude pain insights from "all" filter - they only show when "pain" is explicitly selected
+              if (insightFilter === 'all' && insight.type === 'pain') {
+                return false;
+              }
+              
+              if (insightFilter !== 'all') {
+                if (insightFilter === 'info') {
+                  // Information filter includes both neutral and comparison insights (both use blue color now)
+                  if (insight.color !== 'blue' || (insight.type !== 'neutral' && insight.type !== 'comparison')) return false;
+                } else if (insightFilter === 'pain') {
+                  // Pain filter only shows pain type insights
+                  if (insight.type !== 'pain') return false;
+                } else {
+                  if (insight.color !== insightFilter) return false;
+                }
+              }
+              // Filter by bet type (straight vs parlay)
+              if (insightBetTypeFilter !== 'all') {
+                if (insightBetTypeFilter === 'parlay' && insight.category !== 'parlay') {
+                  if (insight.type === 'pain') {
+                    console.log(`[Pain Filter] ❌ Filtered out (not parlay category):`, insight.id, 'category:', insight.category);
+                  }
+                  return false;
+                }
+                if (insightBetTypeFilter === 'straight' && insight.category === 'parlay') {
+                  if (insight.type === 'pain') {
+                    console.log(`[Pain Filter] ❌ Filtered out (is parlay, filter wants straight):`, insight.id, 'category:', insight.category);
+                  }
+                  return false;
+                }
+              }
+              
+              // Debug: log pain insights that pass all filters
+              if (insight.type === 'pain' && insightFilter === 'pain') {
+                console.log(`[Pain Filter] ✅ INCLUDED:`, insight.id, insight.message, 'category:', insight.category, 'betTypeFilter:', insightBetTypeFilter);
+              }
+              
+              return true;
+            });
+            
+            // Debug summary
+            if (insightFilter === 'pain') {
+              const totalPainInsights = insights.filter(i => i.type === 'pain').length;
+              console.log(`[Pain Filter] SUMMARY: ${filteredInsights.length} pain insights shown out of ${totalPainInsights} total. Filters: insightFilter="${insightFilter}", betTypeFilter="${insightBetTypeFilter}"`);
+            }
+            
+            // Sort insights - when showing "All", interleave by color to ensure mixed display
+            // When filtering by specific type, respect user's sort preference
+            let sortedFilteredInsights: Insight[];
+            
+            if (insightFilter === 'all') {
+              // When showing all, interleave insights by color for better mix
+              // Combine orange (neutral) and blue (comparison) into 'info' group
+              const colorGroups: Record<string, Insight[]> = {
+                'red': [],
+                'green': [],
+                'info': [], // Combined neutral and comparison
+                'yellow': []
+              };
+              
+              // Group by color while maintaining priority within each color
+              // Combine neutral and comparison insights (both blue) into 'info' group
+              filteredInsights.forEach(insight => {
+                if (insight.color === 'blue' && (insight.type === 'neutral' || insight.type === 'comparison')) {
+                  if (!colorGroups['info']) colorGroups['info'] = [];
+                  colorGroups['info'].push(insight);
+                } else {
+                  if (!colorGroups[insight.color]) colorGroups[insight.color] = [];
+                  colorGroups[insight.color].push(insight);
+                }
+              });
+              
+              // Sort each color group by priority
+              Object.keys(colorGroups).forEach(color => {
+                colorGroups[color].sort((a, b) => b.priority - a.priority);
+              });
+              
+              // Interleave: take one from each color group in round-robin fashion
+              const interleaved: Insight[] = [];
+              const maxLength = Math.max(...Object.values(colorGroups).map(g => g.length));
+              
+              for (let i = 0; i < maxLength; i++) {
+                // Define color order for interleaving (red, green, info, yellow)
+                const colorOrder = ['red', 'green', 'info', 'yellow'];
+                
+                // Shuffle the color order each round for better distribution
+                const shuffledColors = [...colorOrder];
+                if (i > 0) {
+                  // Rotate colors each round
+                  for (let j = 0; j < i % 4; j++) {
+                    shuffledColors.push(shuffledColors.shift()!);
+                  }
+                }
+                
+                // Take one insight from each color if available
+                for (const color of shuffledColors) {
+                  if (colorGroups[color] && colorGroups[color].length > i) {
+                    interleaved.push(colorGroups[color][i]);
+                  }
+                }
+              }
+              
+              sortedFilteredInsights = interleaved;
+            } else {
+              // When filtering by specific type, always sort by priority
+              sortedFilteredInsights = [...filteredInsights].sort((a, b) => {
+                return b.priority - a.priority;
+              });
+            }
+            
+            const toggleInsight = (id: string) => {
+              setExpandedInsights(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) {
+                  next.delete(id);
+                } else {
+                  next.add(id);
+                }
+                return next;
+              });
+            };
+            
             return (
-              <div className="p-4 space-y-3">
-                {insights.map((insight) => {
+              <div className="p-4">
+                {/* Filters and Sorting */}
+                <div className="mb-4 space-y-2">
+                  <div className="grid grid-cols-5 gap-2">
+                    <button
+                      onClick={() => setInsightFilter('all')}
+                      className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                        insightFilter === 'all'
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setInsightFilter('green')}
+                      className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                        insightFilter === 'green'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                      }`}
+                    >
+                      Wins
+                    </button>
+                    <button
+                      onClick={() => setInsightFilter('red')}
+                      className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                        insightFilter === 'red'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
+                      }`}
+                    >
+                      Losses
+                    </button>
+                    <button
+                      onClick={() => setInsightFilter('info')}
+                      className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                        insightFilter === 'info'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                      }`}
+                    >
+                      Info
+                    </button>
+                    <button
+                      onClick={() => setInsightFilter('pain')}
+                      className={`text-xs px-2 py-2 rounded-lg transition-colors font-medium ${
+                        insightFilter === 'pain'
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50'
+                      }`}
+                    >
+                      Pain
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setInsightBetTypeFilter('all')}
+                        className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                          insightBetTypeFilter === 'all'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setInsightBetTypeFilter('straight')}
+                        className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                          insightBetTypeFilter === 'straight'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Straight
+                      </button>
+                      <button
+                        onClick={() => setInsightBetTypeFilter('parlay')}
+                        className={`text-xs px-2 py-1 rounded-lg transition-colors font-medium ${
+                          insightBetTypeFilter === 'parlay'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Parlays
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {filteredInsights.length !== insights.length && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Showing {filteredInsights.length} of {insights.length} insights
+                    </div>
+                  )}
+                </div>
+                
+                {/* Insights List */}
+                <div className="space-y-3">
+                  {sortedFilteredInsights.length === 0 ? (
+                    <div className="p-4 text-center text-black dark:text-white opacity-70">
+                      <div className="text-sm">No insights match your filters</div>
+                      <button
+                        onClick={() => {
+                          setInsightFilter('all');
+                          setInsightBetTypeFilter('all');
+                        }}
+                        className="text-xs mt-2 text-purple-500 dark:text-purple-400 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  ) : (
+                    sortedFilteredInsights.map((insight) => {
                   const getColorClasses = () => {
                     switch (insight.color) {
                       case 'red':
                         return {
-                          border: 'border-l-4 border-red-500 dark:border-red-400',
-                          bg: 'bg-red-50/80 dark:bg-red-950/30',
-                          text: 'text-red-900 dark:text-red-100',
-                          iconBg: 'bg-red-100 dark:bg-red-900/50',
+                          border: 'border-red-500 dark:border-red-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-red-50 dark:bg-red-950/20',
+                          iconColor: 'text-red-600 dark:text-red-400',
                         };
                       case 'green':
                         return {
-                          border: 'border-l-4 border-green-500 dark:border-green-400',
-                          bg: 'bg-green-50/80 dark:bg-green-950/30',
-                          text: 'text-green-900 dark:text-green-100',
-                          iconBg: 'bg-green-100 dark:bg-green-900/50',
+                          border: 'border-green-500 dark:border-green-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-green-50 dark:bg-green-950/20',
+                          iconColor: 'text-green-600 dark:text-green-400',
                         };
                       case 'blue':
                         return {
-                          border: 'border-l-4 border-blue-500 dark:border-blue-400',
-                          bg: 'bg-blue-50/80 dark:bg-blue-950/30',
-                          text: 'text-blue-900 dark:text-blue-100',
-                          iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+                          border: 'border-blue-500 dark:border-blue-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-blue-50 dark:bg-blue-950/20',
+                          iconColor: 'text-blue-600 dark:text-blue-400',
                         };
                       case 'yellow':
                         return {
-                          border: 'border-l-4 border-yellow-500 dark:border-yellow-400',
-                          bg: 'bg-yellow-50/80 dark:bg-yellow-950/30',
-                          text: 'text-yellow-900 dark:text-yellow-100',
-                          iconBg: 'bg-yellow-100 dark:bg-yellow-900/50',
+                          border: 'border-yellow-500 dark:border-yellow-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-yellow-50 dark:bg-yellow-950/20',
+                          iconColor: 'text-yellow-600 dark:text-yellow-400',
+                        };
+                      case 'orange':
+                        return {
+                          border: 'border-orange-500 dark:border-orange-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-orange-50 dark:bg-orange-950/20',
+                          iconColor: 'text-orange-600 dark:text-orange-400',
                         };
                       default:
                         return {
-                          border: 'border-l-4 border-gray-300 dark:border-gray-600',
-                          bg: 'bg-gray-50/80 dark:bg-gray-900/30',
-                          text: 'text-gray-900 dark:text-gray-100',
-                          iconBg: 'bg-gray-100 dark:bg-gray-800',
+                          border: 'border-gray-500 dark:border-gray-400',
+                          text: 'text-slate-900 dark:text-white',
+                          iconBg: 'bg-gray-50 dark:bg-gray-800',
+                          iconColor: 'text-gray-600 dark:text-gray-400',
                         };
                     }
                   };
                   
                   const getIcon = () => {
+                    const iconClass = `w-4 h-4 ${colors.iconColor}`;
                     switch (insight.type) {
                       case 'loss':
-                        return '📉';
+                        return <TrendingDown className={iconClass} />;
                       case 'win':
-                        return '📈';
+                        return <TrendingUp className={iconClass} />;
                       case 'comparison':
-                        return '⚖️';
+                        return <BarChart3 className={iconClass} />;
                       case 'streak':
-                        return '🔥';
+                        return <TrendingUp className={iconClass} />;
+                      case 'neutral':
+                        return <Minus className={iconClass} />;
+                      case 'pain':
+                        return <span className={iconClass} style={{ fontSize: '16px' }}>😢</span>;
                       default:
-                        return '💡';
+                        return <Lightbulb className={iconClass} />;
                     }
                   };
                   
-                  const colors = getColorClasses();
-                  
-                  return (
-                    <div
-                      key={insight.id}
-                      className={`rounded-r-lg ${colors.bg} ${colors.border} shadow-sm hover:shadow-md transition-shadow`}
-                    >
-                      <div className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-10 h-10 rounded-full ${colors.iconBg} flex items-center justify-center text-xl`}>
-                            {getIcon()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold leading-relaxed ${colors.text}`}>
-                              {insight.message}
-                            </p>
+                      const colors = getColorClasses();
+                      const isExpanded = expandedInsights.has(insight.id);
+                      const isPainInsight = insight.type === 'pain';
+                      
+                      return (
+                        <div
+                          key={insight.id}
+                          className={`rounded-lg bg-slate-50 dark:bg-[#0a1929] border-2 ${colors.border} shadow-sm hover:shadow-md transition-all ${isExpanded ? 'ring-1 ring-slate-400 dark:ring-gray-500' : ''}`}
+                        >
+                          <div className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className={`flex-shrink-0 w-8 h-8 rounded-md ${colors.iconBg} flex items-center justify-center`}>
+                                {getIcon()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                {isPainInsight ? (
+                                  // Pain insights: single line, no dropdown
+                                  <div className="space-y-1">
+                                    <p className={`text-sm font-medium leading-relaxed ${colors.text}`}>
+                                      {insight.message}
+                                    </p>
+                                    {insight.potentialProfit !== undefined && (
+                                      <p className="text-xs text-orange-600 dark:text-orange-400">
+                                        If they had hit, you would have made ${insight.potentialProfit.toFixed(2)} more profit.
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  // Regular insights: with expand/collapse
+                                  <>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className={`text-sm font-medium leading-relaxed ${colors.text}`}>
+                                        {insight.message}
+                                      </p>
+                                      <button
+                                        onClick={() => toggleInsight(insight.id)}
+                                        className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                        title={isExpanded ? 'Collapse' : 'Expand for details'}
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronUp className="w-4 h-4" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Expanded Details - only for non-pain insights */}
+                                    {isExpanded && (insight.stats || insight.potentialProfit !== undefined || insight.recommendation) && (
+                                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                    {insight.stats && insight.stats.winRate !== undefined && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="opacity-75">Win Rate:</span>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-20 bg-current/20 rounded-full h-1.5">
+                                            <div
+                                              className={`h-1.5 rounded-full transition-all ${
+                                                insight.stats.winRate >= 60 ? 'bg-green-500' :
+                                                insight.stats.winRate >= 50 ? 'bg-yellow-500' :
+                                                'bg-red-500'
+                                              }`}
+                                              style={{ width: `${insight.stats.winRate}%` }}
+                                            />
+                                          </div>
+                                          <span className="font-bold">{insight.stats.winRate}%</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {insight.stats && (insight.stats.wins !== undefined || insight.stats.losses !== undefined) && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="opacity-75">Record:</span>
+                                        <span className="font-bold">
+                                          {insight.stats.wins || 0}W - {insight.stats.losses || 0}L
+                                          {insight.stats.total !== undefined && ` (${insight.stats.total} total)`}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {insight.stats && insight.stats.profit !== undefined && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="opacity-75">Profit:</span>
+                                        <span className={`font-bold ${insight.stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                          ${insight.stats.profit >= 0 ? '+' : ''}{insight.stats.profit.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {insight.stats && insight.stats.roi !== undefined && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="opacity-75">ROI:</span>
+                                        <span className={`font-bold ${insight.stats.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                          {insight.stats.roi >= 0 ? '+' : ''}{insight.stats.roi}%
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {insight.potentialProfit !== undefined && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="opacity-75">Potential Profit (if hit):</span>
+                                        <span className="font-bold text-orange-600 dark:text-orange-400">
+                                          +${insight.potentialProfit.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {insight.recommendation && (
+                                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Recommendation:</div>
+                                        <div className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">{insight.recommendation}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })
+                  )}
+                </div>
               </div>
             );
           })()

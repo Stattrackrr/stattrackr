@@ -64,11 +64,27 @@ export function calculateMoneylineResult(actualValue: number): 'win' | 'loss' {
 /**
  * Calculate bet result for spread bets
  * 
- * @param actualValue - Negative means team covered (win), positive means didn't cover (loss)
+ * @param actualValue - The actual point difference (positive if team won, negative if lost)
+ * @param line - The spread line (negative for favored team, positive for underdog)
  * @returns 'win' or 'loss'
+ * 
+ * Example:
+ * - Line: -5.5 (team favored by 5.5)
+ * - If team wins by 6: actualValue = 6, 6 > 5.5 = win
+ * - If team wins by 5: actualValue = 5, 5 < 5.5 = loss
+ * - If team loses: actualValue = -3, -3 < -5.5 = loss
  */
-export function calculateSpreadResult(actualValue: number): 'win' | 'loss' {
-  return actualValue < 0 ? 'win' : 'loss';
+export function calculateSpreadResult(actualValue: number, line: number): 'win' | 'loss' {
+  // For spread bets, we compare the actual margin to the line
+  // If line is negative (team favored), they need to win by more than |line|
+  // If line is positive (team underdog), they need to lose by less than |line| or win
+  if (line < 0) {
+    // Team is favored - they need to win by more than |line|
+    return actualValue > Math.abs(line) ? 'win' : 'loss';
+  } else {
+    // Team is underdog - they need to not lose by more than line, or win
+    return actualValue > -line ? 'win' : 'loss';
+  }
 }
 
 /**
@@ -89,7 +105,7 @@ export function calculateUniversalBetResult(
   if (statType === 'moneyline') {
     return calculateMoneylineResult(actualValue);
   } else if (statType === 'spread') {
-    return calculateSpreadResult(actualValue);
+    return calculateSpreadResult(actualValue, line);
   } else {
     return calculateBetResult(actualValue, line, overUnder);
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ProfileDropdown, JournalDropdown, SettingsDropdown, ProfileAvatar } from './index';
+import { ProfileDropdown, SettingsDropdown, ProfileAvatar } from './index';
 
 interface MobileBottomNavigationProps {
   hasPremium: boolean;
@@ -66,14 +66,6 @@ export function MobileBottomNavigation({
         />
       )}
       
-      {/* Journal Dropdown Menu - Shows above bottom nav */}
-      {showJournalDropdown && hasPremium && (
-        <JournalDropdown
-          dropdownRef={journalDropdownRef}
-          onClose={() => setShowJournalDropdown(false)}
-        />
-      )}
-
       {/* Settings Dropdown Menu - Shows above bottom nav */}
       {showSettingsDropdown && (
         <SettingsDropdown
@@ -87,8 +79,9 @@ export function MobileBottomNavigation({
       
       {/* Mobile Navigation */}
       <div className="grid grid-cols-4 h-16 lg:hidden">
-        {/* Dashboard */}
+        {/* Props */}
         <button
+          onClick={() => router.push('/nba')}
           className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +89,7 @@ export function MobileBottomNavigation({
             <circle cx="12" cy="12" r="6" strokeWidth={2} />
             <circle cx="12" cy="12" r="2" strokeWidth={2} />
           </svg>
-          <span className="text-xs font-medium">Dashboard</span>
+          <span className="text-xs font-medium">Props</span>
         </button>
         
         {/* Journal */}
@@ -107,7 +100,7 @@ export function MobileBottomNavigation({
               router.push('/subscription');
               return;
             }
-            setShowJournalDropdown(!showJournalDropdown);
+            router.push('/journal');
           }}
           className={journalButtonClasses}
         >

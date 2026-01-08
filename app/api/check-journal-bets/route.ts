@@ -62,8 +62,10 @@ function evaluateGameProp(game: any, statType: string, teamAbbr: string): number
       return homeScore + visitorScore;
     
     case 'spread':
-      // Positive = team lost (failed to cover), negative = team won (covered spread)
-      return isHome ? visitorScore - homeScore : homeScore - visitorScore;
+      // Return point difference: positive if team won, negative if team lost
+      // For home team: homeScore - visitorScore
+      // For away team: visitorScore - homeScore
+      return isHome ? homeScore - visitorScore : visitorScore - homeScore;
     
     case 'moneyline':
       // 1 = win, 0 = loss
@@ -431,9 +433,9 @@ async function resolveParlayBet(
             // For moneyline: evaluateGameProp returns 1 if team won, 0 if lost
             legWon = actualValue === 1;
           } else if (leg.statType === 'spread') {
-            // For spreads: actualValue < 0 means team covered, actualValue > 0 means didn't cover
-            // The line is just for reference - the key is whether actualValue is negative
-            legWon = actualValue < 0;
+            // For spreads: use calculateSpreadResult to properly compare against line
+            const spreadResult = calculateUniversalBetResult(actualValue, legLine, leg.overUnder, 'spread');
+            legWon = spreadResult === 'win';
           } else {
             // For other props (totals, etc.), use standard over/under logic
             legWon = leg.overUnder === 'over' 
@@ -988,6 +990,30 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const recalculate = url.searchParams.get('recalculate') === 'true';
     
+    // OPTIMIZATION: Determine if this is a cron request or user request
+    // Cron requests process all users, user requests only process the authenticated user
+    const querySecret = url.searchParams.get('secret');
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronRequest = (querySecret && cronSecret && querySecret === cronSecret) || 
+                          authorizeCronRequest(request).authorized;
+    
+    // Get user_id if this is a user request (not cron)
+    let userId: string | null = null;
+    if (!isCronRequest) {
+      try {
+        const supabase = await createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          userId = session.user.id;
+          console.log(`[check-journal-bets] User request: filtering by user_id ${userId}`);
+        }
+      } catch (error) {
+        console.error('[check-journal-bets] Failed to get user session:', error);
+      }
+    } else {
+      console.log('[check-journal-bets] Cron request: processing all users');
+    }
+    
     // Fetch all pending journal bets with NBA player props OR game props (including parlays)
     // If recalculate=true, also fetch completed bets that have actual_value set
     // Game props: have game_date and stat_type but no player_id
@@ -1024,6 +1050,7 @@ export async function GET(request: Request) {
     };
 
     // IMPORTANT: Always include 'live' status bets so we can maintain their live status
+    // OPTIMIZATION: Filter by user_id if this is a user request (not cron)
     let playerPropsQuery = supabaseAdmin
       .from('bets')
       .select('*')
@@ -1038,6 +1065,12 @@ export async function GET(request: Request) {
       .is('player_id', null)
       .not('game_date', 'is', null)
       .in('stat_type', GAME_PROP_STAT_TYPES);
+    
+    // OPTIMIZATION: Add user_id filter for user requests (not cron)
+    if (userId) {
+      playerPropsQuery = playerPropsQuery.eq('user_id', userId);
+      gamePropsQuery = gamePropsQuery.eq('user_id', userId);
+    }
     
     if (recalculate) {
       playerPropsQuery = playerPropsQuery.in('result', ['pending', 'win', 'loss']);
@@ -1077,6 +1110,11 @@ export async function GET(request: Request) {
       .select('*')
       .eq('sport', 'NBA')
       .like('market', 'Parlay%');
+    
+    // OPTIMIZATION: Add user_id filter for user requests (not cron)
+    if (userId) {
+      parlayBetsQuery = parlayBetsQuery.eq('user_id', userId);
+    }
     
     if (recalculate) {
       parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
@@ -1177,8 +1215,149 @@ export async function GET(request: Request) {
       const gamesData = await gamesResponse.json();
       const games = gamesData.data;
 
-      // Process each bet for this date
+      // OPTIMIZATION: Group bets by unique (game_id, player_id) to deduplicate stats fetches
+      // First, match bets to games
+      const betsWithGames: Array<{ bet: any; game: any; isGameProp: boolean }> = [];
+      
       for (const bet of bets as any[]) {
+        if (!bet.game_date) continue;
+        
+        const isGameProp = !bet.player_id && bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
+        
+        if (!isGameProp && !bet.player_id) continue;
+        
+        // Find the game with matching teams
+        const game = games.find((g: any) => {
+          const homeMatch = g.home_team.full_name === bet.team || g.home_team.abbreviation === bet.team;
+          const visitorMatch = g.visitor_team.full_name === bet.team || g.visitor_team.abbreviation === bet.team;
+          const homeOppMatch = g.home_team.full_name === bet.opponent || g.home_team.abbreviation === bet.opponent;
+          const visitorOppMatch = g.visitor_team.full_name === bet.opponent || g.visitor_team.abbreviation === bet.opponent;
+          
+          return (homeMatch && visitorOppMatch) || (visitorMatch && homeOppMatch);
+        });
+        
+        if (game) {
+          betsWithGames.push({ bet, game, isGameProp });
+        } else {
+          const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
+        }
+      }
+      
+      // Group player prop bets by unique (game_id, player_id) for deduplication
+      const statsNeeded = new Map<string, { gameId: number; playerId: number; bets: Array<{ bet: any; game: any }> }>();
+      
+      for (const { bet, game, isGameProp } of betsWithGames) {
+        // Skip game props (they don't need player stats)
+        if (isGameProp) continue;
+        
+        // Skip if no player_id
+        if (!bet.player_id) continue;
+        
+        const key = `${game.id}_${bet.player_id}`;
+        if (!statsNeeded.has(key)) {
+          statsNeeded.set(key, { gameId: game.id, playerId: bet.player_id, bets: [] });
+        }
+        statsNeeded.get(key)!.bets.push({ bet, game });
+      }
+      
+      // Fetch and cache stats for each unique game+player combination
+      const statsCache = new Map<string, any>();
+      
+      for (const [key, { gameId, playerId, bets }] of statsNeeded) {
+        // Check database cache first
+        let playerStat: any = null;
+        
+        try {
+          const { data: cachedStats } = await supabaseAdmin
+            .from('player_game_stats')
+            .select('*')
+            .eq('game_id', gameId)
+            .eq('player_id', playerId)
+            .single();
+          
+          if (cachedStats) {
+            // Convert cached stats to API format
+            playerStat = {
+              pts: cachedStats.pts || 0,
+              reb: cachedStats.reb || 0,
+              ast: cachedStats.ast || 0,
+              stl: cachedStats.stl || 0,
+              blk: cachedStats.blk || 0,
+              fg3m: cachedStats.fg3m || 0,
+              min: cachedStats.min || '0:00',
+            };
+            console.log(`[check-journal-bets] ✅ Using cached stats for game ${gameId}, player ${playerId}`);
+          }
+        } catch (error) {
+          // Cache miss or error - will fetch from API
+        }
+        
+        // If not in cache, fetch from API
+        if (!playerStat) {
+          const statsResponse = await fetch(
+            `https://api.balldontlie.io/v1/stats?game_ids[]=${gameId}&player_ids[]=${playerId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+              },
+            }
+          );
+          
+          if (!statsResponse.ok) {
+            console.error(`Failed to fetch stats for game ${gameId}, player ${playerId}`);
+            continue;
+          }
+          
+          const statsData = await statsResponse.json();
+          
+          if (!statsData.data || statsData.data.length === 0) {
+            console.log(`[check-journal-bets] No stats found for game ${gameId}, player ${playerId}`);
+            continue;
+          }
+          
+          playerStat = statsData.data[0];
+          
+          // Store in database cache for future use
+          try {
+            await supabaseAdmin
+              .from('player_game_stats')
+              .upsert({
+                game_id: gameId,
+                player_id: playerId,
+                pts: playerStat.pts || 0,
+                reb: playerStat.reb || 0,
+                ast: playerStat.ast || 0,
+                stl: playerStat.stl || 0,
+                blk: playerStat.blk || 0,
+                fg3m: playerStat.fg3m || 0,
+                min: playerStat.min || '0:00',
+                team_id: playerStat.team?.id,
+                team_abbreviation: playerStat.team?.abbreviation,
+                opponent_id: playerStat.game?.home_team?.id === playerStat.team?.id 
+                  ? playerStat.game?.visitor_team?.id 
+                  : playerStat.game?.home_team?.id,
+                opponent_abbreviation: playerStat.game?.home_team?.abbreviation === playerStat.team?.abbreviation
+                  ? playerStat.game?.visitor_team?.abbreviation
+                  : playerStat.game?.home_team?.abbreviation,
+                game_date: gameDate,
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'game_id,player_id'
+              });
+            console.log(`[check-journal-bets] 💾 Cached stats for game ${gameId}, player ${playerId}`);
+          } catch (error) {
+            // Cache write failed - not critical, just log
+            console.error(`[check-journal-bets] Failed to cache stats for game ${gameId}, player ${playerId}:`, error);
+          }
+        }
+        
+        // Store in memory cache for this request
+        statsCache.set(key, playerStat);
+      }
+      
+      // Now process all bets (both game props and player props)
+      for (const { bet, game, isGameProp } of betsWithGames) {
         // OPTIMIZATION: Skip bets that are already completed (status='completed' and result is win/loss)
         // These bets are done and don't need to be re-checked unless in recalculate mode
         if (!recalculate && bet.status === 'completed' && (bet.result === 'win' || bet.result === 'loss')) {
@@ -1194,34 +1373,7 @@ export async function GET(request: Request) {
           continue;
         }
         
-        // Skip if bet doesn't have required fields
-        if (!bet.game_date) {
-          continue;
-        }
-        
-        // Check if this is a game prop (no player_id but has game prop stat type)
-        const isGameProp = !bet.player_id && bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
-        
-        // For player props, require player_id
-        if (!isGameProp && !bet.player_id) {
-          continue;
-        }
-        
-        // Find the game with matching teams
-        const game = games.find((g: any) => {
-          const homeMatch = g.home_team.full_name === bet.team || g.home_team.abbreviation === bet.team;
-          const visitorMatch = g.visitor_team.full_name === bet.team || g.visitor_team.abbreviation === bet.team;
-          const homeOppMatch = g.home_team.full_name === bet.opponent || g.home_team.abbreviation === bet.opponent;
-          const visitorOppMatch = g.visitor_team.full_name === bet.opponent || g.visitor_team.abbreviation === bet.opponent;
-          
-          return (homeMatch && visitorOppMatch) || (visitorMatch && homeOppMatch);
-        });
-
-        if (!game) {
-          const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
-          continue;
-        }
+        // bet and game are already matched and passed in from betsWithGames
 
         // Check game status using same logic as tracked bets
         const rawStatus = String(game.status || '');
@@ -1361,7 +1513,18 @@ export async function GET(request: Request) {
               }
             }
           }
-
+          
+          // Handle live game props - they can't be determined early, just mark as live
+          if (isGameProp) {
+            await supabaseAdmin
+              .from('bets')
+              .update({ status: 'live' })
+              .eq('id', bet.id);
+            console.log(`[check-journal-bets] Single bet ${bet.id} (Game prop ${bet.stat_type}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
+            updatedCountRef.value++;
+            continue;
+          }
+          
           // If bet can't be determined early, just update status to 'live'
           const updateData: any = { status: 'live' };
           
@@ -1369,7 +1532,8 @@ export async function GET(request: Request) {
           if (bet.result && bet.result !== 'pending' && bet.result !== 'void') {
             updateData.result = 'pending';
             updateData.actual_value = null;
-            console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${bet.player_name}): Game is live but bet was marked as ${bet.result}. Resetting to pending/live.`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
+            console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${betDescription}): Game is live but bet was marked as ${bet.result}. Resetting to pending/live.`);
           }
           
           await supabaseAdmin
@@ -1377,7 +1541,8 @@ export async function GET(request: Request) {
             .update(updateData)
             .eq('id', bet.id);
           
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
+          const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
           updatedCountRef.value++;
           continue;
         }
@@ -1474,29 +1639,14 @@ export async function GET(request: Request) {
           continue; // Skip player stats fetching for game props
         }
 
-        // Fetch player stats for this game
-        const statsResponse = await fetch(
-          `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${bet.player_id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-            },
-          }
-        );
-
-        if (!statsResponse.ok) {
-          console.error(`Failed to fetch stats for player ${bet.player_id}`);
-          continue;
-        }
-
-        const statsData = await statsResponse.json();
+        // Get player stats from cache (already fetched and cached above)
+        const statsKey = `${game.id}_${bet.player_id}`;
+        const playerStat = statsCache.get(statsKey);
         
-        if (!statsData.data || statsData.data.length === 0) {
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): No stats found for player in game ${game.id}`);
+        if (!playerStat) {
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): No stats found for player ${bet.player_id} in game ${game.id}`);
           continue;
         }
-
-        const playerStat = statsData.data[0];
         
         // Check if player played 0 minutes - if so, mark as void
         // Handle various minute formats: "15:30", "15", "0:00", "0", etc.

@@ -47,8 +47,9 @@ export function HeaderNavigation({
 
   return (
     <div className={isDesktop ? 'hidden lg:flex items-center justify-between h-16 px-4 relative' : 'flex items-center justify-between h-16 px-4'}>
-      {/* Dashboard */}
+      {/* Props */}
       <button
+        onClick={() => router.push('/nba')}
         className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +57,7 @@ export function HeaderNavigation({
           <circle cx="12" cy="12" r="6" strokeWidth={2} />
           <circle cx="12" cy="12" r="2" strokeWidth={2} />
         </svg>
-        <span className="text-xs font-medium">Dashboard</span>
+        <span className="text-xs font-medium">Props</span>
       </button>
       
       {/* Journal */}
@@ -67,7 +68,7 @@ export function HeaderNavigation({
             router.push('/subscription');
             return;
           }
-          setShowJournalDropdown(!showJournalDropdown);
+          router.push('/journal');
         }}
         className={journalButtonClasses}
       >
