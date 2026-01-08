@@ -10,6 +10,19 @@ export default function NavigationLoader() {
   const loadingStartTimeRef = useRef<number | null>(null);
   const isInitialLoadRef = useRef(true);
 
+  // Mark initial load as complete after page has had time to render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isInitialLoadRef.current = false;
+    }, 1000); // Give enough time for page to fully load
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Completely disable NavigationLoader on NBA pages or during initial load
+  if (pathname?.startsWith('/nba') || isInitialLoadRef.current) {
+    return null;
+  }
+
   useEffect(() => {
     // Only run in browser
     if (typeof window === 'undefined') return;
@@ -41,7 +54,6 @@ export default function NavigationLoader() {
   useEffect(() => {
     // Skip showing loader on initial page load - let page-specific loading screens handle it
     if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false;
       currentPathRef.current = pathname;
       return;
     }
@@ -85,4 +97,3 @@ export default function NavigationLoader() {
     </div>
   );
 }
-
