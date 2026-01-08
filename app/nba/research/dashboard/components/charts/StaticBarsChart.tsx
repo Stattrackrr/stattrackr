@@ -289,27 +289,16 @@ export default memo(function StaticBarsChart({
         }}
         onMouseLeave={onChartMouseLeave}
       >
-        {!hideLogosAndLabels && (
-          <XAxis
-            dataKey="xKey"
-            tick={<CustomXAxisTick data={data} hideLogo={false} />}
-            axisLine={xAxisLineStyle}
-            height={CHART_CONFIG.xAxis.height}
-            interval={CHART_CONFIG.xAxis.interval}
-            allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
-            hide={!!compactMobile}
-            padding={compactMobile ? { left: 8, right: 8 } : undefined as any}
-          />
-        )}
-        {hideLogosAndLabels && (
-          <XAxis
-            dataKey="xKey"
-            tick={false}
-            axisLine={false}
-            height={0}
-            hide={true}
-          />
-        )}
+        <XAxis
+          dataKey="xKey"
+          tick={hideLogosAndLabels ? false : <CustomXAxisTick data={data} hideLogo={hideLogosAndLabels} />}
+          axisLine={hideLogosAndLabels ? false : xAxisLineStyle}
+          height={CHART_CONFIG.xAxis.height}
+          interval={CHART_CONFIG.xAxis.interval}
+          allowDuplicatedCategory={CHART_CONFIG.xAxis.allowDuplicatedCategory}
+          hide={!!compactMobile}
+          padding={compactMobile ? { left: 8, right: 8 } : undefined as any}
+        />
         <YAxis 
           yAxisId="left"
           domain={yAxisConfig.domain}

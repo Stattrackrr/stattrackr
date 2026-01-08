@@ -623,12 +623,12 @@ const SimpleChart = memo(function SimpleChart({
             <XAxis
               dataKey="xKey"
               tick={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : <CustomXAxisTick data={mergedChartData} hideLogo={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'} />}
-              height={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? 0 : 40}
+              height={40}
               interval={0}
               allowDuplicatedCategory={false}
               axisLine={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : { stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: isMobile ? 2 : 1 }}
               tickLine={false}
-              hide={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'}
+              hide={false}
             />
             <YAxis
               domain={yAxisConfig.domain}
