@@ -14,6 +14,7 @@ import { formatOdds } from '@/lib/currencyUtils';
 import { generateInsights, type Insight } from '@/components/RightSidebar';
 import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
 import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3, Minus, X } from 'lucide-react';
+import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 
 export default function JournalPage() {
   return (
@@ -270,6 +271,7 @@ function JournalContent() {
   const searchParams = useSearchParams();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [navigatingToJournal, setNavigatingToJournal] = useState(false);
   const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
@@ -531,7 +533,22 @@ function JournalContent() {
       }
     }
   }, [bookmaker]);
-  
+
+  // Check if we're navigating to journal (set by other pages)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isNavigating = sessionStorage.getItem('navigating-to-journal');
+      if (isNavigating === 'true') {
+        setNavigatingToJournal(true);
+        // Clear the flag
+        sessionStorage.removeItem('navigating-to-journal');
+        // Hide loading bar after page loads
+        setTimeout(() => {
+          setNavigatingToJournal(false);
+        }, 1000);
+      }
+    }
+  }, []);
   
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -1556,6 +1573,8 @@ function JournalContent() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#050d1a] text-slate-900 dark:text-white overflow-x-hidden pt-safe pb-safe">
+      {/* Loading bar at top when navigating to journal */}
+      <LoadingBar isLoading={navigatingToJournal} isDark={isDark} showImmediately={navigatingToJournal} mobileOffset={0} />
       <style jsx global>{`
         :root {
           --sidebar-width: 360px;

@@ -1,0 +1,12 @@
+[2026-01-10 00:00:02] [INFO] ========================================
+[2026-01-10 00:00:02] [INFO] Daily Player Cache Refresh
+[2026-01-10 00:00:02] [INFO] ========================================
+[2026-01-10 00:00:02] [INFO] 
+[2026-01-10 00:00:02] [INFO] Dev server is already running
+[2026-01-10 00:00:02] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2026-01-10 00:00:02] [INFO] 
+[2026-01-10 00:19:08] [ERROR] ❌ Error: Unable to connect to the remote server
+[2026-01-10 00:19:08] [INFO] 
+[2026-01-10 00:19:08] [INFO] ========================================
+[2026-01-10 00:19:08] [INFO] Refresh failed
+[2026-01-10 00:19:08] [INFO] ========================================

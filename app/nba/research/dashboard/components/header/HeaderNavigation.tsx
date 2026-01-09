@@ -68,6 +68,10 @@ export function HeaderNavigation({
             router.push('/subscription');
             return;
           }
+          // Set flag to show loading bar on journal page
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('navigating-to-journal', 'true');
+          }
           router.push('/journal');
         }}
         className={journalButtonClasses}

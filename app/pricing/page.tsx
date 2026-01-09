@@ -414,6 +414,10 @@ export default function PricingPage() {
                 element?.scrollIntoView({ behavior: 'smooth' });
                 return;
               }
+              // Set flag to show loading bar on journal page
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('navigating-to-journal', 'true');
+              }
               router.push('/journal');
             }}
             className={`text-sm font-medium transition-colors ${
@@ -533,6 +537,10 @@ export default function PricingPage() {
               <button
                 onClick={() => {
                   setShowJournalDropdown(false);
+                  // Set flag to show loading bar on journal page
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('navigating-to-journal', 'true');
+                  }
                   router.push('/journal');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -543,6 +551,10 @@ export default function PricingPage() {
               <button
                 onClick={() => {
                   setShowJournalDropdown(false);
+                  // Set flag to show loading bar on journal page
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('navigating-to-journal', 'true');
+                  }
                   router.push('/journal?tab=tracking');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
