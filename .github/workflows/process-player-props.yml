@@ -61,6 +61,7 @@ jobs:
           echo "🔄 Refreshing odds cache before processing props..."
           RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
+            -L \
             --max-time 300 \
             --write-out "\nHTTP_STATUS:%{http_code}" \
             --fail-with-body 2>&1) || EXIT_CODE=$?
@@ -130,6 +131,7 @@ jobs:
           echo "🔄 Refreshing odds cache before processing props..."
           RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
+            -L \
             --max-time 300 \
             --write-out "\nHTTP_STATUS:%{http_code}" \
             --fail-with-body 2>&1) || EXIT_CODE=$?
@@ -198,6 +200,7 @@ jobs:
           echo "🔄 Refreshing odds cache before processing props..."
           RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
+            -L \
             --max-time 300 \
             --write-out "\nHTTP_STATUS:%{http_code}" \
             --fail-with-body 2>&1) || EXIT_CODE=$?
