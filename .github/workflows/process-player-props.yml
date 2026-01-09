@@ -57,15 +57,32 @@ jobs:
 
       - name: Refresh Odds Cache
         if: steps.check_prod_url.outputs.configured == 'true'
-        continue-on-error: true
         run: |
           echo "🔄 Refreshing odds cache before processing props..."
-          curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
+          RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
             --max-time 300 \
-            --fail-with-body || echo "⚠️ Odds refresh failed, but continuing..."
-          echo "✅ Odds cache refresh completed"
-          sleep 5  # Wait a moment for cache to propagate
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "" ]; then
+            echo "❌ Odds refresh failed with HTTP status: $HTTP_STATUS"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          if [ -n "$EXIT_CODE" ]; then
+            echo "❌ Odds refresh failed with exit code: $EXIT_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          echo "✅ Odds cache refresh completed successfully"
+          echo "Response: $BODY"
+          sleep 10  # Wait for cache to propagate to Supabase
 
       - name: Process All Props Part 1/3
         if: steps.check_prod_url.outputs.configured == 'true'
@@ -109,15 +126,32 @@ jobs:
 
       - name: Refresh Odds Cache
         if: steps.check_prod_url.outputs.configured == 'true'
-        continue-on-error: true
         run: |
           echo "🔄 Refreshing odds cache before processing props..."
-          curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
+          RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
             --max-time 300 \
-            --fail-with-body || echo "⚠️ Odds refresh failed, but continuing..."
-          echo "✅ Odds cache refresh completed"
-          sleep 5  # Wait a moment for cache to propagate
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "" ]; then
+            echo "❌ Odds refresh failed with HTTP status: $HTTP_STATUS"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          if [ -n "$EXIT_CODE" ]; then
+            echo "❌ Odds refresh failed with exit code: $EXIT_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          echo "✅ Odds cache refresh completed successfully"
+          echo "Response: $BODY"
+          sleep 10  # Wait for cache to propagate to Supabase
 
       - name: Process All Props Part 2/3
         if: steps.check_prod_url.outputs.configured == 'true'
@@ -160,15 +194,32 @@ jobs:
 
       - name: Refresh Odds Cache
         if: steps.check_prod_url.outputs.configured == 'true'
-        continue-on-error: true
         run: |
           echo "🔄 Refreshing odds cache before processing props..."
-          curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
+          RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/odds/refresh" \
             -H "Content-Type: application/json" \
             --max-time 300 \
-            --fail-with-body || echo "⚠️ Odds refresh failed, but continuing..."
-          echo "✅ Odds cache refresh completed"
-          sleep 5  # Wait a moment for cache to propagate
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "" ]; then
+            echo "❌ Odds refresh failed with HTTP status: $HTTP_STATUS"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          if [ -n "$EXIT_CODE" ]; then
+            echo "❌ Odds refresh failed with exit code: $EXIT_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          echo "✅ Odds cache refresh completed successfully"
+          echo "Response: $BODY"
+          sleep 10  # Wait for cache to propagate to Supabase
 
       - name: Process All Props Part 3/3
         if: steps.check_prod_url.outputs.configured == 'true'

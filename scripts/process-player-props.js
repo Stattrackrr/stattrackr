@@ -474,14 +474,30 @@ function mapStatTypeToDvpMetric(statType) {
 async function processPlayerProps() {
   console.log('[GitHub Actions] 🚀 Starting player props processing...');
   
-  // Get odds cache
-  const oddsCache = await getCache(ODDS_CACHE_KEY);
-  if (!oddsCache || !oddsCache.lastUpdated) {
-    console.error('[GitHub Actions] ❌ No odds cache found');
-    process.exit(1);
+  // Get odds cache with retries (wait for refresh to complete)
+  console.log('[GitHub Actions] 🔍 Waiting for odds cache (may take a moment after refresh)...');
+  let oddsCache = null;
+  const maxRetries = 10; // Try for up to 30 seconds (10 retries * 3 seconds)
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    oddsCache = await getCache(ODDS_CACHE_KEY, 0);
+    
+    if (oddsCache && oddsCache.lastUpdated) {
+      console.log(`[GitHub Actions] ✅ Found odds cache on attempt ${attempt + 1}: ${oddsCache.games?.length || 0} games`);
+      break;
+    }
+    
+    if (attempt < maxRetries - 1) {
+      console.log(`[GitHub Actions] ⏳ Odds cache not ready yet (attempt ${attempt + 1}/${maxRetries}), waiting 3 seconds...`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
   }
   
-  console.log(`[GitHub Actions] ✅ Found odds cache: ${oddsCache.games?.length || 0} games`);
+  if (!oddsCache || !oddsCache.lastUpdated) {
+    console.error('[GitHub Actions] ❌ No odds cache found after waiting. The odds refresh may have failed or is still in progress.');
+    console.error('[GitHub Actions] 💡 Tip: Check if the odds refresh step completed successfully in the workflow logs.');
+    process.exit(1);
+  }
 
   // Process ALL games regardless of date - no date filtering
   console.log(`[GitHub Actions] 📅 Processing ALL games (no date filter)`);
