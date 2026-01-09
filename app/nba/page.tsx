@@ -3692,6 +3692,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <tr
                                 key={idx}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
+                                onMouseEnter={() => {
+                                  // Prefetch stats on hover (non-blocking) to warm up server cache
+                                  // This makes the dashboard load instantly when clicked
+                                  const playerId = getPlayerIdFromName(prop.playerName);
+                                  if (playerId && typeof window !== 'undefined') {
+                                    const currentSeason = new Date().getFullYear();
+                                    // Prefetch all 4 stat endpoints to warm up server cache
+                                    // Use regular fetch (not cachedFetch) to ensure server cache is warmed
+                                    const prefetchUrls = [
+                                      `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
+                                      `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
+                                      `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
+                                      `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
+                                    ];
+                                    
+                                    // Fire and forget - don't await, just warm up the cache
+                                    prefetchUrls.forEach(url => {
+                                      fetch(url, { cache: 'default' }).catch(() => {
+                                        // Ignore errors - this is just prefetch
+                                      });
+                                    });
+                                  }
+                                }}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -3730,60 +3753,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     }
                                   }
                                   
-                                  // Show loading bar immediately on props page
-                                  setNavigatingToPlayer(true);
-                                  
-                                  // OPTIMIZATION: Start prefetching stats immediately (before navigation)
-                                  // This makes the dashboard feel instant when it loads
-                                  const playerId = getPlayerIdFromName(prop.playerName);
-                                  if (playerId && typeof window !== 'undefined') {
-                                    // Mark that we're coming from props page (for dashboard)
+                                  // Mark that we're coming from props page (for dashboard)
+                                  if (typeof window !== 'undefined') {
                                     try {
                                       sessionStorage.setItem('from_props_page', 'true');
                                     } catch (e) {
                                       // Ignore storage errors
                                     }
-                                    
-                                    // Prefetch stats immediately (non-blocking)
-                                    // This will populate the cache so dashboard loads instantly
-                                    const currentSeason = new Date().getFullYear();
-                                    const prefetchPromises = [
-                                      cachedFetch(
-                                        `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
-                                        undefined,
-                                        60 * 60 * 1000 // 1 hour cache
-                                      ).catch(() => null),
-                                      cachedFetch(
-                                        `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
-                                        undefined,
-                                        60 * 60 * 1000 // 1 hour cache
-                                      ).catch(() => null),
-                                      cachedFetch(
-                                        `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
-                                        undefined,
-                                        60 * 60 * 1000 // 1 hour cache
-                                      ).catch(() => null),
-                                      cachedFetch(
-                                        `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
-                                        undefined,
-                                        60 * 60 * 1000 // 1 hour cache
-                                      ).catch(() => null),
-                                    ];
-                                    
-                                    // Wait for prefetch to complete, then navigate
-                                    Promise.allSettled(prefetchPromises).then(() => {
-                                      // Small delay to ensure loading bar is visible
-                                      setTimeout(() => {
-                                        router.push(finalUrl);
-                                        // Hide loading bar after navigation starts
-                                        setTimeout(() => setNavigatingToPlayer(false), 100);
-                                      }, 100);
-                                    });
-                                  } else {
-                                    // If no player ID, navigate immediately
-                                    router.push(finalUrl);
-                                    setTimeout(() => setNavigatingToPlayer(false), 100);
                                   }
+                                  
+                                  // Navigate immediately - prefetch on hover should have warmed up the cache
+                                  // If prefetch didn't complete yet, dashboard will fetch (but should be faster due to server cache)
+                                  router.push(finalUrl);
                                 }}
                               >
                                 {/* Player Column */}
