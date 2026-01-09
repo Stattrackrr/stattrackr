@@ -3762,9 +3762,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     }
                                   }
                                   
+                                  // Show loading bar immediately
+                                  setNavigatingToPlayer(true);
+                                  
                                   // Navigate immediately - prefetch on hover should have warmed up the cache
                                   // If prefetch didn't complete yet, dashboard will fetch (but should be faster due to server cache)
                                   router.push(finalUrl);
+                                  
+                                  // Hide loading bar after navigation completes (dashboard will handle its own loading)
+                                  setTimeout(() => {
+                                    setNavigatingToPlayer(false);
+                                  }, 1000);
                                 }}
                               >
                                 {/* Player Column */}
