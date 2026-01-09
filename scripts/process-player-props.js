@@ -488,7 +488,7 @@ async function processPlayerProps() {
     }
     
     if (attempt < maxOddsCacheRetries - 1) {
-      console.log(`[GitHub Actions] ⏳ Odds cache not ready yet (attempt ${attempt + 1}/${maxRetries}), waiting 3 seconds...`);
+      console.log(`[GitHub Actions] ⏳ Odds cache not ready yet (attempt ${attempt + 1}/${maxOddsCacheRetries}), waiting 3 seconds...`);
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
   }
