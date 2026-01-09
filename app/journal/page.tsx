@@ -1579,7 +1579,7 @@ function JournalContent() {
         :root {
           --sidebar-width: 360px;
           --right-panel-width: 400px;
-          --gap-size: 6px;
+          --gap-size: 0px;
         }
         /* Hide scrollbars globally except for custom-scrollbar class */
         * {
@@ -3297,35 +3297,46 @@ function JournalContent() {
                 parlay_legs: bet.parlay_legs ?? null,
               }));
               
-              const insights = generateInsights(journalBetsForInsights);
+              // Calculate settled bets FIRST before generating insights
               const settledBets = journalBetsForInsights.filter(b => b.result === 'win' || b.result === 'loss');
               
               if (journalBetsForInsights.length === 0) {
                 return (
                   <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
-                    <div className="text-sm">No bets in journal yet</div>
-                    <div className="text-xs mt-2">Add bets from the research pages to track your betting history</div>
+                    <div className="text-sm">No plays in journal yet</div>
+                    <div className="text-xs mt-2">Add plays from the research pages to track your betting history</div>
                   </div>
                 );
               }
               
+              // Check settled bets count FIRST - this takes priority over everything else
+              // Don't even generate insights if we don't have enough settled bets
               if (settledBets.length < 10) {
                 return (
-                  <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
-                    <div className="text-sm">Add more bets to see insights</div>
-                    <div className="text-xs mt-2">You need at least 10 settled bets to generate insights</div>
-                    <div className="text-xs mt-1 text-slate-500 dark:text-slate-500">
-                      You have {settledBets.length} settled {settledBets.length === 1 ? 'bet' : 'bets'}
+                  <div className="flex items-center justify-center h-full min-h-[200px] p-4">
+                    <div className="text-center text-slate-600 dark:text-slate-400">
+                      <div className="text-sm">You need 10 or more plays in the journal to get insights</div>
+                      <div className="text-xs mt-2 text-slate-500 dark:text-slate-500">
+                        {settledBets.length}/10 plays
+                      </div>
                     </div>
                   </div>
                 );
               }
               
+              // Only generate insights if we have 10+ settled bets
+              const insights = generateInsights(journalBetsForInsights);
+              
+              // If no insights generated but we have 10+ settled bets, show a message
               if (insights.length === 0) {
                 return (
-                  <div className="p-4 text-center py-8 text-slate-600 dark:text-slate-400">
-                    <div className="text-sm">No insights available yet</div>
-                    <div className="text-xs mt-2">Keep betting to see patterns and insights</div>
+                  <div className="flex items-center justify-center h-full min-h-[200px] p-4">
+                    <div className="text-center text-slate-600 dark:text-slate-400">
+                      <div className="text-sm">You need 10 or more plays in the journal to get insights</div>
+                      <div className="text-xs mt-2 text-slate-500 dark:text-slate-500">
+                        {settledBets.length}/10 plays
+                      </div>
+                    </div>
                   </div>
                 );
               }

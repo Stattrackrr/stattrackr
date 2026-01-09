@@ -1146,15 +1146,20 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
       }
       const wonLegs = legs.filter(leg => leg.won === true).length;
       const totalLegs = legs.length;
+      const lostLegs = totalLegs - wonLegs;
       
       // Lost by exactly 1 leg (e.g., 2 leg parlay with 1 won = lost by 1, or 3 leg parlay with 2 won = lost by 1)
-      if (totalLegs > 0 && totalLegs - wonLegs === 1) {
+      // IMPORTANT: Only count as pain if lost by EXACTLY 1 leg
+      if (totalLegs > 0 && lostLegs === 1) {
+        console.log(`[Pain Insights] ✅ Found parlay lost by exactly 1 leg: ${wonLegs} won, ${lostLegs} lost out of ${totalLegs} total legs`);
         parlaysLostByOneLeg.push(bet);
+      } else {
+        console.log(`[Pain Insights] ❌ Parlay NOT pain (lost by ${lostLegs} legs, not 1): ${wonLegs} won, ${lostLegs} lost out of ${totalLegs} total legs`);
       }
     }
   });
   
-  console.log(`[Pain Insights] Found ${parlaysLostByOneLeg.length} parlays lost by 1 leg out of ${parlayBets.filter(b => b.result === 'loss').length} total lost parlays`);
+  console.log(`[Pain Insights] Found ${parlaysLostByOneLeg.length} parlays lost by exactly 1 leg out of ${parlayBets.filter(b => b.result === 'loss').length} total lost parlays`);
   
   if (parlaysLostByOneLeg.length >= 1) {
     const totalWagered = getTotalWagered(parlaysLostByOneLeg);
@@ -1169,7 +1174,7 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
       id: 'pain-parlays-lost-by-one',
       type: 'pain',
       category: 'parlay',
-      message: `Your parlays have lost by 1 leg ${parlaysLostByOneLeg.length} time${parlaysLostByOneLeg.length > 1 ? 's' : ''}`,
+      message: `You've lost ${parlaysLostByOneLeg.length} parlay${parlaysLostByOneLeg.length > 1 ? 's' : ''} by exactly 1 leg`,
       priority: parlaysLostByOneLeg.length * 20,
       color: 'orange',
       stats: {
@@ -1179,11 +1184,11 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
       },
       relatedBets: parlaysLostByOneLeg,
       potentialProfit: potentialProfit,
-      recommendation: `If these ${parlaysLostByOneLeg.length} parlay${parlaysLostByOneLeg.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more. That's tough.`,
+      recommendation: `If these ${parlaysLostByOneLeg.length} parlay${parlaysLostByOneLeg.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more profit.`,
     });
   }
   
-  // 2. Straight bets where player missed by small margins (0.5, 1, 1.5, etc.)
+  // 2. Straight bets where player missed by exactly 0.5 (1 tick) - PAIN only
   const closeMisses: Array<{ bet: JournalBet; margin: number; potentialProfit: number }> = [];
   
   straightBets.forEach(bet => {
@@ -1199,8 +1204,9 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
         margin = actual - line; // How much they missed by
       }
       
-      // Only track misses by 2 or less (very close)
-      if (margin !== null && margin > 0 && margin <= 2) {
+      // Only track misses by exactly 0.5 (1 tick) - this is PAIN
+      // Use small tolerance for floating point comparison (0.49 to 0.51)
+      if (margin !== null && margin > 0 && margin >= 0.49 && margin <= 0.51) {
         const potentialReturn = bet.stake * bet.odds;
         const potentialProfit = potentialReturn - bet.stake;
         closeMisses.push({ bet, margin, potentialProfit });
@@ -1208,7 +1214,7 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
     }
   });
   
-  // Group close misses by player
+  // Group close misses by player (all are 0.5 misses - PAIN)
   const playerCloseMisses: Record<string, Array<{ bet: JournalBet; margin: number; potentialProfit: number }>> = {};
   closeMisses.forEach(miss => {
     const playerName = miss.bet.player_name || getPlayerName(miss.bet) || 'Unknown';
@@ -1218,33 +1224,19 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
     playerCloseMisses[playerName].push(miss);
   });
   
-  // Generate insights for players with multiple close misses
+  // Generate insights for players with 2+ 0.5 misses (PAIN)
+  // Only show player-specific insights if they have 2 or more misses
   Object.entries(playerCloseMisses).forEach(([player, misses]) => {
     if (misses.length >= 2) {
       const totalPotentialProfit = misses.reduce((sum, m) => sum + m.potentialProfit, 0);
-      const avgMargin = misses.reduce((sum, m) => sum + m.margin, 0) / misses.length;
       const statName = misses[0].bet.stat_type ? formatStatName(misses[0].bet.stat_type) : 'stat';
-      
-      // Count misses by specific margins
-      const missesByHalf = misses.filter(m => m.margin <= 0.5).length;
-      const missesByOne = misses.filter(m => m.margin > 0.5 && m.margin <= 1).length;
-      const missesByOneAndHalf = misses.filter(m => m.margin > 1 && m.margin <= 1.5).length;
-      
-      let marginText = '';
-      if (missesByHalf > 0) {
-        marginText = '0.5';
-      } else if (missesByOne > 0) {
-        marginText = '1';
-      } else {
-        marginText = '2';
-      }
       
       painInsights.push({
         id: `pain-player-close-${player}`,
         type: 'pain',
         category: 'player',
-        message: `${player} has missed ${statName} by ${marginText} ${misses.length} time${misses.length > 1 ? 's' : ''}`,
-        priority: misses.length * 15 + (missesByHalf > 0 ? 50 : 0),
+        message: `${player} has missed ${statName} by 0.5 ${misses.length} time${misses.length > 1 ? 's' : ''}`,
+        priority: misses.length * 20,
         color: 'orange',
         stats: {
           losses: misses.length,
@@ -1252,23 +1244,22 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
         },
         relatedBets: misses.map(m => m.bet),
         potentialProfit: totalPotentialProfit,
-        recommendation: `If ${player} had hit these ${misses.length} bet${misses.length > 1 ? 's' : ''}, you would have made $${totalPotentialProfit.toFixed(2)} more. Average miss: ${avgMargin.toFixed(1)}.`,
+        recommendation: `If ${player} had hit these ${misses.length} bet${misses.length > 1 ? 's' : ''}, you would have made $${totalPotentialProfit.toFixed(2)} more.`,
       });
     }
   });
   
-  // Also create a general close misses insight if we have enough
+  // Only show general close misses insight if we have 3+ total 0.5 misses
+  // This prevents duplication when there's only 1-2 misses (which would show player-specific if 2+)
   if (closeMisses.length >= 3) {
     const totalPotentialProfit = closeMisses.reduce((sum, m) => sum + m.potentialProfit, 0);
-    const avgMargin = closeMisses.reduce((sum, m) => sum + m.margin, 0) / closeMisses.length;
-    const missesByHalf = closeMisses.filter(m => m.margin <= 0.5).length;
     
     painInsights.push({
       id: 'pain-general-close-misses',
       type: 'pain',
       category: 'bet_type',
-      message: `You've had ${closeMisses.length} straight bet${closeMisses.length > 1 ? 's' : ''} miss by 2 or less`,
-      priority: closeMisses.length * 10 + (missesByHalf > 0 ? 30 : 0),
+      message: `You've had ${closeMisses.length} straight bet${closeMisses.length > 1 ? 's' : ''} miss by 0.5`,
+      priority: closeMisses.length * 15,
       color: 'orange',
       stats: {
         losses: closeMisses.length,
@@ -1276,70 +1267,13 @@ export function generateInsights(bets: JournalBet[]): Insight[] {
       },
       relatedBets: closeMisses.map(m => m.bet),
       potentialProfit: totalPotentialProfit,
-      recommendation: `If these ${closeMisses.length} close calls had hit, you would have made $${totalPotentialProfit.toFixed(2)} more. Average miss: ${avgMargin.toFixed(1)}.`,
+      recommendation: `If these ${closeMisses.length} close call${closeMisses.length > 1 ? 's' : ''} had hit, you would have made $${totalPotentialProfit.toFixed(2)} more.`,
     });
   }
   
-  // Fallback: If we have lost parlays but no pain insights generated yet, show basic pain insight
-  // This will show ANY lost parlays, even if we don't have leg data
-  if (painInsights.length === 0 && parlayBets.length > 0) {
-    const lostParlays = parlayBets.filter(b => b.result === 'loss');
-    if (lostParlays.length >= 1) {
-      const totalWagered = getTotalWagered(lostParlays);
-      let potentialProfit = 0;
-      lostParlays.forEach(bet => {
-        const potentialReturn = bet.stake * bet.odds;
-        potentialProfit += potentialReturn - bet.stake;
-      });
-      
-      painInsights.push({
-        id: 'pain-parlays-lost-basic',
-        type: 'pain',
-        category: 'parlay',
-        message: `You've lost ${lostParlays.length} parlay${lostParlays.length > 1 ? 's' : ''}`,
-        priority: lostParlays.length * 10,
-        color: 'orange',
-        stats: {
-          losses: lostParlays.length,
-          total: lostParlays.length,
-          wagered: totalWagered,
-        },
-        relatedBets: lostParlays,
-        potentialProfit: potentialProfit,
-        recommendation: `If these ${lostParlays.length} parlay${lostParlays.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more.`,
-      });
-    }
-  }
-  
-  // Fallback: If we have lost straight bets with actual_value but no close misses, show basic pain insight
-  if (painInsights.length === 0 && straightBets.length > 0) {
-    const lostStraightBets = straightBets.filter(b => b.result === 'loss' && b.actual_value !== null && b.actual_value !== undefined);
-    if (lostStraightBets.length >= 3) {
-      const totalWagered = getTotalWagered(lostStraightBets);
-      let potentialProfit = 0;
-      lostStraightBets.forEach(bet => {
-        const potentialReturn = bet.stake * bet.odds;
-        potentialProfit += potentialReturn - bet.stake;
-      });
-      
-      painInsights.push({
-        id: 'pain-straight-lost-basic',
-        type: 'pain',
-        category: 'bet_type',
-        message: `You've lost ${lostStraightBets.length} straight bet${lostStraightBets.length > 1 ? 's' : ''}`,
-        priority: lostStraightBets.length * 5,
-        color: 'orange',
-        stats: {
-          losses: lostStraightBets.length,
-          total: lostStraightBets.length,
-          wagered: totalWagered,
-        },
-        relatedBets: lostStraightBets.slice(0, 10), // Limit to avoid too many
-        potentialProfit: potentialProfit,
-        recommendation: `If these ${lostStraightBets.length} bet${lostStraightBets.length > 1 ? 's' : ''} had hit, you would have made $${potentialProfit.toFixed(2)} more.`,
-      });
-    }
-  }
+  // No fallback insights - pain is only for specific near-misses:
+  // 1. Parlays lost by exactly 1 leg
+  // 2. Straight bets missed by exactly 0.5 (1 tick)
   
   // Add pain insights to main insights array (but they'll be filtered out from "all")
   insights.push(...painInsights);
@@ -2478,35 +2412,46 @@ export default function RightSidebar({
           </div>
         ) : (
           (() => {
-            const insights = generateInsights(journalBets);
+            // Calculate settled bets FIRST before generating insights
             const settledBets = journalBets.filter(b => b.result === 'win' || b.result === 'loss');
             
             if (journalBets.length === 0) {
               return (
                 <div className="p-4 text-center text-black dark:text-white opacity-70">
-                  <div className="text-sm">No bets in journal yet</div>
-                  <div className="text-xs mt-2">Add bets from the research pages to track your betting history</div>
+                  <div className="text-sm">No plays in journal yet</div>
+                  <div className="text-xs mt-2">Add plays from the research pages to track your betting history</div>
                 </div>
               );
             }
             
+            // Check settled bets count FIRST - this takes priority over everything else
+            // Don't even generate insights if we don't have enough settled bets
             if (settledBets.length < 10) {
               return (
-                <div className="p-4 text-center text-black dark:text-white opacity-70">
-                  <div className="text-sm">Add more bets to see insights</div>
-                  <div className="text-xs mt-2">You need at least 10 settled bets to generate insights</div>
-                  <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
-                    You have {settledBets.length} settled {settledBets.length === 1 ? 'bet' : 'bets'}
+                <div className="flex items-center justify-center h-full min-h-[200px] p-4">
+                  <div className="text-center text-black dark:text-white opacity-70">
+                    <div className="text-sm">You need 10 or more plays in the journal to get insights</div>
+                    <div className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                      {settledBets.length}/10 plays
+                    </div>
                   </div>
                 </div>
               );
             }
             
+            // Only generate insights if we have 10+ settled bets
+            const insights = generateInsights(journalBets);
+            
+            // If no insights generated but we have 10+ settled bets, show a message
             if (insights.length === 0) {
               return (
-                <div className="p-4 text-center text-black dark:text-white opacity-70">
-                  <div className="text-sm">No insights available yet</div>
-                  <div className="text-xs mt-2">Keep betting to see patterns and insights</div>
+                <div className="flex items-center justify-center h-full min-h-[200px] p-4">
+                  <div className="text-center text-black dark:text-white opacity-70">
+                    <div className="text-sm">You need 10 or more plays in the journal to get insights</div>
+                    <div className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                      {settledBets.length}/10 plays
+                    </div>
+                  </div>
                 </div>
               );
             }
