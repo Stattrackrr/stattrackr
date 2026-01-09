@@ -477,9 +477,9 @@ async function processPlayerProps() {
   // Get odds cache with retries (wait for refresh to complete)
   console.log('[GitHub Actions] 🔍 Waiting for odds cache (may take a moment after refresh)...');
   let oddsCache = null;
-  const maxRetries = 10; // Try for up to 30 seconds (10 retries * 3 seconds)
+  const maxOddsCacheRetries = 10; // Try for up to 30 seconds (10 retries * 3 seconds)
   
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxOddsCacheRetries; attempt++) {
     oddsCache = await getCache(ODDS_CACHE_KEY, 0);
     
     if (oddsCache && oddsCache.lastUpdated) {
@@ -487,7 +487,7 @@ async function processPlayerProps() {
       break;
     }
     
-    if (attempt < maxRetries - 1) {
+    if (attempt < maxOddsCacheRetries - 1) {
       console.log(`[GitHub Actions] ⏳ Odds cache not ready yet (attempt ${attempt + 1}/${maxRetries}), waiting 3 seconds...`);
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
