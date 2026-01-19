@@ -1,0 +1,28 @@
+[2026-01-19 13:02:16] [INFO] ========================================
+[2026-01-19 13:02:16] [INFO] Daily Player Cache Refresh
+[2026-01-19 13:02:16] [INFO] ========================================
+[2026-01-19 13:02:16] [INFO] 
+[2026-01-19 13:02:18] [INFO] Dev server is not running. Starting it...
+[2026-01-19 13:02:18] [INFO] Starting dev server...
+[2026-01-19 13:02:19] [INFO] Dev server starting (PID: 28316)...
+[2026-01-19 13:02:26] [INFO] Waiting for server to start... (5/300 seconds)
+[2026-01-19 13:02:33] [INFO] Waiting for server to start... (10/300 seconds)
+[2026-01-19 13:02:40] [INFO] Waiting for server to start... (15/300 seconds)
+[2026-01-19 13:02:47] [INFO] Waiting for server to start... (20/300 seconds)
+[2026-01-19 13:02:54] [INFO] Waiting for server to start... (25/300 seconds)
+[2026-01-19 13:03:01] [INFO] Waiting for server to start... (30/300 seconds)
+[2026-01-19 13:03:08] [INFO] Waiting for server to start... (35/300 seconds)
+[2026-01-19 13:03:10] [INFO] Server is ready!
+[2026-01-19 13:03:10] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2026-01-19 13:03:10] [INFO] 
+[2026-01-19 13:34:04] [INFO] ✅ Refresh completed successfully!
+[2026-01-19 13:34:04] [INFO] 
+[2026-01-19 13:34:04] [INFO] Results:
+[2026-01-19 13:34:04] [INFO]   Total Players: 526
+[2026-01-19 13:34:04] [INFO]   Shot Charts: 526 success, 0 failed
+[2026-01-19 13:34:04] [INFO]   Play Types: 526 success, 0 failed
+[2026-01-19 13:34:04] [INFO]   Duration: 1854.11s
+[2026-01-19 13:34:04] [INFO] 
+[2026-01-19 13:34:04] [INFO] ========================================
+[2026-01-19 13:34:04] [INFO] Refresh completed successfully
+[2026-01-19 13:34:04] [INFO] ========================================
