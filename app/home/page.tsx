@@ -57,26 +57,12 @@ export default function HomePage() {
     },
   ];
 
-  // Screenshot paths - mobile screenshots
+  // Screenshot paths - mobile screenshots (4 slides; add mobile-1.png … mobile-4.png to public/screenshots/mobile/)
   const mobileSlides = [
-    { 
-      name: 'Insights Dashboard', 
-      description: 'Personalized insights and performance analytics',
-      image: '/screenshots/mobile/insights.png',
-      objectPosition: 'center center' // Adjust: 'top', 'center', 'bottom', or 'left center', 'right center', etc.
-    },
-    { 
-      name: 'Pain Insights', 
-      description: 'Track close misses and optimize your research',
-      image: '/screenshots/mobile/insights-pain.png',
-      objectPosition: 'center center'
-    },
-    { 
-      name: 'Performance Tracking', 
-      description: 'Monitor your research patterns and trends',
-      image: '/screenshots/mobile/insights-all.png',
-      objectPosition: 'center center'
-    },
+    { name: 'Player Props', description: 'Research player props and lines on mobile', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
+    { name: 'Research Dashboard', description: 'Analytics and performance on the go', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
+    { name: 'Performance Journal', description: 'Track and analyze your research', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
+    { name: 'Analytics & Insights', description: 'Insights and trends at a glance', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
   ];
 
   useEffect(() => {
@@ -353,7 +339,7 @@ export default function HomePage() {
               {/* Mobile Mock - iPhone 17 Style */}
               <div className="relative w-full sm:w-auto flex justify-center">
                 {/* iPhone 17 Frame */}
-                <div className="w-[340px] sm:w-[360px] h-[650px] sm:h-[695px] bg-[#050d1a] rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] bg-[#050d1a] rounded-[3.5rem] shadow-2xl relative overflow-hidden">
                   {/* Screen Bezel */}
                   <div className="w-full h-full bg-[#050d1a] rounded-[3.5rem] overflow-hidden relative">
                     {/* Dynamic Island */}
@@ -389,15 +375,17 @@ export default function HomePage() {
                                 <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
                                   idx === 0 ? 'from-purple-900/20 to-blue-900/20' : 
                                   idx === 1 ? 'from-blue-900/20 to-purple-900/20' : 
-                                  'from-emerald-900/20 to-blue-900/20'
+                                  idx === 2 ? 'from-emerald-900/20 to-blue-900/20' : 
+                                  'from-indigo-900/20 to-purple-900/20'
                                 }`}>
                                   <div className="text-center p-4">
                                     <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                                      idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : 'bg-emerald-600/20'
+                                      idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
                                     }`}>
                                       {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
                                       {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
                                       {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
+                                      {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
                                     </div>
                                     <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
                                     <p className="text-xs text-gray-500">{slide.description}</p>
