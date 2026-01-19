@@ -15,10 +15,10 @@ export function useDashboardStyles({ sidebarOpen }: UseDashboardStylesParams) {
     transition: 'margin-left 0.3s ease, width 0.3s ease'
   }), [sidebarOpen]);
 
-  // Memoize inner container styles
+  // Memoize inner container styles (mobile uses 4px via CSS var in DashboardStyles)
   const innerContainerStyle = useMemo(() => ({
-    paddingLeft: sidebarOpen ? 0 : '2rem',
-    paddingRight: sidebarOpen ? 0 : '1rem'
+    paddingLeft: sidebarOpen ? 0 : 'var(--inner-padding-left, 2rem)',
+    paddingRight: sidebarOpen ? 0 : 'var(--inner-padding-right, 1rem)'
   }), [sidebarOpen]);
 
   // Memoize inner container className
@@ -27,9 +27,9 @@ export function useDashboardStyles({ sidebarOpen }: UseDashboardStylesParams) {
     [sidebarOpen]
   );
 
-  // Memoize main content area className
+  // Memoize main content area className (pr-1 on mobile to match journal)
   const mainContentClassName = useMemo(() => 
-    `relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 overflow-y-auto overflow-x-hidden overscroll-contain pl-0 pr-2 sm:pl-0 sm:pr-2 md:px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
+    `relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 overflow-y-auto overflow-x-hidden overscroll-contain pl-0 pr-1 sm:pl-0 sm:pr-2 md:px-0 pb-0 lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${
       sidebarOpen ? 'lg:flex-[6] xl:flex-[6.2]' : 'lg:flex-[6] xl:flex-[6]'
     }`,
     [sidebarOpen]

@@ -17,6 +17,8 @@ export function DashboardStyles() {
         --content-margin-right: 0px;
         --content-padding-left: 0px;
         --content-padding-right: 0px;
+        --inner-padding-left: 2rem;
+        --inner-padding-right: 1rem;
       }
 
       @media (min-width: 1024px) {
@@ -48,9 +50,9 @@ export function DashboardStyles() {
         }
       }
 
-      /* Mobile-only: reduce outer gap to tighten left/right padding */
+      /* Mobile-only: reduce outer gap and side padding to match journal (px-1) */
       @media (max-width: 639px) {
-        .dashboard-container { --gap: 8px; }
+        .dashboard-container { --gap: 8px; --inner-padding-left: 4px; --inner-padding-right: 4px; }
       }
 
       /* Custom scrollbar colors for light/dark mode - force always visible */
@@ -160,6 +162,8 @@ export function DashboardStyles() {
     `}</style>
   );
 }
+
+
 
 
 

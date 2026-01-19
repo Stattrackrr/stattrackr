@@ -2755,7 +2755,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 paddingRight: 0,
               }}
             >
-          <div className={`h-full pb-12 lg:pr-0 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: '8px', paddingRight: '8px', paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className={`h-full pb-12 lg:pr-0 px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Search Bar */}
             <div className={`mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
