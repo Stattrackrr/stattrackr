@@ -32,6 +32,8 @@ export default function LoginPage() {
       // Maintain compatibility with any existing stored redirect by clearing it
       localStorage.setItem('stattrackr_login_redirect', redirect);
     }
+    // Open in sign-up mode when ?signup=1
+    if (searchParams.get('signup') === '1') setIsSignUp(true);
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();

@@ -602,6 +602,10 @@ export default function NBALandingPage() {
         const proStatus = isActive && isProTier;
         if (isMounted) {
           setIsPro(proStatus);
+          if (!proStatus) {
+            router.replace('/home#pricing');
+            return;
+          }
         }
       } catch (error) {
         console.error('Error checking subscription:', error);

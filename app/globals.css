@@ -95,3 +95,12 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.7);
 }
+
+/* Infinite horizontal scroll for reviews */
+@keyframes scrollReviews {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-scroll-reviews {
+  animation: scrollReviews 35s linear infinite;
+}

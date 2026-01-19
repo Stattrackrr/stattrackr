@@ -86,6 +86,10 @@ export function useSubscriptionCheck({
           
           if (isMounted) {
             setIsPro(proStatus);
+            if (!proStatus) {
+              router.replace('/home#pricing');
+              return;
+            }
           }
           
           if (isActive) {

@@ -192,40 +192,15 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: 'Free',
-      description: 'Perfect for getting started',
-      price: { monthly: 0, annual: 0 },
-      features: [
-        'Basic player stats',
-        'Last 10 games only',
-        'Limited team data',
-        'Community support',
-      ],
-      limitations: [
-        'No advanced stats',
-        'No shot charts',
-        'No export capabilities',
-        'No API access',
-      ],
-      cta: 'Current Plan',
-      highlighted: false,
-    },
-    {
       name: 'Pro',
-      description: 'For serious sports analysts and researchers',
-      price: { monthly: 9.99, semiannual: 50.94, annual: 95.88 },
+      description: 'Complete NBA research and analytics platform',
+      price: { monthly: 9.99, semiannual: 49.99, annual: 89.99 },
       features: [
-        'Everything in Free',
-        'Advanced stats (PER, TS%, USG%)',
-        'Shot charts & visualizations',
-        'Unlimited player research',
-        'Full historical data (3 seasons)',
-        'Real-time odds & lines',
-        'DVP rankings & matchup data',
-        'Injury reports & depth charts',
-        'Export to CSV/Excel',
-        'API access',
-        'Custom alerts & notifications',
+        'Advanced statistics',
+        '10+ bookmakers',
+        'Advanced journaling',
+        'Automatic insights',
+        'Mobile/desktop compatibility',
         'Priority support',
       ],
       limitations: [],
@@ -235,9 +210,6 @@ export default function PricingPage() {
   ];
 
   const handleSelectPlan = async (planName: string, billingCycle: 'monthly' | 'semiannual' | 'annual') => {
-    if (planName === 'Free') {
-      return; // Already on free plan
-    }
     
     // Start checkout directly
     try {
@@ -358,7 +330,7 @@ export default function PricingPage() {
               <p className="text-sm font-medium text-white truncate">{user.email}</p>
               <div className="mt-2 pt-2 border-t border-white/10">
                 <p className="text-xs text-gray-400">Plan</p>
-                <p className="text-sm font-semibold text-purple-400">{hasPremium ? 'Pro' : 'Free'}</p>
+                <p className="text-sm font-semibold text-purple-400">{hasPremium ? 'Pro' : 'Trial'}</p>
               </div>
             </div>
             
@@ -963,72 +935,9 @@ export default function PricingPage() {
             Compare Plans
           </h2>
           <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-white/10 shadow-2xl p-8">
-            <div className="grid grid-cols-2 gap-0">
-              {/* Free Plan Features */}
-              <div className="flex flex-col md:pr-8">
-                <div className="flex items-center gap-2 mb-6 h-[38px] ml-8">
-                  <h3 className="text-2xl font-bold text-white">Free</h3>
-                </div>
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white">Advanced Game Props</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">Advanced Player Stats</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">DvP Rankings</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">Real-time Odds</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">Advanced Tracking</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">Advanced Journaling</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-gray-400 line-through">Admin Picks</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white">Real-time Injuries/Depth Charts</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white">Community Support</span>
-                  </li>
-                </ul>
-              </div>
-
+            <div className="flex justify-center">
               {/* Pro Plan Features */}
-              <div className="flex flex-col md:pl-8">
+              <div className="flex flex-col max-w-2xl">
                 <div className="flex items-center gap-2 mb-6 h-[38px] ml-8">
                   <h3 className="text-2xl font-bold text-emerald-400">Pro</h3>
                 </div>
@@ -1037,55 +946,37 @@ export default function PricingPage() {
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">Advanced Game Props</span>
+                    <span className="text-sm text-white font-medium">Advanced statistics</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">Advanced Player Stats</span>
+                    <span className="text-sm text-white font-medium">10+ bookmakers</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">DvP Rankings</span>
+                    <span className="text-sm text-white font-medium">Advanced journaling</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">Real-time Odds</span>
+                    <span className="text-sm text-white font-medium">Automatic insights</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">Advanced Tracking</span>
+                    <span className="text-sm text-white font-medium">Mobile/desktop compatibility</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-white font-medium">Advanced Journaling</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white font-medium">Admin Picks</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white font-medium">Real-time Injuries/Depth Charts</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-white font-medium">Priority Support</span>
+                    <span className="text-sm text-white font-medium">Priority support</span>
                   </li>
                 </ul>
               </div>
@@ -1119,55 +1010,37 @@ export default function PricingPage() {
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Game Props</span>
+                <span className="text-sm text-gray-200">Advanced statistics</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Player Stats</span>
+                <span className="text-sm text-gray-200">10+ bookmakers</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">DvP Rankings</span>
+                <span className="text-sm text-gray-200">Advanced journaling</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Real-time Odds</span>
+                <span className="text-sm text-gray-200">Automatic insights</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Tracking</span>
+                <span className="text-sm text-gray-200">Mobile/desktop compatibility</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Journaling</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Admin Picks</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Real-time Injuries/Depth Charts</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Priority Support</span>
+                <span className="text-sm text-gray-200">Priority support</span>
               </div>
             </div>
           </div>
@@ -1195,55 +1068,37 @@ export default function PricingPage() {
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Game Props</span>
+                <span className="text-sm text-gray-200">Advanced statistics</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Player Stats</span>
+                <span className="text-sm text-gray-200">10+ bookmakers</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">DvP Rankings</span>
+                <span className="text-sm text-gray-200">Advanced journaling</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Real-time Odds</span>
+                <span className="text-sm text-gray-200">Automatic insights</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Tracking</span>
+                <span className="text-sm text-gray-200">Mobile/desktop compatibility</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Journaling</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Admin Picks</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Real-time Injuries/Depth Charts</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Priority Support</span>
+                <span className="text-sm text-gray-200">Priority support</span>
               </div>
             </div>
           </div>
@@ -1276,55 +1131,37 @@ export default function PricingPage() {
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Game Props</span>
+                <span className="text-sm text-gray-200">Advanced statistics</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Player Stats</span>
+                <span className="text-sm text-gray-200">10+ bookmakers</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">DvP Rankings</span>
+                <span className="text-sm text-gray-200">Advanced journaling</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Real-time Odds</span>
+                <span className="text-sm text-gray-200">Automatic insights</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Tracking</span>
+                <span className="text-sm text-gray-200">Mobile/desktop compatibility</span>
               </div>
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-200">Advanced Journaling</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Admin Picks</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Real-time Injuries/Depth Charts</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-sm text-gray-200">Priority Support</span>
+                <span className="text-sm text-gray-200">Priority support</span>
               </div>
             </div>
           </div>

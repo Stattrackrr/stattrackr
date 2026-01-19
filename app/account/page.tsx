@@ -48,7 +48,7 @@ function AccountSettingsContent() {
     
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: authError } = await supabase.auth.updateUser({
         email,
         data: {
           username: username,
@@ -58,7 +58,22 @@ function AccountSettingsContent() {
         }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Sync to profiles table so first_name, last_name, username, phone show in Supabase Table Editor
+      const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || null;
+      await supabase
+        .from('profiles')
+        .update({
+          email: email || null,
+          full_name: fullName,
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+          username: username.trim() || null,
+          phone: phone.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
       
       alert("Profile updated successfully!");
       await loadUserData(); // Reload to get updated data

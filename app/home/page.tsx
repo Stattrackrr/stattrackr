@@ -18,7 +18,8 @@ import {
   Smartphone,
   Monitor,
   ArrowRight,
-  PlayCircle
+  Lightbulb,
+  Quote
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -27,51 +28,74 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
-  const [activeFeature, setActiveFeature] = useState<'props' | 'dashboard' | 'journal'>('props');
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileSlide, setMobileSlide] = useState(0);
   const [desktopSlide, setDesktopSlide] = useState(0);
   const [mobileImageErrors, setMobileImageErrors] = useState<Record<number, boolean>>({});
   const [desktopImageErrors, setDesktopImageErrors] = useState<Record<number, boolean>>({});
+  const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Screenshot paths - desktop screenshots (in order: Player Detail, Player Props, Dashboard)
+  // On mobile viewport: hide Desktop/Mobile toggle and always show mobile mock (lg = 1024)
+  const effectiveView = isMobileViewport ? 'mobile' : deviceView;
+
+  // Screenshot paths - desktop screenshots (in order: Analytics Dashboard, Player Props, Journal)
   const desktopSlides = [
     { 
-      name: 'Player Detail Page', 
-      description: 'Deep dive into player statistics and matchup data',
+      name: 'Analytics Dashboard', 
+      description: 'The most advanced in the game. Every stat you need in one dashboard.',
+      paragraph: 'The most advanced in the game—every stat you could want built into one dashboard. Find the best matchups and spots to maximize your edge. Desktop-grade research, built for your phone.',
       image: '/screenshots/desktop/player-detail.png',
-      objectPosition: 'center center' // Adjust: 'top', 'center', 'bottom', or 'left center', 'right center', etc.
+      objectPosition: 'center center'
     },
     { 
       name: 'Player Props Research', 
-      description: 'Advanced player prop analysis with DvP rankings and trends',
+      description: 'Scans every line and displays the best lines first',
+      paragraph: 'We scan lines across sportsbooks and rank them so the best lines show up first. Use the filters above to narrow by any stat, and filter by timeframe, best or worst DvP, bookmaker, game, and more. Find the edges you\'re researching without digging through every market.',
       image: '/screenshots/desktop/props.png',
-      objectPosition: 'center center' // Shows center portion, including both left and right sides
+      objectPosition: 'center center'
     },
     { 
-      name: 'Analytics Dashboard', 
-      description: 'Comprehensive betting analytics and performance tracking',
+      name: 'Journal', 
+      description: 'Track how you go with every metric in one place',
+      paragraph: 'Track how you go. The Journal includes: Total P&L, total staked, average stake, ROI, wins and losses, bankroll (in units mode), Profit/Loss Over Time chart, Betting Calendar (day, week, month, year), Profit by Bookmaker, Profit by Market, and automated Insights. Filter by sport, bet type, bookmaker, and date.',
       image: '/screenshots/desktop/dashboard.png',
-      objectPosition: 'center center' // Centered but will stretch to fill
+      objectPosition: 'center center'
     },
   ];
 
   // Screenshot paths - mobile screenshots (4 slides; add mobile-1.png … mobile-4.png to public/screenshots/mobile/)
   const mobileSlides = [
-    { name: 'Player Props', description: 'Research player props and lines on mobile', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
-    { name: 'Research Dashboard', description: 'Analytics and performance on the go', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
-    { name: 'Performance Journal', description: 'Track and analyze your research', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
-    { name: 'Analytics & Insights', description: 'Insights and trends at a glance', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
+    { name: 'Player Props', description: 'Scans every line and displays the best lines first', paragraph: 'We scan lines across sportsbooks and rank them so the best lines show up first. Use the filters above to narrow by any stat, and filter by timeframe, best or worst DvP, bookmaker, game, and more. Find the edges you\'re researching without digging through every market.', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
+    { name: 'Analytics Dashboard', description: 'The most advanced in the game. Every stat you need in one dashboard.', paragraph: 'The most advanced in the game—every stat you could want built into one dashboard. Find the best matchups and spots to maximize your edge. Desktop-grade research, built for your phone.', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
+    { name: 'Performance Journal', description: 'Track how you go with every metric in one place', paragraph: 'Track how you go. The Journal includes: Total P&L, total staked, average stake, ROI, wins and losses, bankroll (in units mode), Profit/Loss Over Time chart, Betting Calendar (day, week, month, year), Profit by Bookmaker, Profit by Market, and automated Insights. Filter by sport, bet type, bookmaker, and date.', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
+    { name: 'Analytics & Insights', description: 'Insights and trends at a glance', paragraph: 'Quickly scan insights and trend summaries on mobile. Get automated takeaways and pattern highlights so you can focus on what matters most without digging through full reports.', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
+  ];
+
+  // User reviews / testimonials (replace with real reviews when available)
+  const reviews = [
+    { quote: 'The dashboard stats on every player and the best-line sorting on props saved me hours. Filters are exactly what I needed.', name: 'Jake M.', tag: 'Pro user' },
+    { quote: "Journal is the most advanced I've used. Track everything, and the automatic insights actually surface stuff I'd have missed.", name: 'Marcus T.', tag: 'Pro user' },
+    { quote: "Clean, fast, and easy to use. Doesn't get in the way—just gives you the numbers and lets you work.", name: 'Alex K.', tag: 'Pro user' },
+    { quote: 'DvP and matchup stuff is legit. I use it every slate before locking in.', name: 'Jordan P.', tag: 'Pro user' },
+    { quote: 'Props page with best lines first is a time-saver. No more hopping between books.', name: 'Sam R.', tag: 'Pro user' },
+    { quote: 'The insights from my journal actually helped me spot leaks in my process.', name: 'Chris L.', tag: 'Pro user' },
+    { quote: 'Simple layout, serious data. Exactly what I wanted.', name: 'Drew H.', tag: 'Pro user' },
+    { quote: 'Best-line sorting and filters changed how I build my cards.', name: 'Taylor W.', tag: 'Pro user' },
+    { quote: 'Tracking my bets and seeing the breakdowns in one place is huge.', name: 'Morgan K.', tag: 'Pro user' },
+    { quote: 'Cross-platform is key for me—dashboard on desktop, props on the go.', name: 'Riley N.', tag: 'Pro user' },
   ];
 
   useEffect(() => {
+    const interval = 7000; // 7 seconds for both
     const mobileInterval = setInterval(() => {
       setMobileSlide((prev) => (prev + 1) % mobileSlides.length);
-    }, 4000);
+    }, interval);
     const desktopInterval = setInterval(() => {
       setDesktopSlide((prev) => (prev + 1) % desktopSlides.length);
-    }, 4500);
+    }, interval);
     return () => {
       clearInterval(mobileInterval);
       clearInterval(desktopInterval);
@@ -110,6 +134,21 @@ export default function HomePage() {
       subscription.unsubscribe();
       window.removeEventListener('scroll', handleScroll);
     };
+  }, []);
+
+  // Logged-in Pro users: redirect to props page, don't show home
+  useEffect(() => {
+    if (!isCheckingSubscription && user && hasPremium) {
+      router.replace('/nba');
+    }
+  }, [isCheckingSubscription, user, hasPremium, router]);
+
+  useEffect(() => {
+    const lg = 1024;
+    const update = () => setIsMobileViewport(typeof window !== 'undefined' && window.innerWidth < lg);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   const checkPremiumStatus = async (userId: string) => {
@@ -208,18 +247,11 @@ export default function HomePage() {
       description: 'Complete NBA research and analytics platform',
       price: { monthly: 9.99, semiannual: 49.99, annual: 89.99 },
       features: [
-        'Player props research & analysis',
-        'Advanced stats (PER, TS%, USG%)',
-        'Shot charts & visualizations',
-        'Unlimited player research',
-        'Full historical data (3 seasons)',
-        'Real-time odds & lines',
-        'DVP rankings & matchup data',
-        'Injury reports & depth charts',
-        'Performance journal & tracking',
-        'Export to CSV/Excel',
-        'API access',
-        'Custom alerts & notifications',
+        'Advanced statistics',
+        '10+ bookmakers',
+        'Advanced journaling',
+        'Automatic insights',
+        'Mobile/desktop compatibility',
         'Priority support',
       ],
       limitations: [],
@@ -229,6 +261,18 @@ export default function HomePage() {
   ];
 
   if (isCheckingSubscription) {
+    return (
+      <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <StatTrackrLogo className="w-20 h-20" />
+          <span className="font-bold text-4xl text-white">StatTrackr</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Logged-in Pro: redirect to /nba; show loading until redirect
+  if (user && hasPremium) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -261,7 +305,15 @@ export default function HomePage() {
               {user ? (
                 <>
                   {hasPremium ? (
-                    <span className="text-sm text-gray-400">Pro Member</span>
+                    <>
+                      <span className="text-sm text-gray-400">Pro Member</span>
+                      <button
+                        onClick={() => router.push('/nba')}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Go to App
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={() => router.push('/home#pricing')}
@@ -270,26 +322,20 @@ export default function HomePage() {
                       Upgrade to Pro
                     </button>
                   )}
-                  <button
-                    onClick={() => router.push('/nba')}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Go to App
-                  </button>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => router.push('/login')}
-                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    Sign In
-                  </button>
                   <button
                     onClick={() => router.push('/home#pricing')}
                     className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
                   >
                     Get Started
+                  </button>
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  >
+                    Sign In
                   </button>
                 </>
               )}
@@ -315,80 +361,174 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push(user ? '/nba' : '/login')}
+                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >
-                Start Researching
+                Get Started
                 <ArrowRight className="w-5 h-5" />
               </button>
               <button
-                onClick={() => {
-                  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-lg font-semibold transition-colors"
               >
-                <PlayCircle className="w-5 h-5" />
-                See Features
+                Need help?
               </button>
             </div>
           </div>
 
           {/* Mock Device Preview */}
-          <div className="relative mt-20">
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 px-4 sm:px-0">
-              {/* Mobile Mock - iPhone 17 Style */}
-              <div className="relative w-full sm:w-auto flex justify-center">
-                {/* iPhone 17 Frame */}
-                <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] bg-[#050d1a] rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-                  {/* Screen Bezel */}
-                  <div className="w-full h-full bg-[#050d1a] rounded-[3.5rem] overflow-hidden relative">
-                    {/* Dynamic Island */}
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                      <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
-                        <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
+          <div className="relative mt-20 flex flex-col items-center">
+            {/* Desktop / Mobile toggle — icons only; hidden on mobile, show only mobile mock there */}
+            <div className="hidden lg:inline-flex rounded-lg bg-gray-800/90 p-1 border border-gray-700 mb-8">
+              <button
+                onClick={() => setDeviceView('desktop')}
+                className={`flex items-center justify-center p-2 rounded-md transition-all ${
+                  deviceView === 'desktop' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Desktop"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setDeviceView('mobile')}
+                className={`flex items-center justify-center p-2 rounded-md transition-all ${
+                  deviceView === 'mobile' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Mobile"
+              >
+                <Smartphone className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Mock + slide copy to the right; copy changes with the photo (5s each) */}
+            <div className="flex flex-col lg:flex-row items-start justify-center gap-8 lg:gap-12 w-full px-4">
+              {effectiveView === 'mobile' && (
+                <div className="relative w-full sm:w-auto flex justify-center flex-shrink-0">
+                  {/* iPhone 17 Frame */}
+                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] bg-[#050d1a] rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                    <div className="w-full h-full bg-[#050d1a] rounded-[3.5rem] overflow-hidden relative">
+                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
+                        <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
+                          <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
+                        </div>
+                      </div>
+                      <div className="pt-4 h-full overflow-hidden relative">
+                        <div className="h-full transition-all duration-500 ease-in-out">
+                          {mobileSlides.map((slide, idx) => (
+                            <div
+                              key={idx}
+                              className={`absolute inset-0 transition-opacity duration-500 ${
+                                idx === mobileSlide ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            >
+                              <div className="w-full h-full relative p-1">
+                                {!mobileImageErrors[idx] ? (
+                                  <Image
+                                    src={slide.image}
+                                    alt={slide.name}
+                                    fill
+                                    className="object-cover rounded-lg"
+                                    style={{ objectPosition: slide.objectPosition || 'center center' }}
+                                    onError={() => setMobileImageErrors(prev => ({ ...prev, [idx]: true }))}
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
+                                    idx === 0 ? 'from-purple-900/20 to-blue-900/20' : 
+                                    idx === 1 ? 'from-blue-900/20 to-purple-900/20' : 
+                                    idx === 2 ? 'from-emerald-900/20 to-blue-900/20' : 
+                                    'from-indigo-900/20 to-purple-900/20'
+                                  }`}>
+                                    <div className="text-center p-4">
+                                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                                        idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
+                                      }`}>
+                                        {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
+                                        {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
+                                        {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
+                                        {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
+                                      </div>
+                                      <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
+                                      <p className="text-xs text-gray-500">{slide.description}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                          {mobileSlides.map((_, idx) => (
+                            <div
+                              key={idx}
+                              className={`h-1.5 rounded-full transition-all ${
+                                idx === mobileSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Screen Content */}
-                    <div className="pt-4 h-full overflow-hidden relative">
+                  </div>
+                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                    Mobile Optimized
+                  </div>
+                </div>
+              )}
+
+              {effectiveView === 'desktop' && (
+                <div className="relative flex-shrink-0">
+                  <div className="w-[min(1110px,95vw)] h-[670px] bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-700 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-8 bg-gray-900 rounded-t-lg flex items-center gap-2 px-4 z-20">
+                      <div className="flex gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      </div>
+                      <div className="flex-1 flex justify-center">
+                        <div className="w-32 h-1 bg-gray-700 rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="pt-8 h-full bg-[#050d1a] overflow-hidden relative">
                       <div className="h-full transition-all duration-500 ease-in-out">
-                        {mobileSlides.map((slide, idx) => (
+                        {desktopSlides.map((slide, idx) => (
                           <div
                             key={idx}
                             className={`absolute inset-0 transition-opacity duration-500 ${
-                              idx === mobileSlide ? 'opacity-100' : 'opacity-0'
+                              idx === desktopSlide ? 'opacity-100' : 'opacity-0'
                             }`}
                           >
-                            {/* Try to load screenshot, fallback to placeholder */}
-                            <div className="w-full h-full relative p-1">
-                              {!mobileImageErrors[idx] ? (
+                            <div className="w-full h-full relative p-0 overflow-hidden">
+                              {!desktopImageErrors[idx] ? (
                                 <Image
                                   src={slide.image}
                                   alt={slide.name}
                                   fill
                                   className="object-cover rounded-lg"
-                                  style={{ objectPosition: slide.objectPosition || 'center center' }}
-                                  onError={() => setMobileImageErrors(prev => ({ ...prev, [idx]: true }))}
+                                  style={{ 
+                                    objectPosition: slide.objectPosition || 'center center',
+                                    transform: 'scale(1)',
+                                    transformOrigin: 'center center'
+                                  }}
+                                  onError={() => setDesktopImageErrors(prev => ({ ...prev, [idx]: true }))}
                                   unoptimized
                                 />
                               ) : (
-                                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
-                                  idx === 0 ? 'from-purple-900/20 to-blue-900/20' : 
-                                  idx === 1 ? 'from-blue-900/20 to-purple-900/20' : 
-                                  idx === 2 ? 'from-emerald-900/20 to-blue-900/20' : 
-                                  'from-indigo-900/20 to-purple-900/20'
+                                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${
+                                  idx === 0 ? 'from-purple-900/30 to-blue-900/30' : 
+                                  idx === 1 ? 'from-blue-900/30 to-purple-900/30' : 
+                                  'from-emerald-900/30 to-blue-900/30'
                                 }`}>
-                                  <div className="text-center p-4">
-                                    <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                                      idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
+                                  <div className="text-center p-8">
+                                    <div className={`w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
+                                      idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : 'bg-emerald-600/20'
                                     }`}>
-                                      {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
-                                      {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
-                                      {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
-                                      {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
+                                      {idx === 0 && <Search className="w-12 h-12 text-purple-400" />}
+                                      {idx === 1 && <BarChart3 className="w-12 h-12 text-blue-400" />}
+                                      {idx === 2 && <BookOpen className="w-12 h-12 text-emerald-400" />}
                                     </div>
-                                    <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
-                                    <p className="text-xs text-gray-500">{slide.description}</p>
+                                    <p className="text-xl font-bold text-gray-200 mb-2">{slide.name}</p>
+                                    <p className="text-sm text-gray-400">{slide.description}</p>
                                   </div>
                                 </div>
                               )}
@@ -396,320 +536,37 @@ export default function HomePage() {
                           </div>
                         ))}
                       </div>
-                      {/* Slide Indicators */}
                       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-                        {mobileSlides.map((_, idx) => (
+                        {desktopSlides.map((_, idx) => (
                           <div
                             key={idx}
-                            className={`h-1.5 rounded-full transition-all ${
-                              idx === mobileSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'
+                            className={`h-2 rounded-full transition-all ${
+                              idx === desktopSlide ? 'bg-blue-400 w-8' : 'bg-gray-600 w-2'
                             }`}
                           />
                         ))}
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                  Mobile Optimized
-                </div>
-              </div>
-
-              {/* Desktop Mock */}
-              <div className="relative">
-                <div className="w-[1110px] h-[670px] bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-700 relative overflow-hidden">
-                  {/* MacBook-style Bezel */}
-                  <div className="absolute top-0 left-0 right-0 h-8 bg-gray-900 rounded-t-lg flex items-center gap-2 px-4 z-20">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    </div>
-                    <div className="flex-1 flex justify-center">
-                      <div className="w-32 h-1 bg-gray-700 rounded-full"></div>
-                    </div>
-                  </div>
-                  
-                  {/* Screen Content */}
-                  <div className="pt-8 h-full bg-[#050d1a] overflow-hidden relative">
-                    <div className="h-full transition-all duration-500 ease-in-out">
-                        {desktopSlides.map((slide, idx) => (
-                        <div
-                          key={idx}
-                          className={`absolute inset-0 transition-opacity duration-500 ${
-                            idx === desktopSlide ? 'opacity-100' : 'opacity-0'
-                          }`}
-                        >
-                          {/* Try to load screenshot, fallback to placeholder */}
-                          <div className="w-full h-full relative p-0 overflow-hidden">
-                            {!desktopImageErrors[idx] ? (
-                              <Image
-                                src={slide.image}
-                                alt={slide.name}
-                                fill
-                                className="object-cover rounded-lg"
-                                style={{ 
-                                  objectPosition: slide.objectPosition || 'center center',
-                                  transform: 'scale(1)',
-                                  transformOrigin: 'center center'
-                                }}
-                                onError={() => setDesktopImageErrors(prev => ({ ...prev, [idx]: true }))}
-                                unoptimized
-                              />
-                            ) : (
-                              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${
-                                idx === 0 ? 'from-purple-900/30 to-blue-900/30' : 
-                                idx === 1 ? 'from-blue-900/30 to-purple-900/30' : 
-                                'from-emerald-900/30 to-blue-900/30'
-                              }`}>
-                                <div className="text-center p-8">
-                                  <div className={`w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
-                                    idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : 'bg-emerald-600/20'
-                                  }`}>
-                                    {idx === 0 && <Search className="w-12 h-12 text-purple-400" />}
-                                    {idx === 1 && <BarChart3 className="w-12 h-12 text-blue-400" />}
-                                    {idx === 2 && <BookOpen className="w-12 h-12 text-emerald-400" />}
-                                  </div>
-                                  <p className="text-xl font-bold text-gray-200 mb-2">{slide.name}</p>
-                                  <p className="text-sm text-gray-400">{slide.description}</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Slide Indicators */}
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-                      {desktopSlides.map((_, idx) => (
-                        <div
-                          key={idx}
-                          className={`h-2 rounded-full transition-all ${
-                            idx === desktopSlide ? 'bg-blue-400 w-8' : 'bg-gray-600 w-2'
-                          }`}
-                        />
-                      ))}
-                    </div>
+                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                    Desktop Experience
                   </div>
                 </div>
-                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                  Desktop Experience
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Powerful Research Tools</h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Everything you need for comprehensive NBA analysis and research
-            </p>
-          </div>
-
-          {/* Feature Tabs */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <button
-              onClick={() => setActiveFeature('props')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeFeature === 'props'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Player Props Research
-            </button>
-            <button
-              onClick={() => setActiveFeature('dashboard')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeFeature === 'dashboard'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Advanced Dashboard
-            </button>
-            <button
-              onClick={() => setActiveFeature('journal')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeFeature === 'journal'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Performance Journal
-            </button>
-          </div>
-
-          {/* Feature Content */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              {activeFeature === 'props' && (
-                <>
-                  <h3 className="text-3xl font-bold mb-4">Comprehensive Player Props Research</h3>
-                  <p className="text-gray-300 mb-6">
-                    Access real-time player prop lines from multiple sportsbooks. Research player performance 
-                    across various statistical categories including points, rebounds, assists, and more. 
-                    Analyze historical performance, head-to-head matchups, and recent trends to make informed research decisions.
-                  </p>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Real-time odds from 13+ sportsbooks</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Historical performance analysis</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Head-to-head matchup data</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Advanced filtering and search</span>
-                    </li>
-                  </ul>
-                </>
               )}
-              {activeFeature === 'dashboard' && (
-                <>
-                  <h3 className="text-3xl font-bold mb-4">Advanced Analytics Dashboard</h3>
-                  <p className="text-gray-300 mb-6">
-                    Dive deep into player statistics with our comprehensive dashboard. Visualize performance 
-                    trends, analyze defensive matchups, and explore advanced metrics. Perfect for researchers 
-                    who need detailed insights into player and team performance patterns.
-                  </p>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Interactive performance charts</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Defense vs Position (DvP) rankings</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Advanced statistical metrics</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Shot charts and visualizations</span>
-                    </li>
-                  </ul>
-                </>
-              )}
-              {activeFeature === 'journal' && (
-                <>
-                  <h3 className="text-3xl font-bold mb-4">Performance Tracking Journal</h3>
-                  <p className="text-gray-300 mb-6">
-                    Track and analyze your research patterns with our comprehensive journal system. 
-                    Monitor performance trends, identify strengths and weaknesses, and gain insights 
-                    into your analytical approach. All data is for research purposes only.
-                  </p>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Track research performance over time</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Profit & loss analytics</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Automated insights and recommendations</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Export data for further analysis</span>
-                    </li>
-                  </ul>
-                </>
-              )}
-            </div>
-            <div className="relative">
-              <div className="aspect-video bg-gray-900 rounded-lg border border-gray-800 overflow-hidden relative">
-                {activeFeature === 'props' && (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <Search className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                      <p className="text-lg text-gray-300 font-semibold mb-2">Player Props Research</p>
-                      <p className="text-sm text-gray-400">Real-time odds • Historical analysis • Matchup data</p>
-                    </div>
-                  </div>
-                )}
-                {activeFeature === 'dashboard' && (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-900/30 to-purple-900/30 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <BarChart3 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <p className="text-lg text-gray-300 font-semibold mb-2">Advanced Analytics Dashboard</p>
-                      <p className="text-sm text-gray-400">Performance charts • DvP rankings • Shot visualizations</p>
-                    </div>
-                  </div>
-                )}
-                {activeFeature === 'journal' && (
-                  <div className="w-full h-full bg-gradient-to-br from-emerald-900/30 to-blue-900/30 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <BookOpen className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                      <p className="text-lg text-gray-300 font-semibold mb-2">Performance Journal</p>
-                      <p className="text-sm text-gray-400">Track patterns • Analyze trends • Export data</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* What is StatTrackr Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-6">What is StatTrackr?</h2>
-          <div className="bg-[#0a1929] rounded-xl p-8 border border-gray-800">
-            <p className="text-lg text-gray-300 mb-4 leading-relaxed">
-              StatTrackr is an <span className="font-semibold text-white">advanced NBA research and analytics platform</span> designed 
-              for sports analysts, researchers, and data enthusiasts. We provide comprehensive tools for analyzing player performance, 
-              team dynamics, and statistical patterns.
-            </p>
-            <div className="bg-purple-600/10 border border-purple-600/30 rounded-lg p-6 mt-6">
-              <p className="text-base text-gray-200 font-medium mb-2">
-                ⚠️ Important: StatTrackr is a Research Tool
-              </p>
-              <p className="text-sm text-gray-400">
-                StatTrackr is <span className="font-semibold text-white">not a betting platform</span>. We do not facilitate, 
-                process, or manage any betting or gambling activities. Our platform is designed exclusively for research, 
-                statistical analysis, and data exploration purposes. All odds and lines displayed are for informational and 
-                research purposes only.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Database className="w-8 h-8 text-purple-400" />
-                </div>
-                <h3 className="font-semibold text-white mb-2">Data Research</h3>
-                <p className="text-sm text-gray-400">Comprehensive statistical databases and historical analysis</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <BarChart3 className="w-8 h-8 text-blue-400" />
-                </div>
-                <h3 className="font-semibold text-white mb-2">Analytics Tools</h3>
-                <p className="text-sm text-gray-400">Advanced visualization and pattern recognition</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-emerald-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-8 h-8 text-emerald-400" />
-                </div>
-                <h3 className="font-semibold text-white mb-2">Performance Insights</h3>
-                <p className="text-sm text-gray-400">Automated insights and trend analysis</p>
+              {/* Copy to the right: matches current slide, updates with the photo */}
+              <div className="w-full lg:w-80 lg:max-w-md flex-shrink-0 text-center lg:text-left">
+                <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 transition-opacity duration-300">
+                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).name}
+                </h3>
+                <p className="text-gray-400 text-sm lg:text-base mb-3">
+                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).description}
+                </p>
+                {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph && (
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -717,7 +574,7 @@ export default function HomePage() {
       </section>
 
       {/* Key Features Grid */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Why Choose StatTrackr?</h2>
@@ -727,43 +584,38 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Database className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Comprehensive Data</h3>
+              <BarChart3 className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Advanced Dashboard</h3>
               <p className="text-gray-400">
-                Access to 3+ seasons of historical data, real-time statistics, and advanced metrics 
-                for thorough research and analysis.
+                Advanced dashboard statistics on every single active NBA player. Charts, trends, DvP, and matchup data at your fingertips.
+              </p>
+            </div>
+            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
+              <Search className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Best Lines & Filters</h3>
+              <p className="text-gray-400">
+                Props pre-calculated to display the best lines on the props page. Filters let you choose exactly which stats you want to see.
+              </p>
+            </div>
+            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
+              <BookOpen className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">The Most Advanced Journal</h3>
+              <p className="text-gray-400">
+                Put your props in and track how you go. The most advanced journal in the game—every metric, calendar, and breakdown you need.
+              </p>
+            </div>
+            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
+              <Lightbulb className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Automatic Insights</h3>
+              <p className="text-gray-400">
+                Insights generated automatically from your journal bets. Spot patterns, strengths, and areas to improve without the guesswork.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <Zap className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Real-Time Updates</h3>
+              <h3 className="text-xl font-bold mb-2">Easy to Use</h3>
               <p className="text-gray-400">
-                Get instant updates on odds, line movements, injuries, and lineup changes to stay 
-                current with the latest information.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Shield className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Research-Focused</h3>
-              <p className="text-gray-400">
-                StatTrackr is a research and analytics platform, not a betting service. 
-                Designed for serious data analysis and statistical research.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <BarChart3 className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Advanced Analytics</h3>
-              <p className="text-gray-400">
-                Powerful visualization tools, DvP rankings, shot charts, and custom metrics 
-                for deep statistical analysis.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <TrendingUp className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Performance Insights</h3>
-              <p className="text-gray-400">
-                Automated insights and recommendations based on your research patterns to help 
-                identify trends and opportunities.
+                Built for speed and clarity. User-friendly layout and workflows so you can focus on research, not fighting the tool.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
@@ -774,6 +626,32 @@ export default function HomePage() {
                 desktop, tablet, and mobile devices.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews / Testimonials — infinite scroll to the right */}
+      <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Don&apos;t take our word for it—take our users&apos;</h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              See what researchers and analysts are saying about StatTrackr
+            </p>
+          </div>
+        </div>
+        <div className="overflow-x-hidden w-full mt-8">
+          <div className="flex gap-6 animate-scroll-reviews w-max">
+            {[...reviews, ...reviews].map((r, i) => (
+              <div key={i} className="flex-shrink-0 w-[min(320px,85vw)] sm:w-[340px] bg-[#0a1929] rounded-xl p-6 border border-gray-800 flex flex-col">
+                <Quote className="w-10 h-10 text-purple-500/50 mb-4 flex-shrink-0" />
+                <p className="text-gray-300 flex-1 mb-4">&ldquo;{r.quote}&rdquo;</p>
+                <div>
+                  <p className="font-semibold text-white">{r.name}</p>
+                  <p className="text-sm text-gray-500">{r.tag}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -916,6 +794,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center text-white mb-10">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-3">
+            {[
+              { q: 'Is there a free trial?', a: 'Yes! All premium plans come with a 7-day free trial. A credit card is required, but you won\'t be charged until the trial ends. Cancel anytime during the trial period to avoid charges.' },
+              { q: 'Can I cancel anytime?', a: 'Yes! You can cancel your subscription at any time. No questions asked, no cancellation fees.' },
+              { q: 'Is mobile supported?', a: 'Yes! StatTrackr is fully optimized for mobile devices. Access all features, analytics, and your performance journal seamlessly from your smartphone or tablet.' },
+              { q: 'How do I contact support?', a: <>You can reach our support team at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
+              { q: 'Does the journal use real money?', a: 'No, the journal is a tracking tool only. It does not handle real money or connect to any external services. You manually enter your research data to track performance, analyze trends, and improve your analytical approach over time.' },
+              { q: 'What sports are available on StatTrackr?', a: "Currently, StatTrackr exclusively supports NBA basketball with comprehensive stats, analytics, and research insights. We're actively developing support for additional sports leagues and will announce them as they become available." },
+              { q: 'Should I tail the top pick on the props page?', a: 'No, it\'s not recommended. The props page surfaces lines and data to support your research—it\'s not a picks service. Do your own independent research using the dashboard, DvP, and filters to ensure you get the best look and make informed decisions.' },
+              { q: 'Are the top-ranked props the best picks?', a: 'No. Ranking is based on line value and available odds, not on our recommendations. We provide the data and tools; you should do your own independent research to find the best look for you. Use the dashboard, filters, and DvP to build your own edges.' },
+            ].map((faq, i) => (
+              <div
+                key={i}
+                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+                className="bg-[#0a1929] rounded-xl p-4 border border-gray-800 cursor-pointer hover:border-purple-500/50 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-semibold text-white">{faq.q}</h3>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${openFAQ === i ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                {openFAQ === i && (
+                  <p className="text-gray-400 mt-3 text-sm leading-relaxed">
+                    {faq.a}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="max-w-4xl mx-auto text-center">
@@ -924,7 +846,11 @@ export default function HomePage() {
             Join thousands of analysts using StatTrackr for advanced NBA research and analytics
           </p>
           <button
-            onClick={() => router.push(user ? '/nba' : '/login')}
+            onClick={() => {
+              if (user && hasPremium) router.push('/nba');
+              else if (user) router.push('/home#pricing');
+              else router.push('/login');
+            }}
             className="px-8 py-4 bg-white text-purple-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
           >
             Start Free Trial
@@ -956,6 +882,7 @@ export default function HomePage() {
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
                 <li><button onClick={() => router.push('/nba')} className="hover:text-white transition-colors">Player Props</button></li>
                 <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">Dashboard</button></li>
               </ul>
