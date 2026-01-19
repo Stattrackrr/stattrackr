@@ -2444,7 +2444,7 @@ function JournalContent() {
       
       {/* Mobile Content */}
       {(
-      <div className="lg:hidden w-full px-3 py-4 pb-20 space-y-2 overflow-y-auto">
+      <div className="lg:hidden w-full px-1 py-4 pb-20 space-y-2 overflow-y-auto">
         {/* 1. Top Stats Container */}
         <div className="w-full bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col overflow-hidden">
           {/* Top half - StatTrackr logo and filters */}
