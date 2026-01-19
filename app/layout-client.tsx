@@ -19,6 +19,18 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     
     // Handle global errors
     const handleError = (event: ErrorEvent) => {
+      // Suppress known benign NotFoundError from releasePointerCapture (e.g. overlayscrollbars,
+      // scrollbar drag, or devtools resize when pointer is released or element unmounts first)
+      const msg = event.error?.message ?? '';
+      if (
+        event.error?.name === 'NotFoundError' &&
+        typeof msg === 'string' &&
+        msg.includes('releasePointerCapture') &&
+        msg.includes('No active pointer with the given id')
+      ) {
+        event.preventDefault();
+        return;
+      }
       console.error('Global error:', event.error);
     };
     

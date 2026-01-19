@@ -2311,13 +2311,7 @@ const ChartControls = function ChartControls({
                   onClick={() => effectiveSetShowAdvancedFilters((v: boolean) => !v)}
                   className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center relative ${effectiveShowAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
                 >
-                  {/* Glow effect around button */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-purple-500/30 blur-md -z-10 animate-pulse"></div>
                   Advanced
-                  {/* NEW badge sticker on top-left of button */}
-                  <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border-2 border-white dark:border-[#0a1929]">
-                    NEW
-                  </div>
                 </button>
               )}
             </div>
@@ -2351,13 +2345,7 @@ const ChartControls = function ChartControls({
                   onClick={() => effectiveSetShowAdvancedFilters((v: boolean) => !v)}
                   className={`w-16 sm:w-24 md:w-28 px-2 sm:px-2 md:px-3 py-2 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center relative ${effectiveShowAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
                 >
-                  {/* Glow effect around button */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-purple-500/30 blur-md -z-10 animate-pulse"></div>
                   Advanced
-                  {/* NEW badge sticker on top-left of button */}
-                  <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border-2 border-white dark:border-[#0a1929]">
-                    NEW
-                  </div>
                 </button>
               )}
             </div>
