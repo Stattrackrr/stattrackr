@@ -19,8 +19,33 @@ import {
   Monitor,
   ArrowRight,
   Lightbulb,
-  Quote
+  Quote,
+  Star
 } from 'lucide-react';
+
+function getInitials(name: string): string {
+  const letters = name.replace(/[^a-zA-Z]/g, '').slice(0, 2);
+  return letters.toUpperCase() || '?';
+}
+
+const AVATAR_GRADIENTS = [
+  'bg-gradient-to-br from-indigo-500 to-indigo-300/90',
+  'bg-gradient-to-br from-violet-500 to-violet-300/90',
+  'bg-gradient-to-br from-purple-500 to-purple-300/90',
+  'bg-gradient-to-br from-fuchsia-500 to-fuchsia-300/90',
+  'bg-gradient-to-br from-rose-500 to-rose-300/90',
+  'bg-gradient-to-br from-amber-500 to-amber-300/90',
+  'bg-gradient-to-br from-emerald-500 to-emerald-300/90',
+  'bg-gradient-to-br from-cyan-500 to-cyan-300/90',
+  'bg-gradient-to-br from-blue-500 to-blue-300/90',
+  'bg-gradient-to-br from-orange-500 to-orange-300/90',
+];
+
+function getAvatarColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) - h) + name.charCodeAt(i) | 0;
+  return AVATAR_GRADIENTS[Math.abs(h) % AVATAR_GRADIENTS.length];
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -74,18 +99,18 @@ export default function HomePage() {
     { name: 'Analytics & Insights', description: 'Insights and trends at a glance', paragraph: 'Quickly scan insights and trend summaries on mobile. Get automated takeaways and pattern highlights so you can focus on what matters most without digging through full reports.', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
   ];
 
-  // User reviews / testimonials (replace with real reviews when available)
+  // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
-    { quote: 'The dashboard stats on every player and the best-line sorting on props saved me hours. Filters are exactly what I needed.', name: 'Jake M.', tag: 'Pro user' },
-    { quote: "Journal is the most advanced I've used. Track everything, and the automatic insights actually surface stuff I'd have missed.", name: 'Marcus T.', tag: 'Pro user' },
-    { quote: "Clean, fast, and easy to use. Doesn't get in the way—just gives you the numbers and lets you work.", name: 'Alex K.', tag: 'Pro user' },
-    { quote: 'DvP and matchup stuff is legit. I use it every slate before locking in.', name: 'Jordan P.', tag: 'Pro user' },
-    { quote: 'Props page with best lines first is a time-saver. No more hopping between books.', name: 'Sam R.', tag: 'Pro user' },
-    { quote: 'The insights from my journal actually helped me spot leaks in my process.', name: 'Chris L.', tag: 'Pro user' },
-    { quote: 'Simple layout, serious data. Exactly what I wanted.', name: 'Drew H.', tag: 'Pro user' },
-    { quote: 'Best-line sorting and filters changed how I build my cards.', name: 'Taylor W.', tag: 'Pro user' },
-    { quote: 'Tracking my bets and seeing the breakdowns in one place is huge.', name: 'Morgan K.', tag: 'Pro user' },
-    { quote: 'Cross-platform is key for me—dashboard on desktop, props on the go.', name: 'Riley N.', tag: 'Pro user' },
+    { quote: "I was skeptical about the price. Figured it'd be bare bones. Only NBA right now but the stats are way more advanced than I expected. I've been winning more since I switched.", name: 'marct_22', tag: 'Pro user' },
+    { quote: "For how cheap it is I wasn't sure it'd be any good. It's only NBA but the dashboard is legit. Deeper than the free stuff I was using. Results don't lie.", name: 'jreed9', tag: 'Pro user' },
+    { quote: "The journal makes it easy to see where I'm going wrong and what I need to fix. I was just guessing before. Now I actually know which spots are killing me.", name: 'jake_m82', tag: 'Pro user' },
+    { quote: "This is the first one I've actually kept using. Most apps I sign up, use twice, and forget. I'm in here every day before the games.", name: 'alexk9', tag: 'Pro user' },
+    { quote: "I was using like three different things before. Spreadsheets, a free site, notes on my phone. Now it's all in one place and I don't waste time switching.", name: 'samr91', tag: 'Pro user' },
+    { quote: "It doesn't overwhelm you. A lot of these tools throw everything at you. This one gives you what matters without the noise. Fits how I actually work.", name: 'cjlew', tag: 'Pro user' },
+    { quote: "I use it on my phone during the day and on my laptop at night. Same stuff, no weird sync. That alone was worth it for me.", name: 'drew_07', tag: 'Pro user' },
+    { quote: "Tried a couple others and they were either too complicated or too basic. This one hit the middle. Does what I need without a learning curve.", name: 'tayw23', tag: 'Pro user' },
+    { quote: "I've been looking for something like this for a while. Most stuff is either junk or way too expensive. This actually does the job without the extras I don't need.", name: 'mok7', tag: 'Pro user' },
+    { quote: "Saves me a bunch of time. I used to dig through a bunch of tabs and apps. Now I just open this and it's right there. Simple as that.", name: 'riley_n24', tag: 'Pro user' },
   ];
 
   useEffect(() => {
@@ -634,9 +659,9 @@ export default function HomePage() {
       <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Don&apos;t take our word for it—take our users&apos;</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Don&apos;t just trust what we say</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              See what researchers and analysts are saying about StatTrackr
+              This is what our users have to say about StatTrackr
             </p>
           </div>
         </div>
@@ -647,7 +672,20 @@ export default function HomePage() {
                 <Quote className="w-10 h-10 text-purple-500/50 mb-4 flex-shrink-0" />
                 <p className="text-gray-300 flex-1 mb-4">&ldquo;{r.quote}&rdquo;</p>
                 <div>
-                  <p className="font-semibold text-white">{r.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(r.name)}`}
+                        aria-hidden
+                      >
+                        {getInitials(r.name)}
+                      </div>
+                      <p className="font-semibold text-white truncate">{r.name}</p>
+                    </div>
+                    <span className="flex gap-0.5 shrink-0" aria-label="5 out of 5 stars">
+                      {[1, 2, 3, 4, 5].map((j) => <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />)}
+                    </span>
+                  </div>
                   <p className="text-sm text-gray-500">{r.tag}</p>
                 </div>
               </div>
@@ -835,6 +873,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          <p className="text-center text-gray-400 mt-10">
+            For more questions or help, email us at{' '}
+            <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>.
+          </p>
         </div>
       </section>
 

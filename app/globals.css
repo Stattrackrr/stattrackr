@@ -102,5 +102,5 @@
   100% { transform: translateX(-50%); }
 }
 .animate-scroll-reviews {
-  animation: scrollReviews 35s linear infinite;
+  animation: scrollReviews 50s linear infinite;
 }
