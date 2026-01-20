@@ -21,7 +21,7 @@ import {
   Lightbulb,
   Quote,
   Star,
-  User
+  User as UserIcon
 } from 'lucide-react';
 
 function getInitials(name: string): string {
@@ -359,7 +359,7 @@ export default function HomePage() {
                           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                           aria-label="Profile"
                         >
-                          <User className="w-5 h-5" />
+                          <UserIcon className="w-5 h-5" />
                         </button>
                         {showProfileMenu && (
                           <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
@@ -397,7 +397,7 @@ export default function HomePage() {
                           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                           aria-label="Profile"
                         >
-                          <User className="w-5 h-5" />
+                          <UserIcon className="w-5 h-5" />
                         </button>
                         {showProfileMenu && (
                           <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
