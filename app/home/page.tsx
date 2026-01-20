@@ -21,7 +21,8 @@ import {
   Lightbulb,
   Quote,
   Star,
-  User as UserIcon
+  User as UserIcon,
+  DollarSign
 } from 'lucide-react';
 
 function getInitials(name: string): string {
@@ -68,6 +69,8 @@ export default function HomePage() {
 
   // On mobile viewport: hide Desktop/Mobile toggle and always show mobile mock (lg = 1024)
   const effectiveView = isMobileViewport ? 'mobile' : deviceView;
+  // Desktop + phone mock: text on the side, static (all slides); else text above, cycling
+  const isDesktopPhoneView = !isMobileViewport && effectiveView === 'mobile';
 
   // Screenshot paths - desktop screenshots (in order: Analytics Dashboard, Player Props, Journal)
   const desktopSlides = [
@@ -500,13 +503,123 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Mock + slide copy to the right; copy changes with the photo (5s each) */}
-            <div className="flex flex-col lg:flex-row items-start justify-center gap-8 lg:gap-12 w-full px-4">
-              {effectiveView === 'mobile' && (
+            {/* Desktop+phone: text on the side (all static). Else: text above, cycling with slide. */}
+            {isDesktopPhoneView ? (
+              <div className="flex flex-row items-start justify-center gap-8 lg:gap-12 w-full px-4">
                 <div className="relative w-full sm:w-auto flex justify-center flex-shrink-0">
-                  {/* iPhone 17 Frame */}
-                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] bg-[#050d1a] rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-                    <div className="w-full h-full bg-[#050d1a] rounded-[3.5rem] overflow-hidden relative">
+                  {/* iPhone frame: bezel, volume, power; photos flick through */}
+                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] rounded-[3.5rem] border-[6px] sm:border-[7px] border-gray-800 box-border bg-gray-800 shadow-2xl relative overflow-visible">
+                    {/* Left: volume — protruding outward from the left edge */}
+                    <div className="absolute -left-3 top-[22%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
+                    <div className="absolute -left-3 top-[31%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
+                    {/* Right: power — protruding outward from the right edge */}
+                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1.5 h-14 sm:h-16 rounded-full bg-gray-700 z-30" aria-hidden />
+                    <div className="w-full h-full bg-[#050d1a] rounded-[3rem] overflow-hidden relative">
+                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
+                        <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
+                          <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
+                        </div>
+                      </div>
+                      <div className="pt-4 h-full overflow-hidden relative">
+                        <div className="h-full transition-all duration-500 ease-in-out">
+                          {mobileSlides.map((slide, idx) => (
+                            <div
+                              key={idx}
+                              className={`absolute inset-0 transition-opacity duration-500 ${
+                                idx === mobileSlide ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            >
+                              <div className="w-full h-full relative p-1">
+                                {!mobileImageErrors[idx] ? (
+                                  <Image
+                                    src={slide.image}
+                                    alt={slide.name}
+                                    fill
+                                    className="object-cover rounded-lg"
+                                    style={{ objectPosition: slide.objectPosition || 'center center' }}
+                                    onError={() => setMobileImageErrors(prev => ({ ...prev, [idx]: true }))}
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
+                                    idx === 0 ? 'from-purple-900/20 to-blue-900/20' :
+                                    idx === 1 ? 'from-blue-900/20 to-purple-900/20' :
+                                    idx === 2 ? 'from-emerald-900/20 to-blue-900/20' :
+                                    'from-indigo-900/20 to-purple-900/20'
+                                  }`}>
+                                    <div className="text-center p-4">
+                                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                                        idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
+                                      }`}>
+                                        {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
+                                        {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
+                                        {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
+                                        {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
+                                      </div>
+                                      <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
+                                      <p className="text-xs text-gray-500">{slide.description}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                          {mobileSlides.map((_, idx) => (
+                            <div
+                              key={idx}
+                              className={`h-1.5 rounded-full transition-all ${
+                                idx === mobileSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                    Mobile Optimized
+                  </div>
+                </div>
+                {/* Static block: all 4 mobile slides’ text, no cycling */}
+                <div className="w-full lg:w-96 lg:max-w-md flex-shrink-0 text-center lg:text-left space-y-6 overflow-y-auto lg:max-h-[min(800px,85vh)] pr-2">
+                  {mobileSlides.map((s, idx) => (
+                    <div key={idx}>
+                      <h3 className="text-lg font-bold text-white mb-1">{s.name}</h3>
+                      <p className="text-gray-400 text-sm mb-2">{s.description}</p>
+                      {s.paragraph && <p className="text-gray-500 text-sm leading-relaxed">{s.paragraph}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-8 lg:gap-10 w-full px-4">
+                {/* Copy above: matches current slide, updates with the photo */}
+                <div className="w-full max-w-2xl mx-auto text-center">
+                  <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 transition-opacity duration-300">
+                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).name}
+                  </h3>
+                  <p className="text-gray-400 text-sm lg:text-base mb-3">
+                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).description}
+                  </p>
+                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph && (
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph}
+                    </p>
+                  )}
+                </div>
+
+                {effectiveView === 'mobile' && (
+                  <div className="relative w-full sm:w-auto flex justify-center flex-shrink-0">
+                  {/* iPhone frame: bezel, volume, power; photos flick through */}
+                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] rounded-[3.5rem] border-[6px] sm:border-[7px] border-gray-800 box-border bg-gray-800 shadow-2xl relative overflow-visible">
+                    {/* Left: volume — protruding outward from the left edge */}
+                    <div className="absolute -left-3 top-[22%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
+                    <div className="absolute -left-3 top-[31%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
+                    {/* Right: power — protruding outward from the right edge */}
+                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1.5 h-14 sm:h-16 rounded-full bg-gray-700 z-30" aria-hidden />
+                    <div className="w-full h-full bg-[#050d1a] rounded-[3rem] overflow-hidden relative">
                       <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
                         <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
                           <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
@@ -653,22 +766,8 @@ export default function HomePage() {
                   </div>
                 </div>
               )}
-
-              {/* Copy to the right: matches current slide, updates with the photo */}
-              <div className="w-full lg:w-80 lg:max-w-md flex-shrink-0 text-center lg:text-left">
-                <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 transition-opacity duration-300">
-                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).name}
-                </h3>
-                <p className="text-gray-400 text-sm lg:text-base mb-3">
-                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).description}
-                </p>
-                {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph && (
-                  <p className="text-gray-500 text-sm leading-relaxed">
-                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph}
-                  </p>
-                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -691,10 +790,10 @@ export default function HomePage() {
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Search className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Best Lines & Filters</h3>
+              <DollarSign className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Competitive Rate, Locked In</h3>
               <p className="text-gray-400">
-                Props pre-calculated to display the best lines on the props page. Filters let you choose exactly which stats you want to see.
+                Subscribe at today&apos;s rate and keep it. As we add more sports and adjust pricing for new members, your rate stays the same.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
