@@ -31,10 +31,12 @@
 3. **Disable "Enable Captcha protection"**
 4. Click "Save"
 
-### 4. Email Settings (Optional - for better emails)
-1. In Supabase dashboard, go to Authentication > Settings
-2. Configure SMTP settings for custom email templates
-3. Or use the default Supabase emails (they work fine)
+### 4. Email Verification & Production SMTP (Optional)
+For **email verification on sign-up** (required in production):
+1. **Authentication** → **Providers** → **Email** → enable **Confirm email**
+2. For reliable delivery, use **custom SMTP** (Resend recommended): **Project Settings** → **Authentication** → **SMTP Settings**
+
+**Full production steps (Resend + Supabase):** see [`docs/email-auth-production-setup.md`](docs/email-auth-production-setup.md).
 
 ## 🚀 How It Works
 
