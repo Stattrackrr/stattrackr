@@ -67,12 +67,14 @@ jobs:
           fi
           
           echo "📸 Snapshotting DvP ranks${DATE_PARAM:+ for date ${{ inputs.date }}}..."
-          # Use CRON_SECRET or ADMIN_SECRET (must match Vercel CRON_SECRET or ADMIN_SECRET)
+          # Use CRON_SECRET or ADMIN_SECRET (must exactly match Vercel)
           AUTH_SECRET="${CRON_SECRET:-$ADMIN_SECRET}"
-          # Use -L to follow redirects (HTTP 307). Auth via Bearer.
+          # Auth: Bearer + X-Cron-Secret + X-Admin-Secret (API accepts any of these)
           RESPONSE=$(curl -s -L -X POST "${PROD_URL}/api/dvp/rank/snapshot${DATE_PARAM}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $AUTH_SECRET" \
+            -H "X-Cron-Secret: $AUTH_SECRET" \
+            -H "X-Admin-Secret: $AUTH_SECRET" \
             -w "\n%{http_code}")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -84,6 +86,10 @@ jobs:
           else
             echo "❌ DvP ranks snapshot failed (HTTP $HTTP_CODE)"
             echo "$BODY"
+            if [ "$HTTP_CODE" -eq 403 ]; then
+              echo ""
+              echo "→ 403: Ensure the GitHub secret (CRON_SECRET or ADMIN_SECRET) exactly matches Vercel’s value. Check: Vercel → Project → Settings → Environment Variables, then GitHub → Settings → Secrets → Actions."
+            fi
             exit 1
           fi
       
