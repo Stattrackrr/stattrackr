@@ -27,6 +27,7 @@ jobs:
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
@@ -42,19 +43,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      # PROD_URL and CRON_SECRET are required: /api/dvp/rank/snapshot requires cron or admin auth
+      # PROD_URL and one of CRON_SECRET or ADMIN_SECRET required (must match Vercel)
       - name: Check if required secrets are configured
         id: check_secrets
         run: |
           if [ -z "$PROD_URL" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
             echo "⚠️ PROD_URL not configured - skipping snapshot"
-          elif [ -z "$CRON_SECRET" ]; then
+          elif [ -z "$CRON_SECRET" ] && [ -z "$ADMIN_SECRET" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
-            echo "⚠️ CRON_SECRET not configured - add a repo secret with the same value as Vercel CRON_SECRET (or ADMIN_SECRET)"
+            echo "⚠️ Add CRON_SECRET or ADMIN_SECRET (same value as in Vercel for that variable)"
           else
             echo "configured=true" >> $GITHUB_OUTPUT
-            echo "✅ PROD_URL and CRON_SECRET configured"
+            echo "✅ PROD_URL and auth secret configured"
           fi
       
       - name: Snapshot DvP Ranks
@@ -66,11 +67,12 @@ jobs:
           fi
           
           echo "📸 Snapshotting DvP ranks${DATE_PARAM:+ for date ${{ inputs.date }}}..."
-          
-          # Use -L to follow redirects (HTTP 307). Auth via Bearer (cron or admin secret).
+          # Use CRON_SECRET or ADMIN_SECRET (must match Vercel CRON_SECRET or ADMIN_SECRET)
+          AUTH_SECRET="${CRON_SECRET:-$ADMIN_SECRET}"
+          # Use -L to follow redirects (HTTP 307). Auth via Bearer.
           RESPONSE=$(curl -s -L -X POST "${PROD_URL}/api/dvp/rank/snapshot${DATE_PARAM}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Authorization: Bearer $AUTH_SECRET" \
             -w "\n%{http_code}")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -89,7 +91,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.check_secrets.outputs.configured }}" == "false" ]; then
-            echo "⚠️ Skipped: PROD_URL or CRON_SECRET not configured"
+            echo "⚠️ Skipped: PROD_URL or CRON_SECRET/ADMIN_SECRET not configured"
           elif [ "${{ job.status }}" == "success" ]; then
             echo "✅ DvP ranks snapshot completed successfully"
           else
