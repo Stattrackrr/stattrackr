@@ -20,7 +20,8 @@ import {
   ArrowRight,
   Lightbulb,
   Quote,
-  Star
+  Star,
+  User
 } from 'lucide-react';
 
 function getInitials(name: string): string {
@@ -61,7 +62,9 @@ export default function HomePage() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // On mobile viewport: hide Desktop/Mobile toggle and always show mobile mock (lg = 1024)
   const effectiveView = isMobileViewport ? 'mobile' : deviceView;
@@ -175,6 +178,18 @@ export default function HomePage() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+
+  // Close profile menu on click outside
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [showProfileMenu]);
 
   const checkPremiumStatus = async (userId: string) => {
     try {
@@ -338,14 +353,74 @@ export default function HomePage() {
                       >
                         Go to App
                       </button>
+                      <div className="relative" ref={profileMenuRef}>
+                        <button
+                          onClick={() => setShowProfileMenu((v) => !v)}
+                          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                          aria-label="Profile"
+                        >
+                          <User className="w-5 h-5" />
+                        </button>
+                        {showProfileMenu && (
+                          <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
+                            <p className="px-4 pt-2 pb-1 text-xs text-gray-500">
+                              You&apos;re logged in with
+                            </p>
+                            <p className="px-4 py-1.5 pb-2 text-sm text-gray-300 truncate border-b border-gray-700" title={user?.email ?? ''}>
+                              {user?.email ?? '—'}
+                            </p>
+                            <button
+                              onClick={async () => {
+                                await supabase.auth.signOut();
+                                setShowProfileMenu(false);
+                                router.push('/home');
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                            >
+                              Log out
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
-                    <button
-                      onClick={() => router.push('/home#pricing')}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Upgrade to Pro
-                    </button>
+                    <>
+                      <button
+                        onClick={() => router.push('/home#pricing')}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Upgrade to Pro
+                      </button>
+                      <div className="relative" ref={profileMenuRef}>
+                        <button
+                          onClick={() => setShowProfileMenu((v) => !v)}
+                          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                          aria-label="Profile"
+                        >
+                          <User className="w-5 h-5" />
+                        </button>
+                        {showProfileMenu && (
+                          <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
+                            <p className="px-4 pt-2 pb-1 text-xs text-gray-500">
+                              You&apos;re logged in with
+                            </p>
+                            <p className="px-4 py-1.5 pb-2 text-sm text-gray-300 truncate border-b border-gray-700" title={user?.email ?? ''}>
+                              {user?.email ?? '—'}
+                            </p>
+                            <button
+                              onClick={async () => {
+                                await supabase.auth.signOut();
+                                setShowProfileMenu(false);
+                                router.push('/home');
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                            >
+                              Log out
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                 </>
               ) : (

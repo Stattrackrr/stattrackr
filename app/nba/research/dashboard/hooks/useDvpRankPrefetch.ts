@@ -32,6 +32,8 @@ export function useDvpRankPrefetch({
 }: UseDvpRankPrefetchParams) {
   const [prefetchedDvpRanks, setPrefetchedDvpRanks] = useState<Record<string, Record<string, number | null>>>({});
   const dvpRanksPrefetchRef = useRef<Set<string>>(new Set());
+  const filteredChartDataRef = useRef<any[]>([]);
+  filteredChartDataRef.current = filteredChartData;
 
   // Prefetch DvP ranks in background for all possible stat/position combinations
   // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
@@ -363,9 +365,11 @@ export function useDvpRankPrefetch({
   }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks, playerId, setDvpRanksPerGame]);
 
   // Legacy fetch DvP ranks (kept for backward compatibility, but should use prefetched data)
-  // Use filteredChartData to match what's actually displayed
+  // Use a ref for filteredChartData to avoid re-running when it changes due to setDvpRanksPerGame
+  // (which would cause: dvpRanksPerGame -> allGamesSecondAxisData -> filteredChartData -> this effect -> loop)
   useEffect(() => {
-    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !filteredChartData.length) {
+    const data = filteredChartDataRef.current;
+    if (selectedFilterForAxis !== 'dvp_rank' || propsMode !== 'player' || !data.length) {
       return;
     }
 
@@ -416,8 +420,8 @@ export function useDvpRankPrefetch({
         // Map ranks to game IDs based on opponent team and game date
         const ranksByGame: Record<string, number | null> = {};
         
-        // Fetch historical ranks for each game - use filteredChartData to match displayed games
-        const rankPromises = filteredChartData.map(async (game: any) => {
+        // Use data captured at effect run (from ref) to avoid dependency on filteredChartData
+        const rankPromises = data.map(async (game: any) => {
           const gameIdStr = game.xKey || String(game.game?.id || game.stats?.game?.id || '');
           const opponent = game.opponent || game.tickLabel || '';
           const gameDate = game.date || game.stats?.game?.date || '';
@@ -493,7 +497,7 @@ export function useDvpRankPrefetch({
             ranksByGame[result.gameIdStr] = result.rank;
           } else if (result.useCurrent) {
             // Use current rank as fallback
-            const game = filteredChartData.find((g: any) => {
+            const game = data.find((g: any) => {
               const gameIdStr = g.xKey || String(g.game?.id || g.stats?.game?.id || '');
               return gameIdStr === result.gameIdStr;
             });
@@ -545,7 +549,7 @@ export function useDvpRankPrefetch({
           gameCount: Object.keys(ranksByGame).length,
           ranksWithValues: Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined).length,
           sampleRanks: Object.entries(ranksByGame).slice(0, 5),
-          sampleGamesWithOpponents: filteredChartData.slice(0, 3).map((g: any) => ({
+          sampleGamesWithOpponents: data.slice(0, 3).map((g: any) => ({
             gameId: g.xKey || String(g.game?.id || g.stats?.game?.id || ''),
             opponent: g.opponent || g.tickLabel || 'N/A'
           }))
@@ -564,6 +568,6 @@ export function useDvpRankPrefetch({
     return () => {
       isMounted = false;
     };
-  }, [selectedFilterForAxis, filteredChartData, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks, setDvpRanksPerGame]);
+  }, [selectedFilterForAxis, propsMode, selectedPosition, selectedStat, prefetchedDvpRanks, setDvpRanksPerGame]);
 }
 
