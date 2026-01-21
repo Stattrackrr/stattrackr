@@ -2631,6 +2631,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     });
   };
 
+  const clearAllGames = () => {
+    setSelectedGames(new Set());
+    setDeselectedGames(prev => {
+      const next = new Set(prev);
+      gamesWithProps.forEach(g => next.add(g.id));
+      saveDeselectedGames(next);
+      return next;
+    });
+    saveFiltersToStorage(selectedBookmakers, selectedPropTypes, new Set());
+  };
+
+  const selectAllGames = () => {
+    const allIds = new Set(gamesWithProps.map(g => g.id));
+    setSelectedGames(allIds);
+    setDeselectedGames(prev => {
+      const next = new Set(prev);
+      allIds.forEach(id => next.delete(id));
+      saveDeselectedGames(next);
+      return next;
+    });
+    saveFiltersToStorage(selectedBookmakers, selectedPropTypes, allIds);
+  };
+
   const getConfidenceColor = (confidence: string) => {
     if (confidence === 'High') return mounted && isDark ? 'text-green-400' : 'text-green-600';
     if (confidence === 'Medium') return mounted && isDark ? 'text-yellow-400' : 'text-yellow-600';
@@ -2852,7 +2875,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               boxSizing: 'border-box'
                             }}
                           >
-                          <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
+                          <div className="p-2 space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                             {gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
@@ -2898,6 +2921,31 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </label>
                               );
                             })}
+                            <div className="flex pt-0.5">
+                              <button
+                                type="button"
+                                onClick={clearAllGames}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                  mounted && isDark
+                                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                }`}
+                              >
+                                Clear all
+                              </button>
+                              <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                              <button
+                                type="button"
+                                onClick={selectAllGames}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                  mounted && isDark
+                                    ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
+                                    : 'text-purple-600 hover:bg-gray-50 hover:text-purple-800'
+                                }`}
+                              >
+                                Select all
+                              </button>
+                            </div>
                           </div>
                         </div>
                         </>,
@@ -2964,6 +3012,31 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </label>
                               );
                             })}
+                            <div className="flex pt-0.5">
+                              <button
+                                type="button"
+                                onClick={clearAllGames}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                  mounted && isDark
+                                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                }`}
+                              >
+                                Clear all
+                              </button>
+                              <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                              <button
+                                type="button"
+                                onClick={selectAllGames}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                  mounted && isDark
+                                    ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
+                                    : 'text-purple-600 hover:bg-gray-50 hover:text-purple-800'
+                                }`}
+                              >
+                                Select all
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </>
