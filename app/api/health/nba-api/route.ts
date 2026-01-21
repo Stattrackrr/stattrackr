@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const results: any = {
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
     tests: [],
   };
 

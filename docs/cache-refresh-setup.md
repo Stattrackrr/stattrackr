@@ -186,28 +186,9 @@ The system provides detailed logging:
 - Cache statistics after refresh
 - Execution duration
 
-### Health Check
+### Server reachability
 
-Create a simple health check endpoint:
-
-```typescript
-// pages/api/cache/health.ts
-import { NextApiRequest, NextApiResponse } from 'next';
-import { cache } from '@/lib/cache';
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const stats = {
-    totalKeys: cache.keys().length,
-    size: cache.size,
-    playerStatsKeys: cache.keys().filter(k => k.startsWith('player_stats_')).length,
-    playerSearchKeys: cache.keys().filter(k => k.startsWith('player_search_')).length,
-    espnPlayerKeys: cache.keys().filter(k => k.startsWith('espn_player_')).length,
-    timestamp: new Date().toISOString()
-  };
-
-  res.status(200).json(stats);
-}
-```
+To check if the server is running, use `cache-refresh.bat health` (hits the root `/`) or run a simple `GET /` request. Avoid exposing cache internals or environment details in public endpoints.
 
 ## Cache Refresh Jobs
 

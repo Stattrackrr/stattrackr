@@ -18,7 +18,7 @@ if "%1"=="help" (
     echo   dry-run   - Show what would be refreshed
     echo   refresh   - Refresh all caches
     echo   player    - Refresh only player stats
-    echo   health    - Check cache health
+    echo   health    - Check if server is running
     echo.
     goto :end
 )
@@ -43,10 +43,10 @@ if "%1"=="player" (
 )
 
 if "%1"=="health" (
-    echo Checking cache health...
+    echo Checking if server is running...
     echo Note: Start your dev server first (npm run dev)
     echo.
-    powershell -Command "try { $response = Invoke-RestMethod -Uri 'http://localhost:3000/api/cache/health'; $response | ConvertTo-Json -Depth 3 } catch { Write-Host 'Error: Could not connect to server. Make sure it is running.' -ForegroundColor Red }"
+    powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 5 | Out-Null; Write-Host 'Server is running.' -ForegroundColor Green } catch { Write-Host 'Error: Could not connect to server. Make sure it is running.' -ForegroundColor Red }"
     goto :end
 )
 
@@ -56,7 +56,7 @@ if "%1"=="" (
     echo   cache-refresh.bat dry-run   - Show what would be refreshed
     echo   cache-refresh.bat refresh   - Refresh all caches
     echo   cache-refresh.bat player    - Refresh only player stats
-    echo   cache-refresh.bat health    - Check cache health
+    echo   cache-refresh.bat health    - Check if server is running
     echo   cache-refresh.bat help      - Show detailed help
     echo.
     goto :end

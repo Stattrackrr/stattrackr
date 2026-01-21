@@ -14,7 +14,6 @@ Your NBA Stats Dashboard now has a fully configured scheduled cache refresh syst
 
 ### 2. **Cache Refresh System**
 - **API Endpoint**: `/pages/api/cache/scheduled-refresh.ts`
-- **Health Monitor**: `/pages/api/cache/health.ts`
 - **CLI Script**: `scripts/cache-refresh.js`
 - **Windows Helper**: `cache-refresh.bat`
 
@@ -59,7 +58,7 @@ Your NBA Stats Dashboard now has a fully configured scheduled cache refresh syst
 cache-refresh.bat dry-run    # Show what would be refreshed
 cache-refresh.bat refresh    # Refresh all caches  
 cache-refresh.bat player     # Refresh only player stats
-cache-refresh.bat health     # Check cache health
+cache-refresh.bat health     # Check if server is running
 cache-refresh.bat help       # Show help
 ```
 
@@ -79,7 +78,6 @@ node scripts/cache-refresh.js --jobs player_stats,player_search
 
 ## 🔧 Monitoring
 
-- **Health endpoint**: `GET /api/cache/health`
 - **GitHub Actions logs**: Check workflow runs for refresh status
 - **Server logs**: Cache refresh operations are logged
 
