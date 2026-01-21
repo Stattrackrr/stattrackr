@@ -57,7 +57,7 @@ export function DashboardModeToggle({
             }
             
             setPropsMode('player');
-            // Always set PTS as default for Player Props
+            // Always set PTS (points) as default for Player Props
             setSelectedStat('pts');
             
             // If we have a gamePropsTeam selected, use it as the player's team
@@ -67,16 +67,20 @@ export function DashboardModeToggle({
               setDepthChartTeam(gamePropsTeam);
             }
             
-            // Clear the playerCleared flag when switching back to Player Props
+            // Clear the playerCleared flag and set stat=pts so useStatUrlSync/effects don't override
             if (typeof window !== 'undefined') {
               try {
                 const raw = sessionStorage.getItem('nba-dashboard-session');
                 if (raw) {
                   const saved = JSON.parse(raw);
                   delete saved.playerCleared; // Remove the flag
+                  saved.selectedStat = 'pts';
                   sessionStorage.setItem('nba-dashboard-session', JSON.stringify(saved));
                 }
               } catch {}
+              const url = new URL(window.location.href);
+              url.searchParams.set('stat', 'pts');
+              router.replace(url.pathname + url.search, { scroll: false });
             }
           }}
           className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all ${
@@ -99,6 +103,8 @@ export function DashboardModeToggle({
         <button
           onClick={() => {
             setPropsMode('team');
+            // Set total_pts first so it isn't overwritten by URL/session or useStatUrlSync
+            setSelectedStat('total_pts');
             
             // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
             if (selectedTeam && selectedTeam !== 'N/A') {
@@ -113,26 +119,23 @@ export function DashboardModeToggle({
             
             // Clear URL parameters and update session storage
             if (typeof window !== 'undefined') {
-              // Save minimal session with cleared player flag
+              // Save minimal session with cleared player flag; use total_pts as default for Game Props
               const clearedSession = {
                 propsMode: 'team' as const,
-                selectedStat,
+                selectedStat: 'total_pts',
                 selectedTimeframe,
                 playerCleared: true // Flag to indicate user deliberately cleared player data
               };
               sessionStorage.setItem('nba-dashboard-session', JSON.stringify(clearedSession));
               
-              // Clear URL parameters
+              // Update URL: remove player params and set stat=total_pts so useStatUrlSync/effects don't override
               const url = new URL(window.location.href);
               url.searchParams.delete('pid');
               url.searchParams.delete('name');
               url.searchParams.delete('team');
-              // Keep stat and tf parameters as they're relevant to Game Props
-              window.history.replaceState({}, '', url.toString());
+              url.searchParams.set('stat', 'total_pts');
+              router.replace(url.pathname + url.search, { scroll: false });
             }
-            
-            // Always set TOTAL_PTS as default for Game Props
-            setSelectedStat('total_pts');
           }}
           className={`px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-colors ${
             propsMode === 'team'

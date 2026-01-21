@@ -201,7 +201,7 @@ export function useStatUrlSync({
         setSelectedStat('pts');
       }
     } else if (propsMode === 'team') {
-      // Only change if current stat is invalid for team mode
+      // Only change if current stat is invalid for team mode; default to total_pts for Game Props
       const teamStatExists = TEAM_STAT_OPTIONS.find(s => s.key === selectedStat);
       if (!teamStatExists && selectedStat !== 'total_pts') {
         setSelectedStat('total_pts');

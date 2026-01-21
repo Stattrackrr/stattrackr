@@ -11,6 +11,8 @@ interface DashboardMobileAnalysisProps {
   propsMode: 'player' | 'team';
   dvpProjectedTab: 'dvp' | 'opponent' | 'injuries';
   setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries') => void;
+  teamMatchupTab: 'opponent' | 'injuries';
+  setTeamMatchupTab: (tab: 'opponent' | 'injuries') => void;
   isDark: boolean;
   opponentTeam: string | null;
   selectedPosition: 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null;
@@ -46,6 +48,8 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
     propsMode,
     dvpProjectedTab,
     setDvpProjectedTab,
+    teamMatchupTab,
+    setTeamMatchupTab,
     isDark,
     opponentTeam,
     selectedPosition,
@@ -77,10 +81,9 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
 
   return (
     <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
-      {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
+      {/* Section 0: DvP | Opponent Breakdown | Injuries - only in Player Props */}
       {propsMode === 'player' && (
         <>
-          {/* Tab Selector */}
           <div className="flex gap-2 sm:gap-2 mb-3 sm:mb-3">
             <button
               onClick={() => setDvpProjectedTab('dvp')}
@@ -115,8 +118,6 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
               Injuries
             </button>
           </div>
-          
-          {/* Content based on selected tab - always render container, just show/hide content */}
           <div className="relative min-h-[250px] sm:min-h-[200px] w-full min-w-0">
             <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
               <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam || ''} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
@@ -398,9 +399,9 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
             
             return (
               <div className="flex flex-col items-center">
-                {/* Mobile Pie Chart - Smaller and Simplified */}
-                <div className="h-32 w-32 mb-2" style={{ minHeight: '128px', minWidth: '128px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                {/* Mobile Pie Chart - fixed size, no animation to avoid glitchy render */}
+                <div className="mb-2" style={{ width: 128, height: 128 }}>
+                  <ResponsiveContainer width={128} height={128}>
                     <PieChart>
                       <Pie
                         data={pieDrawData}
@@ -412,6 +413,8 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
                         dataKey="value"
                         startAngle={90}
                         endAngle={-270}
+                        isAnimationActive={false}
+                        animationDuration={0}
                       >
                         {pieDrawData?.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry?.fill} />
@@ -443,6 +446,60 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
           {selectedComparison === 'assists' && 'Total Assists Per Game Comparison'}
           {selectedComparison === 'fg_pct' && 'Field Goal Shooting Percentage Comparison'}
           {selectedComparison === 'three_pct' && '3-Point Shooting Percentage Comparison'}
+        </div>
+
+        {/* Team Matchup: Opponent Breakdown | Injuries (Game Props) */}
+        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex gap-2 sm:gap-2 mb-3 sm:mb-3">
+            <button
+              onClick={() => setTeamMatchupTab('opponent')}
+              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                teamMatchupTab === 'opponent'
+                  ? 'bg-purple-600 text-white border-purple-600'
+                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <span className="hidden xs:inline">Opponent Breakdown</span>
+              <span className="xs:hidden">Opponent</span>
+            </button>
+            <button
+              onClick={() => setTeamMatchupTab('injuries')}
+              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                teamMatchupTab === 'injuries'
+                  ? 'bg-purple-600 text-white border-purple-600'
+                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              Injuries
+            </button>
+          </div>
+          <div className="relative min-h-[250px] sm:min-h-[200px] w-full min-w-0">
+            <div className={teamMatchupTab === 'opponent' ? 'block' : 'hidden'}>
+              <OpponentAnalysisCard 
+                isDark={isDark} 
+                opponentTeam={opponentTeam || ''} 
+                selectedTimeFilter={selectedTimeFilter}
+                propsMode="team"
+                playerId={null}
+                selectedStat={selectedStat}
+              />
+            </div>
+            <div className={teamMatchupTab === 'injuries' ? 'block' : 'hidden'}>
+              <InjuryContainer
+                selectedTeam={gamePropsTeam}
+                opponentTeam={opponentTeam || ''}
+                isDark={isDark}
+                selectedPlayer={null}
+                playerStats={[]}
+                teammateFilterId={teammateFilterId}
+                setTeammateFilterId={setTeammateFilterId}
+                setTeammateFilterName={setTeammateFilterName}
+                withWithoutMode={withWithoutMode}
+                setWithWithoutMode={setWithWithoutMode}
+                clearTeammateFilter={clearTeammateFilter}
+              />
+            </div>
+          </div>
         </div>
       </div>
       )}

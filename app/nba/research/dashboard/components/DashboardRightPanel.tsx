@@ -32,6 +32,8 @@ interface DashboardRightPanelProps {
   selectedTimeframe: string;
   dvpProjectedTab: 'dvp' | 'opponent' | 'injuries';
   setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries') => void;
+  teamMatchupTab: 'opponent' | 'injuries';
+  setTeamMatchupTab: (tab: 'opponent' | 'injuries') => void;
   opponentTeam: string | null;
   selectedPosition: 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null;
   selectedPlayer: NBAPlayer | null;
@@ -82,6 +84,8 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
     selectedTimeframe,
     dvpProjectedTab,
     setDvpProjectedTab,
+    teamMatchupTab,
+    setTeamMatchupTab,
     opponentTeam,
     selectedPosition,
     selectedPlayer,
@@ -130,7 +134,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             return;
           }
           setPropsMode('player');
-          // Always set PTS as default for Player Props
+          // Always set PTS (points) as default for Player Props
           setSelectedStat('pts');
           
           // If we have a gamePropsTeam selected, use it as the player's team
@@ -140,16 +144,20 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             setDepthChartTeam(gamePropsTeam);
           }
           
-          // Clear the playerCleared flag when switching back to Player Props
+          // Clear the playerCleared flag and set stat=pts so useStatUrlSync/effects don't override
           if (typeof window !== 'undefined') {
             try {
               const raw = sessionStorage.getItem('nba-dashboard-session');
               if (raw) {
                 const saved = JSON.parse(raw);
                 delete saved.playerCleared; // Remove the flag
+                saved.selectedStat = 'pts';
                 sessionStorage.setItem('nba-dashboard-session', JSON.stringify(saved));
               }
             } catch {}
+            const url = new URL(window.location.href);
+            url.searchParams.set('stat', 'pts');
+            router.replace(url.pathname + url.search, { scroll: false });
           }
         }}
         disabled={!hasPremium}
@@ -173,6 +181,8 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
       <button
         onClick={() => {
           setPropsMode('team');
+          // Set total_pts first so it isn't overwritten by URL/session or useStatUrlSync
+          setSelectedStat('total_pts');
           
           // If we have a selectedTeam from Player Props, use it as the gamePropsTeam
           if (selectedTeam && selectedTeam !== 'N/A') {
@@ -187,26 +197,23 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
           
           // Clear URL parameters and update session storage
           if (typeof window !== 'undefined') {
-            // Save minimal session with cleared player flag
+            // Save minimal session with cleared player flag; use total_pts as default for Game Props
             const clearedSession = {
               propsMode: 'team' as const,
-              selectedStat,
+              selectedStat: 'total_pts',
               selectedTimeframe,
               playerCleared: true // Flag to indicate user deliberately cleared player data
             };
             sessionStorage.setItem('nba-dashboard-session', JSON.stringify(clearedSession));
             
-            // Clear URL parameters
+            // Update URL: remove player params and set stat=total_pts so useStatUrlSync/effects don't override
             const url = new URL(window.location.href);
             url.searchParams.delete('pid');
             url.searchParams.delete('name');
             url.searchParams.delete('team');
-            // Keep stat and tf parameters as they're relevant to Game Props
-            window.history.replaceState({}, '', url.toString());
+            url.searchParams.set('stat', 'total_pts');
+            router.replace(url.pathname + url.search, { scroll: false });
           }
-          
-          // Always set TOTAL_PTS as default for Game Props
-          setSelectedStat('total_pts');
         }}
         className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
           propsMode === 'team'
@@ -224,10 +231,9 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
 
 {/* Combined Opponent Analysis & Team Matchup (Desktop) - always visible in both modes */}
   <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
-      {/* Section 0: Defense vs Position / Projected / Opponent Breakdown Tabs - only show in Player Props mode */}
+      {/* Section 0: Defense vs Position / Opponent Breakdown / Injuries Tabs - only in Player Props */}
       {propsMode === 'player' && (
         <>
-          {/* Tab Selector */}
           <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
             <button
               onClick={() => setDvpProjectedTab('dvp')}
@@ -262,8 +268,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
               Injuries
             </button>
           </div>
-          
-          {/* Content based on selected tab - always render container, just show/hide content */}
           <div className="relative min-h-[180px] xl:min-h-[200px] w-full min-w-0">
             <div className={dvpProjectedTab === 'dvp' ? 'block' : 'hidden'}>
               <PositionDefenseCard isDark={isDark} opponentTeam={opponentTeam || ''} selectedPosition={selectedPosition} currentTeam={selectedTeam} />
@@ -493,6 +497,8 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
                                 dataKey="value"
                                 startAngle={90}
                                 endAngle={-270}
+                                isAnimationActive={false}
+                                animationDuration={0}
                               >
                                 {neutralPieData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -605,38 +611,26 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
                 
                 return (
                   <div className="w-full">
-                    {/* Centered Pie Chart */}
+                    {/* Centered Pie Chart - fixed size to avoid resize thrashing */}
                     <div className="flex justify-center">
-                      <div className="flex-shrink-0 select-none"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onMouseUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onFocus={(e) => { e.preventDefault(); e.target.blur(); }}
-                        style={{ 
-                          width: 'min(20vw, 150px)',
-                          height: 'min(20vw, 150px)',
-                          minWidth: '100px',
-                          minHeight: '100px',
-                          maxWidth: '150px',
-                          maxHeight: '150px',
-                          userSelect: 'none', 
-                          outline: 'none',
-                          border: 'none',
-                          boxShadow: 'none'
-                        }}
+                      <div
+                        className="flex-shrink-0 select-none"
+                        style={{ width: 150, height: 150, userSelect: 'none', outline: 'none', border: 'none', boxShadow: 'none' }}
                       >
-                        <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-                          <PieChart style={{ outline: 'none', border: 'none' }}>
+                        <ResponsiveContainer width={150} height={150}>
+                          <PieChart>
                             <Pie
                               data={pieDrawData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={"30%"}
-                              outerRadius={"85%"}
+                              innerRadius="30%"
+                              outerRadius="85%"
                               paddingAngle={5}
                               dataKey="value"
                               startAngle={90}
                               endAngle={-270}
+                              isAnimationActive={false}
+                              animationDuration={0}
                             >
                               {pieDrawData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -654,75 +648,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Mobile Layout - stats below pie */}
-                    <div className="sm:hidden space-y-4">
-                      {/* Centered Pie */}
-                      <div className="flex justify-center">
-                        <div className="h-32 w-32 md:h-40 md:w-40 flex-shrink-0 select-none"
-                          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onMouseUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onFocus={(e) => { e.preventDefault(); e.target.blur(); }}
-                          style={{ 
-                            minHeight: '128px',
-                            minWidth: '128px',
-                            userSelect: 'none', 
-                            outline: 'none',
-                            border: 'none',
-                            boxShadow: 'none'
-                          }}
-                        >
-                          <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-                            <PieChart style={{ outline: 'none', border: 'none' }}>
-                              <Pie
-                                data={pieDrawData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={35}
-                                outerRadius={75}
-                                paddingAngle={5}
-                                dataKey="value"
-                                startAngle={90}
-                                endAngle={-270}
-                              >
-                                {pieDrawData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                              </Pie>
-                              <Tooltip
-                                contentStyle={getUnifiedTooltipStyle(isDark)}
-                                wrapperStyle={{ outline: 'none', zIndex: 9999 }}
-                                labelStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
-                                itemStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
-                                formatter={(value: any, name: string, props: any) => [
-                                  isPercentage ? `${props.payload.displayValue}%` : `${props.payload.displayValue}`,
-                                  name
-                                ]}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-                      {/* Stats Row Below */}
-                      <div className="flex items-center justify-between gap-4">
-                        {/* Left value - Selected Team */}
-                        <div className="flex-1 text-center text-sm font-semibold" style={{ color: leftColor }}>
-                          <div className="truncate text-base font-bold">{leftTeam}</div>
-                          <div className="text-xl font-bold">{leftDisplay}</div>
-                        </div>
-
-                        {/* VS Separator */}
-                        <div className="text-gray-400 text-sm font-bold px-2">VS</div>
-
-                        {/* Right value - Opponent */}
-                        <div className="flex-1 text-center text-sm font-semibold" style={{ color: rightColor }}>
-                          <div className="truncate text-base font-bold">{rightTeam || 'TBD'}</div>
-                          <div className="text-xl font-bold">{rightDisplay}</div>
-                        </div>
                       </div>
                     </div>
 
@@ -751,6 +676,60 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
               {selectedComparison === 'assists' && 'Total Assists Per Game Comparison'}
               {selectedComparison === 'fg_pct' && 'Field Goal Shooting Percentage Comparison'}
               {selectedComparison === 'three_pct' && '3-Point Shooting Percentage Comparison'}
+            </div>
+
+            {/* Team Matchup: Opponent Breakdown | Injuries (Game Props) */}
+            <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
+              <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
+                <button
+                  onClick={() => setTeamMatchupTab('opponent')}
+                  className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                    teamMatchupTab === 'opponent'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  <span className="hidden 2xl:inline">Opponent Breakdown</span>
+                  <span className="2xl:hidden">Opponent</span>
+                </button>
+                <button
+                  onClick={() => setTeamMatchupTab('injuries')}
+                  className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                    teamMatchupTab === 'injuries'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  Injuries
+                </button>
+              </div>
+              <div className="relative min-h-[180px] xl:min-h-[200px] w-full min-w-0">
+                <div className={teamMatchupTab === 'opponent' ? 'block' : 'hidden'}>
+                  <OpponentAnalysisCard 
+                    isDark={isDark} 
+                    opponentTeam={opponentTeam || ''} 
+                    selectedTimeFilter={selectedTimeFilter}
+                    propsMode="team"
+                    playerId={null}
+                    selectedStat={selectedStat}
+                  />
+                </div>
+                <div className={teamMatchupTab === 'injuries' ? 'block' : 'hidden'}>
+                  <InjuryContainer
+                    selectedTeam={gamePropsTeam}
+                    opponentTeam={opponentTeam || ''}
+                    isDark={isDark}
+                    selectedPlayer={null}
+                    playerStats={[]}
+                    teammateFilterId={teammateFilterId}
+                    setTeammateFilterId={setTeammateFilterId}
+                    setTeammateFilterName={setTeammateFilterName}
+                    withWithoutMode={withWithoutMode}
+                    setWithWithoutMode={setWithWithoutMode}
+                    clearTeammateFilter={clearTeammateFilter}
+                  />
+                </div>
+              </div>
             </div>
             
             {/* Matchup Odds Section */}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { DashboardLeftSidebarWrapper } from './components/DashboardLeftSidebarWrapper';
 import { useTheme } from "@/contexts/ThemeContext";
@@ -243,6 +243,8 @@ export function NBADashboardContent() {
     setSelectedFilterForAxis,
     dvpProjectedTab,
     setDvpProjectedTab,
+    teamMatchupTab,
+    setTeamMatchupTab,
     sliderRange,
     setSliderRange,
     selectedTimeframe,
@@ -1217,6 +1219,8 @@ export function NBADashboardContent() {
               propsMode={propsMode}
               dvpProjectedTab={dvpProjectedTab}
               setDvpProjectedTab={setDvpProjectedTab}
+              teamMatchupTab={teamMatchupTab}
+              setTeamMatchupTab={setTeamMatchupTab}
                           isDark={isDark}
                           opponentTeam={opponentTeam}
               selectedPosition={selectedPosition}
@@ -1341,6 +1345,8 @@ export function NBADashboardContent() {
             selectedTimeframe={selectedTimeframe}
             dvpProjectedTab={dvpProjectedTab}
             setDvpProjectedTab={setDvpProjectedTab}
+            teamMatchupTab={teamMatchupTab}
+            setTeamMatchupTab={setTeamMatchupTab}
             opponentTeam={opponentTeam}
             selectedPosition={selectedPosition}
             selectedPlayer={selectedPlayer}
