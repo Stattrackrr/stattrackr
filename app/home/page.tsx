@@ -451,6 +451,12 @@ export default function HomePage() {
                   >
                     Sign In
                   </button>
+                  <button
+                    onClick={() => router.push('/login?signup=1')}
+                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  >
+                    Sign Up
+                  </button>
                 </>
               )}
             </div>

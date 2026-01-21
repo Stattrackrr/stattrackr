@@ -10,7 +10,12 @@ export async function sendVerificationCodeEmail(
 ): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    return { ok: false, error: "RESEND_API_KEY is not set. Add it to .env.local and restart the dev server." };
+    console.warn("[sendVerificationEmail] RESEND_API_KEY is not set in process.env");
+    return {
+      ok: false,
+      error:
+        "RESEND_API_KEY is not set. For production: add it in Vercel → Settings → Environment Variables (Production) and redeploy. For local: add to .env.local and restart the dev server.",
+    };
   }
   const from = process.env.RESEND_FROM_EMAIL
     ? `StatTrackr <${process.env.RESEND_FROM_EMAIL}>`
