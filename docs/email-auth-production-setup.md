@@ -31,7 +31,7 @@ This guide configures **email verification** for sign‑up/sign‑in using **Res
 
 1. Resend → **API Keys** → **Create API Key**
 2. Name it e.g. `Supabase Auth`
-3. Copy the key (`re_...`) — you’ll use it only in **Supabase**, not in your Next.js env.
+3. Copy the key (`re_...`). You’ll use it in **Supabase** (SMTP) and in **Next.js** (`RESEND_API_KEY`) for the 6‑digit OTP flow.
 
 ---
 
@@ -93,19 +93,41 @@ Sign‑up and resend both use `${NEXT_PUBLIC_SITE_URL}/home`. After the user con
 
 1. **Project Settings** → **Authentication** → **URL Configuration**
 2. Set **Site URL** to `https://yourdomain.com` (no trailing slash).
+3. In **Redirect URLs**, add:
+   - `http://localhost:3000/auth/callback` (for local dev)
+   - `https://yourdomain.com/auth/callback` (for production)
 
-This is used as a fallback for auth emails when `emailRedirectTo` is not specified.
+The magic link from the 6‑digit verify flow redirects to `/auth/callback`, which sets the session and then sends the user to `/home`.
 
 ---
 
-## 5. (Optional) Customize Auth Email Templates
+## 5. 6‑digit verification code (custom OTP)
 
-1. Supabase → **Authentication** → **Email Templates**
-2. Edit:
-   - **Confirm signup** — subject/body for the verification link
-   - **Magic Link** / **Change Email Address** / **Reset Password** if you use them
+The app sends a **6‑digit numeric code** via Resend (not Supabase’s link). Supabase’s **Confirm signup** template is not used for email/password sign‑up.
 
-Use the placeholders Supabase provides (e.g. `{{ .ConfirmationURL }}`, `{{ .Token }}`) so links keep working.
+### 5.1 Migration
+
+Run the migration so the app can store and verify 6‑digit codes:
+
+1. In Supabase: **SQL Editor** → **New query**
+2. Run the contents of `migrations/email_verification_codes_6digit.sql`
+
+This creates `email_verification_codes` and `get_auth_user_id_by_email`.
+
+### 5.2 Next.js environment variables
+
+In **Vercel** (or your host) and in `.env.local`:
+
+| Name | Value |
+|------|-------|
+| `RESEND_API_KEY` | Your Resend API key (`re_...`). Same key as Supabase SMTP. |
+| `RESEND_FROM_EMAIL` | Sender address from a Resend‑verified domain, e.g. `noreply@yourdomain.com` |
+
+The 6‑digit email is sent by `lib/sendVerificationEmail.ts` via the Resend API. If `RESEND_FROM_EMAIL` is unset, it falls back to `onboarding@resend.dev` (fine for local dev only).
+
+### 5.3 (Optional) Customize Auth Email Templates
+
+If you use **Magic Link**, **Change Email**, or **Reset Password**, edit those in Supabase → **Authentication** → **Email Templates**. The **Confirm signup** template is not used for email/password sign‑ups in the 6‑digit flow.
 
 ---
 
@@ -115,9 +137,10 @@ Use the placeholders Supabase provides (e.g. `{{ .ConfirmationURL }}`, `{{ .Toke
 - [ ] Resend: API key created
 - [ ] Supabase: Custom SMTP enabled with Resend (Host, Port, User, Password, Sender email/name)
 - [ ] Supabase: **Confirm email** enabled on the Email provider
+- [ ] Migration: `migrations/email_verification_codes_6digit.sql` applied
+- [ ] Next.js / Vercel: `RESEND_API_KEY` and `RESEND_FROM_EMAIL` set
 - [ ] Vercel: `NEXT_PUBLIC_SITE_URL` set to your production URL
 - [ ] Supabase: **Site URL** (Auth → URL Configuration) set to your production URL
-- [ ] (Optional) Supabase: “Confirm signup” (and other) email templates updated
 
 ---
 
@@ -129,19 +152,26 @@ Use the placeholders Supabase provides (e.g. `{{ .ConfirmationURL }}`, `{{ .Toke
 | “Sender not allowed” / 450 | Sender address must be from a Resend‑verified domain |
 | Links go to wrong site | `NEXT_PUBLIC_SITE_URL` in production and `emailRedirectTo` in sign‑up (currently `/home`) |
 | Resend “rate limit” | Resend plan limits; Supabase default SMTP is only for testing (≈2–4/hr) — custom SMTP avoids that |
+| “Invalid or expired code” (6‑digit) | Enter the exact 6 digits from the latest email; each resend invalidates the previous code; code expires in 15 minutes |
+| “Failed to send verification email” | `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in Next.js; `RESEND_FROM_EMAIL` must be from a Resend‑verified domain |
 
 ---
 
 ## 8. App Behaviour (Reference)
 
-- **Sign up with Confirm email ON:** After `signUp`, if Supabase does not return a session, the app shows “Check your email” and “Resend verification email”. No auto sign‑in.
-- **Sign up with Confirm email OFF:** App still signs in and redirects to `/home` when Supabase returns a session.
-- **Sign in before verifying:** Error: “Please verify your email before signing in” + “Resend verification email”.
-- **Resend:** Uses `supabase.auth.resend({ type: 'signup', email })`; Supabase sends the email via your configured SMTP (Resend).
+- **Sign up (6‑digit flow):** `POST /api/auth/signup-with-otp` creates the user (unconfirmed), stores a 6‑digit code, and sends it via Resend. The app shows “Check your email” with an **Enter 6‑digit code** field, **Verify**, and **Resend code**. No auto sign‑in.
+- **Verify:** `POST /api/auth/verify-email-otp` checks the code, confirms the email in Supabase, and returns a magic link to sign in. The user is redirected to `/home` with a session.
+- **Sign in before verifying:** `signInWithPassword` returns “Email not confirmed”. The app shows a 6‑digit code input, **Verify code**, and **Resend code**.
+- **Resend:** `POST /api/auth/resend-email-otp` generates a new 6‑digit code, upserts it, and sends it via Resend.
 
 ---
 
 ## 9. Files
 
-- `app/login/page.tsx` — sign up, sign in, “Check your email”, resend
+- `app/login/page.tsx` — sign up, sign in, “Check your email”, 6‑digit code, verify, resend
+- `app/api/auth/signup-with-otp/route.ts` — create user, store 6‑digit code, send via Resend
+- `app/api/auth/verify-email-otp/route.ts` — verify code, confirm email, return magic link
+- `app/api/auth/resend-email-otp/route.ts` — resend 6‑digit code
+- `lib/sendVerificationEmail.ts` — send 6‑digit email via Resend
+- `migrations/email_verification_codes_6digit.sql` — table and `get_auth_user_id_by_email`
 - `docs/email-auth-production-setup.md` — this guide

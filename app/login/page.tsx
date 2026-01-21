@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [googleAvailable, setGoogleAvailable] = useState(true);
   const [showCheckEmail, setShowCheckEmail] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
 
   // Check if user is already logged in and get redirect param
   useEffect(() => {
@@ -59,29 +60,22 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${baseUrl}${HOME_ROUTE}`,
-            data: {
-              username: username,
-              first_name: firstName,
-              last_name: lastName,
-              phone: phone || null,
-            },
-          },
+        const res = await fetch("/api/auth/signup-with-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            username: username || null,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            phone: phone || null,
+          }),
         });
-        if (signUpError) throw signUpError;
-        // If a session exists, email confirmation is disabled in Supabase — sign in and go home
-        if (data?.session) {
-          if (rememberMe) localStorage.setItem('stattrackr_remember_me', 'true');
-          else localStorage.removeItem('stattrackr_remember_me');
-          router.replace(HOME_ROUTE);
-          return;
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json?.error || "Sign up failed");
         }
-        // Email confirmation required: show "check your email" and do not sign in
         setShowCheckEmail(true);
         setPendingEmail(email);
         setSuccess("");
@@ -111,7 +105,7 @@ export default function LoginPage() {
       } else if (error.message.includes('Invalid login credentials')) {
         setError("Invalid email or password. Please check and try again.");
       } else if (error.message.includes('Email not confirmed')) {
-        setError("Please verify your email before signing in. Check your inbox for the confirmation link.");
+        setError("Please verify your email before signing in. Check your inbox for the verification code.");
       } else if (error.message.includes('User already registered')) {
         setError("Email already in use. Please try a different email or sign in instead.");
       } else {
@@ -127,16 +121,57 @@ export default function LoginPage() {
     setError("");
     setSuccess("");
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: emailToResend,
-        options: { emailRedirectTo: `${baseUrl}${HOME_ROUTE}` },
+      const res = await fetch("/api/auth/resend-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailToResend }),
       });
-      if (resendError) throw resendError;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || "Failed to resend code.");
       setSuccess("Verification email sent. Check your inbox.");
     } catch (e: any) {
       setError(e?.message || "Failed to resend verification email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (emailToVerify: string, code: string, remember: boolean = false) => {
+    const cleaned = code.replace(/\D/g, "");
+    if (cleaned.length !== 6) return;
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/auth/verify-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailToVerify,
+          code: cleaned,
+          origin: typeof window !== "undefined" ? window.location.origin : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || "Invalid or expired code. Request a new one.");
+        return;
+      }
+      if (data.redirectUrl) {
+        if (remember) localStorage.setItem("stattrackr_remember_me", "true");
+        else localStorage.removeItem("stattrackr_remember_me");
+        window.location.href = data.redirectUrl;
+        return;
+      }
+      if (data.signInRequired) {
+        setError("");
+        setSuccess(data.message || "Email verified. Please sign in.");
+        setShowCheckEmail(false);
+        setPendingEmail("");
+        setVerificationCode("");
+      }
+    } catch (e: any) {
+      setError(e?.message || "Invalid or expired code. Request a new one.");
     } finally {
       setLoading(false);
     }
@@ -249,14 +284,35 @@ export default function LoginPage() {
               <div className="mb-6 p-4 rounded-xl bg-red-950/50 border border-red-900/50 text-red-400 text-sm">
                 {error}
                 {error.includes("verify your email") && (
-                  <button
-                    type="button"
-                    onClick={() => handleResendVerification(email)}
-                    disabled={loading}
-                    className="mt-3 block w-full py-2 text-purple-400 hover:text-purple-300 text-sm font-medium disabled:opacity-50"
-                  >
-                    Resend verification email
-                  </button>
+                  <div className="mt-3 space-y-3">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="Enter 6-digit code"
+                      className="w-full h-10 px-3 bg-[#050d1a] border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm"
+                    />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyOtp(email, verificationCode, rememberMe)}
+                        disabled={loading || verificationCode.replace(/\D/g, "").length !== 6}
+                        className="flex-1 py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                      >
+                        {loading ? "Verifying…" : "Verify code"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResendVerification(email)}
+                        disabled={loading}
+                        className="py-2 px-4 text-purple-400 hover:text-purple-300 text-sm font-medium disabled:opacity-50"
+                      >
+                        Resend code
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -269,21 +325,40 @@ export default function LoginPage() {
             )}
 
             {showCheckEmail ? (
-              /* Check your email — after sign up when confirmation is required */
+              /* Check your email — after sign up when confirmation is required (code-based) */
               <div className="space-y-6">
                 <div className="p-4 rounded-xl bg-[#050d1a] border border-gray-700">
                   <h3 className="text-lg font-semibold text-white mb-2">Check your email</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    We sent a verification link to <span className="text-white font-medium">{pendingEmail}</span>. Click the link to activate your account.
+                    We sent a 6-digit code to <span className="text-white font-medium">{pendingEmail}</span>. Enter it below to activate your account.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => handleResendVerification(pendingEmail)}
-                    disabled={loading}
-                    className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    {loading ? "Sending…" : "Resend verification email"}
-                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="Enter 6-digit code"
+                    className="w-full h-11 px-4 mb-3 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleVerifyOtp(pendingEmail, verificationCode, false)}
+                      disabled={loading || verificationCode.replace(/\D/g, "").length !== 6}
+                      className="flex-1 h-11 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {loading ? "Verifying…" : "Verify"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResendVerification(pendingEmail)}
+                      disabled={loading}
+                      className="h-11 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {loading ? "Sending…" : "Resend code"}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -483,6 +558,7 @@ export default function LoginPage() {
                     setSuccess("");
                     setShowCheckEmail(false);
                     setPendingEmail("");
+                    setVerificationCode("");
                     setEmail("");
                     setPassword("");
                     setUsername("");

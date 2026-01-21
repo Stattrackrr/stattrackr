@@ -134,16 +134,27 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const run = async () => {
+      // If Supabase redirected here with tokens in the hash (e.g. /home#access_token=...), set the session
+      if (typeof window !== "undefined" && window.location.hash) {
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const at = params.get("access_token");
+        const rt = params.get("refresh_token");
+        if (at && rt) {
+          await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+          window.history.replaceState(null, "", window.location.pathname + window.location.search || "/home");
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       if (session?.user) {
         checkPremiumStatus(session.user.id);
       } else {
         setIsCheckingSubscription(false);
       }
-    });
-
+    };
+    run();
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
