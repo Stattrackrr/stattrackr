@@ -2271,10 +2271,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   // Deduplicate props: same player + stat + line + opponent should only appear once
   // Keep the one with the most bookmakers or best odds
+  // Uses sortedPlayerProps so Prop Line sort (highest/lowest) order is preserved
   const uniquePlayerProps = useMemo(() => {
     const seen = new Map<string, PlayerProp>();
     
-    filteredPlayerProps.forEach(prop => {
+    sortedPlayerProps.forEach(prop => {
       // Create unique key: playerName + statType + line + opponent
       const key = `${prop.playerName}|${prop.statType}|${prop.line}|${prop.opponent}`;
       
@@ -2308,7 +2309,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     });
     
     return Array.from(seen.values());
-  }, [filteredPlayerProps]);
+  }, [sortedPlayerProps]);
 
   // Sort for display
   // - If prop line sort is active, keep the line-based order (already applied)
@@ -3871,7 +3872,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                     {/* Bookmaker card/button */}
                                                     <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors ${
                                                       mounted && isDark
-                                                        ? 'bg-gray-800 border-gray-600 hover:bg-gray-700'
+                                                        ? 'bg-[#0a1929] border-gray-700 hover:bg-[#0d1f35]'
                                                         : 'bg-white border-gray-300 hover:bg-gray-50'
                                                     }`}>
                                                       {bookmakerInfo?.logoUrl && (
@@ -3909,7 +3910,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                     
                                                     {/* Separator line between bookmakers */}
                                                     {lineIdx < visibleLines.length - 1 && (
-                                                      <div className={`w-px h-8 ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-300'}`} />
+                                                      <div className={`w-px h-8 ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-300'}`} />
                                                     )}
                                                   </div>
                                                 );
@@ -3925,7 +3926,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                     }}
                                                     className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                                                       mounted && isDark
-                                                        ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                                                        ? 'bg-[#0a1929] border-gray-700 text-white hover:bg-[#0d1f35]'
                                                         : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                                   >
@@ -3947,7 +3948,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       <div
                                                         className={`absolute top-full left-0 mt-2 z-50 rounded-lg border shadow-2xl p-4 max-w-3xl ${
                                                           mounted && isDark
-                                                            ? 'bg-gray-800 border-gray-600'
+                                                            ? 'bg-[#0a1929] border-gray-700'
                                                             : 'bg-gray-900 border-gray-500'
                                                         }`}
                                                         style={{
@@ -3986,7 +3987,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                 key={lineIdx}
                                                                 className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border ${
                                                                   mounted && isDark
-                                                                    ? 'bg-gray-700 border-gray-600'
+                                                                    ? 'bg-[#0a1929] border-gray-700'
                                                                     : 'bg-gray-800 border-gray-500'
                                                                 }`}
                                                               >
@@ -5063,7 +5064,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           <div
                                             key={idx}
                                             className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 flex-shrink-0 ${
-                                              mounted && isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-100 border-gray-300'
+                                              mounted && isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
                                           >
@@ -5099,7 +5100,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
                                             className={`flex items-center justify-center px-1 py-1.5 rounded-lg border-2 flex-shrink-0 relative ${
-                                              mounted && isDark ? 'bg-gray-700/50 border-gray-600 hover:bg-gray-700' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                                              mounted && isDark ? 'bg-[#0a1929] border-gray-700 hover:bg-[#0d1f35]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                                             }`}
                                             style={{ minWidth: '40px' }}
                                           >
@@ -5123,7 +5124,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               <div
                                                 className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-lg border shadow-2xl p-4 w-[90vw] max-w-md ${
                                                   mounted && isDark
-                                                    ? 'bg-gray-800 border-gray-600'
+                                                    ? 'bg-[#0a1929] border-gray-700'
                                                     : 'bg-white border-gray-300'
                                                 }`}
                                                 style={{
@@ -5160,7 +5161,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       <div
                                                         key={idx}
                                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
-                                                          mounted && isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                                                          mounted && isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-gray-50 border-gray-200'
                                                         }`}
                                                       >
                                                         {bookmakerInfo?.logoUrl && (
