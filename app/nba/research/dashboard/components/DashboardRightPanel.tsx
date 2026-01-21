@@ -161,12 +161,12 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
           }
         }}
         disabled={!hasPremium}
-        className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+        className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
           propsMode === 'player'
-            ? "bg-purple-600 text-white"
+            ? "bg-purple-600 text-white border-purple-500"
             : !hasPremium
-            ? "bg-gray-200 dark:bg-[#0a1929] text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+            ? "bg-gray-200 dark:bg-[#0a1929] text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600"
+            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
         }`}
       >
         <span className="flex items-center gap-2">
@@ -215,10 +215,10 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             router.replace(url.pathname + url.search, { scroll: false });
           }
         }}
-        className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors ${
+        className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
           propsMode === 'team'
-            ? "bg-purple-600 text-white"
-            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+            ? "bg-purple-600 text-white border-purple-500"
+            : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
         }`}
       >
         Game Props
@@ -313,40 +313,40 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
           <div className="grid grid-cols-2 gap-1 md:gap-1.5">
             <button
               onClick={() => setSelectedComparison('points')}
-              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded border transition-colors ${
                 selectedComparison === 'points'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               POINTS
             </button>
             <button
               onClick={() => setSelectedComparison('rebounds')}
-              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded border transition-colors ${
                 selectedComparison === 'rebounds'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               REBOUNDS
             </button>
             <button
               onClick={() => setSelectedComparison('assists')}
-              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded border transition-colors ${
                 selectedComparison === 'assists'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               ASSISTS
             </button>
             <button
               onClick={() => setSelectedComparison('fg_pct')}
-              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded border transition-colors ${
                 selectedComparison === 'fg_pct'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               FG%
@@ -354,10 +354,10 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             <div className="col-span-2 flex justify-center">
               <button
                 onClick={() => setSelectedComparison('three_pct')}
-                className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded transition-colors w-[calc(50%-0.375rem)] ${
+                className={`px-2 md:px-2.5 py-1.5 text-xs font-medium rounded border transition-colors w-[calc(50%-0.375rem)] ${
                   selectedComparison === 'three_pct'
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    ? "bg-purple-600 text-white border-purple-500"
+                    : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
                 }`}
               >
                 3P%
@@ -440,7 +440,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             : 'text-red-500 dark:text-red-400';
           
           return (
-            <div className="bg-gray-100 dark:bg-[#0a1929] rounded px-2 py-1 mb-2">
+            <div className="bg-gray-100 dark:bg-[#0a1929] rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-2 py-1 mb-2">
               <div className="flex items-center justify-between gap-1 text-xs">
                 <div className={`flex-1 text-center ${teamColorClass}`}>
                   <span className="font-bold">{currentTeam}</span>

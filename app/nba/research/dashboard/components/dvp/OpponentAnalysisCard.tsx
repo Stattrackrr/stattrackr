@@ -210,7 +210,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                 <span className={`${mounted && isDark ? "text-green-400" : "text-green-600"}`}>{opponentTeam || 'TBD'}</span>
                 <span className={`${mounted && isDark ? "text-slate-400" : "text-slate-500"}`}> DEFENSIVE RANKS</span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {!opponentTeam || opponentTeam === 'N/A' || opponentTeam === '' || opponentTeam === 'ALL' ? (
                   <div className="text-sm text-gray-500 dark:text-gray-400">Select an opponent to view defensive ranks</div>
                 ) : loading ? (
@@ -221,7 +221,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                   <div className="text-sm text-gray-500 dark:text-gray-400">No data available</div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Points Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -232,7 +232,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Rebounds Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -243,7 +243,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Assists Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -254,7 +254,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Field Goal % Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -265,7 +265,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>3-Point % Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -276,7 +276,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Steals Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>
@@ -287,7 +287,7 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-3 py-2">
                       <span className={`text-sm font-medium ${mounted && isDark ? "text-white" : "text-black"}`}>Blocks Allowed</span>
                       <div className="flex items-center gap-3">
                         <span className={`text-lg font-bold font-mono ${mounted && isDark ? "text-white" : "text-black"}`}>

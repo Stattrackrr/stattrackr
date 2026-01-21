@@ -83,12 +83,12 @@ export function DashboardModeToggle({
               router.replace(url.pathname + url.search, { scroll: false });
             }
           }}
-          className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all ${
+          className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all border ${
             !isPro
-              ? "bg-gray-300 dark:bg-[#0a1929] text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60"
+              ? "bg-gray-300 dark:bg-[#0a1929] text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-600"
               : propsMode === 'player'
-              ? "bg-purple-600 text-white"
-              : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              ? "bg-purple-600 text-white border-purple-500"
+              : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
           }`}
         >
           <span className="flex items-center gap-1 sm:gap-2">
@@ -137,10 +137,10 @@ export function DashboardModeToggle({
               router.replace(url.pathname + url.search, { scroll: false });
             }
           }}
-          className={`px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-colors ${
+          className={`px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-colors border ${
             propsMode === 'team'
-              ? "bg-purple-600 text-white"
-              : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              ? "bg-purple-600 text-white border-purple-500"
+              : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
           }`}
         >
           Game Props

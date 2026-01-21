@@ -67,7 +67,7 @@ export default function NotificationSystem({ isDark }: { isDark: boolean }) {
 
   // Save notifications to localStorage
   useEffect(() => {
-    if (typeof window === 'undefined' || notifications.length === 0) return;
+    if (typeof window === 'undefined') return;
     localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifications));
     setUnreadCount(notifications.filter(n => !n.read).length);
   }, [notifications]);
@@ -94,6 +94,14 @@ export default function NotificationSystem({ isDark }: { isDark: boolean }) {
 
   const handleMarkAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleClearAll = () => {
+    setNotifications([]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify([]));
+    }
+    setUnreadCount(0);
   };
 
   return (
@@ -136,14 +144,24 @@ export default function NotificationSystem({ isDark }: { isDark: boolean }) {
                   <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     Notifications
                   </h3>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={handleMarkAllRead}
-                      className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'} hover:underline`}
-                    >
-                      Mark all read
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'} hover:underline`}
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAll}
+                        className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} hover:underline`}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="p-2">

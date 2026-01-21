@@ -163,40 +163,40 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
           <div className="grid grid-cols-2 gap-1 md:gap-2 lg:gap-3">
             <button
               onClick={() => setSelectedComparison('points')}
-              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg border transition-colors ${
                 selectedComparison === 'points'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               POINTS
             </button>
             <button
               onClick={() => setSelectedComparison('rebounds')}
-              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg border transition-colors ${
                 selectedComparison === 'rebounds'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               REBOUNDS
             </button>
             <button
               onClick={() => setSelectedComparison('assists')}
-              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg border transition-colors ${
                 selectedComparison === 'assists'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               ASSISTS
             </button>
             <button
               onClick={() => setSelectedComparison('fg_pct')}
-              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors ${
+              className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg border transition-colors ${
                 selectedComparison === 'fg_pct'
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-purple-600 text-white border-purple-500"
+                  : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
               }`}
             >
               FG%
@@ -204,10 +204,10 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
             <div className="col-span-2 flex justify-center">
               <button
                 onClick={() => setSelectedComparison('three_pct')}
-                className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg transition-colors w-[calc(50%-0.25rem)] ${
+                className={`px-2 md:px-3 lg:px-4 py-1.5 md:py-2 text-xs md:text-sm lg:text-base font-medium rounded-lg border transition-colors w-[calc(50%-0.25rem)] ${
                   selectedComparison === 'three_pct'
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    ? "bg-purple-600 text-white border-purple-500"
+                    : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200/80 dark:border-gray-600/60"
                 }`}
               >
                 3P%
@@ -286,7 +286,7 @@ export function DashboardMobileAnalysis(props: DashboardMobileAnalysisProps) {
             : 'text-red-500 dark:text-red-400';
           
           return (
-            <div className="bg-gray-100 dark:bg-[#0a1929] rounded px-2 py-1 mb-2">
+            <div className="bg-gray-100 dark:bg-[#0a1929] rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-2 py-1 mb-2">
               <div className="flex items-center justify-between gap-1 text-xs">
                 <div className={`flex-1 text-center ${teamColorClass}`}>
                   <span className="font-bold">{currentTeam}</span>

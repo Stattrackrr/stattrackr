@@ -1395,7 +1395,7 @@ export default function AddToJournalModal({
       <div className={`flex gap-4 w-full max-w-7xl mx-0 lg:mx-4 items-start h-full lg:h-auto ${
         isParlayMode ? 'flex-col lg:flex-row lg:items-stretch' : ''
       }`}>
-      <div className={`bg-white dark:bg-slate-800 rounded-none lg:rounded-lg shadow-xl w-full flex flex-col ${
+      <div className={`bg-white dark:bg-[#0a1929] rounded-none lg:rounded-lg shadow-xl w-full flex flex-col ${
         isParlayMode 
           ? 'lg:max-w-5xl lg:min-h-0 h-full lg:h-[calc(100vh-2rem)] lg:max-h-[90vh]' 
           : 'max-w-md h-full lg:h-[90vh]'
@@ -1430,7 +1430,7 @@ export default function AddToJournalModal({
           {/* Form */}
           <form id="journal-form" onSubmit={handleSubmit} className="space-y-4">
           {/* Parlay Mode Toggle */}
-          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg border border-gray-200 dark:border-gray-600">
             <div>
               <label className="text-sm font-medium text-gray-900 dark:text-white">Bet Type</label>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1508,7 +1508,7 @@ export default function AddToJournalModal({
           {isParlayMode ? (
             <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4">
               {/* Player Props - First */}
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col">
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col dark:bg-[#0d1f35]">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Player Props</h3>
                 <div className="space-y-4">
                 {/* Player Search */}
@@ -1522,10 +1522,10 @@ export default function AddToJournalModal({
                       value={playerSearchQuery}
                       onChange={(e) => setPlayerSearchQuery(e.target.value)}
                       placeholder="Search by player name..."
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     {playerSearchQuery && playerSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[#0a1929] border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                         {playerSearchResults.map((player) => (
                           <button
                             key={player.id}
@@ -1563,7 +1563,7 @@ export default function AddToJournalModal({
                   <select
                     value={playerStatType}
                     onChange={(e) => setPlayerStatType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     disabled={!selectedPlayer}
                   >
                     {PLAYER_STAT_OPTIONS.map(opt => (
@@ -1573,7 +1573,7 @@ export default function AddToJournalModal({
                 </div>
 
                     {/* Player Odds Section - Collapsible in parlay mode */}
-                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                       <button
                         type="button"
                         onClick={() => {
@@ -1583,7 +1583,7 @@ export default function AddToJournalModal({
                             setPlayerIsManualMode(false);
                           }
                         }}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
                       >
                         <div className="flex items-center gap-2">
                           {playerBookmakerExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -1608,7 +1608,7 @@ export default function AddToJournalModal({
                               {playerOddsError}
                             </div>
                           ) : playerAvailableOdds.length === 0 && !playerOddsLoading ? (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
+                            <div className="p-3 bg-gray-50 dark:bg-[#0a1929] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
                               {selectedPlayer ? 'No live odds available for this prop' : 'Please select a player to see odds'}
                             </div>
                           ) : playerAvailableOdds.length > 0 ? (
@@ -1627,7 +1627,7 @@ export default function AddToJournalModal({
                                     className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
                                       isSelected
                                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-[#0d1f35]'
                                     }`}
                                   >
                                     <div className="flex items-center justify-between">
@@ -1669,7 +1669,7 @@ export default function AddToJournalModal({
                     </div>
 
                     {/* Player Manual Entry Section */}
-                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                       <button
                         type="button"
                         onClick={() => {
@@ -1679,7 +1679,7 @@ export default function AddToJournalModal({
                             setPlayerSelectedOdds(null);
                           }
                         }}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
                       >
                         <div className="flex items-center gap-2">
                           {playerManualExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -1699,7 +1699,7 @@ export default function AddToJournalModal({
                               value={playerManualLine}
                               onChange={(e) => setPlayerManualLine(e.target.value)}
                               placeholder="e.g., 25.5"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
                           <div>
@@ -1712,7 +1712,7 @@ export default function AddToJournalModal({
                               value={playerManualOdds}
                               onChange={(e) => setPlayerManualOdds(e.target.value)}
                               placeholder={oddsFormat === 'decimal' ? 'e.g., 1.91' : 'e.g., -110'}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
                         </div>
@@ -1732,7 +1732,7 @@ export default function AddToJournalModal({
                           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                             playerOverUnder === 'over'
                               ? 'bg-green-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
                           Over
@@ -1744,7 +1744,7 @@ export default function AddToJournalModal({
                           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                             playerOverUnder === 'under'
                               ? 'bg-red-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
                           Under
@@ -1766,7 +1766,7 @@ export default function AddToJournalModal({
               </div>
 
               {/* Game Props - Second */}
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col">
+              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col dark:bg-[#0d1f35]">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Game Props</h3>
                 <div className="space-y-4 pb-24 lg:pb-4">
                 {/* Game Search */}
@@ -1780,10 +1780,10 @@ export default function AddToJournalModal({
                       value={gameSearchQuery}
                       onChange={(e) => setGameSearchQuery(e.target.value)}
                       placeholder="Search by team name..."
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     {gameSearchQuery && gameSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[#0a1929] border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                         {gameSearchResults.map((game, idx) => (
                           <button
                             key={idx}
@@ -1816,7 +1816,7 @@ export default function AddToJournalModal({
                   <select
                     value={gameStatType}
                     onChange={(e) => setGameStatType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     disabled={!selectedGame}
                   >
                     {GAME_PROP_STAT_OPTIONS.map(opt => (
@@ -1826,7 +1826,7 @@ export default function AddToJournalModal({
                 </div>
 
                 {/* Game Odds Section - Collapsible in parlay mode */}
-                <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                   <button
                     type="button"
                     onClick={() => {
@@ -1836,7 +1836,7 @@ export default function AddToJournalModal({
                         setGameIsManualMode(false);
                       }
                     }}
-                    className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                    className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
                   >
                     <div className="flex items-center gap-2">
                       {gameBookmakerExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -1861,7 +1861,7 @@ export default function AddToJournalModal({
                           {gameOddsError}
                         </div>
                       ) : gameAvailableOdds.length === 0 ? (
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
+                        <div className="p-3 bg-gray-50 dark:bg-[#0a1929] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
                           No live odds available for this prop
                         </div>
                       ) : (
@@ -1880,7 +1880,7 @@ export default function AddToJournalModal({
                                 className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
                                   isSelected
                                     ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-[#0d1f35]'
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
@@ -1946,7 +1946,7 @@ export default function AddToJournalModal({
                 </div>
 
                     {/* Game Manual Entry Section */}
-                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                       <button
                         type="button"
                         onClick={() => {
@@ -1956,7 +1956,7 @@ export default function AddToJournalModal({
                             setGameSelectedOdds(null);
                           }
                         }}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
                       >
                         <div className="flex items-center gap-2">
                           {gameManualExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -1976,7 +1976,7 @@ export default function AddToJournalModal({
                               value={gameManualLine}
                               onChange={(e) => setGameManualLine(e.target.value)}
                               placeholder="e.g., 25.5"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
                           <div>
@@ -1989,7 +1989,7 @@ export default function AddToJournalModal({
                               value={gameManualOdds}
                               onChange={(e) => setGameManualOdds(e.target.value)}
                               placeholder={oddsFormat === 'decimal' ? 'e.g., 1.91' : 'e.g., -110'}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
                         </div>
@@ -2010,7 +2010,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'over'
                                 ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             {getTeamNameOnly(gameSelectedOdds.homeTeam)} {formatOdds(gameSelectedOdds.homeOdds || gameSelectedOdds.overPrice, oddsFormat)}
@@ -2022,7 +2022,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'under'
                                 ? 'bg-red-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             {getTeamNameOnly(gameSelectedOdds.awayTeam)} {formatOdds(gameSelectedOdds.awayOdds || gameSelectedOdds.underPrice, oddsFormat)}
@@ -2042,7 +2042,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'over'
                                 ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             {getTeamNameOnly(gameSelectedOdds.favoriteTeam || '')} {gameSelectedOdds.favoriteSpread ?? 0} {formatOdds(gameSelectedOdds.favoriteOdds || gameSelectedOdds.overPrice || 0, oddsFormat)}
@@ -2054,7 +2054,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'under'
                                 ? 'bg-red-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             {getTeamNameOnly(gameSelectedOdds.underdogTeam || '')} {(gameSelectedOdds.underdogSpread ?? 0) > 0 ? '+' : ''}{gameSelectedOdds.underdogSpread ?? 0} {formatOdds(gameSelectedOdds.underdogOdds || gameSelectedOdds.underPrice || 0, oddsFormat)}
@@ -2074,7 +2074,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'over'
                                 ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             Over
@@ -2086,7 +2086,7 @@ export default function AddToJournalModal({
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               gameOverUnder === 'under'
                                 ? 'bg-red-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             Under
@@ -2120,7 +2120,7 @@ export default function AddToJournalModal({
             <select
               value={statType}
               onChange={(e) => setStatType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             >
               {STAT_OPTIONS.map(opt => (
@@ -2130,7 +2130,7 @@ export default function AddToJournalModal({
           </div>
 
           {/* Live Bookmaker Odds Section */}
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
             <button
               type="button"
               onClick={() => {
@@ -2140,7 +2140,7 @@ export default function AddToJournalModal({
                   setIsManualMode(false);
                 }
               }}
-              className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+              className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
             >
               <div className="flex items-center gap-2">
                 {bookmakerExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -2165,7 +2165,7 @@ export default function AddToJournalModal({
                     {oddsError}
                   </div>
                 ) : availableOdds.length === 0 ? (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-[#0a1929] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 text-sm">
                     No live odds available for this prop
                   </div>
                 ) : (
@@ -2240,7 +2240,7 @@ export default function AddToJournalModal({
                           className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
                             isSelected
                               ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-slate-700'
+                              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-[#0d1f35]'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -2432,7 +2432,7 @@ export default function AddToJournalModal({
           </div>
 
           {/* Manual Entry Section */}
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg">
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
             <button
               type="button"
               onClick={() => {
@@ -2443,7 +2443,7 @@ export default function AddToJournalModal({
                   setSelectedOdds(null);
                 }
               }}
-              className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+              className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#0d1f35] transition-colors rounded-lg"
             >
               <div className="flex items-center gap-2">
                 {manualExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -2463,7 +2463,7 @@ export default function AddToJournalModal({
                     value={manualLine}
                     onChange={(e) => setManualLine(e.target.value)}
                     placeholder="e.g., 25.5"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -2476,7 +2476,7 @@ export default function AddToJournalModal({
                     value={manualOdds}
                     onChange={(e) => setManualOdds(e.target.value)}
                     placeholder={oddsFormat === 'decimal' ? 'e.g., 1.91' : 'e.g., -110'}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -2497,7 +2497,7 @@ export default function AddToJournalModal({
                   className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
                     overUnder === 'over'
                       ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {getTeamNameOnly(selectedOdds.homeTeam || '')} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice || 0, oddsFormat)}
@@ -2508,7 +2508,7 @@ export default function AddToJournalModal({
                   className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
                     overUnder === 'under'
                       ? 'bg-red-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {getTeamNameOnly(selectedOdds.awayTeam || '')} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice || 0, oddsFormat)}
@@ -2527,7 +2527,7 @@ export default function AddToJournalModal({
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   overUnder === 'over'
                     ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 Over
@@ -2538,7 +2538,7 @@ export default function AddToJournalModal({
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   overUnder === 'under'
                     ? 'bg-red-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 Under
@@ -2559,7 +2559,7 @@ export default function AddToJournalModal({
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     >
                       {CURRENCIES.map(curr => (
@@ -2584,7 +2584,7 @@ export default function AddToJournalModal({
                         value={stake}
                         onChange={(e) => setStake(e.target.value)}
                         placeholder="100"
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
                         required
                       />
                     </div>
@@ -2599,7 +2599,7 @@ export default function AddToJournalModal({
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                       disabled
                     >
@@ -2625,7 +2625,7 @@ export default function AddToJournalModal({
                         value={stake}
                         onChange={(e) => setStake(e.target.value)}
                         placeholder="1.0"
-                        className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
+                        className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
                         required
                       />
                     </div>
@@ -2704,7 +2704,7 @@ export default function AddToJournalModal({
           {/* Bet Slip - Full screen on mobile, side panel on desktop */}
           {showBetSlipMobile && (
             <div className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
-              <div className="bg-white dark:bg-slate-800 w-full h-full flex flex-col shadow-xl">
+              <div className="bg-white dark:bg-[#0a1929] w-full h-full flex flex-col shadow-xl">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bet Slip</h3>
                   <button
@@ -2780,7 +2780,7 @@ export default function AddToJournalModal({
                           return (
                             <div
                               key={sel.id}
-                              className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"
+                              className="flex items-center justify-between p-2 bg-white dark:bg-[#0a1929] rounded border border-gray-200 dark:border-gray-600"
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -2824,7 +2824,7 @@ export default function AddToJournalModal({
                 </div>
 
                 {/* Stake and Currency - Mobile */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-600 space-y-4 bg-white dark:bg-slate-800">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-600 space-y-4 bg-white dark:bg-[#0a1929]">
                   <div className="grid grid-cols-[auto_1fr] gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2833,7 +2833,7 @@ export default function AddToJournalModal({
                       <select
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         required
                         disabled={parlaySelections.length < 2}
                       >
@@ -2865,7 +2865,7 @@ export default function AddToJournalModal({
                               value={stake}
                               onChange={(e) => setStake(e.target.value)}
                               placeholder="100"
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
                               required
                               disabled={parlaySelections.length < 2}
                             />
@@ -2888,7 +2888,7 @@ export default function AddToJournalModal({
                               value={stake}
                               onChange={(e) => setStake(e.target.value)}
                               placeholder="1.0"
-                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
                               required
                               disabled={parlaySelections.length < 2}
                             />
@@ -2919,7 +2919,7 @@ export default function AddToJournalModal({
           )}
 
           {/* Bet Slip - Desktop: Separate container on the right */}
-          <div className="hidden lg:flex bg-white dark:bg-slate-800 rounded-lg shadow-xl w-96 p-6 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 2rem)', maxHeight: 'calc(100vh - 2rem)' }}>
+          <div className="hidden lg:flex bg-white dark:bg-[#0a1929] rounded-lg shadow-xl w-96 p-6 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 2rem)', maxHeight: 'calc(100vh - 2rem)' }}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex-shrink-0">Bet Slip</h3>
             <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 min-h-0">
             {/* Parlay Selections List */}
@@ -2989,7 +2989,7 @@ export default function AddToJournalModal({
                     return (
                       <div
                         key={sel.id}
-                        className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"
+                        className="flex items-center justify-between p-2 bg-white dark:bg-[#0a1929] rounded border border-gray-200 dark:border-gray-600"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -3042,7 +3042,7 @@ export default function AddToJournalModal({
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                         disabled={parlaySelections.length < 2 || preferredJournalInput === 'units'}
                       >
@@ -3074,7 +3074,7 @@ export default function AddToJournalModal({
                               value={stake}
                               onChange={(e) => setStake(e.target.value)}
                               placeholder="100"
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
                               required
                               disabled={parlaySelections.length < 2}
                             />
@@ -3097,7 +3097,7 @@ export default function AddToJournalModal({
                               value={stake}
                               onChange={(e) => setStake(e.target.value)}
                               placeholder="1.0"
-                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 text-base"
+                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
                               required
                               disabled={parlaySelections.length < 2}
                             />
