@@ -1296,6 +1296,57 @@ export async function POST(request: NextRequest) {
           if (!playerData || typeof playerData !== 'object') continue;
           
           const propsData = playerData as Record<string, any>;
+          
+          // First pass: Collect individual stat lines (PTS, REB, AST) to validate combined stats
+          const individualStats: { pts?: number; reb?: number; ast?: number } = {};
+          
+          for (const baseStat of ['PTS', 'REB', 'AST']) {
+            const statData = propsData[baseStat] || propsData[baseStat.toLowerCase()];
+            if (statData) {
+              const entries = Array.isArray(statData) ? statData : [statData];
+              for (const entry of entries) {
+                if (!entry || !entry.line || entry.line === 'N/A') continue;
+                if (entry.isPickem === true) continue;
+                const line = parseFloat(entry.line);
+                if (!isNaN(line)) {
+                  if (baseStat === 'PTS') individualStats.pts = Math.max(individualStats.pts || 0, line);
+                  if (baseStat === 'REB') individualStats.reb = Math.max(individualStats.reb || 0, line);
+                  if (baseStat === 'AST') individualStats.ast = Math.max(individualStats.ast || 0, line);
+                }
+              }
+            }
+          }
+          
+          // Helper function to validate combined stat line
+          const validateCombinedStatLine = (statType: string, line: number): boolean => {
+            if (statType === 'PRA') {
+              const minExpected = (individualStats.pts || 0) + (individualStats.reb || 0) + (individualStats.ast || 0);
+              if (minExpected > 0 && line < minExpected * 0.7) {
+                console.warn(`[Player Props Update Odds] ⚠️ Invalid PRA line ${line} for ${playerName} from ${bookmakerName} - expected at least ~${minExpected.toFixed(1)} based on PTS(${individualStats.pts || 'N/A'})+REB(${individualStats.reb || 'N/A'})+AST(${individualStats.ast || 'N/A'})`);
+                return false;
+              }
+            } else if (statType === 'PR') {
+              const minExpected = (individualStats.pts || 0) + (individualStats.reb || 0);
+              if (minExpected > 0 && line < minExpected * 0.7) {
+                console.warn(`[Player Props Update Odds] ⚠️ Invalid PR line ${line} for ${playerName} from ${bookmakerName} - expected at least ~${minExpected.toFixed(1)} based on PTS(${individualStats.pts || 'N/A'})+REB(${individualStats.reb || 'N/A'})`);
+                return false;
+              }
+            } else if (statType === 'PA') {
+              const minExpected = (individualStats.pts || 0) + (individualStats.ast || 0);
+              if (minExpected > 0 && line < minExpected * 0.7) {
+                console.warn(`[Player Props Update Odds] ⚠️ Invalid PA line ${line} for ${playerName} from ${bookmakerName} - expected at least ~${minExpected.toFixed(1)} based on PTS(${individualStats.pts || 'N/A'})+AST(${individualStats.ast || 'N/A'})`);
+                return false;
+              }
+            } else if (statType === 'RA') {
+              const minExpected = (individualStats.reb || 0) + (individualStats.ast || 0);
+              if (minExpected > 0 && line < minExpected * 0.7) {
+                console.warn(`[Player Props Update Odds] ⚠️ Invalid RA line ${line} for ${playerName} from ${bookmakerName} - expected at least ~${minExpected.toFixed(1)} based on REB(${individualStats.reb || 'N/A'})+AST(${individualStats.ast || 'N/A'})`);
+                return false;
+              }
+            }
+            return true;
+          };
+          
           // Get ALL stat types dynamically
           const allStatTypes = Object.keys(propsData).filter(key => {
             const statData = propsData[key];
@@ -1317,6 +1368,13 @@ export async function POST(request: NextRequest) {
               if (isNaN(line)) continue;
               
               const statType = statTypeKey.toUpperCase();
+              
+              // Validate combined stat lines against individual stat lines
+              if (['PRA', 'PR', 'PA', 'RA'].includes(statType)) {
+                if (!validateCombinedStatLine(statType, line)) {
+                  continue; // Skip this invalid entry
+                }
+              }
               // Include opponent in key to avoid duplicates for different games
               const opponent = awayTeamAbbr; // Use away team as opponent (player is on home team initially)
               const propKey = `${playerName}|${statType}|${Math.round(line * 2) / 2}|${opponent || 'ALL'}`;
