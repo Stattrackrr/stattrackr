@@ -149,6 +149,7 @@ export default function AddToJournalModal({
   const [isParlayMode, setIsParlayMode] = useState(false);
   const [parlaySelections, setParlaySelections] = useState<ParlaySelection[]>([]);
   const [showBetSlipMobile, setShowBetSlipMobile] = useState(false);
+  const [parlayOdds, setParlayOdds] = useState(''); // User-entered parlay odds
   
   // In parlay mode, allow switching between game prop and player prop
   const [parlayModeType, setParlayModeType] = useState<'game' | 'player'>(isGameProp ? 'game' : 'player');
@@ -940,7 +941,12 @@ export default function AddToJournalModal({
   // Add current selection to parlay
   const addToParlay = () => {
     if (isManualMode) {
-      if (!manualLine || !manualOdds) {
+      if (!manualLine) {
+        setError('Please enter a line');
+        return;
+      }
+      // In parlay mode, odds are entered in bet slip, so manual odds are optional
+      if (!isParlayMode && !manualOdds) {
         setError('Please enter both line and odds');
         return;
       }
@@ -965,7 +971,14 @@ export default function AddToJournalModal({
       multiplier = getPrizePicksMultiplier(selectedOdds, variantLabel);
       finalOdds = multiplier;
     } else {
-      finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
+      // In parlay mode, use default odds if manual odds not provided (odds entered in bet slip)
+      if (isManualMode) {
+        finalOdds = manualOdds && manualOdds.trim() !== '' 
+          ? parseFloat(manualOdds) 
+          : (isParlayMode ? 1.0 : 0);
+      } else {
+        finalOdds = overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice;
+      }
     }
 
     // Validate: PrizePicks pick'em can only be combined with other PrizePicks props
@@ -1015,6 +1028,9 @@ export default function AddToJournalModal({
 
     setParlaySelections([...parlaySelections, newSelection]);
     
+    // Clear parlay odds when adding a new selection (user needs to re-enter)
+    setParlayOdds('');
+    
     // Reset form for next selection (but keep stake if parlay is ready)
     // In parlay mode, keep the current mode type; otherwise use the original isGameProp
     setStatType(currentIsGameProp ? 'moneyline' : 'pts');
@@ -1037,9 +1053,10 @@ export default function AddToJournalModal({
   const removeFromParlay = (id: string) => {
     const newSelections = parlaySelections.filter(sel => sel.id !== id);
     setParlaySelections(newSelections);
-    // Clear stake if we go below 2 selections
+    // Clear stake and parlay odds if we go below 2 selections
     if (newSelections.length < 2) {
       setStake('');
+      setParlayOdds('');
     }
   };
 
@@ -1050,20 +1067,22 @@ export default function AddToJournalModal({
       return;
     }
 
+    // In parlay mode, odds are entered in bet slip, so individual leg odds are optional
     const finalOdds = gameIsManualMode && gameManualOdds
       ? (oddsFormat === 'american' ? americanToDecimal(parseFloat(gameManualOdds)) : parseFloat(gameManualOdds))
       : gameSelectedOdds
         ? (gameOverUnder === 'over' ? gameSelectedOdds.overPrice : gameSelectedOdds.underPrice)
-        : null;
+        : isParlayMode ? 1.0 : null; // Use default odds in parlay mode if not provided
 
-    if (!finalOdds) {
+    if (!isParlayMode && !finalOdds) {
       setError('Please select odds or enter manual odds');
       return;
     }
 
     // Use team names from API response if available, otherwise fall back to selectedGame
-    const actualHomeTeam = gameSelectedOdds?.homeTeam || selectedGame.homeTeam;
-    const actualAwayTeam = gameSelectedOdds?.awayTeam || selectedGame.awayTeam;
+    // IMPORTANT: Use gameSelectedOdds first as it has the correct team names from the odds API
+    const actualHomeTeam = gameSelectedOdds?.homeTeam || selectedGame?.homeTeam || '';
+    const actualAwayTeam = gameSelectedOdds?.awayTeam || selectedGame?.awayTeam || '';
 
     // For moneylines, store the actual team that was bet on (not just home team)
     // For spreads, store the team that was bet on (favorite or underdog) and the spread from their perspective
@@ -1075,7 +1094,12 @@ export default function AddToJournalModal({
     
     if (gameStatType === 'moneyline') {
       // For moneylines: 'over' = home team, 'under' = away team
-      betTeam = gameOverUnder === 'over' ? actualHomeTeam : actualAwayTeam;
+      // Use the team names directly from gameSelectedOdds to ensure we get the correct team
+      if (gameSelectedOdds?.homeTeam && gameSelectedOdds?.awayTeam) {
+        betTeam = gameOverUnder === 'over' ? gameSelectedOdds.homeTeam : gameSelectedOdds.awayTeam;
+      } else {
+        betTeam = gameOverUnder === 'over' ? actualHomeTeam : actualAwayTeam;
+      }
     } else if (gameStatType === 'spread' && gameSelectedOdds) {
       // For spreads: 'over' = favorite, 'under' = underdog
       // Store the spread from the team's perspective (negative for favorite, positive for underdog)
@@ -1093,7 +1117,27 @@ export default function AddToJournalModal({
       playerName: '', // Not used for game props
       playerId: '', // Not used for game props
       team: betTeam, // Store the actual team that was bet on
-      opponent: betTeam === actualHomeTeam ? actualAwayTeam : actualHomeTeam, // Store the opponent
+      opponent: (() => {
+        // Determine opponent based on which team was selected
+        if (gameStatType === 'moneyline' && gameSelectedOdds?.homeTeam && gameSelectedOdds?.awayTeam) {
+          // Use team names from gameSelectedOdds for accurate matching
+          // Normalize strings for comparison (trim and case-insensitive)
+          const betTeamNormalized = betTeam?.trim().toLowerCase();
+          const homeTeamNormalized = gameSelectedOdds.homeTeam.trim().toLowerCase();
+          const awayTeamNormalized = gameSelectedOdds.awayTeam.trim().toLowerCase();
+          
+          if (betTeamNormalized === homeTeamNormalized) {
+            return gameSelectedOdds.awayTeam;
+          } else if (betTeamNormalized === awayTeamNormalized) {
+            return gameSelectedOdds.homeTeam;
+          }
+          // If no match, fall through to fallback
+        }
+        // Fallback to comparing with actualHomeTeam/actualAwayTeam
+        const betTeamNormalized = betTeam?.trim().toLowerCase();
+        const homeTeamNormalized = actualHomeTeam?.trim().toLowerCase();
+        return betTeamNormalized === homeTeamNormalized ? actualAwayTeam : actualHomeTeam;
+      })(), // Store the opponent
       gameDate: selectedGame.gameDate,
       statType: gameStatType,
       line: finalLine,
@@ -1109,6 +1153,9 @@ export default function AddToJournalModal({
 
     setParlaySelections([...parlaySelections, newSelection]);
     
+    // Clear parlay odds when adding a new selection (user needs to re-enter)
+    setParlayOdds('');
+    
     // Reset game form
     setGameSelectedOdds(null);
     setGameOverUnder('over');
@@ -1120,19 +1167,20 @@ export default function AddToJournalModal({
   };
 
   // Add player prop to parlay (right side)
-  const addPlayerPropToParlay = () => {
+  const addPlayerPropToParlay = async () => {
     if (!selectedPlayer || !playerStatType) {
       setError('Please select a player and stat type');
       return;
     }
 
+    // In parlay mode, odds are entered in bet slip, so individual leg odds are optional
     const finalOdds = playerIsManualMode && playerManualOdds
       ? (oddsFormat === 'american' ? americanToDecimal(parseFloat(playerManualOdds)) : parseFloat(playerManualOdds))
       : playerSelectedOdds
         ? (playerOverUnder === 'over' ? playerSelectedOdds.overPrice : playerSelectedOdds.underPrice)
-        : null;
+        : isParlayMode ? 1.0 : null; // Use default odds in parlay mode if not provided
 
-    if (!finalOdds) {
+    if (!isParlayMode && !finalOdds) {
       setError('Please select odds or enter manual odds');
       return;
     }
@@ -1144,13 +1192,67 @@ export default function AddToJournalModal({
     // Get player's team from search result or use default
     const playerTeam = selectedPlayer.team || team;
 
+    // Fetch the player's actual game info (opponent and gameDate)
+    let playerOpponent = opponent; // Fallback to original if fetch fails
+    let playerGameDate = gameDate; // Fallback to original if fetch fails
+
+    if (playerTeam && playerTeam !== 'N/A') {
+      try {
+        // Get today and tomorrow dates in US Eastern Time (NBA games are scheduled in ET)
+        const getUSEasternDateString = (date: Date): string => {
+          return new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          });
+        };
+
+        const today = getUSEasternDateString(new Date());
+        const tomorrow = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
+        // Fetch games for today and tomorrow
+        const gamesResponse = await fetch(`/api/bdl/games?start_date=${today}&end_date=${tomorrow}&per_page=100`);
+        if (gamesResponse.ok) {
+          const gamesData = await gamesResponse.json();
+          const games = Array.isArray(gamesData?.data) ? gamesData.data : [];
+
+          // Find the game where this player's team is playing
+          const playerGame = games.find((g: any) => {
+            const homeAbbr = g.home_team?.abbreviation;
+            const visitorAbbr = g.visitor_team?.abbreviation;
+            return homeAbbr === playerTeam || visitorAbbr === playerTeam;
+          });
+
+          if (playerGame) {
+            const homeAbbr = playerGame.home_team?.abbreviation;
+            const visitorAbbr = playerGame.visitor_team?.abbreviation;
+            playerOpponent = playerTeam === homeAbbr ? visitorAbbr : homeAbbr;
+            
+            // Extract date from game
+            if (playerGame.date) {
+              const gameDateStr = typeof playerGame.date === 'string' 
+                ? playerGame.date.split('T')[0] 
+                : new Date(playerGame.date).toISOString().split('T')[0];
+              playerGameDate = gameDateStr;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching player game info:', err);
+        // Use fallback values (original opponent and gameDate)
+      }
+    }
+
     const newSelection: ParlaySelection = {
       id: `player-${Date.now()}-${Math.random()}`,
       playerName: selectedPlayer.full,
       playerId: String(selectedPlayer.id),
       team: playerTeam,
-      opponent: opponent,
-      gameDate: gameDate,
+      opponent: playerOpponent,
+      gameDate: playerGameDate,
       statType: playerStatType,
       line: finalLine,
       overUnder: playerOverUnder,
@@ -1164,6 +1266,9 @@ export default function AddToJournalModal({
     };
 
     setParlaySelections([...parlaySelections, newSelection]);
+    
+    // Clear parlay odds when adding a new selection (user needs to re-enter)
+    setParlayOdds('');
     
     // Reset player form
     setPlayerSelectedOdds(null);
@@ -1186,6 +1291,17 @@ export default function AddToJournalModal({
       }
       if (!stake) {
         setError('Please enter a stake');
+        return;
+      }
+      if (!parlayOdds || parlayOdds.trim() === '') {
+        setError('Please enter parlay odds in the bet slip');
+        return;
+      }
+      
+      // Validate parlay odds format
+      const parsedOdds = parseFloat(parlayOdds);
+      if (isNaN(parsedOdds) || parsedOdds <= 0) {
+        setError('Please enter valid parlay odds');
         return;
       }
     } else {
@@ -1212,7 +1328,10 @@ export default function AddToJournalModal({
 
       if (isParlayMode) {
         // Handle parlay submission
-        const combinedOdds = calculateParlayOdds(parlaySelections, oddsFormat);
+        // Use user-entered parlay odds instead of calculating
+        const combinedOdds = oddsFormat === 'american' 
+          ? americanToDecimal(parseFloat(parlayOdds)) 
+          : parseFloat(parlayOdds);
         const selectionTexts = parlaySelections.map(sel => {
           const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
           const statLabel = statOptions.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
@@ -1226,13 +1345,11 @@ export default function AddToJournalModal({
           
           // Format the selection text based on stat type
           if (sel.isGameProp && sel.statType === 'moneyline') {
-            // For moneylines, show the selected team name
-            const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-            return `${selectedTeam} ML vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}${variantInfo}`;
+            // For moneylines, sel.team is the team that was bet on, sel.opponent is the other team
+            return `${sel.team} to win${variantInfo}`;
           } else if (sel.isGameProp && sel.statType === 'spread') {
-            // For spreads, show team and spread
-            const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-            return `${selectedTeam} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}${variantInfo}`;
+            // For spreads, sel.team is the team that was bet on, sel.opponent is the other team
+            return `${sel.team} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.opponent}${variantInfo}`;
           } else {
             // For other stats, use the standard format
             return `${displayName} ${sel.overUnder} ${sel.line} ${statLabel}${variantInfo}`;
@@ -1301,9 +1418,40 @@ export default function AddToJournalModal({
         const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
         const finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
         
-        const selection = isGameProp 
-          ? `${team} vs ${opponent} ${overUnder} ${finalLine} ${statLabel}`
-          : `${playerName} ${overUnder} ${finalLine} ${statLabel}`;
+        // For game props, determine the actual team that was bet on and format selection text
+        let betTeam = team;
+        let betOpponent = opponent;
+        let selection: string;
+        
+        if (isGameProp && statType === 'moneyline') {
+          // For moneylines: determine which team was selected
+          if (selectedOdds?.homeTeam && selectedOdds?.awayTeam) {
+            betTeam = overUnder === 'over' ? selectedOdds.homeTeam : selectedOdds.awayTeam;
+            betOpponent = overUnder === 'over' ? selectedOdds.awayTeam : selectedOdds.homeTeam;
+          } else {
+            // Fallback: use team/opponent props (assuming team is home, opponent is away)
+            betTeam = overUnder === 'over' ? team : opponent;
+            betOpponent = overUnder === 'over' ? opponent : team;
+          }
+          selection = `${betTeam} to win`;
+        } else if (isGameProp && statType === 'spread') {
+          // For spreads: determine which team was selected
+          if (selectedOdds?.favoriteTeam && selectedOdds?.underdogTeam) {
+            betTeam = overUnder === 'over' ? selectedOdds.favoriteTeam : selectedOdds.underdogTeam;
+            betOpponent = overUnder === 'over' ? selectedOdds.underdogTeam : selectedOdds.favoriteTeam;
+            selection = `${betTeam} ${finalLine > 0 ? '+' : ''}${finalLine} vs ${betOpponent}`;
+          } else {
+            betTeam = overUnder === 'over' ? team : opponent;
+            betOpponent = overUnder === 'over' ? opponent : team;
+            selection = `${betTeam} ${finalLine > 0 ? '+' : ''}${finalLine} vs ${betOpponent}`;
+          }
+        } else {
+          // For other game props and player props, use standard format
+          selection = isGameProp 
+            ? `${team} vs ${opponent} ${overUnder} ${finalLine} ${statLabel}`
+            : `${playerName} ${overUnder} ${finalLine} ${statLabel}`;
+        }
+        
         const market = isGameProp ? `Game ${statLabel}` : `Player ${statLabel}`;
         
         // Get bookmaker name if odds were selected from a bookmaker
@@ -1335,8 +1483,8 @@ export default function AddToJournalModal({
             result: 'pending',
             player_id: playerId,
             player_name: playerName,
-            team,
-            opponent,
+            team: betTeam, // Use the actual team that was bet on (for moneylines/spreads)
+            opponent: betOpponent, // Use the opponent of the team that was bet on
             stat_type: statType,
             line: finalLine,
             over_under: overUnder,
@@ -1445,6 +1593,7 @@ export default function AddToJournalModal({
                   // Switching to parlay mode - clear current selection and stake
                   setParlaySelections([]);
                   setStake('');
+                  setParlayOdds('');
                   // Reset side-by-side states
                   setSelectedGame(null);
                   setGameSearchQuery('');
@@ -1490,6 +1639,7 @@ export default function AddToJournalModal({
                 } else {
                   // Switching to single bet mode - clear parlay
                   setParlaySelections([]);
+                  setParlayOdds('');
                 }
               }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -1668,7 +1818,7 @@ export default function AddToJournalModal({
                       )}
                     </div>
 
-                    {/* Player Manual Entry Section */}
+                    {/* Player Manual Entry Section - Line always available, odds only in single bet mode */}
                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                       <button
                         type="button"
@@ -1702,6 +1852,7 @@ export default function AddToJournalModal({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
+                          {!isParlayMode && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
@@ -1715,6 +1866,7 @@ export default function AddToJournalModal({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1945,7 +2097,7 @@ export default function AddToJournalModal({
                   )}
                 </div>
 
-                    {/* Game Manual Entry Section */}
+                    {/* Game Manual Entry Section - Line always available, odds only in single bet mode */}
                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-[#0d1f35]">
                       <button
                         type="button"
@@ -1979,6 +2131,7 @@ export default function AddToJournalModal({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
+                          {!isParlayMode && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
@@ -1992,6 +2145,7 @@ export default function AddToJournalModal({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                           </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2676,29 +2830,9 @@ export default function AddToJournalModal({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {parlaySelections.length > 0 && (
-                <span className="text-sm">
-                  {(() => {
-                    const allPrizePicksPickem = parlaySelections.every(sel => {
-                      const selIsPrizePicks = isPrizePicks(sel.bookmaker);
-                      return selIsPrizePicks && sel.isPickem;
-                    });
-                    if (allPrizePicksPickem) {
-                      const totalMultiplier = parlaySelections.reduce((acc, sel) => {
-                        const multiplier = sel.multiplier ?? getPrizePicksMultiplier(null, sel.variantLabel);
-                        return acc * multiplier;
-                      }, 1);
-                      return `${totalMultiplier}x`;
-                    }
-                    return formatOdds(calculateParlayOdds(parlaySelections, oddsFormat), oddsFormat);
-                  })()}
-                </span>
-              )}
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
 
           {/* Bet Slip - Full screen on mobile, side panel on desktop */}
@@ -2737,22 +2871,6 @@ export default function AddToJournalModal({
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                           Selections ({parlaySelections.length})
                         </h4>
-                        <div className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                          {(() => {
-                            const allPrizePicksPickem = parlaySelections.every(sel => {
-                              const selIsPrizePicks = isPrizePicks(sel.bookmaker);
-                              return selIsPrizePicks && sel.isPickem;
-                            });
-                            if (allPrizePicksPickem) {
-                              const totalMultiplier = parlaySelections.reduce((acc, sel) => {
-                                const multiplier = sel.multiplier ?? getPrizePicksMultiplier(null, sel.variantLabel);
-                                return acc * multiplier;
-                              }, 1);
-                              return `${totalMultiplier}x`;
-                            }
-                            return formatOdds(calculateParlayOdds(parlaySelections, oddsFormat), oddsFormat);
-                          })()}
-                        </div>
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                         {parlaySelections.map((sel) => {
@@ -2768,11 +2886,11 @@ export default function AddToJournalModal({
                           // Format the selection text based on stat type
                           let selectionText = '';
                           if (sel.isGameProp && sel.statType === 'moneyline') {
-                            const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-                            selectionText = `${selectedTeam} ML vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}`;
+                            // For moneylines, sel.team is the team that was bet on, sel.opponent is the other team
+                            selectionText = `${sel.team} to win`;
                           } else if (sel.isGameProp && sel.statType === 'spread') {
-                            const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-                            selectionText = `${selectedTeam} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}`;
+                            // For spreads, sel.team is the team that was bet on, sel.opponent is the other team
+                            selectionText = `${sel.team} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.opponent}`;
                           } else {
                             selectionText = `${displayName} ${sel.overUnder} ${sel.line} ${statLabel}`;
                           }
@@ -2801,7 +2919,9 @@ export default function AddToJournalModal({
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                   {showMultiplier && multiplier 
                                     ? `${sel.variantLabel || 'Pick\'em'} Line ${sel.line} • ${multiplier}x multiplier • ${sel.bookmaker}`
-                                    : `${formatOdds(sel.odds, oddsFormat)} ${sel.bookmaker ? `• ${sel.bookmaker}` : '• Manual'}`}
+                                    : sel.isManual || !sel.bookmaker
+                                      ? 'Manual'
+                                      : `${formatOdds(sel.odds, oddsFormat)} • ${sel.bookmaker}`}
                                 </div>
                               </div>
                               <button
@@ -2814,6 +2934,22 @@ export default function AddToJournalModal({
                             </div>
                           );
                         })}
+                      </div>
+                      
+                      {/* Parlay Odds Input */}
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Parlay Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
+                        </label>
+                        <input
+                          type="number"
+                          step={oddsFormat === 'decimal' ? '0.01' : '1'}
+                          value={parlayOdds}
+                          onChange={(e) => setParlayOdds(e.target.value)}
+                          placeholder={oddsFormat === 'decimal' ? 'e.g., 4.08' : 'e.g., +308'}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          required
+                        />
                       </div>
                     </>
                   ) : (
@@ -2943,22 +3079,6 @@ export default function AddToJournalModal({
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                     Selections ({parlaySelections.length})
                   </h4>
-                  <div className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                    {(() => {
-                      const allPrizePicksPickem = parlaySelections.every(sel => {
-                        const selIsPrizePicks = isPrizePicks(sel.bookmaker);
-                        return selIsPrizePicks && sel.isPickem;
-                      });
-                      if (allPrizePicksPickem) {
-                        const totalMultiplier = parlaySelections.reduce((acc, sel) => {
-                          const multiplier = sel.multiplier ?? getPrizePicksMultiplier(null, sel.variantLabel);
-                          return acc * multiplier;
-                        }, 1);
-                        return `${totalMultiplier}x`;
-                      }
-                      return formatOdds(calculateParlayOdds(parlaySelections, oddsFormat), oddsFormat);
-                    })()}
-                  </div>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                   {parlaySelections.map((sel) => {
@@ -2974,13 +3094,11 @@ export default function AddToJournalModal({
                     // Format the selection text based on stat type
                     let selectionText = '';
                     if (sel.isGameProp && sel.statType === 'moneyline') {
-                      // For moneylines, show the selected team name
-                      const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-                      selectionText = `${selectedTeam} ML vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}`;
+                      // For moneylines, sel.team is the team that was bet on, sel.opponent is the other team
+                      selectionText = `${sel.team} to win`;
                     } else if (sel.isGameProp && sel.statType === 'spread') {
-                      // For spreads, show team and spread
-                      const selectedTeam = sel.overUnder === 'over' ? getTeamNameOnly(sel.team) : getTeamNameOnly(sel.opponent);
-                      selectionText = `${selectedTeam} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.overUnder === 'over' ? getTeamNameOnly(sel.opponent) : getTeamNameOnly(sel.team)}`;
+                      // For spreads, sel.team is the team that was bet on, sel.opponent is the other team
+                      selectionText = `${sel.team} ${sel.line > 0 ? '+' : ''}${sel.line} vs ${sel.opponent}`;
                     } else {
                       // For other stats, use the standard format
                       selectionText = `${displayName} ${sel.overUnder} ${sel.line} ${statLabel}`;
@@ -3010,7 +3128,9 @@ export default function AddToJournalModal({
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {showMultiplier && multiplier 
                               ? `${sel.variantLabel || 'Pick\'em'} Line ${sel.line} • ${multiplier}x multiplier • ${sel.bookmaker}`
-                              : `${formatOdds(sel.odds, oddsFormat)} ${sel.bookmaker ? `• ${sel.bookmaker}` : '• Manual'}`}
+                              : sel.isManual || !sel.bookmaker
+                                ? 'Manual'
+                                : `${formatOdds(sel.odds, oddsFormat)} • ${sel.bookmaker}`}
                           </div>
                         </div>
                         <button
@@ -3023,6 +3143,22 @@ export default function AddToJournalModal({
                       </div>
                     );
                   })}
+                </div>
+                
+                {/* Parlay Odds Input */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Parlay Odds ({oddsFormat === 'decimal' ? 'Decimal' : 'American'})
+                  </label>
+                  <input
+                    type="number"
+                    step={oddsFormat === 'decimal' ? '0.01' : '1'}
+                    value={parlayOdds}
+                    onChange={(e) => setParlayOdds(e.target.value)}
+                    placeholder={oddsFormat === 'decimal' ? 'e.g., 4.08' : 'e.g., +308'}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
                 </div>
               </>
             ) : (
