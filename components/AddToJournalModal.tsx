@@ -975,7 +975,7 @@ export default function AddToJournalModal({
       if (isManualMode) {
         finalOdds = manualOdds && manualOdds.trim() !== '' 
           ? parseFloat(manualOdds) 
-          : (isParlayMode ? 1.0 : 0);
+          : 1.0; // Default odds (especially for parlay mode)
       } else {
         finalOdds = overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice;
       }
@@ -1068,13 +1068,13 @@ export default function AddToJournalModal({
     }
 
     // In parlay mode, odds are entered in bet slip, so individual leg odds are optional
-    const finalOdds = gameIsManualMode && gameManualOdds
+    const finalOdds: number = gameIsManualMode && gameManualOdds
       ? (oddsFormat === 'american' ? americanToDecimal(parseFloat(gameManualOdds)) : parseFloat(gameManualOdds))
       : gameSelectedOdds
         ? (gameOverUnder === 'over' ? gameSelectedOdds.overPrice : gameSelectedOdds.underPrice)
-        : isParlayMode ? 1.0 : null; // Use default odds in parlay mode if not provided
+        : 1.0; // Use default odds if not provided (especially in parlay mode)
 
-    if (!isParlayMode && !finalOdds) {
+    if (!isParlayMode && (!gameSelectedOdds && (!gameIsManualMode || !gameManualOdds))) {
       setError('Please select odds or enter manual odds');
       return;
     }
@@ -1174,13 +1174,13 @@ export default function AddToJournalModal({
     }
 
     // In parlay mode, odds are entered in bet slip, so individual leg odds are optional
-    const finalOdds = playerIsManualMode && playerManualOdds
+    const finalOdds: number = playerIsManualMode && playerManualOdds
       ? (oddsFormat === 'american' ? americanToDecimal(parseFloat(playerManualOdds)) : parseFloat(playerManualOdds))
       : playerSelectedOdds
         ? (playerOverUnder === 'over' ? playerSelectedOdds.overPrice : playerSelectedOdds.underPrice)
-        : isParlayMode ? 1.0 : null; // Use default odds in parlay mode if not provided
+        : 1.0; // Use default odds if not provided (especially in parlay mode)
 
-    if (!isParlayMode && !finalOdds) {
+    if (!isParlayMode && (!playerSelectedOdds && (!playerIsManualMode || !playerManualOdds))) {
       setError('Please select odds or enter manual odds');
       return;
     }
