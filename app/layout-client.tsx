@@ -126,8 +126,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       }
     };
     
-    // Prefetch dashboard games after a short delay (don't block player props prefetch)
-    setTimeout(prefetchDashboardGames, 1000);
+    // Prefetch dashboard games immediately (runs in background, doesn't block render)
+    prefetchDashboardGames();
   }, []);
 
   return (

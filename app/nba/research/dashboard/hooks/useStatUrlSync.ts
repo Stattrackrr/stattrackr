@@ -73,7 +73,6 @@ export function useStatUrlSync({
       // Clear the initial stat ref so we don't use it again
       const initialStat = initialStatFromUrlRef.current;
       initialStatFromUrlRef.current = null; // Clear it so we don't reset to it later
-      console.log(`[Dashboard] 🎯 useSearchParams: Using initial stat from mount: "${initialStat}"`);
       statFromUrlRef.current = true;
       setSelectedStat(initialStat);
       
@@ -85,7 +84,6 @@ export function useStatUrlSync({
     // After first render, always respect the current URL parameter
     // BUT skip if user just manually selected a stat (to prevent override)
     if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] ⏸️ useSearchParams: Skipping - user just manually selected stat`);
       return;
     }
     
@@ -100,15 +98,12 @@ export function useStatUrlSync({
       
       // Only update if it's different from current stat to avoid unnecessary re-renders
       if (normalizedStat !== selectedStat) {
-        console.log(`[Dashboard] 🎯 useSearchParams: Updating stat from URL: "${stat}" -> "${normalizedStat}" (current: "${selectedStat}")`);
         statFromUrlRef.current = true;
         setSelectedStat(normalizedStat);
         
         // Store in session storage
         updateSessionProperty('selectedStat', normalizedStat);
       }
-    } else {
-      console.log(`[Dashboard] ⚠️ useSearchParams: No stat parameter found in URL`);
     }
   }, [searchParams, selectedStat, setSelectedStat, statFromUrlRef, userSelectedStatRef]);
 
@@ -141,7 +136,6 @@ export function useStatUrlSync({
         url.searchParams.set('stat', selectedStat);
         // Use replace to avoid adding to history
         router.replace(url.pathname + url.search, { scroll: false });
-        console.log(`[Dashboard] 🔄 Updated URL stat parameter to: "${selectedStat}"`);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,11 +143,8 @@ export function useStatUrlSync({
 
   // Ensure correct default stat is set when propsMode changes (but not when user clicks stats)
   useEffect(() => {
-    console.log(`[Dashboard] 🔄 Default stat logic running: propsMode="${propsMode}", selectedStat="${selectedStat}", statFromUrlRef=${statFromUrlRef.current}, initialStatFromUrl="${initialStatFromUrlRef.current}", userSelectedStat=${userSelectedStatRef.current}`);
-    
     // Skip if user manually selected a stat (don't override user choice)
     if (userSelectedStatRef.current) {
-      console.log(`[Dashboard] ⏸️ Skipping default stat logic - user manually selected stat`);
       userSelectedStatRef.current = false; // Reset after one check
       return;
     }
@@ -161,7 +152,6 @@ export function useStatUrlSync({
     // Skip if we have an initial stat from URL (don't override it, even if URL was changed)
     // But only if we haven't used it yet - after first use, always respect URL
     if (initialStatFromUrlRef.current && !hasUsedInitialStatRef.current) {
-      console.log(`[Dashboard] ⏸️ Skipping default stat logic - initial stat "${initialStatFromUrlRef.current}" was captured from URL on mount`);
       return;
     }
     
@@ -170,14 +160,12 @@ export function useStatUrlSync({
       const url = new URL(window.location.href);
       const urlStat = url.searchParams.get('stat');
       if (urlStat) {
-        console.log(`[Dashboard] ⏸️ Skipping default stat logic - stat "${urlStat}" found in URL`);
         return;
       }
     }
     
     // Skip if stat was set from URL (don't override it)
     if (statFromUrlRef.current) {
-      console.log(`[Dashboard] ⏸️ Skipping default stat logic - stat was set from URL (ref flag)`);
       statFromUrlRef.current = false; // Reset flag after skipping once
       return;
     }
@@ -197,7 +185,6 @@ export function useStatUrlSync({
       // Don't reset if user has a valid stat selected
       const playerStatExists = PLAYER_STAT_OPTIONS.find(s => s.key === selectedStat);
       if (!playerStatExists && selectedStat !== 'pts') {
-        console.log(`[Dashboard] ⚠️ Stat "${selectedStat}" not found in PLAYER_STAT_OPTIONS, resetting to 'pts'`);
         setSelectedStat('pts');
       }
     } else if (propsMode === 'team') {

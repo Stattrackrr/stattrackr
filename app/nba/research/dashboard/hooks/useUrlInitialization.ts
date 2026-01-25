@@ -49,15 +49,12 @@ export function useUrlInitialization({
 }: UseUrlInitializationParams) {
   // On mount: restore from sessionStorage and URL once
   useEffect(() => {
-    console.log(`[Dashboard] 🚀 Mount useEffect running - checking URL and session storage`);
-    
     // OPTIMIZATION: Pre-fetch games immediately if coming from props page
     // This ensures games are available when player is selected, reducing wait time
     if (fetchTodaysGames && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const hasPlayerParam = url.searchParams.has('player') || url.searchParams.has('pid') || url.searchParams.has('name');
       if (hasPlayerParam) {
-        console.log('[Dashboard] 🏀 Pre-fetching games immediately (player param detected)');
         fetchTodaysGames({ silent: true }); // Silent to avoid loading state flicker
       }
     }
@@ -82,10 +79,7 @@ export function useUrlInitialization({
         // Don't restore stat from session storage if there's a stat in the URL (URL takes precedence)
         const urlHasStat = typeof window !== 'undefined' ? new URL(window.location.href).searchParams.get('stat') : null;
         if (saved?.selectedStat && !urlHasStat) {
-          console.log(`[Dashboard] 📦 Restoring stat from session storage: "${saved.selectedStat}" (no stat in URL)`);
           setSelectedStat(saved.selectedStat);
-        } else if (urlHasStat) {
-          console.log(`[Dashboard] ⏸️ Skipping session storage stat restore - stat "${urlHasStat}" found in URL`);
         }
         // Only restore selectedTimeframe if we have playerStats loaded (prevents race condition)
         // If playerStats is empty, don't restore timeframe yet - wait for stats to load first
@@ -100,7 +94,6 @@ export function useUrlInitialization({
       if (typeof window !== 'undefined') {
         // Capture initial URL IMMEDIATELY to prevent race conditions
         const initialUrl = window.location.href;
-        console.log(`[Dashboard] 🔍 Initial URL (captured immediately): ${initialUrl}`);
         const url = new URL(initialUrl);
         const pid = url.searchParams.get('pid');
         const name = url.searchParams.get('name');
@@ -111,13 +104,8 @@ export function useUrlInitialization({
         const tf = url.searchParams.get('tf');
         const mode = url.searchParams.get('mode');
         
-        console.log(`[Dashboard] 🔍 URL params: stat="${stat}", player="${player}", mode="${mode}", line="${line}"`);
-        console.log(`[Dashboard] 🔍 All URL params:`, Object.fromEntries(url.searchParams.entries()));
-        console.log(`[Dashboard] 🔍 Current window.location.href: ${window.location.href}`);
-        
         // Set stat from URL FIRST (before propsMode) to prevent default stat logic from overriding it
         if (stat) {
-          console.log(`[Dashboard] ✅ Found stat in URL: "${stat}"`);
           // Normalize stat from props page format (uppercase) to dashboard format (lowercase)
           // Also handle special cases like "THREES" -> "fg3m"
           const normalizedStat = (() => {
@@ -131,8 +119,6 @@ export function useUrlInitialization({
             // Dashboard expects: pts, reb, ast, stl, blk, pra, pa, pr, ra
             return stat.toLowerCase();
           })();
-          
-          console.log(`[Dashboard] 📊 Setting stat from URL: "${stat}" -> "${normalizedStat}"`);
           
           // Set flag to prevent default stat logic from overriding
           statFromUrlRef.current = true;
@@ -158,13 +144,10 @@ export function useUrlInitialization({
               }));
             }
           }
-        } else {
-          console.log(`[Dashboard] ⚠️ No stat parameter found in URL`);
         }
         
         // Set propsMode AFTER stat (so default stat logic can see the URL stat)
         if (mode === 'team' || mode === 'player') {
-          console.log(`[Dashboard] 🎯 Setting propsMode from URL: "${mode}"`);
           initialPropsMode = mode;
           setPropsMode(mode);
         }
@@ -177,7 +160,6 @@ export function useUrlInitialization({
         if (tf && tf !== 'thisseason') {
           // Set timeframe immediately from URL (don't wait for stats to load)
           // This ensures the correct timeframe is active when stats load
-          console.log(`[Dashboard] ✅ Setting timeframe from URL: "${tf}"`);
           setSelectedTimeframe(tf);
           // Also store it in session storage for persistence
           const saved = getSavedSession();
@@ -190,7 +172,6 @@ export function useUrlInitialization({
           }
         } else {
           // ALWAYS default to last10 (override "thisseason" from URL or when no URL param)
-          console.log(`[Dashboard] 🔄 FORCING timeframe to "last10" (overriding URL tf=${tf || 'none'})`);
           setSelectedTimeframe('last10');
           // Update URL to reflect the change
           if (typeof window !== 'undefined') {
@@ -212,7 +193,6 @@ export function useUrlInitialization({
         // Handle player selection - support both 'pid+name' and 'player' params
         if (false) { // Disabled - moved below
           // Coming from player props page without explicit timeframe - default to last10
-          console.log(`[Dashboard] Setting default timeframe to "last10" for player from props page`);
           setSelectedTimeframe('last10');
           // Store in session storage
           if (typeof window !== 'undefined') {
@@ -264,8 +244,6 @@ export function useUrlInitialization({
             // Trigger search for the player name
             const searchForPlayer = async () => {
               try {
-                console.log(`[Dashboard] 🔍 [Props Page] Searching for player: "${playerName}"`);
-                
                 // OPTIMIZATION: Try all search variations in parallel instead of sequentially
                 // This reduces search time from ~1.8s to ~0.6s (fastest response wins)
                 const nameParts = playerName.trim().split(/\s+/);
@@ -295,7 +273,6 @@ export function useUrlInitialization({
                     json = await res.json();
                     rawResults = json?.results || json?.data;
                     if (Array.isArray(rawResults) && rawResults.length > 0) {
-                      console.log(`[Dashboard] ✅ [Props Page] Found results from parallel search`);
                       break; // Use first successful result
                     }
                   } catch (e) {
@@ -305,7 +282,6 @@ export function useUrlInitialization({
                 
                 // Fallback: if no results, try the original sequential approach
                 if (!rawResults || !Array.isArray(rawResults) || rawResults.length === 0) {
-                  console.log(`[Dashboard] ⚠️ [Props Page] Parallel search found no results, trying sequential fallback...`);
                   const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(playerName)}`);
                   if (res.ok) {
                     json = await res.json();
@@ -322,7 +298,6 @@ export function useUrlInitialization({
                       headshotUrl: r.headshotUrl || null 
                     }))
                   : [];
-                console.log(`[Dashboard] 📊 [Props Page] Parsed ${results.length} results for "${playerName}"`);
                 if (results && results.length > 0) {
                   // Try to find exact match first, then use first result
                   const playerNameLower = playerName.toLowerCase().trim();
@@ -339,7 +314,6 @@ export function useUrlInitialization({
                     playerResult = results[0];
                   }
                   
-                  console.log(`[Dashboard] ✅ [Props Page] Found player: ${playerResult.full} (ID: ${playerResult.id}, Team: ${playerResult.team})`);
                   const r: BdlSearchResult = {
                     id: playerResult.id,
                     full: playerResult.full,
@@ -376,28 +350,25 @@ export function useUrlInitialization({
                   });
                   
                   // Now load stats in background without blocking
-                  console.log(`[Dashboard] 🚀 [Props Page] Loading stats in background for:`, r);
                   handlePlayerSelectFromSearch(r).catch(err => {
-                    console.error('[Dashboard] ❌ [Props Page] Error loading player stats:', err);
+                    console.error('[Dashboard] Error loading player stats:', err);
                     setApiError(`Failed to load stats: ${err instanceof Error ? err.message : 'Unknown error'}`);
                     setIsLoading(false);
                   });
                   shouldLoadDefaultPlayer = false;
                 } else {
-                  console.warn(`[Dashboard] ⚠️ [Props Page] No results found for player: "${playerName}"`);
-                  console.warn(`[Dashboard] ⚠️ [Props Page] API response was:`, json);
                   setApiError(`Player "${playerName}" not found. Please try searching manually.`);
                   setIsLoading(false); // Clear loading state if no results found
                 }
               } catch (error) {
-                console.error(`[Dashboard] ❌ [Props Page] Error searching for player "${playerName}":`, error);
+                console.error(`[Dashboard] Error searching for player "${playerName}":`, error);
                 setApiError(`Error searching for player: ${error instanceof Error ? error.message : 'Unknown error'}`);
                 setIsLoading(false); // Clear loading state on error
               }
             };
             // Await the search to ensure it completes before continuing
             searchForPlayer().catch(err => {
-              console.error('[Dashboard] ❌ [Props Page] Unhandled error in searchForPlayer:', err);
+              console.error('[Dashboard] Unhandled error in searchForPlayer:', err);
               setApiError(`Failed to load player: ${err instanceof Error ? err.message : 'Unknown error'}`);
               setIsLoading(false); // Clear loading state on error
             });

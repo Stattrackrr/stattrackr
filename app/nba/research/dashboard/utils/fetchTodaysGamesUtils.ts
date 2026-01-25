@@ -55,7 +55,7 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
             try {
               const parsed = JSON.parse(cachedData);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                console.log(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
+                // Using cached games from sessionStorage
                 if (onGamesChange) {
                   onGamesChange(parsed);
                 }
@@ -76,7 +76,7 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
                 return parsed;
               }
             } catch (e) {
-              console.warn('Failed to parse cached games data, fetching fresh');
+              // Failed to parse cached games data, fetching fresh
             }
           }
         }
@@ -93,8 +93,7 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
       );
       const arr = Array.isArray(data?.data) ? data.data : [];
       if (arr.length > 0) {
-        console.log(`✅ Fetched ${arr.length} games from ${start} to ${end}`);
-        console.log(`   Games: ${arr.map((g: any) => `${g.home_team?.abbreviation} vs ${g.visitor_team?.abbreviation}`).join(', ')}`);
+        // Fetched games from API
         if (onGamesChange) {
           onGamesChange(arr);
         }
@@ -114,7 +113,7 @@ export async function fetchTodaysGamesCore(options: FetchTodaysGamesOptions = {}
       console.error('Error fetching date-range games:', e);
     }
 
-    console.log('❌ No games found in date range');
+    // No games found in date range
     if (onGamesChange) {
       onGamesChange([]);
     }
