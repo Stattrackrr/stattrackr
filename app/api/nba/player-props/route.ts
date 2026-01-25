@@ -85,14 +85,6 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
     }
   }
   
-  // Log date extraction details
-  console.log(`[Player Props API] 📊 Extracted ${gameDates.size} unique dates from ${oddsCache.games.length} games`);
-  console.log(`[Player Props API] 📊 Today (US ET): ${todayUSET}`);
-  console.log(`[Player Props API] 📊 Available game dates: ${Array.from(gameDates).sort().join(', ')}`);
-  if (dateDetails.length > 0) {
-    console.log(`[Player Props API] 📊 Sample date details (first 3):`, dateDetails.slice(0, 3));
-  }
-  
   // Calculate tomorrow's date
   const todayUSETStr = getUSEasternDateString(new Date());
   const [year, month, day] = todayUSETStr.split('-').map(Number);
@@ -101,17 +93,14 @@ function getGameDateFromOddsCache(oddsCache: OddsCache): string {
 
   // Default: Show today's props if available, otherwise tomorrow
   if (gameDates.has(todayUSETStr)) {
-    console.log(`[Player Props API] ✅ Using TODAY's date: ${todayUSETStr}`);
     return todayUSETStr;
   }
   
   if (gameDates.has(tomorrowUSET)) {
-    console.log(`[Player Props API] ✅ Using TOMORROW's date: ${tomorrowUSET} (no games today)`);
     return tomorrowUSET;
   }
   
   // Fallback to tomorrow
-  console.log(`[Player Props API] ⚠️ No games found for today or tomorrow, falling back to tomorrow: ${tomorrowUSET}`);
   return tomorrowUSET;
 }
 
@@ -145,43 +134,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const forceRefresh = searchParams.get('refresh') === '1';
     
-    // refresh=1 just forces reading from Supabase (bypasses in-memory cache)
-    // It doesn't clear cache or trigger processing - just reads the latest processed cache
-    if (forceRefresh) {
-      console.log('[Player Props API] Refresh requested - reading from Supabase cache (bypassing in-memory)...');
-    }
-    
     // First, get the odds cache to check lastUpdated timestamp
     let oddsCache: OddsCache | null = await getNBACache<OddsCache>(ODDS_CACHE_KEY, {
       restTimeoutMs: 30000, // Increased from 10s to 30s
       jsTimeoutMs: 30000,   // Increased from 10s to 30s
-      quiet: false,
+      quiet: true,
     });
     
     // Fallback to in-memory cache
     if (!oddsCache) {
       const { cache: inMemoryCache } = await import('@/lib/cache');
       oddsCache = inMemoryCache.get(ODDS_CACHE_KEY);
-      if (oddsCache) {
-        console.log(`[Player Props API] ✅ Using in-memory odds cache (${oddsCache.games?.length || 0} games)`);
-      }
     }
     
     // If main cache is empty, try staging cache (if a refresh is in progress)
     if (!oddsCache) {
-      console.log(`[Player Props API] ⚠️ Main odds cache empty, checking staging key: ${ODDS_CACHE_KEY_STAGING}`);
       oddsCache = await getNBACache<OddsCache>(ODDS_CACHE_KEY_STAGING, {
         restTimeoutMs: 5000, // Shorter timeout for staging
         jsTimeoutMs: 5000,
-        quiet: true, // Don't log verbose messages for staging fallback
+        quiet: true,
       });
-      if (oddsCache) {
-        console.log(`[Player Props API] ✅ Using STAGING odds cache (${oddsCache.games?.length || 0} games)`);
-      }
     }
     
     if (!oddsCache || !oddsCache.lastUpdated) {
-      console.error(`[Player Props API] ❌ No odds data available (checked main, in-memory, and staging caches)`);
       return NextResponse.json({
         success: false,
         error: 'No odds data available - odds cache may be refreshing',

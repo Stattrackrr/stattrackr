@@ -121,7 +121,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
     setOddsError(null);
     
     // Clear opponent team when switching players to force re-detection
-    console.log(`[Player Select] Clearing opponent team for player switch to: ${player.full}`);
     setOpponentTeam('N/A');
     
     try {
@@ -214,14 +213,14 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
             heightInches: heightInchesData || undefined,
           });
         });
-      }).catch(err => {
-        console.warn('Failed to load player metadata (non-critical):', err);
+      }).catch(() => {
+        // Ignore metadata loading errors
       });
       
       // Start premium fetches in background (don't await)
       if (hasPremium) {
-        fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
-        fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+        fetchAdvancedStats(pid).catch(() => {});
+        fetchShotDistanceStats(pid).catch(() => {});
       }
       
       // Batch remaining state updates in startTransition
@@ -269,10 +268,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       if (todaysGames.length > 0) {
         const opponent = getOpponentTeam(currentTeam, todaysGames);
         const normalizedOpponent = normalizeAbbr(opponent);
-        console.log(`[Player Select] Setting opponent for ${currentTeam}: ${normalizedOpponent} (games already loaded)`);
         setOpponentTeam(normalizedOpponent);
-      } else {
-        console.log(`[Player Select] Team set to ${currentTeam}, opponent will be set when games load`);
       }
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
@@ -292,7 +288,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
   const handlePlayerSelectFromSearch = useCallback(async (r: BdlSearchResult) => {
     // Prevent duplicate calls
     if (isHandlingPlayerSelectRef.current) {
-      console.log('🔍 [handlePlayerSelectFromSearch] Already handling, skipping duplicate call');
       return;
     }
     
@@ -301,11 +296,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
     // OPTIMIZATION: Check if we already have stats for this player ID
     // If stats are already loaded and player ID matches, skip refetch
     if (resolvedPlayerId === pid && playerStats.length > 0) {
-      console.log('🔍 [handlePlayerSelectFromSearch] Stats already loaded for this player, skipping refetch', {
-        pid,
-        statsCount: playerStats.length,
-        resolvedPlayerId
-      });
       // Still update player metadata if needed, but don't refetch stats
       isHandlingPlayerSelectRef.current = true;
       try {
@@ -386,14 +376,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
     isHandlingPlayerSelectRef.current = true;
     
     try {
-      const callData = {
-        player: r.full,
-        id: r.id,
-        team: r.team,
-        pos: r.pos,
-        stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-      };
-      console.log('🔍 [handlePlayerSelectFromSearch] Called with:', callData);
       setApiError(null);
     
     // Clear premium stats immediately when switching players
@@ -415,12 +397,10 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       // OPTIMIZATION: Start fetch immediately without blocking UI
       // If data is cached, this will return instantly and we won't show loading
       // Only set loading if we actually need to wait for network
-      console.log('🔍 [handlePlayerSelectFromSearch] Starting stats fetch (both seasons in parallel):', { pid, name: r.full });
       
       // Start fetch immediately - if cached, this is instant
       const fetchStartTime = Date.now();
-      const statsPromise = fetchSortedStats(pid).catch(err => {
-        console.error('❌ [handlePlayerSelectFromSearch] fetchSortedStats failed:', err);
+      const statsPromise = fetchSortedStats(pid).catch(() => {
         return [];
       });
       
@@ -451,11 +431,8 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       // Fetch current season first (for immediate chart rendering)
       const rows = await statsPromise;
       
-      // Log stats completion
-      const fetchElapsed = Date.now() - fetchStartTime;
-      console.log('🔍 [handlePlayerSelectFromSearch] Current season stats loaded:', { statsCount: rows.length, elapsed: fetchElapsed });
-      
       // If fetch was fast (< 100ms), it was cached - ensure loading is cleared immediately
+      const fetchElapsed = Date.now() - fetchStartTime;
       if (fetchElapsed < 100 && isLoading) {
         setIsLoading(false);
       }
@@ -466,14 +443,12 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       if (prevSeasonPromise) {
         prevSeasonPromise.then((prevSeason: any[]) => {
           if (prevSeason && prevSeason.length > 0) {
-            console.log('🔍 [handlePlayerSelectFromSearch] Last season loaded in background:', { statsCount: prevSeason.length });
             // Merge last season data and update playerStats
             const mergedRows = [...rows, ...prevSeason];
             setPlayerStats(mergedRows);
-            console.log('🔍 [handlePlayerSelectFromSearch] Updated playerStats with last season:', { totalStats: mergedRows.length });
           }
-        }).catch((err: any) => {
-          console.error('❌ [handlePlayerSelectFromSearch] Error loading last season:', err);
+        }).catch(() => {
+          // Ignore errors loading last season
         });
       }
       
@@ -517,8 +492,8 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         
         // Start premium fetches in background (don't await)
         if (hasPremium) {
-          fetchAdvancedStats(pid).catch(err => console.error('Advanced stats error:', err));
-          fetchShotDistanceStats(pid).catch(err => console.error('Shot distance error:', err));
+          fetchAdvancedStats(pid).catch(() => {});
+          fetchShotDistanceStats(pid).catch(() => {});
         }
         
         // Get position from search result
@@ -543,12 +518,10 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         if (samplePlayer) {
           if (samplePlayer.jersey) {
             jerseyNumber = samplePlayer.jersey;
-            console.log(`✅ Found jersey #${jerseyNumber} from sample data for ${r.full}`);
           }
           if (samplePlayer.heightFeet) {
             heightFeetData = samplePlayer.heightFeet;
             heightInchesData = samplePlayer.heightInches;
-            console.log(`✅ Found height ${heightFeetData}'${heightInchesData}" from sample data for ${r.full}`);
           }
         }
         
@@ -566,11 +539,9 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
               if (found) {
                 if (!jerseyNumber && found.jersey && found.jersey !== 'N/A') {
                   jerseyNumber = Number(found.jersey);
-                  console.log(`✅ Found jersey #${jerseyNumber} from depth chart for ${r.full}`);
                 }
                 if (!playerPosition) {
                   playerPosition = pos;
-                  console.log(`✅ Found position ${playerPosition} from depth chart for ${r.full}`);
                 }
                 break;
               }
@@ -591,21 +562,15 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
             } as NBAPlayer;
           });
         }
-      }).catch(err => {
-        console.warn('⚠️ [handlePlayerSelectFromSearch] Error in background metadata lookup:', err);
+      }).catch(() => {
+        // Ignore background metadata lookup errors
       });
       
       // Fetch BDL and ESPN metadata in background (non-blocking - updates player when ready)
       // This ensures chart loads fast, but metadata still gets populated
       Promise.all([
-        fetchBdlPlayerData(pid).catch(err => {
-          console.warn('⚠️ [handlePlayerSelectFromSearch] fetchBdlPlayerData failed (non-critical):', err);
-          return null;
-        }),
-        fetchEspnPlayerData(r.full, r.team).catch(err => {
-          console.warn('⚠️ [handlePlayerSelectFromSearch] fetchEspnPlayerData failed (non-critical):', err);
-          return null;
-        })
+        fetchBdlPlayerData(pid).catch(() => null),
+        fetchEspnPlayerData(r.full, r.team).catch(() => null)
       ]).then(([bdlPlayerData, espnData]) => {
         // Process BDL/ESPN data and merge with current player state
         const heightData = parseBdlHeight(bdlPlayerData?.height);
@@ -631,14 +596,12 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
           if (espnData) {
             if (!finalJerseyNumber && espnData.jersey) {
               finalJerseyNumber = Number(espnData.jersey);
-              console.log(`✅ Found jersey #${finalJerseyNumber} from ESPN for ${r.full}`);
             }
             if (!finalHeightFeet && espnData.height) {
               const espnHeightData = parseEspnHeight(espnData.height);
               if (espnHeightData.feet) {
                 finalHeightFeet = espnHeightData.feet;
                 finalHeightInches = espnHeightData.inches;
-                console.log(`✅ Found height ${finalHeightFeet}'${finalHeightInches}" from ESPN for ${r.full}`);
               }
             }
           }
@@ -655,29 +618,20 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
           
           return prev;
         });
-      }).catch(err => {
-        console.warn('⚠️ [handlePlayerSelectFromSearch] Error processing BDL/ESPN data:', err);
+      }).catch(() => {
+        // Ignore BDL/ESPN data processing errors
       });
       
       // Batch all state updates together in startTransition to prevent multiple re-renders
       // Set selectedTimeframe FIRST so it's correct when playerStats updates (prevents double baseGameData recalculation)
-      console.log('[DEBUG handlePlayerSelectFromSearch] About to batch state updates', {
-        rowsCount: rows.length,
-        currentTeam,
-        timestamp: new Date().toISOString()
-      });
-      
       startTransition(() => {
         // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
         // Set this FIRST so baseGameData calculates correctly when playerStats updates
-        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting timeframe to "last10"`);
         setSelectedTimeframe('last10');
         
         // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
-        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting playerStats (${rows.length} rows)`);
         setPlayerStats(rows);
         
-        console.log(`[DEBUG handlePlayerSelectFromSearch] Setting teams and player`);
         setSelectedTeam(currentTeam);
         setOriginalPlayerTeam(currentTeam);
         setDepthChartTeam(currentTeam);
@@ -693,7 +647,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
         
         // Reset betting lines in transition to prevent visible refresh
         // BUT preserve the line from URL if it exists (important for steals/blocks)
-        console.log(`[DEBUG handlePlayerSelectFromSearch] Resetting bettingLines`);
         setBettingLines(prev => {
           // Check URL for line parameter
           if (typeof window !== 'undefined') {
@@ -718,8 +671,6 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
           }
           return {};
         });
-        
-        console.log(`[DEBUG handlePlayerSelectFromSearch] All state updates batched in startTransition`);
       });
       
       // Defer URL update and opponent calculation to background (useEffect will handle opponent)
@@ -737,9 +688,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       });
       
       if (!rows.length) setApiError("No games found for current/previous season for this player.");
-      console.log('✅ handlePlayerSelectFromSearch completed successfully');
     } catch (e: any) {
-      console.error('❌ handlePlayerSelectFromSearch error:', e);
       setApiError(e?.message || "Failed to load stats."); 
       setPlayerStats([]);
       setOpponentTeam('N/A');

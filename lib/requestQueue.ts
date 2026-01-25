@@ -54,10 +54,6 @@ class RequestQueue {
     this.inFlightRequests.set(requestId, promise);
     promise.finally(() => {
       this.inFlightRequests.delete(requestId);
-      const waitTime = Date.now() - enqueueTime;
-      if (waitTime > 5000) {
-        console.warn(`[RequestQueue] ⚠️ Request waited ${waitTime}ms in queue: ${requestId}`);
-      }
     });
     
     return promise;
@@ -73,11 +69,6 @@ class RequestQueue {
     while (this.queue.length > 0 && this.concurrent < this.maxConcurrent) {
       const request = this.queue.shift();
       if (!request) break;
-
-      // Log if queue is getting backed up
-      if (this.queue.length > 10) {
-        console.warn(`[RequestQueue] ⚠️ Queue backing up: ${this.queue.length} requests waiting, ${this.concurrent} concurrent`);
-      }
 
       this.concurrent++;
       this.executeRequest(request).finally(() => {
@@ -107,7 +98,6 @@ class RequestQueue {
       if (isRateLimit && request.retries < request.maxRetries) {
         // Reduced backoff: 2s only (was exponential 1s, 2s, 4s)
         const backoffDelay = 2000;
-        console.warn(`[RequestQueue] Rate limited, retrying in ${backoffDelay}ms (attempt ${request.retries + 1}/${request.maxRetries})`);
         
         request.retries++;
         setTimeout(() => {
@@ -178,7 +168,6 @@ export async function queuedFetch(
         const json = await clonedResponse.json();
         // If the response has data, it's cached data from the API - return it instead of throwing
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          console.log(`[RequestQueue] 429 response contains cached data (${json.data.length} items), returning it`);
           return response; // Return the original response (not cloned)
         }
       } catch (e) {

@@ -487,8 +487,6 @@ export async function GET(req: NextRequest) {
         setNBACache(cacheKey, 'player_stats', responseData, CACHE_TTL.PLAYER_STATS, true).catch(err => {
           console.warn('[Stats API] Failed to store in Supabase cache:', err);
         });
-      } else {
-        console.log(`[Stats API] Not caching empty array for player ${playerId}, season ${season}, postseason ${postseason}`);
       }
 
       return all;

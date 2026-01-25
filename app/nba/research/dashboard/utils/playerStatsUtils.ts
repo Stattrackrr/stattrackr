@@ -9,7 +9,6 @@ export async function fetchSortedStatsCore(
   playerId: string,
   selectedTimeframe: string
 ): Promise<BallDontLieStats[]> {
-  console.log('[fetchSortedStatsCore] Starting fetch for playerId:', playerId);
   const season = currentNbaSeason();
   
   // Use queued fetch to prevent rate limiting
@@ -56,20 +55,9 @@ export async function fetchSortedStatsCore(
             return min > 0;
           });
           const teamsWithMinutes = new Set(withMinutes.map(s => s?.team?.abbreviation).filter(Boolean));
-          console.log(`[fetchSortedStatsCore] Last season (${yr}) stats: total=${stats.length}, with minutes>0=${withMinutes.length}, teams=${Array.from(teams).join(',')}, teamsWithMinutes=${Array.from(teamsWithMinutes).join(',')}`);
           if (stats.length > 0 && withMinutes.length === 0) {
-            const sample = stats.slice(0, 5).map(s => ({
-              date: s.game?.date,
-              team: s.team?.abbreviation,
-              min: s.min,
-              pts: s.pts,
-              reb: s.reb
-            }));
-            console.log(`[fetchSortedStatsCore] Sample last season stats (all have 0 minutes):`, sample);
-            
             // WORKAROUND: If all stats have 0 minutes, identify games where player was on their previous team
             // and fetch stats by game_id to get actual data
-            console.log(`[fetchSortedStatsCore] 🔧 Attempting to fetch stats by game_id for games with player's previous team...`);
             
             // Identify games where stat.team doesn't match either team in the game
             // This indicates the player was on a different team (e.g., stat.team=WAS but game has ATL)
@@ -93,8 +81,6 @@ export async function fetchSortedStatsCore(
               .filter((id): id is number => typeof id === 'number' && !isNaN(id));
             
             if (gamesWithPreviousTeam.length > 0) {
-              console.log(`[fetchSortedStatsCore] 🔧 Found ${gamesWithPreviousTeam.length} games with player's previous team, fetching stats by game_id...`);
-              
               // Fetch stats for these specific games (batch in groups of 50 to avoid URL length issues)
               const batchSize = 50;
               const gameBatches: number[][] = [];
@@ -119,18 +105,14 @@ export async function fetchSortedStatsCore(
                   });
                   
                   statsByGameId.push(...validStats);
-                  console.log(`[fetchSortedStatsCore] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games`);
                 } catch (error: any) {
-                  console.warn(`[fetchSortedStatsCore] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+                  // Ignore batch errors
                 }
               }
               
               if (statsByGameId.length > 0) {
-                console.log(`[fetchSortedStatsCore] ✅ Successfully fetched ${statsByGameId.length} stats by game_id (workaround for API data quality issue)`);
                 // Replace the invalid stats with the valid ones we fetched
                 return statsByGameId;
-              } else {
-                console.warn(`[fetchSortedStatsCore] ⚠️ No valid stats found when querying by game_id`);
               }
             }
           }
@@ -139,7 +121,6 @@ export async function fetchSortedStatsCore(
         return stats;
       } catch (error: any) {
         if (error?.status === 429) {
-          console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array`);
           return [];
         }
         throw error;
@@ -159,7 +140,6 @@ export async function fetchSortedStatsCore(
         return (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
       } catch (error: any) {
         if (error?.status === 429) {
-          console.warn(`[fetchSortedStatsCore] Rate limited for ${url}, returning empty array`);
           return [];
         }
         throw error;
@@ -181,18 +161,15 @@ export async function fetchSortedStatsCore(
   if (selectedTimeframe === 'last10') {
     // Fetch current season first (for immediate chart rendering)
     const currSeason = await grabSeason(season);
-    console.log(`[fetchSortedStatsCore] Current season loaded for last10: ${currSeason.length} games`);
     
     // Start fetching last season in background (don't await)
-    const prevSeasonPromise = grabSeason(season - 1).catch(err => {
-      console.error('[fetchSortedStatsCore] Error fetching last season:', err);
+    const prevSeasonPromise = grabSeason(season - 1).catch(() => {
       return [];
     });
     
     // Return current season immediately - chart can render with this
     // Last season will be merged in via incremental update
     const rows = currSeason;
-    console.log(`[fetchSortedStatsCore] Returning current season immediately (${currSeason.length} games), last season loading in background`);
     
     // Store promise for incremental update (if caller supports it)
     (rows as any)._prevSeasonPromise = prevSeasonPromise;
@@ -205,17 +182,14 @@ export async function fetchSortedStatsCore(
   // OPTIMIZATION: For faster initial render, return current season immediately
   // Last season can load in background and update playerStats incrementally
   const currSeason = await grabSeason(season);
-  console.log(`[fetchSortedStatsCore] Current season loaded for ${selectedTimeframe}: ${currSeason.length} games`);
   
   // Start fetching last season in background (don't await)
-  const prevSeasonPromise = grabSeason(season - 1).catch(err => {
-    console.error('[fetchSortedStatsCore] Error fetching last season:', err);
+  const prevSeasonPromise = grabSeason(season - 1).catch(() => {
     return [];
   });
   
   // Return current season immediately - chart can render with this
   const rows = currSeason;
-  console.log(`[fetchSortedStatsCore] Returning current season immediately (${currSeason.length} games), last season loading in background`);
   
   // Store promise for incremental update (if caller supports it)
   (rows as any)._prevSeasonPromise = prevSeasonPromise;
@@ -243,19 +217,6 @@ export async function fetchSortedStatsCore(
         return min > 0;
       });
       const teamsWithMinutes = new Set(withMinutes.map(s => s?.team?.abbreviation).filter(Boolean));
-      
-      console.log(`[fetchSortedStatsCore] Last season (${lastSeason}) analysis: total=${prevSeason.length}, with minutes>0=${withMinutes.length}, teams=${Array.from(teams).join(',')}, teamsWithMinutes=${Array.from(teamsWithMinutes).join(',')}`);
-      
-      if (prevSeason.length > 0 && withMinutes.length === 0) {
-        const sample = prevSeason.slice(0, 5).map(s => ({
-          date: s.game?.date,
-          team: s.team?.abbreviation,
-          min: s.min,
-          pts: s.pts,
-          reb: s.reb
-        }));
-        console.log(`[fetchSortedStatsCore] ⚠️ All last season stats have 0 minutes! Sample:`, sample);
-      }
     }
   }).catch(() => {});
   
@@ -269,45 +230,9 @@ export async function fetchSortedStatsCore(
       const m = d.getMonth();
       return m >= 9 ? y : y - 1;
     };
-    const currentSeasonCount = rows.filter(s => getSeasonYear(s) === currentSeason).length;
-    const lastSeasonCount = rows.filter(s => getSeasonYear(s) === currentSeason - 1).length;
-    
-    // Log sample dates from each season to verify they're being included
-    const currentSeasonSample = rows.filter(s => getSeasonYear(s) === currentSeason).slice(0, 3).map(s => ({
-      date: s.game?.date,
-      min: s.min
-    }));
-    const lastSeasonSample = rows.filter(s => getSeasonYear(s) === currentSeason - 1).slice(0, 3).map(s => ({
-      date: s.game?.date,
-      min: s.min
-    }));
-    
-    console.log(`[fetchSortedStatsCore] Season breakdown: current (${currentSeason}): ${currentSeasonCount} games, last (${currentSeason - 1}): ${lastSeasonCount} games, total: ${rows.length}`, {
-      currSeasonLength: currSeason.length,
-      currentSeasonSample,
-      lastSeasonSample
-    });
   }
   
   const safe = rows.filter(s => s && (s?.game?.date || s?.team?.abbreviation));
-  
-  // Debug: log if we're filtering out all stats
-  if (rows.length > 0 && safe.length === 0) {
-    console.warn('[fetchSortedStatsCore] All stats filtered out! Sample stat structure:', {
-      totalRows: rows.length,
-      sampleStat: rows[0],
-      hasGame: !!rows[0]?.game,
-      hasGameDate: !!rows[0]?.game?.date,
-      hasTeam: !!rows[0]?.team,
-      hasTeamAbbr: !!rows[0]?.team?.abbreviation,
-    });
-  } else if (rows.length > 0) {
-    console.log('[fetchSortedStatsCore] Filtered stats:', {
-      totalRows: rows.length,
-      safeRows: safe.length,
-      filteredOut: rows.length - safe.length,
-    });
-  }
   
   safe.sort((a, b) => {
     const da = a?.game?.date ? new Date(a.game.date).getTime() : 0;
@@ -329,13 +254,6 @@ export async function fetchSortedStatsCore(
     const finalLastSeasonCount = safe.filter(s => getSeasonYear(s) === currentSeason - 1).length;
     
     // Debug: Check team distribution across seasons
-    const currentSeasonStats = safe.filter(s => getSeasonYear(s) === currentSeason);
-    const lastSeasonStats = safe.filter(s => getSeasonYear(s) === currentSeason - 1);
-    const currentSeasonTeams = new Set(currentSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
-    const lastSeasonTeams = new Set(lastSeasonStats.map(s => s?.team?.abbreviation).filter(Boolean));
-    
-    console.log(`[fetchSortedStatsCore] FINAL RETURN: returning ${safe.length} stats (current: ${finalCurrentSeasonCount}, last: ${finalLastSeasonCount})`);
-    console.log(`[fetchSortedStatsCore] Team distribution - Current season teams: ${Array.from(currentSeasonTeams).join(', ') || 'none'}, Last season teams: ${Array.from(lastSeasonTeams).join(', ') || 'none'}`);
   }
   
   return safe;

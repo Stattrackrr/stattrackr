@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
       }
       
       // Not rate limited - trigger refresh
-      console.warn('No odds data in cache - triggering refresh and waiting...');
       try {
         // Wait for refresh with 30 second timeout
         const refreshPromise = ensureOddsCache({ source: 'api/odds', force: true });
@@ -104,7 +103,6 @@ export async function GET(request: NextRequest) {
         }
         // Cache populated - continue to return data below
       } catch (err) {
-        console.error('Odds refresh failed or timed out:', err);
         // Return loading state so UI can retry
         return NextResponse.json({
           success: true,
@@ -117,35 +115,13 @@ export async function GET(request: NextRequest) {
     
     // If team is provided, find game odds for that matchup
     if (team) {
-      console.log(`[Odds API] Searching for team: ${team}. Total games in cache: ${oddsCache.games.length}`);
-      console.log(`[Odds API] Available games in cache:`, oddsCache.games.map((g: any) => ({
-        homeTeam: g.homeTeam,
-        awayTeam: g.awayTeam,
-        gameId: g.gameId,
-        bookmakersCount: g.bookmakers?.length || 0
-      })));
-      
       const game = oddsCache.games.find((g: any) => {
-        // Log each comparison attempt
         const homeMatch = gameInvolvesTeam(g.homeTeam, g.awayTeam, team);
         const awayMatch = gameInvolvesTeam(g.awayTeam, g.homeTeam, team);
-        const matches = homeMatch || awayMatch;
-        
-        if (matches) {
-          console.log(`[Odds API] ✅ Match found! ${g.homeTeam} vs ${g.awayTeam} matches ${team}`);
-        } else {
-          // Log why it didn't match for debugging
-          console.log(`[Odds API] ❌ No match: "${g.homeTeam}" vs "${g.awayTeam}" for "${team}"`);
-          console.log(`[Odds API]   - Home team normalized: "${g.homeTeam.toUpperCase().trim()}"`);
-          console.log(`[Odds API]   - Away team normalized: "${g.awayTeam.toUpperCase().trim()}"`);
-          console.log(`[Odds API]   - Search term normalized: "${team.toUpperCase().trim()}"`);
-        }
-        return matches;
+        return homeMatch || awayMatch;
       });
       
       if (!game) {
-        console.log(`[Odds API] ❌ No game found for team: ${team}`);
-        console.log(`[Odds API] Team names in cache:`, oddsCache.games.map((g: any) => `Home: "${g.homeTeam}", Away: "${g.awayTeam}"`));
         return NextResponse.json({
           success: true,
           data: [],
@@ -175,31 +151,9 @@ export async function GET(request: NextRequest) {
     
     // If player is provided, find their props across all games
     if (player) {
-      console.log(`[Odds API] Searching for player: "${player}". Total games: ${oddsCache.games.length}`);
-      
       // Search all games for this player's props
       for (const game of oddsCache.games) {
         const playerPropsByBookmaker = game.playerPropsByBookmaker || {};
-        const bookmakerNames = Object.keys(playerPropsByBookmaker);
-        
-        console.log(`[Odds API] Checking game: ${game.homeTeam} vs ${game.awayTeam}`);
-        console.log(`[Odds API] Bookmakers with props: ${bookmakerNames.length}`);
-        
-        if (bookmakerNames.length > 0) {
-          // Log ALL player names from first bookmaker to help debug name matching
-          const firstBookmaker = playerPropsByBookmaker[bookmakerNames[0]];
-          const allPlayerNames = Object.keys(firstBookmaker || {});
-          console.log(`[Odds API] All player names in cache (${allPlayerNames.length} total):`, allPlayerNames);
-          
-          // Check if we can find a case-insensitive match
-          const playerLower = player.toLowerCase().trim();
-          const matchingNames = allPlayerNames.filter(name => name.toLowerCase().trim() === playerLower);
-          if (matchingNames.length > 0) {
-            console.log(`[Odds API] ✅ Found case-insensitive match(es):`, matchingNames);
-          } else {
-            console.log(`[Odds API] ❌ No case-insensitive match for "${player}" (searched: "${playerLower}")`);
-          }
-        }
         
         // Check if this player has props in any bookmaker
         // Use case-insensitive matching since player names might be stored differently
@@ -216,8 +170,6 @@ export async function GET(request: NextRequest) {
         );
         
         if (hasPlayerProps) {
-          console.log(`[Odds API] ✅ Found props for "${player}" in game: ${game.homeTeam} vs ${game.awayTeam}`);
-          
           // Find the actual cached player name (case-insensitive match) - check ALL bookmakers, not just ones with props
           let actualPlayerName: string | null = null;
           // Check all bookmakers in the game, not just ones that have props
@@ -229,7 +181,6 @@ export async function GET(request: NextRequest) {
             // Try exact match first
             if (bookmakerProps[player]) {
               actualPlayerName = player;
-              console.log(`[Odds API] Found exact match: "${player}" in bookmaker ${bookmakerName}`);
               break;
             }
             // Try case-insensitive match
@@ -238,13 +189,11 @@ export async function GET(request: NextRequest) {
             );
             if (cachedName) {
               actualPlayerName = cachedName;
-              console.log(`[Odds API] Found cached player name: "${cachedName}" for search "${player}" in bookmaker ${bookmakerName}`);
               break;
             }
           }
           
           if (!actualPlayerName) {
-            console.warn(`[Odds API] ⚠️ Found hasPlayerProps=true but couldn't find actual player name for "${player}" in any bookmaker`);
             continue; // Skip this game, try next
           }
           
@@ -269,7 +218,6 @@ export async function GET(request: NextRequest) {
                 return propData;
               };
               
-              console.log(`[Odds API] Adding bookmaker ${book.name} with ${Object.keys(bookmakerProps).length} props for "${actualPlayerName}"`);
               bookRows.push({
                 ...book,
                 PTS: getPrimaryProp(bookmakerProps.PTS),
@@ -284,12 +232,9 @@ export async function GET(request: NextRequest) {
                 PA: getPrimaryProp(bookmakerProps.PA),
                 RA: getPrimaryProp(bookmakerProps.RA),
               });
-            } else {
-              console.log(`[Odds API] Bookmaker ${book.name} has no props for "${actualPlayerName}"`);
             }
           }
           
-          console.log(`[Odds API] ✅ Returning ${bookRows.length} bookmakers with props for "${player}" (actual name: "${actualPlayerName}")`);
           return NextResponse.json({
             success: true,
             data: bookRows,
@@ -300,7 +245,6 @@ export async function GET(request: NextRequest) {
       }
       
       // Player not found in any game
-      console.log(`[Odds API] ❌ No props found for player: "${player}" after checking ${oddsCache.games.length} games`);
       return NextResponse.json({
         success: true,
         data: [],

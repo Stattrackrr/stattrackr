@@ -52,7 +52,6 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
   // Check cache first (in-memory)
   let cached = cache.get<any>(cacheKey);
   if (cached) {
-    console.log(`[Shot Chart Enhanced] ✅ Using cached defensive stats for ${teamAbbr}`);
     return cached;
   }
   
@@ -61,7 +60,6 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
     const { getNBACache } = await import('@/lib/nbaCache');
     cached = await getNBACache<any>(cacheKey);
     if (cached) {
-      console.log(`[Shot Chart Enhanced] ✅ Using Supabase cached defensive stats for ${teamAbbr}`);
       // Also store in in-memory cache for faster access
       // Use TRACKING_STATS TTL (365 days) so cache persists until replaced by cron job
       cache.set(cacheKey, cached, CACHE_TTL.TRACKING_STATS);
@@ -85,20 +83,17 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
         .maybeSingle();
       
       if (staleData?.data) {
-        const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
-        console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr}`);
         // Store in in-memory cache with TRACKING_STATS TTL
         cache.set(cacheKey, staleData.data, CACHE_TTL.TRACKING_STATS);
         return staleData.data;
       }
     }
   } catch (cacheError: any) {
-    console.warn(`[Shot Chart Enhanced] ⚠️ Error checking Supabase cache for ${teamAbbr}:`, cacheError.message);
+    // Ignore cache errors
   }
 
   // In production/development, don't try NBA API - everything should be cached
   if (isProduction) {
-    console.log(`[Shot Chart Enhanced] ⚠️ No cache found for ${teamAbbr} in production. Cache should be populated from external service.`);
     return null;
   }
 
@@ -128,7 +123,6 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
     });
 
     const defenseUrl = `${NBA_STATS_BASE}/shotchartdetail?${defenseParams.toString()}`;
-    console.log(`[Shot Chart Enhanced] Fetching defensive stats for ${teamAbbr}...`);
     
     const defenseData = await fetchNBAStats(defenseUrl, 5000, 0); // 5s timeout, no retries (fail fast)
 
@@ -216,10 +210,8 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
       try {
         const { setNBACache } = await import('@/lib/nbaCache');
         await setNBACache(cacheKey, 'team_defense', stats, CACHE_TTL.TRACKING_STATS);
-        console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory + Supabase)`);
       } catch (cacheError: any) {
-        console.warn(`[Shot Chart Enhanced] ⚠️ Failed to save to Supabase cache:`, cacheError.message);
-        console.log(`[Shot Chart Enhanced] 💾 Cached defensive stats for ${teamAbbr} (in-memory only)`);
+        // Ignore cache save errors
       }
       
       return stats;
@@ -227,7 +219,6 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
 
     return null;
   } catch (error: any) {
-    console.warn(`[Shot Chart Enhanced] Error fetching defensive stats for ${teamAbbr}:`, error.message);
     
     // If NBA API fails, try to get stale cache from Supabase as last resort
     try {
@@ -247,15 +238,13 @@ async function fetchSingleTeamDefenseStats(teamAbbr: string, teamId: string, sea
           .maybeSingle();
         
         if (staleData?.data) {
-          const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
-          console.log(`[Shot Chart Enhanced] ✅ Using ${isExpired ? 'stale' : 'valid'} cached defensive stats for ${teamAbbr} (NBA API failed)`);
           // Store in in-memory cache for faster access with TRACKING_STATS TTL
           cache.set(cacheKey, staleData.data, CACHE_TTL.TRACKING_STATS);
           return staleData.data;
         }
       }
     } catch (staleError: any) {
-      console.warn(`[Shot Chart Enhanced] ⚠️ Error checking stale cache for ${teamAbbr}:`, staleError.message);
+      // Ignore stale cache errors
     }
     
     return null;
@@ -309,8 +298,6 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
     const timeoutId = setTimeout(() => controller.abort(), actualTimeout);
 
     try {
-      console.log(`[Shot Chart Enhanced] Fetching NBA API (attempt ${attempt + 1}/${maxAttempts}): ${url.substring(0, 100)}...`);
-      
       const response = await fetch(url, {
         headers: NBA_HEADERS,
         signal: controller.signal,
@@ -324,12 +311,10 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (!response.ok) {
         const text = await response.text();
         const errorMsg = `NBA API ${response.status}: ${response.statusText}`;
-        console.error(`[Shot Chart Enhanced] NBA API error ${response.status} (attempt ${attempt + 1}/${maxAttempts}):`, text.slice(0, 500));
         
         // Don't retry on 4xx errors (client errors) except 429 (rate limit)
         if (response.status === 429 || (response.status >= 500 && attempt < actualRetries)) {
           const delay = 1000 * (attempt + 1);
-          console.log(`[Shot Chart Enhanced] Retrying after ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           lastError = new Error(errorMsg);
           continue;
@@ -339,7 +324,6 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       }
 
       const data = await response.json();
-      console.log(`[Shot Chart Enhanced] ✅ Successfully fetched NBA API data`);
       return data;
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -347,7 +331,6 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (error.name === 'AbortError') {
         lastError = new Error(`Request timeout after ${actualTimeout}ms`);
         if (attempt < actualRetries) {
-          console.log(`[Shot Chart Enhanced] Timeout on attempt ${attempt + 1}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
@@ -358,18 +341,10 @@ async function fetchNBAStats(url: string, timeout = 20000, retries = 2) {
       if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ENOTFOUND') || error.message?.includes('ECONNRESET')) {
         lastError = error;
         if (attempt < actualRetries) {
-          console.log(`[Shot Chart Enhanced] Network error on attempt ${attempt + 1}: ${error.message}, retrying...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
-      
-      // Log the error for debugging
-      console.error(`[Shot Chart Enhanced] Fetch error (attempt ${attempt + 1}):`, {
-        name: error.name,
-        message: error.message,
-        isProduction,
-      });
       
       throw error;
     }
@@ -400,9 +375,6 @@ export async function GET(request: NextRequest) {
     // Auto-convert BallDontLie ID to NBA Stats ID if needed
     const originalPlayerId = playerId;
     
-    // Try to convert any ID format using the smart detection
-    console.log(`[Shot Chart Enhanced] Received player ID: ${playerId} (length: ${playerId.length})`);
-    
     // Convert to NBA Stats ID first (handles BDL IDs and other formats)
     const converted = getNbaStatsId(playerId);
     nbaPlayerId = converted || playerId;
@@ -410,7 +382,6 @@ export async function GET(request: NextRequest) {
     // Validate NBA Stats ID format (should be 6-10 digits after conversion)
     // NBA Stats IDs are typically 6-7 digits, but some newer players have longer IDs
     if (nbaPlayerId.length > 10) {
-      console.error(`[Shot Chart Enhanced] ❌ Invalid player ID: ${playerId} -> ${nbaPlayerId} (too long after conversion, max 10 digits)`);
       return NextResponse.json({
         playerId: playerId,
         season: `${season}-${String(season + 1).slice(-2)}`,
@@ -429,16 +400,10 @@ export async function GET(request: NextRequest) {
       }, { status: 200 });
     }
     
-    if (converted && converted !== playerId) {
-      // Conversion happened
-      console.log(`[Shot Chart Enhanced] ✅ Converted ${playerId} → ${nbaPlayerId}`);
-    } else if (converted === playerId || nbaPlayerId === playerId) {
-      // Already NBA Stats ID
-      console.log(`[Shot Chart Enhanced] ✅ Player ID ${playerId} is already NBA Stats format`);
+    if (!converted || (converted === playerId && nbaPlayerId === playerId && nbaPlayerId.length <= 10)) {
+      // Already NBA Stats ID or valid format
     } else {
-      // Conversion failed
-      console.error(`[Shot Chart Enhanced] ❌ Could not convert player ID ${playerId} - not in mapping file`);
-      // Return empty data instead of error - player just might not have shot data yet
+      // Conversion failed - return empty data instead of error - player just might not have shot data yet
       return NextResponse.json({
         playerId: playerId,
         season: `${season}-${String(season + 1).slice(-2)}`,
@@ -457,35 +422,23 @@ export async function GET(request: NextRequest) {
       }, { status: 200 });
     }
 
-    console.log(`[Shot Chart Enhanced] Request for player ${nbaPlayerId} (original: ${originalPlayerId}), opponent: ${opponentTeam || 'none'}, season: ${season}, bypassCache: ${bypassCache}`);
-
     // Define seasonStr early so it's available throughout the function
     const seasonStr = `${season}-${String(season + 1).slice(-2)}`;
 
     // Check cache (unless bypassed) - use NBA ID for cache key
     cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
     
-    // Log Supabase status for debugging
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const isProduction = process.env.NODE_ENV === 'production';
-    console.log(`[Shot Chart Enhanced] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-    console.log(`[Shot Chart Enhanced] Supabase config check: URL=${supabaseUrl ? 'SET' : 'MISSING'}, KEY=${supabaseKey ? 'SET' : 'MISSING'}`);
     
     // OPTIMIZATION: Check in-memory cache FIRST (fastest, for previously selected players)
     // Then fallback to Supabase cache (persistent, shared across instances)
     let cached = !bypassCache ? cache.get<any>(cacheKey) : null;
-    if (cached) {
-      console.log(`[Shot Chart Enhanced] ✅ Cache HIT in memory for key: ${cacheKey}`);
-    } else {
+    if (!cached) {
       // Fallback to Supabase cache (slower, but persistent)
       cached = !bypassCache ? await getNBACache<any>(cacheKey) : null;
       if (cached) {
-        console.log(`[Shot Chart Enhanced] ✅ Cache HIT in Supabase for key: ${cacheKey}`);
         // Store in in-memory cache for faster future access
         cache.set(cacheKey, cached, CACHE_TTL.PLAYER_STATS);
-      } else {
-        console.log(`[Shot Chart Enhanced] ❌ Cache MISS in both memory and Supabase for key: ${cacheKey}`);
       }
     }
     
@@ -514,23 +467,11 @@ export async function GET(request: NextRequest) {
                            (cached.shotZones?.aboveBreak3?.fga || 0);
       
       if (totalAttempts === 0) {
-        console.log(`[Shot Chart Enhanced] ⚠️ Cached data has 0 shot attempts, treating as invalid cache. Fetching fresh data...`);
         cached = null; // Treat as cache miss
-      } else {
-        console.log(`[Shot Chart Enhanced] ✅ Cache hit for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
-          restrictedArea: cached.shotZones?.restrictedArea?.fga || 0,
-          paint: cached.shotZones?.paint?.fga || 0,
-          midRange: cached.shotZones?.midRange?.fga || 0,
-          leftCorner3: cached.shotZones?.leftCorner3?.fga || 0,
-          rightCorner3: cached.shotZones?.rightCorner3?.fga || 0,
-          aboveBreak3: cached.shotZones?.aboveBreak3?.fga || 0,
-        });
       }
     }
     
     if (cached) {
-      console.log(`[Shot Chart Enhanced] ✅ Returning cached data for player ${nbaPlayerId} (original: ${originalPlayerId})`);
-      
       // If opponent team is provided, fetch defensive rankings even on cache hit
       // (rankings are opponent-specific, so they may not be in the cached response)
       if (opponentTeam && opponentTeam !== 'N/A') {
@@ -558,7 +499,6 @@ export async function GET(request: NextRequest) {
           const rankings = cachedRankings?.rankings || cachedRankings;
           
           if (rankings && Object.keys(rankings).length > 0) {
-            console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
             defenseRankings = rankings;
             leagueAverageRankings = computeLeagueAverageRankings(rankings);
           } else {
@@ -573,7 +513,6 @@ export async function GET(request: NextRequest) {
             }
             
             if (singleTeamStats) {
-              console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
               // Convert single team stats to rankings format (without rank)
               defenseRankings = {
                 [opponentTeam]: {
@@ -607,11 +546,9 @@ export async function GET(request: NextRequest) {
               leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
             } else {
               // No cached rankings or stats - try to fetch single team stats synchronously (faster than all teams)
-              console.log(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Fetching single team defensive stats for ${opponentTeam}...`);
               try {
                 const singleTeamStats = await fetchSingleTeamDefenseStats(opponentTeam, NBA_TEAM_MAP[opponentTeam], seasonStr, season);
                 if (singleTeamStats) {
-                  console.log(`[Shot Chart Enhanced] ✅ Fetched single team stats for ${opponentTeam}`);
                   // Convert to rankings format (without rank, but with stats)
                   defenseRankings = {
                     [opponentTeam]: {
@@ -644,23 +581,17 @@ export async function GET(request: NextRequest) {
                   leagueAverageRankings = computeLeagueAverageRankings(defenseRankings);
                 } else {
                   // If single team fetch fails, trigger background fetch for ALL teams (non-blocking)
-                  console.warn(`[Shot Chart Enhanced] ⚠️ Single team fetch failed. Triggering background fetch for all 30 teams...`);
                   const host = request.headers.get('host') || 'localhost:3000';
                   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
                   const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-                  fetch(rankingsUrl).catch(err => {
-                    console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
-                  });
+                  fetch(rankingsUrl).catch(() => {});
                 }
               } catch (err) {
-                console.error(`[Shot Chart Enhanced] ⚠️ Error fetching single team stats:`, err);
                 // Trigger background fetch as fallback
                 const host = request.headers.get('host') || 'localhost:3000';
                 const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
                 const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
-                fetch(rankingsUrl).catch(fetchErr => {
-                  console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, fetchErr.message);
-                });
+                fetch(rankingsUrl).catch(() => {});
               }
             }
           }
@@ -670,21 +601,12 @@ export async function GET(request: NextRequest) {
             cached.opponentRankings = defenseRankings[opponentTeam];
             cached.opponentRankingsSource = 'team';
             cached.opponentTeam = opponentTeam; // Ensure opponentTeam is set
-            console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam} to cached response`);
-            // Debug: Log aboveBreak3 ranking specifically
-            if (cached.opponentRankings?.aboveBreak3) {
-              const ab3 = cached.opponentRankings.aboveBreak3;
-              console.log(`[Shot Chart Enhanced] 🔍 ${opponentTeam} Above Break 3: Rank #${ab3.rank}, FGM: ${ab3.fgm?.toFixed(1) || 'N/A'}, FG%: ${ab3.fgPct?.toFixed(1) || 'N/A'}%`);
-            }
           } else if (leagueAverageRankings) {
             cached.opponentRankings = leagueAverageRankings;
             cached.opponentRankingsSource = 'league_average';
-            console.warn(`[Shot Chart Enhanced] ⚠️ No defensive rankings available for ${opponentTeam}, using league average`);
-          } else {
-            console.warn(`[Shot Chart Enhanced] ⚠️ No defensive rankings available for ${opponentTeam}`);
           }
         } catch (err) {
-          console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
+          // Ignore defense rankings errors
         }
       }
       
@@ -695,12 +617,6 @@ export async function GET(request: NextRequest) {
                            (cached.shotZones?.leftCorner3?.fga || 0) +
                            (cached.shotZones?.rightCorner3?.fga || 0) +
                            (cached.shotZones?.aboveBreak3?.fga || 0);
-      
-      if (totalAttempts === 0) {
-        console.warn(`[Shot Chart Enhanced] ⚠️ Cached data has 0 attempts, but returning anyway (may be valid for new players)`);
-      }
-      
-      console.log(`[Shot Chart Enhanced] ✅ Returning cached response for player ${nbaPlayerId}, total attempts: ${totalAttempts}`);
       
       return NextResponse.json(cached, {
         status: 200,
@@ -713,8 +629,6 @@ export async function GET(request: NextRequest) {
     // UNLESS X-Allow-NBA-API header is set (indicates caller can reach NBA API, e.g., from GitHub Actions)
     const allowNbaApi = request.headers.get('x-allow-nba-api') === 'true';
     if (isProduction && !allowNbaApi) {
-      console.log(`[Shot Chart Enhanced] ⚠️ No cache found for player ${nbaPlayerId} in production. Cache should be populated from external service.`);
-      
       // Return empty data - cache should be populated by external service
       return NextResponse.json({
         playerId: nbaPlayerId,
@@ -734,8 +648,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Only try NBA API in local development
-    console.log(`[Shot Chart Enhanced] No cache found, fetching from NBA API for player ${nbaPlayerId} (original: ${originalPlayerId}), season ${season} (local dev only)`);
-
     // Fetch player shot chart detail (has actual zone data)
     const playerParams = new URLSearchParams({
       LeagueID: '00',
@@ -761,7 +673,6 @@ export async function GET(request: NextRequest) {
     });
 
     const playerUrl = `${NBA_STATS_BASE}/shotchartdetail?${playerParams.toString()}`;
-    console.log(`[Shot Chart Enhanced] Calling NBA API: ${playerUrl}`);
     
     // Use shorter timeout in production (8s) to fail fast, longer in dev (20s)
     const timeout = process.env.NODE_ENV === 'production' ? 8000 : 20000;
@@ -769,10 +680,7 @@ export async function GET(request: NextRequest) {
     
     try {
       playerData = await fetchNBAStats(playerUrl, timeout);
-      console.log(`[Shot Chart Enhanced] Player data received:`, playerData?.resultSets?.length, 'result sets');
     } catch (error: any) {
-      console.error(`[Shot Chart Enhanced] NBA API fetch error:`, error.message);
-      
       // If fetch fails, check if we have any cached data (even expired) to return
       // Query Supabase directly to get expired cache
       try {
@@ -782,14 +690,10 @@ export async function GET(request: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
-        console.log(`[Shot Chart Enhanced] Checking stale cache - Supabase URL: ${supabaseUrl ? 'SET' : 'MISSING'}, Key: ${supabaseServiceKey ? 'SET' : 'MISSING'}`);
-        
         if (supabaseUrl && supabaseServiceKey) {
           const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
             auth: { autoRefreshToken: false, persistSession: false }
           });
-          
-          console.log(`[Shot Chart Enhanced] Querying Supabase for stale cache key: ${cacheKey}`);
           
           // Get cache even if expired (use .maybeSingle() to handle 0 rows gracefully)
           let { data: staleData, error: staleError } = await supabaseAdmin
@@ -801,7 +705,6 @@ export async function GET(request: NextRequest) {
           // If no cache with opponent, check without opponent (like we do for fresh cache)
           if (!staleData?.data && opponentTeam && opponentTeam !== 'N/A') {
             const cacheKeyNoOpponent = `shot_enhanced_${nbaPlayerId}_none_${season}`;
-            console.log(`[Shot Chart Enhanced] Checking for stale cache without opponent: ${cacheKeyNoOpponent}`);
             const result = await supabaseAdmin
               .from('nba_api_cache')
               .select('data, expires_at')
@@ -811,9 +714,7 @@ export async function GET(request: NextRequest) {
             staleError = result.error;
           }
           
-          if (staleError) {
-            console.warn(`[Shot Chart Enhanced] Supabase query error for stale cache:`, staleError.message || staleError);
-          } else if (staleData?.data && staleData.data.shotZones) {
+          if (!staleError && staleData?.data && staleData.data.shotZones) {
             // Validate that we have actual shot data
             const totalAttempts = (staleData.data.shotZones?.restrictedArea?.fga || 0) +
                                (staleData.data.shotZones?.paint?.fga || 0) +
@@ -824,7 +725,6 @@ export async function GET(request: NextRequest) {
             
             if (totalAttempts > 0) {
               const isExpired = staleData.expires_at && new Date(staleData.expires_at) < new Date();
-              console.log(`[Shot Chart Enhanced] ✅ Found cached data (${isExpired ? 'expired' : 'valid'}) with ${totalAttempts} attempts, returning it`);
               
               // Add opponent rankings if needed (same logic as cache hit)
               if (opponentTeam && opponentTeam !== 'N/A') {
@@ -847,7 +747,7 @@ export async function GET(request: NextRequest) {
                     }
                   }
                 } catch (err) {
-                  console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
+                  // Ignore defense rankings errors
                 }
               }
               
@@ -860,25 +760,16 @@ export async function GET(request: NextRequest) {
                 status: 200,
                 headers: { 'X-Cache-Status': isExpired ? 'STALE' : 'HIT' }
               });
-            } else {
-              console.log(`[Shot Chart Enhanced] Stale cache found but has 0 attempts, ignoring`);
             }
-          } else {
-            console.log(`[Shot Chart Enhanced] No stale cache found in Supabase`);
           }
-        } else {
-          console.error(`[Shot Chart Enhanced] ❌ Cannot check stale cache - Supabase credentials missing!`);
         }
       } catch (staleError: any) {
-        console.error(`[Shot Chart Enhanced] ❌ Error checking stale cache:`, staleError.message || staleError);
+        // Ignore stale cache errors
       }
       
       // If fetch fails in production, try to trigger background cache population
       if (process.env.NODE_ENV === 'production' && !bypassCache) {
-        console.log(`[Shot Chart Enhanced] ⚠️ NBA API fetch failed in production. Attempting background cache population...`);
-        
         // Try to trigger background cache population (non-blocking)
-        // Use a separate endpoint or queue system if available
         const host = request.headers.get('host') || 'localhost:3000';
         const protocol = 'https';
         const cacheUrl = `${protocol}://${host}/api/shot-chart-enhanced?playerId=${nbaPlayerId}&season=${season}&bypassCache=true`;
@@ -887,9 +778,7 @@ export async function GET(request: NextRequest) {
         fetch(cacheUrl, { 
           method: 'GET',
           headers: { 'Cache-Control': 'no-cache' }
-        }).catch(err => {
-          console.warn(`[Shot Chart Enhanced] Background cache population failed:`, err.message);
-        });
+        }).catch(() => {});
       }
       
       // Return empty data - component will show 0% but at least won't crash
@@ -933,23 +822,14 @@ export async function GET(request: NextRequest) {
     // Process shot chart data (individual shots, not aggregated)
     // The shotchartdetail endpoint returns individual shots in the first result set
     const shotData = playerData.resultSets?.[0];
-    if (!shotData || !shotData.rowSet) {
-      console.log(`[Shot Chart Enhanced] No shot data available`);
-    } else {
+    if (shotData && shotData.rowSet) {
       const headers = shotData.headers || [];
       const rows = shotData.rowSet || [];
-      
-      console.log(`[Shot Chart Enhanced] Processing ${rows.length} individual shots`);
-      console.log(`[Shot Chart Enhanced] Headers:`, headers.slice(0, 10).join(', '), '...');
 
       const shotZoneIdx = headers.indexOf('SHOT_ZONE_BASIC');
       const shotZoneAreaIdx = headers.indexOf('SHOT_ZONE_AREA');
       const shotMadeIdx = headers.indexOf('SHOT_MADE_FLAG');
       const shotTypeIdx = headers.indexOf('SHOT_TYPE');
-
-      if (shotZoneIdx === -1) {
-        console.log(`[Shot Chart Enhanced] ⚠️ No SHOT_ZONE_BASIC column found`);
-      }
 
       // Log unique zones/areas to debug
       const uniqueZones = new Set();
@@ -1008,9 +888,6 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      console.log(`[Shot Chart Enhanced] Processed ${rows.length} shots into zones`);
-      console.log(`[Shot Chart Enhanced] Unique zones found:`, Array.from(uniqueZones));
-      console.log(`[Shot Chart Enhanced] Unique areas found:`, Array.from(uniqueAreas));
     }
 
     // Calculate percentages (keep pts as totals, not per game)
@@ -1021,8 +898,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`[Shot Chart Enhanced] Final shot zones (with percentages):`, JSON.stringify(shotZones, null, 2));
-
     // Validate that we have actual shot data before proceeding
     const totalAttempts = shotZones.restrictedArea.fga +
                          shotZones.paint.fga +
@@ -1032,11 +907,6 @@ export async function GET(request: NextRequest) {
                          shotZones.aboveBreak3.fga;
     
     if (totalAttempts === 0) {
-      console.warn(`[Shot Chart Enhanced] ⚠️ No shot attempts found for player ${nbaPlayerId}. This might be a rookie or player with no games this season.`);
-      // Log uncached players in development/staging only
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[Cache Miss Log] ❌ Player ${nbaPlayerId} (shot chart) not cached: No shot attempts found for season ${seasonStr}`);
-      }
       // Don't cache empty data - return it but don't cache
       return NextResponse.json({
         playerId: nbaPlayerId,
@@ -1072,7 +942,6 @@ export async function GET(request: NextRequest) {
         const rankings = cachedRankings?.rankings || cachedRankings;
         
         if (rankings && Object.keys(rankings).length > 0) {
-          console.log(`[Shot Chart Enhanced] ✅ Using cached defense rankings (${Object.keys(rankings).length} teams)`);
           defenseRankings = rankings;
           leagueAverageRankings = computeLeagueAverageRankings(rankings);
         } else if (opponentTeam && opponentTeam !== 'N/A') {
@@ -1086,9 +955,8 @@ export async function GET(request: NextRequest) {
             singleTeamStats = cache.get<any>(singleTeamCacheKey);
           }
         
-        if (singleTeamStats) {
-          console.log(`[Shot Chart Enhanced] ✅ Using cached single team stats for ${opponentTeam} (no rank available)`);
-          // Convert single team stats to rankings format (without rank)
+            if (singleTeamStats) {
+              // Convert single team stats to rankings format (without rank)
           defenseRankings = {
             [opponentTeam]: {
               restrictedArea: {
@@ -1121,25 +989,17 @@ export async function GET(request: NextRequest) {
         } else {
           // No cached rankings or stats - trigger background fetch for ALL teams (non-blocking)
           // This will populate the all-teams rankings cache with actual ranks (1-30)
-          console.warn(`[Shot Chart Enhanced] ⚠️ No cached rankings found. Triggering background fetch for all 30 teams to calculate ranks...`);
-          
-          // Trigger all-teams rankings endpoint in background (non-blocking)
-          // This will calculate ranks by comparing all teams
-          // Works in both dev and production - uses Supabase cache if available
           const host = request.headers.get('host') || 'localhost:3000';
           const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
           const rankingsUrl = `${protocol}://${host}/api/team-defense-rankings?season=${season}`;
           
           // Don't await - let it run in background (this can take 30-60 seconds)
           // In production, this will use Supabase cache if available, avoiding timeouts
-          fetch(rankingsUrl).catch(err => {
-            console.warn(`[Shot Chart Enhanced] Background all-teams rankings fetch failed:`, err.message);
-          });
+          fetch(rankingsUrl).catch(() => {});
         }
       }
     } catch (err) {
-      console.error(`[Shot Chart Enhanced] ⚠️ Error fetching defense rankings (non-fatal):`, err);
-      // Continue without rankings - they're optional
+      // Ignore defense rankings errors
     }
 
     // Note: Opponent defense data is now handled via rankings (see defenseRankings above)
@@ -1152,16 +1012,9 @@ export async function GET(request: NextRequest) {
     if (opponentTeam && opponentTeam !== 'N/A' && defenseRankings && defenseRankings[opponentTeam]) {
       opponentRankings = defenseRankings[opponentTeam];
       opponentRankingsSource = 'team';
-      console.log(`[Shot Chart Enhanced] ✅ Added rankings for ${opponentTeam}:`, opponentRankings);
-      // Debug: Log aboveBreak3 ranking specifically
-      if (opponentRankings?.aboveBreak3) {
-        const ab3 = opponentRankings.aboveBreak3;
-        console.log(`[Shot Chart Enhanced] 🔍 ${opponentTeam} Above Break 3: Rank #${ab3.rank}, FGM: ${ab3.fgm?.toFixed(1) || 'N/A'}, FG%: ${ab3.fgPct?.toFixed(1) || 'N/A'}%`);
-      }
     } else if (leagueAverageRankings) {
       opponentRankings = leagueAverageRankings;
       opponentRankingsSource = 'league_average';
-      console.warn('[Shot Chart Enhanced] ⚠️ Using league-average rankings (no opponent specified or data missing)');
     }
 
     const response = {
@@ -1180,15 +1033,6 @@ export async function GET(request: NextRequest) {
     // TTL is 365 days - cache is refreshed by cron job, not by expiration
     await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
     cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
-    
-    console.log(`[Shot Chart Enhanced] 💾 Cached response for player ${nbaPlayerId} (original: ${originalPlayerId}), zones:`, {
-      restrictedArea: response.shotZones.restrictedArea.fga,
-      paint: response.shotZones.paint.fga,
-      midRange: response.shotZones.midRange.fga,
-      leftCorner3: response.shotZones.leftCorner3.fga,
-      rightCorner3: response.shotZones.rightCorner3.fga,
-      aboveBreak3: response.shotZones.aboveBreak3.fga,
-    });
 
     return NextResponse.json(response, {
       status: 200,
@@ -1196,13 +1040,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[Shot Chart Enhanced] Error:', error);
-    
     // On timeout, try to return cached data if available
     if ((error.message?.includes('timeout') || error.name === 'AbortError') && cacheKey) {
       const cached = cache.get<any>(cacheKey);
       if (cached) {
-        console.log(`[Shot Chart Enhanced] ⚠️ Timeout occurred, returning cached data for player ${nbaPlayerId}`);
         return NextResponse.json(cached, {
           status: 200,
           headers: { 
