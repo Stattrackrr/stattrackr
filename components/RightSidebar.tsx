@@ -1773,11 +1773,13 @@ export default function RightSidebar({
       return;
     }
 
+    // EGRESS OPTIMIZATION: Limit to last 200 bets to reduce data transfer
     const { data, error } = await supabase
       .from('bets')
       .select('*')
       .eq('user_id', user.id)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(200);
 
     if (error) {
       console.error('Failed to fetch journal bets:', error);

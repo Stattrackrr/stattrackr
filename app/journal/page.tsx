@@ -275,6 +275,38 @@ function JournalContent() {
   const [navigatingToJournal, setNavigatingToJournal] = useState(false);
   const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
+  const [hasMoreBets, setHasMoreBets] = useState(false);
+  const [loadingMoreBets, setLoadingMoreBets] = useState(false);
+  
+  // Function to load more bets (pagination)
+  const loadMoreBets = async () => {
+    if (loadingMoreBets || !hasMoreBets) return;
+    
+    setLoadingMoreBets(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const BATCH_SIZE = 200;
+      const { data: moreBets, count } = await supabase
+        .from('bets')
+        .select('*', { count: 'exact' })
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+        .range(bets.length, bets.length + BATCH_SIZE - 1);
+
+      if (moreBets && moreBets.length > 0) {
+        setBets(prev => [...prev, ...moreBets]);
+        setHasMoreBets((count || 0) > bets.length + moreBets.length);
+      } else {
+        setHasMoreBets(false);
+      }
+    } catch (error) {
+      console.error('Error loading more bets:', error);
+    } finally {
+      setLoadingMoreBets(false);
+    }
+  };
   
   // Expose manual trigger function to window for testing
   useEffect(() => {
@@ -299,14 +331,17 @@ function JournalContent() {
         // Refresh bets
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const { data: refreshedBets } = await supabase
+          const BATCH_SIZE = 200;
+          const { data: refreshedBets, count } = await supabase
             .from('bets')
-            .select('*')
+            .select('*', { count: 'exact' })
             .eq('user_id', session.user.id)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .limit(BATCH_SIZE);
           
           if (refreshedBets) {
             setBets(refreshedBets);
+            setHasMoreBets((count || 0) > BATCH_SIZE);
             console.log('✅ Bets refreshed');
           }
         }
@@ -828,23 +863,32 @@ function JournalContent() {
         // Fetch bets immediately (don't wait for check-journal-bets)
         // OPTIMIZATION: Explicitly filter by user_id and order by date DESC for better index usage
         // RLS handles security, but explicit filter helps query planner
-        const { data, error } = await supabase
+        // EGRESS OPTIMIZATION: Limit to last 200 bets initially to reduce data transfer
+        const BATCH_SIZE = 200;
+        const { data, error, count } = await supabase
           .from('bets')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('user_id', session.user.id)
-          .order('date', { ascending: false });
+          .order('date', { ascending: false })
+          .limit(BATCH_SIZE);
 
         if (!isMounted) return;
 
         if (error) {
           console.error('Error fetching bets:', error);
           setBets([]);
+          setHasMoreBets(false);
         } else {
           setBets(data || []);
+          // Check if there are more bets to load
+          setHasMoreBets((count || 0) > BATCH_SIZE);
         }
 
         // Set loading to false immediately so UI shows
         setLoading(false);
+        
+        // Expose loadMoreBets to window for testing
+        (window as any).loadMoreBets = loadMoreBets;
 
         // Run check-journal-bets in background (non-blocking) to update completed games
         // This will refresh the data after the page loads
@@ -867,14 +911,17 @@ function JournalContent() {
             if (isMounted) {
               const { data: { session: refreshSession } } = await supabase.auth.getSession();
               if (refreshSession?.user) {
-                const { data: refreshedBets } = await supabase
+                const BATCH_SIZE = 200;
+                const { data: refreshedBets, count } = await supabase
                   .from('bets')
-                  .select('*')
+                  .select('*', { count: 'exact' })
                   .eq('user_id', refreshSession.user.id)
-                  .order('date', { ascending: false });
+                  .order('date', { ascending: false })
+                  .limit(BATCH_SIZE);
               
                 if (isMounted && refreshedBets) {
                   setBets(refreshedBets);
+                  setHasMoreBets((count || 0) > BATCH_SIZE);
                 }
               }
             }
@@ -936,11 +983,13 @@ function JournalContent() {
           // Then refresh bets from database
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user && isMounted) {
-            const { data, error } = await supabase
+            const BATCH_SIZE = 200;
+            const { data, error, count } = await supabase
               .from('bets')
-              .select('*')
+              .select('*', { count: 'exact' })
               .eq('user_id', session.user.id)
-              .order('date', { ascending: false });
+              .order('date', { ascending: false })
+              .limit(BATCH_SIZE);
             
             if (!error && data && isMounted) {
               setBets(data || []);
@@ -2514,6 +2563,18 @@ function JournalContent() {
                       );
                     })
                   )}
+                  {/* Load More Button */}
+                  {hasMoreBets && (
+                    <div className="flex justify-center mt-4 pb-2">
+                      <button
+                        onClick={loadMoreBets}
+                        disabled={loadingMoreBets}
+                        className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {loadingMoreBets ? 'Loading...' : 'Load More Bets'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -3352,6 +3413,18 @@ function JournalContent() {
                   </div>
                 );
               })
+            )}
+            {/* Load More Button (Mobile) */}
+            {hasMoreBets && (
+              <div className="flex justify-center mt-4 pb-2">
+                <button
+                  onClick={loadMoreBets}
+                  disabled={loadingMoreBets}
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loadingMoreBets ? 'Loading...' : 'Load More Bets'}
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -1142,12 +1142,13 @@ export async function GET(request: Request) {
     // Fetch player props (have player_id) OR game props (have game prop stat type)
     // We'll fetch both and filter in memory to avoid complex OR queries
     // Helper function to fetch bets in batches (pagination)
-    const fetchBetsInBatches = async (baseQuery: any, batchSize = 100): Promise<any[]> => {
+    // EGRESS OPTIMIZATION: Added maxBets limit to prevent excessive data transfer
+    const fetchBetsInBatches = async (baseQuery: any, batchSize = 100, maxBets = 2000): Promise<any[]> => {
       const allBets: any[] = [];
       let offset = 0;
       let hasMore = true;
 
-      while (hasMore) {
+      while (hasMore && allBets.length < maxBets) {
         const { data: batch, error } = await baseQuery
           .order('game_date', { ascending: false })
           .order('created_at', { ascending: false })
@@ -1164,6 +1165,10 @@ export async function GET(request: Request) {
         } else {
           hasMore = false;
         }
+      }
+
+      if (allBets.length >= maxBets) {
+        console.log(`[check-journal-bets] ⚠️  Reached max limit of ${maxBets} bets - stopping fetch to prevent excessive egress`);
       }
 
       return allBets;
