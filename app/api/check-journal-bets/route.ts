@@ -195,6 +195,7 @@ async function resolveParlayBet(
   bet: any,
   games: any[],
   updatedCountRef: { value: number },
+  globalStatsCache?: Map<string, any>,
   request?: Request
 ): Promise<void> {
   try {
@@ -210,10 +211,17 @@ async function resolveParlayBet(
       }
     }
     
-    // If bet is already resolved and we're not in recalculate mode, skip update
-    if (!recalculate && bet.result && bet.result !== 'pending') {
-      // Silently skip - no need to log every time
-      return;
+    // SPORTSBOOK-STANDARD: Skip parlays that are already fully resolved
+    // A parlay is resolved if it has a final result (win/loss/void) AND status is completed
+    // This prevents unnecessary re-processing of resolved parlays
+    if (!recalculate) {
+      const hasFinalResult = bet.result === 'win' || bet.result === 'loss' || bet.result === 'void';
+      const isCompleted = bet.status === 'completed';
+      
+      if (hasFinalResult && isCompleted) {
+        // Silently skip - bet is fully resolved, no need to process again
+        return;
+      }
     }
     
     // OPTIMIZATION: Use structured parlay_legs data if available (new parlays)
@@ -232,17 +240,21 @@ async function resolveParlayBet(
     
     if (bet.parlay_legs && Array.isArray(bet.parlay_legs) && bet.parlay_legs.length > 0) {
       // Use structured data (new parlays)
-      legs = bet.parlay_legs.map((leg: any) => ({
-        playerName: leg.playerName,
-        playerId: leg.playerId,
-        team: leg.team,
-        opponent: leg.opponent,
-        gameDate: leg.gameDate,
-        overUnder: leg.overUnder,
-        line: leg.line,
-        statType: leg.statType,
-        isGameProp: leg.isGameProp || false, // Include game prop flag
-      }));
+      legs = bet.parlay_legs.map((leg: any) => {
+        // Auto-detect game props: if statType is a game prop type, mark it as such
+        const isGamePropType = GAME_PROP_STAT_TYPES.includes(leg.statType);
+        return {
+          playerName: leg.playerName,
+          playerId: leg.playerId,
+          team: leg.team,
+          opponent: leg.opponent,
+          gameDate: leg.gameDate,
+          overUnder: leg.overUnder,
+          line: leg.line,
+          statType: leg.statType,
+          isGameProp: leg.isGameProp !== undefined ? leg.isGameProp : isGamePropType, // Auto-detect if not set
+        };
+      });
     } else {
       // Fallback: Parse text for legacy parlays
       const parsedLegs = parseParlayLegs(bet.selection || bet.market || '');
@@ -267,12 +279,23 @@ async function resolveParlayBet(
       const statKey = leg.statType;
       let legResolved = false;
       
-      // OPTIMIZATION: If we have structured data (playerId, team, opponent, gameDate), use direct lookup
-      if (leg.playerId && leg.team && leg.gameDate) {
-        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Using structured data - direct lookup (playerId: ${leg.playerId}, team: ${leg.team}, gameDate: ${leg.gameDate})`);
+      // OPTIMIZATION: If we have structured data (team and gameDate), use direct lookup
+      // For player props: need playerId, team, gameDate
+      // For game props: need team, gameDate (no playerId needed)
+      const hasStructuredData = leg.team && leg.gameDate && (leg.isGameProp || leg.playerId);
+      
+      if (hasStructuredData) {
+        const dataType = leg.isGameProp ? 'game prop' : 'player prop';
+        const playerInfo = leg.playerId ? `playerId: ${leg.playerId}, ` : '';
+        console.log(`[check-journal-bets] Parlay ${bet.id} leg "${leg.playerName}": Using structured data - direct lookup (${dataType}, ${playerInfo}team: ${leg.team}, gameDate: ${leg.gameDate})`);
         
         // Find the specific game for this leg
-        const legGameDate = leg.gameDate.split('T')[0];
+        const legGameDate = leg.gameDate?.split('T')[0];
+        if (!legGameDate) {
+          console.error(`[check-journal-bets] ❌ Parlay leg "${leg.playerName}": Missing gameDate`);
+          allLegsResolved = false;
+          continue;
+        }
         let targetGame = games.find((g: any) => {
           const gameDate = g.date ? g.date.split('T')[0] : null;
           if (gameDate !== legGameDate) return false;
@@ -312,24 +335,40 @@ async function resolveParlayBet(
                 break;
               }
               
-              // Check if player played in this game by fetching stats
-              try {
-                // Add timeout to individual fetch request
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per request
-                
-                const statsResponse = await fetch(
-                  `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${leg.playerId}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-                    },
-                    signal: controller.signal,
-                  }
-                );
-                
-                clearTimeout(timeoutId);
-                
+              // SPORTSBOOK-STANDARD: Check global stats cache first (batch-fetched)
+              // Only fallback to individual fetch if not in cache
+              let foundStats: any = null;
+              
+              if (globalStatsCache) {
+                const cacheKey = `${game.id}_${leg.playerId}`;
+                foundStats = globalStatsCache.get(cacheKey);
+              }
+              
+              if (foundStats) {
+                // Found in global cache - use it
+                foundGame = game;
+                cachedPlayerStats = foundStats;
+                targetGame = foundGame;
+                break;
+              } else {
+                // Not in cache - try individual fetch (fallback for game matching)
+                try {
+                  // Add timeout to individual fetch request
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per request
+                  
+                  const statsResponse = await fetch(
+                    `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${leg.playerId}`,
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+                      },
+                      signal: controller.signal,
+                    }
+                  );
+                  
+                  clearTimeout(timeoutId);
+                  
                   if (statsResponse.ok) {
                     const statsData = await statsResponse.json();
                     if (statsData.data && statsData.data.length > 0) {
@@ -340,8 +379,9 @@ async function resolveParlayBet(
                       break;
                     }
                   }
-              } catch (e: any) {
-                // Continue searching silently
+                } catch (e: any) {
+                  // Continue searching silently
+                }
               }
             }
             
@@ -355,9 +395,17 @@ async function resolveParlayBet(
           }
         }
         
-        // Check if game is completed (same logic as before)
+        // SPORTSBOOK-STANDARD RESOLUTION: Check if game is final
+        // Sportsbooks use two indicators:
+        // 1. Final scores exist (home_team_score and visitor_team_score are populated) - PRIMARY
+        // 2. Status says "Final" - SECONDARY (for confirmation)
+        // If scores exist, game is final regardless of status field
+        const hasFinalScores = targetGame.home_team_score != null && targetGame.visitor_team_score != null;
         const rawStatus = String(targetGame.status || '');
         const gameStatus = rawStatus.toLowerCase();
+        const statusSaysFinal = gameStatus.includes('final') || targetGame.status === 'Final';
+        const isGameFinal = hasFinalScores || statusSaysFinal;
+        
         let isCompleted = false;
         let completedAt: Date | null = null;
         const now = Date.now();
@@ -380,28 +428,37 @@ async function resolveParlayBet(
           const timeSinceTipoff = now - tipoffTime;
           const gameHasStarted = timeSinceTipoff > 0;
           
-          if (!hasTimeComponent && !gameStatus.includes('final')) {
+          if (!hasTimeComponent && !isGameFinal) {
+            // Date-only game and not final - skip
             allLegsResolved = false;
             continue;
           }
           
           if (gameHasStarted) {
-            // CRITICAL: Only mark as completed when status explicitly says "final"
-            // This prevents premature bet resolution during live games
-            if (gameStatus.includes('final')) {
+            // SPORTSBOOK RULE: Game is completed if final scores exist OR status says final
+            if (isGameFinal) {
               isCompleted = true;
               const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000;
               completedAt = new Date(tipoffTime + estimatedGameDurationMs);
+              const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+              console.log(`[check-journal-bets] ✅ Parlay leg "${leg.playerName}": Game is FINAL (${reason}) - sportsbook-standard resolution`);
+            } else {
+              // Game has started but not final - wait for scores or final status
+              console.log(`[check-journal-bets] ⏳ Parlay leg "${leg.playerName}": Game started but no final scores yet (status: "${targetGame.status}", home_score: ${targetGame.home_team_score}, visitor_score: ${targetGame.visitor_team_score}) - waiting for completion`);
+              allLegsResolved = false;
+              continue;
             }
-            // REMOVED: Time-based completion check - this was causing premature bet resolution
           } else {
             // Game hasn't started - silently skip (will be checked again later)
             allLegsResolved = false;
             continue;
           }
-        } else if (gameStatus.includes('final')) {
+        } else if (isGameFinal) {
+          // No tipoff time but game is final (scores exist or status says final)
           isCompleted = true;
           completedAt = new Date(now - (60 * 60 * 1000));
+          const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+          console.log(`[check-journal-bets] ✅ Parlay leg "${leg.playerName}": Game is FINAL (${reason}) but no tipoff time available`);
         }
         
         if (!isCompleted) {
@@ -563,8 +620,16 @@ async function resolveParlayBet(
         }
         
         // Check if game is completed (same logic as single bets)
+        // SPORTSBOOK-STANDARD RESOLUTION: Check if game is final
+        // Sportsbooks use two indicators:
+        // 1. Final scores exist (home_team_score and visitor_team_score are populated) - PRIMARY
+        // 2. Status says "Final" - SECONDARY (for confirmation)
+        // If scores exist, game is final regardless of status field
+        const hasFinalScores = game.home_team_score != null && game.visitor_team_score != null;
         const rawStatus = String(game.status || '');
         const gameStatus = rawStatus.toLowerCase();
+        const statusSaysFinal = gameStatus.includes('final') || game.status === 'Final';
+        const isGameFinal = hasFinalScores || statusSaysFinal;
         
         let isCompleted = false;
         let completedAt: Date | null = null;
@@ -594,7 +659,6 @@ async function resolveParlayBet(
         if (!Number.isNaN(tipoffTime)) {
           const timeSinceTipoff = now - tipoffTime;
           const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
-          const tenMinutesMs = 10 * 60 * 1000; // 10 minutes
           
           // CRITICAL: Game must have actually started (tipoffTime is in the past) before we can mark it as completed
           const gameHasStarted = timeSinceTipoff > 0;
@@ -602,39 +666,42 @@ async function resolveParlayBet(
           // If game.date only has date (no time), be extra conservative
           // NBA games are typically scheduled for evening (7-10 PM local time)
           // If we only have a date, we can't know the actual tipoff time
-          // CRITICAL: For date-only games, ONLY mark as started if status is "final"
+          // CRITICAL: For date-only games, ONLY mark as started if game is final (scores exist or status says final)
           // We cannot trust time-based checks when we don't have the actual tipoff time
-          if (!hasTimeComponent) {
-            if (!gameStatus.includes('final')) {
-              // Date-only and not final: skip this leg - we can't verify the game actually started
-              allLegsResolved = false;
-              continue;
-            }
-            // If status is "final", proceed with normal logic
+          if (!hasTimeComponent && !isGameFinal) {
+            // Date-only and not final: skip this leg - we can't verify the game actually started
+            allLegsResolved = false;
+            continue;
           }
           
-          // For date-only games without "final" status, we already skipped them above
-          // So if we reach here with date-only, it means status is "final"
+          // For date-only games without final status, we already skipped them above
+          // So if we reach here with date-only, it means game is final
           if (gameHasStarted) {
-            // CRITICAL: Only mark as completed when status explicitly says "final"
-            // This prevents premature bet resolution during live games
-            if (gameStatus.includes('final')) {
+            // SPORTSBOOK RULE: Game is completed if final scores exist OR status says final
+            if (isGameFinal) {
               isCompleted = true;
               const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
               completedAt = new Date(estimatedCompletionTime);
+              const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+              console.log(`[check-journal-bets] ✅ Parlay leg "${leg.playerName}": Game is FINAL (${reason}) - sportsbook-standard resolution`);
+            } else {
+              // Game has started but not final - wait for scores or final status
+              console.log(`[check-journal-bets] ⏳ Parlay leg "${leg.playerName}": Game started but no final scores yet (status: "${game.status}", home_score: ${game.home_team_score}, visitor_score: ${game.visitor_team_score}) - waiting for completion`);
+              allLegsResolved = false;
+              continue;
             }
-            // REMOVED: Time-based completion check - this was causing premature bet resolution
           } else {
             // Game hasn't started yet - silently skip (will be checked again later)
             allLegsResolved = false;
             continue; // Game not started yet, can't resolve this leg
           }
-        } else if (gameStatus.includes('final')) {
-          // Status says final but no date - only mark as completed if we can verify it's actually finished
-          // Be more cautious: if we don't have a tipoff time, we can't verify the game started
+        } else if (isGameFinal) {
+          // No tipoff time but game is final (scores exist or status says final)
           isCompleted = true;
           // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
           completedAt = new Date(now - (60 * 60 * 1000));
+          const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+          console.log(`[check-journal-bets] ✅ Parlay leg "${leg.playerName}": Game is FINAL (${reason}) but no tipoff time available`);
         }
         
         // Only process if game is completed AND completed at least 10 minutes ago
@@ -790,6 +857,15 @@ async function resolveParlayBet(
           fg3m: playerStat.fg3m || 0,
         };
         
+        // Check if this is a game prop (moneyline, spread, etc.) - these don't use player stats
+        if (GAME_PROP_STAT_TYPES.includes(statKey)) {
+          // This should have been handled earlier as a game prop
+          // If we reach here, it means the leg wasn't marked as isGameProp
+          console.error(`[check-journal-bets] ⚠️  Parlay leg "${leg.playerName}" has game prop stat type "${statKey}" but wasn't marked as isGameProp. This is a data issue.`);
+          allLegsResolved = false;
+          continue;
+        }
+        
         let actualValue = 0;
         switch (statKey) {
           case 'pts':
@@ -823,7 +899,7 @@ async function resolveParlayBet(
             actualValue = stats.fg3m;
             break;
           default:
-            logDebug(`Unknown stat type for parlay leg: ${statKey}`);
+            console.error(`[check-journal-bets] ❌ Unknown stat type for parlay leg: ${statKey} (player: ${leg.playerName})`);
             allLegsResolved = false;
             continue;
         }
@@ -931,22 +1007,57 @@ export async function GET(request: Request) {
   const allowDevBypass = process.env.ALLOW_DEV_BYPASS === 'true';
   const bypassAuth = isDevelopment && allowDevBypass && request.headers.get('x-bypass-auth') === 'true';
   
-  if (!bypassAuth) {
+  // For local development: allow localhost requests (makes testing easier)
+  // This bypasses auth for local development regardless of CRON_SECRET
+  const host = request.headers.get('host') || '';
+  const urlObj = new URL(request.url);
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1') || urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1';
+  const allowLocalDev = isDevelopment && isLocalhost;
+  
+  console.log('[check-journal-bets] 🔍 Auth check:', {
+    isDevelopment,
+    isLocalhost,
+    allowLocalDev,
+    host,
+    urlHostname: urlObj.hostname,
+    nodeEnv: process.env.NODE_ENV,
+    bypassAuth
+  });
+  
+  // LOCAL DEV BYPASS: If running locally, allow unauthenticated requests
+  // This makes local testing easier
+  if (allowLocalDev) {
+    console.log('[check-journal-bets] ✅ Local development mode: Allowing request without authentication');
+    // Skip all auth checks - proceed directly to processing
+  } else if (!bypassAuth) {
     let isAuthorized = false;
     
     // Check if this is a cron request (Vercel cron or manual with secret)
-    const url = new URL(request.url);
-    const querySecret = url.searchParams.get('secret');
+    const querySecret = urlObj.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
+    
+    console.log('[check-journal-bets] Secret check:', {
+      hasQuerySecret: !!querySecret,
+      hasCronSecret: !!cronSecret,
+      querySecretLength: querySecret?.length || 0,
+      cronSecretLength: cronSecret?.length || 0,
+      secretsMatch: querySecret === cronSecret
+    });
     
     // Check for cron secret in query parameter
     if (querySecret && cronSecret && querySecret === cronSecret) {
       isAuthorized = true;
+      console.log('[check-journal-bets] ✅ Authenticated via CRON_SECRET');
+    } else if (querySecret && cronSecret) {
+      console.error('[check-journal-bets] ❌ CRON_SECRET mismatch - query secret does not match environment secret');
     } else {
       // Check for cron authorization (Vercel cron or header-based)
       const authResult = authorizeCronRequest(request);
       if (authResult.authorized) {
         isAuthorized = true;
+        console.log('[check-journal-bets] ✅ Authenticated via cron headers');
+      } else {
+        console.log('[check-journal-bets] ⚠️  No cron authorization found');
       }
     }
     
@@ -970,16 +1081,25 @@ export async function GET(request: Request) {
     }
     
     if (!isAuthorized) {
+      console.error('[check-journal-bets] ❌ Unauthorized - returning 401');
+      console.error('[check-journal-bets]    Auth details:', {
+        allowLocalDev,
+        isDevelopment,
+        isLocalhost,
+        host,
+        hasQuerySecret: !!urlObj.searchParams.get('secret'),
+        hasCronSecret: !!process.env.CRON_SECRET
+      });
       return NextResponse.json(
         { error: 'Unauthorized - Must be a cron request or authenticated user' },
         { status: 401 }
       );
     }
+  }
 
-    const rateResult = checkRateLimit(request, strictRateLimiter);
-    if (!rateResult.allowed && rateResult.response) {
-      return rateResult.response;
-    }
+  const rateResult = checkRateLimit(request, strictRateLimiter);
+  if (!rateResult.allowed && rateResult.response) {
+    return rateResult.response;
   }
 
   try {
@@ -1077,12 +1197,10 @@ export async function GET(request: Request) {
       gamePropsQuery = gamePropsQuery.in('result', ['pending', 'win', 'loss']);
       console.log('[check-journal-bets] Recalculation mode: will re-check completed bets');
     } else {
-      // In normal mode, include:
-      // 1. Pending bets (to check if games have started/finished)
-      // 2. Live bets (to maintain live status and check for early determination)
-      // Note: We'll filter out completed bets in code to avoid complex queries
-      playerPropsQuery = playerPropsQuery.or('result.eq.pending,status.eq.live');
-      gamePropsQuery = gamePropsQuery.or('result.eq.pending,status.eq.live');
+      // In normal mode, fetch ALL bets and filter in code
+      // This ensures we don't miss any bets due to query syntax issues
+      // We'll filter out completed bets in code below
+      console.log('[check-journal-bets] Normal mode: fetching all NBA bets (will filter completed in code)');
     }
     
     // Fetch bets in batches to avoid loading all into memory
@@ -1095,14 +1213,22 @@ export async function GET(request: Request) {
     let singleBets = [...(playerProps || []), ...(gameProps || [])];
     if (!recalculate) {
       singleBets = singleBets.filter((bet: any) => {
-        // Skip bets that are already completed (status='completed' with win/loss)
-        // These are done and don't need re-checking
-        if (bet.status === 'completed' && (bet.result === 'win' || bet.result === 'loss')) {
-          return false;
+        // SPORTSBOOK-STANDARD: Skip bets that are already fully resolved
+        // A bet is resolved if it has a final result (win/loss/void) AND status is completed
+        // This prevents unnecessary re-processing of resolved bets
+        const hasFinalResult = bet.result === 'win' || bet.result === 'loss' || bet.result === 'void';
+        const isCompleted = bet.status === 'completed';
+        
+        if (hasFinalResult && isCompleted) {
+          return false; // Skip - bet is fully resolved
         }
+        
+        // Include all other bets (pending, live, or any that need checking)
         return true;
       });
     }
+    
+    console.log(`[check-journal-bets] After filtering: ${singleBets.length} single bets to process (from ${(playerProps || []).length + (gameProps || []).length} total)`);
     
     // Then get parlay bets (market contains "Parlay") in batches
     let parlayBetsQuery = supabaseAdmin
@@ -1119,9 +1245,8 @@ export async function GET(request: Request) {
     if (recalculate) {
       parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
     } else {
-      // Include pending and live parlays
-      // Note: We'll filter out completed bets in code to avoid complex queries
-      parlayBetsQuery = parlayBetsQuery.or('result.eq.pending,status.eq.live');
+      // In normal mode, fetch ALL parlays and filter in code
+      // This ensures we don't miss any bets due to query syntax issues
     }
     
     const parlayBets = await fetchBetsInBatches(parlayBetsQuery);
@@ -1130,13 +1255,22 @@ export async function GET(request: Request) {
     let filteredParlayBets = parlayBets || [];
     if (!recalculate) {
       filteredParlayBets = filteredParlayBets.filter((bet: any) => {
-        // Skip parlays that are already completed
-        if (bet.status === 'completed' && (bet.result === 'win' || bet.result === 'loss')) {
-          return false;
+        // SPORTSBOOK-STANDARD: Skip parlays that are already fully resolved
+        // A parlay is resolved if it has a final result (win/loss/void) AND status is completed
+        // This prevents unnecessary re-processing of resolved parlays
+        const hasFinalResult = bet.result === 'win' || bet.result === 'loss' || bet.result === 'void';
+        const isCompleted = bet.status === 'completed';
+        
+        if (hasFinalResult && isCompleted) {
+          return false; // Skip - parlay is fully resolved
         }
+        
+        // Include all other parlays (pending, live, or any that need checking)
         return true;
       });
     }
+    
+    console.log(`[check-journal-bets] After filtering: ${filteredParlayBets.length} parlay bets to process (from ${(parlayBets || []).length} total)`);
     
     const journalBets = [...(singleBets || []), ...(filteredParlayBets || [])];
 
@@ -1195,6 +1329,190 @@ export async function GET(request: Request) {
       acc[date].push(bet);
       return acc;
     }, {});
+    
+    // SPORTSBOOK-STANDARD: Collect ALL parlay leg stats needs upfront for batch fetching
+    // This matches how sportsbooks operate - they batch all requests together
+    const parlayStatsNeeded = new Map<string, { gameId: number; playerId: number; gameDate: string }>();
+    const parlayGamesCache = new Map<string, any[]>(); // Cache games by date for parlay processing
+    
+    // First, fetch all games needed for parlays
+    for (const [parlayDate, parlays] of Object.entries(parlaysByDate)) {
+      const gamesResponse = await fetch(
+        `https://api.balldontlie.io/v1/games?dates[]=${parlayDate}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+          },
+        }
+      );
+      
+      if (gamesResponse.ok) {
+        const gamesData = await gamesResponse.json();
+        const games = gamesData.data || [];
+        parlayGamesCache.set(parlayDate, games);
+        
+        // Extract all player prop legs from parlays and collect stats needs
+        for (const parlayBet of parlays as any[]) {
+          if (!parlayBet.parlay_legs || !Array.isArray(parlayBet.parlay_legs)) continue;
+          
+          for (const leg of parlayBet.parlay_legs) {
+            // Skip game props (they don't need player stats)
+            if (leg.isGameProp || GAME_PROP_STAT_TYPES.includes(leg.statType)) continue;
+            if (!leg.playerId || !leg.gameDate) continue;
+            
+            // Find the game for this leg
+            const legGameDate = leg.gameDate.split('T')[0];
+            const legGames = parlayGamesCache.get(legGameDate) || [];
+            
+            const targetGame = legGames.find((g: any) => {
+              const gameDate = g.date ? g.date.split('T')[0] : null;
+              if (gameDate !== legGameDate) return false;
+              
+              const homeMatch = g.home_team?.abbreviation === leg.team || g.home_team?.full_name === leg.team;
+              const visitorMatch = g.visitor_team?.abbreviation === leg.team || g.visitor_team?.full_name === leg.team;
+              const opponentMatch = leg.opponent && (
+                g.home_team?.abbreviation === leg.opponent || g.home_team?.full_name === leg.opponent ||
+                g.visitor_team?.abbreviation === leg.opponent || g.visitor_team?.full_name === leg.opponent
+              );
+              
+              return (homeMatch || visitorMatch) && (!leg.opponent || opponentMatch);
+            });
+            
+            if (targetGame && targetGame.id) {
+              const key = `${targetGame.id}_${leg.playerId}`;
+              if (!parlayStatsNeeded.has(key)) {
+                parlayStatsNeeded.set(key, { gameId: targetGame.id, playerId: leg.playerId, gameDate: legGameDate });
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Batch fetch all parlay leg stats (sportsbook-style)
+    const globalParlayStatsCache = new Map<string, any>();
+    if (parlayStatsNeeded.size > 0) {
+      console.log(`[check-journal-bets] 📦 Batch fetching ${parlayStatsNeeded.size} parlay leg stats (sportsbook-style batching)`);
+      
+      // Check database cache first
+      const parlayGameIds = Array.from(parlayStatsNeeded.values()).map(v => v.gameId);
+      const parlayPlayerIds = Array.from(parlayStatsNeeded.values()).map(v => v.playerId);
+      
+      try {
+        const { data: cachedStats } = await supabaseAdmin
+          .from('player_game_stats')
+          .select('*')
+          .in('game_id', parlayGameIds)
+          .in('player_id', parlayPlayerIds);
+        
+        if (cachedStats && cachedStats.length > 0) {
+          for (const cached of cachedStats) {
+            const key = `${cached.game_id}_${cached.player_id}`;
+            globalParlayStatsCache.set(key, {
+              pts: cached.pts || 0,
+              reb: cached.reb || 0,
+              ast: cached.ast || 0,
+              stl: cached.stl || 0,
+              blk: cached.blk || 0,
+              fg3m: cached.fg3m || 0,
+              min: cached.min || '0:00',
+            });
+          }
+          console.log(`[check-journal-bets] ✅ Found ${cachedStats.length} cached parlay stats in database`);
+        }
+      } catch (error) {
+        // Cache query failed - will fetch from API
+      }
+      
+      // Determine which stats need to be fetched from API
+      const parlayStatsToFetch: Array<{ gameId: number; playerId: number; key: string; gameDate: string }> = [];
+      for (const [key, { gameId, playerId, gameDate }] of parlayStatsNeeded) {
+        if (!globalParlayStatsCache.has(key)) {
+          parlayStatsToFetch.push({ gameId, playerId, key, gameDate });
+        }
+      }
+      
+      // Batch fetch missing stats
+      if (parlayStatsToFetch.length > 0) {
+        const uniqueGameIds = [...new Set(parlayStatsToFetch.map(s => s.gameId))];
+        const uniquePlayerIds = [...new Set(parlayStatsToFetch.map(s => s.playerId))];
+        
+        const batchUrl = new URL('https://api.balldontlie.io/v1/stats');
+        uniqueGameIds.forEach(id => batchUrl.searchParams.append('game_ids[]', String(id)));
+        uniquePlayerIds.forEach(id => batchUrl.searchParams.append('player_ids[]', String(id)));
+        
+        try {
+          const statsResponse = await fetch(batchUrl.toString(), {
+            headers: {
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+            },
+          });
+          
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            
+            if (statsData.data && statsData.data.length > 0) {
+              const fetchedStatsMap = new Map<string, any>();
+              for (const stat of statsData.data) {
+                const statKey = `${stat.game?.id}_${stat.player?.id}`;
+                if (!fetchedStatsMap.has(statKey)) {
+                  fetchedStatsMap.set(statKey, stat);
+                }
+              }
+              
+              // Store fetched stats in cache and database
+              const statsToCache: any[] = [];
+              for (const { gameId, playerId, key, gameDate } of parlayStatsToFetch) {
+                const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
+                if (stat) {
+                  globalParlayStatsCache.set(key, stat);
+                  
+                  statsToCache.push({
+                    game_id: gameId,
+                    player_id: playerId,
+                    pts: stat.pts || 0,
+                    reb: stat.reb || 0,
+                    ast: stat.ast || 0,
+                    stl: stat.stl || 0,
+                    blk: stat.blk || 0,
+                    fg3m: stat.fg3m || 0,
+                    min: stat.min || '0:00',
+                    team_id: stat.team?.id,
+                    team_abbreviation: stat.team?.abbreviation,
+                    opponent_id: stat.game?.home_team?.id === stat.team?.id 
+                      ? stat.game?.visitor_team?.id 
+                      : stat.game?.home_team?.id,
+                    opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
+                      ? stat.game?.visitor_team?.abbreviation
+                      : stat.game?.home_team?.abbreviation,
+                    game_date: gameDate,
+                    updated_at: new Date().toISOString(),
+                  });
+                }
+              }
+              
+              // Batch insert/update all stats in database cache
+              if (statsToCache.length > 0) {
+                try {
+                  await supabaseAdmin
+                    .from('player_game_stats')
+                    .upsert(statsToCache, {
+                      onConflict: 'game_id,player_id'
+                    });
+                  console.log(`[check-journal-bets] 💾 Batch cached ${statsToCache.length} parlay stats in database`);
+                } catch (error) {
+                  console.error(`[check-journal-bets] Failed to batch cache parlay stats:`, error);
+                }
+              }
+              
+              console.log(`[check-journal-bets] ✅ Batch fetched ${fetchedStatsMap.size} parlay stats from API`);
+            }
+          }
+        } catch (error) {
+          console.error(`[check-journal-bets] ❌ Batch parlay stats fetch error:`, error);
+        }
+      }
+    }
 
     for (const [gameDate, bets] of Object.entries(gamesByDate)) {
       // Fetch games for this date
@@ -1222,8 +1540,12 @@ export async function GET(request: Request) {
       for (const bet of bets as any[]) {
         if (!bet.game_date) continue;
         
-        const isGameProp = !bet.player_id && bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
+        // CRITICAL FIX: Detect game props by stat_type, not just by missing player_id
+        // Some moneyline bets incorrectly have player_id set to team abbreviation (e.g., "DAL", "ORL")
+        // So we check stat_type first, then fall back to checking if player_id is missing
+        const isGameProp = bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
         
+        // Skip if it's not a game prop and has no player_id (invalid bet)
         if (!isGameProp && !bet.player_id) continue;
         
         // Find the game with matching teams
@@ -1240,7 +1562,35 @@ export async function GET(request: Request) {
           betsWithGames.push({ bet, game, isGameProp });
         } else {
           const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name;
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
+          console.error(`[check-journal-bets] ❌ Single bet ${bet.id} (${betDescription}): Game not found for ${bet.team} vs ${bet.opponent} on ${bet.game_date}`);
+          console.error(`[check-journal-bets]    Available games on ${bet.game_date}:`, games.map((g: any) => `${g.home_team?.abbreviation || g.home_team?.full_name} vs ${g.visitor_team?.abbreviation || g.visitor_team?.full_name}`).join(', '));
+          
+          // CRITICAL FIX: For game props (moneylines), try to find game by checking all games
+          // The team matching might be failing due to abbreviation/full name mismatches
+          if (isGameProp && games.length > 0) {
+            // Try more flexible matching - check if either team name/abbr matches
+            const flexibleMatch = games.find((g: any) => {
+              const homeAbbr = g.home_team?.abbreviation?.toUpperCase() || '';
+              const homeFull = g.home_team?.full_name?.toUpperCase() || '';
+              const visitorAbbr = g.visitor_team?.abbreviation?.toUpperCase() || '';
+              const visitorFull = g.visitor_team?.full_name?.toUpperCase() || '';
+              const betTeam = (bet.team || '').toUpperCase();
+              const betOpp = (bet.opponent || '').toUpperCase();
+              
+              // Check if bet.team matches either home or visitor (and bet.opponent matches the other)
+              const teamMatches = betTeam === homeAbbr || betTeam === homeFull || betTeam === visitorAbbr || betTeam === visitorFull;
+              const oppMatches = !betOpp || betOpp === homeAbbr || betOpp === homeFull || betOpp === visitorAbbr || betOpp === visitorFull;
+              
+              return teamMatches && oppMatches;
+            });
+            
+            if (flexibleMatch) {
+              console.log(`[check-journal-bets] ✅ Found game using flexible matching for bet ${bet.id}`);
+              betsWithGames.push({ bet, game: flexibleMatch, isGameProp });
+            } else {
+              console.error(`[check-journal-bets] ❌ Still couldn't find game for bet ${bet.id} even with flexible matching`);
+            }
+          }
         }
       }
       
@@ -1261,123 +1611,184 @@ export async function GET(request: Request) {
         statsNeeded.get(key)!.bets.push({ bet, game });
       }
       
-      // Fetch and cache stats for each unique game+player combination
+      // SPORTSBOOK-STANDARD BATCH FETCHING: Collect all stats needs and fetch in batches
+      // This matches how sportsbooks operate - they batch all requests together
       const statsCache = new Map<string, any>();
       
-      for (const [key, { gameId, playerId, bets }] of statsNeeded) {
-        // Check database cache first
-        let playerStat: any = null;
+      // First, check database cache for all needed stats
+      const cacheKeys = Array.from(statsNeeded.keys());
+      const cacheResults = new Map<string, any>();
+      
+      if (cacheKeys.length > 0) {
+        const gameIds = Array.from(statsNeeded.values()).map(v => v.gameId);
+        const playerIds = Array.from(statsNeeded.values()).map(v => v.playerId);
         
         try {
           const { data: cachedStats } = await supabaseAdmin
             .from('player_game_stats')
             .select('*')
-            .eq('game_id', gameId)
-            .eq('player_id', playerId)
-            .single();
+            .in('game_id', gameIds)
+            .in('player_id', playerIds);
           
-          if (cachedStats) {
-            // Convert cached stats to API format
-            playerStat = {
-              pts: cachedStats.pts || 0,
-              reb: cachedStats.reb || 0,
-              ast: cachedStats.ast || 0,
-              stl: cachedStats.stl || 0,
-              blk: cachedStats.blk || 0,
-              fg3m: cachedStats.fg3m || 0,
-              min: cachedStats.min || '0:00',
-            };
-            console.log(`[check-journal-bets] ✅ Using cached stats for game ${gameId}, player ${playerId}`);
+          if (cachedStats && cachedStats.length > 0) {
+            for (const cached of cachedStats) {
+              const key = `${cached.game_id}_${cached.player_id}`;
+              cacheResults.set(key, {
+                pts: cached.pts || 0,
+                reb: cached.reb || 0,
+                ast: cached.ast || 0,
+                stl: cached.stl || 0,
+                blk: cached.blk || 0,
+                fg3m: cached.fg3m || 0,
+                min: cached.min || '0:00',
+              });
+            }
+            console.log(`[check-journal-bets] ✅ Found ${cachedStats.length} cached stats in database`);
           }
         } catch (error) {
-          // Cache miss or error - will fetch from API
+          // Cache query failed - will fetch from API
         }
+      }
+      
+      // Determine which stats need to be fetched from API
+      const statsToFetch: Array<{ gameId: number; playerId: number; key: string }> = [];
+      for (const [key, { gameId, playerId }] of statsNeeded) {
+        if (!cacheResults.has(key)) {
+          statsToFetch.push({ gameId, playerId, key });
+        } else {
+          statsCache.set(key, cacheResults.get(key));
+        }
+      }
+      
+      // BATCH FETCH: Fetch all missing stats in a single API call (sportsbook-style)
+      if (statsToFetch.length > 0) {
+        console.log(`[check-journal-bets] 📦 Batch fetching ${statsToFetch.length} stats from API (sportsbook-style batching)`);
         
-        // If not in cache, fetch from API
-        if (!playerStat) {
-          const statsResponse = await fetch(
-            `https://api.balldontlie.io/v1/stats?game_ids[]=${gameId}&player_ids[]=${playerId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-              },
+        // Build batch request URL with all game_ids and player_ids
+        const uniqueGameIds = [...new Set(statsToFetch.map(s => s.gameId))];
+        const uniquePlayerIds = [...new Set(statsToFetch.map(s => s.playerId))];
+        
+        const batchUrl = new URL('https://api.balldontlie.io/v1/stats');
+        uniqueGameIds.forEach(id => batchUrl.searchParams.append('game_ids[]', String(id)));
+        uniquePlayerIds.forEach(id => batchUrl.searchParams.append('player_ids[]', String(id)));
+        
+        try {
+          const statsResponse = await fetch(batchUrl.toString(), {
+            headers: {
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+            },
+          });
+          
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            
+            if (statsData.data && statsData.data.length > 0) {
+              // Index stats by game_id + player_id for fast lookup
+              const fetchedStatsMap = new Map<string, any>();
+              for (const stat of statsData.data) {
+                const statKey = `${stat.game?.id}_${stat.player?.id}`;
+                if (!fetchedStatsMap.has(statKey)) {
+                  fetchedStatsMap.set(statKey, stat);
+                }
+              }
+              
+              // Store fetched stats in cache and database
+              const statsToCache: any[] = [];
+              for (const { gameId, playerId, key } of statsToFetch) {
+                const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
+                if (stat) {
+                  statsCache.set(key, stat);
+                  
+                  // Prepare for database cache
+                  statsToCache.push({
+                    game_id: gameId,
+                    player_id: playerId,
+                    pts: stat.pts || 0,
+                    reb: stat.reb || 0,
+                    ast: stat.ast || 0,
+                    stl: stat.stl || 0,
+                    blk: stat.blk || 0,
+                    fg3m: stat.fg3m || 0,
+                    min: stat.min || '0:00',
+                    team_id: stat.team?.id,
+                    team_abbreviation: stat.team?.abbreviation,
+                    opponent_id: stat.game?.home_team?.id === stat.team?.id 
+                      ? stat.game?.visitor_team?.id 
+                      : stat.game?.home_team?.id,
+                    opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
+                      ? stat.game?.visitor_team?.abbreviation
+                      : stat.game?.home_team?.abbreviation,
+                    game_date: gameDate,
+                    updated_at: new Date().toISOString(),
+                  });
+                }
+              }
+              
+              // Batch insert/update all stats in database cache
+              if (statsToCache.length > 0) {
+                try {
+                  await supabaseAdmin
+                    .from('player_game_stats')
+                    .upsert(statsToCache, {
+                      onConflict: 'game_id,player_id'
+                    });
+                  console.log(`[check-journal-bets] 💾 Batch cached ${statsToCache.length} stats in database`);
+                } catch (error) {
+                  console.error(`[check-journal-bets] Failed to batch cache stats:`, error);
+                }
+              }
+              
+              console.log(`[check-journal-bets] ✅ Batch fetched ${fetchedStatsMap.size} stats from API`);
             }
-          );
-          
-          if (!statsResponse.ok) {
-            console.error(`Failed to fetch stats for game ${gameId}, player ${playerId}`);
-            continue;
+          } else {
+            console.error(`[check-journal-bets] ❌ Batch stats fetch failed: ${statsResponse.status}`);
           }
-          
-          const statsData = await statsResponse.json();
-          
-          if (!statsData.data || statsData.data.length === 0) {
-            console.log(`[check-journal-bets] No stats found for game ${gameId}, player ${playerId}`);
-            continue;
-          }
-          
-          playerStat = statsData.data[0];
-          
-          // Store in database cache for future use
-          try {
-            await supabaseAdmin
-              .from('player_game_stats')
-              .upsert({
-                game_id: gameId,
-                player_id: playerId,
-                pts: playerStat.pts || 0,
-                reb: playerStat.reb || 0,
-                ast: playerStat.ast || 0,
-                stl: playerStat.stl || 0,
-                blk: playerStat.blk || 0,
-                fg3m: playerStat.fg3m || 0,
-                min: playerStat.min || '0:00',
-                team_id: playerStat.team?.id,
-                team_abbreviation: playerStat.team?.abbreviation,
-                opponent_id: playerStat.game?.home_team?.id === playerStat.team?.id 
-                  ? playerStat.game?.visitor_team?.id 
-                  : playerStat.game?.home_team?.id,
-                opponent_abbreviation: playerStat.game?.home_team?.abbreviation === playerStat.team?.abbreviation
-                  ? playerStat.game?.visitor_team?.abbreviation
-                  : playerStat.game?.home_team?.abbreviation,
-                game_date: gameDate,
-                updated_at: new Date().toISOString(),
-              }, {
-                onConflict: 'game_id,player_id'
-              });
-            console.log(`[check-journal-bets] 💾 Cached stats for game ${gameId}, player ${playerId}`);
-          } catch (error) {
-            // Cache write failed - not critical, just log
-            console.error(`[check-journal-bets] Failed to cache stats for game ${gameId}, player ${playerId}:`, error);
-          }
+        } catch (error) {
+          console.error(`[check-journal-bets] ❌ Batch stats fetch error:`, error);
         }
-        
-        // Store in memory cache for this request
-        statsCache.set(key, playerStat);
       }
       
       // Now process all bets (both game props and player props)
-      for (const { bet, game, isGameProp } of betsWithGames) {
-        // OPTIMIZATION: Skip bets that are already completed (status='completed' and result is win/loss)
-        // These bets are done and don't need to be re-checked unless in recalculate mode
-        if (!recalculate && bet.status === 'completed' && (bet.result === 'win' || bet.result === 'loss')) {
-          continue; // Skip already completed bets to improve performance
+      for (const { bet, game, isGameProp: initialIsGameProp } of betsWithGames) {
+        // SPORTSBOOK-STANDARD: Skip bets that are already fully resolved
+        // A bet is resolved if it has a final result (win/loss/void) AND status is completed
+        // This prevents unnecessary re-processing of resolved bets
+        if (!recalculate) {
+          const hasFinalResult = bet.result === 'win' || bet.result === 'loss' || bet.result === 'void';
+          const isCompleted = bet.status === 'completed';
+          
+          if (hasFinalResult && isCompleted) {
+            continue; // Skip - bet is fully resolved, no need to process again
+          }
         }
+        
+        // CRITICAL FIX: Re-detect game prop by stat_type (some bets have player_id incorrectly set to team abbreviation)
+        // This ensures moneyline/spread bets are always treated as game props, not player props
+        const isGameProp = bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
         
         // Check if this is a parlay bet
         const isParlay = bet.market && bet.market.startsWith('Parlay');
         
         if (isParlay) {
-          // Handle parlay resolution
-          await resolveParlayBet(bet, games, updatedCountRef, request);
+          // Handle parlay resolution (using pre-fetched stats cache if available)
+          await resolveParlayBet(bet, games, updatedCountRef, globalParlayStatsCache || undefined, request);
           continue;
         }
         
         // bet and game are already matched and passed in from betsWithGames
 
-        // Check game status using same logic as tracked bets
+        // SPORTSBOOK-STANDARD RESOLUTION: Check if game is final
+        // Sportsbooks use two indicators:
+        // 1. Final scores exist (home_team_score and visitor_team_score are populated) - PRIMARY
+        // 2. Status says "Final" - SECONDARY (for confirmation)
+        // If scores exist, game is final regardless of status field
+        const hasFinalScores = game.home_team_score != null && game.visitor_team_score != null;
         const rawStatus = String(game.status || '');
         const gameStatus = rawStatus.toLowerCase();
+        const statusSaysFinal = gameStatus.includes('final') || game.status === 'Final';
+        
+        // Game is final if scores exist (sportsbook standard) OR status explicitly says final
+        const isGameFinal = hasFinalScores || statusSaysFinal;
         
         // Check if game is live by looking at tipoff time and game status
         let isLive = false;
@@ -1389,12 +1800,11 @@ export async function GET(request: Request) {
         
         // Check if game status indicates it's in progress (e.g., "1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr", "Halftime", etc.)
         const liveStatusIndicators = ['qtr', 'quarter', 'half', 'ot', 'overtime'];
-        const gameIsInProgress = liveStatusIndicators.some(indicator => gameStatus.includes(indicator)) && !gameStatus.includes('final');
+        const gameIsInProgress = liveStatusIndicators.some(indicator => gameStatus.includes(indicator)) && !isGameFinal;
         
         if (!Number.isNaN(tipoffTime)) {
           const timeSinceTipoff = now - tipoffTime;
           const threeHoursMs = 3 * 60 * 60 * 1000;
-          const tenMinutesMs = 10 * 60 * 1000;
           const estimatedGameDurationMs = 2.5 * 60 * 60 * 1000; // 2.5 hours for NBA game
           
           // CRITICAL: Game must have actually started (tipoffTime is in the past) before we can mark it as completed
@@ -1403,30 +1813,32 @@ export async function GET(request: Request) {
           // Game is live if: (1) it started and hasn't been 3 hours yet, OR (2) status indicates it's in progress
           isLive = (gameHasStarted && timeSinceTipoff < threeHoursMs) || gameIsInProgress;
           
-          // Game is completed ONLY if:
-          // 1. Game has actually started (tipoffTime is in the past)
-          // 2. AND Status explicitly says "final"
-          // CRITICAL: We ONLY mark as completed when status is "final" to prevent premature resolution
-          if (gameHasStarted) {
-            if (gameStatus.includes('final')) {
-              isCompleted = true;
-              const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
-              completedAt = new Date(estimatedCompletionTime);
-            }
-            // REMOVED: Time-based completion check - this was causing premature bet resolution
-            // Games must explicitly have "final" status before we resolve bets
+          // SPORTSBOOK RULE: Game is completed if:
+          // 1. Final scores exist (primary indicator - this is how sportsbooks determine completion)
+          // 2. OR status explicitly says "final" AND game has started
+          if (gameHasStarted && isGameFinal) {
+            isCompleted = true;
+            const estimatedCompletionTime = tipoffTime + estimatedGameDurationMs;
+            completedAt = new Date(estimatedCompletionTime);
+            const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] ✅ Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is FINAL (${reason}) - sportsbook-standard resolution`);
+          } else if (gameHasStarted && !isGameFinal) {
+            // Game has started but not final - wait for scores or final status
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] ⏳ Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} started but no final scores yet (status: "${game.status}", home_score: ${game.home_team_score}, visitor_score: ${game.visitor_team_score}) - waiting for completion`);
           } else {
             // Game hasn't started yet - cannot be completed
             const hoursUntilTipoff = (tipoffTime - now) / (1000 * 60 * 60);
-            console.log(`[check-journal-bets] ✅ FIX VERIFIED: Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} hasn't started yet (tipoff: ${new Date(tipoffTime).toISOString()}, ${hoursUntilTipoff.toFixed(2)} hours from now). Skipping to prevent premature loss marking.`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] ⏳ Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} hasn't started yet (tipoff: ${new Date(tipoffTime).toISOString()}, ${hoursUntilTipoff.toFixed(2)} hours from now)`);
             continue;
           }
-        } else if (gameStatus.includes('final')) {
-          // Status says final but no date - only mark as completed if we can verify it's actually finished
-          // Be more cautious: if we don't have a tipoff time, we can't verify the game started
-          // Only mark as completed if status explicitly contains "final" and we have some confidence
-          // For safety, we'll still mark it but log a warning
-          console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${bet.player_name}): Game status is "final" but no tipoff time available. Proceeding with caution.`);
+        } else if (isGameFinal) {
+          // No tipoff time but game is final (scores exist or status says final)
+          const reason = hasFinalScores ? 'final scores exist' : 'status says final';
+          const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+          console.log(`[check-journal-bets] ✅ Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is FINAL (${reason}) but no tipoff time available`);
           isCompleted = true;
           // Set completedAt to 1 hour ago to ensure it passes the 10-minute check
           completedAt = new Date(now - (60 * 60 * 1000));
@@ -1555,7 +1967,8 @@ export async function GET(request: Request) {
             // Determine if game is live (started but not final)
             const gameIsLive = isLive && !isCompleted;
             const newStatus = gameIsLive ? 'live' : 'pending';
-            console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is ${game.status} (not final), but bet is marked as ${bet.result}. Resetting to ${newStatus}.`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] ⚠️  Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is ${game.status} (not final), but bet is marked as ${bet.result}. Resetting to ${newStatus}.`);
             await supabaseAdmin
               .from('bets')
               .update({
@@ -1573,9 +1986,11 @@ export async function GET(request: Request) {
               .eq('id', bet.id)
               .eq('result', 'pending'); // Only update if still pending
             
-            console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is live, updated status to 'live'`);
           } else {
-            console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): Game ${bet.team} vs ${bet.opponent} is ${game.status}, not completed yet`);
+            const betDescription = isGameProp ? `Game prop ${bet.stat_type}` : bet.player_name || 'Unknown';
+            console.log(`[check-journal-bets] Single bet ${bet.id} (${betDescription}): Game ${bet.team} vs ${bet.opponent} is ${game.status}, not completed yet`);
           }
           continue;
         }
@@ -1592,7 +2007,9 @@ export async function GET(request: Request) {
         }
 
         // Handle game props differently from player props
-        if (isGameProp) {
+        // CRITICAL: Re-check isGameProp here (some bets have player_id incorrectly set to team abbreviation)
+        const finalIsGameProp = bet.stat_type && GAME_PROP_STAT_TYPES.includes(bet.stat_type);
+        if (finalIsGameProp) {
           console.log(`[check-journal-bets] Evaluating game prop bet ${bet.id}: ${bet.stat_type} for game ${game.id}`);
           
           // Evaluate game prop using game data
@@ -1602,9 +2019,16 @@ export async function GET(request: Request) {
           const line = Number(bet.line);
           let result: 'win' | 'loss';
           
+          // For moneyline bets, over_under might be null or invalid - that's okay, we'll use a default
+          // Moneyline bets don't really need over_under, but the function requires it
           if (!bet.over_under || (bet.over_under !== 'over' && bet.over_under !== 'under')) {
-            console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
-            continue;
+            if (bet.stat_type === 'moneyline') {
+              // For moneyline, default to 'over' (doesn't matter since calculateUniversalBetResult ignores it for moneyline)
+              bet.over_under = 'over';
+            } else {
+              console.error(`[check-journal-bets] Invalid over_under value for bet ${bet.id}: "${bet.over_under}"`);
+              continue;
+            }
           }
           
           result = calculateUniversalBetResult(
@@ -1621,19 +2045,24 @@ export async function GET(request: Request) {
           console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);
 
           // Update the journal bet with result
-          const { error: updateError } = await supabaseAdmin
+          const { data: updateData, error: updateError } = await supabaseAdmin
             .from('bets')
             .update({
               status: 'completed',
               result,
               actual_value: actualValue,
             })
-            .eq('id', bet.id);
+            .eq('id', bet.id)
+            .select();
 
           if (updateError) {
-            console.error(`Failed to update bet ${bet.id}:`, updateError);
+            console.error(`[check-journal-bets] ❌ Failed to update bet ${bet.id}:`, updateError);
+            console.error(`[check-journal-bets]    Bet details:`, { team: bet.team, opponent: bet.opponent, game_date: bet.game_date, stat_type: bet.stat_type });
           } else {
             console.log(`[check-journal-bets] ✅ Updated game prop bet ${bet.id}: ${bet.stat_type} ${bet.over_under} ${line}: ${result} (actual: ${actualValue})`);
+            if (updateData && updateData.length === 0) {
+              console.error(`[check-journal-bets] ⚠️  Update returned no rows for bet ${bet.id} - bet may not exist or RLS is blocking`);
+            }
             updatedCountRef.value++;
           }
           continue; // Skip player stats fetching for game props
@@ -1757,19 +2186,24 @@ export async function GET(request: Request) {
         console.log(`[check-journal-bets]   Comparison: ${actualValue} ${bet.over_under === 'over' ? (isWholeNumber ? '>=' : '>') : (isWholeNumber ? '<=' : '<')} ${line} = ${result}`);
 
         // Update the journal bet with result
-        const { error: updateError } = await supabaseAdmin
+        const { data: updateData, error: updateError } = await supabaseAdmin
           .from('bets')
           .update({
             status: 'completed',
             result,
             actual_value: actualValue,
           })
-          .eq('id', bet.id);
+          .eq('id', bet.id)
+          .select();
 
         if (updateError) {
-          console.error(`Failed to update bet ${bet.id}:`, updateError);
+          console.error(`[check-journal-bets] ❌ Failed to update bet ${bet.id}:`, updateError);
+          console.error(`[check-journal-bets]    Bet details:`, { player_name: bet.player_name, team: bet.team, opponent: bet.opponent, game_date: bet.game_date, stat_type: bet.stat_type });
         } else {
           console.log(`[check-journal-bets] ✅ Updated ${bet.player_name} ${bet.stat_type} ${bet.over_under} ${line}: ${result} (actual: ${actualValue})`);
+          if (updateData && updateData.length === 0) {
+            console.error(`[check-journal-bets] ⚠️  Update returned no rows for bet ${bet.id} - bet may not exist or RLS is blocking`);
+          }
           updatedCountRef.value++;
         }
       }
@@ -1860,10 +2294,10 @@ export async function GET(request: Request) {
         }
       }
       
-      // Process parlays for this date
+      // Process parlays for this date (using pre-fetched stats cache)
       const parlaysList = parlays as any[];
       for (const parlayBet of parlaysList) {
-        await resolveParlayBet(parlayBet, allGames, updatedCountRef, request);
+        await resolveParlayBet(parlayBet, allGames, updatedCountRef, globalParlayStatsCache, request);
       }
     }
 

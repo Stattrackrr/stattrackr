@@ -11,6 +11,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { formatOdds } from '@/lib/currencyUtils';
+import { getFullTeamName } from '@/lib/teamMapping';
 import { generateInsights, type Insight } from '@/components/RightSidebar';
 import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
 import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3, Minus, X } from 'lucide-react';
@@ -274,6 +275,49 @@ function JournalContent() {
   const [navigatingToJournal, setNavigatingToJournal] = useState(false);
   const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
+  
+  // Expose manual trigger function to window for testing
+  useEffect(() => {
+    (window as any).checkJournalBets = async (recalculate = false) => {
+      console.log(`🔄 Manually triggering check-journal-bets${recalculate ? ' (recalculate mode)' : ''}...`);
+      try {
+        const response = await fetch(`/api/check-journal-bets${recalculate ? '?recalculate=true' : ''}`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('❌ Failed:', response.status, response.statusText);
+          console.error('Response:', text);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('✅ Response:', data);
+        console.log(`📊 Updated ${data.updated || 0} bet(s)`);
+        
+        // Refresh bets
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: refreshedBets } = await supabase
+            .from('bets')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('date', { ascending: false });
+          
+          if (refreshedBets) {
+            setBets(refreshedBets);
+            console.log('✅ Bets refreshed');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error:', error);
+      }
+    };
+    
+    console.log('💡 To manually check journal bets, run: checkJournalBets() or checkJournalBets(true) for recalculate mode');
+    console.log('📝 Server-side logs (with detailed debugging) appear in your terminal where "npm run dev" is running');
+  }, []);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
   const [dateRange, setDateRange] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
     if (typeof window !== 'undefined') {
@@ -817,7 +861,7 @@ function JournalContent() {
               return;
             }
             const data = await response.json();
-            // Debug logging removed('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
+            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
             
             // Refresh bets after check completes to show updated results
             if (isMounted) {
@@ -838,7 +882,7 @@ function JournalContent() {
           .catch((error) => {
             // Silently handle errors - this is a non-blocking background operation
             // Only log in development for debugging
-            // Debug logging removed('[Journal] check-journal-bets error (non-critical):', error);
+            console.error('[Journal] check-journal-bets error (non-critical):', error);
           });
       } catch (error) {
         console.error('Error checking subscription:', error);
@@ -2298,8 +2342,21 @@ function JournalContent() {
                       
                       // Check if this is a parlay
                       const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
-                      const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
-                      const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
+                      // SPORTSBOOK-STANDARD: Use structured parlay_legs data first (most reliable)
+                      // Fallback to parsing selection text, then market string
+                      const structuredLegs = bet.parlay_legs && Array.isArray(bet.parlay_legs) ? bet.parlay_legs : [];
+                      const parsedLegs = isParlay ? parseParlayLegs(bet.selection) : [];
+                      const parlayLegs = structuredLegs.length > 0 ? structuredLegs.map((leg: any) => ({
+                        playerName: leg.playerName || '',
+                        overUnder: leg.overUnder || 'over',
+                        line: leg.line || 0,
+                        statName: formatStatType(leg.statType) || '',
+                        team: leg.team || '', // Preserve team for moneyline display
+                        statType: leg.statType || '', // Preserve statType for moneyline check
+                        isGameProp: leg.isGameProp || false, // Preserve isGameProp flag
+                      })) : parsedLegs;
+                      // Use structured legs count first, then parsed, then market fallback
+                      const legCount = structuredLegs.length || parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
 
                       // Determine bet state: pending (blue), live (orange), or final (green/red)
                       // A bet can be live but already determined (win/loss) if outcome was determined early
@@ -2373,7 +2430,27 @@ function JournalContent() {
                                           {legWon ? '✓' : '✗'}
                                         </span>
                                       )}
-                                      <span>{leg.playerName} {leg.overUnder} {leg.line} {leg.statName}</span>
+                                      <span>
+                                        {(() => {
+                                          // Check if this is a moneyline bet
+                                          // Use storedLeg data first (most reliable), then fallback to leg data
+                                          const legAny = leg as any;
+                                          const statType = storedLeg?.statType || legAny.statType || '';
+                                          const team = storedLeg?.team || legAny.team || '';
+                                          const isMoneyline = statType === 'moneyline' || 
+                                                              leg.statName?.toLowerCase().includes('moneyline');
+                                          
+                                          if (isMoneyline && team) {
+                                            // For moneyline bets, show "X Team to Win"
+                                            // Convert abbreviation to full name if needed
+                                            const teamName = getFullTeamName(team);
+                                            return `${teamName} to win`;
+                                          }
+                                          
+                                          // For non-moneyline bets, use standard format
+                                          return `${leg.playerName} ${leg.overUnder} ${leg.line} ${leg.statName}`;
+                                        })()}
+                                      </span>
                                     </div>
                                   );
                                 })}
@@ -3102,8 +3179,21 @@ function JournalContent() {
                 
                 // Check if this is a parlay
                 const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
-                const parlayLegs = isParlay ? parseParlayLegs(bet.selection) : [];
-                const legCount = parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
+                // SPORTSBOOK-STANDARD: Use structured parlay_legs data first (most reliable)
+                // Fallback to parsing selection text, then market string
+                const structuredLegs = bet.parlay_legs && Array.isArray(bet.parlay_legs) ? bet.parlay_legs : [];
+                const parsedLegs = isParlay ? parseParlayLegs(bet.selection) : [];
+                const parlayLegs = structuredLegs.length > 0 ? structuredLegs.map((leg: any) => ({
+                  playerName: leg.playerName || '',
+                  overUnder: leg.overUnder || 'over',
+                  line: leg.line || 0,
+                  statName: formatStatType(leg.statType) || '',
+                  team: leg.team || '', // Preserve team for moneyline display
+                  statType: leg.statType || '', // Preserve statType for moneyline check
+                  isGameProp: leg.isGameProp || false, // Preserve isGameProp flag
+                })) : parsedLegs;
+                // Use structured legs count first, then parsed, then market fallback
+                const legCount = structuredLegs.length || parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
                 
                 const betDate = new Date(bet.date);
                 const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -3182,7 +3272,27 @@ function JournalContent() {
                                     {legWon ? '✓' : '✗'}
                                   </span>
                                 )}
-                                <span>{leg.playerName} {leg.overUnder} {leg.line} {leg.statName}</span>
+                                <span>
+                                  {(() => {
+                                    // Check if this is a moneyline bet
+                                    // Use storedLeg data first (most reliable), then fallback to leg data
+                                    const legAny = leg as any;
+                                    const statType = storedLeg?.statType || legAny.statType || '';
+                                    const team = storedLeg?.team || legAny.team || '';
+                                    const isMoneyline = statType === 'moneyline' || 
+                                                        leg.statName?.toLowerCase().includes('moneyline');
+                                    
+                                    if (isMoneyline && team) {
+                                      // For moneyline bets, show "X Team to Win"
+                                      // Convert abbreviation to full name if needed
+                                      const teamName = getFullTeamName(team);
+                                      return `${teamName} to win`;
+                                    }
+                                    
+                                    // For non-moneyline bets, use standard format
+                                    return `${leg.playerName} ${leg.overUnder} ${leg.line} ${leg.statName}`;
+                                  })()}
+                                </span>
                               </div>
                             );
                           })}

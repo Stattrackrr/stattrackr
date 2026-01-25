@@ -14,14 +14,32 @@ async function triggerCheck() {
   try {
     const args = process.argv.slice(2);
     const recalculate = args.includes('recalculate');
+    const cronSecret = process.env.CRON_SECRET;
     
-    const url = `${API_URL}/api/check-journal-bets${recalculate ? '?recalculate=true' : ''}`;
+    // Build URL with secret if available
+    let url = `${API_URL}/api/check-journal-bets`;
+    const params = new URLSearchParams();
+    if (recalculate) {
+      params.append('recalculate', 'true');
+    }
+    if (cronSecret) {
+      params.append('secret', cronSecret);
+    }
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
     
     console.log('🔄 Triggering check-journal-bets API...');
     if (recalculate) {
       console.log('   Mode: RECALCULATE (will re-check already resolved bets)\n');
     } else {
       console.log('   Mode: NORMAL (will only check pending bets)\n');
+    }
+    
+    if (cronSecret) {
+      console.log('   ✅ Using CRON_SECRET for authentication\n');
+    } else {
+      console.log('   ⚠️  No CRON_SECRET found - will rely on user session (may fail if not logged in)\n');
     }
     
     // Call the API endpoint
