@@ -34,7 +34,6 @@ export function useLast5GamesPrefetch({
             const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
             
             if (cacheAge < CACHE_TTL_MS) {
-              console.log(`[Dashboard] ✅ Last 5 Games data already cached for ${selectedTeam} (${Math.round(cacheAge / 1000)}s old)`);
               return; // Already cached and fresh
             }
           } catch (e) {
@@ -46,7 +45,6 @@ export function useLast5GamesPrefetch({
       }
       
       // Prefetch in background (non-blocking)
-      console.log(`[Dashboard] 🚀 Prefetching Last 5 Games data for ${selectedTeam}...`);
       const baseParams = `team=${encodeURIComponent(selectedTeam)}&season=${season}&lastNGames=5`;
       
       Promise.all([
@@ -63,13 +61,12 @@ export function useLast5GamesPrefetch({
               players: reboundingResult.players || [],
               __timestamp: Date.now()
             }));
-            console.log(`[Dashboard] ✅ Prefetched Last 5 Games data for ${selectedTeam} (${passingResult.players?.length || 0} passing, ${reboundingResult.players?.length || 0} rebounding)`);
           } catch (e) {
             // Ignore storage errors
           }
         }
-      }).catch(err => {
-        console.warn(`[Dashboard] ⚠️ Failed to prefetch Last 5 Games for ${selectedTeam}:`, err);
+      }).catch(() => {
+        // Ignore errors
       });
     };
     

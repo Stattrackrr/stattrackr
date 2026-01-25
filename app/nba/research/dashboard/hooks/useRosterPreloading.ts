@@ -25,7 +25,6 @@ export function useRosterPreloading({
       if (todaysGames.length === 0) return;
       
       setRosterCacheLoading(true);
-      console.log('🚀 Preloading all team rosters for instant switching...');
       
       // Get all unique teams from today's games
       const allTeams = new Set<string>();
@@ -33,8 +32,6 @@ export function useRosterPreloading({
         if (game.home_team?.abbreviation) allTeams.add(normalizeAbbr(game.home_team.abbreviation));
         if (game.visitor_team?.abbreviation) allTeams.add(normalizeAbbr(game.visitor_team.abbreviation));
       });
-      
-      console.log(`📋 Found ${allTeams.size} teams to preload:`, Array.from(allTeams));
       
       // Fetch all rosters with staggered delays to avoid rate limiting
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -47,7 +44,6 @@ export function useRosterPreloading({
           const roster = await fetchTeamDepthChart(team);
           results.push({ team, roster });
         } catch (error) {
-          console.warn(`Failed to preload roster for ${team}:`, error);
           results.push({ team, roster: null });
         }
         // Add 100ms delay between requests to respect rate limits
@@ -66,8 +62,6 @@ export function useRosterPreloading({
       
       setAllTeamRosters(rosterCache);
       setRosterCacheLoading(false);
-      
-      console.log(`✅ Preloaded ${Object.keys(rosterCache).length} team rosters for instant switching`);
 
       // Preload injuries for all teams we just cached so swaps show injury badges instantly
       try {
@@ -83,7 +77,7 @@ export function useRosterPreloading({
           }
         }
       } catch (err) {
-        console.warn('Failed to preload injuries for all teams:', err);
+        // Ignore errors
       }
     };
     

@@ -32,7 +32,6 @@ export function useTimeframeRestoration({
       
       // If URL has "thisseason", force it to "last10"
       if (urlTimeframe === 'thisseason' || selectedTimeframe === 'thisseason') {
-        console.log('[Dashboard] 🔄 FORCING timeframe from "thisseason" to "last10" in restore logic');
         setSelectedTimeframe('last10');
         if (typeof window !== 'undefined') {
           const newUrl = new URL(window.location.href);
@@ -45,7 +44,6 @@ export function useTimeframeRestoration({
       
       // Check if URL has a timeframe param - respect other values
       if (urlTimeframe && urlTimeframe !== 'thisseason') {
-        console.log('[Dashboard] ⚠️ Skipping timeframe restore - URL has timeframe param:', urlTimeframe);
         hasRestoredTimeframeRef.current = true;
         return;
       }
@@ -57,7 +55,6 @@ export function useTimeframeRestoration({
         if (saved && typeof saved === 'string') {
           const parsed = JSON.parse(saved);
           if (parsed?.selectedTimeframe && parsed.selectedTimeframe !== 'last10') {
-            console.log(`[Dashboard] 🔄 Restoring timeframe from session: "${parsed.selectedTimeframe}"`);
             setSelectedTimeframe(parsed.selectedTimeframe);
           }
         }

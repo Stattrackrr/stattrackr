@@ -17,12 +17,6 @@ export function useCountdownTimer({
   useEffect(() => {
     if (!nextGameTipoff || isGameInProgress) {
       setCountdown(null);
-      if (!nextGameTipoff) {
-        console.log('[Countdown] No tipoff time available');
-      }
-      if (isGameInProgress) {
-        console.log('[Countdown] Game in progress, hiding countdown');
-      }
       return;
     }
     
@@ -33,7 +27,6 @@ export function useCountdownTimer({
       
       if (diff <= 0) {
         setCountdown(null);
-        console.log('[Countdown] Game time has passed');
         return;
       }
       

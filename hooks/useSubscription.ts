@@ -18,15 +18,8 @@ export function useSubscription() {
     setLoading(true);
     try {
       const status = await checkSubscriptionStatus();
-      console.log('[useSubscription] Loaded subscription status:', status);
       setSubscriptionStatus(status);
-      
-      // Log access levels
-      const hasPremium = status.isActive && (status.tier === 'premium' || status.tier === 'pro');
-      const hasPro = status.isActive && status.tier === 'pro';
-      console.log('[useSubscription] Access levels:', { hasPremium, hasPro, tier: status.tier, isActive: status.isActive });
     } catch (error) {
-      console.error('[useSubscription] Error loading subscription:', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +65,6 @@ export function useSubscription() {
 
   // Refresh subscription status (call after upgrade/downgrade)
   const refresh = useCallback(async () => {
-    console.log('[useSubscription] Manually refreshing subscription status...');
     await loadSubscription();
   }, []);
 

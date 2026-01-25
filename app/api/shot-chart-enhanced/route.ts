@@ -428,6 +428,18 @@ export async function GET(request: NextRequest) {
     // Check cache (unless bypassed) - use NBA ID for cache key
     cacheKey = `shot_enhanced_${nbaPlayerId}_${opponentTeam || 'none'}_${season}`;
     
+    // If bypassCache, clear the shot chart cache for this player/opponent/season
+    if (bypassCache) {
+      try {
+        const { deleteNBACache } = await import('@/lib/nbaCache');
+        await deleteNBACache(cacheKey);
+        cache.delete(cacheKey);
+        console.log(`[shot-chart-enhanced] 🗑️ Cleared shot chart cache: ${cacheKey}`);
+      } catch (err) {
+        // Ignore cache deletion errors
+      }
+    }
+    
     const isProduction = process.env.NODE_ENV === 'production';
     
     // OPTIMIZATION: Check both caches in parallel for faster response
@@ -872,7 +884,22 @@ export async function GET(request: NextRequest) {
         if (rankings && Object.keys(rankings).length > 0) {
           defenseRankings = rankings;
           leagueAverageRankings = computeLeagueAverageRankings(rankings);
+          console.log(`[shot-chart-enhanced] ✅ Found defense rankings cache for season ${season}, teams: ${Object.keys(rankings).length}`);
+          if (opponentTeam && rankings[opponentTeam]) {
+            const oppRanks = rankings[opponentTeam];
+            console.log(`[shot-chart-enhanced] ✅ Opponent ${opponentTeam} ranks:`, {
+              restrictedArea: oppRanks.restrictedArea?.rank,
+              paint: oppRanks.paint?.rank,
+              midRange: oppRanks.midRange?.rank,
+              leftCorner3: oppRanks.leftCorner3?.rank,
+              rightCorner3: oppRanks.rightCorner3?.rank,
+              aboveBreak3: oppRanks.aboveBreak3?.rank
+            });
+          } else if (opponentTeam) {
+            console.log(`[shot-chart-enhanced] ⚠️ Opponent ${opponentTeam} not found in rankings. Available teams:`, Object.keys(rankings).slice(0, 10));
+          }
         } else {
+          console.log(`[shot-chart-enhanced] ⚠️ No defense rankings cache found for season ${season}, falling back to single team stats`);
           // Check for single team stats cache (without rank, but still useful)
           const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
           // Use shorter timeout (2s)
@@ -1028,9 +1055,20 @@ export async function GET(request: NextRequest) {
     if (opponentTeam && opponentTeam !== 'N/A' && defenseRankings && defenseRankings[opponentTeam]) {
       opponentRankings = defenseRankings[opponentTeam];
       opponentRankingsSource = 'team';
+      console.log(`[shot-chart-enhanced] ✅ Using team rankings for ${opponentTeam}:`, {
+        restrictedArea: opponentRankings.restrictedArea?.rank,
+        paint: opponentRankings.paint?.rank,
+        midRange: opponentRankings.midRange?.rank,
+        leftCorner3: opponentRankings.leftCorner3?.rank,
+        rightCorner3: opponentRankings.rightCorner3?.rank,
+        aboveBreak3: opponentRankings.aboveBreak3?.rank
+      });
     } else if (leagueAverageRankings) {
       opponentRankings = leagueAverageRankings;
       opponentRankingsSource = 'league_average';
+      console.log(`[shot-chart-enhanced] ⚠️ Using league average rankings (rank 0) for ${opponentTeam}`);
+    } else {
+      console.log(`[shot-chart-enhanced] ❌ No opponent rankings available for ${opponentTeam}`);
     }
 
     const response = {

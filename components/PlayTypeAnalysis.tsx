@@ -30,35 +30,20 @@ export function PlayTypeAnalysis({
   const [playTypeData, setPlayTypeData] = useState<PlayTypeData[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
 
-  // Log when component mounts/updates
-  useEffect(() => {
-    console.log('[PlayTypeAnalysis] Component mounted/updated', { 
-      playerId, 
-      opponentTeam, 
-      season,
-      hasPlayerId: !!playerId 
-    });
-  }, [playerId, opponentTeam, season]);
-
   // Only fetch data when the component is opened (isOpen is true)
   // This defers loading until user clicks to expand, improving initial page load
   useEffect(() => {
     const fetchData = async () => {
-      console.log('[PlayTypeAnalysis] useEffect triggered', { playerId, opponentTeam, season, isOpen });
-      
       // Only fetch when component is opened (user clicked to expand)
       if (!isOpen) {
-        console.log('[PlayTypeAnalysis] Component is closed, skipping fetch');
         return;
       }
       
       if (!playerId) {
-        console.log('[PlayTypeAnalysis] No playerId, skipping fetch');
         setLoading(false);
         return;
       }
 
-      console.log('[PlayTypeAnalysis] Starting fetch...');
       setLoading(true);
       setError(null);
 
@@ -74,8 +59,6 @@ export function PlayTypeAnalysis({
         }
 
         const url = `/api/play-type-analysis?${params.toString()}`;
-        console.log('[PlayTypeAnalysis] Fetching:', url);
-        console.log('[PlayTypeAnalysis] Full URL:', window.location.origin + url);
 
         const response = await fetch(url);
 
@@ -85,10 +68,8 @@ export function PlayTypeAnalysis({
           try {
             const errorData = await response.json();
             errorMessage = errorData.error || errorData.message || errorMessage;
-            console.error('[PlayTypeAnalysis] API error:', response.status, errorData);
           } catch {
             const errorText = await response.text().catch(() => '');
-            console.error('[PlayTypeAnalysis] API error:', response.status, errorText);
             if (errorText) {
               errorMessage = errorText.substring(0, 200);
             }
@@ -97,21 +78,15 @@ export function PlayTypeAnalysis({
         }
 
         const data = await response.json();
-        console.log('[PlayTypeAnalysis] Data received:', data);
-        console.log('[PlayTypeAnalysis] Play types:', data.playTypes?.length || 0);
-        console.log('[PlayTypeAnalysis] Total points:', data.totalPoints);
         
         // Filter out play types with 0.0 points
         const filteredPlayTypes = (data.playTypes || []).filter((playType: PlayTypeData) => 
           playType.points > 0
         );
         
-        console.log('[PlayTypeAnalysis] Filtered play types (removed 0.0):', filteredPlayTypes.length);
-        
         setPlayTypeData(filteredPlayTypes);
         setTotalPoints(data.totalPoints || 0);
       } catch (err: any) {
-        console.error('[PlayTypeAnalysis] Error:', err);
         setError(err.message);
       } finally {
         setLoading(false);

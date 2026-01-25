@@ -32,8 +32,6 @@ export function useAggressivePrefetch({
     // Mark as prefetched to avoid duplicate prefetches
     prefetchedRef.current.add(playerId);
 
-    console.log('[Aggressive Prefetch] 🚀 Starting parallel prefetch for player:', playerId);
-
     // Prefetch ALL critical data in parallel (non-blocking)
     Promise.allSettled([
       // 1. Prefetch stats (current season, regular season)
@@ -76,10 +74,7 @@ export function useAggressivePrefetch({
             30 * 60 * 1000 // 30 minutes
           ).catch(() => null)
         : Promise.resolve(null),
-    ]).then((results) => {
-      const successCount = results.filter((r) => r.status === 'fulfilled').length;
-      console.log(`[Aggressive Prefetch] ✅ Completed: ${successCount}/${results.length} prefetches successful`);
-    });
+    ]);
   }, [resolvedPlayerId, originalPlayerTeam, opponentTeam, selectedPlayer]);
 }
 

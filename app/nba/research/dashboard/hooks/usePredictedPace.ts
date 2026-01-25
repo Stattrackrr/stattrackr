@@ -57,7 +57,6 @@ export function usePredictedPace({
     // Clamp to reasonable NBA pace range (90-110)
     const clampedPace = Math.max(90, Math.min(110, calculatedPace));
     
-    console.log('[Dashboard] Calculated predicted pace from total:', { totalLine, calculatedPace, clampedPace });
     setPredictedPace(clampedPace);
   }, [realOddsData, selectedTeam, opponentTeam, propsMode, setPredictedPace]);
 }

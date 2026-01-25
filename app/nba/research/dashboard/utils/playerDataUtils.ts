@@ -22,8 +22,6 @@ export async function resolvePlayerId(fullName: string, teamAbbr?: string): Prom
  * Parse ESPN height format (total inches or "6'10") into feet and inches
  */
 export function parseEspnHeight(height: any): { feet?: number; inches?: number } {
-  console.log('🏀 ESPN height data:', height, 'Type:', typeof height);
-  
   if (!height) return {};
   
   // If it's a number (total inches)
@@ -31,7 +29,6 @@ export function parseEspnHeight(height: any): { feet?: number; inches?: number }
     const totalInches = parseInt(String(height), 10);
     const feet = Math.floor(totalInches / 12);
     const inches = totalInches % 12;
-    console.log(`🏀 Converted ${totalInches}" to ${feet}'${inches}"`);
     return { feet, inches };
   }
   
@@ -43,11 +40,9 @@ export function parseEspnHeight(height: any): { feet?: number; inches?: number }
   if (match) {
     const feet = parseInt(match[1], 10);
     const inches = parseInt(match[2], 10);
-    console.log(`🏀 Parsed height: ${feet}'${inches}"`);
     return { feet, inches };
   }
   
-  console.log(`❌ Could not parse height: "${heightStr}"`);
   return {};
 }
 
@@ -62,7 +57,6 @@ export async function fetchEspnPlayerDataCore(playerName: string, team?: string)
     const json = await res.json();
     return json.data || null;
   } catch (error) {
-    console.warn('Failed to fetch ESPN player data:', error);
     return null;
   }
 }
@@ -81,26 +75,13 @@ export async function fetchBdlPlayerData(playerId: string): Promise<any | null> 
   try {
     const res = await fetch(`/api/bdl/player/${playerId}`);
     if (!res.ok) {
-      console.warn(`❌ Failed to fetch BDL player data for ${playerId}: ${res.status}`);
       return null;
     }
     const json = await res.json();
     const playerData = json.data || null;
     
-    if (playerData) {
-      console.log(`✅ BDL player data fetched for ${playerId}:`, {
-        jersey_number: playerData.jersey_number,
-        height: playerData.height,
-        hasJersey: !!playerData.jersey_number && playerData.jersey_number !== '',
-        hasHeight: !!playerData.height && playerData.height !== ''
-      });
-    } else {
-      console.warn(`⚠️ BDL player data is null for ${playerId}`);
-    }
-    
     return playerData;
   } catch (error) {
-    console.warn('❌ Failed to fetch BDL player data:', error);
     return null;
   }
 }
@@ -168,7 +149,6 @@ export async function fetchShotDistanceStatsCore(playerId: string): Promise<any 
     
     return null;
   } catch (error) {
-    console.error('Failed to fetch shot distance stats:', error);
     return null;
   }
 }

@@ -26,14 +26,6 @@ export function useLastSeasonStatsFetch({
   const playerId = selectedPlayer?.id?.toString() || null;
 
   useEffect(() => {
-    console.log(`[useEffect lastseason] Triggered:`, {
-      selectedTimeframe,
-      hasSelectedPlayer: !!selectedPlayer?.id,
-      playerStatsLength: playerStats.length,
-      refPlayerId: lastSeasonGameIdFetchRef.current.playerId,
-      refAttempted: lastSeasonGameIdFetchRef.current.attempted
-    });
-    
     if (selectedTimeframe !== 'lastseason' || !playerId || playerStats.length === 0) {
       // Reset ref when not viewing last season
       if (selectedTimeframe !== 'lastseason') {
@@ -52,7 +44,6 @@ export function useLastSeasonStatsFetch({
     
     const lastSeasonStats = playerStats.filter(s => getSeasonYear(s) === lastSeason);
     if (lastSeasonStats.length === 0) {
-      console.log(`[useEffect lastseason] ⏸️ No last season stats found, skipping`);
       return;
     }
     
@@ -85,7 +76,6 @@ export function useLastSeasonStatsFetch({
     if (lastSeasonGameIdFetchRef.current.playerId === playerId && 
         lastSeasonGameIdFetchRef.current.attempted && 
         hasValidLastSeasonStats) {
-      console.log(`[useEffect lastseason] ⏸️ Already attempted for player ${playerId} and have valid stats, skipping`);
       return;
     }
     
@@ -99,8 +89,6 @@ export function useLastSeasonStatsFetch({
       // Mark as attempted NOW to prevent duplicate fetches
       lastSeasonGameIdFetchRef.current = { playerId, attempted: true };
       
-      console.log(`[useEffect lastseason] 🔧 Detected API data quality issue: all ${lastSeasonStats.length} last season stats have 0 minutes. Fetching by game_id...`);
-      
       // Identify ALL games where ATL appears - player was on ATL for those games
       // We know from the logs that there are 4 games where ATL appears
       const atlGames = lastSeasonStats.filter(s => {
@@ -109,14 +97,6 @@ export function useLastSeasonStatsFetch({
         return (homeTeam === 'ATL' || visitorTeam === 'ATL') && s.game?.id;
       });
       
-      console.log(`[useEffect lastseason] 🔍 Found ${atlGames.length} games where ATL appears (player was on ATL):`, atlGames.map(s => ({
-        gameId: s.game?.id,
-        date: s.game?.date,
-        homeTeam: s.game?.home_team?.abbreviation,
-        visitorTeam: s.game?.visitor_team?.abbreviation,
-        statTeam: s.team?.abbreviation
-      })));
-      
       // Get unique game IDs for games where ATL appears
       const gameIds = Array.from(new Set(
         atlGames
@@ -124,11 +104,7 @@ export function useLastSeasonStatsFetch({
           .filter((id): id is number => typeof id === 'number' && !isNaN(id))
       ));
       
-      console.log(`[useEffect lastseason] 🔍 Unique game IDs to fetch: ${gameIds.length}`, gameIds);
-      
       if (gameIds.length > 0) {
-        console.log(`[useEffect lastseason] 🔧 Found ${gameIds.length} games with player's previous team, fetching stats by game_id...`);
-        console.log(`[useEffect lastseason] 🔧 Game IDs to fetch:`, gameIds);
         
         // Fetch stats by game_id in batches (async, don't block)
         const fetchStatsByGameId = async () => {
@@ -145,29 +121,10 @@ export function useLastSeasonStatsFetch({
               const gameIdsStr = batch.join(',');
               const url = `/api/stats?player_id=${playerId}&game_ids=${gameIdsStr}&per_page=100&max_pages=1`;
               const requestId = `stats-${playerId}-games-${batch[0]}-${Date.now()}`;
-              console.log(`[useEffect lastseason] 🔧 Fetching stats for game IDs: ${gameIdsStr}`);
               const r = await queuedFetch(url, {}, requestId);
               const j = await r.json().catch(() => ({}));
               
-              console.log(`[useEffect lastseason] 🔧 API response:`, {
-                hasData: !!j?.data,
-                dataIsArray: Array.isArray(j?.data),
-                dataLength: Array.isArray(j?.data) ? j.data.length : 0,
-                error: j?.error,
-                fullResponse: j
-              });
-              
               const batchStats = (Array.isArray(j?.data) ? j.data : []) as BallDontLieStats[];
-              
-              console.log(`[useEffect lastseason] 🔧 Raw batch stats (${batchStats.length}):`, batchStats.slice(0, 3).map(s => ({
-                gameId: s.game?.id,
-                date: s.game?.date,
-                team: s.team?.abbreviation,
-                min: s.min,
-                pts: s.pts,
-                reb: s.reb,
-                ast: s.ast
-              })));
               
               // WORKAROUND: Even if stats have 0 minutes, if we know from game data that the player
               // was on ATL for these games, include them. The API has data quality issues for players
@@ -190,42 +147,20 @@ export function useLastSeasonStatsFetch({
                 const isIdentifiedAtlGame = gameId && gameIds.includes(gameId);
                 
                 if (isIdentifiedAtlGame) {
-                  console.log(`[useEffect lastseason] ✅ Including stat from identified ATL game (even with 0 minutes):`, {
-                    gameId,
-                    date: s.game?.date,
-                    team: s.team?.abbreviation,
-                    homeTeam: s.game?.home_team?.abbreviation,
-                    visitorTeam: s.game?.visitor_team?.abbreviation,
-                    min: s.min,
-                    pts: s.pts,
-                    reb: s.reb,
-                    ast: s.ast
-                  });
                   return true; // Always include stats from identified ATL games
                 }
                 
                 // For other games, only include if they have actual data
-                if (!hasActualData) {
-                  console.log(`[useEffect lastseason] 🔍 Filtered out stat (not identified ATL game, no data):`, {
-                    gameId,
-                    min: s.min,
-                    parsedMin: min,
-                    pts: s.pts
-                  });
-                }
                 return hasActualData;
               });
               
               statsByGameId.push(...validStats);
-              console.log(`[useEffect lastseason] 🔧 Fetched ${validStats.length} valid stats from ${batch.length} games (raw: ${batchStats.length})`);
             } catch (error: any) {
-              console.warn(`[useEffect lastseason] ⚠️ Error fetching stats by game_id for batch:`, error?.message || error);
+              // Ignore errors
             }
           }
           
           if (statsByGameId.length > 0) {
-            console.log(`[useEffect lastseason] ✅ Successfully fetched ${statsByGameId.length} stats by game_id. Updating playerStats...`);
-            
             // CORRECT THE TEAM: For stats from identified ATL games, fix the team abbreviation
             // The API returns stat.team=WAS, but we know the player was on ATL for these games
             const correctedStats = statsByGameId.map(stat => {
@@ -246,8 +181,6 @@ export function useLastSeasonStatsFetch({
                 // Ensure team.id is always a number (required by BallDontLieStats type)
                 // Use the team ID from game data if available, otherwise fall back to original or 0
                 const teamId: number = correctTeamId ?? stat.team?.id ?? 0;
-                
-                console.log(`[useEffect lastseason] 🔧 Correcting team for game ${gameId}: ${stat.team?.abbreviation} → ${correctTeam} (home: ${homeTeam}, visitor: ${visitorTeam}, teamId: ${teamId})`);
                 
                 return {
                   ...stat,
@@ -270,8 +203,6 @@ export function useLastSeasonStatsFetch({
             const currentSeasonStats = playerStats.filter(s => getSeasonYear(s) === currentNbaSeason());
             const lastSeasonStatsOriginal = playerStats.filter(s => getSeasonYear(s) === lastSeason);
             
-            console.log(`[useEffect lastseason] 📊 Before merge: current=${currentSeasonStats.length}, lastSeason original=${lastSeasonStatsOriginal.length}, corrected stats=${correctedStats.length}`);
-            
             // Create a map of game_id -> corrected stat for quick lookup
             const correctedStatsMap = new Map(correctedStats.map(s => [s.game?.id, s]));
             
@@ -279,7 +210,6 @@ export function useLastSeasonStatsFetch({
             const lastSeasonStatsCorrected = lastSeasonStatsOriginal.map(stat => {
               const gameId = stat.game?.id;
               if (gameId && correctedStatsMap.has(gameId)) {
-                console.log(`[useEffect lastseason] 🔄 Replacing stat for game ${gameId} with corrected version`);
                 return correctedStatsMap.get(gameId)!;
               }
               return stat;
@@ -293,30 +223,18 @@ export function useLastSeasonStatsFetch({
               return gameId && !originalGameIds.has(gameId);
             });
             
-            if (newStats.length > 0) {
-              console.log(`[useEffect lastseason] ➕ Adding ${newStats.length} new stats that weren't in original`);
-            }
-            
             // Combine: current season + corrected last season stats + any new stats
             const updatedStats = [...currentSeasonStats, ...lastSeasonStatsCorrected, ...newStats];
             
-            console.log(`[useEffect lastseason] 📊 After merge: current=${currentSeasonStats.length}, lastSeason=${lastSeasonStatsCorrected.length}, new=${newStats.length}, total=${updatedStats.length}`);
-            
             setPlayerStats(updatedStats);
-          } else {
-            console.warn(`[useEffect lastseason] ⚠️ No valid stats found when querying by game_id`);
           }
         };
         
         // Fetch asynchronously (don't block the UI)
-        fetchStatsByGameId().catch(err => {
-          console.error(`[useEffect lastseason] ❌ Error in fetchStatsByGameId:`, err);
+        fetchStatsByGameId().catch(() => {
+          // Ignore errors
         });
-      } else {
-        console.log(`[useEffect lastseason] ⏸️ No game IDs found to fetch`);
       }
-    } else {
-      console.log(`[useEffect lastseason] ✅ Last season stats have minutes, no fetch needed`);
     }
   }, [selectedTimeframe, playerId, playerStats, setPlayerStats]);
 }

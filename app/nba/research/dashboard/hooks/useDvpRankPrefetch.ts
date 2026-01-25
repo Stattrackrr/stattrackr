@@ -39,21 +39,10 @@ export function useDvpRankPrefetch({
   // Use ALL playerStats (not adjustedChartData) to ensure ranks are available for all games
   useEffect(() => {
     if (propsMode !== 'player' || !playerStats.length || !selectedStat) {
-      if (propsMode === 'player' && playerStats.length && !selectedPosition) {
-        console.log('[DvP Rank Prefetch] Waiting for selectedPosition to be determined...', {
-          playerName: selectedPlayer?.full,
-          hasPlayerStats: playerStats.length > 0,
-          hasRoster: !!playerTeamRoster
-        });
-      }
       return;
     }
     
     if (!selectedPosition) {
-      console.log('[DvP Rank Prefetch] Skipping - selectedPosition is null', {
-        playerName: selectedPlayer?.full,
-        hasPlayerStats: playerStats.length > 0
-      });
       return;
     }
 
@@ -95,15 +84,6 @@ export function useDvpRankPrefetch({
 
     // Mark as prefetching
     dvpRanksPrefetchRef.current.add(prefetchKey);
-    
-    console.log('[DvP Rank Prefetch] Starting prefetch', {
-      prefetchKey,
-      selectedPosition,
-      selectedStat,
-      dvpMetric,
-      playerStatsCount: playerStats.length,
-      playerName: selectedPlayer?.full
-    });
 
     // Prefetch in background (don't block UI)
     let isMounted = true;
@@ -181,16 +161,10 @@ export function useDvpRankPrefetch({
                   return { gameIdStr, rank };
                 }
                 // If historical lookup returned empty, fall through to current ranks
-              } else {
-                console.log(`[Prefetch] Historical API returned no ranks for ${dateStr} ${selectedPosition}:${dvpMetric}`, {
-                  success: historicalData.success,
-                  hasRanks: !!historicalData.ranks,
-                  note: historicalData.note
-                });
               }
             }
           } catch (historicalError) {
-            console.warn(`[Prefetch] Historical fetch failed for ${gameIdStr}:`, historicalError);
+            // Ignore errors
           }
           
           return { gameIdStr, rank: null, useCurrent: true };
@@ -216,14 +190,9 @@ export function useDvpRankPrefetch({
             );
             if (currentData) {
               currentRanks = currentData.metrics?.[dvpMetric] || {};
-              console.log(`[Prefetch] Fetched current ranks for ${selectedPosition}:${dvpMetric}:`, {
-                rankCount: Object.keys(currentRanks).length,
-                sampleTeams: Object.keys(currentRanks).slice(0, 5),
-                reason: !hasHistoricalRanks ? 'No historical ranks found, using current as fallback' : 'Some games need current ranks'
-              });
             }
           } catch (error) {
-            console.error(`[Prefetch] Failed to fetch current ranks:`, error);
+            // Ignore errors
           }
         }
         
@@ -263,24 +232,12 @@ export function useDvpRankPrefetch({
         });
         
         // Store prefetched data
-        const ranksWithValues = Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined);
-        const sampleRanksWithValues = ranksWithValues.slice(0, 5);
-        const sampleRanksNull = Object.entries(ranksByGame).filter(([_, rank]) => rank === null).slice(0, 5);
-        
-        console.log(`[DvP Rank Prefetch] Stored ranks for ${prefetchKey}:`, {
-          gameCount: Object.keys(ranksByGame).length,
-          ranksWithValues: ranksWithValues.length,
-          sampleRanksWithValues,
-          sampleRanksNull,
-          sampleGameIds: Object.keys(ranksByGame).slice(0, 10)
-        });
         setPrefetchedDvpRanks(prev => ({
           ...prev,
           [prefetchKey]: ranksByGame,
         }));
       } catch (error) {
         // Silent fail for prefetch
-        console.error('[Prefetch] Error prefetching DvP ranks:', error);
       }
     };
 
@@ -305,13 +262,6 @@ export function useDvpRankPrefetch({
     if (selectedFilterForAxis === 'dvp_rank') {
       // Need player position and selected stat to get the right prefetched data
       if (!selectedPosition || !selectedStat) {
-        console.log('[DvP Rank] Cannot use ranks - missing data:', {
-          hasPosition: !!selectedPosition,
-          hasStat: !!selectedStat,
-          selectedPosition,
-          selectedStat,
-          playerName: selectedPlayer?.full
-        });
         setDvpRanksPerGame({});
         return;
       }
@@ -342,21 +292,9 @@ export function useDvpRankPrefetch({
       
       if (prefetched) {
         // Use prefetched data immediately
-        console.log(`[DvP Rank] Using prefetched data for ${prefetchKey}:`, {
-          gameCount: Object.keys(prefetched).length,
-          sampleRanks: Object.entries(prefetched).slice(0, 5),
-          sampleGameIds: Object.keys(prefetched).slice(0, 5),
-          ranksWithValues: Object.entries(prefetched).filter(([_, rank]) => rank !== null && rank !== undefined).length
-        });
         setDvpRanksPerGame(prefetched);
       } else {
         // Fallback to empty (will trigger legacy fetch if needed)
-        console.log(`[DvP Rank] No prefetched data for ${prefetchKey}, waiting for prefetch...`, {
-          availableKeys: Object.keys(prefetchedDvpRanks),
-          selectedPosition,
-          dvpMetric,
-          prefetchKey
-        });
         setDvpRanksPerGame({});
       }
     } else {
@@ -407,11 +345,8 @@ export function useDvpRankPrefetch({
       const hasValidValues = Object.values(prefetched).some(v => v !== null && v !== undefined);
       if (hasValidValues) {
         // Already have prefetched data with valid values, skip fetch
-        console.log('[DvP Rank Legacy] Skipping - prefetched data has valid values');
-      return;
+        return;
       }
-      // Prefetched data exists but all values are null - still fetch to try to get data
-      console.log('[DvP Rank Legacy] Prefetched data exists but all values are null, fetching...');
     }
 
     let isMounted = true;
@@ -455,7 +390,7 @@ export function useDvpRankPrefetch({
             }
             // If historical API returned empty ranks or no match, fall through to use current ranks
           } catch (historicalError) {
-            console.warn(`[Second Axis] Failed to fetch historical rank for game ${gameIdStr}:`, historicalError);
+            // Ignore errors
           }
           
           // Fallback: use current ranks if historical lookup fails
@@ -470,7 +405,6 @@ export function useDvpRankPrefetch({
         
         if (needsCurrentRanks) {
           // Fetch current DvP ranks as fallback
-          console.log('[DvP Rank Legacy] Fetching current ranks...', { selectedPosition, dvpMetric });
           const currentData = await cachedFetch<any>(
             `/api/dvp/rank/batch?pos=${selectedPosition}&metrics=${dvpMetric}&games=82`,
             undefined,
@@ -479,13 +413,6 @@ export function useDvpRankPrefetch({
           
           if (currentData) {
             currentRanks = currentData.metrics?.[dvpMetric] || {};
-            console.log('[DvP Rank Legacy] Current ranks response:', {
-              hasMetrics: !!currentData.metrics,
-              hasDvpMetric: !!currentData.metrics?.[dvpMetric],
-              rankCount: Object.keys(currentRanks).length,
-              sampleTeams: Object.keys(currentRanks).slice(0, 10),
-              sampleRanks: Object.entries(currentRanks).slice(0, 5)
-            });
           }
         }
         
@@ -524,16 +451,6 @@ export function useDvpRankPrefetch({
                 }
                 
                 ranksByGame[result.gameIdStr] = typeof rank === 'number' && rank > 0 ? rank : null;
-                
-                // Log when we can't find a match
-                if (rank === null || rank === undefined) {
-                  console.log('[DvP Rank Legacy] No rank found for opponent:', {
-                    gameIdStr: result.gameIdStr,
-                    opponent,
-                    normalizedOpp,
-                    availableTeams: Object.keys(currentRanks).slice(0, 10)
-                  });
-                }
               } else {
                 ranksByGame[result.gameIdStr] = null;
               }
@@ -545,18 +462,8 @@ export function useDvpRankPrefetch({
           }
         });
         
-        console.log('[DvP Rank Legacy] Fetched ranks:', {
-          gameCount: Object.keys(ranksByGame).length,
-          ranksWithValues: Object.entries(ranksByGame).filter(([_, rank]) => rank !== null && rank !== undefined).length,
-          sampleRanks: Object.entries(ranksByGame).slice(0, 5),
-          sampleGamesWithOpponents: data.slice(0, 3).map((g: any) => ({
-            gameId: g.xKey || String(g.game?.id || g.stats?.game?.id || ''),
-            opponent: g.opponent || g.tickLabel || 'N/A'
-          }))
-        });
         setDvpRanksPerGame(ranksByGame);
       } catch (error) {
-        console.error('[Second Axis] Error fetching DvP ranks:', error);
         if (isMounted) {
           setDvpRanksPerGame({});
         }

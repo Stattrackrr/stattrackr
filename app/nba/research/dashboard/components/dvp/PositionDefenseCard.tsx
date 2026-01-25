@@ -151,7 +151,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             )
             .then(data => ({ type: 'team', data }))
             .catch((error: any) => {
-              console.error('[DVP Frontend] Team fetch error:', error);
               return { type: 'team', data: { error: error.message || 'Failed to fetch team data' } };
             })
           );
@@ -166,7 +165,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             )
             .then(data => ({ type: 'rank', data }))
             .catch((error: any) => {
-              console.error('[DVP Frontend] Rank fetch error:', error);
               return { type: 'rank', data: { error: error.message || 'Failed to fetch rank data' } };
             })
           );
@@ -182,11 +180,9 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             if (result.type === 'team') {
               // Handle rate limit (null) gracefully - skip update but don't show error
               if (result.data === null) {
-                console.warn('[DVP Frontend] Team data rate limited, using cached data if available');
                 return; // Skip this result, continue with cached data
               }
               if (!result.data || result.data?.error) {
-                console.error('[DVP Frontend] Team data error:', result.data?.error || 'No data returned');
                 // Don't set error if we have cached data - allow fallback to cached data
                 if (!teamCached) {
                   setError('Unable to load data. Please try again.');
@@ -198,29 +194,15 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             } else if (result.type === 'rank') {
               // Handle rate limit (null) gracefully - skip update but don't show error
               if (result.data === null) {
-                console.warn('[DVP Frontend] Rank data rate limited, using cached data if available');
                 return; // Skip this result, continue with cached data
               }
               if (!result.data || result.data?.error) {
-                console.error('[DVP Frontend] Rank data error:', result.data?.error || 'No data returned');
                 // Don't set error if we have cached data - allow fallback to cached data
                 if (!rankCached) {
                   setError('Unable to load data. Please try again.');
                 }
                 return;
               }
-              // Debug: log rank data structure
-              console.log('[DVP Frontend] Rank data received:', {
-                hasData: !!result.data,
-                hasMetrics: !!result.data?.metrics,
-                metricKeys: result.data?.metrics ? Object.keys(result.data.metrics) : [],
-                sampleMetric: result.data?.metrics?.pts ? {
-                  teamCount: Object.keys(result.data.metrics.pts).length,
-                  sampleTeams: Object.keys(result.data.metrics.pts).slice(0, 5),
-                  fullPtsData: result.data.metrics.pts // Log the full object to see structure
-                } : null,
-                fullData: result.data // Log full response to debug
-              });
               rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
               dvpRankCache.set(rankCacheKey, rankData);
             }
@@ -232,68 +214,17 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             const rmap: Record<string, number | null> = {};
             const normalizedOpp = normalizeAbbr(targetOpp);
             
-            // Debug: log rank data structure before extraction
-            console.log('[DVP Frontend] Extracting ranks:', {
-              hasRankData: !!rankData,
-              hasMetrics: !!rankData.metrics,
-              metricKeys: rankData.metrics ? Object.keys(rankData.metrics) : [],
-              normalizedOpp,
-              targetPos,
-              sampleRankData: rankData.metrics?.pts ? {
-                teamKeys: Object.keys(rankData.metrics.pts).slice(0, 10),
-                oppRank: rankData.metrics.pts[normalizedOpp],
-                oppRankType: typeof rankData.metrics.pts[normalizedOpp]
-              } : null
-            });
-            // Also log the actual rank values for each metric
-            if (rankData.metrics) {
-              console.log('[DVP Frontend] Rank values for', normalizedOpp, ':', 
-                Object.entries(rankData.metrics).map(([metric, ranks]: [string, any]) => {
-                  const rank = ranks?.[normalizedOpp];
-                  return `${metric}: ${rank !== undefined ? rank : 'undefined'}`;
-                }).join(', ')
-              );
-            }
-            
             for (const m of DVP_METRICS) {
               const perGame = dvpData.metrics?.[m.key];
               const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
               map[m.key] = typeof value === 'number' ? value : null;
               
               const ranks = rankData.metrics?.[m.key] || {};
-              
-              // Debug: log what we're looking for and what's available
-              if (m.key === 'pts') { // Only log for first metric to avoid spam
-                console.log('[DVP Frontend] Looking for rank:', {
-                  metric: m.key,
-                  normalizedOpp,
-                  availableTeamKeys: Object.keys(ranks).slice(0, 10),
-                  allTeamKeys: Object.keys(ranks).sort(),
-                  foundRank: ranks[normalizedOpp],
-                  rankType: typeof ranks[normalizedOpp],
-                  sampleRanks: Object.fromEntries(Object.entries(ranks).slice(0, 5))
-                });
-              }
-              
               const rank = ranks?.[normalizedOpp] as number | undefined;
               
               // Accept 0 as a valid rank (means team has null value)
               rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }
-            
-            // Debug: log extracted ranks
-            const nonNullRanks = Object.entries(rmap).filter(([_, v]) => v !== null);
-            console.log('[DVP Frontend] Extracted ranks result:', {
-              normalizedOpp,
-              targetPos,
-              nonNullRanksCount: nonNullRanks.length,
-              ranks: nonNullRanks,
-              allRanks: rmap
-            });
-            // Log each rank value explicitly
-            console.log('[DVP Frontend] Rank values:', 
-              Object.entries(rmap).map(([metric, rank]) => `${metric}=${rank}`).join(', ')
-            );
             
             setPerStat(map);
             setPerRank(rmap);
@@ -360,7 +291,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
           setLoading(false);
         }
       } catch (e: any) {
-        console.error('[DVP Frontend] Error:', e);
         if (!abort) setError('Unable to load data. Please try again.');
       } finally {
         if (!abort) setLoading(false);
@@ -418,7 +348,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             if (result.type === 'team') {
               // Skip if rate limited (null) - don't overwrite cache with null
               if (result.data === null) {
-                console.warn('[DVP Frontend] Team data rate limited, keeping existing cache');
                 return;
               }
               if (result.data?.metrics) {
@@ -427,7 +356,6 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
             } else if (result.type === 'rank') {
               // Skip if rate limited (null) - don't overwrite cache with null
               if (result.data === null) {
-                console.warn('[DVP Frontend] Rank data rate limited, keeping existing cache');
                 return;
               }
               if (result.data?.metrics) {

@@ -32,12 +32,8 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
       .single();
 
     if (profileError) {
-      console.error('[Subscription] Profile query error:', profileError);
       // If it's a "not found" error, that's OK - fall through to metadata
-      // But log other errors
-      if (profileError.code !== 'PGRST116') {
-        console.error('[Subscription] Unexpected profile error:', profileError);
-      }
+      // Ignore other errors
     }
 
     if (profile) {
@@ -50,14 +46,6 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
       } else if (profileData.subscription_tier === 'premium') {
         tier = 'premium';
       }
-      
-      console.log('[Subscription] Profile data:', {
-        userId: user.id,
-        subscription_status: profileData.subscription_status,
-        subscription_tier: profileData.subscription_tier,
-        isActive,
-        tier,
-      });
       
       return {
         tier,
@@ -99,7 +87,6 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
       trialEndsAt,
     };
   } catch (error) {
-    console.error('Error checking subscription status:', error);
     return {
       tier: 'free',
       isActive: false,

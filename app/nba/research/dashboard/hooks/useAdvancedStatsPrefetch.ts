@@ -70,7 +70,6 @@ export function useAdvancedStatsPrefetch({
     
     if (advancedStatsPrefetchRef.current.has(prefetchKey)) {
       // Already prefetching or prefetched for these games
-      console.log('[Usage Rate Prefetch] Already prefetching/prefetched for player', playerId);
       return;
     }
 
@@ -79,18 +78,11 @@ export function useAdvancedStatsPrefetch({
     if (missingGameIds.length === 0 && gameIds.length > 0) {
       // Already prefetched all games, mark as done
       advancedStatsPrefetchRef.current.add(prefetchKey);
-      console.log('[Usage Rate Prefetch] Already have all prefetched data for', gameIds.length, 'games');
       return;
-    }
-    
-    // If we have some but not all, still fetch (will merge with existing)
-    if (missingGameIds.length < gameIds.length) {
-      console.log('[Usage Rate Prefetch] Have', gameIds.length - missingGameIds.length, 'games, fetching', missingGameIds.length, 'missing');
     }
 
     // Mark as prefetching
     advancedStatsPrefetchRef.current.add(prefetchKey);
-    console.log('[Usage Rate Prefetch] Starting prefetch for player', playerId, 'with', gameIds.length, 'games');
     
     let isMounted = true;
     const prefetchAdvancedStats = async () => {
@@ -111,15 +103,12 @@ export function useAdvancedStatsPrefetch({
           }
         });
         
-        console.log('[Usage Rate Prefetch] Fetched', Object.keys(statsByGame).length, 'games with usage rate data');
         setPrefetchedAdvancedStats(prev => ({ ...prev, ...statsByGame }));
       } catch (error: any) {
         // Handle rate limit errors gracefully - don't throw, just log
         if (error?.status === 429 || error?.message?.includes('Rate limit')) {
-          console.warn('[Prefetch] Rate limit hit, skipping prefetch. Will retry later.');
           return;
         }
-        console.error('[Prefetch] Error prefetching advanced stats:', error);
       }
     };
 
@@ -212,12 +201,10 @@ export function useAdvancedStatsPrefetch({
       } catch (error: any) {
         // Handle rate limit errors gracefully - don't throw, just log
         if (error?.status === 429 || error?.message?.includes('Rate limit')) {
-          console.warn('[Second Axis] Rate limit hit, skipping fetch. Will retry later.');
           if (isMounted) {
             return;
           }
         }
-        console.error('[Second Axis] Error fetching advanced stats:', error);
         if (isMounted) {
           setAdvancedStatsPerGame({});
         }

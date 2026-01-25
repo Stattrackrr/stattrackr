@@ -38,11 +38,11 @@ interface EnhancedShotData {
     aboveBreak3: EnhancedZone;
   };
   opponentDefense?: {
-    restrictedArea: EnhancedZone;
-    paint: EnhancedZone;
-    midRange: EnhancedZone;
-    corner3: EnhancedZone;
-    aboveBreak3: EnhancedZone;
+    restrictedArea: OpponentZoneDefense;
+    paint: OpponentZoneDefense;
+    midRange: OpponentZoneDefense;
+    corner3: OpponentZoneDefense;
+    aboveBreak3: OpponentZoneDefense;
   } | null;
   opponentRankings?: {
     restrictedArea: ZoneRanking;
@@ -100,13 +100,10 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   const [showOppDef, setShowOppDef] = useState(false); // Show opponent defense
   const [showOppDefMakes, setShowOppDefMakes] = useState(false); // Show opponent defense makes (vs attempts)
 
-  // Removed console.log to prevent spam - component renders frequently
-
   // Set 20-second timeout before allowing fallback to BallDontLie
   useEffect(() => {
     setAllowFallback(false);
     const timeout = setTimeout(() => {
-      console.log('[Shot Chart] 20 seconds passed, allowing BallDontLie fallback');
       setAllowFallback(true);
     }, 20000); // 20 seconds
 
@@ -116,11 +113,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
   // Fetch enhanced shot data from NBA Stats API - LAZY LOAD after 2 seconds
   // This defers loading until after stats are displayed, improving initial page load
   useEffect(() => {
-    // Removed excessive logging
-    // console.log('[Shot Chart] useEffect triggered:', { playerId, opponentTeam, hasShotData: !!shotData });
-    
     if (!playerId) {
-      console.warn('[Shot Chart] No playerId provided, clearing data');
       setEnhancedData(null); // Clear data when no player
       setEnhancedLoading(false);
       return;
@@ -136,11 +129,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         // Convert BallDontLie ID to NBA Stats ID
         const nbaPlayerId = getNbaStatsId(playerId);
         
-        // Removed excessive logging
-        // console.log('[Shot Chart] Converting player ID:', { original: playerId, converted: nbaPlayerId });
-        
         if (!nbaPlayerId) {
-          // console.warn('[Shot Chart] Failed to convert player ID:', playerId);
           setEnhancedData(null); // Clear data on conversion failure
           setEnhancedError(`Failed to convert player ID: ${playerId}`);
           setEnhancedLoading(false);
@@ -153,14 +142,12 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
         try {
           // Ensure we're in the browser before fetching
           if (typeof window === 'undefined') {
-            console.warn('[Shot Chart] Skipping fetch - not in browser environment');
             setEnhancedLoading(false);
             return;
           }
 
-          const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
-          // Removed excessive logging
-          // console.log('[Shot Chart] Fetching from:', url);
+          // Add bypassCache to force fresh rankings after cache population
+          const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}&bypassCache=true`;
           
           // Add timeout and better error handling
           const controller = new AbortController();
@@ -186,34 +173,13 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           
           if (response.ok) {
             const data = await response.json();
-            // Removed excessive logging
-            // console.log('[Shot Chart] Enhanced data loaded for player:', nbaPlayerId, 'Data:', data);
-            // console.log('[Shot Chart] Data validation:', {
-            //   hasShotZones: !!data.shotZones,
-            //   shotZonesKeys: data.shotZones ? Object.keys(data.shotZones) : [],
-            //   totalAttempts: data.shotZones ? (
-            //     (data.shotZones.restrictedArea?.fga || 0) +
-            //     (data.shotZones.paint?.fga || 0) +
-            //     (data.shotZones.midRange?.fga || 0) +
-            //     (data.shotZones.leftCorner3?.fga || 0) +
-            //     (data.shotZones.rightCorner3?.fga || 0) +
-            //     (data.shotZones.aboveBreak3?.fga || 0)
-            //   ) : 0
-            // });
             
             // Check if API returned an error in the response body (even with 200 status)
             // But if we have shotZones data (even if empty), use it - don't treat as error
             if (data.error && !data.shotZones) {
-              console.error('[Shot Chart] API returned error in response:', data.error);
               setEnhancedData(null);
               setEnhancedError(data.error || 'Failed to load shot chart data');
               return;
-            }
-            
-            // If we have stale data, log it but still use it
-            if (data.stale) {
-              // Removed excessive logging
-              // console.log('[Shot Chart] Using stale cached data (expired but still valid)');
             }
             
             // Validate that we have actual shot data
@@ -224,35 +190,14 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                                (data.shotZones?.rightCorner3?.fga || 0) +
                                (data.shotZones?.aboveBreak3?.fga || 0);
             
-            // Removed excessive logging
-            // console.log('[Shot Chart] Validation check:', {
-            //   totalAttempts,
-            //   hasShotZones: !!data.shotZones,
-            //   shotZonesStructure: data.shotZones ? Object.keys(data.shotZones) : []
-            // });
-            
             // Only reject if we have no shot zones object at all
             // Allow data through if shotZones exists, even if totalAttempts is 0 (might be a calculation issue or empty season)
             if (!data.shotZones) {
-              console.warn('[Shot Chart] No shot zones in response for player:', nbaPlayerId, {
-                hasShotZones: !!data.shotZones,
-                totalAttempts,
-                dataKeys: Object.keys(data),
-                fullData: data
-              });
               setEnhancedData(null);
               setEnhancedError('No shot chart data available for this player');
               setEnhancedLoading(false);
               return;
             }
-            
-            // Warn if total attempts is 0 but still allow the data through (might be valid for a player with no shots)
-            if (totalAttempts === 0) {
-              console.warn('[Shot Chart] Warning: Total attempts is 0 for player:', nbaPlayerId, 'but shotZones exists');
-            }
-            
-            // Removed excessive logging
-            // console.log('[Shot Chart] ✅ Setting enhanced data for player:', nbaPlayerId, 'with', totalAttempts, 'total attempts');
             setEnhancedData(data);
             setEnhancedError(null); // Clear any previous errors
           } else {
@@ -261,10 +206,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             try {
               const errorData = await response.json();
               errorMessage = errorData.error || errorData.message || errorMessage;
-              console.error('[Shot Chart] API returned error:', response.status, errorData);
             } catch {
               const errorText = await response.text().catch(() => '');
-              console.error('[Shot Chart] API returned error:', response.status, errorText);
               if (errorText) {
                 errorMessage = errorText.substring(0, 200);
               }
@@ -273,7 +216,6 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             setEnhancedError(errorMessage);
           }
         } catch (err: any) {
-          console.error('[Shot Chart] Error fetching enhanced data:', err);
           setEnhancedData(null);
           
           // Provide more specific error messages
@@ -698,16 +640,6 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       </>
     );
   };
-  
-  // Removed excessive logging - was causing performance issues
-  // if (enhancedData) {
-  //   console.log('[Shot Chart] ✅ Rendering chart with enhanced data:', {
-  //     playerId,
-  //     hasShotZones: !!enhancedData.shotZones,
-  //     zonesCount: enhancedData.shotZones ? Object.keys(enhancedData.shotZones).length : 0
-  //   });
-  // }
-
   // Use the same court dimensions for actual chart (already calculated above)
   const midRangeWidth = 80; // Width of mid-range zone
 
@@ -763,7 +695,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           >
             Makes
           </button>
-          {(enhancedData?.opponentRankings || enhancedData?.opponentDefense) && (
+          {enhancedData?.opponentRankings && (
             <>
               <button
                 onClick={() => {
@@ -776,7 +708,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                     : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                Opp Def
+                Opp Def Rank
               </button>
             </>
           )}
@@ -807,11 +739,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 L 150 ${baseline} 
                 L 15 ${baseline} 
                 Q 0 ${baseline} 0 ${baseline - 15} Z`}
-            fill={showOppDef && (enhancedData?.opponentRankings?.leftCorner3 || enhancedData?.opponentDefense?.corner3)
-              ? getColorForRank(
-                  enhancedData.opponentRankings?.leftCorner3?.rank || 0, 
-                  enhancedData.opponentRankings?.leftCorner3?.fgPct || enhancedData.opponentDefense?.corner3?.fgPct || 0
-                ) 
+            fill={showOppDef && enhancedData?.opponentRankings?.leftCorner3 
+              ? getColorForRank(enhancedData.opponentRankings.leftCorner3.rank, enhancedData.opponentRankings.leftCorner3.fgPct) 
               : getColorForDistribution(distributions[3] || 0)}
             stroke="none"
           />
@@ -838,11 +767,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           y={freeThrowLine}
           width={paintWidth}
           height={baseline - freeThrowLine}
-          fill={showOppDef && (enhancedData?.opponentRankings?.paint || enhancedData?.opponentDefense?.paint)
-            ? getColorForRank(
-                enhancedData.opponentRankings?.paint?.rank || 0, 
-                enhancedData.opponentRankings?.paint?.fgPct || enhancedData.opponentDefense?.paint?.fgPct || 0
-              ) 
+          fill={showOppDef && enhancedData?.opponentRankings?.paint 
+            ? getColorForRank(enhancedData.opponentRankings.paint.rank, enhancedData.opponentRankings.paint.fgPct) 
             : getColorForDistribution(distributions[1] || 0)}
           stroke="none"
         />
@@ -853,11 +779,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               L ${centerX - 60} ${baseline - 60} 
               Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
               L ${centerX + 60} ${baseline} Z`}
-          fill={showOppDef && (enhancedData?.opponentRankings?.restrictedArea || enhancedData?.opponentDefense?.restrictedArea)
-            ? getColorForRank(
-                enhancedData.opponentRankings?.restrictedArea?.rank || 0, 
-                enhancedData.opponentRankings?.restrictedArea?.fgPct || enhancedData.opponentDefense?.restrictedArea?.fgPct || 0
-              ) 
+          fill={showOppDef && enhancedData?.opponentRankings?.restrictedArea 
+            ? getColorForRank(enhancedData.opponentRankings.restrictedArea.rank, enhancedData.opponentRankings.restrictedArea.fgPct) 
             : getColorForDistribution(distributions[0] || 0)}
           stroke="#000"
           strokeWidth="3"
@@ -892,11 +815,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 Q 0 ${baseline} 0 ${baseline - 15} 
                 L 0 15 
                 Q 0 0 15 0 Z`}
-          fill={showOppDef && (enhancedData?.opponentRankings?.aboveBreak3 || enhancedData?.opponentDefense?.aboveBreak3)
-            ? getColorForRank(
-                enhancedData.opponentRankings?.aboveBreak3?.rank || 0, 
-                enhancedData.opponentRankings?.aboveBreak3?.fgPct || enhancedData.opponentDefense?.aboveBreak3?.fgPct || 0
-              ) 
+          fill={showOppDef && enhancedData?.opponentRankings?.aboveBreak3 
+            ? getColorForRank(enhancedData.opponentRankings.aboveBreak3.rank, enhancedData.opponentRankings.aboveBreak3.fgPct) 
             : getColorForDistribution(distributions[enhancedData ? 5 : 4] || 0)}
         />
         
@@ -920,11 +840,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} 
               L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
               Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
-          fill={showOppDef && (enhancedData?.opponentRankings?.midRange || enhancedData?.opponentDefense?.midRange)
-            ? getColorForRank(
-                enhancedData.opponentRankings?.midRange?.rank || 0, 
-                enhancedData.opponentRankings?.midRange?.fgPct || enhancedData.opponentDefense?.midRange?.fgPct || 0
-              ) 
+          fill={showOppDef && enhancedData?.opponentRankings?.midRange 
+            ? getColorForRank(enhancedData.opponentRankings.midRange.rank, enhancedData.opponentRankings.midRange.fgPct) 
             : getColorForDistribution(distributions[2] || 0)}
           stroke="none"
         />
@@ -1077,7 +994,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       </svg>
       
       {/* Color Legend */}
-      {showOppDef && (enhancedData?.opponentRankings || enhancedData?.opponentDefense) ? (
+      {showOppDef && enhancedData?.opponentRankings ? (
         <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
           <span className="text-gray-700 dark:text-gray-300">Defense Ranking:</span>
           <div className="flex items-center gap-1">
