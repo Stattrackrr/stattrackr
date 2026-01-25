@@ -38,11 +38,11 @@ interface EnhancedShotData {
     aboveBreak3: EnhancedZone;
   };
   opponentDefense?: {
-    restrictedArea: OpponentZoneDefense;
-    paint: OpponentZoneDefense;
-    midRange: OpponentZoneDefense;
-    corner3: OpponentZoneDefense;
-    aboveBreak3: OpponentZoneDefense;
+    restrictedArea: EnhancedZone;
+    paint: EnhancedZone;
+    midRange: EnhancedZone;
+    corner3: EnhancedZone;
+    aboveBreak3: EnhancedZone;
   } | null;
   opponentRankings?: {
     restrictedArea: ZoneRanking;
@@ -763,7 +763,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           >
             Makes
           </button>
-          {enhancedData?.opponentRankings && (
+          {(enhancedData?.opponentRankings || enhancedData?.opponentDefense) && (
             <>
               <button
                 onClick={() => {
@@ -776,7 +776,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                     : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                Opp Def Rank
+                Opp Def
               </button>
             </>
           )}
@@ -807,8 +807,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 L 150 ${baseline} 
                 L 15 ${baseline} 
                 Q 0 ${baseline} 0 ${baseline - 15} Z`}
-            fill={showOppDef && enhancedData?.opponentRankings?.leftCorner3 
-              ? getColorForRank(enhancedData.opponentRankings.leftCorner3.rank, enhancedData.opponentRankings.leftCorner3.fgPct) 
+            fill={showOppDef && (enhancedData?.opponentRankings?.leftCorner3 || enhancedData?.opponentDefense?.corner3)
+              ? getColorForRank(
+                  enhancedData.opponentRankings?.leftCorner3?.rank || 0, 
+                  enhancedData.opponentRankings?.leftCorner3?.fgPct || enhancedData.opponentDefense?.corner3?.fgPct || 0
+                ) 
               : getColorForDistribution(distributions[3] || 0)}
             stroke="none"
           />
@@ -835,8 +838,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
           y={freeThrowLine}
           width={paintWidth}
           height={baseline - freeThrowLine}
-          fill={showOppDef && enhancedData?.opponentRankings?.paint 
-            ? getColorForRank(enhancedData.opponentRankings.paint.rank, enhancedData.opponentRankings.paint.fgPct) 
+          fill={showOppDef && (enhancedData?.opponentRankings?.paint || enhancedData?.opponentDefense?.paint)
+            ? getColorForRank(
+                enhancedData.opponentRankings?.paint?.rank || 0, 
+                enhancedData.opponentRankings?.paint?.fgPct || enhancedData.opponentDefense?.paint?.fgPct || 0
+              ) 
             : getColorForDistribution(distributions[1] || 0)}
           stroke="none"
         />
@@ -847,8 +853,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               L ${centerX - 60} ${baseline - 60} 
               Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} 
               L ${centerX + 60} ${baseline} Z`}
-          fill={showOppDef && enhancedData?.opponentRankings?.restrictedArea 
-            ? getColorForRank(enhancedData.opponentRankings.restrictedArea.rank, enhancedData.opponentRankings.restrictedArea.fgPct) 
+          fill={showOppDef && (enhancedData?.opponentRankings?.restrictedArea || enhancedData?.opponentDefense?.restrictedArea)
+            ? getColorForRank(
+                enhancedData.opponentRankings?.restrictedArea?.rank || 0, 
+                enhancedData.opponentRankings?.restrictedArea?.fgPct || enhancedData.opponentDefense?.restrictedArea?.fgPct || 0
+              ) 
             : getColorForDistribution(distributions[0] || 0)}
           stroke="#000"
           strokeWidth="3"
@@ -883,8 +892,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
                 Q 0 ${baseline} 0 ${baseline - 15} 
                 L 0 15 
                 Q 0 0 15 0 Z`}
-          fill={showOppDef && enhancedData?.opponentRankings?.aboveBreak3 
-            ? getColorForRank(enhancedData.opponentRankings.aboveBreak3.rank, enhancedData.opponentRankings.aboveBreak3.fgPct) 
+          fill={showOppDef && (enhancedData?.opponentRankings?.aboveBreak3 || enhancedData?.opponentDefense?.aboveBreak3)
+            ? getColorForRank(
+                enhancedData.opponentRankings?.aboveBreak3?.rank || 0, 
+                enhancedData.opponentRankings?.aboveBreak3?.fgPct || enhancedData.opponentDefense?.aboveBreak3?.fgPct || 0
+              ) 
             : getColorForDistribution(distributions[enhancedData ? 5 : 4] || 0)}
         />
         
@@ -908,8 +920,11 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
               Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} 
               L ${paintRight + midRangeWidth} ${freeThrowLine - 50} 
               Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
-          fill={showOppDef && enhancedData?.opponentRankings?.midRange 
-            ? getColorForRank(enhancedData.opponentRankings.midRange.rank, enhancedData.opponentRankings.midRange.fgPct) 
+          fill={showOppDef && (enhancedData?.opponentRankings?.midRange || enhancedData?.opponentDefense?.midRange)
+            ? getColorForRank(
+                enhancedData.opponentRankings?.midRange?.rank || 0, 
+                enhancedData.opponentRankings?.midRange?.fgPct || enhancedData.opponentDefense?.midRange?.fgPct || 0
+              ) 
             : getColorForDistribution(distributions[2] || 0)}
           stroke="none"
         />
@@ -1062,7 +1077,7 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
       </svg>
       
       {/* Color Legend */}
-      {showOppDef && enhancedData?.opponentRankings ? (
+      {showOppDef && (enhancedData?.opponentRankings || enhancedData?.opponentDefense) ? (
         <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
           <span className="text-gray-700 dark:text-gray-300">Defense Ranking:</span>
           <div className="flex items-center gap-1">

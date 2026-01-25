@@ -934,9 +934,93 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Note: Opponent defense data is now handled via rankings (see defenseRankings above)
-    // The old per-team defense fetching has been deprecated in favor of league-wide rankings
-    const opponentDefense = null; // Deprecated, keeping for backwards compatibility
+    // Fetch opponent defense stats (single team) - synchronous fetch for immediate display
+    let opponentDefense = null;
+    if (opponentTeam && opponentTeam !== 'N/A' && NBA_TEAM_MAP[opponentTeam]) {
+      try {
+        const singleTeamStats = await fetchSingleTeamDefenseStats(
+          opponentTeam, 
+          NBA_TEAM_MAP[opponentTeam], 
+          seasonStr, 
+          season
+        );
+        
+        if (singleTeamStats) {
+          // Convert to opponentDefense format (matches old structure)
+          opponentDefense = {
+            restrictedArea: {
+              fgm: singleTeamStats.restrictedArea.made,
+              fga: singleTeamStats.restrictedArea.attempted,
+              fgPct: singleTeamStats.restrictedArea.fgPct,
+              pts: singleTeamStats.restrictedArea.pts
+            },
+            paint: {
+              fgm: singleTeamStats.paint.made,
+              fga: singleTeamStats.paint.attempted,
+              fgPct: singleTeamStats.paint.fgPct,
+              pts: singleTeamStats.paint.pts
+            },
+            midRange: {
+              fgm: singleTeamStats.midRange.made,
+              fga: singleTeamStats.midRange.attempted,
+              fgPct: singleTeamStats.midRange.fgPct,
+              pts: singleTeamStats.midRange.pts
+            },
+            corner3: {
+              fgm: (singleTeamStats.leftCorner3.made + singleTeamStats.rightCorner3.made),
+              fga: (singleTeamStats.leftCorner3.attempted + singleTeamStats.rightCorner3.attempted),
+              fgPct: (singleTeamStats.leftCorner3.attempted + singleTeamStats.rightCorner3.attempted) > 0
+                ? ((singleTeamStats.leftCorner3.made + singleTeamStats.rightCorner3.made) / 
+                   (singleTeamStats.leftCorner3.attempted + singleTeamStats.rightCorner3.attempted)) * 100
+                : 0,
+              pts: (singleTeamStats.leftCorner3.pts + singleTeamStats.rightCorner3.pts)
+            },
+            aboveBreak3: {
+              fgm: singleTeamStats.aboveBreak3.made,
+              fga: singleTeamStats.aboveBreak3.attempted,
+              fgPct: singleTeamStats.aboveBreak3.fgPct,
+              pts: singleTeamStats.aboveBreak3.pts
+            }
+          };
+          
+          // Also add to defenseRankings if not already present (for rankings display)
+          if (!defenseRankings || !defenseRankings[opponentTeam]) {
+            if (!defenseRankings) {
+              defenseRankings = {};
+            }
+            defenseRankings[opponentTeam] = {
+              restrictedArea: {
+                ...singleTeamStats.restrictedArea,
+                rank: 0 // No rank available without all teams comparison
+              },
+              paint: {
+                ...singleTeamStats.paint,
+                rank: 0
+              },
+              midRange: {
+                ...singleTeamStats.midRange,
+                rank: 0
+              },
+              leftCorner3: {
+                ...singleTeamStats.leftCorner3,
+                rank: 0
+              },
+              rightCorner3: {
+                ...singleTeamStats.rightCorner3,
+                rank: 0
+              },
+              aboveBreak3: {
+                ...singleTeamStats.aboveBreak3,
+                rank: 0
+              }
+            };
+          }
+        }
+      } catch (err) {
+        // Ignore errors - opponentDefense will remain null
+        console.error('[shot-chart-enhanced] Error fetching single team defense:', err);
+      }
+    }
 
     // Add opponent defense rankings if available
     let opponentRankings = null;
