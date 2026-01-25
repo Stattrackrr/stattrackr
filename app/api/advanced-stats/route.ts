@@ -102,10 +102,8 @@ export async function GET(req: NextRequest) {
     if (!forceRefresh) {
       const cached = cache.get<any>(cacheKey);
       if (cached) {
-        console.log(`[Advanced Stats API] Cache HIT for ${cacheKey}`);
         return NextResponse.json(cached, { status: 200 });
       }
-      console.log(`[Advanced Stats API] Cache MISS for ${cacheKey}`);
     }
     
     const url = buildAdvancedStatsUrl(playerIds, season, postseason, gameIds);
@@ -114,8 +112,6 @@ export async function GET(req: NextRequest) {
     // Cache the response (advanced stats don't change after games are complete)
     // Use 12 hour cache for completed games
     cache.set(cacheKey, json, CACHE_TTL.ADVANCED_STATS); // Use configured TTL (12 hours)
-    
-    console.log(`[Advanced Stats API] Cache SET for ${cacheKey} (TTL: ${CACHE_TTL.ADVANCED_STATS} minutes)`);
     
     return NextResponse.json(json, { status: 200 });
   } catch (err: any) {

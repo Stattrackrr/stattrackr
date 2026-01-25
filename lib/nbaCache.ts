@@ -196,7 +196,7 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
       } catch (restError: any) {
         if (restError.name === 'AbortError') {
           if (!quiet) {
-            console.warn(`[NBA Cache] ⏱️ REST API timeout (${restTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}..., falling back to JS client...`);
+            // REST API timeout, falling back to JS client (verbose logging removed for performance)
           }
           // Fall through to JS client as fallback
         } else {
@@ -211,7 +211,7 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
         if (!quiet) {
-          console.warn(`[NBA Cache] ⏱️ Query timeout (${jsTimeoutMs}ms) for key: ${cacheKey.substring(0, 50)}...`);
+          // Query timeout (verbose logging removed for performance)
         }
         resolve(null);
       }, jsTimeoutMs);
@@ -231,7 +231,7 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     if (result === null) {
       // Timeout - Supabase is too slow, skip it and use in-memory cache
       if (!quiet) {
-        console.warn(`[NBA Cache] ⏱️ Supabase timeout - skipping persistent cache, will use in-memory only`);
+        // Supabase timeout - skipping persistent cache, will use in-memory only (verbose logging removed for performance)
       }
       return null;
     }

@@ -217,23 +217,10 @@ export async function GET(req: NextRequest) {
     
     // Dashboard stats chart always bypasses cache (refresh=1) - other features can use cache
     if (forceRefresh) {
-      console.log(`[Stats API] 🔄 Bypassing cache (refresh=1) for player ${playerId}, season ${season}, postseason ${postseason}`);
+      // Bypassing cache (refresh=1)
     } else if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
       // Only use cache if it has actual data (not empty arrays) AND not forcing refresh
-      // Debug: log cached data structure to verify game/team are included
-      if (cachedData.data.length > 0) {
-        console.log(`[Stats API] ✅ Using cached data (${cacheSource}):`, {
-          playerId,
-          season,
-          postseason,
-          totalStats: cachedData.data.length,
-          hasGame: !!cachedData.data[0]?.game,
-          hasGameDate: !!cachedData.data[0]?.game?.date,
-          hasTeam: !!cachedData.data[0]?.team,
-          hasTeamAbbr: !!cachedData.data[0]?.team?.abbreviation,
-          sampleStatKeys: Object.keys(cachedData.data[0] || {}),
-        });
-      }
+      // Using cached data (verbose logging removed for performance)
       // Return cached data immediately with HTTP cache headers for CDN caching
       return NextResponse.json(cachedData, { 
         status: 200,
@@ -245,13 +232,13 @@ export async function GET(req: NextRequest) {
     
     // If cache exists but is empty, log it and continue to fetch fresh data
     if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length === 0) {
-      console.log(`[Stats API] Cache hit but empty array for player ${playerId}, season ${season}, postseason ${postseason}. Fetching fresh data...`);
+      // Cache hit but empty array, fetching fresh data
     }
 
     // Check if a request for this player/season/postseason is already in flight
     const requestKey = `${playerId}-${season}-${postseason ? 'po' : 'reg'}`;
     if (inFlightRequests.has(requestKey)) {
-      console.log(`[Stats API] Request already in flight for ${requestKey}, waiting...`);
+      // Request already in flight, waiting
       try {
         const existingData = await inFlightRequests.get(requestKey)!;
         return NextResponse.json({ data: existingData }, { status: 200 });
@@ -412,49 +399,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Debug: log sample stat structure to verify game/team are included      
-        if (batch.length > 0 && all.length === 0) {
-          const sampleStat = batch[0];
-          console.log('[Stats API] Sample stat from BDL:', {
-            playerId,
-            season,
-            postseason,
-            hasGame: !!sampleStat?.game,
-            hasGameDate: !!sampleStat?.game?.date,
-            hasTeam: !!sampleStat?.team,
-            hasTeamAbbr: !!sampleStat?.team?.abbreviation,
-            statKeys: Object.keys(sampleStat || {}),
-            // Log actual stat values to verify all fields are present
-            statValues: {
-              pts: sampleStat?.pts,
-              reb: sampleStat?.reb,
-              ast: sampleStat?.ast,
-              stl: sampleStat?.stl,
-              blk: sampleStat?.blk,
-              fg3m: sampleStat?.fg3m,
-              fgm: sampleStat?.fgm,
-              fga: sampleStat?.fga,
-              ftm: sampleStat?.ftm,
-              fta: sampleStat?.fta,
-              turnover: sampleStat?.turnover,
-              pf: sampleStat?.pf,
-              oreb: sampleStat?.oreb,
-              dreb: sampleStat?.dreb,
-            },
-          });
-        }
-        
-        // Log batch summary to see if we're getting all stat types
-        if (batch.length > 0) {
-          const statCounts = {
-            hasPts: batch.filter(s => s.pts !== undefined && s.pts !== null).length,
-            hasReb: batch.filter(s => s.reb !== undefined && s.reb !== null).length,
-            hasAst: batch.filter(s => s.ast !== undefined && s.ast !== null).length,
-            hasStl: batch.filter(s => s.stl !== undefined && s.stl !== null).length,
-            hasBlk: batch.filter(s => s.blk !== undefined && s.blk !== null).length,
-            hasFg3m: batch.filter(s => s.fg3m !== undefined && s.fg3m !== null).length,
-          };
-          console.log(`[Stats API] Page ${page} stat coverage (${batch.length} stats):`, statCounts);
-        }
+        // Verbose logging removed for performance
 
         all.push(...batch);
         
