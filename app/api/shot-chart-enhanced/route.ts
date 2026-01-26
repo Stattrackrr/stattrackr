@@ -484,7 +484,24 @@ export async function GET(request: NextRequest) {
                            (cached.shotZones?.aboveBreak3?.fga || 0);
       
       if (totalAttempts === 0) {
+        // Invalid cache - log details, clear it, and treat as cache miss
+        console.log(`[shot-chart-enhanced] ⚠️ Invalid cache detected (all 0s) for ${cacheKey}`);
+        console.log(`[shot-chart-enhanced] Cache data:`, JSON.stringify(cached.shotZones, null, 2));
+        console.log(`[shot-chart-enhanced] Clearing invalid cache and treating as cache miss`);
+        
+        // Clear the bad cache entry from both Supabase and in-memory
+        try {
+          const { deleteNBACache } = await import('@/lib/nbaCache');
+          await deleteNBACache(cacheKey);
+          cache.delete(cacheKey);
+          console.log(`[shot-chart-enhanced] 🗑️ Cleared invalid cache: ${cacheKey}`);
+        } catch (err) {
+          console.log(`[shot-chart-enhanced] ⚠️ Error clearing invalid cache:`, err);
+        }
+        
         cached = null; // Treat as cache miss
+      } else {
+        console.log(`[shot-chart-enhanced] ✅ Valid cache found for ${cacheKey} (${totalAttempts} total attempts)`);
       }
     }
     
@@ -842,6 +859,18 @@ export async function GET(request: NextRequest) {
     
     if (totalAttempts === 0) {
       // Don't cache empty data - return it but don't cache
+      // Also clear any existing empty cache to prevent it from being returned again
+      if (cacheKey) {
+        try {
+          const { deleteNBACache } = await import('@/lib/nbaCache');
+          await deleteNBACache(cacheKey);
+          cache.delete(cacheKey);
+          console.log(`[shot-chart-enhanced] 🗑️ Cleared empty cache for ${cacheKey}`);
+        } catch (err) {
+          // Ignore cache deletion errors
+        }
+      }
+      
       return NextResponse.json({
         playerId: nbaPlayerId,
         originalPlayerId: originalPlayerId !== nbaPlayerId ? originalPlayerId : undefined,
@@ -1083,10 +1112,23 @@ export async function GET(request: NextRequest) {
       cachedAt: new Date().toISOString()
     };
 
-    // Cache the result in both Supabase (persistent) and in-memory
-    // TTL is 365 days - cache is refreshed by cron job, not by expiration
-    await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
-    cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
+    // Validate one more time before caching - never cache empty data
+    const finalTotalAttempts = shotZones.restrictedArea.fga +
+                              shotZones.paint.fga +
+                              shotZones.midRange.fga +
+                              shotZones.leftCorner3.fga +
+                              shotZones.rightCorner3.fga +
+                              shotZones.aboveBreak3.fga;
+    
+    if (finalTotalAttempts > 0) {
+      // Cache the result in both Supabase (persistent) and in-memory
+      // TTL is 365 days - cache is refreshed by cron job, not by expiration
+      await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
+      cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
+      console.log(`[shot-chart-enhanced] ✅ Cached shot chart for player ${nbaPlayerId} (${finalTotalAttempts} total attempts)`);
+    } else {
+      console.log(`[shot-chart-enhanced] ⚠️ Skipping cache - no shot data for player ${nbaPlayerId}`);
+    }
 
     return NextResponse.json(response, {
       status: 200,

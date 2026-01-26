@@ -146,8 +146,8 @@ const ShotChart: React.FC<ShotChartProps> = ({ isDark, playerId, opponentTeam, s
             return;
           }
 
-          // Add bypassCache to force fresh rankings after cache population
-          const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}&bypassCache=true`;
+          // Use cached data by default - cache is populated by daily cron job
+          const url = `/api/shot-chart-enhanced?playerId=${encodeURIComponent(nbaPlayerId)}&season=2025${opponentTeam && opponentTeam !== 'N/A' ? `&opponentTeam=${encodeURIComponent(opponentTeam)}` : ''}`;
           
           // Add timeout and better error handling
           const controller = new AbortController();
