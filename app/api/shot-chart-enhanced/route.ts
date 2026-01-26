@@ -524,49 +524,46 @@ export async function GET(request: NextRequest) {
         responseData.opponentRankingsSource = cached.opponentRankingsSource;
         responseData.opponentTeam = opponentTeam;
       } else if (opponentTeam && opponentTeam !== 'N/A' && !cached.opponentRankings) {
-        // Rankings not in cache - fetch in background (non-blocking) for future requests
-        // Don't block the response - return shot chart data immediately
-        Promise.resolve().then(async () => {
-          try {
-            const rankingsCacheKey = `team_defense_rankings_${season}`;
-            // Use shorter timeout (3s) - if it takes longer, skip it
-            let cachedRankings = await Promise.race([
-              getNBACache<any>(rankingsCacheKey, {
-                restTimeoutMs: 3000,
-                jsTimeoutMs: 3000,
-              }),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
-            ]);
-            
-            if (!cachedRankings) {
-              cachedRankings = cache.get<any>(rankingsCacheKey);
-            } else {
-              cache.set(rankingsCacheKey, cachedRankings, CACHE_TTL.TRACKING_STATS);
-            }
-            
-            const rankings = cachedRankings?.rankings || cachedRankings;
-            
-            if (rankings && Object.keys(rankings).length > 0 && rankings[opponentTeam]) {
-              // Rankings found - could update cache here for future requests
-              return;
-            }
-            
-            // Try single team stats cache (faster fallback)
-            const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
-            let singleTeamStats = await Promise.race([
-              getNBACache<any>(singleTeamCacheKey),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
-            ]);
-            
-            if (!singleTeamStats) {
-              singleTeamStats = cache.get<any>(singleTeamCacheKey);
-            }
-            
-            // Found stats - could update cache here for future requests
-          } catch (err) {
-            // Ignore background fetch errors
+        // Rankings not in cache - try to fetch synchronously (with short timeout) so they're included in response
+        try {
+          const rankingsCacheKey = `team_defense_rankings_${season}`;
+          // Use shorter timeout (2s) - if it takes longer, skip it and return without rankings
+          let cachedRankings = await Promise.race([
+            getNBACache<any>(rankingsCacheKey, {
+              restTimeoutMs: 2000,
+              jsTimeoutMs: 2000,
+            }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
+          ]);
+          
+          if (!cachedRankings) {
+            cachedRankings = cache.get<any>(rankingsCacheKey);
+          } else {
+            cache.set(rankingsCacheKey, cachedRankings, CACHE_TTL.TRACKING_STATS);
           }
-        }).catch(() => {});
+          
+          const rankings = cachedRankings?.rankings || cachedRankings;
+          
+          if (rankings && Object.keys(rankings).length > 0 && rankings[opponentTeam]) {
+            // Rankings found - include them in response
+            responseData.opponentRankings = rankings[opponentTeam];
+            responseData.opponentRankingsSource = 'team';
+            responseData.opponentTeam = opponentTeam;
+            console.log(`[shot-chart-enhanced] ✅ Added rankings from defense cache for ${opponentTeam}`);
+          } else {
+            // Try league average as fallback
+            const leagueAverageRankings = computeLeagueAverageRankings(rankings || {});
+            if (leagueAverageRankings) {
+              responseData.opponentRankings = leagueAverageRankings;
+              responseData.opponentRankingsSource = 'league_average';
+              responseData.opponentTeam = opponentTeam;
+              console.log(`[shot-chart-enhanced] ⚠️ Using league average rankings for ${opponentTeam}`);
+            }
+          }
+        } catch (err) {
+          // Ignore errors - return shot chart data without rankings
+          console.log(`[shot-chart-enhanced] ⚠️ Could not fetch rankings for ${opponentTeam}:`, err);
+        }
       }
       
       return NextResponse.json(responseData, {
