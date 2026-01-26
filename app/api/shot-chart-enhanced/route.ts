@@ -434,7 +434,6 @@ export async function GET(request: NextRequest) {
         const { deleteNBACache } = await import('@/lib/nbaCache');
         await deleteNBACache(cacheKey);
         cache.delete(cacheKey);
-        console.log(`[shot-chart-enhanced] 🗑️ Cleared shot chart cache: ${cacheKey}`);
       } catch (err) {
         // Ignore cache deletion errors
       }
@@ -484,24 +483,16 @@ export async function GET(request: NextRequest) {
                            (cached.shotZones?.aboveBreak3?.fga || 0);
       
       if (totalAttempts === 0) {
-        // Invalid cache - log details, clear it, and treat as cache miss
-        console.log(`[shot-chart-enhanced] ⚠️ Invalid cache detected (all 0s) for ${cacheKey}`);
-        console.log(`[shot-chart-enhanced] Cache data:`, JSON.stringify(cached.shotZones, null, 2));
-        console.log(`[shot-chart-enhanced] Clearing invalid cache and treating as cache miss`);
-        
-        // Clear the bad cache entry from both Supabase and in-memory
+        // Invalid cache - clear it and treat as cache miss
         try {
           const { deleteNBACache } = await import('@/lib/nbaCache');
           await deleteNBACache(cacheKey);
           cache.delete(cacheKey);
-          console.log(`[shot-chart-enhanced] 🗑️ Cleared invalid cache: ${cacheKey}`);
         } catch (err) {
-          console.log(`[shot-chart-enhanced] ⚠️ Error clearing invalid cache:`, err);
+          // Ignore cache deletion errors
         }
         
         cached = null; // Treat as cache miss
-      } else {
-        console.log(`[shot-chart-enhanced] ✅ Valid cache found for ${cacheKey} (${totalAttempts} total attempts)`);
       }
     }
     
@@ -518,22 +509,50 @@ export async function GET(request: NextRequest) {
       // This reduces latency from ~15s to <100ms for cached shot chart data
       const responseData = { ...cached };
       
-      // If rankings are already in cache, include them
+      // If rankings are already in cache, check if they have valid ranks (not all 0)
       if (opponentTeam && opponentTeam !== 'N/A' && cached.opponentRankings) {
-        responseData.opponentRankings = cached.opponentRankings;
-        responseData.opponentRankingsSource = cached.opponentRankingsSource;
-        responseData.opponentTeam = opponentTeam;
-      } else if (opponentTeam && opponentTeam !== 'N/A' && !cached.opponentRankings) {
-        // Rankings not in cache - try to fetch synchronously (with short timeout) so they're included in response
+        // Check if all ranks are 0 (invalid - means single team stats without league rankings)
+        const ranks = {
+          restrictedArea: cached.opponentRankings.restrictedArea?.rank ?? 0,
+          paint: cached.opponentRankings.paint?.rank ?? 0,
+          midRange: cached.opponentRankings.midRange?.rank ?? 0,
+          leftCorner3: cached.opponentRankings.leftCorner3?.rank ?? 0,
+          rightCorner3: cached.opponentRankings.rightCorner3?.rank ?? 0,
+          aboveBreak3: cached.opponentRankings.aboveBreak3?.rank ?? 0,
+        };
+        
+        const allRanksZero = ranks.restrictedArea === 0 &&
+                             ranks.paint === 0 &&
+                             ranks.midRange === 0 &&
+                             ranks.leftCorner3 === 0 &&
+                             ranks.rightCorner3 === 0 &&
+                             ranks.aboveBreak3 === 0;
+        
+        if (!allRanksZero) {
+          // Valid rankings with actual ranks - use them
+          responseData.opponentRankings = cached.opponentRankings;
+          responseData.opponentRankingsSource = cached.opponentRankingsSource;
+          responseData.opponentTeam = opponentTeam;
+        } else {
+          // Rankings exist but all ranks are 0 - try to fetch real rankings from defense cache
+          // Clear responseData.opponentRankings so we fetch fresh
+          responseData.opponentRankings = undefined;
+        }
+      }
+      
+      // If we don't have valid rankings yet, try to fetch from defense rankings cache
+      if (opponentTeam && opponentTeam !== 'N/A' && !responseData.opponentRankings) {
+        // Rankings not in cache or invalid - try to fetch synchronously (with short timeout) so they're included in response
         try {
           const rankingsCacheKey = `team_defense_rankings_${season}`;
-          // Use shorter timeout (2s) - if it takes longer, skip it and return without rankings
+          
+          // Use longer timeout (5s) to give Supabase cache time to respond
           let cachedRankings = await Promise.race([
             getNBACache<any>(rankingsCacheKey, {
-              restTimeoutMs: 2000,
-              jsTimeoutMs: 2000,
+              restTimeoutMs: 5000,
+              jsTimeoutMs: 5000,
             }),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
           ]);
           
           if (!cachedRankings) {
@@ -542,27 +561,40 @@ export async function GET(request: NextRequest) {
             cache.set(rankingsCacheKey, cachedRankings, CACHE_TTL.TRACKING_STATS);
           }
           
-          const rankings = cachedRankings?.rankings || cachedRankings;
-          
-          if (rankings && Object.keys(rankings).length > 0 && rankings[opponentTeam]) {
-            // Rankings found - include them in response
-            responseData.opponentRankings = rankings[opponentTeam];
-            responseData.opponentRankingsSource = 'team';
-            responseData.opponentTeam = opponentTeam;
-            console.log(`[shot-chart-enhanced] ✅ Added rankings from defense cache for ${opponentTeam}`);
-          } else {
-            // Try league average as fallback
-            const leagueAverageRankings = computeLeagueAverageRankings(rankings || {});
-            if (leagueAverageRankings) {
-              responseData.opponentRankings = leagueAverageRankings;
-              responseData.opponentRankingsSource = 'league_average';
+          if (cachedRankings) {
+            const rankings = cachedRankings?.rankings || cachedRankings;
+            
+            if (rankings && Object.keys(rankings).length > 0 && rankings[opponentTeam]) {
+              // Rankings found - include them in response
+              responseData.opponentRankings = rankings[opponentTeam];
+              responseData.opponentRankingsSource = 'team';
               responseData.opponentTeam = opponentTeam;
-              console.log(`[shot-chart-enhanced] ⚠️ Using league average rankings for ${opponentTeam}`);
+              
+              // Update the cached shot chart data with the new rankings so future requests don't need to fetch again
+              try {
+                const updatedCacheData = {
+                  ...cached,
+                  opponentRankings: rankings[opponentTeam],
+                  opponentRankingsSource: 'team',
+                  opponentTeam: opponentTeam
+                };
+                cache.set(cacheKey, updatedCacheData, CACHE_TTL.TRACKING_STATS);
+                await setNBACache(cacheKey, 'shot_chart', updatedCacheData, CACHE_TTL.TRACKING_STATS);
+              } catch (err) {
+                // Ignore cache update errors
+              }
+            } else {
+              // Try league average as fallback
+              const leagueAverageRankings = computeLeagueAverageRankings(rankings || {});
+              if (leagueAverageRankings) {
+                responseData.opponentRankings = leagueAverageRankings;
+                responseData.opponentRankingsSource = 'league_average';
+                responseData.opponentTeam = opponentTeam;
+              }
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           // Ignore errors - return shot chart data without rankings
-          console.log(`[shot-chart-enhanced] ⚠️ Could not fetch rankings for ${opponentTeam}:`, err);
         }
       }
       
@@ -862,7 +894,6 @@ export async function GET(request: NextRequest) {
           const { deleteNBACache } = await import('@/lib/nbaCache');
           await deleteNBACache(cacheKey);
           cache.delete(cacheKey);
-          console.log(`[shot-chart-enhanced] 🗑️ Cleared empty cache for ${cacheKey}`);
         } catch (err) {
           // Ignore cache deletion errors
         }
@@ -910,22 +941,8 @@ export async function GET(request: NextRequest) {
         if (rankings && Object.keys(rankings).length > 0) {
           defenseRankings = rankings;
           leagueAverageRankings = computeLeagueAverageRankings(rankings);
-          console.log(`[shot-chart-enhanced] ✅ Found defense rankings cache for season ${season}, teams: ${Object.keys(rankings).length}`);
-          if (opponentTeam && rankings[opponentTeam]) {
-            const oppRanks = rankings[opponentTeam];
-            console.log(`[shot-chart-enhanced] ✅ Opponent ${opponentTeam} ranks:`, {
-              restrictedArea: oppRanks.restrictedArea?.rank,
-              paint: oppRanks.paint?.rank,
-              midRange: oppRanks.midRange?.rank,
-              leftCorner3: oppRanks.leftCorner3?.rank,
-              rightCorner3: oppRanks.rightCorner3?.rank,
-              aboveBreak3: oppRanks.aboveBreak3?.rank
-            });
-          } else if (opponentTeam) {
-            console.log(`[shot-chart-enhanced] ⚠️ Opponent ${opponentTeam} not found in rankings. Available teams:`, Object.keys(rankings).slice(0, 10));
-          }
+          // Rankings found
         } else {
-          console.log(`[shot-chart-enhanced] ⚠️ No defense rankings cache found for season ${season}, falling back to single team stats`);
           // Check for single team stats cache (without rank, but still useful)
           const singleTeamCacheKey = `team_defense_stats_${opponentTeam}_${season}`;
           // Use shorter timeout (2s)
@@ -1081,20 +1098,9 @@ export async function GET(request: NextRequest) {
     if (opponentTeam && opponentTeam !== 'N/A' && defenseRankings && defenseRankings[opponentTeam]) {
       opponentRankings = defenseRankings[opponentTeam];
       opponentRankingsSource = 'team';
-      console.log(`[shot-chart-enhanced] ✅ Using team rankings for ${opponentTeam}:`, {
-        restrictedArea: opponentRankings.restrictedArea?.rank,
-        paint: opponentRankings.paint?.rank,
-        midRange: opponentRankings.midRange?.rank,
-        leftCorner3: opponentRankings.leftCorner3?.rank,
-        rightCorner3: opponentRankings.rightCorner3?.rank,
-        aboveBreak3: opponentRankings.aboveBreak3?.rank
-      });
     } else if (leagueAverageRankings) {
       opponentRankings = leagueAverageRankings;
       opponentRankingsSource = 'league_average';
-      console.log(`[shot-chart-enhanced] ⚠️ Using league average rankings (rank 0) for ${opponentTeam}`);
-    } else {
-      console.log(`[shot-chart-enhanced] ❌ No opponent rankings available for ${opponentTeam}`);
     }
 
     const response = {
@@ -1122,9 +1128,7 @@ export async function GET(request: NextRequest) {
       // TTL is 365 days - cache is refreshed by cron job, not by expiration
       await setNBACache(cacheKey, 'shot_chart', response, CACHE_TTL.TRACKING_STATS);
       cache.set(cacheKey, response, CACHE_TTL.TRACKING_STATS);
-      console.log(`[shot-chart-enhanced] ✅ Cached shot chart for player ${nbaPlayerId} (${finalTotalAttempts} total attempts)`);
-    } else {
-      console.log(`[shot-chart-enhanced] ⚠️ Skipping cache - no shot data for player ${nbaPlayerId}`);
+      // Cache updated
     }
 
     return NextResponse.json(response, {
