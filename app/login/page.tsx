@@ -387,7 +387,7 @@ export default function LoginPage() {
               <form onSubmit={handleForgotPassword} className="space-y-6">
                 {forgotPasswordSuccess ? (
                   <div className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
-                    Check your email for a password reset link. If you don't see it, check your spam folder.
+                    Check your email for the reset link. Use the link from <strong>this</strong> email (not an old one), and open it in this same browser or paste it in the address bar. If you don&apos;t see it, check spam.
                   </div>
                 ) : (
                   <>

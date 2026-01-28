@@ -17,11 +17,22 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const establishSessionAndCheck = async () => {
-      // If recovery link landed here with tokens in the hash, establish session first
-      const hash = typeof window !== "undefined" ? window.location.hash?.replace(/^#/, "") || "" : "";
-      const params = new URLSearchParams(hash);
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
+      // 1) Tokens in sessionStorage (captured by inline script before React)
+      let params: URLSearchParams | null = null;
+      if (typeof window !== "undefined") {
+        const stored = sessionStorage.getItem("sb_recovery");
+        if (stored) {
+          sessionStorage.removeItem("sb_recovery");
+          params = new URLSearchParams(stored);
+        }
+      }
+      // 2) Tokens in hash (if inline script didn't run first)
+      if (!params && typeof window !== "undefined" && window.location.hash) {
+        const hash = window.location.hash.replace(/^#/, "");
+        if (hash.includes("access_token")) params = new URLSearchParams(hash);
+      }
+      const accessToken = params?.get("access_token") ?? null;
+      const refreshToken = params?.get("refresh_token") ?? null;
 
       if (accessToken && refreshToken) {
         const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
@@ -30,8 +41,8 @@ export default function UpdatePasswordPage() {
           setCheckingSession(false);
           return;
         }
-        // Strip hash and reload so we have a clean URL and a confirmed session
-        router.replace("/auth/update-password");
+        // Clean URL and reload so session is confirmed
+        window.location.replace("/auth/update-password");
         return;
       }
 

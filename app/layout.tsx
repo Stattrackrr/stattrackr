@@ -61,6 +61,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Devtools disabled */}
       </head>
       <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]">
+        {/* Capture password-reset hash before React so it survives; runs on first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var p='/auth/update-password';if(location.pathname===p&&location.hash&&location.hash.indexOf('access_token')!==-1){try{sessionStorage.setItem('sb_recovery',location.hash.slice(1));location.replace(p+location.search);}catch(e){}}}());`,
+          }}
+        />
         <RootLayoutClient>{children}</RootLayoutClient>
       </body>
     </html>
