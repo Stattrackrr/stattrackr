@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
+  const [forgotPasswordCode, setForgotPasswordCode] = useState("");
+  const [forgotPasswordVerifyLoading, setForgotPasswordVerifyLoading] = useState(false);
   const [isResetRedirect, setIsResetRedirect] = useState(false);
 
   // If password reset link landed here (Supabase may redirect to Site URL), read hash and send to update-password
@@ -230,20 +232,46 @@ export default function LoginPage() {
     setForgotPasswordLoading(true);
     setForgotPasswordError("");
     setForgotPasswordSuccess(false);
+    setForgotPasswordCode("");
     try {
-      // Use canonical URL so www→non-www redirect doesn't drop the hash (tokens get lost)
-      let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
-      if (baseUrl.startsWith("https://www.")) baseUrl = baseUrl.replace("https://www.", "https://");
-      if (baseUrl.startsWith("http://www.")) baseUrl = baseUrl.replace("http://www.", "http://");
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
-        redirectTo: `${baseUrl}/auth/update-password`,
+      const { error } = await supabase.auth.signInWithOtp({
+        email: forgotPasswordEmail.trim().toLowerCase(),
+        options: { shouldCreateUser: false },
       });
       if (error) throw error;
       setForgotPasswordSuccess(true);
     } catch (err: any) {
-      setForgotPasswordError(err?.message || "Failed to send reset link. Please try again.");
+      setForgotPasswordError(err?.message || "Failed to send code. Try again or use an existing account.");
     } finally {
       setForgotPasswordLoading(false);
+    }
+  };
+
+  const handleVerifyResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = forgotPasswordCode.trim().replace(/\s/g, "");
+    if (!/^\d{6}$/.test(code)) {
+      setForgotPasswordError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setForgotPasswordVerifyLoading(true);
+    setForgotPasswordError("");
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: forgotPasswordEmail.trim().toLowerCase(),
+        token: code,
+        type: "email",
+      });
+      if (error) throw error;
+      if (data?.session) {
+        router.replace("/auth/update-password");
+        return;
+      }
+      setForgotPasswordError("Invalid or expired code. Request a new one.");
+    } catch (err: any) {
+      setForgotPasswordError(err?.message || "Invalid code. Request a new one.");
+    } finally {
+      setForgotPasswordVerifyLoading(false);
     }
   };
 
@@ -325,7 +353,7 @@ export default function LoginPage() {
                 {showForgotPassword ? "Reset password" : isSignUp ? "Create Account" : "Welcome Back"}
               </h2>
               <p className="text-gray-500">
-                {showForgotPassword ? "Enter your email and we'll send you a reset link" : isSignUp ? "Start tracking your performance" : "Sign in to continue"}
+                {showForgotPassword ? "Enter your email and we'll send you a 6-digit code" : isSignUp ? "Start tracking your performance" : "Sign in to continue"}
               </p>
             </div>
 
@@ -378,19 +406,15 @@ export default function LoginPage() {
             {isResetRedirect && !showForgotPassword && (
               <div className="mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 text-amber-200 text-sm">
                 <p className="font-medium mb-1">Resetting your password?</p>
-                <p>Use the link from your email in <strong>this same browser</strong>—click it, or copy the link and paste it into the address bar above. Don’t open it in a different app or you’ll end up back here.</p>
+                <p>Click <strong>Forgot password?</strong> above, enter your email, and we&apos;ll send you a 6-digit code. Enter the code and set a new password. Don’t open it in a different app or you’ll end up back here.</p>
               </div>
             )}
 
             {showForgotPassword ? (
-              /* Forgot password — request reset link */
-              <form onSubmit={handleForgotPassword} className="space-y-6">
-                {forgotPasswordSuccess ? (
-                  <div className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
-                    Check your email for the reset link. Use the link from <strong>this</strong> email (not an old one), and open it in this same browser or paste it in the address bar. If you don&apos;t see it, check spam.
-                  </div>
-                ) : (
-                  <>
+              /* Forgot password — email then 6-digit code */
+              <div className="space-y-6">
+                {!forgotPasswordSuccess ? (
+                  <form onSubmit={handleForgotPassword} className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                       <div className="relative">
@@ -420,10 +444,60 @@ export default function LoginPage() {
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         </div>
                       ) : (
-                        "Send reset link"
+                        "Send 6-digit code"
                       )}
                     </button>
-                  </>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyResetCode} className="space-y-6">
+                    <div className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
+                      Check your email for the 6-digit code. If you don&apos;t see it, check spam.
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Code</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={forgotPasswordCode}
+                        onChange={(e) => setForgotPasswordCode(e.target.value.replace(/\D/g, ""))}
+                        placeholder="000000"
+                        className="w-full h-12 px-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-center text-lg tracking-[0.4em]"
+                      />
+                    </div>
+                    {forgotPasswordError && (
+                      <div className="p-4 rounded-xl bg-red-950/50 border border-red-900/50 text-red-400 text-sm">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordVerifyLoading || forgotPasswordCode.length !== 6}
+                      className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {forgotPasswordVerifyLoading ? (
+                        <div className="flex justify-center">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        "Verify and set new password"
+                      )}
+                    </button>
+                    <p className="text-center text-sm text-gray-500">
+                      Wrong email?{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotPasswordSuccess(false);
+                          setForgotPasswordCode("");
+                          setForgotPasswordError("");
+                        }}
+                        className="text-purple-400 hover:text-purple-300 font-medium"
+                      >
+                        Use a different email
+                      </button>
+                    </p>
+                  </form>
                 )}
                 <p className="text-center">
                   <button
@@ -433,13 +507,14 @@ export default function LoginPage() {
                       setForgotPasswordEmail("");
                       setForgotPasswordError("");
                       setForgotPasswordSuccess(false);
+                      setForgotPasswordCode("");
                     }}
                     className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
                   >
                     Back to sign in
                   </button>
                 </p>
-              </form>
+              </div>
             ) : showCheckEmail ? (
               /* Check your email — after sign up when confirmation is required (code-based) */
               <div className="space-y-6">

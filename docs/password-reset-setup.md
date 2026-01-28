@@ -1,27 +1,27 @@
-# Password reset setup
+# Password reset setup (6-digit code)
 
-If users keep ending up on the login page after clicking the reset link, the tokens in the URL are being lost (usually due to a redirect).
+Password reset uses a 6-digit code sent by email: user enters email → receives code → enters code → sets new password. No link to click.
 
-## 1. Supabase dashboard
+## 1. Supabase email template (required for 6-digit code)
 
-1. Go to **Authentication → URL configuration**.
-2. Set **Site URL** to your canonical URL **without** `www`, e.g. `https://stattrackr.co`.
-3. In **Redirect URLs**, include:
-   - `https://stattrackr.co/auth/update-password`
-   - (and any other auth URLs you use)
+1. Go to **Authentication → Email Templates**.
+2. Open the **Magic Link** template (used for `signInWithOtp`).
+3. Ensure the email body includes the **OTP token** so the user gets a 6-digit code, e.g.:
 
-Using the same canonical URL (no `www`) everywhere avoids a redirect that drops the hash.
+   ```html
+   <h2>Your reset code</h2>
+   <p>Enter this code on the site: <strong>{{ .Token }}</strong></p>
+   ```
 
-## 2. After deploy
+   The variable `{{ .Token }}` is the 6-digit code. Without it, the user only gets a magic link and the code flow won’t work.
 
-When you change the redirect URL or deploy fixes:
+## 2. Flow
 
-1. Request a **new** password reset (Forgot password? → enter email).
-2. Use the link from **that** email only. Old emails may point at `www` or an old path.
-3. Open the link in the **same browser** (or paste the full link into the address bar). Don’t open from an in-app browser if it strips the URL.
+1. User clicks **Forgot password?** and enters their email.
+2. We call `signInWithOtp({ email, options: { shouldCreateUser: false } })` so only existing users receive a code.
+3. User receives the email with the 6-digit code.
+4. User enters the code and clicks **Verify and set new password**.
+5. We call `verifyOtp({ email, token, type: 'email' })` and get a session.
+6. User is redirected to `/auth/update-password` where they set a new password; we call `updateUser({ password })`.
 
-## How it works
-
-- The reset link goes to Supabase, then Supabase redirects to your site with tokens in the URL hash.
-- The app captures that hash (inline script + sessionStorage) and establishes the session, then shows the “Set new password” form.
-- If the link sent users to `www` and your host redirects `www` → non-`www`, the hash is lost. Using the non-`www` URL in Supabase and in our `redirectTo` avoids that.
+No redirect URLs or link handling are required for this flow.
