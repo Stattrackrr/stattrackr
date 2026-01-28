@@ -442,10 +442,12 @@ type BdlPlayerProp = {
   prop_type: string;
   line_value: string;
   market: {
-    type: 'over_under' | 'milestone';
+    type: 'over_under' | 'milestone' | 'yes_no';
     over_odds?: number;
     under_odds?: number;
     odds?: number;
+    yes_odds?: number;
+    no_odds?: number;
   };
   updated_at: string;
 };
@@ -858,6 +860,18 @@ export async function refreshOddsData(
         };
 
         if (prop.market?.type === 'over_under') {
+          // Double-double / triple-double: BDL may return as over_under (Over=Yes, Under=No)
+          if (statKey === 'DD' || statKey === 'TD') {
+            const rawOverOdds = prop.market.over_odds;
+            const rawUnderOdds = prop.market.under_odds;
+            if (rawOverOdds != null && rawUnderOdds != null) {
+              bucket[statKey] = {
+                yes: formatOddsPrice(rawOverOdds, vendorName),
+                no: formatOddsPrice(rawUnderOdds, vendorName),
+              };
+            }
+            continue;
+          }
           // Parse line_value as number to ensure proper sorting
           const lineNum = parseFloat(prop.line_value);
           const line = Number.isFinite(lineNum) ? lineNum : parseFloat(String(prop.line_value)) || 0;
@@ -916,6 +930,16 @@ export async function refreshOddsData(
             }
           }
           // For all other prop types, non-allowed milestone values, or non-DK/FD vendors, skip (leave blank)
+        } else if (statKey === 'DD' || statKey === 'TD') {
+          // Double-double / triple-double: yes/no market from BDL
+          const yesOdds = (prop.market as any)?.yes_odds ?? prop.market?.over_odds;
+          const noOdds = (prop.market as any)?.no_odds ?? prop.market?.under_odds;
+          if (yesOdds != null && noOdds != null) {
+            bucket[statKey] = {
+              yes: formatOddsPrice(yesOdds, vendorName),
+              no: formatOddsPrice(noOdds, vendorName),
+            };
+          }
         }
       }
       

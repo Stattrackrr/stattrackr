@@ -393,6 +393,14 @@ export function CustomChartTooltip({
             label: 'DREB',
             value: String(Number(stats.dreb || 0))
           });
+        } else if (selectedStat === 'double_double' || selectedStat === 'triple_double') {
+          const pts = Number(stats.pts || 0), reb = Number(stats.reb || 0), ast = Number(stats.ast || 0), stl = Number(stats.stl ?? 0), blk = Number(stats.blk ?? 0);
+          const count = [pts, reb, ast, stl, blk].filter(v => v >= 10).length;
+          statRows.push({
+            label: selectedStat === 'triple_double' ? 'Triple Double' : 'Double Double',
+            value: (selectedStat === 'triple_double' ? count >= 3 : count >= 2) ? 'Yes' : 'No'
+          });
+          statRows.push({ label: 'PTS', value: String(pts) }, { label: 'REB', value: String(reb) }, { label: 'AST', value: String(ast) }, { label: 'STL', value: String(stl) }, { label: 'BLK', value: String(blk) });
         } else {
           // Default: Show common stats
           statRows.push({

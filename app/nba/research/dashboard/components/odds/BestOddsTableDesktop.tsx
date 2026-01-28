@@ -19,6 +19,8 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
     PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
     PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
     RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    DD: { yes: 'N/A', no: 'N/A' },
+    TD: { yes: 'N/A', no: 'N/A' },
   },
   {
     name: 'FanDuel',
@@ -33,6 +35,8 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
     PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
     PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
     RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    DD: { yes: 'N/A', no: 'N/A' },
+    TD: { yes: 'N/A', no: 'N/A' },
   },
   {
     name: 'BetMGM',
@@ -47,6 +51,8 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
     PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
     PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
     RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    DD: { yes: 'N/A', no: 'N/A' },
+    TD: { yes: 'N/A', no: 'N/A' },
   },
   {
     name: 'Caesars',
@@ -61,6 +67,8 @@ const PLACEHOLDER_BOOK_ROWS: any[] = [
     PR: { line: 'N/A', over: 'N/A', under: 'N/A' },
     PA: { line: 'N/A', over: 'N/A', under: 'N/A' },
     RA: { line: 'N/A', over: 'N/A', under: 'N/A' },
+    DD: { yes: 'N/A', no: 'N/A' },
+    TD: { yes: 'N/A', no: 'N/A' },
   },
 ];
 
@@ -144,6 +152,8 @@ export const BestOddsTableDesktop = memo(function BestOddsTableDesktop({
     'fta': 'FTA',
     'oreb': 'OREB',
     'dreb': 'DREB',
+    'double_double': 'Double Double',
+    'triple_double': 'Triple Double',
     'to': 'TO',
     'pf': 'PF',
     'stl': 'STL',

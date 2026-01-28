@@ -26,6 +26,8 @@ export interface BookRow {
   PR: { line: string; over: string; under: string };
   PA: { line: string; over: string; under: string };
   RA: { line: string; over: string; under: string };
+  DD?: { yes: string; no: string };
+  TD?: { yes: string; no: string };
 }
 
 // Versioned key to avoid stale The Odds API cache
@@ -231,6 +233,8 @@ export async function GET(request: NextRequest) {
                 PR: getPrimaryProp(bookmakerProps.PR),
                 PA: getPrimaryProp(bookmakerProps.PA),
                 RA: getPrimaryProp(bookmakerProps.RA),
+                DD: bookmakerProps.DD || { yes: 'N/A', no: 'N/A' },
+                TD: bookmakerProps.TD || { yes: 'N/A', no: 'N/A' },
               });
             }
           }

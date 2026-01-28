@@ -39,7 +39,7 @@ export function calculateYAxisConfig({
   }
   
   const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
-  const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'turnover', 'pf', 'stl', 'blk'];
+  const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'double_double', 'triple_double', 'turnover', 'pf', 'stl', 'blk'];
   const isSmallIncrementStat = smallIncrementStats.includes(selectedStat);
   
   // Get min and max values from data

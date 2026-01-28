@@ -101,6 +101,14 @@ export function getStatValue(stats: BallDontLieStats, key: string): number {
     case 'ft_pct': return (stats.ft_pct || 0) * 100;
     case 'oreb': return stats.oreb;
     case 'dreb': return stats.dreb;
+    case 'double_double': {
+      const count = [stats.pts, stats.reb, stats.ast, stats.stl ?? 0, stats.blk ?? 0].filter(v => (v || 0) >= 10).length;
+      return count >= 2 ? 1 : 0;
+    }
+    case 'triple_double': {
+      const count = [stats.pts, stats.reb, stats.ast, stats.stl ?? 0, stats.blk ?? 0].filter(v => (v || 0) >= 10).length;
+      return count >= 3 ? 1 : 0;
+    }
     case 'turnover': return stats.turnover;
     case 'pf': return stats.pf;
     case 'stl': return stats.stl;

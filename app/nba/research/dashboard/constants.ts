@@ -227,6 +227,7 @@ export const PLAYER_STAT_OPTIONS = [
   // After FGA: STL, BLK, OREB, DREB (then remaining)
   { key: "stl", label: "STL" }, { key: "blk", label: "BLK" },
   { key: "oreb", label: "OREB" }, { key: "dreb", label: "DREB" },
+  { key: "double_double", label: "Double Double" }, { key: "triple_double", label: "Triple Double" },
   { key: "fg_pct", label: "FG%" }, { key: "ftm", label: "FTM" }, { key: "fta", label: "FTA" },
   { key: "ft_pct", label: "FT%" }, { key: "turnover", label: "TO" }, { key: "pf", label: "PF" }
 ];

@@ -27,6 +27,8 @@ export function getBookRowKey(stat: string | null | undefined): string | null {
     'pr': 'PR',
     'pa': 'PA',
     'ra': 'RA',
+    'double_double': 'DD',
+    'triple_double': 'TD',
     'spread': 'Spread',
     'total_pts': 'Total',
     'moneyline': 'H2H',
