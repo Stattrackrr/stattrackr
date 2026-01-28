@@ -247,8 +247,8 @@ export function CustomChartTooltip({
       // Center horizontally
       const left = Math.max(10, (viewportWidth - tooltipWidth) / 2);
       
-      // Position in upper-middle area (above the chart area)
-      const top = Math.max(10, Math.min(viewportHeight * 0.3, viewportHeight - tooltipHeight - 20));
+      // Position in middle area of screen (around 40-45% from top) - not too high
+      const top = Math.max(10, Math.min(viewportHeight * 0.4, viewportHeight - tooltipHeight - 20));
       
       return { left: `${left}px`, top: `${top}px` };
     } else {
