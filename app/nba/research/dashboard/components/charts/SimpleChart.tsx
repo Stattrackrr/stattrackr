@@ -10,9 +10,11 @@ import {
   Cell,
   ComposedChart,
   Line,
+  Tooltip,
 } from 'recharts';
 import StaticLabelList from './StaticLabelList';
 import CustomXAxisTick from './CustomXAxisTick';
+import { CHART_CONFIG } from '../../constants';
 
 interface SimpleChartProps {
   isLoading?: boolean;
@@ -24,6 +26,7 @@ interface SimpleChartProps {
   selectedTimeframe?: string;
   secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
   selectedFilterForAxis?: string | null;
+  customTooltip?: any;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -37,6 +40,7 @@ const SimpleChart = memo(function SimpleChart({
   selectedTimeframe,
   secondAxisData,
   selectedFilterForAxis,
+  customTooltip,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -395,9 +399,11 @@ const SimpleChart = memo(function SimpleChart({
         isDark={isDark} 
         formatChartLabel={formatChartLabel} 
         fontSizePx={12}
+        selectedStat={selectedStat}
+        chartData={mergedChartData}
       />
     );
-  }, [isDark, formatChartLabel, chartData.length, selectedStat]);
+  }, [isDark, formatChartLabel, chartData.length, selectedStat, mergedChartData]);
 
   // Limit Y-axis ticks to only 4: evenly spaced across the domain
   const limitTicks = useCallback((ticks: number[], domain: [number, number]) => {
@@ -671,16 +677,124 @@ const SimpleChart = memo(function SimpleChart({
               />
             )}
 
+            {/* Tooltip */}
+            <Tooltip 
+              content={(props: any) => {
+                if (!props?.active || !props?.payload || !props?.payload.length) {
+                  return null;
+                }
+                if (!customTooltip) {
+                  return null;
+                }
+                // Pass coordinate to customTooltip so it can position at cursor
+                return customTooltip({ ...props, coordinate: props.coordinate });
+              }}
+              cursor={{ 
+                fill: isDark ? 'rgba(107, 114, 128, 0.5)' : 'rgba(156, 163, 175, 0.6)', 
+                stroke: isDark ? '#6b7280' : '#9ca3af',
+                strokeWidth: 2,
+                opacity: 0.7,
+                width: 2
+              }}
+              trigger="hover"
+              allowEscapeViewBox={{ x: true, y: true }}
+              wrapperStyle={{ zIndex: 100000, pointerEvents: 'none' }}
+              shared={false}
+              itemStyle={{ padding: '4px' }}
+              isAnimationActive={false}
+              position={{ x: 'auto', y: 'auto' }}
+            />
+
             {/* Bar chart */}
             <Bar
               key={`bar-${selectedStat}-${mergedChartData.length}`}
-              dataKey="value"
+              dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
               radius={[10, 10, 10, 10]}
+              shape={selectedStat === 'fg3m' ? (props: any) => {
+                const { x, y, width, height, payload } = props;
+                const attempts = payload?.stats?.fg3a || 0;
+                const makes = payload?.stats?.fg3m || 0;
+                const makesHeight = attempts > 0 ? (makes / attempts) * height : 0;
+                const isLive = (payload as any)?.isLive;
+                const barIndex = props.index ?? -1;
+                const isMostRecent = isLive && barIndex === mergedChartData.length - 1;
+                
+                // Get color for makes bar based on betting line comparison
+                const makesColor = makes > bettingLine 
+                  ? CHART_CONFIG.colors.green 
+                  : makes === bettingLine 
+                    ? '#9ca3af' 
+                    : CHART_CONFIG.colors.red;
+                
+                return (
+                  <g>
+                    {/* Background bar (attempts) - gray, semi-transparent */}
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      fill={isDark ? '#4b5563' : '#d1d5db'}
+                      fillOpacity={0.5}
+                      rx={10}
+                      ry={10}
+                      stroke={isMostRecent ? '#9333ea' : 'none'}
+                      strokeWidth={isMostRecent ? 3 : 0}
+                      style={{ pointerEvents: 'all' }}
+                    />
+                    
+                    {/* Attempts label on top of attempts bar */}
+                    {attempts > 0 && (
+                      <text
+                        x={x + width / 2}
+                        y={y - 4}
+                        textAnchor="middle"
+                        fontSize="12"
+                        fontWeight="bold"
+                        fill={isDark ? '#ffffff' : '#000000'}
+                      >
+                        {attempts}
+                      </text>
+                    )}
+                    
+                    {/* Foreground bar (makes) - colored based on betting line */}
+                    {makes > 0 && (
+                      <rect
+                        x={x}
+                        y={y + height - makesHeight}
+                        width={width}
+                        height={makesHeight}
+                        fill={makesColor}
+                        rx={10}
+                        ry={10}
+                        stroke={isMostRecent ? '#9333ea' : 'none'}
+                        strokeWidth={isMostRecent ? 3 : 0}
+                        style={{ pointerEvents: 'none' }}
+                      />
+                    )}
+                    
+                    {/* Makes label on top of makes bar */}
+                    {makes > 0 && makesHeight > 10 && (
+                      <text
+                        x={x + width / 2}
+                        y={y + height - makesHeight - 4}
+                        textAnchor="middle"
+                        fontSize="12"
+                        fontWeight="bold"
+                        fill="#ffffff"
+                      >
+                        {makes}
+                      </text>
+                    )}
+                  </g>
+                );
+              } : undefined}
             >
-              {barCells}
+              {selectedStat !== 'fg3m' && barCells}
             
               {/* Labels on top of bars - memoized to prevent re-renders when betting line changes */}
-              {memoizedLabelList}
+              {/* Don't show default labels for fg3m since we handle them in the custom shape */}
+              {selectedStat !== 'fg3m' && memoizedLabelList}
             </Bar>
             {hasSecondAxis && (
               <Line
@@ -711,7 +825,8 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.isDark !== nextProps.isDark ||
     prevProps.secondAxisData !== nextProps.secondAxisData ||
     prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis ||
-    prevProps.selectedTimeframe !== nextProps.selectedTimeframe;
+    prevProps.selectedTimeframe !== nextProps.selectedTimeframe ||
+    prevProps.customTooltip !== nextProps.customTooltip;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

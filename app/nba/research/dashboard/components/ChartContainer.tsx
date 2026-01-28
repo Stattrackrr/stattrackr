@@ -256,6 +256,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
           selectedTimeframe={selectedTimeframe}
           secondAxisData={showAdvancedFilters ? secondAxisData : null}
           selectedFilterForAxis={showAdvancedFilters ? selectedFilterForAxis : null}
+          customTooltip={customTooltip}
         />
       </div>
     </div>

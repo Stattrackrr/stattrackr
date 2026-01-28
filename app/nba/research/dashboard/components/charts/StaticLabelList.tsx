@@ -7,11 +7,15 @@ import { CHART_CONFIG } from '../../constants';
 export default memo(function StaticLabelList({ 
   isDark, 
   formatChartLabel, 
-  fontSizePx = 12 
+  fontSizePx = 12,
+  selectedStat,
+  chartData
 }: { 
   isDark: boolean; 
   formatChartLabel: (v: any) => string; 
-  fontSizePx?: number 
+  fontSizePx?: number;
+  selectedStat?: string;
+  chartData?: Array<{ value: number; [key: string]: any }>;
 }) {
   return (
     <LabelList
@@ -22,8 +26,8 @@ export default memo(function StaticLabelList({
         fontWeight: CHART_CONFIG.labelList.fontWeight,
         fill: isDark ? '#ffffff' : '#000000'
       }}
-      formatter={formatChartLabel}
       content={(props: any) => {
+        
         if (!props) return null;
         
         const value = props?.value ?? props?.payload?.value;
@@ -32,7 +36,23 @@ export default memo(function StaticLabelList({
           return null;
         }
         
-        const { x, y, width, value: labelValue, height, viewBox } = props;
+        // In Recharts LabelList, props.payload is the data object
+        // But we should also check props directly as it might be structured differently
+        const { x, y, width, value: labelValue, height, viewBox, payload, index } = props;
+        
+        // For fg3m, we need to access the full data entry with stats
+        // Since payload is undefined in LabelList, we'll use the index to look up the data from chartData
+        let dataObject = payload;
+        
+        // If payload is undefined and we have chartData and index, look up the data entry
+        if (!dataObject && chartData && (index !== undefined && index !== null)) {
+          dataObject = chartData[index];
+        }
+        
+        // Fallback to props if still no data
+        if (!dataObject) {
+          dataObject = props;
+        }
         
         // Ensure we have valid positioning props - if not, don't render (Recharts will call again)
         if (x === undefined || y === undefined || width === undefined) {
@@ -48,6 +68,38 @@ export default memo(function StaticLabelList({
           labelY = y - 4;
         }
         
+        // Special handling for fg3m (3PM/A) - show made/attempted format
+        let displayText = formatChartLabel(labelValue);
+        
+        // Always check for fg3m - try multiple ways to access the data
+        if (selectedStat === 'fg3m') {
+          // Try dataObject.stats (from chartData lookup by index)
+          const stats = dataObject?.stats;
+          if (stats && (stats.fg3m !== undefined || stats.fg3a !== undefined)) {
+            const makes = stats.fg3m || 0;
+            const attempts = stats.fg3a || 0;
+            displayText = `${makes}/${attempts}`;
+          } 
+          // Try payload.stats (fallback)
+          else if (payload?.stats && (payload.stats.fg3m !== undefined || payload.stats.fg3a !== undefined)) {
+            const makes = payload.stats.fg3m || 0;
+            const attempts = payload.stats.fg3a || 0;
+            displayText = `${makes}/${attempts}`;
+          }
+          // Try root level (shouldn't happen but just in case)
+          else if (dataObject?.fg3m !== undefined || dataObject?.fg3a !== undefined) {
+            const makes = dataObject.fg3m || 0;
+            const attempts = dataObject.fg3a || 0;
+            displayText = `${makes}/${attempts}`;
+          }
+          // Try props directly (last resort)
+          else if (props?.stats && (props.stats.fg3m !== undefined || props.stats.fg3a !== undefined)) {
+            const makes = props.stats.fg3m || 0;
+            const attempts = props.stats.fg3a || 0;
+            displayText = `${makes}/${attempts}`;
+          }
+        }
+        
         return (
           <text
             key={`label-${x}-${y}-${value}`}
@@ -61,10 +113,10 @@ export default memo(function StaticLabelList({
               fill: isDark ? '#ffffff' : '#000000'
             }}
           >
-            {formatChartLabel(labelValue)}
+            {displayText}
           </text>
         );
       }}
     />
   );
-}, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel && prev.fontSizePx === next.fontSizePx);
+}, (prev, next) => prev.isDark === next.isDark && prev.formatChartLabel === next.formatChartLabel && prev.fontSizePx === next.fontSizePx && prev.selectedStat === next.selectedStat && prev.chartData === next.chartData);

@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { parseMinutes } from '../../utils/playerUtils';
 import { PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS } from '../../constants';
 
@@ -7,6 +9,7 @@ interface CustomChartTooltipProps {
   active?: boolean;
   payload?: any[];
   label?: any;
+  coordinate?: { x: number; y: number };
   propsMode: 'player' | 'team';
   selectedStat: string;
   isDark: boolean;
@@ -29,12 +32,32 @@ export function CustomChartTooltip({
   active,
   payload,
   label,
+  coordinate,
   propsMode,
   selectedStat,
   isDark,
   gamePropsTeam,
   selectedTeam,
 }: CustomChartTooltipProps) {
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Track mouse position for cursor-following tooltip
+  useEffect(() => {
+    if (!active) {
+      setMousePosition(null);
+      return;
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [active]);
+
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -47,7 +70,18 @@ export function CustomChartTooltip({
   const statLabel = statMeta ? statMeta.label : selectedStat.toUpperCase();
   const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
   const numValue = typeof data.value === 'number' ? data.value : parseFloat(data.value) || 0;
-  const formattedValue = isPercentageStat ? `${numValue.toFixed(1)}%` : `${numValue}`;
+  
+  // Special handling for fg3m (3PM/A) - show made/attempted format
+  let formattedValue: string;
+  if (selectedStat === 'fg3m' && propsMode === 'player' && data.stats) {
+    const makes = data.stats.fg3m || 0;
+    const attempts = data.stats.fg3a || 0;
+    formattedValue = `${makes}/${attempts}`;
+  } else if (isPercentageStat) {
+    formattedValue = `${numValue.toFixed(1)}%`;
+  } else {
+    formattedValue = `${numValue}`;
+  }
   
   // Handle both player and team mode data
   let correctDate = "Unknown Date";
@@ -167,16 +201,26 @@ export function CustomChartTooltip({
   const winColor = isDark ? '#10b981' : '#059669'; // Green for wins
   const lossColor = isDark ? '#ef4444' : '#dc2626'; // Red for losses
   
-  return (
-    <div style={{
-      backgroundColor: tooltipBg,
-      border: `1px solid ${tooltipBorder}`,
-      borderRadius: '8px',
-      padding: '12px',
-      minWidth: '200px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      zIndex: 9999
-    }}>
+  // Position tooltip at cursor location with offset to prevent overlap
+  // Use very high z-index to ensure it appears above betting line (z-index 25) and chart (z-index 20)
+  const tooltipStyle: React.CSSProperties = {
+    backgroundColor: tooltipBg,
+    border: `1px solid ${tooltipBorder}`,
+    borderRadius: '8px',
+    padding: '12px',
+    minWidth: '200px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    zIndex: 999999, // Very high z-index to appear above everything
+    pointerEvents: 'none',
+    position: 'fixed',
+    left: mousePosition ? `${mousePosition.x + 15}px` : undefined,
+    top: mousePosition ? `${mousePosition.y - 10}px` : undefined,
+    transform: 'none',
+  };
+
+  // Build tooltip content
+  const tooltipContent = (
+    <div style={tooltipStyle}>
       {/* Header: Date, Opponent, and Game Result */}
       <div style={{ 
         marginBottom: '12px', 
@@ -327,6 +371,13 @@ export function CustomChartTooltip({
       )}
     </div>
   );
+
+  // Render tooltip in a portal to document body to escape stacking context
+  if (typeof window !== 'undefined' && active && mousePosition) {
+    return createPortal(tooltipContent, document.body);
+  }
+
+  return null;
 }
 
 
