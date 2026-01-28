@@ -16,7 +16,25 @@ export default function UpdatePasswordPage() {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const checkSession = async () => {
+    const establishSessionAndCheck = async () => {
+      // If recovery link landed here with tokens in the hash, establish session first
+      const hash = typeof window !== "undefined" ? window.location.hash?.replace(/^#/, "") || "" : "";
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        if (error) {
+          setError(error.message);
+          setCheckingSession(false);
+          return;
+        }
+        // Strip hash and reload so we have a clean URL and a confirmed session
+        router.replace("/auth/update-password");
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.replace("/login?redirect=/auth/update-password");
@@ -24,7 +42,7 @@ export default function UpdatePasswordPage() {
       }
       setCheckingSession(false);
     };
-    checkSession();
+    establishSessionAndCheck();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
