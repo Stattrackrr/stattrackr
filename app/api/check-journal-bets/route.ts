@@ -1202,10 +1202,10 @@ export async function GET(request: Request) {
       gamePropsQuery = gamePropsQuery.in('result', ['pending', 'win', 'loss']);
       console.log('[check-journal-bets] Recalculation mode: will re-check completed bets');
     } else {
-      // In normal mode, fetch ALL bets and filter in code
-      // This ensures we don't miss any bets due to query syntax issues
-      // We'll filter out completed bets in code below
-      console.log('[check-journal-bets] Normal mode: fetching all NBA bets (will filter completed in code)');
+      // EGRESS: Only fetch pending/live bets in normal mode so we don't transfer completed bets
+      playerPropsQuery = playerPropsQuery.in('status', ['pending', 'live']);
+      gamePropsQuery = gamePropsQuery.in('status', ['pending', 'live']);
+      console.log('[check-journal-bets] Normal mode: fetching only pending/live NBA bets');
     }
     
     // Fetch bets in batches to avoid loading all into memory
@@ -1250,8 +1250,8 @@ export async function GET(request: Request) {
     if (recalculate) {
       parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
     } else {
-      // In normal mode, fetch ALL parlays and filter in code
-      // This ensures we don't miss any bets due to query syntax issues
+      // EGRESS: Only fetch pending/live parlays in normal mode
+      parlayBetsQuery = parlayBetsQuery.in('status', ['pending', 'live']);
     }
     
     const parlayBets = await fetchBetsInBatches(parlayBetsQuery);

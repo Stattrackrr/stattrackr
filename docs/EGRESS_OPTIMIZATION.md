@@ -1,8 +1,7 @@
 # Egress Optimization Guide
 
 ## Current Issue
-**Egress: 5.722 GB / 5 GB (114% - EXCEEDED)**
-**Database Size: 0.146 GB / 0.5 GB (29% - OK)**
+**Egress:** Data transfer OUT from Supabase (queries, API responses). Exceeding the 5 GB Free Plan limit causes overage.
 
 The problem is **data transfer out** (egress), not storage. This happens when:
 - Large API responses are sent to clients
@@ -10,7 +9,17 @@ The problem is **data transfer out** (egress), not storage. This happens when:
 - No pagination/limits on queries
 - Frequent polling/refreshing
 
-## Main Culprits
+## Fixes applied (reduce egress)
+
+### Similar-players API
+- **Before:** Fetched entire `players` table with `.select('*')` on every request (no limit).
+- **After:** `.select('id, first_name, last_name, position, height, height_inches, weight, headshot_url, team_id, team_abbreviation')` and 2‑minute in-memory cache so repeated calls don’t re-fetch.
+
+### Check-journal-bets (cron)
+- **Before:** In normal mode, fetched ALL NBA bets (including completed) and filtered in code.
+- **After:** In normal mode, only fetches `.in('status', ['pending', 'live'])` so completed bets are never transferred.
+
+## Main Culprits (other)
 
 ### 1. Journal Page - Fetching ALL Bets
 **File:** `app/journal/page.tsx:831-835`
