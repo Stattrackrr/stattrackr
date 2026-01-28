@@ -31,6 +31,7 @@ export default function LoginPage() {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
+  const [isResetRedirect, setIsResetRedirect] = useState(false);
 
   // If password reset link landed here (Supabase may redirect to Site URL), read hash and send to update-password
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function LoginPage() {
     if (redirect) {
       // Maintain compatibility with any existing stored redirect by clearing it
       localStorage.setItem('stattrackr_login_redirect', redirect);
+      if (redirect === "/auth/update-password") setIsResetRedirect(true);
     }
     // Open in sign-up mode when ?signup=1
     if (searchParams.get('signup') === '1') setIsSignUp(true);
@@ -231,7 +233,7 @@ export default function LoginPage() {
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
-        redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
+        redirectTo: `${origin}/auth/update-password`,
       });
       if (error) throw error;
       setForgotPasswordSuccess(true);
@@ -366,6 +368,14 @@ export default function LoginPage() {
             {success && (
               <div className="mb-6 p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
                 {success}
+              </div>
+            )}
+
+            {/* Reset link sent here — explain how to use the email link */}
+            {isResetRedirect && !showForgotPassword && (
+              <div className="mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 text-amber-200 text-sm">
+                <p className="font-medium mb-1">Resetting your password?</p>
+                <p>Use the link from your email in <strong>this same browser</strong>—click it, or copy the link and paste it into the address bar above. Don’t open it in a different app or you’ll end up back here.</p>
               </div>
             )}
 
