@@ -134,6 +134,13 @@ export function useStatUrlSync({
       // Only update if different to avoid unnecessary navigation
       if (currentStat !== selectedStat) {
         url.searchParams.set('stat', selectedStat);
+        // Remove line param if it exists and is for a different stat
+        // This prevents loading the wrong betting line when switching stats
+        const urlLine = url.searchParams.get('line');
+        const urlStat = url.searchParams.get('stat');
+        if (urlLine && urlStat && urlStat.toLowerCase() !== selectedStat.toLowerCase()) {
+          url.searchParams.delete('line');
+        }
         // Use replace to avoid adding to history
         router.replace(url.pathname + url.search, { scroll: false });
       }

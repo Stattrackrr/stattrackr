@@ -135,13 +135,25 @@ export function useUrlInitialization({
           }
           
           // If line is provided, set it for this stat (use normalized stat for the key)
-          if (line) {
-            const lineValue = parseFloat(line);
-            if (!isNaN(lineValue)) {
-              setBettingLines(prev => ({
-                ...prev,
-                [normalizedStat]: Math.abs(lineValue) // Use absolute value (line can be negative for under props)
-              }));
+          // Only set if the stat in URL matches the normalized stat (prevents wrong stat's line)
+          if (line && stat) {
+            const urlStatNormalized = (() => {
+              const statUpper = stat.toUpperCase();
+              if (statUpper === 'THREES' || statUpper === '3PM' || statUpper === '3PM/A') {
+                return 'fg3m';
+              }
+              return stat.toLowerCase();
+            })();
+            
+            // Only use the line if the URL stat matches the normalized stat
+            if (urlStatNormalized === normalizedStat) {
+              const lineValue = parseFloat(line);
+              if (!isNaN(lineValue)) {
+                setBettingLines(prev => ({
+                  ...prev,
+                  [normalizedStat]: Math.abs(lineValue) // Use absolute value (line can be negative for under props)
+                }));
+              }
             }
           }
         }
