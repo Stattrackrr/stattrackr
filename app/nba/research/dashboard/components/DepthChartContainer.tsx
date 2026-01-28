@@ -178,12 +178,16 @@ const DepthChartContainer = memo(function DepthChartContainer({
             // Show button if team has a game (even if cache is empty)
             setLineupAvailable(hasGame);
             
-            // Pre-fetch lineup in background if game exists but cache is empty
+            // Pre-fetch lineups for both teams if game exists but cache is empty
             if (hasGame) {
-              // Trigger background fetch immediately (don't wait for button click)
+              // Trigger background fetch for selected team
               fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}&fetchIfMissing=true`).catch(err => {
                 console.error('[DepthChart] Background fetch error:', err);
               });
+              // Also prefetch opponent so both lineups load when user clicks Show Lineups
+              if (opponentTeam && opponentTeam !== 'N/A' && opponentTeam !== selectedTeam) {
+                fetch(`/api/dvp/get-todays-lineup?team=${opponentTeam}&fetchIfMissing=true`).catch(() => {});
+              }
             }
           } else {
             console.log(`[DepthChart] No games data returned for ${selectedTeam}`);
@@ -214,18 +218,18 @@ const DepthChartContainer = memo(function DepthChartContainer({
     const oppTeam = opponentTeam || 'N/A';
     const hasOpponent = oppTeam && oppTeam !== 'N/A' && oppTeam !== playerTeam;
     
-    // Fetch both lineups
+    // Fetch both lineups; trigger Basketball Monsters fetch when missing, then poll for both
     const fetchLineups = async () => {
       setLineupLoading(true);
       
       try {
-        // Fetch selected team lineup
+        // Fetch selected team lineup (use cache if we already have it)
         let selectedTeamLineup = null;
         if (startingLineup && startingLineup.length === 5) {
           selectedTeamLineup = startingLineup;
         } else {
           try {
-            const response = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}`);
+            const response = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}&fetchIfMissing=true`);
             const data = await response.json();
             if (data.lineup && Array.isArray(data.lineup) && data.lineup.length === 5) {
               selectedTeamLineup = data.lineup;
@@ -236,12 +240,14 @@ const DepthChartContainer = memo(function DepthChartContainer({
           }
         }
         
-        // Fetch opponent team lineup if available
+        // Fetch opponent: use fetchIfMissing so Basketball Monsters fetch runs if not cached
+        let opponentLineupGot: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> | null = null;
         if (hasOpponent) {
           try {
-            const oppResponse = await fetch(`/api/dvp/get-todays-lineup?team=${oppTeam}`);
+            const oppResponse = await fetch(`/api/dvp/get-todays-lineup?team=${oppTeam}&fetchIfMissing=true`);
             const oppData = await oppResponse.json();
             if (oppData.lineup && Array.isArray(oppData.lineup) && oppData.lineup.length === 5) {
+              opponentLineupGot = oppData.lineup;
               setOpponentLineup(oppData.lineup);
             } else {
               setOpponentLineup(null);
@@ -254,30 +260,46 @@ const DepthChartContainer = memo(function DepthChartContainer({
           setOpponentLineup(null);
         }
         
-        // If selected team lineup not in cache, poll for it
+        const maxAttempts = 10;
+        const pollDelayMs = 2000;
+        
+        // If selected team lineup not in cache, poll (fetch was triggered above)
         if (!selectedTeamLineup) {
-          let attempts = 0;
-          const maxAttempts = 10;
-          
-          while (attempts < maxAttempts) {
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
               const pollResponse = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}`);
               const pollData = await pollResponse.json();
-              
               if (pollData.lineup && Array.isArray(pollData.lineup) && pollData.lineup.length === 5) {
                 setStartingLineup(pollData.lineup);
+                selectedTeamLineup = pollData.lineup;
                 break;
               }
             } catch (error) {
-              console.error(`[DepthChart] Polling attempt ${attempts + 1} failed:`, error);
+              console.error(`[DepthChart] Polling attempt ${attempt + 1} failed:`, error);
             }
-            
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (attempt < maxAttempts - 1) {
+              await new Promise(resolve => setTimeout(resolve, pollDelayMs));
+            }
           }
-          
-          if (attempts >= maxAttempts) {
+          if (!selectedTeamLineup) {
             setStartingLineup(null);
+          }
+        }
+        
+        // If opponent lineup not in cache, poll so both sides can load
+        if (hasOpponent && !opponentLineupGot) {
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, pollDelayMs));
+            try {
+              const r = await fetch(`/api/dvp/get-todays-lineup?team=${oppTeam}`);
+              const d = await r.json();
+              if (d.lineup && Array.isArray(d.lineup) && d.lineup.length === 5) {
+                setOpponentLineup(d.lineup);
+                break;
+              }
+            } catch {
+              // continue
+            }
           }
         }
       } catch (error: any) {

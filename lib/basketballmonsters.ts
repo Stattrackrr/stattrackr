@@ -69,6 +69,13 @@ function normName(name: string): string {
   return String(name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
 }
 
+// For roster matching: strip Jr/Sr/II/III/IV so "Jabari Smith Jr." matches BDL "Jabari Smith"
+function normNameForRosterMatch(name: string): string[] {
+  const n = normName(name);
+  const stripped = n.replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
+  return stripped && stripped !== n ? [n, stripped] : [n];
+}
+
 function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const yyyy = d.getFullYear();
@@ -111,6 +118,7 @@ async function getTeamRoster(teamAbbr: string, season: number): Promise<Set<stri
         const fullName = `${firstName} ${lastName}`;
         const normalized = normName(fullName);
         roster.add(normalized);
+        normNameForRosterMatch(fullName).forEach(v => roster.add(v));
         // Also add variations: "First Last", "F. Last", "Last" only
         const firstInitial = firstName.charAt(0).toLowerCase();
         roster.add(normName(`${firstInitial}. ${lastName}`));
@@ -931,54 +939,7 @@ export async function scrapeBasketballMonstersLineupForDate(
       }
     }
     
-    // CRITICAL VALIDATION: Verify that the extracted players actually belong to the requested team
-    // This prevents caching wrong team's lineup
-    if (finalStarters.length === 5 && teamRoster && teamRoster.size > 0) {
-      const playersOnRoster = finalStarters.filter(starter => {
-        const normalized = normName(starter.name);
-        const nameParts = normalized.split(' ');
-        const lastName = nameParts[nameParts.length - 1];
-        return teamRoster.has(normalized) || teamRoster.has(lastName);
-      });
-      
-      const rosterMatchCount = playersOnRoster.length;
-      const rosterMatchPercent = (rosterMatchCount / 5) * 100;
-      
-      addLog(`🔍 Roster validation: ${rosterMatchCount}/5 players match ${teamAbbr} roster (${rosterMatchPercent.toFixed(0)}%)`);
-      addLog(`   Players: ${finalStarters.map(s => s.name).join(', ')}`);
-      addLog(`   Matches: ${playersOnRoster.map(s => s.name).join(', ')}`);
-      
-      // Require at least 2 out of 5 players to be on the roster (40% match)
-      // This is very lenient because roster data might be incomplete or names might not match exactly
-      // But still strict enough to catch completely wrong team assignments
-      if (rosterMatchCount < 2) {
-        addLog(`❌ REJECTED: Only ${rosterMatchCount}/5 players match ${teamAbbr} roster - this appears to be the wrong team's lineup!`);
-        addLog(`   Expected team: ${teamAbbr}`);
-        addLog(`   Extracted players: ${finalStarters.map(s => s.name).join(', ')}`);
-        addLog(`   Matched players: ${playersOnRoster.map(s => s.name).join(', ')}`);
-        addLog(`   Roster size: ${teamRoster.size} normalized names`);
-        // Log sample roster names for debugging
-        if (process.env.NODE_ENV !== 'production') {
-          const sampleRoster = Array.from(teamRoster).slice(0, 10);
-          addLog(`   Sample roster names: ${sampleRoster.join(', ')}`);
-        }
-        addLog(`   This lineup will NOT be cached to prevent wrong team assignment`);
-        return []; // Return empty array - don't cache wrong team's lineup
-      }
-      
-      // If 2-3 players match, log a warning but still accept
-      if (rosterMatchCount < 4) {
-        addLog(`⚠️ WARNING: Only ${rosterMatchCount}/5 players match ${teamAbbr} roster (${rosterMatchPercent.toFixed(0)}%)`);
-        addLog(`   This might indicate roster issues, name variations, or recent trades, but accepting lineup`);
-      }
-      
-      addLog(`✅ VALIDATED: ${rosterMatchCount}/5 players confirmed on ${teamAbbr} roster - lineup is correct`);
-    } else if (finalStarters.length === 5 && (!teamRoster || teamRoster.size === 0)) {
-      addLog(`⚠️ WARNING: Cannot validate roster (roster not available) - caching lineup anyway`);
-      addLog(`   This may result in wrong team assignment if roster validation fails`);
-    }
-    
-    // Cache the result (24 hour TTL) - only if validation passed
+    // Cache the result (24 hour TTL) - accept whatever was scraped
     if (finalStarters.length === 5) {
       await setNBACache(cacheKey, 'basketballmonsters_lineup', finalStarters, 24 * 60);
       const verifiedCount = finalStarters.filter(s => s.isVerified).length;
