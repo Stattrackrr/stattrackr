@@ -133,30 +133,6 @@ export default memo(function StaticBarsChart({
       };
     });
     
-    // Debug logging for DvP rank
-    if (selectedFilterForAxis === 'dvp_rank') {
-      const valuesWithRanks = merged.filter((item: any) => item.secondAxisValue !== null && item.secondAxisValue !== undefined);
-      const sampleMerged = merged.slice(0, 3).map((item: any) => ({
-        xKey: item.xKey,
-        gameId: item.game?.id,
-        statsGameId: item.stats?.game?.id,
-        secondAxisValue: item.secondAxisValue,
-        value: item.value
-      }));
-      const secondAxisDataSample = secondAxisData.slice(0, 3);
-      const allGameIds = Array.from(secondAxisMap.keys());
-      const allXKeys = merged.map((item: any) => item.xKey || String(item.game?.id || ''));
-      
-      console.log('[StaticBarsChart] Merged DvP rank data:', {
-        totalGames: merged.length,
-        gamesWithRanks: valuesWithRanks.length,
-        sampleMerged,
-        secondAxisDataSample,
-        allGameIdsFromMap: allGameIds.slice(0, 10),
-        allXKeysFromData: allXKeys.slice(0, 10),
-        matchingGameIds: allGameIds.filter(id => allXKeys.includes(id)).slice(0, 5)
-      });
-    }
     
     return merged;
   }, [data, secondAxisData, selectedFilterForAxis]);
@@ -243,20 +219,6 @@ export default memo(function StaticBarsChart({
   const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
   const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;
   
-  // Debug logging for DvP rank
-  if (selectedFilterForAxis === 'dvp_rank') {
-    console.log('[StaticBarsChart] Second axis setup:', {
-      hasSecondAxis,
-      hasSelectedFilter: !!selectedFilterForAxis,
-      hasSecondAxisData: !!secondAxisData,
-      secondAxisDataLength: secondAxisData?.length || 0,
-      hasSecondAxisConfig: !!secondAxisConfig,
-      secondAxisConfig: secondAxisConfig,
-      usingComposedChart: hasSecondAxis,
-      sampleSecondAxisData: secondAxisData?.slice(0, 3)
-    });
-  }
-  
   // On mobile, use mobile margins (which already account for second axis)
   // On desktop, use larger right margin when second axis is present to give y-axis more space
   const finalMargin = useMemo(() => {
@@ -266,14 +228,16 @@ export default memo(function StaticBarsChart({
     return hasSecondAxis ? { ...chartMargin, right: 10 } : chartMargin; // 10px right margin for second axis
   }, [chartMargin, hasSecondAxis, compactMobile, isMobileSB]);
 
+
   return (
-    <ResponsiveContainer 
-      key={viewportWidth}
-      width="100%" 
-      height="100%" 
-      debounce={CHART_CONFIG.performance.debounceMs}
-      style={{ overflow: 'visible' }} // Ensure right y-axis isn't clipped
-    >
+    <div data-chart-container style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <ResponsiveContainer 
+        key={viewportWidth}
+        width="100%" 
+        height="100%" 
+        debounce={CHART_CONFIG.performance.debounceMs}
+        style={{ overflow: 'visible' }} // Ensure right y-axis isn't clipped
+      >
       <ChartComponent 
         data={mergedData} 
         margin={finalMargin}
@@ -330,13 +294,29 @@ export default memo(function StaticBarsChart({
           />
         )}
         <Tooltip 
-          content={customTooltip}
-          cursor={compactMobile ? false : { fill: isDark ? '#4b5563' : '#9ca3af', opacity: 0.3 }}
-          trigger={compactMobile ? 'click' : 'hover'}
+          content={(props: any) => {
+            if (!props?.active || !props?.payload || !props?.payload.length) {
+              return null;
+            }
+            if (!customTooltip) {
+              return null;
+            }
+            // Pass coordinate to customTooltip so it can position at cursor
+            return customTooltip({ ...props, coordinate: props.coordinate });
+          }}
+          cursor={compactMobile ? false : { 
+            fill: isDark ? 'rgba(107, 114, 128, 0.5)' : 'rgba(156, 163, 175, 0.6)', 
+            stroke: isDark ? '#6b7280' : '#9ca3af',
+            strokeWidth: 2,
+            opacity: 0.7,
+            width: 2
+          }}
+          trigger="hover"
           allowEscapeViewBox={{ x: true, y: true }}
-          wrapperStyle={{ zIndex: 9999, pointerEvents: 'none' }}
+          wrapperStyle={{ zIndex: 100000, pointerEvents: 'none' }}
           shared={false}
           itemStyle={{ padding: '4px' }}
+          isAnimationActive={false}
         />
         <Bar 
           yAxisId="left"
@@ -345,6 +325,8 @@ export default memo(function StaticBarsChart({
           isAnimationActive={false} 
           animationDuration={0}
           background={false}
+          // Ensure bars are interactive
+          style={{ cursor: 'pointer' }}
           shape={selectedStat === 'fg3m' ? (props: any) => {
             const { x, y, width, height, payload } = props;
             const attempts = payload?.stats?.fg3a || 0;
@@ -354,8 +336,11 @@ export default memo(function StaticBarsChart({
             const barIndex = props.index ?? -1;
             const isMostRecent = isLive && barIndex === data.length - 1;
             
+            // Return the default bar shape but with custom rendering on top
+            // This preserves Recharts' hover detection
             return (
               <g>
+                {/* Main bar - this needs to be interactive for tooltips */}
                 <rect
                   x={x}
                   y={y}
@@ -367,6 +352,7 @@ export default memo(function StaticBarsChart({
                   ry={CHART_CONFIG.bar.radius[0]}
                   stroke={isMostRecent ? '#9333ea' : 'none'}
                   strokeWidth={isMostRecent ? 3 : 0}
+                  style={{ pointerEvents: 'all' }}
                 />
                 
                 {attempts > 0 && makes === 0 && (
@@ -378,7 +364,7 @@ export default memo(function StaticBarsChart({
                     fontWeight="bold"
                     fill={isDark ? '#ffffff' : '#000000'}
                   >
-                    {attempts}
+                    {makes}/{attempts}
                   </text>
                 )}
                 
@@ -391,7 +377,7 @@ export default memo(function StaticBarsChart({
                     fontWeight="bold"
                     fill={isDark ? '#ffffff' : '#000000'}
                   >
-                    {attempts}
+                    {makes}/{attempts}
                   </text>
                 )}
                 
@@ -410,6 +396,7 @@ export default memo(function StaticBarsChart({
                     data-bar-index={String(barIndex)}
                     data-makes-value={String(makes)}
                     data-state={makes > bettingLine ? 'over' : makes === bettingLine ? 'push' : 'under'}
+                    style={{ pointerEvents: 'none' }}
                   />
                 )}
                 
@@ -443,7 +430,7 @@ export default memo(function StaticBarsChart({
             );
           })}
           {!['fg3m', 'moneyline', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat) && !hideLogosAndLabels && (
-            <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} />
+            <StaticLabelList isDark={isDark} formatChartLabel={formatChartLabel} fontSizePx={compactMobile ? 14 : 12} selectedStat={selectedStat} />
           )}
         </Bar>
         {/* Only show ReferenceLine on mobile - desktop uses CSS overlay */}
@@ -469,6 +456,7 @@ export default memo(function StaticBarsChart({
         )}
       </ChartComponent>
     </ResponsiveContainer>
+    </div>
   );
 }, (prev, next) => (
   prev.data === next.data &&

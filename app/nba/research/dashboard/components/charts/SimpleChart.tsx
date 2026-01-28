@@ -702,7 +702,6 @@ const SimpleChart = memo(function SimpleChart({
               shared={false}
               itemStyle={{ padding: '4px' }}
               isAnimationActive={false}
-              position={{ x: 'auto', y: 'auto' }}
             />
 
             {/* Bar chart */}
