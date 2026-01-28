@@ -59,12 +59,12 @@ Since you're finding many websites with starting lineups, you can:
 ## Quick Fix Script
 
 ```powershell
-# Try NBA Stats API
-.\scripts\fetch-positions-via-api.ps1 -Team MIL -Season 2025 -Apply
+# Option A: Call NBA Stats API endpoint (e.g. in browser or curl):
+# GET /api/dvp/fetch-nba-starting-positions?team=MIL&season=2025
+# Then update data/player_positions/teams/MIL.json from the response and run reingest.
 
-# If that fails, manually edit:
-# data/player_positions/teams/MIL.json
-# Then run:
+# Option B: Manually edit position files, then reingest:
+# Edit: data/player_positions/teams/MIL.json
 .\scripts\reingest-dvp-all.ps1
 ```
 

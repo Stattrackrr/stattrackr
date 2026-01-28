@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, memo } from 'react';
-import { getTeamLogoUrl } from '@/lib/nbaLogos';
 import { cachedFetch } from '@/lib/requestCache';
 
 interface DepthChartData {
@@ -43,11 +42,6 @@ const DepthChartContainer = memo(function DepthChartContainer({
   const [depthChart, setDepthChart] = useState<DepthChartData | null>(null);
   const [depthLoading, setDepthLoading] = useState<boolean>(false);
   const [depthError, setDepthError] = useState<string | null>(null);
-  const [showLineups, setShowLineups] = useState<boolean>(false);
-  const [startingLineup, setStartingLineup] = useState<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> | null>(null);
-  const [opponentLineup, setOpponentLineup] = useState<Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> | null>(null);
-  const [lineupLoading, setLineupLoading] = useState<boolean>(false);
-  const [lineupAvailable, setLineupAvailable] = useState<boolean>(false); // Track if lineup is available in cache (server-side check)
 
   // Helper to decode HTML entities in text
   const decodeHtmlEntities = (text: string): string => {
@@ -109,210 +103,12 @@ const DepthChartContainer = memo(function DepthChartContainer({
 
   // Removed hasGameToday check - we now rely on cache availability check instead
   
-  // Clear all state when team changes (new player selected)
+  // Clear depth chart state when team changes (new player selected)
   useEffect(() => {
-    // Reset all lineup-related state
-    setShowLineups(false);
-    setStartingLineup(null);
-    setOpponentLineup(null);
-    setLineupLoading(false);
-    setLineupAvailable(false);
-    
-    // Reset depth chart state
     setDepthChart(null);
     setDepthLoading(false);
     setDepthError(null);
   }, [selectedTeam]);
-  
-  // Check if lineup is available in cache (server-side check) - runs on team change
-  // Also check if team has a game today/tomorrow to show button even if cache is empty
-  useEffect(() => {
-    if (!selectedTeam || selectedTeam === 'N/A') {
-      setLineupAvailable(false);
-      setStartingLineup(null);
-      return;
-    }
-    
-    // Check cache availability server-side
-    const checkLineupAvailability = async () => {
-      try {
-        const response = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}`);
-        const data = await response.json();
-        
-        // Only set available if we have a valid lineup (5 players)
-        if (data.lineup && Array.isArray(data.lineup) && data.lineup.length === 5) {
-          setLineupAvailable(true);
-          // Pre-load the lineup so it's ready when user clicks "Show Lineups"
-          setStartingLineup(data.lineup);
-        } else {
-          // No cache - check if team has a game today/tomorrow
-          // If so, show button and it will trigger a one-time server-side fetch when clicked
-          const now = new Date();
-          const easternTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-          const todayStr = `${easternTime.getFullYear()}-${String(easternTime.getMonth() + 1).padStart(2, '0')}-${String(easternTime.getDate()).padStart(2, '0')}`;
-          
-          const tomorrow = new Date(easternTime);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-          
-          // Check if team has a game today or tomorrow
-          const gamesResponse = await fetch(`/api/bdl/games?start_date=${todayStr}&end_date=${tomorrowStr}&per_page=100`);
-          const gamesData = await gamesResponse.json();
-          
-          // BDL API returns 'data' array, not 'games'
-          const gamesArray = gamesData.data || gamesData.games || [];
-          
-          if (Array.isArray(gamesArray) && gamesArray.length > 0) {
-            const teamUpper = selectedTeam.toUpperCase();
-            const hasGame = gamesArray.some((game: any) => {
-              const homeTeam = game.home_team?.abbreviation?.toUpperCase();
-              const awayTeam = game.visitor_team?.abbreviation?.toUpperCase();
-              const matches = homeTeam === teamUpper || awayTeam === teamUpper;
-              if (matches) {
-                console.log(`[DepthChart] ✅ Found game for ${selectedTeam}: ${awayTeam} @ ${homeTeam} on ${game.date}`);
-              }
-              return matches;
-            });
-            
-            console.log(`[DepthChart] Team ${selectedTeam} has game today/tomorrow: ${hasGame}`);
-            // Show button if team has a game (even if cache is empty)
-            setLineupAvailable(hasGame);
-            
-            // Pre-fetch lineups for both teams if game exists but cache is empty
-            if (hasGame) {
-              // Trigger background fetch for selected team
-              fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}&fetchIfMissing=true`).catch(err => {
-                console.error('[DepthChart] Background fetch error:', err);
-              });
-              // Also prefetch opponent so both lineups load when user clicks Show Lineups
-              if (opponentTeam && opponentTeam !== 'N/A' && opponentTeam !== selectedTeam) {
-                fetch(`/api/dvp/get-todays-lineup?team=${opponentTeam}&fetchIfMissing=true`).catch(() => {});
-              }
-            }
-          } else {
-            console.log(`[DepthChart] No games data returned for ${selectedTeam}`);
-            setLineupAvailable(false);
-          }
-          setStartingLineup(null);
-        }
-      } catch (error: any) {
-        // Silently fail - don't show errors to users
-        console.error('[DepthChart] Failed to check lineup availability:', error);
-        setLineupAvailable(false);
-        setStartingLineup(null);
-      }
-    };
-    
-    checkLineupAvailability();
-  }, [selectedTeam]);
-  
-  // Fetch starting lineups from cache when showLineups is enabled
-  useEffect(() => {
-    // Only fetch if button is clicked and lineup should be available
-    if (!showLineups || !selectedTeam || selectedTeam === 'N/A' || !lineupAvailable) {
-      return;
-    }
-    
-    // Get opponent team
-    const playerTeam = originalPlayerTeam || 'N/A';
-    const oppTeam = opponentTeam || 'N/A';
-    const hasOpponent = oppTeam && oppTeam !== 'N/A' && oppTeam !== playerTeam;
-    
-    // Fetch both lineups; trigger Basketball Monsters fetch when missing, then poll for both
-    const fetchLineups = async () => {
-      setLineupLoading(true);
-      
-      try {
-        // Fetch selected team lineup (use cache if we already have it)
-        let selectedTeamLineup = null;
-        if (startingLineup && startingLineup.length === 5) {
-          selectedTeamLineup = startingLineup;
-        } else {
-          try {
-            const response = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}&fetchIfMissing=true`);
-            const data = await response.json();
-            if (data.lineup && Array.isArray(data.lineup) && data.lineup.length === 5) {
-              selectedTeamLineup = data.lineup;
-              setStartingLineup(data.lineup);
-            }
-          } catch (error) {
-            console.error(`[DepthChart] Failed to fetch ${selectedTeam} lineup:`, error);
-          }
-        }
-        
-        // Fetch opponent: use fetchIfMissing so Basketball Monsters fetch runs if not cached
-        let opponentLineupGot: Array<{ name: string; position: string; isVerified: boolean; isProjected: boolean }> | null = null;
-        if (hasOpponent) {
-          try {
-            const oppResponse = await fetch(`/api/dvp/get-todays-lineup?team=${oppTeam}&fetchIfMissing=true`);
-            const oppData = await oppResponse.json();
-            if (oppData.lineup && Array.isArray(oppData.lineup) && oppData.lineup.length === 5) {
-              opponentLineupGot = oppData.lineup;
-              setOpponentLineup(oppData.lineup);
-            } else {
-              setOpponentLineup(null);
-            }
-          } catch (error) {
-            console.error(`[DepthChart] Failed to fetch ${oppTeam} lineup:`, error);
-            setOpponentLineup(null);
-          }
-        } else {
-          setOpponentLineup(null);
-        }
-        
-        const maxAttempts = 10;
-        const pollDelayMs = 2000;
-        
-        // If selected team lineup not in cache, poll (fetch was triggered above)
-        if (!selectedTeamLineup) {
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            try {
-              const pollResponse = await fetch(`/api/dvp/get-todays-lineup?team=${selectedTeam}`);
-              const pollData = await pollResponse.json();
-              if (pollData.lineup && Array.isArray(pollData.lineup) && pollData.lineup.length === 5) {
-                setStartingLineup(pollData.lineup);
-                selectedTeamLineup = pollData.lineup;
-                break;
-              }
-            } catch (error) {
-              console.error(`[DepthChart] Polling attempt ${attempt + 1} failed:`, error);
-            }
-            if (attempt < maxAttempts - 1) {
-              await new Promise(resolve => setTimeout(resolve, pollDelayMs));
-            }
-          }
-          if (!selectedTeamLineup) {
-            setStartingLineup(null);
-          }
-        }
-        
-        // If opponent lineup not in cache, poll so both sides can load
-        if (hasOpponent && !opponentLineupGot) {
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            await new Promise(resolve => setTimeout(resolve, pollDelayMs));
-            try {
-              const r = await fetch(`/api/dvp/get-todays-lineup?team=${oppTeam}`);
-              const d = await r.json();
-              if (d.lineup && Array.isArray(d.lineup) && d.lineup.length === 5) {
-                setOpponentLineup(d.lineup);
-                break;
-              }
-            } catch {
-              // continue
-            }
-          }
-        }
-      } catch (error: any) {
-        console.error('[DepthChart] Failed to fetch lineups:', error);
-        setStartingLineup(null);
-        setOpponentLineup(null);
-      } finally {
-        setLineupLoading(false);
-      }
-    };
-    
-    fetchLineups();
-  }, [showLineups, selectedTeam, lineupAvailable, opponentTeam, originalPlayerTeam, startingLineup]);
   
   // Use preloaded data for instant switching - fallback to fetch if not available
   useEffect(() => {
@@ -383,23 +179,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (depthLoading) {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
-          {lineupAvailable && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowLineups(!showLineups)}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  showLineups
-                    ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600'
-                }`}
-              >
-                {showLineups ? 'Hide' : 'Show'} Lineups
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">Loading depth chart…</div>
       </div>
     );
@@ -408,23 +188,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (depthError) {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
-          {lineupAvailable && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowLineups(!showLineups)}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  showLineups
-                    ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600'
-                }`}
-              >
-                {showLineups ? 'Hide' : 'Show'} Lineups
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-xs text-red-500">{depthError}</div>
       </div>
     );
@@ -433,23 +197,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
   if (!mappedDepthChart) {
     return (
       <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
-          {lineupAvailable && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowLineups(!showLineups)}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  showLineups
-                    ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600'
-                }`}
-              >
-                {showLineups ? 'Hide' : 'Show'} Lineups
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
         <div className="text-center py-6 text-gray-500 dark:text-gray-400">
           <div className="text-sm font-bold mb-2">No Live Roster Available</div>
           <div className="text-xs">Unable to load current depth chart data from ESPN</div>
@@ -474,187 +222,12 @@ const DepthChartContainer = memo(function DepthChartContainer({
     { key: 'C', label: 'CENTER' }
   ];
   
-  // Helper to check if a player is in the starting lineup
-  const isInStartingLineup = (playerName: string, position: string): boolean => {
-    if (!startingLineup || !showLineups) return false;
-    
-    const normalizeName = (name: string) => 
-      name.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
-    
-    const playerNorm = normalizeName(playerName);
-    
-    return startingLineup.some(starter => {
-      const starterNorm = normalizeName(starter.name);
-      return starterNorm === playerNorm && starter.position === position;
-    });
-  };
-  
-  // Determine if lineup is confirmed (all players verified) or predicted (any player projected)
-  const isLineupConfirmed = startingLineup && startingLineup.length === 5
-    ? startingLineup.every(player => player.isVerified)
-    : false;
-  
   return (
     <div className="bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-6 py-5 border border-gray-200 dark:border-gray-700 w-full flex-shrink-0">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-sm text-gray-900 dark:text-white font-semibold">Depth Chart</div>
-        
-        {/* Lineups Button - Only show if lineup is available */}
-        {lineupAvailable && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setShowLineups(!showLineups);
-              }}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                showLineups
-                  ? 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-600'
-              }`}
-            >
-              {showLineups ? 'Hide' : 'Show'} Lineups
-            </button>
-          </div>
-        )}
-      </div>
+      <div className="text-sm text-gray-900 dark:text-white font-semibold mb-3">Depth Chart</div>
       
-      {/* VS Table Lineups Display */}
-      {showLineups && (
-        <>
-          {lineupLoading && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-4 text-center">Loading lineups...</div>
-          )}
-          
-          {!lineupLoading && startingLineup && startingLineup.length === 5 && (() => {
-            // Determine opponent lineup status
-            const isOpponentLineupConfirmed = opponentLineup && opponentLineup.length === 5
-              ? opponentLineup.every(player => player.isVerified)
-              : false;
-            
-            return (
-              <div className="mb-4">
-                {/* VS Table */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <table className="w-full" style={{ tableLayout: 'fixed' }}>
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
-                      <tr>
-                        <th className="px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 text-left border-r border-gray-200 dark:border-gray-700" style={{ width: '20%' }}>
-                          Position
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 text-left border-r border-gray-200 dark:border-gray-700" style={{ width: '40%' }}>
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="flex items-center justify-center">
-                              {getTeamLogoUrl(selectedTeam) ? (
-                                <img 
-                                  src={getTeamLogoUrl(selectedTeam)!} 
-                                  alt={selectedTeam}
-                                  className="w-10 h-10 object-contain"
-                                  onError={(e) => {
-                                    const img = e.target as HTMLImageElement;
-                                    img.style.display = 'none';
-                                    const fallback = document.createElement('span');
-                                    fallback.className = 'text-xs font-semibold';
-                                    fallback.textContent = selectedTeam.toUpperCase();
-                                    if (img.parentElement) {
-                                      img.parentElement.appendChild(fallback);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-xs font-semibold">{selectedTeam.toUpperCase()}</span>
-                              )}
-                            </div>
-                            <div className={`text-[10px] ${isLineupConfirmed ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                              {isLineupConfirmed ? '✅ Confirmed' : '📋 Predicted'}
-                            </div>
-                          </div>
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 text-left" style={{ width: '40%' }}>
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="flex items-center justify-center">
-                              {opponentTeam && opponentTeam !== 'N/A' && getTeamLogoUrl(opponentTeam) ? (
-                                <img 
-                                  src={getTeamLogoUrl(opponentTeam)!} 
-                                  alt={opponentTeam}
-                                  className="w-10 h-10 object-contain"
-                                  onError={(e) => {
-                                    const img = e.target as HTMLImageElement;
-                                    img.style.display = 'none';
-                                    const fallback = document.createElement('span');
-                                    fallback.className = 'text-xs font-semibold';
-                                    fallback.textContent = opponentTeam.toUpperCase();
-                                    if (img.parentElement) {
-                                      img.parentElement.appendChild(fallback);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-xs font-semibold">{opponentTeam && opponentTeam !== 'N/A' ? opponentTeam.toUpperCase() : 'OPPONENT'}</span>
-                              )}
-                            </div>
-                            {opponentLineup && opponentLineup.length === 5 && (
-                              <div className={`text-[10px] ${isOpponentLineupConfirmed ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                                {isOpponentLineupConfirmed ? '✅ Confirmed' : '📋 Predicted'}
-                              </div>
-                            )}
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {['PG', 'SG', 'SF', 'PF', 'C'].map((position) => {
-                        const selectedPlayer = startingLineup.find(p => p.position === position);
-                        const opponentPlayer = opponentLineup?.find(p => p.position === position);
-                        
-                        return (
-                          <tr key={position} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
-                            <td className="px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700" style={{ width: '20%' }}>
-                              {position}
-                            </td>
-                            <td className="px-3 py-2 text-xs text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700" style={{ width: '40%' }}>
-                              {selectedPlayer ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span>{selectedPlayer.name}</span>
-                                  {selectedPlayer.isVerified && (
-                                    <span className="text-green-600 dark:text-green-400" title="Verified">✓</span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500">—</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-xs text-gray-900 dark:text-white" style={{ width: '40%' }}>
-                              {opponentPlayer ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span>{opponentPlayer.name}</span>
-                                  {opponentPlayer.isVerified && (
-                                    <span className="text-green-600 dark:text-green-400" title="Verified">✓</span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })()}
-          
-          {!lineupLoading && (!startingLineup || startingLineup.length !== 5) && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-4 text-center">
-              Lineup data not available
-            </div>
-          )}
-        </>
-      )}
-      
-      {/* Team Swapper - Only show when lineups are hidden */}
-      {!showLineups && selectedTeam && selectedTeam !== 'N/A' && (
+      {/* Team Swapper */}
+      {selectedTeam && selectedTeam !== 'N/A' && (
         <div className="flex items-center justify-center gap-2 mb-3">
           {(() => {
             // Get the original player's team and opponent team
@@ -710,9 +283,8 @@ const DepthChartContainer = memo(function DepthChartContainer({
         </div>
       )}
       
-      {/* Show depth chart only when lineups are hidden */}
-      {!showLineups && (
-        <div className="overflow-x-auto">
+      {/* Depth chart */}
+      <div className="overflow-x-auto">
           <div className="min-w-full">
             {/* Depth Headers (top row) */}
           <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: `120px repeat(${maxDepth}, minmax(100px, 1fr))` }}>
@@ -806,18 +378,10 @@ const DepthChartContainer = memo(function DepthChartContainer({
                       );
                       
                       
-                      const isStarter = isInStartingLineup(player.name, position.key);
-                      
-                      // Determine styling based on selection and starter status
+                      // Determine styling based on selection
                       let cardClasses = 'w-full p-2 text-center rounded border text-xs relative ';
                       if (isSelected) {
                         cardClasses += 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-100 border-purple-300 dark:border-purple-600 ring-2 ring-purple-500 dark:ring-purple-400';
-                      } else if (isStarter && showLineups) {
-                        if (isLineupConfirmed) {
-                          cardClasses += 'bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-300 border-green-300 dark:border-green-600 ring-1 ring-green-400';
-                        } else {
-                          cardClasses += 'bg-orange-50 dark:bg-orange-900/20 text-orange-900 dark:text-orange-300 border-orange-300 dark:border-orange-600 ring-1 ring-orange-400';
-                        }
                       } else {
                         cardClasses += 'bg-white dark:bg-[#0a1929] text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
                       }
@@ -853,7 +417,6 @@ const DepthChartContainer = memo(function DepthChartContainer({
           ))}
         </div>
       </div>
-      )}
     </div>
   );
 });

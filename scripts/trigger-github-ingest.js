@@ -48,7 +48,7 @@ async function triggerWorkflow() {
       console.log('   1. Go to: https://github.com/' + GITHUB_REPO + '/actions');
       console.log('   2. Click on "Auto Ingest Games to Git" workflow');
       console.log('   3. Wait for it to complete (usually takes 2-5 minutes)');
-      console.log('   4. Check the DvP store files for BasketballMonsters positions');
+      console.log('   4. Check the DvP store files for updated positions');
     } else {
       const errorText = await response.text();
       console.error(`❌ Failed to trigger workflow: ${response.status} ${response.statusText}`);

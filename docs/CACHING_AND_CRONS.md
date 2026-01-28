@@ -166,17 +166,7 @@ interface OddsCache {
 **Purpose:** Automatically ingest NBA game data when all games are complete
 **Frequency:** 8 times per day
 
-#### 4. **Lineup Prefetch** (`/api/cron/prefetch-lineups`)
-```json
-{
-  "path": "/api/cron/prefetch-lineups",
-  "schedule": "*/30 * * * *"       // Every 30 minutes
-}
-```
-**Purpose:** Prefetch starting lineups for upcoming games
-**Frequency:** 48 times per day
-
-#### 5. **NBA Stats Refresh** (`/api/cron/refresh-nba-stats`)
+#### 4. **NBA Stats Refresh** (`/api/cron/refresh-nba-stats`)
 ```json
 {
   "path": "/api/cron/refresh-nba-stats",
@@ -186,7 +176,7 @@ interface OddsCache {
 **Purpose:** Refresh NBA player statistics
 **Frequency:** Once daily
 
-#### 6. **DVP Cache Refresh** (`/api/cron/refresh-dvp-cache`)
+#### 5. **DVP Cache Refresh** (`/api/cron/refresh-dvp-cache`)
 ```json
 {
   "path": "/api/cron/refresh-dvp-cache",
@@ -197,7 +187,7 @@ interface OddsCache {
 **Frequency:** Once daily
 **Max Duration:** 300 seconds (5 minutes)
 
-#### 7. **Defensive Stats Refresh** (`/api/cron/refresh-defensive-stats`)
+#### 6. **Defensive Stats Refresh** (`/api/cron/refresh-defensive-stats`)
 ```json
 {
   "path": "/api/cron/refresh-defensive-stats",
@@ -207,7 +197,7 @@ interface OddsCache {
 **Purpose:** Refresh defensive statistics
 **Frequency:** Once daily
 
-#### 8. **Odds Cleanup** (`/api/odds/cleanup`)
+#### 7. **Odds Cleanup** (`/api/odds/cleanup`)
 ```json
 {
   "path": "/api/odds/cleanup",
@@ -217,7 +207,7 @@ interface OddsCache {
 **Purpose:** Clean up old odds snapshots and expired cache entries
 **Frequency:** Once daily
 
-#### 9. **Odds Snapshots Cleanup** (`/api/cron/cleanup-odds-snapshots`)
+#### 8. **Odds Snapshots Cleanup** (`/api/cron/cleanup-odds-snapshots`)
 ```json
 {
   "path": "/api/cron/cleanup-odds-snapshots",
@@ -237,7 +227,7 @@ interface OddsCache {
 **Purpose:** Check bet statuses
 **Frequency:** 48 times per day
 
-#### 11. **Journal Bets Check** (`/api/check-journal-bets`)
+#### 10. **Journal Bets Check** (`/api/check-journal-bets`)
 ```json
 {
   "path": "/api/check-journal-bets",

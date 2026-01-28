@@ -33,7 +33,7 @@ export function useRosterPreloading({
         if (game.visitor_team?.abbreviation) allTeams.add(normalizeAbbr(game.visitor_team.abbreviation));
       });
       
-      // Fetch all rosters with staggered delays to avoid rate limiting
+      // Fetch all rosters with staggered delays to avoid rate limiting (runs in background)
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       const results = [];
       const teamArray = Array.from(allTeams);
@@ -52,7 +52,7 @@ export function useRosterPreloading({
         }
       }
       
-      // Build roster cache
+      // Build roster cache and update (UI already shown; depth chart will use cache when ready)
       const rosterCache: Record<string, DepthChartData> = {};
       results.forEach(({ team, roster }) => {
         if (roster) {
