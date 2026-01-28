@@ -224,9 +224,11 @@ export const PLAYER_STAT_OPTIONS = [
   { key: "ra", label: "RA" },
   { key: "fg3m", label: "3PM/A" },
   { key: "fg3_pct", label: "3P%" }, { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
+  // After FGA: STL, BLK, OREB, DREB (then remaining)
+  { key: "stl", label: "STL" }, { key: "blk", label: "BLK" },
+  { key: "oreb", label: "OREB" }, { key: "dreb", label: "DREB" },
   { key: "fg_pct", label: "FG%" }, { key: "ftm", label: "FTM" }, { key: "fta", label: "FTA" },
-  { key: "ft_pct", label: "FT%" }, { key: "oreb", label: "OREB" }, { key: "dreb", label: "DREB" },
-  { key: "turnover", label: "TO" }, { key: "pf", label: "PF" }, { key: "stl", label: "STL" }, { key: "blk", label: "BLK" }
+  { key: "ft_pct", label: "FT%" }, { key: "turnover", label: "TO" }, { key: "pf", label: "PF" }
 ];
 
 export const TEAM_STAT_OPTIONS = [

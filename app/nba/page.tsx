@@ -577,24 +577,28 @@ export default function NBALandingPage() {
 
       if (!isMounted) return;
 
-      setUserEmail(session.user.email || null);
-      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-      setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
-      
+      // Don't set email/username/avatar until we have profile — set all together below to avoid flash of email before name
+
       try {
         const { data: profile } = await (supabase
           .from('profiles') as any)
-          .select('subscription_status, subscription_tier')
+          .select('subscription_status, subscription_tier, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
-        
+
         if (!isMounted) return;
+
+        const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
+        const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
+        const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null;
+        setUserEmail(session.user.email || null);
+        setUsername(displayName);
+        setAvatarUrl(avatarFromProfile);
         
         let isActive = false;
         let isProTier = false;
         
-        if (profile) {
-          const profileData = profile as any;
+        if (profileData) {
           isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
           isProTier = profileData.subscription_tier === 'pro';
         }
@@ -1930,6 +1934,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       'FG3M': '3-Pointers',
       'PRA': 'Points + Rebounds + Assists',
       'PR': 'Points + Rebounds',
+      'PA': 'Points + Assists',
       'RA': 'Rebounds + Assists',
     };
     return labels[statType] || statType;
@@ -1961,7 +1966,39 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         types.add(prop.statType);
       }
     });
-    return Array.from(types).sort();
+
+    const ordered = Array.from(types);
+
+    // Desired display order for prop types
+    const ORDER: string[] = [
+      'PTS',   // points
+      'REB',   // rebounds
+      'AST',   // assists
+      'THREES', // 3PM (props page uses THREES)
+      'FG3M',  // fallback 3PM key if present
+      'PRA',
+      'PR',
+      'PA',
+      'RA',
+      'STL',
+      'BLK',
+    ];
+
+    const orderIndex = (type: string) => {
+      const upper = type.toUpperCase();
+      const idx = ORDER.indexOf(upper);
+      return idx === -1 ? ORDER.length : idx;
+    };
+
+    ordered.sort((a, b) => {
+      const ia = orderIndex(a);
+      const ib = orderIndex(b);
+      if (ia !== ib) return ia - ib;
+      // For any types not explicitly ordered, fall back to alphabetical
+      return a.localeCompare(b);
+    });
+
+    return ordered;
   }, [playerProps]);
 
   // Save filters to localStorage helper (defined before useEffects)
@@ -2772,6 +2809,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 await supabase.auth.signOut();
                 router.push('/');
               }}
+              onProfileUpdated={({ username: u, avatar_url: a }) => {
+                if (u !== undefined) setUsername(u ?? null);
+                if (a !== undefined) setAvatarUrl(a ?? null);
+              }}
             />
 
             {/* Main Content Area - Top Player Props */}
@@ -3127,20 +3168,39 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </label>
                               );
                           })}
-                          <button
-                            onClick={() => {
-                              const newSet = new Set<string>();
-                              setSelectedPropTypes(newSet);
-                              saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
-                            }}
-                            className={`w-full mt-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                              mounted && isDark
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                          >
-                            Clear All
-                          </button>
+                          <div className="flex pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSet = new Set<string>();
+                                setSelectedPropTypes(newSet);
+                                saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                mounted && isDark
+                                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                              }`}
+                            >
+                              Clear all
+                            </button>
+                            <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSet = new Set(availablePropTypes);
+                                setSelectedPropTypes(newSet);
+                                saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                mounted && isDark
+                                  ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
+                                  : 'text-purple-600 hover:bg-gray-50 hover:text-purple-800'
+                              }`}
+                            >
+                              Select all
+                            </button>
+                          </div>
                         </div>
                       </div>
                       </>,
@@ -3185,20 +3245,39 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </label>
                             );
                           })}
-                          <button
-                            onClick={() => {
-                              const newSet = new Set<string>();
-                              setSelectedPropTypes(newSet);
-                              saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
-                            }}
-                            className={`w-full mt-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                              mounted && isDark
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                          >
-                            Clear All
-                          </button>
+                          <div className="flex pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSet = new Set<string>();
+                                setSelectedPropTypes(newSet);
+                                saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                mounted && isDark
+                                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                              }`}
+                            >
+                              Clear all
+                            </button>
+                            <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSet = new Set(availablePropTypes);
+                                setSelectedPropTypes(newSet);
+                                saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
+                              }}
+                              className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
+                                mounted && isDark
+                                  ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
+                                  : 'text-purple-600 hover:bg-gray-50 hover:text-purple-800'
+                              }`}
+                            >
+                              Select all
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </>

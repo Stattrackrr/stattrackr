@@ -15,6 +15,7 @@ interface DashboardLeftSidebarWrapperProps {
   isPro: boolean;
   onSubscriptionClick: () => void;
   onSignOutClick: () => void;
+  onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
 }
 
 export function DashboardLeftSidebarWrapper({
@@ -29,6 +30,7 @@ export function DashboardLeftSidebarWrapper({
   isPro,
   onSubscriptionClick,
   onSignOutClick,
+  onProfileUpdated,
 }: DashboardLeftSidebarWrapperProps) {
   return (
     <>
@@ -44,6 +46,7 @@ export function DashboardLeftSidebarWrapper({
           isPro={isPro}
           onSubscriptionClick={onSubscriptionClick}
           onSignOutClick={onSignOutClick}
+          onProfileUpdated={onProfileUpdated}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />

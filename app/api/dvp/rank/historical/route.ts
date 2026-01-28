@@ -70,17 +70,16 @@ export async function GET(request: NextRequest) {
     
     const supabase = await createClient();
     
-    // Get the most recent snapshot on or before the game date for each team
-    // This gives us the historical rank that was accurate at the time of the game
-    // Query all snapshots and group by team to get the latest per team
-    const { data, error } = await supabase
-      .from('dvp_rank_snapshots')
-      .select('team, rank, snapshot_date')
-      .eq('season', season)
-      .eq('position', normalizedPos)
-      .eq('metric', normalizedMetric)
-      .lte('snapshot_date', gameDate.toISOString().split('T')[0])
-      .order('snapshot_date', { ascending: false });
+    // EGRESS OPTIMIZATION: Use RPC function with DISTINCT ON to get only latest snapshot per team
+    // This reduces data transfer from potentially thousands of rows to just 30 rows (one per team)
+    // Instead of fetching all snapshots and filtering in JS, PostgreSQL does it efficiently
+    const gameDateStr = gameDate.toISOString().split('T')[0];
+    const { data, error } = await supabase.rpc('get_latest_dvp_snapshots', {
+      p_season: season,
+      p_position: normalizedPos,
+      p_metric: normalizedMetric,
+      p_game_date: gameDateStr
+    });
     
     if (error) {
       console.error('[Historical DvP] Database error:', error);
@@ -96,15 +95,18 @@ export async function GET(request: NextRequest) {
     let latestSnapshotDate: string | null = null;
     
     if (data && data.length > 0) {
-      // Track the latest snapshot date we're using
-      latestSnapshotDate = data[0].snapshot_date;
+      // Find the latest snapshot date
+      latestSnapshotDate = data.reduce((latest: string | null, row: any) => {
+        if (!latest || row.snapshot_date > latest) {
+          return row.snapshot_date;
+        }
+        return latest;
+      }, null);
       
       for (const row of data) {
         const team = normalizeAbbr(row.team);
-        // Only keep the first (most recent) rank for each team
-        if (!ranksByTeam.hasOwnProperty(team)) {
-          ranksByTeam[team] = row.rank;
-        }
+        // Data is already filtered to one row per team by the RPC function
+        ranksByTeam[team] = row.rank;
       }
     }
     

@@ -124,7 +124,7 @@ export function DashboardDesktopContent({
             </Suspense>
           </div>
         );
-      }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
+      }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, opponentTeam, isDark])}
 
       {/* Under-chart container (Desktop) - Always render with skeleton when loading */}
       {useMemo(() => {

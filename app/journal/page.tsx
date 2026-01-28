@@ -694,18 +694,25 @@ function JournalContent() {
         // Check Pro access - query database directly (matching dashboard approach)
         const { data: profile } = await (supabase
           .from('profiles') as any)
-          .select('subscription_status, subscription_tier')
+          .select('subscription_status, subscription_tier, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
         
         if (!isMounted) return;
-        
+
+        const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
+        // Set email, name, and avatar together from profile (with session fallback) so we never flash email before name
+        const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
+        const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? null;
+        setUserEmail(session.user.email || null);
+        setUsername(displayName);
+        setAvatarUrl(avatarFromProfile);
+
         let isActive = false;
         let isPro = false;
         
-        if (profile) {
+        if (profileData) {
           // Use profiles table if available
-          const profileData = profile as any;
           isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
           isPro = profileData.subscription_tier === 'pro';
         } else {
@@ -855,11 +862,6 @@ function JournalContent() {
           }
         }
         
-        // Set user info for profile menu
-        setAvatarUrl(session.user.user_metadata?.avatar_url || null);
-        setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-        setUserEmail(session.user.email || null);
-
         // Fetch bets immediately (don't wait for check-journal-bets)
         // OPTIMIZATION: Explicitly filter by user_id and order by date DESC for better index usage
         // RLS handles security, but explicit filter helps query planner
@@ -1751,6 +1753,10 @@ function JournalContent() {
             isPro={isPro}
             onSubscriptionClick={handleSubscriptionClick}
             onSignOutClick={handleSignOutClick}
+            onProfileUpdated={({ username: u, avatar_url: a }) => {
+            if (u !== undefined) setUsername(u ?? null);
+            if (a !== undefined) setAvatarUrl(a ?? null);
+          }}
           />
         </div>
       )}

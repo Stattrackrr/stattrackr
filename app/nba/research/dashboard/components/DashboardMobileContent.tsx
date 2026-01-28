@@ -150,7 +150,7 @@ export function DashboardMobileContent({
             </Suspense>
           </div>
         );
-      }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, isDark])}
+      }, [propsMode, selectedTeam, selectedPlayer?.id, selectedPlayer?.full, selectedPlayer?.firstName, selectedPlayer?.lastName, opponentTeam, isDark])}
 
       {/* 6. Official Odds Card Container (Mobile) - Always render with skeleton when loading */}
       {useMemo(() => {

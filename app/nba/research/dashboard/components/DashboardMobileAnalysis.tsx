@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense, lazy } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { PositionDefenseCard, OpponentAnalysisCard } from './dvp';
 import InjuryContainer from '@/components/InjuryContainer';
@@ -7,10 +8,11 @@ import { createTeamComparisonPieData } from '../utils/teamAnalysisUtils';
 import { NBAPlayer } from '../types';
 import { BallDontLieStats } from '../types';
 
+
 interface DashboardMobileAnalysisProps {
   propsMode: 'player' | 'team';
-  dvpProjectedTab: 'dvp' | 'opponent' | 'injuries';
-  setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries') => void;
+  dvpProjectedTab: 'dvp' | 'opponent' | 'injuries' | 'matchup';
+  setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries' | 'matchup') => void;
   teamMatchupTab: 'opponent' | 'injuries';
   setTeamMatchupTab: (tab: 'opponent' | 'injuries') => void;
   isDark: boolean;

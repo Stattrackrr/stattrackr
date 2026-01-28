@@ -40,26 +40,29 @@ export function useSubscriptionCheck({
 
       if (!isMounted) return;
 
-      setUserEmail(session.user.email || null);
-      setUsername(session.user.user_metadata?.username || session.user.user_metadata?.full_name || null);
-      setAvatarUrl(session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
-      
+      // Don't set email/username/avatar until we have profile — set all together below to avoid flash of email before name
+
       try {
-        // Check Pro access - query database directly
+        // Load profile first: name and avatar are single source of truth
         const { data: profile } = await (supabase
           .from('profiles') as any)
-          .select('subscription_status, subscription_tier')
+          .select('subscription_status, subscription_tier, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
-        
+
         if (!isMounted) return;
+        const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
+        const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
+        const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null;
+        setUserEmail(session.user.email || null);
+        setUsername(displayName);
+        setAvatarUrl(avatarFromProfile);
         
         let isActive = false;
         let isProTier = false;
         
-        if (profile) {
+        if (profileData) {
           // Use profiles table if available
-          const profileData = profile as any;
           isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
           isProTier = profileData.subscription_tier === 'pro';
         } else {

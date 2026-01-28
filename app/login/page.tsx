@@ -26,6 +26,11 @@ export default function LoginPage() {
   const [showCheckEmail, setShowCheckEmail] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
 
   // Check if user is already logged in and get redirect param
   useEffect(() => {
@@ -38,6 +43,11 @@ export default function LoginPage() {
     }
     // Open in sign-up mode when ?signup=1
     if (searchParams.get('signup') === '1') setIsSignUp(true);
+    // Show success message after password reset
+    if (searchParams.get('reset') === 'success') {
+      setSuccess('Your password has been updated. You can sign in now.');
+      setError('');
+    }
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -197,6 +207,25 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotPasswordLoading(true);
+    setForgotPasswordError("");
+    setForgotPasswordSuccess(false);
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
+        redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
+      });
+      if (error) throw error;
+      setForgotPasswordSuccess(true);
+    } catch (err: any) {
+      setForgotPasswordError(err?.message || "Failed to send reset link. Please try again.");
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050d1a] flex items-center justify-center p-4">
       {/* Back Button */}
@@ -272,10 +301,10 @@ export default function LoginPage() {
             {/* Form Header */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-white mb-2">
-                {isSignUp ? "Create Account" : "Welcome Back"}
+                {showForgotPassword ? "Reset password" : isSignUp ? "Create Account" : "Welcome Back"}
               </h2>
               <p className="text-gray-500">
-                {isSignUp ? "Start tracking your performance" : "Sign in to continue"}
+                {showForgotPassword ? "Enter your email and we'll send you a reset link" : isSignUp ? "Start tracking your performance" : "Sign in to continue"}
               </p>
             </div>
 
@@ -324,7 +353,65 @@ export default function LoginPage() {
               </div>
             )}
 
-            {showCheckEmail ? (
+            {showForgotPassword ? (
+              /* Forgot password — request reset link */
+              <form onSubmit={handleForgotPassword} className="space-y-6">
+                {forgotPasswordSuccess ? (
+                  <div className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
+                    Check your email for a password reset link. If you don't see it, check your spam folder.
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                        <input
+                          type="email"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                          className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          placeholder="Enter your email"
+                          required
+                        />
+                      </div>
+                    </div>
+                    {forgotPasswordError && (
+                      <div className="p-4 rounded-xl bg-red-950/50 border border-red-900/50 text-red-400 text-sm">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordLoading}
+                      className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {forgotPasswordLoading ? (
+                        <div className="flex justify-center">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        "Send reset link"
+                      )}
+                    </button>
+                  </>
+                )}
+                <p className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordEmail("");
+                      setForgotPasswordError("");
+                      setForgotPasswordSuccess(false);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                  >
+                    Back to sign in
+                  </button>
+                </p>
+              </form>
+            ) : showCheckEmail ? (
               /* Check your email — after sign up when confirmation is required (code-based) */
               <div className="space-y-6">
                 <div className="p-4 rounded-xl bg-[#050d1a] border border-gray-700">
@@ -485,19 +572,32 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember Me Checkbox - Only for Sign In */}
+              {/* Remember Me & Forgot password - Only for Sign In */}
               {!isSignUp && (
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 bg-[#050d1a] border border-gray-700 rounded focus:ring-purple-500 focus:ring-2"
-                  />
-                  <label htmlFor="rememberMe" className="ml-3 text-sm text-gray-400">
-                    Remember me
-                  </label>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 bg-[#050d1a] border border-gray-700 rounded focus:ring-purple-500 focus:ring-2"
+                    />
+                    <label htmlFor="rememberMe" className="ml-3 text-sm text-gray-400">
+                      Remember me
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(true);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className="text-sm text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
               )}
 

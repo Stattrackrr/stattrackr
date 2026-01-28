@@ -1101,6 +1101,10 @@ export function NBADashboardContent() {
             isPro={isPro}
             onSubscriptionClick={handleSidebarSubscription}
             onSignOutClick={handleLogout}
+            onProfileUpdated={({ username: u, avatar_url: a }) => {
+              if (u !== undefined) setUsername(u ?? null);
+              if (a !== undefined) setAvatarUrl(a ?? null);
+            }}
         />
         <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0" style={{}}>
           {/* Main content area */}

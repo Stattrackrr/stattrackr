@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, Dispatch, SetStateAction, useEffect } from "react";
+import { useState, Dispatch, SetStateAction, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
@@ -23,6 +23,8 @@ interface LeftSidebarProps {
   onViewTrackingClick?: () => void;
   sidebarOpen?: boolean;
   onToggleSidebar?: () => void;
+  /** Called after profile (name, username, phone) or avatar is saved so parent can update displayed name/avatar */
+  onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
 }
 
 export default function LeftSidebar({
@@ -39,11 +41,24 @@ export default function LeftSidebar({
   onViewTrackingClick,
   sidebarOpen = true,
   onToggleSidebar,
+  onProfileUpdated,
 }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(false);
-  const [showProfileDetails, setShowProfileDetails] = useState(false);
+  // Dropdown below profile card (name click toggles this)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  // Profile modal (opened only when "Profile" is clicked in the dropdown)
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  // Profile form (editable in modal)
+  const [profileName, setProfileName] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+  const [profileAvatarFile, setProfileAvatarFile] = useState<File | null>(null);
+  const [profileAvatarPreviewUrl, setProfileAvatarPreviewUrl] = useState<string | null>(null);
+  const profileAvatarInputRef = useRef<HTMLInputElement>(null);
   const [showUnitSettingsModal, setShowUnitSettingsModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [bankroll, setBankroll] = useState<string>('');
@@ -68,6 +83,45 @@ export default function LeftSidebar({
     // Load unit size from profile
     loadUnitSize();
   }, []);
+
+  // When profile modal opens, load full_name, username, phone from profiles
+  useEffect(() => {
+    if (!showProfileModal) return;
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, username, phone, avatar_url')
+          .eq('id', user.id)
+          .single();
+        const row = data as { full_name?: string | null; username?: string | null; phone?: string | null; avatar_url?: string | null } | null;
+        setProfileName(row?.full_name ?? username ?? userEmail ?? '');
+        setProfileUsername(row?.username ?? '');
+        setProfilePhone(row?.phone ?? '');
+        const avatarFromProfile = (row as { avatar_url?: string | null })?.avatar_url;
+        setProfileAvatarUrl(avatarFromProfile ?? avatarUrl ?? null);
+      } catch {
+        setProfileName(username ?? userEmail ?? '');
+        setProfileUsername(username ?? '');
+        setProfilePhone('');
+        setProfileAvatarUrl(avatarUrl ?? null);
+      }
+    };
+    loadProfile();
+  }, [showProfileModal, username, userEmail, avatarUrl]);
+
+  // When profile modal closes, clear pending avatar selection and revoke preview URL
+  useEffect(() => {
+    if (!showProfileModal) {
+      if (profileAvatarPreviewUrl) {
+        URL.revokeObjectURL(profileAvatarPreviewUrl);
+      }
+      setProfileAvatarFile(null);
+      setProfileAvatarPreviewUrl(null);
+    }
+  }, [showProfileModal]); // eslint-disable-line react-hooks/exhaustive-deps -- only run on modal close, intentionally omit profileAvatarPreviewUrl to avoid revoking while open
   const { theme, setTheme, isDark } = useTheme();
   
   const loadUnitSize = async () => {
@@ -341,9 +395,9 @@ export default function LeftSidebar({
         <div className="px-3 pt-3">
           <button
             type="button"
-            onClick={() => setShowProfileDetails((prev) => !prev)}
+            onClick={() => setShowProfileDropdown((prev) => !prev)}
             className="w-full bg-white/85 dark:bg-gray-800/85 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 flex items-center gap-3 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
-            aria-expanded={showProfileDetails}
+            aria-expanded={showProfileDropdown}
           >
             <div 
               className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-sm font-semibold text-white"
@@ -360,7 +414,7 @@ export default function LeftSidebar({
               <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{membershipLabel}</p>
             </div>
             <svg
-              className={`w-4 h-4 text-slate-500 dark:text-slate-300 transition-transform ${showProfileDetails ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-slate-500 dark:text-slate-300 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -368,21 +422,34 @@ export default function LeftSidebar({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          {showProfileDetails && (
-            <div className="mt-2 grid gap-2">
-              {onViewTrackingClick && showViewTrackingButton && (
+          {/* Dropdown: Profile opens modal; View Tracking, Subscription, Sign Out */}
+          {showProfileDropdown && (
+            <div className="mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileModal(true);
+                  setShowProfileDropdown(false);
+                }}
+                className="w-full px-3 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Profile
+              </button>
+              {showViewTrackingButton && onViewTrackingClick && (
                 <button
                   type="button"
                   onClick={() => {
-                    setShowProfileDetails(false);
-                    if (onViewTrackingClick) {
-                      onViewTrackingClick();
-                    }
+                    onViewTrackingClick();
+                    setShowProfileDropdown(false);
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-purple-300 dark:border-purple-500/40 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-purple-600 dark:text-purple-300 shadow-sm hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors"
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a2 2 0 10-4 0v1.083A6 6 0 004 11v3.159c0 .538-.214 1.055-.595 1.436L2 17h5m4 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                   View Tracking
                 </button>
@@ -391,11 +458,14 @@ export default function LeftSidebar({
                 <button
                   type="button"
                   onClick={() => {
-                    setShowProfileDetails(false);
-                    onSubscriptionClick?.();
+                    onSubscriptionClick();
+                    setShowProfileDropdown(false);
                   }}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-slate-200 bg-white dark:bg-gray-700 hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors"
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 >
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
                   Subscription
                 </button>
               )}
@@ -403,11 +473,14 @@ export default function LeftSidebar({
                 <button
                   type="button"
                   onClick={() => {
-                    setShowProfileDetails(false);
-                    onSignOutClick?.();
+                    onSignOutClick();
+                    setShowProfileDropdown(false);
                   }}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-lg border border-red-200 dark:border-red-500/50 text-red-600 dark:text-red-300 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 border-t border-gray-200 dark:border-gray-700"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1z" />
+                  </svg>
                   Sign Out
                 </button>
               )}
@@ -434,6 +507,250 @@ export default function LeftSidebar({
           </li>
         </ul>
       </div>
+
+      {/* Profile Modal - opens only when "Profile" is clicked in the dropdown */}
+      {showProfileModal && mounted && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-[140] bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowProfileModal(false)}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+              {/* Header */}
+              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View your account details</p>
+                </div>
+                <button
+                  onClick={() => setShowProfileModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4 space-y-4 text-sm">
+                {/* Profile picture - editable; upload happens on Save */}
+                <div className="flex flex-col items-center gap-3">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 w-full text-left">
+                    Profile picture
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-2xl font-semibold text-white shrink-0"
+                      style={!(profileAvatarPreviewUrl || profileAvatarUrl || avatarUrl) ? { backgroundColor: getAvatarColor(displayName) } : undefined}
+                    >
+                      {profileAvatarPreviewUrl || profileAvatarUrl || avatarUrl ? (
+                        <img
+                          src={profileAvatarPreviewUrl || profileAvatarUrl || avatarUrl || ''}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <span>{fallbackInitial}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        disabled={savingProfile}
+                        onClick={() => profileAvatarInputRef.current?.click()}
+                        className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {profileAvatarFile ? 'Change photo (new one selected)' : 'Change photo'}
+                      </button>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                        JPG, PNG or WebP. Max 2MB. Saved when you click Save.
+                      </p>
+                    </div>
+                    <input
+                      ref={profileAvatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          alert('Image must be under 2MB.');
+                          return;
+                        }
+                        if (profileAvatarPreviewUrl) URL.revokeObjectURL(profileAvatarPreviewUrl);
+                        setProfileAvatarPreviewUrl(URL.createObjectURL(file));
+                        setProfileAvatarFile(file);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Name - editable */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                {/* Username - editable */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={profileUsername}
+                    onChange={(e) => setProfileUsername(e.target.value)}
+                    placeholder="Username"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                {/* Email - read-only, grey, no "Locked" label */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                    Email
+                  </label>
+                  <div className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed select-none">
+                    {userEmail || 'Not set'}
+                  </div>
+                </div>
+
+                {/* Phone - editable */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
+                    placeholder="Phone number"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  disabled={savingProfile}
+                  onClick={async () => {
+                    setSavingProfile(true);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      let newAvatarUrl: string | null = null;
+                      const fileToUpload = profileAvatarFile; // capture before any state updates
+                      if (fileToUpload) {
+                        try {
+                          // Remove any existing avatar files in this user's folder so we replace, not accumulate
+                          try {
+                            const { data: existingFiles } = await supabase.storage
+                              .from('avatars')
+                              .list(user.id, { limit: 10 });
+                            const filesToRemove = (existingFiles || [])
+                              .filter((item: { name?: string }) => item.name && !item.name.startsWith('.'))
+                              .map((item: { name: string }) => `${user.id}/${item.name}`);
+                            if (filesToRemove.length > 0) {
+                              await supabase.storage.from('avatars').remove(filesToRemove);
+                            }
+                          } catch {
+                            // No existing folder or list/remove failed; proceed with upload
+                          }
+                          // Unique filename per upload so the URL changes and browser/CDN won't serve cached old image
+                          const ext = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
+                          const path = `${user.id}/avatar_${Date.now()}.${ext}`;
+                          const { error: uploadError } = await supabase.storage
+                            .from('avatars')
+                            .upload(path, fileToUpload, { upsert: false });
+                          if (uploadError) throw uploadError;
+                          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+                          newAvatarUrl = urlData.publicUrl;
+                          await supabase.auth.updateUser({ data: { avatar_url: newAvatarUrl } });
+                        } catch (uploadErr) {
+                          console.error('Error uploading avatar:', uploadErr);
+                          alert('Failed to upload photo. Please try again.');
+                          setSavingProfile(false);
+                          return;
+                        } finally {
+                          if (profileAvatarPreviewUrl) URL.revokeObjectURL(profileAvatarPreviewUrl);
+                          setProfileAvatarFile(null);
+                          setProfileAvatarPreviewUrl(null);
+                        }
+                        // Update modal avatar so it shows the new photo before we close (cache-bust so img reloads)
+                        setProfileAvatarUrl(newAvatarUrl ? `${newAvatarUrl}?t=${Date.now()}` : null);
+                      }
+                      // Persist to profiles (avatar_url when we uploaded; always name/username/phone)
+                      const profileUpdates: { full_name: string | null; username: string | null; phone: string | null; avatar_url?: string } = {
+                        full_name: profileName.trim() || null,
+                        username: profileUsername.trim() || null,
+                        phone: profilePhone.trim() || null,
+                      };
+                      if (newAvatarUrl !== null) {
+                        profileUpdates.avatar_url = newAvatarUrl;
+                      }
+                      const { error } = await (supabase.from('profiles') as any)
+                        .update(profileUpdates)
+                        .eq('id', user.id);
+                      if (error) throw error;
+                      // Sync name to auth user metadata so Supabase auth shows the profile name (single source of truth)
+                      await supabase.auth.updateUser({
+                        data: {
+                          full_name: profileName.trim() || null,
+                          username: profileUsername.trim() || null,
+                        },
+                      });
+                      // Pass cache-busted URL so the sidebar shows the new image (same path can be cached)
+                      const displayAvatarUrl = newAvatarUrl ? `${newAvatarUrl}?t=${Date.now()}` : undefined;
+                      onProfileUpdated?.({
+                        username: profileUsername.trim() || null,
+                        full_name: profileName.trim() || null,
+                        ...(displayAvatarUrl ? { avatar_url: displayAvatarUrl } : {}),
+                      });
+                      // Brief delay so user sees the new avatar in the modal before it closes
+                      await new Promise((r) => setTimeout(r, 350));
+                      setShowProfileModal(false);
+                    } catch (err) {
+                      console.error('Error saving profile:', err);
+                      alert('Failed to save profile. Please try again.');
+                    } finally {
+                      setSavingProfile(false);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {savingProfile ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
  
       {/* Profile & Settings section at bottom */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white pb-4">
