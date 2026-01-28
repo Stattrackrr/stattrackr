@@ -233,7 +233,9 @@ export function CustomChartTooltip({
   // Use very high z-index to ensure it appears above betting line (z-index 25) and chart (z-index 20)
   // On mobile, center the tooltip horizontally and position it in the middle of the screen
   const getTooltipPosition = () => {
-    if (!mousePosition) return { left: undefined, top: undefined };
+    const currentPosition = mousePosition || (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
+    
+    if (!currentPosition) return { left: undefined, top: undefined };
     
     if (isMobile) {
       // On mobile: center horizontally, position in middle-upper area of screen
@@ -257,14 +259,14 @@ export function CustomChartTooltip({
       const offsetY = -10;
       
       // Ensure tooltip doesn't go off right edge
-      let left = mousePosition.x + offsetX;
+      let left = currentPosition.x + offsetX;
       if (left + tooltipWidth > viewportWidth - 10) {
         left = viewportWidth - tooltipWidth - 10;
       }
       
       return {
         left: `${left}px`,
-        top: `${mousePosition.y + offsetY}px`
+        top: `${currentPosition.y + offsetY}px`
       };
     }
   };
