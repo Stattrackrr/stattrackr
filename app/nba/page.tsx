@@ -2182,10 +2182,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     }
   }, [gamesWithProps, deselectedGames]);
 
-  // Reset pagination when filtered props change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [playerProps, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, propLineSort]);
+  // Pagination reset is handled by the effect at ~462 that runs on filter/sort change only.
+  // Do not depend on playerProps here — it gets new references often and was resetting
+  // the page to 1 when the user clicked to another page.
 
   // Filter player props based on search query and selected filters
   // Filter props based on search, bookmakers, prop types, and games
