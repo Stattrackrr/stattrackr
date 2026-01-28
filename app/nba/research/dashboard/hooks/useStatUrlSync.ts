@@ -133,12 +133,16 @@ export function useStatUrlSync({
       
       // Only update if different to avoid unnecessary navigation
       if (currentStat !== selectedStat) {
-        url.searchParams.set('stat', selectedStat);
-        // Remove line param if it exists and is for a different stat
-        // This prevents loading the wrong betting line when switching stats
+        // Get the old stat and line BEFORE updating
+        const oldStat = currentStat;
         const urlLine = url.searchParams.get('line');
-        const urlStat = url.searchParams.get('stat');
-        if (urlLine && urlStat && urlStat.toLowerCase() !== selectedStat.toLowerCase()) {
+        
+        // Update the stat
+        url.searchParams.set('stat', selectedStat);
+        
+        // Remove line param if it exists and the stat changed
+        // This prevents loading the wrong betting line when switching stats
+        if (urlLine && oldStat && oldStat.toLowerCase() !== selectedStat.toLowerCase()) {
           url.searchParams.delete('line');
         }
         // Use replace to avoid adding to history
@@ -212,7 +216,17 @@ export function useStatUrlSync({
     // Update URL immediately to prevent race conditions
     if (typeof window !== 'undefined' && router) {
       const url = new URL(window.location.href);
+      const oldStat = url.searchParams.get('stat');
+      
+      // Update the stat
       url.searchParams.set('stat', stat);
+      
+      // Remove line parameter if switching to a different stat
+      // This prevents loading the wrong betting line when switching stats
+      if (oldStat && oldStat.toLowerCase() !== stat.toLowerCase()) {
+        url.searchParams.delete('line');
+      }
+      
       router.replace(url.pathname + url.search, { scroll: false });
       // Debug logging removed(`[Dashboard] 🔄 Immediately updated URL stat parameter to: "${stat}"`);
       
