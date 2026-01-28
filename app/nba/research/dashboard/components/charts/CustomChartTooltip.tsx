@@ -40,6 +40,19 @@ export function CustomChartTooltip({
   selectedTeam,
 }: CustomChartTooltipProps) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    checkMobile();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
 
   // Track mouse position for cursor-following tooltip
   useEffect(() => {
@@ -52,11 +65,26 @@ export function CustomChartTooltip({
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
+    // For touch events on mobile, use touch coordinates
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        setMousePosition({ x: touch.clientX, y: touch.clientY });
+      }
+    };
+
+    // Use coordinate from Recharts if available (for touch events)
+    if (coordinate && coordinate.x !== undefined && coordinate.y !== undefined) {
+      setMousePosition({ x: coordinate.x, y: coordinate.y });
+    }
+
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchstart', handleTouchStart);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouchStart);
     };
-  }, [active]);
+  }, [active, coordinate]);
 
   if (!active || !payload || !payload.length) {
     return null;
@@ -203,18 +231,59 @@ export function CustomChartTooltip({
   
   // Position tooltip at cursor location with offset to prevent overlap
   // Use very high z-index to ensure it appears above betting line (z-index 25) and chart (z-index 20)
+  // On mobile, center the tooltip horizontally and position it in the middle of the screen
+  const getTooltipPosition = () => {
+    if (!mousePosition) return { left: undefined, top: undefined };
+    
+    if (isMobile) {
+      // On mobile: center horizontally, position in middle-upper area of screen
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+      const tooltipWidth = 280; // Approximate tooltip width
+      const tooltipHeight = 200; // Approximate tooltip height
+      
+      // Center horizontally
+      const left = Math.max(10, (viewportWidth - tooltipWidth) / 2);
+      
+      // Position in upper-middle area (above the chart area)
+      const top = Math.max(10, Math.min(viewportHeight * 0.3, viewportHeight - tooltipHeight - 20));
+      
+      return { left: `${left}px`, top: `${top}px` };
+    } else {
+      // Desktop: follow cursor with offset
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+      const tooltipWidth = 280;
+      const offsetX = 15;
+      const offsetY = -10;
+      
+      // Ensure tooltip doesn't go off right edge
+      let left = mousePosition.x + offsetX;
+      if (left + tooltipWidth > viewportWidth - 10) {
+        left = viewportWidth - tooltipWidth - 10;
+      }
+      
+      return {
+        left: `${left}px`,
+        top: `${mousePosition.y + offsetY}px`
+      };
+    }
+  };
+
+  const position = getTooltipPosition();
+  
   const tooltipStyle: React.CSSProperties = {
     backgroundColor: tooltipBg,
     border: `1px solid ${tooltipBorder}`,
     borderRadius: '8px',
     padding: '12px',
-    minWidth: '200px',
+    minWidth: isMobile ? '280px' : '200px',
+    maxWidth: isMobile ? '90vw' : 'none',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     zIndex: 999999, // Very high z-index to appear above everything
     pointerEvents: 'none',
     position: 'fixed',
-    left: mousePosition ? `${mousePosition.x + 15}px` : undefined,
-    top: mousePosition ? `${mousePosition.y - 10}px` : undefined,
+    left: position.left,
+    top: position.top,
     transform: 'none',
   };
 
@@ -373,7 +442,9 @@ export function CustomChartTooltip({
   );
 
   // Render tooltip in a portal to document body to escape stacking context
-  if (typeof window !== 'undefined' && active && mousePosition) {
+  // On mobile, we can render even without mousePosition since we center it
+  const shouldRender = typeof window !== 'undefined' && active && (mousePosition || (isMobile && coordinate));
+  if (shouldRender) {
     return createPortal(tooltipContent, document.body);
   }
 
