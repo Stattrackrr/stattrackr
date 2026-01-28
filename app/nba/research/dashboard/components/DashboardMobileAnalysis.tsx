@@ -11,8 +11,8 @@ import { BallDontLieStats } from '../types';
 
 interface DashboardMobileAnalysisProps {
   propsMode: 'player' | 'team';
-  dvpProjectedTab: 'dvp' | 'opponent' | 'injuries' | 'matchup';
-  setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries' | 'matchup') => void;
+  dvpProjectedTab: 'dvp' | 'opponent' | 'injuries';
+  setDvpProjectedTab: (tab: 'dvp' | 'opponent' | 'injuries') => void;
   teamMatchupTab: 'opponent' | 'injuries';
   setTeamMatchupTab: (tab: 'opponent' | 'injuries') => void;
   isDark: boolean;
