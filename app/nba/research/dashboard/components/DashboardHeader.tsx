@@ -192,8 +192,8 @@ export function DashboardHeader({
           {/* Team vs Team Display - Desktop only - Aligned with name - Now in the middle */}
           <div className="hidden lg:flex flex-shrink-0 items-end mx-4">
             {propsMode === 'player' ? (
-              // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
-              selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
+              // Player Props Mode - Show player's team vs next opponent (show team immediately, opponent when games load)
+              selectedTeam && selectedTeam !== 'N/A' ? (
                 <div className="flex items-center gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
                   {/* Player Team */}
                   <div className="flex items-center gap-1.5">
@@ -216,18 +216,18 @@ export function DashboardHeader({
                   </div>
                   
                   {/* Countdown to Tipoff - Centered between teams */}
-                  {countdown && !isGameInProgress ? (
+                  {nextGameOpponent && countdown && !isGameInProgress ? (
                     <div className="flex flex-col items-center min-w-[80px]">
                       <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Tipoff in</div>
                       <div className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
                         {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
                       </div>
                     </div>
-                  ) : isGameInProgress ? (
+                  ) : nextGameOpponent && isGameInProgress ? (
                     <div className="flex flex-col items-center min-w-[80px]">
                       <div className="text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
                     </div>
-                  ) : nextGameTipoff ? (
+                  ) : nextGameOpponent && nextGameTipoff ? (
                     <div className="flex flex-col items-center min-w-[80px]">
                       <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
                     </div>
@@ -235,24 +235,31 @@ export function DashboardHeader({
                     <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
                   )}
                   
-                  {/* Next Game Opponent */}
+                  {/* Next Game Opponent (or placeholder until games load) */}
                   <div className="flex items-center gap-1.5">
-                    <img 
-                      src={getEspnLogoUrl(nextGameOpponent)}
-                      alt={nextGameOpponent}
-                      className="w-8 h-8 object-contain flex-shrink-0"
-                      onError={(e) => {
-                        const candidates = getEspnLogoCandidates(nextGameOpponent);
-                        const next = opponentTeamLogoAttempt + 1;
-                        if (next < candidates.length) {
-                          setOpponentTeamLogoAttempt(next);
-                          e.currentTarget.src = candidates[next];
-                        } else {
-                          e.currentTarget.onerror = null;
-                        }
-                      }}
-                    />
-                    <span className="font-bold text-gray-900 dark:text-white text-sm">{nextGameOpponent}</span>
+                    {(nextGameOpponent || opponentTeam) && (nextGameOpponent || opponentTeam) !== '' && (nextGameOpponent || opponentTeam) !== 'N/A' ? (
+                      <>
+                        <img 
+                          src={getEspnLogoUrl(nextGameOpponent || opponentTeam || '')}
+                          alt={nextGameOpponent || opponentTeam || ''}
+                          className="w-8 h-8 object-contain flex-shrink-0"
+                          onError={(e) => {
+                            const opp = nextGameOpponent || opponentTeam || '';
+                            const candidates = getEspnLogoCandidates(opp);
+                            const next = opponentTeamLogoAttempt + 1;
+                            if (next < candidates.length) {
+                              setOpponentTeamLogoAttempt(next);
+                              e.currentTarget.src = candidates[next];
+                            } else {
+                              e.currentTarget.onerror = null;
+                            }
+                          }}
+                        />
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">{nextGameOpponent || opponentTeam}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500 text-sm font-medium min-w-[60px]">—</span>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -479,8 +486,8 @@ export function DashboardHeader({
           {/* Team vs Team Display - Mobile only - Aligned with height */}
           <div className="flex-shrink-0">
             {propsMode === 'player' ? (
-              // Player Props Mode - Show player's team vs NEXT GAME opponent (not chart filter)
-              selectedTeam && nextGameOpponent && selectedTeam !== 'N/A' && nextGameOpponent !== '' ? (
+              // Player Props Mode - Show player's team vs next opponent (show team immediately, opponent when games load)
+              selectedTeam && selectedTeam !== 'N/A' ? (
                 <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
                   {/* Team Logos */}
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -507,24 +514,31 @@ export function DashboardHeader({
                     {/* VS */}
                     <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
                     
-                    {/* Next Game Opponent */}
+                    {/* Next Game Opponent (or placeholder until games load) */}
                     <div className="flex items-center gap-1 min-w-0">
-                      <img 
-                        src={getEspnLogoUrl(nextGameOpponent)}
-                        alt={nextGameOpponent}
-                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
-                        onError={(e) => {
-                          const candidates = getEspnLogoCandidates(nextGameOpponent);
-                          const next = opponentTeamLogoAttempt + 1;
-                          if (next < candidates.length) {
-                            setOpponentTeamLogoAttempt(next);
-                            e.currentTarget.src = candidates[next];
-                          } else {
-                            e.currentTarget.onerror = null;
-                          }
-                        }}
-                      />
-                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{nextGameOpponent}</span>
+                      {(nextGameOpponent || opponentTeam) && (nextGameOpponent || opponentTeam) !== '' && (nextGameOpponent || opponentTeam) !== 'N/A' ? (
+                        <>
+                          <img 
+                            src={getEspnLogoUrl(nextGameOpponent || opponentTeam || '')}
+                            alt={nextGameOpponent || opponentTeam || ''}
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              const opp = nextGameOpponent || opponentTeam || '';
+                              const candidates = getEspnLogoCandidates(opp);
+                              const next = opponentTeamLogoAttempt + 1;
+                              if (next < candidates.length) {
+                                setOpponentTeamLogoAttempt(next);
+                                e.currentTarget.src = candidates[next];
+                              } else {
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{nextGameOpponent || opponentTeam}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
+                      )}
                     </div>
                   </div>
                   
