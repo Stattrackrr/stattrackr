@@ -32,6 +32,22 @@ export default function LoginPage() {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
 
+  // If password reset link landed here (Supabase may redirect to Site URL), read hash and send to update-password
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash?.replace(/^#/, "") || "";
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    const type = params.get("type");
+    if ((type === "recovery" || accessToken) && accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
+        router.replace("/auth/update-password");
+      });
+      return;
+    }
+  }, [router]);
+
   // Check if user is already logged in and get redirect param
   useEffect(() => {
     // Get redirect parameter from URL
