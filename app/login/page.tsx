@@ -231,9 +231,12 @@ export default function LoginPage() {
     setForgotPasswordError("");
     setForgotPasswordSuccess(false);
     try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      // Use canonical URL so www→non-www redirect doesn't drop the hash (tokens get lost)
+      let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+      if (baseUrl.startsWith("https://www.")) baseUrl = baseUrl.replace("https://www.", "https://");
+      if (baseUrl.startsWith("http://www.")) baseUrl = baseUrl.replace("http://www.", "http://");
       const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
-        redirectTo: `${origin}/auth/update-password`,
+        redirectTo: `${baseUrl}/auth/update-password`,
       });
       if (error) throw error;
       setForgotPasswordSuccess(true);
