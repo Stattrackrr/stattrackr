@@ -18,6 +18,8 @@ export interface UseUrlInitializationParams {
   setPlayerStats: (stats: any[]) => void;
   setIsLoading: (loading: boolean) => void;
   setApiError: (error: string | null) => void;
+  setManualOpponent?: (opponent: string) => void;
+  setOpponentTeam?: (team: string) => void;
   playerStats: any[];
   handlePlayerSelectFromSearch: (result: BdlSearchResult) => Promise<void>;
   fetchTodaysGames?: (options?: { silent?: boolean }) => void;
@@ -42,12 +44,13 @@ export function useUrlInitialization({
   setPlayerStats,
   setIsLoading,
   setApiError,
+  setManualOpponent,
+  setOpponentTeam,
   playerStats,
   handlePlayerSelectFromSearch,
   fetchTodaysGames,
   statFromUrlRef,
 }: UseUrlInitializationParams) {
-  // On mount: restore from sessionStorage and URL once
   useEffect(() => {
     // OPTIMIZATION: Pre-fetch games immediately if coming from props page
     // This ensures games are available when player is selected, reducing wait time
@@ -103,7 +106,17 @@ export function useUrlInitialization({
         const line = url.searchParams.get('line');
         const tf = url.searchParams.get('tf');
         const mode = url.searchParams.get('mode');
-        
+        const opponent = url.searchParams.get('opponent');
+
+        // Set opponent from URL (e.g. from "View on dashboard" in daily pick)
+        if (opponent && setManualOpponent && setOpponentTeam) {
+          const normOpp = normalizeAbbr(opponent.trim());
+          if (normOpp) {
+            setManualOpponent(normOpp);
+            setOpponentTeam(normOpp);
+          }
+        }
+
         // Set stat from URL FIRST (before propsMode) to prevent default stat logic from overriding it
         if (stat) {
           // Normalize stat from props page format (uppercase) to dashboard format (lowercase)

@@ -25,7 +25,18 @@ export async function GET(request: NextRequest) {
       ? `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`
       : 'http://localhost:3000';
 
-    // Fetch all teams with rankings (this will cache the data)
+    // Note: Basketball Reference endpoint has been removed
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'This cron job is deprecated. The Basketball Reference scraping endpoint has been removed.',
+        message: 'Please use alternative data sources for team defensive stats.'
+      },
+      { status: 410 } // 410 Gone
+    );
+    
+    // Old code below (kept for reference):
+    /*
     const response = await fetch(
       `${origin}/api/team-defensive-stats/bballref?all=1`,
       {

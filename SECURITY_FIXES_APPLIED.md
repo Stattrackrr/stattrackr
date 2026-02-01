@@ -41,8 +41,8 @@ All critical security vulnerabilities have been identified and fixed. The codeba
 3. `app/api/team-defensive-stats/route.ts`
 4. `app/api/team-defensive-stats/rank/route.ts`
 5. `app/api/dvp/team-totals/route.ts`
-6. `app/api/dvp/fetch-rotowire-lineups/route.ts`
-7. `app/api/dvp/fetch-rotowire-lineups-puppeteer/route.ts`
+6. `app/api/dvp/fetch-rotowire-lineups/route.ts` (REMOVED)
+7. `app/api/dvp/fetch-rotowire-lineups-puppeteer/route.ts` (REMOVED)
 8. `app/api/dvp/fetch-nba-starting-positions/route.ts`
 9. `app/api/dvp/fetch-lineups-multi-source/route.ts`
 10. `app/api/dvp/fetch-espn-positions/route.ts`
@@ -205,10 +205,10 @@ While all critical security issues are fixed, consider these improvements:
 6. `app/api/team-defensive-stats/route.ts` - Removed hardcoded API key
 7. `app/api/team-defensive-stats/rank/route.ts` - Removed hardcoded API key
 8. `app/api/dvp/team-totals/route.ts` - Removed hardcoded API key
-9. `app/api/dvp/fetch-rotowire-lineups/route.ts` - Removed hardcoded API key
-10. `app/api/dvp/fetch-rotowire-lineups-puppeteer/route.ts` - Removed hardcoded API key
+9. `app/api/dvp/fetch-rotowire-lineups/route.ts` - Removed hardcoded API key (FILE REMOVED)
+10. `app/api/dvp/fetch-rotowire-lineups-puppeteer/route.ts` - Removed hardcoded API key (FILE REMOVED)
 11. `app/api/dvp/fetch-nba-starting-positions/route.ts` - Removed hardcoded API key
-12. `app/api/dvp/fetch-lineups-multi-source/route.ts` - Removed hardcoded API key
+12. `app/api/dvp/fetch-lineups-multi-source/route.ts` - Removed hardcoded API key (FILE REMOVED)
 13. `app/api/dvp/fetch-espn-positions/route.ts` - Removed hardcoded API key
 14. `app/api/dvp/fetch-basketballmonsters-lineups/route.ts` - Removed hardcoded API key
 15. `app/api/dvp/build-aliases/route.ts` - Removed hardcoded API key

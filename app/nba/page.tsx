@@ -270,7 +270,8 @@ export default function NBALandingPage() {
   const propsLoadedRef = useRef(false); // Track if props are already loaded to prevent redundant fetches
   const initialFetchCompletedRef = useRef(false); // Track if initial fetch has completed
   const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
-  const [navigatingToPlayer, setNavigatingToPlayer] = useState(false); // Track when navigating to dashboard
+  const [navigatingToPlayer, setNavigatingToPlayer] = useState(false);
+  const navigatingRef = useRef(false);
   const [isMobile, setIsMobile] = useState(false);
   // Load filter selections from localStorage on mount
   const loadFiltersFromStorage = () => {
@@ -3874,8 +3875,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  if (navigatingRef.current) return;
+                                  navigatingRef.current = true;
+                                  setNavigatingToPlayer(true);
                                   
-                                  // Force immediate log before any async operations
                                   const clickData = {
                                     player: prop.playerName,
                                     statType: prop.statType,
@@ -3918,17 +3921,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     }
                                   }
                                   
-                                  // Show loading bar immediately
-                                  setNavigatingToPlayer(true);
-                                  
-                                  // Navigate immediately - prefetch on hover should have warmed up the cache
-                                  // If prefetch didn't complete yet, dashboard will fetch (but should be faster due to server cache)
                                   router.push(finalUrl);
-                                  
-                                  // Hide loading bar after navigation completes (dashboard will handle its own loading)
                                   setTimeout(() => {
+                                    navigatingRef.current = false;
                                     setNavigatingToPlayer(false);
-                                  }, 1000);
+                                  }, 1500);
                                 }}
                               >
                                 {/* Player Column */}
@@ -4982,11 +4979,23 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 mounted && isDark ? 'bg-[#0a1929] border-gray-900' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
+                                if (navigatingRef.current) return;
+                                navigatingRef.current = true;
+                                setNavigatingToPlayer(true);
+                                try {
+                                  sessionStorage.removeItem('nba_dashboard_session_v1');
+                                  sessionStorage.setItem('from_props_page', 'true');
+                                } catch {}
                                 const params = new URLSearchParams();
                                 params.set('player', prop.playerName);
-                                params.set('stat', prop.statType);
+                                params.set('stat', (prop.statType || '').toLowerCase());
                                 params.set('line', prop.line.toString());
+                                params.set('tf', 'last10');
                                 router.push(`/nba/research/dashboard?${params.toString()}`);
+                                setTimeout(() => {
+                                  navigatingRef.current = false;
+                                  setNavigatingToPlayer(false);
+                                }, 1500);
                               }}
                             >
                               {/* Header Section */}

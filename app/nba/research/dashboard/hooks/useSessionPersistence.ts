@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { SavedSession, SESSION_KEY } from '../types';
 import { BdlSearchResult } from '../types';
 
@@ -25,8 +24,6 @@ export function useSessionPersistence({
   resolvedPlayerId,
   gamePropsTeam,
 }: UseSessionPersistenceParams) {
-  const searchParams = useSearchParams();
-
   useEffect(() => {
     try {
       // Always save propsMode, selectedStat, and selectedTimeframe
@@ -55,14 +52,15 @@ export function useSessionPersistence({
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
         
-        // Check if we're loading from URL params (has 'player' but not 'pid')
-        // If so, don't update URL immediately to prevent double reload
+        // Don't strip player params while we're still loading from URL
+        // (e.g. "View on dashboard" from Today's Best Pick navigates with player=... in URL)
         const currentUrl = new URL(window.location.href);
         const hasPlayerParam = currentUrl.searchParams.has('player');
         const hasPidParam = currentUrl.searchParams.has('pid');
-        const isLoadingFromUrl = hasPlayerParam && !hasPidParam;
+        const hasPlayerInUrl = hasPlayerParam || hasPidParam;
+        const isLoadingFromUrl = hasPlayerInUrl && (!selectedPlayer || !selectedTeam);
         
-        // Update URL for share/save (but skip if we're still loading from URL params)
+        // Update URL for share/save (but skip if we're still loading player from URL params)
         if (!isLoadingFromUrl) {
           const url = new URL(window.location.href);
           url.searchParams.set('mode', propsMode);
@@ -72,10 +70,8 @@ export function useSessionPersistence({
             url.searchParams.set('pid', String(r.id));
             url.searchParams.set('name', r.full);
             url.searchParams.set('team', selectedTeam);
-            // Remove 'player' param if it exists (we now have pid/name/team)
             url.searchParams.delete('player');
           } else {
-            // Remove player-specific params when not in player mode
             url.searchParams.delete('pid');
             url.searchParams.delete('name');
             url.searchParams.delete('team');
@@ -84,10 +80,13 @@ export function useSessionPersistence({
           
           url.searchParams.set('stat', selectedStat);
           url.searchParams.set('tf', selectedTimeframe);
-          window.history.replaceState({}, '', url.toString());
+          const newUrlStr = url.toString();
+          if (window.location.href !== newUrlStr) {
+            window.history.replaceState({}, '', newUrlStr);
+          }
         }
       }
     } catch {}
-  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam, searchParams]);
+  }, [selectedPlayer, selectedTeam, selectedStat, selectedTimeframe, resolvedPlayerId, propsMode, gamePropsTeam]);
 }
 

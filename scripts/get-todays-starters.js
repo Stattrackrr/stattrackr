@@ -249,7 +249,7 @@ async function main() {
       
       // Check if game has started
       // Note: balldontlie.io API only provides boxscore/stats for games that have started
-      // For projected starters before games start, you'd need to use other sources (ESPN, Rotowire, etc.)
+      // For projected starters before games start, you'd need to use other sources (ESPN, etc.)
       const gameStarted = hasGameStarted(status);
       
       if (!gameStarted) {

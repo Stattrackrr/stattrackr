@@ -136,31 +136,13 @@ export function DashboardHeader({
                 {selectedPlayer && (
                   <button
                     onClick={() => {
-                      // Show loading bar immediately
-                      if (onNavigateBackToProps) {
-                        onNavigateBackToProps();
-                      }
-                      
-                      // Clear dashboard session storage before navigating
+                      if (onNavigateBackToProps) onNavigateBackToProps();
                       try {
                         sessionStorage.removeItem('nba_dashboard_session_v1');
                         sessionStorage.removeItem('last_prop_click');
                         sessionStorage.removeItem('last_prop_url');
-                      } catch (e) {
-                        // Ignore errors
-                      }
-                      
-                      // Small delay to ensure loading bar is visible, then navigate
-                      setTimeout(() => {
-                        // Use native browser back for instant navigation (same as browser back button)
-                        window.history.back();
-                        // Hide loading bar after navigation starts
-                        setTimeout(() => {
-                          if (onNavigateBackToProps) {
-                            onNavigateBackToProps();
-                          }
-                        }, 100);
-                      }, 100);
+                      } catch {}
+                      window.location.href = '/nba';
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
@@ -387,31 +369,13 @@ export function DashboardHeader({
                 {selectedPlayer && (
                   <button
                     onClick={() => {
-                      // Show loading bar immediately
-                      if (onNavigateBackToProps) {
-                        onNavigateBackToProps();
-                      }
-                      
-                      // Clear dashboard session storage before navigating
+                      if (onNavigateBackToProps) onNavigateBackToProps();
                       try {
                         sessionStorage.removeItem('nba_dashboard_session_v1');
                         sessionStorage.removeItem('last_prop_click');
                         sessionStorage.removeItem('last_prop_url');
-                      } catch (e) {
-                        // Ignore errors
-                      }
-                      
-                      // Small delay to ensure loading bar is visible, then navigate
-                      setTimeout(() => {
-                        // Use native browser back for instant navigation (same as browser back button)
-                        window.history.back();
-                        // Hide loading bar after navigation starts
-                        setTimeout(() => {
-                          if (onNavigateBackToProps) {
-                            onNavigateBackToProps();
-                          }
-                        }, 100);
-                      }, 100);
+                      } catch {}
+                      window.location.href = '/nba';
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >

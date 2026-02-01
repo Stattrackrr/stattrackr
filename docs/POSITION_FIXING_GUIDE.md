@@ -19,21 +19,7 @@ The NBA Stats API `boxscoretraditionalv2` endpoint has `START_POSITION` field wh
 - Can be slow/timeout
 - May require retries
 
-### Option 2: Basketball-Reference (Historical Data)
-Basketball-Reference has starting lineups for every game.
-
-**URL Format:** `https://www.basketball-reference.com/teams/MIL/2026_start.html`
-
-**Pros:**
-- Reliable historical data
-- Easy to verify manually
-- Complete season data
-
-**Cons:**
-- Requires HTML parsing
-- May need to handle different formats
-
-### Option 3: Manual Verification
+### Option 2: Manual Verification
 Since you're finding many websites with starting lineups, you can:
 
 1. **Use the position files directly:**
@@ -49,12 +35,11 @@ Since you're finding many websites with starting lineups, you can:
 
 1. **For current season (2025-26):**
    - Try NBA Stats API endpoint (may need retries if it times out)
-   - If that fails, use Basketball-Reference scraping
-   - As fallback, manually verify from websites you're finding
+   - As fallback, manually verify from websites
 
 2. **For historical seasons:**
-   - Use Basketball-Reference (most reliable)
-   - Or use stored DvP data if positions were correct when ingested
+   - Use stored DvP data if positions were correct when ingested
+   - Or manually verify and update position files
 
 ## Quick Fix Script
 
@@ -70,12 +55,10 @@ Since you're finding many websites with starting lineups, you can:
 
 ## Websites with Starting Lineups
 
-Based on your research, these sites have starting lineups:
-- Rotowire
+Based on research, these sites have starting lineups:
 - Underdog Fantasy  
 - TheScore
 - Yahoo Sports
-- Basketball-Reference
 - NBA.com official
 
 We can add scraping for any of these if you find one that's particularly reliable and easy to access.

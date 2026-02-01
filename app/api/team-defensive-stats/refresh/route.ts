@@ -17,84 +17,17 @@ const CACHE_KEY = 'bballref_defensive_stats_all';
 const CACHE_TYPE = 'team_defensive_stats';
 
 /**
- * Refresh all teams' defensive stats from Basketball Reference
- * This endpoint fetches and caches all 30 teams' defensive stats in one go
+ * Refresh all teams' defensive stats
+ * This endpoint is deprecated - the bballref endpoint has been removed
  */
 export async function GET(request: NextRequest) {
-  const startTime = Date.now();
-  
-  try {
-    console.log('[Team Defensive Stats Refresh] Starting bulk refresh for all teams');
-    
-    // Fetch all teams' defensive stats by calling the bballref endpoint with ?all=1
-    // Use the request URL to determine the base URL
-    const requestUrl = new URL(request.url);
-    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
-    
-    const refreshUrl = `${baseUrl}/api/team-defensive-stats/bballref?all=1`;
-    
-    console.log(`[Team Defensive Stats Refresh] Fetching from: ${refreshUrl}`);
-    
-    const response = await fetch(refreshUrl, {
-      cache: 'no-store',
-      headers: {
-        'User-Agent': 'StatTrackr-Cache-Refresh/1.0',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch defensive stats: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.teamStats) {
-      throw new Error('Invalid response from defensive stats API');
-    }
-    
-    const teamsProcessed = Object.keys(data.teamStats).length;
-    
-    // Cache in both in-memory and Supabase
-    const cachePayload = {
-      success: true,
-      source: 'basketball-reference',
-      teamStats: data.teamStats,
-      rankings: data.rankings || {},
-      cachedAt: new Date().toISOString(),
-    };
-    
-    // Cache in-memory (24 hours)
-    cache.set(CACHE_KEY, cachePayload, 24 * 60);
-    
-    // Cache in Supabase (24 hours) for persistent storage across instances
-    await setNBACache(CACHE_KEY, CACHE_TYPE, cachePayload, 24 * 60);
-    
-    const elapsed = Date.now() - startTime;
-    const result = {
-      success: true,
-      teamsProcessed,
-      totalTeams: ALL_NBA_TEAMS.length,
-      elapsed: `${elapsed}ms`,
-      cachedAt: new Date().toISOString(),
-      ttl: '24 hours',
-    };
-    
-    console.log(`[Team Defensive Stats Refresh] ✅ Complete:`, result);
-    
-    return NextResponse.json(result, { status: 200 });
-    
-  } catch (error: any) {
-    const elapsed = Date.now() - startTime;
-    console.error('[Team Defensive Stats Refresh] ❌ Error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to refresh team defensive stats',
-        elapsed: `${elapsed}ms`
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'This endpoint is deprecated. The Basketball Reference scraping endpoint has been removed.',
+      message: 'Please use alternative data sources for team defensive stats.'
+    },
+    { status: 410 } // 410 Gone
+  );
 }
 

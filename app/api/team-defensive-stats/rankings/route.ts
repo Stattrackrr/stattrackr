@@ -18,12 +18,22 @@ export async function GET(req: NextRequest) {
   const getAll = searchParams.get('all') === '1';
 
   try {
-    // Fetch the rankings data
+    // Note: Basketball Reference endpoint has been removed
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'This endpoint is deprecated. The Basketball Reference scraping endpoint has been removed.',
+        message: 'Please use alternative data sources for team defensive rankings.'
+      },
+      { status: 410 } // 410 Gone
+    );
+    
+    // Old code below (kept for reference):
+    /*
     const cacheKey = 'bballref_defensive_stats_all';
     let rankingsData = cache.get<any>(cacheKey);
     
     if (!rankingsData) {
-      // Fetch from the bballref endpoint
       const origin = req.headers.get('host') 
         ? `${req.headers.get('x-forwarded-proto') || 'https'}://${req.headers.get('host')}`
         : 'http://localhost:3000';

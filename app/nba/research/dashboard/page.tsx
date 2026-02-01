@@ -914,6 +914,8 @@ export function NBADashboardContent() {
     setPlayerStats,
     setIsLoading,
     setApiError,
+    setManualOpponent,
+    setOpponentTeam,
     playerStats,
     handlePlayerSelectFromSearch,
     fetchTodaysGames, // Pass fetchTodaysGames to pre-fetch games when player param detected

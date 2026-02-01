@@ -61,98 +61,14 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
       const targetOpp = opponentTeam;
 
       try {
-        // Fetch team defensive stats from Basketball Reference (faster and more reliable)
-        let defensiveStatsResponse: any;
-        try {
-          defensiveStatsResponse = await cachedFetch<any>(
-            `/api/team-defensive-stats/bballref?team=${targetOpp}`,
-            undefined,
-            DVP_CACHE_TTL * 10 // Cache for 20 minutes (Basketball Reference updates daily)
-          );
-        } catch (fetchError: any) {
-          // Handle HTTP errors (like 500, 400, etc.) and timeouts
-          console.error('[OpponentAnalysisCard] Error fetching defensive stats:', fetchError);
-          if (!abort) {
-            setError('Unable to load data. Please try again.');
-            setTeamStats(null);
-            setTeamRanks({});
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Check if response is valid
-        if (!defensiveStatsResponse) {
-          console.error('[OpponentAnalysisCard] No response from defensive stats API for', targetOpp);
-          if (!abort) {
-            setError('Unable to load data. Please try again.');
-            setTeamStats(null);
-            setTeamRanks({});
-            setLoading(false);
-          }
-          return;
-        }
-
-
-        if (defensiveStatsResponse.success === true) {
-          const perGame = defensiveStatsResponse.perGame || {};
-          
-          // Map BDL stats to our format (already per-game from API)
-          const stats: any = {
-            pts: perGame.pts || 0,
-            reb: perGame.reb || 0,
-            ast: perGame.ast || 0,
-            fg_pct: perGame.fg_pct || 0,
-            fg3_pct: perGame.fg3_pct || 0,
-            stl: perGame.stl || 0,
-            blk: perGame.blk || 0,
-          };
-
-          // Initialize ranks to 0 - will be fetched separately to avoid blocking
-          const ranks: Record<string, number> = {
-            pts: 0,
-            reb: 0,
-            ast: 0,
-            fg_pct: 0,
-            fg3_pct: 0,
-            stl: 0,
-            blk: 0,
-          };
-
-          // Fetch rankings asynchronously from Basketball Reference (much faster)
-          (async () => {
-            try {
-              const rankingsResponse = await cachedFetch<any>(
-                `/api/team-defensive-stats/bballref?all=1`, // Get all teams with rankings
-                undefined,
-                DVP_CACHE_TTL * 30 // Cache rankings for 1 hour
-              );
-
-              if (rankingsResponse?.success && rankingsResponse.rankings && !abort) {
-                const normalizedOpp = normalizeAbbr(targetOpp);
-                const teamRankings = rankingsResponse.rankings[normalizedOpp];
-                if (teamRankings) {
-                  setTeamRanks(teamRankings);
-                }
-              }
-            } catch (rankError: any) {
-              console.warn('[OpponentAnalysisCard] Failed to fetch rankings:', rankError);
-              // Continue without ranks if ranking fetch fails
-            }
-          })();
-
-          if (!abort) {
-            setTeamStats(stats);
-            setTeamRanks(ranks);
-            setError(null);
-          }
-        } else {
-          console.error('Failed to fetch defensive stats:', defensiveStatsResponse);
-          if (!abort) {
-            setTeamStats(null);
-            setTeamRanks({});
-            setError('Unable to load data. Please try again.');
-          }
+        // Note: Basketball Reference endpoint has been removed
+        // This component needs to be updated to use an alternative data source
+        console.warn('[OpponentAnalysisCard] Team defensive stats endpoint is deprecated');
+        
+        if (!abort) {
+          setError('Team defensive stats endpoint is deprecated. Please use an alternative data source.');
+          setTeamStats(null);
+          setTeamRanks({});
         }
       } catch (error: any) {
         console.error('Failed to fetch opponent analysis data:', error);
