@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
       const firstLine = bookmakerLines[0];
       const overOdds = firstLine?.overOdds ?? p.overOdds ?? '-110';
       const underOdds = firstLine?.underOdds ?? p.underOdds ?? '-110';
-      const bookmakerCount = new Set(bookmakerLines.map((l) => l.bookmaker)).size;
+      const bookmakerCount = new Set(bookmakerLines.map((l: { bookmaker: string }) => l.bookmaker)).size;
 
       propsToScan.push({
         playerId,

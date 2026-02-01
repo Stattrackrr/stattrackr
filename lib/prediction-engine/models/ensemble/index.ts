@@ -130,7 +130,7 @@ export async function dynamicWeightAdjustment(
 ): Promise<ModelWeights> {
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get model performance from last N days
     const cutoffDate = new Date();

@@ -102,6 +102,7 @@ export async function GET(req: NextRequest) {
       rankings: teams,
       note: 'Rank 30 = best (most conceded), Rank 1 = worst (least conceded)'
     });
+    */
   } catch (e: any) {
     console.error('[rankings] Error:', e);
     return NextResponse.json({

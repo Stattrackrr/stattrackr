@@ -108,7 +108,7 @@ export async function fetchReferee(gameId: string): Promise<RefereeData | null> 
   try {
     // Try to get from database first
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('referee_stats')
@@ -198,7 +198,7 @@ export async function isNationalTVGame(
 ): Promise<boolean> {
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('national_tv_games')

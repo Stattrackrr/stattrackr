@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
       duration: `${duration}ms`,
       timestamp: new Date().toISOString(),
     });
+    */
   } catch (error: any) {
     console.error('[Defensive Stats Cache Refresh] Error:', error);
     return NextResponse.json(

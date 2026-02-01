@@ -201,7 +201,7 @@ export async function runPredictionForProp(prop: PropInput): Promise<PredictionF
     allPredictions.push(ContextModels.fatigueModel(completePlayerStats, statType, 3));
     allPredictions.push(ContextModels.injuryImpactModel(completePlayerStats, statType, playerInjury.status as any));
     allPredictions.push(ContextModels.refereeBiasModel(completePlayerStats, statType, referee ?? undefined));
-    allPredictions.push(ContextModels.altitudeArenaModel(completePlayerStats, statType, arena, true));
+    allPredictions.push(ContextModels.altitudeArenaModel(completePlayerStats, statType, arena ?? undefined, true));
     allPredictions.push(ContextModels.revengeGameModel(completePlayerStats, statType, prop.opponent, formerTeams));
     allPredictions.push(ContextModels.contractYearModel(completePlayerStats, statType, contractYear));
     allPredictions.push(ContextModels.milestoneChaseModel(completePlayerStats, statType));

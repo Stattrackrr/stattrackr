@@ -26,7 +26,7 @@ export async function fetchCoachData(team: string): Promise<CoachData | null> {
 
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('coach_tendencies')
@@ -74,7 +74,7 @@ export async function fetchArenaData(team: string): Promise<ArenaData | null> {
 
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('arena_factors')
@@ -114,7 +114,7 @@ export async function fetchArenaData(team: string): Promise<ArenaData | null> {
 export async function fetchRefereeData(refereeName: string): Promise<RefereeData | null> {
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('referee_stats')
@@ -145,7 +145,7 @@ export async function fetchRefereeData(refereeName: string): Promise<RefereeData
 export async function isContractYear(playerId: number): Promise<boolean> {
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('player_contracts')
@@ -170,7 +170,7 @@ export async function isContractYear(playerId: number): Promise<boolean> {
 export async function getFormerTeams(playerId: number): Promise<string[]> {
   try {
     const { createClient } = await import('@/lib/supabase/server');
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('player_former_teams')

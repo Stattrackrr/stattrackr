@@ -165,6 +165,8 @@ export interface TrackingStatsData {
   contestedRebounds?: number;
   reboundChances?: number;
   adjustedReboundChance?: number;
+  potentialAssistsLast5?: number;
+  reboundChancesLast5?: number;
   
   // Defense
   deflections?: number;
