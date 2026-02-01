@@ -3,6 +3,7 @@
 import { useState, useEffect, memo } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { cachedFetch } from '@/lib/requestCache';
+import { currentNbaSeason } from '../../utils/playerUtils';
 
 // DVP cache TTL constant (shared with PositionDefenseCard)
 const DVP_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
@@ -51,25 +52,46 @@ const OpponentAnalysisCard = memo(function OpponentAnalysisCard({
     }
 
     let abort = false;
-    const LOCAL_CACHE_KEY = 'opponentAnalysisCacheV1';
     const LOCAL_CACHE_TTL = 1000 * 60 * 60 * 6; // 6 hours
 
     const fetchData = async () => {
       setLoading(true);
       setError(null);
 
-      const targetOpp = opponentTeam;
+      const targetOpp = normalizeAbbr(opponentTeam);
 
       try {
-        // Note: Basketball Reference endpoint has been removed
-        // This component needs to be updated to use an alternative data source
-        console.warn('[OpponentAnalysisCard] Team defensive stats endpoint is deprecated');
-        
-        if (!abort) {
-          setError('Team defensive stats endpoint is deprecated. Please use an alternative data source.');
+        const url = `/api/team-defensive-stats/rank?season=${currentNbaSeason()}&games=20`;
+        const data = await cachedFetch<any>(url, undefined, LOCAL_CACHE_TTL);
+
+        if (abort) return;
+        if (!data?.success || !data.rankings || !data.teamStats) {
+          setError(data?.error || 'No rankings data available');
           setTeamStats(null);
           setTeamRanks({});
+          return;
         }
+
+        const stats = data.teamStats[targetOpp];
+        const ranks = data.rankings[targetOpp];
+        if (!stats || !ranks) {
+          setError(`No data for ${targetOpp}`);
+          setTeamStats(null);
+          setTeamRanks({});
+          return;
+        }
+
+        setTeamStats({
+          pts: stats.pts,
+          reb: stats.reb,
+          ast: stats.ast,
+          fg_pct: stats.fg_pct,
+          fg3_pct: stats.fg3_pct,
+          stl: stats.stl,
+          blk: stats.blk,
+        });
+        setTeamRanks(ranks);
+        setError(null);
       } catch (error: any) {
         console.error('Failed to fetch opponent analysis data:', error);
         if (!abort) {
