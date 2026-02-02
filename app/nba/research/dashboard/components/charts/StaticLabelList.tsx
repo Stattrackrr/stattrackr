@@ -68,6 +68,11 @@ export default memo(function StaticLabelList({
           labelY = y - 4;
         }
         
+        // Composite stats (PR, PRA, RA, PA) - numbers are inside each segment, hide default label
+        if (['pra', 'pr', 'pa', 'ra'].includes(selectedStat || '')) {
+          return null;
+        }
+
         // Special handling for fg3m (3PM/A) - show made/attempted format
         let displayText = formatChartLabel(labelValue);
         

@@ -119,10 +119,11 @@ const SimpleChart = memo(function SimpleChart({
     return '#6b7280'; // gray for equal
   }, []);
 
-  // Memoize cells - only recalculate when chartData changes, NOT when betting line changes
-  // Colors are updated via DOM manipulation for instant updates (no React re-renders)
-  // Initial colors use bettingLine prop, but cells don't re-render when it changes
+  const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
+
+  // Memoize cells - skip for composite stats (they use custom chopped shape)
   const barCells = useMemo(() => {
+    if (isCompositeStat) return null;
     return chartData.map((entry, index) => (
       <Cell 
         key={`cell-${index}`} 
@@ -131,7 +132,7 @@ const SimpleChart = memo(function SimpleChart({
         data-bar-value={entry.value}
       />
     ));
-  }, [chartData, getBarColor, bettingLine]); // Include bettingLine for initial render
+  }, [chartData, getBarColor, bettingLine, isCompositeStat]);
 
   // Merge second axis data with main data
   const mergedChartData = useMemo(() => {
@@ -801,7 +802,114 @@ const SimpleChart = memo(function SimpleChart({
               key={`bar-${selectedStat}-${mergedChartData.length}`}
               dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
               radius={[10, 10, 10, 10]}
-              shape={selectedStat === 'fg3m' ? (props: any) => {
+              shape={isCompositeStat ? (props: any) => {
+                const { x, y, width, height, payload } = props;
+                const stats = payload?.stats || {};
+                const pts = Number(stats.pts ?? 0);
+                const reb = Number(stats.reb ?? 0);
+                const ast = Number(stats.ast ?? 0);
+                const total = selectedStat === 'pra' ? pts + reb + ast
+                  : selectedStat === 'pr' ? pts + reb
+                  : selectedStat === 'pa' ? pts + ast
+                  : reb + ast;
+                const barColor = getBarColor(payload?.value ?? total, bettingLine);
+                const isLive = (payload as any)?.isLive;
+                const barIndex = props.index ?? -1;
+                const isMostRecent = isLive && barIndex === mergedChartData.length - 1;
+                const chopStroke = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)';
+                const segments: { h: number; val: number }[] = [];
+                if (total > 0) {
+                  if (selectedStat === 'pra') {
+                    segments.push(
+                      { h: (pts / total) * height, val: pts },
+                      { h: (reb / total) * height, val: reb },
+                      { h: (ast / total) * height, val: ast }
+                    );
+                  } else if (selectedStat === 'pr') {
+                    segments.push({ h: (pts / total) * height, val: pts }, { h: (reb / total) * height, val: reb });
+                  } else if (selectedStat === 'pa') {
+                    segments.push({ h: (pts / total) * height, val: pts }, { h: (ast / total) * height, val: ast });
+                  } else {
+                    segments.push({ h: (reb / total) * height, val: reb }, { h: (ast / total) * height, val: ast });
+                  }
+                }
+                const clipId = `composite-clip-bar-${barIndex}`;
+                let offset = 0;
+                return (
+                  <g style={{ pointerEvents: 'all' }}>
+                    <defs>
+                      <clipPath id={clipId}>
+                        <rect x={x} y={y} width={width} height={height} rx={10} ry={10} />
+                      </clipPath>
+                    </defs>
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      fill="none"
+                      stroke={isMostRecent ? '#9333ea' : 'transparent'}
+                      strokeWidth={isMostRecent ? 3 : 0}
+                      rx={10}
+                      ry={10}
+                    />
+                    <g clipPath={`url(#${clipId})`}>
+                      {segments.map((seg, i) => {
+                        const segH = Math.max(4, Math.round(seg.h));
+                        const segY = y + height - offset - segH;
+                        offset += segH;
+                        const isLast = i === segments.length - 1;
+                        const textFill = barColor === '#6b7280' ? (isDark ? '#e5e7eb' : '#374151') : '#fff';
+                        return (
+                          <g key={i}>
+                            <rect
+                              x={x}
+                              y={segY}
+                              width={width}
+                              height={segH}
+                              rx={isLast ? 6 : 0}
+                              ry={isLast ? 6 : 0}
+                              fill={barColor}
+                            />
+                            {segH >= 8 && (
+                              <text
+                                x={x + width / 2}
+                                y={segY + segH / 2}
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize={Math.min(11, Math.max(8, segH - 4))}
+                                fontWeight="600"
+                                fill={textFill}
+                              >
+                                {seg.val}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </g>
+                    {segments.length > 1 && (() => {
+                      let off = 0;
+                      const chopY: number[] = [];
+                      for (let i = 0; i < segments.length - 1; i++) {
+                        off += Math.max(4, Math.round(segments[i].h));
+                        chopY.push(y + height - off);
+                      }
+                      return chopY.map((cy, i) => (
+                        <line
+                          key={i}
+                          x1={x}
+                          x2={x + width}
+                          y1={cy}
+                          y2={cy}
+                          stroke={chopStroke}
+                          strokeWidth={2}
+                        />
+                      ));
+                    })()}
+                  </g>
+                );
+              } : selectedStat === 'fg3m' ? (props: any) => {
                 const { x, y, width, height, payload } = props;
                 const attempts = payload?.stats?.fg3a || 0;
                 const makes = payload?.stats?.fg3m || 0;
