@@ -564,16 +564,17 @@ const SimpleChart = memo(function SimpleChart({
     }
   }, []);
 
-  // Compute average for in-chart overlay (stat + timeframe)
+  // Compute average and hit rate for in-chart overlay (stat + timeframe)
   const averageDisplay = useMemo(() => {
     if (['moneyline', 'spread', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) return null;
-    const validValues = chartData
+    const validEntries = chartData
       .map((d: any) => {
-        if (selectedStat === 'fg3m' && d?.stats) return Number((d.stats as any).fg3m);
-        return Number.isFinite(d.value) ? d.value : null;
+        const v = selectedStat === 'fg3m' && d?.stats ? Number((d.stats as any).fg3m) : (Number.isFinite(d.value) ? d.value : null);
+        return v != null ? { value: v } : null;
       })
-      .filter((v): v is number => v != null);
-    if (validValues.length === 0) return null;
+      .filter((x): x is { value: number } => x != null);
+    if (validEntries.length === 0) return null;
+    const validValues = validEntries.map(x => x.value);
     const avg = validValues.reduce((s, v) => s + v, 0) / validValues.length;
     const pctStats = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
     const formatted = pctStats.includes(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
@@ -582,8 +583,14 @@ const SimpleChart = memo(function SimpleChart({
       h2h: 'H2H', lastseason: 'Last Season', thisseason: 'Season'
     };
     const tfLabel = (selectedTimeframe && tfLabels[selectedTimeframe]) || '';
-    return { formatted, tfLabel };
-  }, [chartData, selectedStat, selectedTimeframe]);
+    // Hit rate: % of games over the line in selected timeframe
+    let hitRate: number | null = null;
+    if (Number.isFinite(bettingLine) && validEntries.length > 0) {
+      const overCount = validEntries.filter(({ value }) => value > bettingLine).length;
+      hitRate = Math.round((overCount / validEntries.length) * 100);
+    }
+    return { formatted, tfLabel, hitRate };
+  }, [chartData, selectedStat, selectedTimeframe, bettingLine]);
 
   // Loading state
   // Chart is independent - only depends on its own data, not global isLoading
@@ -637,10 +644,10 @@ const SimpleChart = memo(function SimpleChart({
         />
       )}
       
-      {/* In-chart average - top right */}
+      {/* In-chart average + hit rate - top right */}
       {averageDisplay && (
         <div
-          className="absolute top-1 right-2 pointer-events-none z-[100] flex items-center justify-center px-2 py-1 rounded shadow leading-none"
+          className="absolute top-1 right-2 pointer-events-none z-[100] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none"
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -651,6 +658,14 @@ const SimpleChart = memo(function SimpleChart({
             {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
             <span className="font-semibold">{averageDisplay.formatted}</span>
           </span>
+          {averageDisplay.hitRate != null && (
+            <>
+              <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>|</span>
+              <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                Hit: <span className="font-semibold">{averageDisplay.hitRate}%</span>
+              </span>
+            </>
+          )}
         </div>
       )}
       {/* In-chart teammate filter - center horizontally, inline with average (same top) */}
