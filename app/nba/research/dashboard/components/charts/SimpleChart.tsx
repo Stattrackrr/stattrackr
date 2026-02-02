@@ -907,6 +907,18 @@ const SimpleChart = memo(function SimpleChart({
                         />
                       ));
                     })()}
+                    {/* Total on top of bar */}
+                    <text
+                      x={x + width / 2}
+                      y={y - 4}
+                      textAnchor="middle"
+                      dominantBaseline="auto"
+                      fontSize={12}
+                      fontWeight={700}
+                      fill={isDark ? '#ffffff' : '#000000'}
+                    >
+                      {payload?.value ?? total}
+                    </text>
                   </g>
                 );
               } : selectedStat === 'fg3m' ? (props: any) => {
