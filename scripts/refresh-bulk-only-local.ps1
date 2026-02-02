@@ -66,6 +66,7 @@ Write-Host "`nBulk data has been cached to Supabase." -ForegroundColor Green
 Write-Host "Production will now have access to:" -ForegroundColor Green
 Write-Host "  ✅ Bulk player play types (all players)" -ForegroundColor Green
 Write-Host "  ✅ Defensive rankings (all play types)" -ForegroundColor Green
+Write-Host "  ✅ Opponent Breakdown stats (pts/reb/ast/fg%/3p%/stl/blk)" -ForegroundColor Green
 Write-Host "  ✅ Zone defense rankings (if successful)" -ForegroundColor Green
 Write-Host "`nNote: Team tracking stats (potentials) can be refreshed separately" -ForegroundColor Gray
 Write-Host "      when the NBA API is more stable." -ForegroundColor Gray

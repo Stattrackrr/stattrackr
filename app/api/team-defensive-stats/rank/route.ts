@@ -2,8 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL } from '@/lib/cache';
+import { getNBACache } from '@/lib/nbaCache';
 import { NBA_TEAMS } from '@/lib/nbaAbbr';
-import { normalizeAbbr } from '@/lib/nbaAbbr';
 
 export const runtime = 'nodejs';
 
@@ -64,14 +64,58 @@ export async function GET(req: NextRequest) {
   const seasonYear = seasonParam ? parseInt(seasonParam, 10) : currentNbaSeason();
 
   try {
-    const cacheKey = `team_defensive_stats_rankings:${seasonYear}:${games}`;
-    const hit = cache.get<any>(cacheKey);
+    const nbaCacheKey = `team_defensive_stats_rankings:${seasonYear}`;
+    const bdlCacheKey = `team_defensive_stats_rankings:${seasonYear}:${games}`;
+
+    // 1. Check in-memory cache (same pattern as shot-chart-enhanced)
+    let hit = cache.get<any>(nbaCacheKey) ?? cache.get<any>(bdlCacheKey);
     if (hit) {
-      console.log(`[team-defensive-stats-rank] Cache hit for season ${seasonYear}, ${games} games`);
+      console.log(`[team-defensive-stats-rank] Cache hit (in-memory) for season ${seasonYear}`);
       return NextResponse.json(hit);
     }
 
-    console.log(`[team-defensive-stats-rank] Fetching rankings for all teams, season ${seasonYear}, ${games} games`);
+    // 2. Check Supabase nba_api_cache (populated by /api/cache/nba-league-data cron - no direct NBA API from production)
+    try {
+      hit = await getNBACache<any>(nbaCacheKey);
+      if (hit) {
+        cache.set(nbaCacheKey, hit, CACHE_TTL.TRACKING_STATS);
+        console.log(`[team-defensive-stats-rank] Cache hit (Supabase) for season ${seasonYear}`);
+        return NextResponse.json(hit);
+      }
+      hit = await getNBACache<any>(bdlCacheKey);
+      if (hit) {
+        cache.set(bdlCacheKey, hit, CACHE_TTL.ADVANCED_STATS * 2);
+        console.log(`[team-defensive-stats-rank] Cache hit (Supabase BDL) for season ${seasonYear}`);
+        return NextResponse.json(hit);
+      }
+      // Stale cache fallback (like shot chart)
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+        for (const key of [nbaCacheKey, bdlCacheKey]) {
+          const { data: staleData } = await supabaseAdmin
+            .from('nba_api_cache')
+            .select('data')
+            .eq('cache_key', key)
+            .maybeSingle();
+          if (staleData?.data) {
+            hit = staleData.data as any;
+            cache.set(key, hit, CACHE_TTL.TRACKING_STATS);
+            console.log(`[team-defensive-stats-rank] Stale cache hit for season ${seasonYear}`);
+            return NextResponse.json(hit);
+          }
+        }
+      }
+    } catch (cacheErr: any) {
+      // Ignore cache errors, fall through to BDL
+    }
+
+    // 3. Fall back to BallDontLie (cache populated by cron; BDL fallback when cache empty)
+    console.log(`[team-defensive-stats-rank] No cache, falling back to BDL (${games} games). Run /api/cache/nba-league-data to populate NBA data.`);
     
     // Fetch defensive stats for all teams in parallel (with rate limiting)
     const teams = Object.keys(NBA_TEAMS);
@@ -260,8 +304,8 @@ export async function GET(req: NextRequest) {
       teamStats: teamStatsMap,
     };
 
-    // Cache for 2 hours (rankings don't change often)
-    cache.set(cacheKey, payload, CACHE_TTL.ADVANCED_STATS * 2);
+    // Cache BDL result (includes games in key since BDL varies by games)
+    cache.set(bdlCacheKey, payload, CACHE_TTL.ADVANCED_STATS * 2);
 
     return NextResponse.json(payload);
   } catch (e: any) {

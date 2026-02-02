@@ -139,6 +139,7 @@ export async function GET(request: NextRequest) {
       playerPlayTypes: {},
       playerFreeThrows: {},
       opponentFreeThrows: {},
+      opponentDefensiveRankings: {},
       errors: [],
     };
 
@@ -504,6 +505,59 @@ export async function GET(request: NextRequest) {
           opponentFreeThrowRankings.sort((a, b) => a.oppFtm - b.oppFtm);
           
           console.log(`[NBA League Data Cache] ✅ Opponent free throw rankings: ${opponentFreeThrowRankings.length} teams`);
+
+          // Also build full opponent defensive rankings (pts, reb, ast, fg_pct, fg3_pct, stl, blk) for /api/team-defensive-stats/rank
+          const oppPtsIdx = headers.indexOf('OPP_PTS');
+          const oppRebIdx = headers.indexOf('OPP_REB');
+          const oppAstIdx = headers.indexOf('OPP_AST');
+          const oppFgPctIdx = headers.indexOf('OPP_FG_PCT');
+          const oppFg3PctIdx = headers.indexOf('OPP_FG3_PCT');
+          const oppStlIdx = headers.indexOf('OPP_STL');
+          const oppBlkIdx = headers.indexOf('OPP_BLK');
+          const gpIdx = headers.indexOf('GP');
+
+          if (oppPtsIdx >= 0 && oppRebIdx >= 0) {
+            const teamStatsMap: Record<string, { pts: number; reb: number; ast: number; fg_pct: number; fg3_pct: number; stl: number; blk: number; sample_games: number }> = {};
+            for (const row of rows) {
+              const teamId = parseInt(row[teamIdIdx]) || 0;
+              const teamAbbr = TEAM_ID_TO_ABBR_NBA[teamId];
+              if (!teamAbbr) continue;
+              const gp = Math.max(1, parseInt(row[gpIdx]) || 82);
+              teamStatsMap[teamAbbr] = {
+                pts: parseFloat(row[oppPtsIdx]) || 0,
+                reb: parseFloat(row[oppRebIdx]) || 0,
+                ast: parseFloat(row[oppAstIdx]) || 0,
+                fg_pct: (parseFloat(row[oppFgPctIdx]) || 0) * 100,
+                fg3_pct: (parseFloat(row[oppFg3PctIdx]) || 0) * 100,
+                stl: parseFloat(row[oppStlIdx]) || 0,
+                blk: parseFloat(row[oppBlkIdx]) || 0,
+                sample_games: gp,
+              };
+            }
+            const metrics = ['pts', 'reb', 'ast', 'fg_pct', 'fg3_pct', 'stl', 'blk'] as const;
+            const rankings: Record<string, Record<string, number>> = {};
+            for (const metric of metrics) {
+              const sorted = Object.entries(teamStatsMap)
+                .filter(([, s]) => s.sample_games > 0)
+                .sort(([, a], [, b]) => (b[metric] || 0) - (a[metric] || 0));
+              sorted.forEach(([team], i) => {
+                if (!rankings[team]) rankings[team] = {};
+                rankings[team][metric] = 30 - i;
+              });
+            }
+            const defensiveRankingsPayload = {
+              success: true,
+              season: season,
+              games: 82,
+              rankings,
+              teamStats: teamStatsMap,
+            };
+            const defensiveRankingsCacheKey = `team_defensive_stats_rankings:${season}`;
+            await setNBACache(defensiveRankingsCacheKey, 'team_defensive_stats_rankings', defensiveRankingsPayload, CACHE_TTL.TRACKING_STATS);
+            cache.set(defensiveRankingsCacheKey, defensiveRankingsPayload, CACHE_TTL.TRACKING_STATS);
+            results.opponentDefensiveRankings = { teamsCached: Object.keys(teamStatsMap).length };
+            console.log(`[NBA League Data Cache] ✅ Cached opponent defensive rankings (Opponent Breakdown) for ${Object.keys(teamStatsMap).length} teams`);
+          }
         }
       }
     } catch (err: any) {
@@ -530,6 +584,7 @@ export async function GET(request: NextRequest) {
         totalPlayersCached: Object.keys(results.playerPlayTypes || {}).length > 0 ? results.playerPlayTypes.totalPlayers : 0,
         playerFreeThrowsCached: Object.keys(results.playerFreeThrows || {}).length > 0 ? results.playerFreeThrows.playersCached : 0,
         opponentFreeThrowsCached: Object.keys(results.opponentFreeThrows || {}).length > 0 ? results.opponentFreeThrows.teamsCached : 0,
+        opponentDefensiveRankingsCached: Object.keys(results.opponentDefensiveRankings || {}).length > 0 ? results.opponentDefensiveRankings.teamsCached : 0,
         errors: results.errors.length,
       }
     });
