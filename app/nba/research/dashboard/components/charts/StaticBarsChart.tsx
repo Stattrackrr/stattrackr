@@ -22,6 +22,7 @@ export default memo(function StaticBarsChart({
   onChartMouseLeave,
   secondAxisData,
   selectedFilterForAxis,
+  averageDisplay,
 }: {
   data: any[];
   yAxisConfig: { domain: [number, number]; ticks: number[]; dataMin: number; dataMax: number };
@@ -38,6 +39,7 @@ export default memo(function StaticBarsChart({
   onChartMouseLeave?: () => void;
   secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
   selectedFilterForAxis?: string | null;
+  averageDisplay?: { formatted: string; tfLabel: string } | null;
 }) {
   const colorMap = useMemo(() => {
     return data.map(d => {
@@ -231,6 +233,22 @@ export default memo(function StaticBarsChart({
 
   return (
     <div data-chart-container style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* In-chart average overlay - top right */}
+      {averageDisplay && (
+        <div
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 pointer-events-none z-[100] px-2.5 py-1.5 rounded-lg shadow-lg"
+          style={{
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+            border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
+          }}
+          aria-hidden
+        >
+          <span className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
+            <span className="font-bold text-base">{averageDisplay.formatted}</span>
+          </span>
+        </div>
+      )}
       <ResponsiveContainer 
         key={viewportWidth}
         width="100%" 
@@ -467,7 +485,8 @@ export default memo(function StaticBarsChart({
   prev.customTooltip === next.customTooltip &&
   prev.formatChartLabel === next.formatChartLabel &&
   prev.secondAxisData === next.secondAxisData &&
-  prev.selectedFilterForAxis === next.selectedFilterForAxis
+  prev.selectedFilterForAxis === next.selectedFilterForAxis &&
+  prev.averageDisplay === next.averageDisplay
 ));
 
 

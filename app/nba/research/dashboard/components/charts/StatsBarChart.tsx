@@ -203,6 +203,27 @@ const StatsBarChart = memo(function StatsBarChart({
     return customTooltip(tooltipProps);
   }, [isMobile, mobileTooltipActive, customTooltip]);
 
+  // Compute average for in-chart overlay (stat + timeframe) - skip moneyline/spread
+  const averageDisplay = useMemo(() => {
+    if (['moneyline', 'spread', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) return null;
+    const validValues = data
+      .map((d: any) => {
+        if (selectedStat === 'fg3m' && d?.stats) return Number((d.stats as any).fg3m);
+        return Number.isFinite(d.value) ? d.value : null;
+      })
+      .filter((v): v is number => v != null);
+    if (validValues.length === 0) return null;
+    const avg = validValues.reduce((s, v) => s + v, 0) / validValues.length;
+    const pctStats = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
+    const formatted = pctStats.includes(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
+    const tfLabels: Record<string, string> = {
+      last5: 'L5', last10: 'L10', last15: 'L15', last20: 'L20',
+      h2h: 'H2H', lastseason: 'Last Season', thisseason: 'Season'
+    };
+    const tfLabel = (selectedTimeframe && tfLabels[selectedTimeframe]) || '';
+    return { avg, formatted, tfLabel };
+  }, [data, selectedStat, selectedTimeframe]);
+
   return (
     <div className="relative w-full h-full chart-mobile-optimized" key={layoutKey}>
       {/* Background glow effect */}
@@ -239,6 +260,7 @@ const StatsBarChart = memo(function StatsBarChart({
         onChartMouseLeave={handleChartMouseLeave}
         secondAxisData={secondAxisData}
         selectedFilterForAxis={selectedFilterForAxis}
+        averageDisplay={averageDisplay}
       />
       {/* Mobile-only: Reference line layer (SVG) for perfect alignment */}
       {isMobile && (

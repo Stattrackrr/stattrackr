@@ -20,6 +20,10 @@ const PureChart = memo(function PureChart({
   selectedTimeframe,
   secondAxisData,
   selectedFilterForAxis,
+  teammateFilterId,
+  teammateFilterName,
+  withWithoutMode,
+  clearTeammateFilter,
 }: any) {
   // Use the main tooltip instead - this old one is removed
 
@@ -73,6 +77,10 @@ const PureChart = memo(function PureChart({
           selectedTimeframe={selectedTimeframe}
           secondAxisData={secondAxisData}
           selectedFilterForAxis={selectedFilterForAxis}
+          teammateFilterId={teammateFilterId}
+          teammateFilterName={teammateFilterName}
+          withWithoutMode={withWithoutMode}
+          clearTeammateFilter={clearTeammateFilter}
         />
       )}
     </div>
@@ -84,7 +92,10 @@ const PureChart = memo(function PureChart({
     prev.isLoading === next.isLoading &&
     prev.chartData === next.chartData &&
     prev.selectedStat === next.selectedStat &&
-    prev.selectedTimeframe === next.selectedTimeframe
+    prev.selectedTimeframe === next.selectedTimeframe &&
+    prev.teammateFilterId === next.teammateFilterId &&
+    prev.teammateFilterName === next.teammateFilterName &&
+    prev.withWithoutMode === next.withWithoutMode
   );
 });
 

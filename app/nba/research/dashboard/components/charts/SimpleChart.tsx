@@ -27,6 +27,10 @@ interface SimpleChartProps {
   secondAxisData?: Array<{ gameId: string; gameDate: string; value: number | null }> | null;
   selectedFilterForAxis?: string | null;
   customTooltip?: any;
+  teammateFilterId?: number | null;
+  teammateFilterName?: string | null;
+  withWithoutMode?: 'with' | 'without';
+  clearTeammateFilter?: () => void;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -41,6 +45,10 @@ const SimpleChart = memo(function SimpleChart({
   secondAxisData,
   selectedFilterForAxis,
   customTooltip,
+  teammateFilterId,
+  teammateFilterName,
+  withWithoutMode,
+  clearTeammateFilter,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -556,6 +564,27 @@ const SimpleChart = memo(function SimpleChart({
     }
   }, []);
 
+  // Compute average for in-chart overlay (stat + timeframe)
+  const averageDisplay = useMemo(() => {
+    if (['moneyline', 'spread', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) return null;
+    const validValues = chartData
+      .map((d: any) => {
+        if (selectedStat === 'fg3m' && d?.stats) return Number((d.stats as any).fg3m);
+        return Number.isFinite(d.value) ? d.value : null;
+      })
+      .filter((v): v is number => v != null);
+    if (validValues.length === 0) return null;
+    const avg = validValues.reduce((s, v) => s + v, 0) / validValues.length;
+    const pctStats = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
+    const formatted = pctStats.includes(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
+    const tfLabels: Record<string, string> = {
+      last5: 'L5', last10: 'L10', last15: 'L15', last20: 'L20',
+      h2h: 'H2H', lastseason: 'Last Season', thisseason: 'Season'
+    };
+    const tfLabel = (selectedTimeframe && tfLabels[selectedTimeframe]) || '';
+    return { formatted, tfLabel };
+  }, [chartData, selectedStat, selectedTimeframe]);
+
   // Loading state
   // Chart is independent - only depends on its own data, not global isLoading
   if (!chartData || chartData.length === 0) {
@@ -608,6 +637,54 @@ const SimpleChart = memo(function SimpleChart({
         />
       )}
       
+      {/* In-chart average - top right */}
+      {averageDisplay && (
+        <div
+          className="absolute top-1 right-2 pointer-events-none z-[100] flex items-center justify-center px-2 py-1 rounded shadow leading-none"
+          style={{
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+            border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
+          }}
+          aria-hidden
+        >
+          <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
+            <span className="font-semibold">{averageDisplay.formatted}</span>
+          </span>
+        </div>
+      )}
+      {/* In-chart teammate filter - center horizontally, inline with average (same top) */}
+      {teammateFilterId && teammateFilterName && clearTeammateFilter && (
+        <div
+          className="absolute top-1 left-1/2 -translate-x-1/2 pointer-events-none z-[100]"
+          aria-hidden
+        >
+          <div
+            className="pointer-events-auto flex items-center gap-1.5 px-2 py-1 rounded shadow leading-none"
+            style={{
+              backgroundColor: isDark ? 'rgba(88, 28, 135, 0.9)' : 'rgba(147, 51, 234, 0.2)',
+              border: `1px solid ${isDark ? 'rgba(167, 139, 250, 0.4)' : 'rgba(126, 34, 206, 0.5)'}`,
+            }}
+          >
+            <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-purple-100' : 'text-purple-800'}`}>
+              {withWithoutMode === 'without' ? 'Without' : 'With'} {teammateFilterName}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearTeammateFilter();
+              }}
+              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity bg-white/20 text-purple-100"
+              aria-label="Clear filter"
+            >
+              <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M1 1L7 7M7 1L1 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Betting line overlay - updates via DOM, no re-renders */}
       <div 
         id="simple-chart-betting-line-container"
@@ -825,7 +902,10 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.secondAxisData !== nextProps.secondAxisData ||
     prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis ||
     prevProps.selectedTimeframe !== nextProps.selectedTimeframe ||
-    prevProps.customTooltip !== nextProps.customTooltip;
+    prevProps.customTooltip !== nextProps.customTooltip ||
+    prevProps.teammateFilterId !== nextProps.teammateFilterId ||
+    prevProps.teammateFilterName !== nextProps.teammateFilterName ||
+    prevProps.withWithoutMode !== nextProps.withWithoutMode;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

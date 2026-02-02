@@ -257,6 +257,10 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
           secondAxisData={showAdvancedFilters ? secondAxisData : null}
           selectedFilterForAxis={showAdvancedFilters ? selectedFilterForAxis : null}
           customTooltip={customTooltip}
+          teammateFilterId={teammateFilterId}
+          teammateFilterName={teammateFilterName}
+          withWithoutMode={withWithoutMode}
+          clearTeammateFilter={clearTeammateFilter}
         />
       </div>
     </div>
