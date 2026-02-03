@@ -34,9 +34,8 @@ export function DashboardLeftSidebarWrapper({
 }: DashboardLeftSidebarWrapperProps) {
   return (
     <>
-      {/* Left Sidebar - conditionally rendered based on sidebarOpen state */}
-      {sidebarOpen && (
-        <LeftSidebar
+      {/* Left Sidebar - always mounted so profile modal works from mobile nav; visibility controlled by LeftSidebar's lg:flex */}
+      <LeftSidebar
           oddsFormat={oddsFormat}
           setOddsFormat={setOddsFormat}
           hasPremium={hasPremium}
@@ -50,7 +49,6 @@ export function DashboardLeftSidebarWrapper({
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
-      )}
       
       {/* Expand Sidebar Button - visible when sidebar is closed */}
       {!sidebarOpen && (

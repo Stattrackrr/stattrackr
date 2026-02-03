@@ -17,6 +17,9 @@ interface MobileBottomNavigationProps {
   profileDropdownRef: React.RefObject<HTMLDivElement | null>;
   journalDropdownRef: React.RefObject<HTMLDivElement | null>;
   settingsDropdownRef: React.RefObject<HTMLDivElement | null>;
+  onProfileClick?: () => void;
+  showViewTrackingButton?: boolean;
+  onViewTrackingClick?: () => void;
   onSubscription: () => void;
   onLogout: () => void;
   theme: 'Light' | 'Dark';
@@ -39,6 +42,9 @@ export function MobileBottomNavigation({
   profileDropdownRef,
   journalDropdownRef,
   settingsDropdownRef,
+  onProfileClick,
+  showViewTrackingButton,
+  onViewTrackingClick,
   onSubscription,
   onLogout,
   theme,
@@ -60,6 +66,9 @@ export function MobileBottomNavigation({
       {showProfileDropdown && (
         <ProfileDropdown
           dropdownRef={profileDropdownRef}
+          onProfileClick={onProfileClick}
+          showViewTrackingButton={showViewTrackingButton}
+          onViewTrackingClick={onViewTrackingClick}
           onSubscription={onSubscription}
           onLogout={onLogout}
           onClose={() => setShowProfileDropdown(false)}

@@ -3938,11 +3938,11 @@ function JournalContent() {
       )}
       
       {/* Mobile Bottom Navigation - Always visible on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1929] border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
         {/* Profile Dropdown Menu - Shows above bottom nav */}
         {showProfileDropdown && (
           <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               <button
                 onClick={() => {
                   setShowProfileDropdown(false);
@@ -3969,7 +3969,7 @@ function JournalContent() {
         {/* Settings Dropdown Menu - Shows above bottom nav */}
         {showSettingsDropdown && (
           <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
               <button
                 onClick={() => {
                   setShowSettingsDropdown(false);

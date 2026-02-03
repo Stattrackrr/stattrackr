@@ -1412,6 +1412,7 @@ export function NBADashboardContent() {
         profileDropdownRef={profileDropdownRef}
         journalDropdownRef={journalDropdownRef}
         settingsDropdownRef={settingsDropdownRef}
+        onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
         onSubscription={handleSidebarSubscription}
         onLogout={handleLogout}
         theme={theme}

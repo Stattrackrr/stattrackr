@@ -86,6 +86,13 @@ export default function LeftSidebar({
     loadUnitSize();
   }, []);
 
+  // Listen for mobile nav "Profile" click - opens profile modal when triggered from mobile bottom nav
+  useEffect(() => {
+    const handler = () => setShowProfileModal(true);
+    window.addEventListener('open-profile-modal', handler);
+    return () => window.removeEventListener('open-profile-modal', handler);
+  }, []);
+
   // When profile modal opens, load full_name, username, phone from profiles
   useEffect(() => {
     if (!showProfileModal) return;
@@ -278,7 +285,7 @@ export default function LeftSidebar({
         document.body
       )}
     <div 
-      className="hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-[#0a1929] border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl"
+      className={`hidden lg:flex fixed top-4 h-[calc(100vh-1rem)] bg-gray-300 dark:bg-[#0a1929] border-r border-gray-200 dark:border-gray-700 flex-col rounded-r-2xl shadow-xl ${sidebarOpen === false ? 'lg:hidden' : ''}`}
       style={{
         marginLeft: '0px',
         width: 'var(--sidebar-width, 360px)',
@@ -364,22 +371,19 @@ export default function LeftSidebar({
           )}
         </div>
         
-        {/* Today's Best Pick - NBA pages only */}
+        {/* Today's Best Pick - NBA pages only (suspended for maintenance) */}
         {pathname.startsWith('/nba') && (
           <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={() => setShowDailyPickModal(true)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+            <div
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-300 dark:border-gray-600 cursor-not-allowed"
+              title="Under maintenance"
             >
               <span className="flex items-center gap-2">
-                <span aria-hidden>🏆</span>
-                Today&apos;s Best Pick
+                <span aria-hidden title="Maintenance">🔧</span>
+                <span>Today&apos;s Best Pick</span>
+                <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">(maintenance)</span>
               </span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            </div>
           </div>
         )}
 

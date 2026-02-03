@@ -1,6 +1,7 @@
 'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
+import { MobileBottomNavigation } from "@/app/nba/research/dashboard/components/header";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -401,6 +402,14 @@ export default function NBALandingPage() {
   });
   // Odds format state - load from localStorage or default to 'american'
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
+
+  // Mobile bottom nav dropdown state
+  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement | null>(null);
+  const journalDropdownRef = useRef<HTMLDivElement | null>(null);
+  const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -3586,7 +3595,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   }}
                                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold ${
                                     mounted && isDark
-                                      ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                      ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                   }`}
                                 >
@@ -4664,7 +4673,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4693,7 +4702,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4722,7 +4731,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4751,7 +4760,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4780,7 +4789,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4809,7 +4818,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4838,7 +4847,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
                                   : mounted && isDark
-                                    ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -4904,18 +4913,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           
                           // Helper to get stat box color based on hit rate
                           const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
-                            // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box
+                            // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box - darker on mobile/dark mode
                             if (!isStreak && (!hitRate || hitRate.total === 0)) {
                               return {
-                                background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                background: mounted && isDark ? '#1f2937' : '#f3f4f6',
+                                borderColor: mounted && isDark ? '#374151' : '#d1d5db',
                                 borderWidth: '2px',
                                 boxShadow: 'none',
                               };
                             }
                             
-                            let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
-                            let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
+                            let bgColor = mounted && isDark ? '#1f2937' : '#f9fafb';
+                            let borderColor = mounted && isDark ? '#374151' : '#e5e7eb';
                             let glowColor: string | null = null;
                             
                             if (isStreak) {
@@ -4951,7 +4960,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }
                             
                             return {
-                              background: bgColor !== (mounted && isDark ? '#374151' : '#f9fafb')
+                              background: bgColor !== (mounted && isDark ? '#1f2937' : '#f9fafb')
                                 ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
                                 : bgColor,
                               borderColor: borderColor,
@@ -5052,10 +5061,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                     </div>
                                   </div>
-                                  {/* Bookmaker IP Box */}
+                                  {/* Bookmaker IP Box - darker text on mobile */}
                                   <div className="flex-shrink-0">
                                     <div className="flex flex-col items-center justify-center rounded-lg border-2 px-3 py-2" style={getStatBoxStyle(null)}>
-                                      <div className={`text-[10px] font-semibold mb-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>Books</div>
+                                      <div className={`text-[10px] font-semibold mb-1 ${mounted && isDark ? 'text-gray-500 sm:text-gray-300' : 'text-gray-600 sm:text-gray-700'}`}>Books</div>
                                       {(() => {
                                         // Calculate implied probabilities on-the-fly from odds
                                         const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
@@ -5063,10 +5072,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? null);
                                         return (
                                           <>
-                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-green-500 sm:text-green-400' : 'text-green-600'}`}>
                                               {overProb !== null && overProb !== undefined ? `${overProb.toFixed(0)}%` : '-'}
                                             </div>
-                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-red-500 sm:text-red-400' : 'text-red-600'}`}>
                                               {underProb !== null && underProb !== undefined ? `${underProb.toFixed(0)}%` : '-'}
                                             </div>
                                           </>
@@ -5079,7 +5088,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               
                               {/* Statistics Grid */}
                               <div className={`grid grid-cols-6 gap-0.5 px-0 py-2.5 rounded-xl mb-3 w-full ${
-                                mounted && isDark ? 'bg-gray-900/50' : 'bg-gray-50'
+                                mounted && isDark ? 'bg-gray-900/80' : 'bg-gray-50'
                               }`}>
                                 {/* L5 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
@@ -5224,7 +5233,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           <div
                                             key={idx}
                                             className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 flex-shrink-0 ${
-                                              mounted && isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-gray-100 border-gray-300'
+                                              mounted && isDark ? 'bg-[#0a1929] border-gray-800' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
                                           >
@@ -5260,7 +5269,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
                                             className={`flex items-center justify-center px-1 py-1.5 rounded-lg border-2 flex-shrink-0 relative ${
-                                              mounted && isDark ? 'bg-[#0a1929] border-gray-700 hover:bg-[#0d1f35]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                                              mounted && isDark ? 'bg-[#0a1929] border-gray-800 hover:bg-[#0d1f35]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                                             }`}
                                             style={{ minWidth: '40px' }}
                                           >
@@ -5284,7 +5293,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               <div
                                                 className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-lg border shadow-2xl p-4 w-[90vw] max-w-md ${
                                                   mounted && isDark
-                                                    ? 'bg-[#0a1929] border-gray-700'
+                                                    ? 'bg-[#0a1929] border-gray-800'
                                                     : 'bg-white border-gray-300'
                                                 }`}
                                                 style={{
@@ -5321,7 +5330,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       <div
                                                         key={idx}
                                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
-                                                          mounted && isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-gray-50 border-gray-200'
+                                                          mounted && isDark ? 'bg-[#0a1929] border-gray-800' : 'bg-gray-50 border-gray-200'
                                                         }`}
                                                       >
                                                         {bookmakerInfo?.logoUrl && (
@@ -5512,6 +5521,40 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation - Only visible on mobile */}
+      <MobileBottomNavigation
+        hasPremium={isPro}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={showJournalDropdown}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={setShowJournalDropdown}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+        profileDropdownRef={profileDropdownRef}
+        journalDropdownRef={journalDropdownRef}
+        settingsDropdownRef={settingsDropdownRef}
+        onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
+        onSubscription={() => router.push('/subscription')}
+        onLogout={async () => {
+          await supabase.auth.signOut();
+          router.push('/');
+        }}
+        theme={theme}
+        oddsFormat={oddsFormat}
+        setTheme={setTheme}
+        setOddsFormat={(fmt) => {
+          setOddsFormat(fmt);
+          try {
+            localStorage.setItem('oddsFormat', fmt);
+          } catch {
+            // ignore
+          }
+        }}
+      />
     </div>
   );
 }
