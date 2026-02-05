@@ -261,9 +261,25 @@ export default function LeftSidebar({
     }
   };
 
+  // Sport icons: emoji for NBA; AFL logo from local file (public/images/afl-logo.png)
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" }) => {
+    if (sport === "nba") {
+      return (
+        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-lg leading-none select-none" aria-hidden>
+          🏀
+        </span>
+      );
+    }
+    return (
+      <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center" aria-hidden>
+        <img src="/images/afl-logo.png" alt="" className="w-5 h-5 object-contain" />
+      </span>
+    );
+  };
+
   const sports = [
-    { name: "NBA", href: "/nba" },
-    { name: "Soccer", href: "#", comingSoon: true },
+    { name: "NBA", href: "/nba", logo: <SportLogo sport="nba" /> },
+    { name: "AFL", href: "#", comingSoon: true, comingSoonText: "EST 1st March", logo: <SportLogo sport="afl" /> },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
@@ -349,20 +365,24 @@ export default function LeftSidebar({
                 <li key={sport.name}>
                   {sport.comingSoon ? (
                     <div
-                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between"
+                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between gap-2"
                     >
-                      <span>{sport.name}</span>
-                      <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
-                        Coming Soon
+                      <span className="flex items-center gap-2">
+                        {sport.logo}
+                        <span>{sport.name} coming soon</span>
+                      </span>
+                      <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
+                        {sport.comingSoonText ?? "Coming Soon"}
                       </span>
                     </div>
                   ) : (
                     <Link
                       href={sport.href}
                       onClick={() => setShowSportsDropdown(false)}
-                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center gap-2"
                     >
-                      {sport.name}
+                      {sport.logo}
+                      <span>{sport.name}</span>
                     </Link>
                   )}
                 </li>
@@ -519,7 +539,7 @@ export default function LeftSidebar({
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
           <li className="flex items-center gap-2">
-            <span className="text-lg">⚽</span>
+            <span className="text-lg" aria-hidden>🏟️</span>
             <span>More Sports</span>
           </li>
           <li className="flex items-center gap-2">
