@@ -233,10 +233,10 @@ export default memo(function StaticBarsChart({
 
   return (
     <div data-chart-container style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* In-chart average overlay - top right */}
+      {/* In-chart average overlay - top right (z-[1] so dropdowns appear on top) */}
       {averageDisplay && (
         <div
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 pointer-events-none z-[100] px-2.5 py-1.5 rounded-lg shadow-lg"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 pointer-events-none z-[1] px-2.5 py-1.5 rounded-lg shadow-lg"
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -353,11 +353,14 @@ export default memo(function StaticBarsChart({
             const isLive = (payload as any)?.isLive;
             const barIndex = props.index ?? -1;
             const isMostRecent = isLive && barIndex === data.length - 1;
+            const HOVER_H = 400;
+            const hoverH = HOVER_H;
+            const hoverY = y - HOVER_H;
             
-            // Return the default bar shape but with custom rendering on top
-            // This preserves Recharts' hover detection
             return (
               <g>
+                {/* Invisible hover rect: full width, full bar slot height for every bar */}
+                <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
                 {/* Main bar - this needs to be interactive for tooltips */}
                 <rect
                   x={x}
@@ -432,7 +435,19 @@ export default memo(function StaticBarsChart({
                 )}
               </g>
             );
-          } : undefined}
+          } : (props: any) => {
+            const { x, y, width, height, fill } = props;
+            const HOVER_H = 400;
+            const hoverH = HOVER_H;
+            const hoverY = y - HOVER_H;
+            return (
+              <g>
+                {/* Invisible hover rect: full width, full bar slot height for every bar */}
+                <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
+                <rect x={x} y={y} width={width} height={height} fill={fill ?? '#888'} rx={CHART_CONFIG.bar.radius[0]} ry={CHART_CONFIG.bar.radius[0]} />
+              </g>
+            );
+          }}
         >
           {mergedData.map((e, i) => {
             const isLive = (e as any).isLive && i === data.length - 1; // Most recent game (last item)

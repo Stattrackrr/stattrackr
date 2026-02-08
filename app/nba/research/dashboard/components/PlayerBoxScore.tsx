@@ -80,12 +80,14 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
   });
 
   // Only show current season - wait for data to load before filtering
-  // This prevents race condition where previous season shows if current season request is still loading
   let displayGames = bySeason(currentSeason);
-  // Remove games with 0 minutes played
   displayGames = displayGames.filter(g => parseMinutes(g.min) > 0);
-  // Limit to 50 most recent games (playerStats are already newest-first)
-  displayGames = displayGames.slice(0, 50);
+  // Sort newest first, then limit to 50 most recent
+  displayGames = [...displayGames].sort((a, b) => {
+    const dateA = a.game?.date ? new Date(a.game.date).getTime() : 0;
+    const dateB = b.game?.date ? new Date(b.game.date).getTime() : 0;
+    return dateB - dateA;
+  }).slice(0, 50);
   
   // Pagination logic
   const totalGames = displayGames.length;

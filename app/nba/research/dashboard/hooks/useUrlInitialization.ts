@@ -11,6 +11,7 @@ export interface UseUrlInitializationParams {
   setBettingLines: (lines: Record<string, number> | ((prev: Record<string, number>) => Record<string, number>)) => void;
   setGamePropsTeam: (team: string) => void;
   setSelectedPlayer: (player: any) => void;
+  setDvpRanksPerGame?: (ranks: Record<string, number | null>) => void;
   setSelectedTeam: (team: string) => void;
   setOriginalPlayerTeam: (team: string) => void;
   setDepthChartTeam: (team: string) => void;
@@ -37,6 +38,7 @@ export function useUrlInitialization({
   setBettingLines,
   setGamePropsTeam,
   setSelectedPlayer,
+  setDvpRanksPerGame,
   setSelectedTeam,
   setOriginalPlayerTeam,
   setDepthChartTeam,
@@ -246,6 +248,7 @@ export function useUrlInitialization({
             // This prevents blank screen while searching
             const urlTeam = team ? normalizeAbbr(team) : '';
             startTransition(() => {
+              setDvpRanksPerGame?.({});
               setSelectedPlayer({
                 id: '',
                 full: playerName,
@@ -355,6 +358,7 @@ export function useUrlInitialization({
                   // Don't clear stats here - let handlePlayerSelectFromSearch handle it
                   // This prevents the double render (clear then load)
                   startTransition(() => {
+                    setDvpRanksPerGame?.({});
                     setSelectedPlayer({
                       id: pid,
                       full: r.full,
@@ -370,8 +374,6 @@ export function useUrlInitialization({
                     setOriginalPlayerTeam(currentTeam);
                     setDepthChartTeam(currentTeam);
                     setResolvedPlayerId(pid);
-                    // Don't clear stats here - handlePlayerSelectFromSearch will handle clearing and loading
-                    // This prevents the reset/re-render flicker
                   });
                   
                   // Now load stats in background without blocking

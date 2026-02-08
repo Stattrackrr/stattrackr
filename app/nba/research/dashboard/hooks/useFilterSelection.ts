@@ -13,8 +13,12 @@ export function useFilterSelection({
 }: UseFilterSelectionParams) {
   const handleSelectFilterForAxis = useCallback((filter: string | null) => {
     setSelectedFilterForAxis(filter);
-    // Reset slider when filter changes
-    setSliderRange(null);
+    // Set initial range for DvP so we use filtered path immediately (avoids one render with chartData/10 games)
+    if (filter === 'dvp_rank') {
+      setSliderRange({ min: 1, max: 30 });
+    } else {
+      setSliderRange(null);
+    }
   }, [setSelectedFilterForAxis, setSliderRange]);
 
   return {

@@ -877,6 +877,7 @@ export function NBADashboardContent() {
     setOriginalPlayerTeam,
     setDepthChartTeam,
     setSelectedPlayer,
+    setDvpRanksPerGame,
     setBettingLines,
     setShowDropdown,
     setSearchQuery,
@@ -907,6 +908,7 @@ export function NBADashboardContent() {
     setBettingLines,
     setGamePropsTeam,
     setSelectedPlayer,
+    setDvpRanksPerGame,
     setSelectedTeam,
     setOriginalPlayerTeam,
     setDepthChartTeam,
@@ -1177,7 +1179,11 @@ export function NBADashboardContent() {
               onChangeBettingLine={setBettingLine}
               selectedTimeframe={selectedTimeframe}
               onSelectTimeframe={setSelectedTimeframe}
-              chartData={selectedFilterForAxis && sliderRange ? filteredChartData : chartData}
+              chartData={
+                selectedFilterForAxis && sliderRange
+                  ? (selectedFilterForAxis === 'dvp_rank' && filteredChartData.length === 0 ? [] : filteredChartData)
+                  : chartData
+              }
               yAxisConfig={yAxisConfig}
               isLoading={chartLoadingState.isLoading}
               oddsLoading={chartLoadingState.oddsLoading}

@@ -29,6 +29,7 @@ export interface UsePlayerSelectionParams {
   setOriginalPlayerTeam: (team: string) => void;
   setDepthChartTeam: (team: string) => void;
   setSelectedPlayer: Dispatch<SetStateAction<NBAPlayer | null>>;
+  setDvpRanksPerGame: (ranks: Record<string, number | null>) => void;
   setBettingLines: (lines: (prev: Record<string, number>) => Record<string, number>) => void;
   setShowDropdown: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -80,6 +81,7 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
     setOriginalPlayerTeam,
     setDepthChartTeam,
     setSelectedPlayer,
+    setDvpRanksPerGame,
     setBettingLines,
     setShowDropdown,
     setSearchQuery,
@@ -159,12 +161,14 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       const currentTeam = normalizeAbbr(player.teamAbbr);
       
       // Set player stats immediately so UI can render (with basic player info)
+      // Clear DvP ranks in same batch so we never show previous player's ranks (fixes "few games" until refresh)
       startTransition(() => {
         setSelectedTimeframe('last10');
         setPlayerStats(rows);
         setSelectedTeam(currentTeam);
         setOriginalPlayerTeam(currentTeam);
         setDepthChartTeam(currentTeam);
+        setDvpRanksPerGame({});
         setSelectedPlayer(player); // Set basic player first, will update with jersey/height later
       });
       
@@ -624,20 +628,14 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
       
       // Batch all state updates together in startTransition to prevent multiple re-renders
       // Set selectedTimeframe FIRST so it's correct when playerStats updates (prevents double baseGameData recalculation)
+      // Clear DvP ranks in same batch so we never show previous player's ranks (fixes "few games" until refresh)
       startTransition(() => {
-        // ALWAYS set timeframe to "last10" when selecting a new player (override URL if needed)
-        // Set this FIRST so baseGameData calculates correctly when playerStats updates
         setSelectedTimeframe('last10');
-        
-        // Then set playerStats - this will trigger baseGameData recalculation with correct timeframe
         setPlayerStats(rows);
-        
         setSelectedTeam(currentTeam);
         setOriginalPlayerTeam(currentTeam);
         setDepthChartTeam(currentTeam);
-        
-        // Set player with minimal data for immediate chart rendering
-        // Metadata (jersey/height) will be updated in background
+        setDvpRanksPerGame({});
         setSelectedPlayer(tempPlayer);
 
         // Reset betting-line auto-set trackers so odds can re-apply for the new player
@@ -704,8 +702,8 @@ export function usePlayerSelection(params: UsePlayerSelectionParams) {
     setIsLoading, setApiError, setAdvancedStats, setShotDistanceData, setAdvancedStatsLoading,
     setShotDistanceLoading, setRealOddsData, setOddsSnapshots, setLineMovementData, setOddsLoading,
     setOddsError, setOpponentTeam, setResolvedPlayerId, setSelectedTimeframe, setPlayerStats,
-    setSelectedTeam, setOriginalPlayerTeam, setDepthChartTeam, setSelectedPlayer, setBettingLines,
-    setShowDropdown, setSearchQuery, setSearchResults, isLoading, hasPremium, selectedStat,
+    setSelectedTeam, setOriginalPlayerTeam, setDepthChartTeam, setSelectedPlayer, setDvpRanksPerGame,
+    setBettingLines, setShowDropdown, setSearchQuery, setSearchResults, isLoading, hasPremium, selectedStat,
     todaysGames, playerTeamRoster, fetchSortedStats, fetchAdvancedStats, fetchShotDistanceStats,
     lastAutoSetStatRef, lastAutoSetLineRef, hasManuallySetLineRef, statFromUrlRef
   ]);

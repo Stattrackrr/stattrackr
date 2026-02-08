@@ -6,7 +6,38 @@
  */
 
 import { parseMinutes } from './playerUtils';
+import { normalizeAbbr } from '@/lib/nbaAbbr';
+import { TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from './teamUtils';
 import { BallDontLieStats, AdvancedStats } from '../types';
+
+/** Build a stable game key so DvP lookups match across prefetch and filtering (avoids empty key when game.id is missing). */
+export function getStableGameId(stats: any): string {
+  const numericGameId = typeof stats?.game?.id === 'number' ? stats.game.id : null;
+  if (numericGameId != null) return String(numericGameId);
+  const gameDate = (stats?.game?.date || '').toString().slice(0, 10);
+  let playerTeam = stats?.team?.abbreviation || '';
+  const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
+  const visitorTeamId = stats?.game?.visitor_team?.id ?? (stats?.game as any)?.visitor_team_id;
+  const homeTeamAbbr = stats?.game?.home_team?.abbreviation ?? (homeTeamId ? TEAM_ID_TO_ABBR[homeTeamId] : undefined);
+  const visitorTeamAbbr = stats?.game?.visitor_team?.abbreviation ?? (visitorTeamId ? TEAM_ID_TO_ABBR[visitorTeamId] : undefined);
+  const playerTeamNorm = normalizeAbbr(playerTeam);
+  const playerTeamId = ABBR_TO_TEAM_ID[playerTeamNorm];
+  let opponent = '';
+  if (playerTeamId && homeTeamId && visitorTeamId) {
+    if (playerTeamId === homeTeamId && visitorTeamAbbr) opponent = visitorTeamAbbr;
+    else if (playerTeamId === visitorTeamId && homeTeamAbbr) opponent = homeTeamAbbr;
+  }
+  if (!opponent && homeTeamAbbr && visitorTeamAbbr) {
+    const homeNorm = normalizeAbbr(homeTeamAbbr);
+    const awayNorm = normalizeAbbr(visitorTeamAbbr);
+    if (playerTeamNorm === homeNorm) opponent = awayNorm;
+    else if (playerTeamNorm === awayNorm) opponent = homeNorm;
+  }
+  const datePart = (gameDate || '').toString().slice(0, 10);
+  const homeId = homeTeamId ?? (stats?.game as any)?.home_team_id ?? '';
+  const visId = visitorTeamId ?? (stats?.game as any)?.visitor_team_id ?? '';
+  return opponent && datePart ? `${datePart}-${opponent}` : `${datePart}-${homeId}-${visId}`;
+}
 
 export interface AllGamesSecondAxisDataItem {
   gameId: string;
@@ -51,7 +82,7 @@ export function processAllGamesSecondAxisData({
     })
     .map((stats: any) => {
       const numericGameId = typeof stats?.game?.id === 'number' ? stats.game.id : null;
-      const gameIdStr = String(numericGameId || '');
+      const gameIdStr = getStableGameId(stats);
       const gameDate = stats?.game?.date || '';
       let value: number | null = null;
 

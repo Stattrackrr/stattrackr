@@ -645,10 +645,10 @@ const SimpleChart = memo(function SimpleChart({
         />
       )}
       
-      {/* In-chart average + hit rate - top right */}
+      {/* In-chart average + hit rate - top right (z-[1] so dropdowns appear on top) */}
       {averageDisplay && (
         <div
-          className="absolute top-1 right-2 pointer-events-none z-[100] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none"
+          className="absolute top-1 right-2 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none"
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -797,7 +797,7 @@ const SimpleChart = memo(function SimpleChart({
               isAnimationActive={false}
             />
 
-            {/* Bar chart */}
+            {/* Bar chart - invisible hover rect covers full width and top 2/3 of bar slot */}
             <Bar
               key={`bar-${selectedStat}-${mergedChartData.length}`}
               dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
@@ -835,8 +835,13 @@ const SimpleChart = memo(function SimpleChart({
                 }
                 const clipId = `composite-clip-bar-${barIndex}`;
                 let offset = 0;
+                const HOVER_H = 400;
+                const hoverH = HOVER_H;
+                const hoverY = y - HOVER_H;
                 return (
                   <g style={{ pointerEvents: 'all' }}>
+                    {/* Invisible hover rect: full width, full bar slot height for every bar */}
+                    <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
                     <defs>
                       <clipPath id={clipId}>
                         <rect x={x} y={y} width={width} height={height} rx={10} ry={10} />
@@ -936,9 +941,13 @@ const SimpleChart = memo(function SimpleChart({
                   : makes === bettingLine 
                     ? '#9ca3af' 
                     : CHART_CONFIG.colors.red;
-                
+                const HOVER_H = 400;
+                const hoverH = HOVER_H;
+                const hoverY = y - HOVER_H;
                 return (
                   <g>
+                    {/* Invisible hover rect: full width, full bar slot height for every bar */}
+                    <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
                     {/* Background bar (attempts) - gray, semi-transparent */}
                     <rect
                       x={x}
@@ -999,7 +1008,19 @@ const SimpleChart = memo(function SimpleChart({
                     )}
                   </g>
                 );
-              } : undefined}
+              } : (props: any) => {
+                const { x, y, width, height, fill } = props;
+                const HOVER_H = 400;
+                const hoverH = HOVER_H;
+                const hoverY = y - HOVER_H;
+                return (
+                  <g>
+                    {/* Invisible hover rect: full width, top 2/3 of bar slot */}
+                    <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
+                    <rect x={x} y={y} width={width} height={height} fill={fill ?? '#888'} rx={10} ry={10} />
+                  </g>
+                );
+              }}
             >
               {selectedStat !== 'fg3m' && barCells}
             

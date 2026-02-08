@@ -8,6 +8,7 @@
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from './teamUtils';
 import { getStatValue } from './statUtils';
+import { getStableGameId } from './allGamesSecondAxisDataUtils';
 import { currentNbaSeason } from './playerUtils';
 import { BaseGameDataItem } from './baseGameDataUtils';
 import { NBAPlayer } from '../types';
@@ -152,14 +153,13 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
       const iso = stats?.game?.date;
       const d = iso ? new Date(iso) : null;
       const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
-      const gameId = stats?.game?.id ?? `${opponent}-${index}`;
       const gameData = {
         stats,
         opponent,
         gameNumber: index + 1,
         game: opponent ? `vs ${opponent}` : "—",
         date: shortDate,
-        xKey: String(gameId),
+        xKey: getStableGameId(stats),
         tickLabel: opponent || "",
       };
       const statValue = getStatValue(stats, selectedStat);
@@ -192,11 +192,11 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
   });
 
   // Apply timeframe to the filtered games
-  const n = parseInt(selectedTimeframe.replace('last', ''));
+  const n = parseInt(selectedTimeframe.replace('last', ''), 10);
   let timeframeFilteredStats = sortedFilteredStats;
-  
+
   if (!Number.isNaN(n) && selectedTimeframe.startsWith('last')) {
-    // Take the first N games (newest first, so these are the most recent N)
+    // Apply L10/L20 etc.: take the N most recent games that match the DvP (or other slider) filter
     timeframeFilteredStats = sortedFilteredStats.slice(0, n);
   } else if (selectedTimeframe === 'h2h') {
     // Filter to only show games against the current opponent team
@@ -299,20 +299,19 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
     const iso = stats?.game?.date;
     const d = iso ? new Date(iso) : null;
     const shortDate = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
-    const gameId = stats?.game?.id ?? `${opponent}-${index}`;
+    // Use stable game id so DvP/second-axis lookups match (same key as allGamesSecondAxisDataUtils)
+    const xKey = getStableGameId(stats);
     
-    // Create baseGameData format
     const gameData = {
       stats,
       opponent,
       gameNumber: index + 1,
       game: opponent ? `vs ${opponent}` : "—",
       date: shortDate,
-      xKey: String(gameId),
+      xKey,
       tickLabel: opponent || "",
     };
 
-    // Map to chartData format
     const statValue = getStatValue(stats, selectedStat);
     const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
     

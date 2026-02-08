@@ -33,10 +33,6 @@ export function calculateSliderConfig({
     .map(item => item.value)
     .filter((v): v is number => v !== null && Number.isFinite(v));
 
-  if (values.length === 0) {
-    return null;
-  }
-
   let min: number;
   let max: number;
 
@@ -50,14 +46,17 @@ export function calculateSliderConfig({
       max = 100;
       break;
     case 'pace':
+      if (values.length === 0) return null;
       min = Math.floor(Math.min(...values));
       max = Math.ceil(Math.max(...values));
       break;
     case 'usage_rate':
+      if (values.length === 0) return null;
       min = Math.floor(Math.min(...values));
       max = Math.ceil(Math.max(...values));
       break;
     case 'dvp_rank':
+      // Always return 1–30 so slider and filtered path work before DvP ranks load
       min = 1;
       max = 30;
       break;
