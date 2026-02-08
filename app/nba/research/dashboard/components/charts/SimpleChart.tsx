@@ -52,6 +52,9 @@ const SimpleChart = memo(function SimpleChart({
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileTooltipActive, setMobileTooltipActive] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -63,6 +66,48 @@ const SimpleChart = memo(function SimpleChart({
       return () => window.removeEventListener('resize', checkMobile);
     }
   }, []);
+
+  const handleChartTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobile) return;
+    setIsDragging(false);
+    if (e.touches?.length > 0) {
+      const t = e.touches[0];
+      touchStartRef.current = { x: t.clientX, y: t.clientY };
+    } else {
+      touchStartRef.current = null;
+    }
+  }, [isMobile]);
+
+  const handleChartTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || !touchStartRef.current || !e.touches?.length) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    if (dx * dx + dy * dy > 16) setIsDragging(true);
+  }, [isMobile]);
+
+  const handleChartTouchEnd = useCallback(() => {
+    if (!isMobile) return;
+    touchStartRef.current = null;
+    if (isDragging) {
+      setIsDragging(false);
+      setMobileTooltipActive(false);
+      return;
+    }
+    setIsDragging(false);
+    setMobileTooltipActive(prev => !prev);
+  }, [isMobile, isDragging]);
+
+  const handleChartMouseLeave = useCallback(() => {
+    if (isMobile) setMobileTooltipActive(false);
+  }, [isMobile]);
+
+  const adjustedTooltip = useCallback((props: any) => {
+    if (isMobile && !mobileTooltipActive) return null;
+    if (!props?.active || !props?.payload || !props?.payload?.length) return null;
+    if (!customTooltip) return null;
+    return customTooltip({ ...props, coordinate: props.coordinate });
+  }, [isMobile, mobileTooltipActive, customTooltip]);
 
   // Calculate initial background gradient (only when chartData or isDark changes)
   const getBackgroundGradient = useCallback((overPercent: number, underPercent: number) => {
@@ -725,7 +770,13 @@ const SimpleChart = memo(function SimpleChart({
         />
       </div>
       
-      <div className="relative z-20 w-full h-full">
+      <div 
+        className="relative z-20 w-full h-full"
+        onTouchStart={handleChartTouchStart}
+        onTouchMove={handleChartTouchMove}
+        onTouchEnd={handleChartTouchEnd}
+        onMouseLeave={handleChartMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent
             key={`chart-${selectedStat}-${mergedChartData.length}-${hasSecondAxis ? 'secondaxis' : 'single'}`}
@@ -770,18 +821,9 @@ const SimpleChart = memo(function SimpleChart({
               />
             )}
 
-            {/* Tooltip */}
+            {/* Tooltip - on mobile, tap to show, tap again to dismiss */}
             <Tooltip 
-              content={(props: any) => {
-                if (!props?.active || !props?.payload || !props?.payload.length) {
-                  return null;
-                }
-                if (!customTooltip) {
-                  return null;
-                }
-                // Pass coordinate to customTooltip so it can position at cursor
-                return customTooltip({ ...props, coordinate: props.coordinate });
-              }}
+              content={adjustedTooltip}
               cursor={{ 
                 fill: isDark ? 'rgba(107, 114, 128, 0.5)' : 'rgba(156, 163, 175, 0.6)', 
                 stroke: isDark ? '#6b7280' : '#9ca3af',
