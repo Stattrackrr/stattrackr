@@ -55,6 +55,7 @@ const SimpleChart = memo(function SimpleChart({
   const [mobileTooltipActive, setMobileTooltipActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPayloadRef = useRef<{ payload: any[]; coordinate?: { x: number; y: number }; props: any } | null>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -92,20 +93,35 @@ const SimpleChart = memo(function SimpleChart({
     if (isDragging) {
       setIsDragging(false);
       setMobileTooltipActive(false);
+      lastPayloadRef.current = null;
       return;
     }
     setIsDragging(false);
-    setMobileTooltipActive(prev => !prev);
+    setMobileTooltipActive(prev => {
+      if (prev) lastPayloadRef.current = null;
+      return !prev;
+    });
   }, [isMobile, isDragging]);
 
   const handleChartMouseLeave = useCallback(() => {
-    if (isMobile) setMobileTooltipActive(false);
+    if (isMobile) {
+      setMobileTooltipActive(false);
+      lastPayloadRef.current = null;
+    }
   }, [isMobile]);
 
   const adjustedTooltip = useCallback((props: any) => {
-    if (isMobile && !mobileTooltipActive) return null;
-    if (!props?.active || !props?.payload || !props?.payload?.length) return null;
     if (!customTooltip) return null;
+    if (props?.active && props?.payload?.length) {
+      lastPayloadRef.current = { payload: props.payload, coordinate: props.coordinate, props };
+    }
+    if (isMobile) {
+      if (!mobileTooltipActive) return null;
+      const p = lastPayloadRef.current;
+      if (!p?.payload?.length) return null;
+      return customTooltip({ ...props, active: true, payload: p.payload, coordinate: p.coordinate ?? props.coordinate });
+    }
+    if (!props?.active || !props?.payload?.length) return null;
     return customTooltip({ ...props, coordinate: props.coordinate });
   }, [isMobile, mobileTooltipActive, customTooltip]);
 
