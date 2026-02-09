@@ -1564,10 +1564,8 @@ export default function AddToJournalModal({
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar min-h-0 px-6 ${
-          isParlayMode ? 'pb-6' : 'pb-6'
-        }`}>
+        {/* Scrollable Content - on mobile, add-to-journal-scroll-bottom keeps Add to Journal button tappable (see globals.css) */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 px-6 pb-12 lg:pb-6 add-to-journal-scroll-bottom">
           {/* Error */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-sm">
@@ -1920,7 +1918,7 @@ export default function AddToJournalModal({
               {/* Game Props - Second */}
               <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col dark:bg-[#0d1f35]">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Game Props</h3>
-                <div className="space-y-4 pb-24 lg:pb-4">
+                <div className="space-y-4 pb-8 lg:pb-4">
                 {/* Game Search */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

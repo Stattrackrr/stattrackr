@@ -29,6 +29,13 @@
   }
 }
 
+/* Add to Journal modal: on mobile, extra bottom padding so Add to Journal button is reachable when Live Bookmaker/Manual sections are expanded */
+@media (max-width: 1023px) {
+  .add-to-journal-scroll-bottom {
+    padding-bottom: max(10rem, calc(env(safe-area-inset-bottom, 0px) + 6rem));
+  }
+}
+
 /* iOS standalone mode: Add safe area padding to body to prevent content from going under status bar */
 /* Only applies when in standalone mode (added to home screen), not in Safari */
 @media (display-mode: standalone) {
