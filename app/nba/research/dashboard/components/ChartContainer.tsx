@@ -247,6 +247,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
       )}
       <div className="flex-1 min-h-0 relative">
         <SimpleChart
+          key={manualOpponent ?? 'ALL'}
           isLoading={isLoading}
           chartData={chartData}
           yAxisConfig={yAxisConfig}
@@ -275,6 +276,7 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
     prev.bettingLine === next.bettingLine &&
     prev.selectedTimeframe === next.selectedTimeframe &&
     prev.propsMode === next.propsMode &&
+    prev.manualOpponent === next.manualOpponent &&
     // Removed isLoading and oddsLoading - chart is independent
     prev.chartData === next.chartData &&
     prev.yAxisConfig === next.yAxisConfig &&

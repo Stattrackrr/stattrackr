@@ -27,6 +27,8 @@ export interface FilteredChartDataParams {
   selectedTimeframe: string;
   selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string; teamAbbr?: string } | null;
   opponentTeam: string | null;
+  /** When set (e.g. user picked a team in the selector), restrict chart to only games vs this opponent */
+  manualOpponent: string;
 }
 
 /**
@@ -44,7 +46,15 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
     selectedTimeframe,
     selectedPlayer,
     opponentTeam,
+    manualOpponent,
   } = params;
+
+  /** Restrict to games vs manualOpponent when user has selected a specific team (only for chart; matchup stays auto). */
+  const restrictToManualOpponent = (items: FilteredChartDataItem[]): FilteredChartDataItem[] => {
+    if (!manualOpponent || manualOpponent === 'ALL' || manualOpponent === '') return items;
+    const norm = normalizeAbbr(manualOpponent);
+    return items.filter((item: any) => normalizeAbbr(item.opponent || '') === norm);
+  };
 
   // If no filter axis selected, use adjustedChartData (which already has timeframe filter from baseGameData)
   if (!selectedFilterForAxis || !allGamesSecondAxisData || propsMode !== 'player') {
@@ -127,7 +137,7 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
       return dateB - dateA;
     }).reverse();
     
-    return sorted.map((item: any, index: number) => {
+    const noSliderResult = sorted.map((item: any, index: number) => {
       const stats = item.stats;
       let playerTeam = stats?.team?.abbreviation || selectedPlayer?.teamAbbr || "";
       const homeTeamId = stats?.game?.home_team?.id ?? (stats?.game as any)?.home_team_id;
@@ -169,6 +179,8 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
         value,
       };
     });
+    const restricted = restrictToManualOpponent(noSliderResult);
+    return restricted.length > 0 ? restricted : adjustedChartData;
   }
 
   // Filter ALL games by slider range using allGamesSecondAxisData (calculated from playerStats directly)
@@ -181,6 +193,11 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
       return item.value >= sliderRange.min && item.value <= sliderRange.max;
     })
     .map(item => item.stats); // Get the original stats objects
+
+  // When DvP/pace/usage etc. aren't loaded yet, all values are null → 0 games → blank chart. Fall back to main data.
+  if (filteredStats.length === 0) {
+    return adjustedChartData;
+  }
 
   // Now we need to recreate baseGameData format from these filtered stats
   // Then apply timeframe to get the final result
@@ -321,6 +338,7 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
     };
   });
 
-  return mapped;
+  const restricted = restrictToManualOpponent(mapped);
+  return restricted.length > 0 ? restricted : adjustedChartData;
 }
 

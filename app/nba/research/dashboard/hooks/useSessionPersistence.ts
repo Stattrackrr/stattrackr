@@ -78,8 +78,13 @@ export function useSessionPersistence({
             url.searchParams.delete('player');
           }
           
+          const currentStatInUrl = url.searchParams.get('stat');
           url.searchParams.set('stat', selectedStat);
           url.searchParams.set('tf', selectedTimeframe);
+          // Remove stale line when stat changed so refresh never applies previous stat's line (e.g. AST 2.5 -> PTS)
+          if (currentStatInUrl !== selectedStat) {
+            url.searchParams.delete('line');
+          }
           const newUrlStr = url.toString();
           if (window.location.href !== newUrlStr) {
             window.history.replaceState({}, '', newUrlStr);

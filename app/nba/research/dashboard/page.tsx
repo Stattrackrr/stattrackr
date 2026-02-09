@@ -819,6 +819,7 @@ export function NBADashboardContent() {
     selectedTimeframe,
     selectedPlayer,
     opponentTeam,
+    manualOpponent,
     advancedStatsPerGame,
     dvpRanksPerGame,
   });

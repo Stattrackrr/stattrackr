@@ -20,6 +20,7 @@ export interface UseChartDataProcessingParams {
   selectedTimeframe: string;
   selectedPlayer: { id: number | string; full?: string; firstName?: string; lastName?: string } | null;
   opponentTeam: string;
+  manualOpponent: string;
   advancedStatsPerGame: Record<number, { pace?: number; usage_percentage?: number }>;
   dvpRanksPerGame: Record<string, number | null>;
 }
@@ -38,6 +39,7 @@ export function useChartDataProcessing({
   selectedTimeframe,
   selectedPlayer,
   opponentTeam,
+  manualOpponent,
   advancedStatsPerGame,
   dvpRanksPerGame,
 }: UseChartDataProcessingParams) {
@@ -85,8 +87,9 @@ export function useChartDataProcessing({
       selectedTimeframe,
       selectedPlayer,
       opponentTeam,
+      manualOpponent: manualOpponent || 'ALL',
     });
-  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, playerId, opponentTeam]);
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, playerId, opponentTeam, manualOpponent]);
 
   // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
   const secondAxisData = useMemo(() => {

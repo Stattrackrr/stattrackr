@@ -706,10 +706,10 @@ const SimpleChart = memo(function SimpleChart({
         />
       )}
       
-      {/* In-chart average + hit rate - top right (z-[1] so dropdowns appear on top) */}
+      {/* In-chart average + hit rate - center when second axis visible, else top right (z-[1] so dropdowns appear on top) */}
       {averageDisplay && (
         <div
-          className="absolute top-1 right-2 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none"
+          className={`absolute top-1 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${hasSecondAxis ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
