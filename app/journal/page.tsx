@@ -2514,7 +2514,7 @@ function JournalContent() {
                           ) : (
                             <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
                           )}
-                          <div className="flex items-center justify-between text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 flex-wrap gap-1">
+                          <div className="flex items-center justify-between text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400 flex-wrap gap-1">
                             <span className="break-words">
                               Stake: {viewMode === 'units' 
                                 ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
@@ -2526,11 +2526,11 @@ function JournalContent() {
                             </div>
                           </div>
                           {(bet.market || bet.opponent) && (
-                            <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-500 break-words">
+                            <div className="mt-0.5 text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400 break-words">
                               {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
                             </div>
                           )}
-                          <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400">
+                          <div className="mt-0.5 text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400">
                             Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void', isParlay)}</span>
                           </div>
                           {isLive && !isParlay && bet.player_id && bet.game_date && bet.stat_type && bet.line && bet.over_under && (
@@ -3368,7 +3368,7 @@ function JournalContent() {
                     ) : (
                       <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
                     )}
-                    <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between text-xs text-purple-600 dark:text-purple-400">
                       <span>
                         Stake: {viewMode === 'units' 
                           ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
@@ -3380,7 +3380,7 @@ function JournalContent() {
                       </div>
                     </div>
                     {(bet.market || bet.opponent) && (
-                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                      <div className="mt-1 text-xs text-purple-600 dark:text-purple-400">
                         {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
                       </div>
                     )}
@@ -4684,8 +4684,8 @@ function LiveStatsIndicator({
   return (
     <div className="mt-1.5 space-y-1">
       <div className="flex items-center justify-between text-[9px] md:text-[10px]">
-        <span className="text-slate-600 dark:text-slate-400">
-          Live: <span className="font-semibold text-orange-600 dark:text-orange-400">{currentValue.toFixed(1)}</span> / {line} {formatStatType(statType)}
+        <span className="text-white dark:text-white">
+          Live: <span className="font-semibold text-orange-600 dark:text-orange-400">{currentValue.toFixed(1)}</span> / {Math.round(line)} {formatStatType(statType)}
         </span>
         <span className={`font-medium ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
           {overUnder === 'over' ? (currentValue >= line ? '✓' : '→') : (currentValue <= line ? '✓' : '→')}
@@ -4730,8 +4730,8 @@ function FinalStatsIndicator({
   return (
     <div className="mt-1.5 space-y-1">
       <div className="flex items-center justify-between text-[9px] md:text-[10px]">
-        <span className="text-slate-600 dark:text-slate-400">
-          Final: <span className={`font-semibold ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{actualValue.toFixed(1)}</span> / {line} {formatStatType(statType)}
+        <span className="text-white dark:text-white">
+          Final: <span className={`font-semibold ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{actualValue.toFixed(1)}</span> / {Math.round(line)} {formatStatType(statType)}
         </span>
         <span className={`font-medium ${isWinning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
           {isWinning ? '✓' : '✗'}

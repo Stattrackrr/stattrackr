@@ -1108,7 +1108,8 @@ export async function GET(request: Request) {
     
     // Check if we should also re-check completed bets (for recalculation)
     const url = new URL(request.url);
-    const recalculate = url.searchParams.get('recalculate') === 'true';
+    let recalculate = url.searchParams.get('recalculate') === 'true';
+    const betIdParam = url.searchParams.get('bet_id') || url.searchParams.get('id');
     
     // OPTIMIZATION: Determine if this is a cron request or user request
     // Cron requests process all users, user requests only process the authenticated user
@@ -1208,14 +1209,46 @@ export async function GET(request: Request) {
       console.log('[check-journal-bets] Normal mode: fetching only pending/live NBA bets');
     }
     
-    // Fetch bets in batches to avoid loading all into memory
-    const [playerProps, gameProps] = await Promise.all([
-      fetchBetsInBatches(playerPropsQuery),
-      fetchBetsInBatches(gamePropsQuery),
-    ]);
+    let singleBets: any[];
     
-    // Filter out completed bets in normal mode (optimization: skip already resolved bets)
-    let singleBets = [...(playerProps || []), ...(gameProps || [])];
+    // Single-bet re-run: only process one bet by id (e.g. to fix wrong actual_value)
+    if (betIdParam && betIdParam.trim()) {
+      const betId = betIdParam.trim();
+      // In production require login so users can only re-run their own bet; on localhost dev allow by id only
+      if (!userId && !allowLocalDev) {
+        return NextResponse.json(
+          { error: 'Must be logged in to re-run a single bet. Open the journal while signed in and call the API from the same origin, or use recalculate=true with cron.' },
+          { status: 401 }
+        );
+      }
+      let singleBetQuery = supabaseAdmin
+        .from('bets')
+        .select('*')
+        .eq('id', betId)
+        .eq('sport', 'NBA');
+      if (userId) singleBetQuery = singleBetQuery.eq('user_id', userId);
+      const { data: singleBet, error: singleError } = await singleBetQuery.maybeSingle();
+      if (singleError) {
+        console.error('[check-journal-bets] Single bet fetch error:', singleError);
+        return NextResponse.json({ error: 'Failed to fetch bet' }, { status: 500 });
+      }
+      if (!singleBet) {
+        return NextResponse.json(
+          { error: 'Bet not found or not yours. Use the bet ID from the journal (e.g. from the URL or API).' },
+          { status: 404 }
+        );
+      }
+      singleBets = [singleBet];
+      recalculate = true; // Force re-evaluation so actual_value/result get updated
+      console.log(`[check-journal-bets] Single-bet mode: re-running bet ${betId} (${singleBet.player_name || singleBet.stat_type})`);
+    } else {
+      // Fetch bets in batches to avoid loading all into memory
+      const [playerProps, gameProps] = await Promise.all([
+        fetchBetsInBatches(playerPropsQuery),
+        fetchBetsInBatches(gamePropsQuery),
+      ]);
+      singleBets = [...(playerProps || []), ...(gameProps || [])];
+    }
     if (!recalculate) {
       singleBets = singleBets.filter((bet: any) => {
         // SPORTSBOOK-STANDARD: Skip bets that are already fully resolved
@@ -1233,9 +1266,9 @@ export async function GET(request: Request) {
       });
     }
     
-    console.log(`[check-journal-bets] After filtering: ${singleBets.length} single bets to process (from ${(playerProps || []).length + (gameProps || []).length} total)`);
+    console.log(`[check-journal-bets] After filtering: ${singleBets.length} single bets to process${betIdParam ? ' (single-bet mode)' : ''}`);
     
-    // Then get parlay bets (market contains "Parlay") in batches
+    // Then get parlay bets (market contains "Parlay") in batches — skip when re-running a single bet
     let parlayBetsQuery = supabaseAdmin
       .from('bets')
       .select('*')
@@ -1247,14 +1280,16 @@ export async function GET(request: Request) {
       parlayBetsQuery = parlayBetsQuery.eq('user_id', userId);
     }
     
-    if (recalculate) {
-      parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
-    } else {
-      // EGRESS: Only fetch pending/live parlays in normal mode
-      parlayBetsQuery = parlayBetsQuery.in('status', ['pending', 'live']);
+    if (!betIdParam) {
+      if (recalculate) {
+        parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
+      } else {
+        // EGRESS: Only fetch pending/live parlays in normal mode
+        parlayBetsQuery = parlayBetsQuery.in('status', ['pending', 'live']);
+      }
     }
     
-    const parlayBets = await fetchBetsInBatches(parlayBetsQuery);
+    const parlayBets = betIdParam ? [] : await fetchBetsInBatches(parlayBetsQuery);
     
     // Filter out completed parlay bets in normal mode
     let filteredParlayBets = parlayBets || [];
@@ -1459,7 +1494,10 @@ export async function GET(request: Request) {
             if (statsData.data && statsData.data.length > 0) {
               const fetchedStatsMap = new Map<string, any>();
               for (const stat of statsData.data) {
-                const statKey = `${stat.game?.id}_${stat.player?.id}`;
+                const gid = stat.game?.id ?? (stat as any).game_id;
+                const pid = stat.player?.id ?? (stat as any).player_id;
+                if (gid == null || pid == null) continue;
+                const statKey = `${gid}_${pid}`;
                 if (!fetchedStatsMap.has(statKey)) {
                   fetchedStatsMap.set(statKey, stat);
                 }
@@ -1688,10 +1726,13 @@ export async function GET(request: Request) {
             const statsData = await statsResponse.json();
             
             if (statsData.data && statsData.data.length > 0) {
-              // Index stats by game_id + player_id for fast lookup
+              // Index stats by game_id + player_id for fast lookup (support nested game.id/player.id or top-level game_id/player_id)
               const fetchedStatsMap = new Map<string, any>();
               for (const stat of statsData.data) {
-                const statKey = `${stat.game?.id}_${stat.player?.id}`;
+                const gid = stat.game?.id ?? (stat as any).game_id;
+                const pid = stat.player?.id ?? (stat as any).player_id;
+                if (gid == null || pid == null) continue;
+                const statKey = `${gid}_${pid}`;
                 if (!fetchedStatsMap.has(statKey)) {
                   fetchedStatsMap.set(statKey, stat);
                 }
@@ -2131,9 +2172,13 @@ export async function GET(request: Request) {
           fg3m: playerStat.fg3m || 0,
         };
 
-        // Calculate combined stats if needed
+        // Normalize stat_type so "PTS"/"Pts" etc. always match (points bet must use pts, not ast)
+        const statType = String(bet.stat_type ?? '').trim().toLowerCase();
+        const statTypeNorm = statType === 'points' ? 'pts' : statType;
+
+        // Calculate actual value from the correct stat (pts for points, ast for assists, etc.)
         let actualValue = 0;
-        switch (bet.stat_type) {
+        switch (statTypeNorm) {
           case 'pts':
             actualValue = stats.pts;
             break;
@@ -2165,7 +2210,7 @@ export async function GET(request: Request) {
             actualValue = stats.fg3m;
             break;
           default:
-            logDebug(`Unknown stat type: ${bet.stat_type}`);
+            logDebug(`Unknown stat type: ${bet.stat_type} (normalized: ${statTypeNorm})`);
             continue;
         }
 
@@ -2181,7 +2226,7 @@ export async function GET(request: Request) {
           actualValue,
           line,
           bet.over_under,
-          bet.stat_type || ''
+          statTypeNorm || bet.stat_type || ''
         );
 
         // Log the evaluation for debugging
