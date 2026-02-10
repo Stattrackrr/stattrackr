@@ -31,6 +31,7 @@ interface SimpleChartProps {
   teammateFilterName?: string | null;
   withWithoutMode?: 'with' | 'without';
   clearTeammateFilter?: () => void;
+  customXAxisTick?: any;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -49,6 +50,7 @@ const SimpleChart = memo(function SimpleChart({
   teammateFilterName,
   withWithoutMode,
   clearTeammateFilter,
+  customXAxisTick,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -807,7 +809,9 @@ const SimpleChart = memo(function SimpleChart({
           >
             <XAxis
               dataKey="xKey"
-              tick={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason') ? false : <CustomXAxisTick data={mergedChartData} hideLogo={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'} />}
+              tick={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason')
+                ? false
+                : (customXAxisTick || <CustomXAxisTick data={mergedChartData} hideLogo={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'} />)}
               height={40}
               interval={0}
               allowDuplicatedCategory={false}
