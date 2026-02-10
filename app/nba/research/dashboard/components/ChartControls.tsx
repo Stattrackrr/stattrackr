@@ -792,6 +792,22 @@ const ChartControls = function ChartControls({
     });
     
     if (matchingBooks.length > 0) {
+      // If user explicitly selected a bookmaker and it still matches this line,
+      // keep that bookmaker instead of auto-switching to the first match.
+      if (selectedBookmaker) {
+        const selectedLower = selectedBookmaker.toLowerCase();
+        const selectedMatch = matchingBooks.find((book: any) => {
+          const meta = (book as any)?.meta;
+          const baseName = (meta?.baseName || book?.name || '').toLowerCase();
+          return baseName === selectedLower;
+        });
+        if (selectedMatch) {
+          const selectedName = (selectedMatch as any)?.meta?.baseName || selectedMatch?.name;
+          setSelectedBookmaker(prev => prev !== selectedName ? selectedName : prev);
+          return;
+        }
+      }
+
       let bookToSelect: any;
       
       if (hasUrlLine) {
@@ -820,7 +836,7 @@ const ChartControls = function ChartControls({
       // Clear selection if no bookmaker matches
       setSelectedBookmaker(prev => prev !== null ? null : prev);
     }
-  }, [displayLine, realOddsData, selectedStat, oddsLoading]);
+  }, [displayLine, realOddsData, selectedStat, oddsLoading, selectedBookmaker]);
   
    const StatPills = useMemo(() => (
       <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0 w-full max-w-full">
@@ -1039,6 +1055,7 @@ const ChartControls = function ChartControls({
                     key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
                     onClick={() => {
                       onChangeBettingLine(altLine.line);
+                      setDisplayLine(altLine.line);
                       setSelectedBookmaker(altLine.bookmaker);
                       setIsAltLinesOpen(false);
                       const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
@@ -1615,6 +1632,7 @@ const ChartControls = function ChartControls({
                     key={`${altLine.bookmaker}-${altLine.line}-${idx}`}
                     onClick={() => {
                       onChangeBettingLine(altLine.line);
+                      setDisplayLine(altLine.line);
                       setSelectedBookmaker(altLine.bookmaker);
                       setIsAltLinesOpen(false);
                       const input = document.getElementById('betting-line-input') as HTMLInputElement | null;

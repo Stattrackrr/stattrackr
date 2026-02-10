@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS player_game_stats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   game_id INTEGER NOT NULL,
   player_id INTEGER NOT NULL,
+  -- Individual stats
   pts INTEGER DEFAULT 0,
   reb INTEGER DEFAULT 0,
   ast INTEGER DEFAULT 0,
@@ -14,6 +15,12 @@ CREATE TABLE IF NOT EXISTS player_game_stats (
   blk INTEGER DEFAULT 0,
   fg3m INTEGER DEFAULT 0,
   min TEXT,
+  -- Composite stats (pre-calculated for accuracy and performance)
+  pra INTEGER DEFAULT 0,  -- Points + Rebounds + Assists
+  pr INTEGER DEFAULT 0,   -- Points + Rebounds
+  pa INTEGER DEFAULT 0,   -- Points + Assists
+  ra INTEGER DEFAULT 0,   -- Rebounds + Assists
+  -- Team and game info
   team_id INTEGER,
   team_abbreviation TEXT,
   opponent_id INTEGER,

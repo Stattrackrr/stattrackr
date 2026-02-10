@@ -290,7 +290,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
           <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: `120px repeat(${maxDepth}, minmax(100px, 1fr))` }}>
             <div></div> {/* Empty corner cell */}
             {Array.from({ length: maxDepth }, (_, index) => (
-              <div key={index} className="text-center font-bold py-1 px-2 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <div key={index} className="text-center font-bold py-1 px-2 rounded text-xs bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100">
                 {index === 0 ? 'STARTER' : index === 1 ? '2ND' : index === 2 ? '3RD' : index === 3 ? '4TH' : `${index + 1}TH`}
               </div>
             ))}
@@ -300,7 +300,7 @@ const DepthChartContainer = memo(function DepthChartContainer({
           {positions.map((position) => (
             <div key={position.key} className="grid gap-2 mb-2" style={{ gridTemplateColumns: `120px repeat(${maxDepth}, minmax(100px, 1fr))` }}>
               {/* Position Label */}
-              <div className="flex items-center justify-center font-bold py-2 px-2 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <div className="flex items-center justify-center font-bold py-2 px-2 rounded text-xs bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100">
                 {position.key}
               </div>
               

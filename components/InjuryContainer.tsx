@@ -41,6 +41,7 @@ interface StatisticalImpact {
   fg3m: number | null; // 3-pointers made
   hasSignificantChange: boolean;
   noGamesTogether?: boolean; // Flag to indicate no games played together
+  gamesWithoutCount?: number; // Number of games selected player played without injured player
 }
 
 interface InjuryContainerProps {
@@ -200,6 +201,38 @@ const InjuryContainer = memo(function InjuryContainer({
     const calculateImpacts = async () => {
       const newImpacts: Record<number, StatisticalImpact> = {};
       const newAverages: Record<number, { rebounds: number; points: number; assists: number; plusMinus: number; fg3m: number }> = {};
+    const season = currentNbaSeason();
+
+    const parseSeasonBounds = (seasonValue: unknown): { start: Date; end: Date } | null => {
+      // currentNbaSeason() returns a start year number (e.g. 2025 for 2025-26)
+      if (typeof seasonValue === 'number' && Number.isFinite(seasonValue)) {
+        return {
+          start: new Date(seasonValue, 6, 1),         // Jul 1 start year
+          end: new Date(seasonValue + 1, 6, 1),       // Jul 1 next year (exclusive)
+        };
+      }
+
+      const seasonStr = String(seasonValue ?? '').trim();
+      const m = seasonStr.match(/^(\d{4})-(\d{2})$/);
+      if (!m) return null;
+      const startYear = parseInt(m[1], 10);
+      const endYear = parseInt(`20${m[2]}`, 10);
+      if (!Number.isFinite(startYear) || !Number.isFinite(endYear)) return null;
+      return {
+        start: new Date(startYear, 6, 1),
+        end: new Date(endYear, 6, 1),
+      };
+    };
+
+    const seasonBounds = parseSeasonBounds(season);
+    const seasonPlayerStats = playerStats.filter((stat: any) => {
+      const gameDate = stat?.game?.date;
+      if (!gameDate) return false;
+      const dt = new Date(gameDate);
+      if (Number.isNaN(dt.getTime())) return false;
+      if (!seasonBounds) return true;
+      return dt >= seasonBounds.start && dt < seasonBounds.end;
+    });
 
       // Debug logging removed(`[Injury Impact] Starting calculation for ${teamInjuriesRaw.length} injured players`);
 
@@ -209,9 +242,6 @@ const InjuryContainer = memo(function InjuryContainer({
         const injuredPlayerId = injury.player.id;
         
         try {
-          // Use current NBA season (automatically updates when season changes)
-          const season = currentNbaSeason();
-
           // Find games where the injured player was out (didn't play)
           // Fetch stats from the current season
           const response = await fetch(`/api/stats?player_id=${injuredPlayerId}&per_page=100&max_pages=5&season=${season}`);
@@ -233,7 +263,8 @@ const InjuryContainer = memo(function InjuryContainer({
                 assists: null,
                 fg3m: null,
                 hasSignificantChange: false,
-                noGamesTogether: true
+                noGamesTogether: true,
+                gamesWithoutCount: seasonPlayerStats.length
               },
               average: null
             };
@@ -289,7 +320,7 @@ const InjuryContainer = memo(function InjuryContainer({
           // Debug logging removed(`[Injury Impact] Sample game dates from injured player:`, Array.from(gamesWithInjuredPlayerByDate).slice(0, 5));
 
           // Filter selected player's stats: games WITHOUT injured player (match by date first, then ID)
-          const gamesWithoutInjured = playerStats.filter((stat: any) => {
+          const gamesWithoutInjured = seasonPlayerStats.filter((stat: any) => {
             const gameDate = stat.game?.date;
             const gameId = stat.game?.id;
             
@@ -310,7 +341,7 @@ const InjuryContainer = memo(function InjuryContainer({
           });
 
           // Filter selected player's stats: games WITH injured player
-          const gamesWithInjured = playerStats.filter((stat: any) => {
+          const gamesWithInjured = seasonPlayerStats.filter((stat: any) => {
             const gameDate = stat.game?.date;
             const gameId = stat.game?.id;
             
@@ -329,7 +360,7 @@ const InjuryContainer = memo(function InjuryContainer({
           // Debug logging removed
           
           // Check if there's any overlap at all (by date)
-          const selectedPlayerGameDates = new Set<string>(playerStats.map((s: any) => {
+          const selectedPlayerGameDates = new Set<string>(seasonPlayerStats.map((s: any) => {
             const date = s.game?.date;
             return date ? new Date(date).toISOString().split('T')[0] : null;
           }).filter((date): date is string => date != null));
@@ -348,7 +379,8 @@ const InjuryContainer = memo(function InjuryContainer({
                 assists: null,
                 fg3m: null,
                 hasSignificantChange: false,
-                noGamesTogether: true
+                noGamesTogether: true,
+                gamesWithoutCount: gamesWithoutInjured.length
               },
               average: null
             };
@@ -366,7 +398,8 @@ const InjuryContainer = memo(function InjuryContainer({
                 points: null,
                 assists: null,
                 fg3m: null,
-                hasSignificantChange: false
+                hasSignificantChange: false,
+                gamesWithoutCount: 0
               },
               average: null
             };
@@ -389,8 +422,8 @@ const InjuryContainer = memo(function InjuryContainer({
             : null;
 
           // Get selected player's team from their stats
-          const selectedPlayerTeam = playerStats.length > 0
-            ? playerStats[0]?.team?.abbreviation
+          const selectedPlayerTeam = seasonPlayerStats.length > 0
+            ? seasonPlayerStats[0]?.team?.abbreviation
             : selectedTeam;
 
           // Debug logging removed(`[Injury Impact] Teams - Injured: ${injuredPlayerTeam}, Selected: ${selectedPlayerTeam}`);
@@ -406,7 +439,8 @@ const InjuryContainer = memo(function InjuryContainer({
                 points: null,
                 assists: null,
                 fg3m: null,
-                hasSignificantChange: false
+                hasSignificantChange: false,
+                gamesWithoutCount: gamesWithoutInjured.length
               },
               average: null
             };
@@ -489,7 +523,8 @@ const InjuryContainer = memo(function InjuryContainer({
               points: diff.points,
               assists: diff.assists,
               fg3m: diff.fg3m,
-              hasSignificantChange
+              hasSignificantChange,
+              gamesWithoutCount: gamesWithoutInjuredSameTeam.length
             },
             average: {
               rebounds: avgWithout.rebounds,
@@ -509,7 +544,8 @@ const InjuryContainer = memo(function InjuryContainer({
               points: null,
               assists: null,
               fg3m: null,
-              hasSignificantChange: false
+              hasSignificantChange: false,
+              gamesWithoutCount: undefined
             },
             average: null
           };
@@ -571,75 +607,19 @@ const InjuryContainer = memo(function InjuryContainer({
     return 'text-gray-500 dark:text-gray-400';
   };
 
-  // Format impact text - show averages when player is out, not differences
+  // Keep injury note simple: only show games count without teammate.
   const formatImpactText = (injury: InjuryData): React.ReactNode => {
     const impact = impactData[injury.player.id];
-    const averages = averageData[injury.player.id];
-    
-    if (!impact) {
-      return <span>No games played with/without each other this season</span>;
-    }
+    if (!impact) return <span>No with/without sample this season</span>;
 
-    // Check if they haven't played together
-    if (impact.noGamesTogether) {
-      return <span>No games played with/without each other this season</span>;
-    }
-
-    if (!averages) {
-      return <span>No games played with/without each other this season</span>;
-    }
-
-    // If no significant change, still show the stats (just don't filter by significance)
-    if (!impact.hasSignificantChange) {
-      // Show stats anyway, even if change is small
-    }
-
-    // Show all stats: points, assists, rebounds, 3pm
-    const statList = [
-      { key: 'points', diff: impact.points || 0, label: 'points' },
-      { key: 'assists', diff: impact.assists || 0, label: 'assists' },
-      { key: 'rebounds', diff: impact.rebounds || 0, label: 'rebounds' },
-      { key: 'fg3m', diff: impact.fg3m || 0, label: '3pm' }
-    ];
+    const gamesWithout = Math.max(0, Math.round(impact.gamesWithoutCount ?? 0));
+    const selectedName = selectedPlayer?.full || 'Selected player';
 
     return (
-      <div className="space-y-1">
-        <div className="text-xs text-gray-600 dark:text-gray-300">
-          Without {injury.player.first_name} {injury.player.last_name}, {selectedPlayer?.full || 'this player'} averages:
-        </div>
-        {statList.map((stat) => {
-          const diff = stat.diff;
-          const absDiff = Math.abs(diff);
-          const isPositive = diff > 0;
-          const arrowColor = isPositive ? 'text-green-500' : 'text-red-500';
-          
-          if (absDiff < 0.1) {
-            // Don't show stats with negligible difference
-            return null;
-          }
-          
-          return (
-            <div key={stat.key} className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
-              <svg 
-                className={`w-3.5 h-3.5 ${arrowColor}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-              >
-                {isPositive ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                )}
-              </svg>
-              <span>
-                {absDiff.toFixed(1)} {isPositive ? 'more' : 'less'} {stat.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <span>
+        {selectedName} has played {gamesWithout} game{gamesWithout === 1 ? '' : 's'} without{' '}
+        {injury.player.first_name} {injury.player.last_name} this season.
+      </span>
     );
   };
 

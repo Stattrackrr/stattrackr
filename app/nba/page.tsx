@@ -5385,7 +5385,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                       
                       {/* Pagination controls - Shared for desktop and mobile */}
-                      <div className="flex items-center justify-between mt-6 px-2 pb-4">
+                      <div className="flex items-center justify-between mt-6 px-2 pb-24 sm:pb-4">
                         <div className={`text-sm ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           Showing {(currentPageSafe - 1) * pageSize + 1} - {Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of {totalPropsCount}
                         </div>

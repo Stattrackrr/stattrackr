@@ -2837,7 +2837,10 @@ export default function AddToJournalModal({
           {showBetSlipMobile && (
             <div className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
               <div className="bg-white dark:bg-[#0a1929] w-full h-full flex flex-col shadow-xl">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
+                <div
+                  className="flex items-center justify-between px-4 pb-4 border-b border-gray-200 dark:border-gray-600"
+                  style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2.25rem)' }}
+                >
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bet Slip</h3>
                   <button
                     type="button"
@@ -2847,7 +2850,7 @@ export default function AddToJournalModal({
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 pb-6 space-y-4 custom-scrollbar" style={{ paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))' }}>
                   {/* Bet Slip Content - Same as desktop */}
                   {parlaySelections.length > 0 ? (
                     <>
@@ -2949,104 +2952,104 @@ export default function AddToJournalModal({
                           required
                         />
                       </div>
+
+                      {/* Stake and Currency - Mobile - Moved up directly after parlay odds */}
+                      <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-[auto_1fr] gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Currency
+                            </label>
+                            <select
+                              value={currency}
+                              onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              required
+                              disabled={parlaySelections.length < 2}
+                            >
+                              {CURRENCIES.map(curr => (
+                                <option key={curr} value={curr}>{curr}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              {preferredJournalInput === 'units' ? 'Units' : 'Stake'}
+                            </label>
+                            <div className="relative">
+                              {preferredJournalInput === 'money' ? (
+                                <>
+                                  <span className={`absolute left-3 font-medium pointer-events-none text-base ${
+                                    parlaySelections.length < 2
+                                      ? 'text-gray-400 dark:text-gray-600'
+                                      : 'text-gray-500 dark:text-gray-400'
+                                  }`} style={{ 
+                                    top: '0.5rem',
+                                    lineHeight: '1.5rem'
+                                  }}>
+                                    {getCurrencySymbol(currency)}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={stake}
+                                    onChange={(e) => setStake(e.target.value)}
+                                    placeholder="100"
+                                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
+                                    required
+                                    disabled={parlaySelections.length < 2}
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <span className={`absolute right-3 font-medium pointer-events-none text-base ${
+                                    parlaySelections.length < 2
+                                      ? 'text-gray-400 dark:text-gray-600'
+                                      : 'text-gray-500 dark:text-gray-400'
+                                  }`} style={{ 
+                                    top: '0.5rem',
+                                    lineHeight: '1.5rem'
+                                  }}>
+                                    units
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={stake}
+                                    onChange={(e) => setStake(e.target.value)}
+                                    placeholder="1.0"
+                                    className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
+                                    required
+                                    disabled={parlaySelections.length < 2}
+                                  />
+                                </>
+                              )}
+                            </div>
+                            {parlaySelections.length < 2 && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Add at least 2 selections
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                          type="submit"
+                          form="journal-form"
+                          onClick={() => setShowBetSlipMobile(false)}
+                          className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loading || parlaySelections.length < 2}
+                        >
+                          {loading ? 'Adding...' : `Submit Parlay (${parlaySelections.length})`}
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       No selections yet. Add props from the left to build your parlay.
                     </div>
                   )}
-                </div>
-
-                {/* Stake and Currency - Mobile */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-600 space-y-4 bg-white dark:bg-[#0a1929]">
-                  <div className="grid grid-cols-[auto_1fr] gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Currency
-                      </label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value as typeof CURRENCIES[number])}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                        disabled={parlaySelections.length < 2}
-                      >
-                        {CURRENCIES.map(curr => (
-                          <option key={curr} value={curr}>{curr}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {preferredJournalInput === 'units' ? 'Units' : 'Stake'}
-                      </label>
-                      <div className="relative">
-                        {preferredJournalInput === 'money' ? (
-                          <>
-                            <span className={`absolute left-3 font-medium pointer-events-none text-base ${
-                              parlaySelections.length < 2
-                                ? 'text-gray-400 dark:text-gray-600'
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`} style={{ 
-                              top: '0.5rem',
-                              lineHeight: '1.5rem'
-                            }}>
-                              {getCurrencySymbol(currency)}
-                            </span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={stake}
-                              onChange={(e) => setStake(e.target.value)}
-                              placeholder="100"
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
-                              required
-                              disabled={parlaySelections.length < 2}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <span className={`absolute right-3 font-medium pointer-events-none text-base ${
-                              parlaySelections.length < 2
-                                ? 'text-gray-400 dark:text-gray-600'
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`} style={{ 
-                              top: '0.5rem',
-                              lineHeight: '1.5rem'
-                            }}>
-                              units
-                            </span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={stake}
-                              onChange={(e) => setStake(e.target.value)}
-                              placeholder="1.0"
-                              className="w-full pl-3 pr-16 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-[#0a1929] text-base"
-                              required
-                              disabled={parlaySelections.length < 2}
-                            />
-                          </>
-                        )}
-                      </div>
-                      {parlaySelections.length < 2 && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Add at least 2 selections
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    form="journal-form"
-                    onClick={() => setShowBetSlipMobile(false)}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={loading || parlaySelections.length < 2}
-                  >
-                    {loading ? 'Adding...' : `Submit Parlay (${parlaySelections.length})`}
-                  </button>
                 </div>
               </div>
             </div>

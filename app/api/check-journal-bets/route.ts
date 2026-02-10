@@ -26,6 +26,10 @@ interface PlayerStats {
   stl: number;
   blk: number;
   fg3m: number;
+  pra?: number;  // Pre-calculated Points + Rebounds + Assists
+  pr?: number;   // Pre-calculated Points + Rebounds
+  pa?: number;   // Pre-calculated Points + Assists
+  ra?: number;   // Pre-calculated Rebounds + Assists
 }
 
 const logDebug = (...args: Parameters<typeof console.log>) => {
@@ -555,6 +559,7 @@ async function resolveParlayBet(
         }
         
         // Calculate actual value and determine win/loss
+        // Use pre-calculated composite stats if available (from cache), otherwise calculate
         const stats: PlayerStats = {
           pts: playerStat.pts || 0,
           reb: playerStat.reb || 0,
@@ -562,6 +567,10 @@ async function resolveParlayBet(
           stl: playerStat.stl || 0,
           blk: playerStat.blk || 0,
           fg3m: playerStat.fg3m || 0,
+          pra: playerStat.pra ?? ((playerStat.pts || 0) + (playerStat.reb || 0) + (playerStat.ast || 0)),
+          pr: playerStat.pr ?? ((playerStat.pts || 0) + (playerStat.reb || 0)),
+          pa: playerStat.pa ?? ((playerStat.pts || 0) + (playerStat.ast || 0)),
+          ra: playerStat.ra ?? ((playerStat.reb || 0) + (playerStat.ast || 0)),
         };
         
         let actualValue = 0;
@@ -569,10 +578,10 @@ async function resolveParlayBet(
           case 'pts': actualValue = stats.pts; break;
           case 'reb': actualValue = stats.reb; break;
           case 'ast': actualValue = stats.ast; break;
-          case 'pa': actualValue = stats.pts + stats.ast; break;
-          case 'pr': actualValue = stats.pts + stats.reb; break;
-          case 'pra': actualValue = stats.pts + stats.reb + stats.ast; break;
-          case 'ra': actualValue = stats.reb + stats.ast; break;
+          case 'pa': actualValue = stats.pa ?? (stats.pts + stats.ast); break;
+          case 'pr': actualValue = stats.pr ?? (stats.pts + stats.reb); break;
+          case 'pra': actualValue = stats.pra ?? (stats.pts + stats.reb + stats.ast); break;
+          case 'ra': actualValue = stats.ra ?? (stats.reb + stats.ast); break;
           case 'stl': actualValue = stats.stl; break;
           case 'blk': actualValue = stats.blk; break;
           case 'fg3m': actualValue = stats.fg3m; break;
@@ -1448,6 +1457,7 @@ export async function GET(request: Request) {
         if (cachedStats && cachedStats.length > 0) {
           for (const cached of cachedStats) {
             const key = `${cached.game_id}_${cached.player_id}`;
+            // Include composite stats from cache (pre-calculated for accuracy)
             globalParlayStatsCache.set(key, {
               pts: cached.pts || 0,
               reb: cached.reb || 0,
@@ -1455,6 +1465,10 @@ export async function GET(request: Request) {
               stl: cached.stl || 0,
               blk: cached.blk || 0,
               fg3m: cached.fg3m || 0,
+              pra: cached.pra ?? ((cached.pts || 0) + (cached.reb || 0) + (cached.ast || 0)),
+              pr: cached.pr ?? ((cached.pts || 0) + (cached.reb || 0)),
+              pa: cached.pa ?? ((cached.pts || 0) + (cached.ast || 0)),
+              ra: cached.ra ?? ((cached.reb || 0) + (cached.ast || 0)),
               min: cached.min || '0:00',
             });
           }
@@ -1508,18 +1522,36 @@ export async function GET(request: Request) {
               for (const { gameId, playerId, key, gameDate } of parlayStatsToFetch) {
                 const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
                 if (stat) {
-                  globalParlayStatsCache.set(key, stat);
-                  
-                  statsToCache.push({
-                    game_id: gameId,
-                    player_id: playerId,
+                  // Normalize stats structure for consistent access (same format as database cache)
+                  const normalizedStat = {
                     pts: stat.pts || 0,
                     reb: stat.reb || 0,
                     ast: stat.ast || 0,
                     stl: stat.stl || 0,
                     blk: stat.blk || 0,
                     fg3m: stat.fg3m || 0,
+                    pra: (stat.pts || 0) + (stat.reb || 0) + (stat.ast || 0),
+                    pr: (stat.pts || 0) + (stat.reb || 0),
+                    pa: (stat.pts || 0) + (stat.ast || 0),
+                    ra: (stat.reb || 0) + (stat.ast || 0),
                     min: stat.min || '0:00',
+                  };
+                  globalParlayStatsCache.set(key, normalizedStat);
+                  
+                  statsToCache.push({
+                    game_id: gameId,
+                    player_id: playerId,
+                    pts: normalizedStat.pts,
+                    reb: normalizedStat.reb,
+                    ast: normalizedStat.ast,
+                    stl: normalizedStat.stl,
+                    blk: normalizedStat.blk,
+                    fg3m: normalizedStat.fg3m,
+                    pra: normalizedStat.pra,
+                    pr: normalizedStat.pr,
+                    pa: normalizedStat.pa,
+                    ra: normalizedStat.ra,
+                    min: normalizedStat.min,
                     team_id: stat.team?.id,
                     team_abbreviation: stat.team?.abbreviation,
                     opponent_id: stat.game?.home_team?.id === stat.team?.id 
@@ -1676,6 +1708,7 @@ export async function GET(request: Request) {
           if (cachedStats && cachedStats.length > 0) {
             for (const cached of cachedStats) {
               const key = `${cached.game_id}_${cached.player_id}`;
+              // Include composite stats from cache (pre-calculated for accuracy)
               cacheResults.set(key, {
                 pts: cached.pts || 0,
                 reb: cached.reb || 0,
@@ -1683,6 +1716,10 @@ export async function GET(request: Request) {
                 stl: cached.stl || 0,
                 blk: cached.blk || 0,
                 fg3m: cached.fg3m || 0,
+                pra: cached.pra ?? ((cached.pts || 0) + (cached.reb || 0) + (cached.ast || 0)),
+                pr: cached.pr ?? ((cached.pts || 0) + (cached.reb || 0)),
+                pa: cached.pa ?? ((cached.pts || 0) + (cached.ast || 0)),
+                ra: cached.ra ?? ((cached.reb || 0) + (cached.ast || 0)),
                 min: cached.min || '0:00',
               });
             }
@@ -1743,19 +1780,43 @@ export async function GET(request: Request) {
               for (const { gameId, playerId, key } of statsToFetch) {
                 const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
                 if (stat) {
-                  statsCache.set(key, stat);
-                  
-                  // Prepare for database cache
-                  statsToCache.push({
-                    game_id: gameId,
-                    player_id: playerId,
+                  // Normalize stats structure for consistent access (same format as database cache)
+                  const normalizedStat = {
                     pts: stat.pts || 0,
                     reb: stat.reb || 0,
                     ast: stat.ast || 0,
                     stl: stat.stl || 0,
                     blk: stat.blk || 0,
                     fg3m: stat.fg3m || 0,
+                    pra: (stat.pts || 0) + (stat.reb || 0) + (stat.ast || 0),
+                    pr: (stat.pts || 0) + (stat.reb || 0),
+                    pa: (stat.pts || 0) + (stat.ast || 0),
+                    ra: (stat.reb || 0) + (stat.ast || 0),
                     min: stat.min || '0:00',
+                  };
+                  statsCache.set(key, normalizedStat);
+                  
+                  // Calculate composite stats for storage
+                  const pra = normalizedStat.pts + normalizedStat.reb + normalizedStat.ast;
+                  const pr = normalizedStat.pts + normalizedStat.reb;
+                  const pa = normalizedStat.pts + normalizedStat.ast;
+                  const ra = normalizedStat.reb + normalizedStat.ast;
+                  
+                  // Prepare for database cache
+                  statsToCache.push({
+                    game_id: gameId,
+                    player_id: playerId,
+                    pts: normalizedStat.pts,
+                    reb: normalizedStat.reb,
+                    ast: normalizedStat.ast,
+                    stl: normalizedStat.stl,
+                    blk: normalizedStat.blk,
+                    fg3m: normalizedStat.fg3m,
+                    pra: pra,
+                    pr: pr,
+                    pa: pa,
+                    ra: ra,
+                    min: normalizedStat.min,
                     team_id: stat.team?.id,
                     team_abbreviation: stat.team?.abbreviation,
                     opponent_id: stat.game?.home_team?.id === stat.team?.id 
@@ -2177,10 +2238,12 @@ export async function GET(request: Request) {
         const statTypeNorm = statType === 'points' ? 'pts' : statType;
 
         // Calculate actual value from the correct stat (pts for points, ast for assists, etc.)
+        // CRITICAL: Use pre-calculated composite stats when available for accuracy
         let actualValue = 0;
         switch (statTypeNorm) {
           case 'pts':
             actualValue = stats.pts;
+            console.log(`[check-journal-bets] Bet ${bet.id}: Reading POINTS - stats.pts = ${stats.pts}, actualValue = ${actualValue}`);
             break;
           case 'reb':
             actualValue = stats.reb;
@@ -2189,16 +2252,20 @@ export async function GET(request: Request) {
             actualValue = stats.ast;
             break;
           case 'pa':
-            actualValue = stats.pts + stats.ast;
+            // Use pre-calculated PA if available, otherwise calculate
+            actualValue = stats.pa ?? (stats.pts + stats.ast);
             break;
           case 'pr':
-            actualValue = stats.pts + stats.reb;
+            // Use pre-calculated PR if available, otherwise calculate
+            actualValue = stats.pr ?? (stats.pts + stats.reb);
             break;
           case 'pra':
-            actualValue = stats.pts + stats.reb + stats.ast;
+            // Use pre-calculated PRA if available, otherwise calculate
+            actualValue = stats.pra ?? (stats.pts + stats.reb + stats.ast);
             break;
           case 'ra':
-            actualValue = stats.reb + stats.ast;
+            // Use pre-calculated RA if available, otherwise calculate
+            actualValue = stats.ra ?? (stats.reb + stats.ast);
             break;
           case 'stl':
             actualValue = stats.stl;
@@ -2212,6 +2279,11 @@ export async function GET(request: Request) {
           default:
             logDebug(`Unknown stat type: ${bet.stat_type} (normalized: ${statTypeNorm})`);
             continue;
+        }
+        
+        // Validate actualValue is reasonable (sanity check)
+        if (statTypeNorm === 'pts' && (actualValue < 0 || actualValue > 150)) {
+          console.error(`[check-journal-bets] ⚠️  WARNING: Bet ${bet.id} (${bet.player_name}) has suspicious points value: ${actualValue}. Stats object:`, stats);
         }
 
         // Determine result using shared utility function
