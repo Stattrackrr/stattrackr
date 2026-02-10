@@ -469,8 +469,8 @@ function toGameLogRow(cells: { text: string; raw: string }[], season: number): G
   };
 }
 
-async function fetchPlayerGameLogs(playerPageUrl: string): Promise<GameLogRow[]> {
-  return fetchPlayerGameLogsWithValidation(playerPageUrl);
+async function fetchPlayerGameLogs(playerPageUrl: string, expectedSurname?: string): Promise<GameLogRow[]> {
+  return fetchPlayerGameLogsWithValidation(playerPageUrl, expectedSurname);
 }
 
 async function fetchPlayerGameLogsWithValidation(

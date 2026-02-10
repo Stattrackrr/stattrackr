@@ -677,7 +677,7 @@ export async function GET(request: NextRequest) {
           if (!statsResult.ok || !statsResult.data || getResponseArray(statsResult.data as Record<string, unknown>).length === 0) {
             statsResult = await aflFetchWithRetry(apiKey, 'players/statistics', { id: idStr, season: trySeason });
           }
-          if (statsResult.ok && statsResult.data) {
+          if (statsResult.ok) {
             const payload = extractStatsPayloadFromApiResponse(statsResult.data as Record<string, unknown>);
             statsFlat = addPerGameAndSanitize(flattenStats(payload));
           } else {

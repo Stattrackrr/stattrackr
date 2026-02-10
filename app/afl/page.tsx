@@ -16,7 +16,8 @@ type AflGameLogRecord = Record<string, unknown>;
 
 export default function AFLPage() {
   const router = useRouter();
-  const { theme, oddsFormat, setOddsFormat, isDark } = useTheme();
+  const { theme, setTheme, isDark } = useTheme();
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPro, setIsPro] = useState(true);
@@ -54,6 +55,17 @@ export default function AFLPage() {
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('oddsFormat');
+      if (stored === 'american' || stored === 'decimal') {
+        setOddsFormat(stored);
+      }
+    } catch {
+      // Ignore localStorage read errors.
+    }
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -404,7 +416,7 @@ export default function AFLPage() {
         }}
         theme={theme}
         oddsFormat={oddsFormat}
-        setTheme={() => {}}
+        setTheme={setTheme}
         setOddsFormat={(fmt) => { setOddsFormat(fmt); try { localStorage.setItem('oddsFormat', fmt); } catch { /* ignore */ } }}
       />
     </div>
