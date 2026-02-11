@@ -367,7 +367,7 @@ export default function AddToJournalModal({
           }
 
         const response = await fetch(
-            `/api/odds?team=${encodeURIComponent(team.trim())}`
+            `/api/odds?team=${encodeURIComponent(team.trim())}&opponent=${encodeURIComponent((opponent || '').trim())}&game_date=${encodeURIComponent((gameDate || '').trim())}`
           );
           
           if (!response.ok) {
@@ -668,7 +668,7 @@ export default function AddToJournalModal({
 
       try {
         const response = await fetch(
-          `/api/odds?team=${encodeURIComponent(selectedGame.homeTeam)}`
+          `/api/odds?team=${encodeURIComponent(selectedGame.homeTeam)}&opponent=${encodeURIComponent(selectedGame.awayTeam)}&game_date=${encodeURIComponent(selectedGame.gameDate || '')}`
         );
         
         if (!response.ok) {
@@ -1549,7 +1549,7 @@ export default function AddToJournalModal({
           : 'max-w-md h-full lg:h-[90vh]'
       }`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 pb-4 pt-[calc(env(safe-area-inset-top,0px)+3rem)] lg:p-6 lg:pb-4 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add to Journal</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -2839,7 +2839,7 @@ export default function AddToJournalModal({
               <div className="bg-white dark:bg-[#0a1929] w-full h-full flex flex-col shadow-xl">
                 <div
                   className="flex items-center justify-between px-4 pb-4 border-b border-gray-200 dark:border-gray-600"
-                  style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2.25rem)' }}
+                  style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}
                 >
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bet Slip</h3>
                   <button
@@ -3037,7 +3037,6 @@ export default function AddToJournalModal({
                         <button
                           type="submit"
                           form="journal-form"
-                          onClick={() => setShowBetSlipMobile(false)}
                           className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={loading || parlaySelections.length < 2}
                         >

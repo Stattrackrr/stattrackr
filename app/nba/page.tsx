@@ -407,12 +407,14 @@ export default function NBALandingPage() {
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showAflComingSoonPopup, setShowAflComingSoonPopup] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    setShowAflComingSoonPopup(true);
     // Set dropdown container to document.body for portal rendering
     if (typeof document !== 'undefined') {
       setDropdownContainer(document.body);
@@ -5555,6 +5557,44 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           }
         }}
       />
+
+      {mounted && showAflComingSoonPopup && (
+        <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 px-4">
+          <div
+            className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
+              isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-white border-gray-200'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>🏉 AFL Launch Update</h3>
+                <p className={`mt-2 text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  AFL is launching soon and will be live before the season begins. 🚀 We are building the most advanced AFL props and analytics experience on the market. 📊
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAflComingSoonPopup(false)}
+                className={`rounded p-1 transition-colors ${
+                  isDark ? 'text-gray-400 hover:bg-[#10243e] hover:text-gray-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                }`}
+                aria-label="Close AFL announcement"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAflComingSoonPopup(false)}
+              className="mt-4 w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

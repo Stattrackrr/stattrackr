@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const player = searchParams.get('player');
     const team = searchParams.get('team');
+    const opponent = searchParams.get('opponent');
+    const gameDate = searchParams.get('game_date');
     const checkTimestamp = searchParams.get('check_timestamp') === '1';
     
     // Get bulk cached odds data - check Supabase first (persistent, shared across instances)
@@ -117,11 +119,39 @@ export async function GET(request: NextRequest) {
     
     // If team is provided, find game odds for that matchup
     if (team) {
-      const game = oddsCache.games.find((g: any) => {
+      const normalize = (v: string | null | undefined) => String(v || '').trim().toLowerCase();
+      const dateKey = (v: string | null | undefined) => {
+        const s = String(v || '');
+        if (!s) return '';
+        const i = s.indexOf('T');
+        return i >= 0 ? s.slice(0, i) : s.slice(0, 10);
+      };
+
+      const normalizedTeam = normalize(team);
+      const normalizedOpponent = normalize(opponent);
+      const requestedDateKey = dateKey(gameDate);
+
+      const candidates = oddsCache.games.filter((g: any) => {
         const homeMatch = gameInvolvesTeam(g.homeTeam, g.awayTeam, team);
         const awayMatch = gameInvolvesTeam(g.awayTeam, g.homeTeam, team);
         return homeMatch || awayMatch;
       });
+
+      const withTeamAndOpponent = normalizedOpponent
+        ? candidates.filter((g: any) => {
+            const home = normalize(g.homeTeam);
+            const away = normalize(g.awayTeam);
+            const teamMatches = home.includes(normalizedTeam) || away.includes(normalizedTeam) || normalizedTeam.includes(home) || normalizedTeam.includes(away);
+            const oppMatches = home.includes(normalizedOpponent) || away.includes(normalizedOpponent) || normalizedOpponent.includes(home) || normalizedOpponent.includes(away);
+            return teamMatches && oppMatches;
+          })
+        : candidates;
+
+      const withDate = requestedDateKey
+        ? withTeamAndOpponent.filter((g: any) => dateKey(g.commenceTime) === requestedDateKey)
+        : withTeamAndOpponent;
+
+      const game = (withDate[0] || withTeamAndOpponent[0] || candidates[0]) ?? null;
       
       if (!game) {
         return NextResponse.json({
