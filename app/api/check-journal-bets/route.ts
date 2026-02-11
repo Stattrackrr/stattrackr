@@ -38,6 +38,14 @@ const logDebug = (...args: Parameters<typeof console.log>) => {
   }
 };
 
+function isGameFinalByScoresOrStatus(game: any): boolean {
+  const hasFinalScores = game?.home_team_score != null && game?.visitor_team_score != null;
+  const rawStatus = String(game?.status || '');
+  const gameStatus = rawStatus.toLowerCase();
+  const statusSaysFinal = gameStatus.includes('final') || rawStatus === 'Final';
+  return hasFinalScores || statusSaysFinal;
+}
+
 // Game prop stat types that don't require a player_id
 const GAME_PROP_STAT_TYPES = ['total_pts', 'home_total', 'away_total', 'first_half_total', 'second_half_total', 
                                'q1_total', 'q2_total', 'q3_total', 'q4_total', 
@@ -509,36 +517,35 @@ async function resolveParlayBet(
           continue; // Move to next leg
         }
         
-        // DIRECT LOOKUP: Fetch stats for this specific game and find player by playerId
-        // Use cached stats if we already fetched them in the fallback
-        let playerStat: any = null;
+        // STRICT PARLAY SETTLEMENT: always fetch fresh stats for completed games.
+        // Do not settle using cached live snapshots.
+        const statsResponse = await fetch(
+          `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGame.id}&player_ids[]=${leg.playerId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+            },
+          }
+        );
         
-        if (cachedPlayerStats) {
-          // Use the stats we already fetched in the fallback
-          playerStat = cachedPlayerStats;
-        } else {
-          // Fetch stats if we didn't get them from the fallback
-          const statsResponse = await fetch(
-            `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGame.id}&player_ids[]=${leg.playerId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-              },
-            }
-          );
-          
-          if (!statsResponse.ok) {
-            allLegsResolved = false;
-            continue;
-          }
-          
-          const statsData = await statsResponse.json();
-          if (!statsData.data || statsData.data.length === 0) {
-            allLegsResolved = false;
-            continue;
-          }
-          
-          playerStat = statsData.data[0]; // Should only be one result since we filtered by playerId
+        if (!statsResponse.ok) {
+          allLegsResolved = false;
+          continue;
+        }
+        
+        const statsData = await statsResponse.json();
+        if (!statsData.data || statsData.data.length === 0) {
+          allLegsResolved = false;
+          continue;
+        }
+        
+        const playerStat = statsData.data[0];
+        const statGameId = playerStat?.game?.id ?? playerStat?.game_id;
+        const statPlayerId = playerStat?.player?.id ?? playerStat?.player_id;
+        if (String(statGameId ?? '') !== String(targetGame.id) || String(statPlayerId ?? '') !== String(leg.playerId)) {
+          console.warn(`[check-journal-bets] Parlay leg "${leg.playerName}": stats identity mismatch, deferring settlement`);
+          allLegsResolved = false;
+          continue;
         }
         
         // Check if player played (void if < 0.01 minutes)
@@ -1119,6 +1126,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     let recalculate = url.searchParams.get('recalculate') === 'true';
     const betIdParam = url.searchParams.get('bet_id') || url.searchParams.get('id');
+    const latestParam = url.searchParams.get('latest') === 'true';
     
     // OPTIMIZATION: Determine if this is a cron request or user request
     // Cron requests process all users, user requests only process the authenticated user
@@ -1220,21 +1228,27 @@ export async function GET(request: Request) {
     
     let singleBets: any[];
     
-    // Single-bet re-run: only process one bet by id (e.g. to fix wrong actual_value)
-    if (betIdParam && betIdParam.trim()) {
-      const betId = betIdParam.trim();
-      // In production require login so users can only re-run their own bet; on localhost dev allow by id only
-      if (!userId && !allowLocalDev) {
+    // Single-bet re-run: process one bet by id, or the most recent bet via latest=true.
+    if ((betIdParam && betIdParam.trim()) || latestParam) {
+      const betId = betIdParam?.trim();
+      // In production require login (or cron auth) so users can only re-run their own bet.
+      if (!userId && !allowLocalDev && !isCronRequest) {
         return NextResponse.json(
-          { error: 'Must be logged in to re-run a single bet. Open the journal while signed in and call the API from the same origin, or use recalculate=true with cron.' },
+          { error: 'Must be logged in to re-run a single bet. Open the journal while signed in and call the API from the same origin, or use cron auth.' },
           { status: 401 }
         );
       }
       let singleBetQuery = supabaseAdmin
         .from('bets')
         .select('*')
-        .eq('id', betId)
         .eq('sport', 'NBA');
+      if (betId) {
+        singleBetQuery = singleBetQuery.eq('id', betId);
+      } else {
+        singleBetQuery = singleBetQuery
+          .order('created_at', { ascending: false })
+          .limit(1);
+      }
       if (userId) singleBetQuery = singleBetQuery.eq('user_id', userId);
       const { data: singleBet, error: singleError } = await singleBetQuery.maybeSingle();
       if (singleError) {
@@ -1243,13 +1257,14 @@ export async function GET(request: Request) {
       }
       if (!singleBet) {
         return NextResponse.json(
-          { error: 'Bet not found or not yours. Use the bet ID from the journal (e.g. from the URL or API).' },
+          { error: latestParam ? 'No recent NBA bet found for this scope.' : 'Bet not found or not yours. Use the bet ID from the journal (e.g. from the URL or API).' },
           { status: 404 }
         );
       }
       singleBets = [singleBet];
       recalculate = true; // Force re-evaluation so actual_value/result get updated
-      console.log(`[check-journal-bets] Single-bet mode: re-running bet ${betId} (${singleBet.player_name || singleBet.stat_type})`);
+      const selectedBetId = singleBet.id;
+      console.log(`[check-journal-bets] Single-bet mode: re-running bet ${selectedBetId} (${singleBet.player_name || singleBet.stat_type})`);
     } else {
       // Fetch bets in batches to avoid loading all into memory
       const [playerProps, gameProps] = await Promise.all([
@@ -1275,7 +1290,7 @@ export async function GET(request: Request) {
       });
     }
     
-    console.log(`[check-journal-bets] After filtering: ${singleBets.length} single bets to process${betIdParam ? ' (single-bet mode)' : ''}`);
+    console.log(`[check-journal-bets] After filtering: ${singleBets.length} single bets to process${(betIdParam || latestParam) ? ' (single-bet mode)' : ''}`);
     
     // Then get parlay bets (market contains "Parlay") in batches — skip when re-running a single bet
     let parlayBetsQuery = supabaseAdmin
@@ -1289,7 +1304,7 @@ export async function GET(request: Request) {
       parlayBetsQuery = parlayBetsQuery.eq('user_id', userId);
     }
     
-    if (!betIdParam) {
+    if (!(betIdParam || latestParam)) {
       if (recalculate) {
         parlayBetsQuery = parlayBetsQuery.in('result', ['pending', 'win', 'loss']);
       } else {
@@ -1298,7 +1313,7 @@ export async function GET(request: Request) {
       }
     }
     
-    const parlayBets = betIdParam ? [] : await fetchBetsInBatches(parlayBetsQuery);
+    const parlayBets = (betIdParam || latestParam) ? [] : await fetchBetsInBatches(parlayBetsQuery);
     
     // Filter out completed parlay bets in normal mode
     let filteredParlayBets = parlayBets || [];
@@ -1381,7 +1396,7 @@ export async function GET(request: Request) {
     
     // SPORTSBOOK-STANDARD: Collect ALL parlay leg stats needs upfront for batch fetching
     // This matches how sportsbooks operate - they batch all requests together
-    const parlayStatsNeeded = new Map<string, { gameId: number; playerId: number; gameDate: string }>();
+    const parlayStatsNeeded = new Map<string, { gameId: number; playerId: number; gameDate: string; isGameFinal: boolean }>();
     const parlayGamesCache = new Map<string, any[]>(); // Cache games by date for parlay processing
     
     // First, fetch all games needed for parlays
@@ -1430,7 +1445,12 @@ export async function GET(request: Request) {
             if (targetGame && targetGame.id) {
               const key = `${targetGame.id}_${leg.playerId}`;
               if (!parlayStatsNeeded.has(key)) {
-                parlayStatsNeeded.set(key, { gameId: targetGame.id, playerId: leg.playerId, gameDate: legGameDate });
+                parlayStatsNeeded.set(key, {
+                  gameId: targetGame.id,
+                  playerId: leg.playerId,
+                  gameDate: legGameDate,
+                  isGameFinal: isGameFinalByScoresOrStatus(targetGame),
+                });
               }
             }
           }
@@ -1479,10 +1499,11 @@ export async function GET(request: Request) {
       }
       
       // Determine which stats need to be fetched from API
-      const parlayStatsToFetch: Array<{ gameId: number; playerId: number; key: string; gameDate: string }> = [];
-      for (const [key, { gameId, playerId, gameDate }] of parlayStatsNeeded) {
-        if (!globalParlayStatsCache.has(key)) {
-          parlayStatsToFetch.push({ gameId, playerId, key, gameDate });
+      const parlayStatsToFetch: Array<{ gameId: number; playerId: number; key: string; gameDate: string; isGameFinal: boolean }> = [];
+      for (const [key, { gameId, playerId, gameDate, isGameFinal }] of parlayStatsNeeded) {
+        // For final games, always re-fetch fresh stats from API to avoid stale cached in-game snapshots.
+        if (isGameFinal || !globalParlayStatsCache.has(key)) {
+          parlayStatsToFetch.push({ gameId, playerId, key, gameDate, isGameFinal });
         }
       }
       
@@ -1519,7 +1540,7 @@ export async function GET(request: Request) {
               
               // Store fetched stats in cache and database
               const statsToCache: any[] = [];
-              for (const { gameId, playerId, key, gameDate } of parlayStatsToFetch) {
+              for (const { gameId, playerId, key, gameDate, isGameFinal } of parlayStatsToFetch) {
                 const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
                 if (stat) {
                   // Normalize stats structure for consistent access (same format as database cache)
@@ -1538,31 +1559,34 @@ export async function GET(request: Request) {
                   };
                   globalParlayStatsCache.set(key, normalizedStat);
                   
-                  statsToCache.push({
-                    game_id: gameId,
-                    player_id: playerId,
-                    pts: normalizedStat.pts,
-                    reb: normalizedStat.reb,
-                    ast: normalizedStat.ast,
-                    stl: normalizedStat.stl,
-                    blk: normalizedStat.blk,
-                    fg3m: normalizedStat.fg3m,
-                    pra: normalizedStat.pra,
-                    pr: normalizedStat.pr,
-                    pa: normalizedStat.pa,
-                    ra: normalizedStat.ra,
-                    min: normalizedStat.min,
-                    team_id: stat.team?.id,
-                    team_abbreviation: stat.team?.abbreviation,
-                    opponent_id: stat.game?.home_team?.id === stat.team?.id 
-                      ? stat.game?.visitor_team?.id 
-                      : stat.game?.home_team?.id,
-                    opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
-                      ? stat.game?.visitor_team?.abbreviation
-                      : stat.game?.home_team?.abbreviation,
-                    game_date: gameDate,
-                    updated_at: new Date().toISOString(),
-                  });
+                  // Persist only final-game stats to avoid saving transient live snapshots.
+                  if (isGameFinal) {
+                    statsToCache.push({
+                      game_id: gameId,
+                      player_id: playerId,
+                      pts: normalizedStat.pts,
+                      reb: normalizedStat.reb,
+                      ast: normalizedStat.ast,
+                      stl: normalizedStat.stl,
+                      blk: normalizedStat.blk,
+                      fg3m: normalizedStat.fg3m,
+                      pra: normalizedStat.pra,
+                      pr: normalizedStat.pr,
+                      pa: normalizedStat.pa,
+                      ra: normalizedStat.ra,
+                      min: normalizedStat.min,
+                      team_id: stat.team?.id,
+                      team_abbreviation: stat.team?.abbreviation,
+                      opponent_id: stat.game?.home_team?.id === stat.team?.id 
+                        ? stat.game?.visitor_team?.id 
+                        : stat.game?.home_team?.id,
+                      opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
+                        ? stat.game?.visitor_team?.abbreviation
+                        : stat.game?.home_team?.abbreviation,
+                      game_date: gameDate,
+                      updated_at: new Date().toISOString(),
+                    });
+                  }
                 }
               }
               
@@ -1670,7 +1694,7 @@ export async function GET(request: Request) {
       }
       
       // Group player prop bets by unique (game_id, player_id) for deduplication
-      const statsNeeded = new Map<string, { gameId: number; playerId: number; bets: Array<{ bet: any; game: any }> }>();
+      const statsNeeded = new Map<string, { gameId: number; playerId: number; isGameFinal: boolean; bets: Array<{ bet: any; game: any }> }>();
       
       for (const { bet, game, isGameProp } of betsWithGames) {
         // Skip game props (they don't need player stats)
@@ -1681,7 +1705,12 @@ export async function GET(request: Request) {
         
         const key = `${game.id}_${bet.player_id}`;
         if (!statsNeeded.has(key)) {
-          statsNeeded.set(key, { gameId: game.id, playerId: bet.player_id, bets: [] });
+          statsNeeded.set(key, {
+            gameId: game.id,
+            playerId: bet.player_id,
+            isGameFinal: isGameFinalByScoresOrStatus(game),
+            bets: [],
+          });
         }
         statsNeeded.get(key)!.bets.push({ bet, game });
       }
@@ -1731,10 +1760,11 @@ export async function GET(request: Request) {
       }
       
       // Determine which stats need to be fetched from API
-      const statsToFetch: Array<{ gameId: number; playerId: number; key: string }> = [];
-      for (const [key, { gameId, playerId }] of statsNeeded) {
-        if (!cacheResults.has(key)) {
-          statsToFetch.push({ gameId, playerId, key });
+      const statsToFetch: Array<{ gameId: number; playerId: number; key: string; isGameFinal: boolean }> = [];
+      for (const [key, { gameId, playerId, isGameFinal }] of statsNeeded) {
+        // For final games, always re-fetch from API to avoid stale cached values.
+        if (isGameFinal || !cacheResults.has(key)) {
+          statsToFetch.push({ gameId, playerId, key, isGameFinal });
         } else {
           statsCache.set(key, cacheResults.get(key));
         }
@@ -1777,7 +1807,7 @@ export async function GET(request: Request) {
               
               // Store fetched stats in cache and database
               const statsToCache: any[] = [];
-              for (const { gameId, playerId, key } of statsToFetch) {
+              for (const { gameId, playerId, key, isGameFinal } of statsToFetch) {
                 const stat = fetchedStatsMap.get(`${gameId}_${playerId}`);
                 if (stat) {
                   // Normalize stats structure for consistent access (same format as database cache)
@@ -1803,31 +1833,34 @@ export async function GET(request: Request) {
                   const ra = normalizedStat.reb + normalizedStat.ast;
                   
                   // Prepare for database cache
-                  statsToCache.push({
-                    game_id: gameId,
-                    player_id: playerId,
-                    pts: normalizedStat.pts,
-                    reb: normalizedStat.reb,
-                    ast: normalizedStat.ast,
-                    stl: normalizedStat.stl,
-                    blk: normalizedStat.blk,
-                    fg3m: normalizedStat.fg3m,
-                    pra: pra,
-                    pr: pr,
-                    pa: pa,
-                    ra: ra,
-                    min: normalizedStat.min,
-                    team_id: stat.team?.id,
-                    team_abbreviation: stat.team?.abbreviation,
-                    opponent_id: stat.game?.home_team?.id === stat.team?.id 
-                      ? stat.game?.visitor_team?.id 
-                      : stat.game?.home_team?.id,
-                    opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
-                      ? stat.game?.visitor_team?.abbreviation
-                      : stat.game?.home_team?.abbreviation,
-                    game_date: gameDate,
-                    updated_at: new Date().toISOString(),
-                  });
+                  // Persist only final-game stats to avoid writing in-progress values to cache.
+                  if (isGameFinal) {
+                    statsToCache.push({
+                      game_id: gameId,
+                      player_id: playerId,
+                      pts: normalizedStat.pts,
+                      reb: normalizedStat.reb,
+                      ast: normalizedStat.ast,
+                      stl: normalizedStat.stl,
+                      blk: normalizedStat.blk,
+                      fg3m: normalizedStat.fg3m,
+                      pra: pra,
+                      pr: pr,
+                      pa: pa,
+                      ra: ra,
+                      min: normalizedStat.min,
+                      team_id: stat.team?.id,
+                      team_abbreviation: stat.team?.abbreviation,
+                      opponent_id: stat.game?.home_team?.id === stat.team?.id 
+                        ? stat.game?.visitor_team?.id 
+                        : stat.game?.home_team?.id,
+                      opponent_abbreviation: stat.game?.home_team?.abbreviation === stat.team?.abbreviation
+                        ? stat.game?.visitor_team?.abbreviation
+                        : stat.game?.home_team?.abbreviation,
+                      game_date: gameDate,
+                      updated_at: new Date().toISOString(),
+                    });
+                  }
                 }
               }
               
@@ -1951,88 +1984,8 @@ export async function GET(request: Request) {
           completedAt = new Date(now - (60 * 60 * 1000));
         }
         
-        // If game is live but not completed, check if bet can be determined early
+        // If game is live but not completed, only mark as live (never settle early).
         if (isLive && !isCompleted) {
-          // Fetch live stats to check if bet can be determined
-          if (!isGameProp && bet.player_id) {
-            const liveStatsResponse = await fetch(
-              `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${bet.player_id}`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-                },
-              }
-            );
-
-            if (liveStatsResponse.ok) {
-              const liveStatsData = await liveStatsResponse.json();
-              if (liveStatsData.data && liveStatsData.data.length > 0) {
-                const livePlayerStat = liveStatsData.data[0];
-                
-                // Calculate current stat value
-                const liveStats: PlayerStats = {
-                  pts: livePlayerStat.pts || 0,
-                  reb: livePlayerStat.reb || 0,
-                  ast: livePlayerStat.ast || 0,
-                  stl: livePlayerStat.stl || 0,
-                  blk: livePlayerStat.blk || 0,
-                  fg3m: livePlayerStat.fg3m || 0,
-                };
-
-                let currentValue = 0;
-                switch (bet.stat_type) {
-                  case 'pts': currentValue = liveStats.pts; break;
-                  case 'reb': currentValue = liveStats.reb; break;
-                  case 'ast': currentValue = liveStats.ast; break;
-                  case 'pa': currentValue = liveStats.pts + liveStats.ast; break;
-                  case 'pr': currentValue = liveStats.pts + liveStats.reb; break;
-                  case 'pra': currentValue = liveStats.pts + liveStats.reb + liveStats.ast; break;
-                  case 'ra': currentValue = liveStats.reb + liveStats.ast; break;
-                  case 'stl': currentValue = liveStats.stl; break;
-                  case 'blk': currentValue = liveStats.blk; break;
-                  case 'fg3m': currentValue = liveStats.fg3m; break;
-                }
-
-                // Check if bet can be determined early
-                const line = Number(bet.line);
-                const isWholeNumber = line % 1 === 0;
-                let canDetermineEarly = false;
-                let earlyResult: 'win' | 'loss' | null = null;
-
-                if (bet.over_under === 'over') {
-                  // For "over" bets: can determine win if player has reached/exceeded the line
-                  if (isWholeNumber ? currentValue >= line : currentValue > line) {
-                    canDetermineEarly = true;
-                    earlyResult = 'win';
-                  }
-                } else if (bet.over_under === 'under') {
-                  // For "under" bets: can determine loss if player has exceeded the line
-                  // For whole numbers: if current > line, it's a loss
-                  // For decimals: if current >= line, it's a loss
-                  if (isWholeNumber ? currentValue > line : currentValue >= line) {
-                    canDetermineEarly = true;
-                    earlyResult = 'loss';
-                  }
-                }
-
-                if (canDetermineEarly && earlyResult) {
-                  // Mark bet as win/loss immediately, but keep status as 'live' since game is still ongoing
-                  console.log(`[check-journal-bets] 🎯 Early determination: Bet ${bet.id} (${bet.player_name}) ${bet.over_under} ${line} ${bet.stat_type} - Current: ${currentValue}, Result: ${earlyResult}`);
-                  await supabaseAdmin
-                    .from('bets')
-                    .update({
-                      status: 'live', // Keep as live since game is still ongoing
-                      result: earlyResult,
-                      actual_value: currentValue,
-                    })
-                    .eq('id', bet.id);
-                  updatedCountRef.value++;
-                  continue;
-                }
-              }
-            }
-          }
-          
           // Handle live game props - they can't be determined early, just mark as live
           if (isGameProp) {
             await supabaseAdmin
@@ -2175,12 +2128,26 @@ export async function GET(request: Request) {
           continue; // Skip player stats fetching for game props
         }
 
-        // Get player stats from cache (already fetched and cached above)
-        const statsKey = `${game.id}_${bet.player_id}`;
-        const playerStat = statsCache.get(statsKey);
-        
+        // SAFETY: For completed games, always fetch fresh player stats before settlement.
+        // This prevents finalizing against stale in-progress cache values.
+        const finalStatsResponse = await fetch(
+          `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${bet.player_id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+            },
+          }
+        );
+
+        if (!finalStatsResponse.ok) {
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): final stats fetch failed (${finalStatsResponse.status}), deferring settlement`);
+          continue;
+        }
+
+        const finalStatsData = await finalStatsResponse.json();
+        const playerStat = finalStatsData?.data?.[0];
         if (!playerStat) {
-          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): No stats found for player ${bet.player_id} in game ${game.id}`);
+          console.log(`[check-journal-bets] Single bet ${bet.id} (${bet.player_name}): no final stats yet for player ${bet.player_id} in game ${game.id}, deferring settlement`);
           continue;
         }
         
