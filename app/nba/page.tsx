@@ -240,6 +240,9 @@ const SESSION_STORAGE_MAX_SIZE = 4 * 1024 * 1024; // 4MB (conservative limit, mo
 const BATCH_DELAY_MS = 500;
 const ODDS_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
+const AFL_POPUP_DISMISSED_KEY = 'afl_launch_popup_dismissed_v1';
+const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
+const AFL_NOTIFICATION_ID = 'afl-launch-update-2026';
 
 export default function NBALandingPage() {
   const router = useRouter();
@@ -411,10 +414,37 @@ export default function NBALandingPage() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
+  const dismissAflComingSoonPopup = useCallback(() => {
+    setShowAflComingSoonPopup(false);
+    try {
+      localStorage.setItem(AFL_POPUP_DISMISSED_KEY, '1');
+      const existingRaw = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      const hasAflNotification = Array.isArray(existing) && existing.some((n: any) => n?.id === AFL_NOTIFICATION_ID);
+      if (!hasAflNotification) {
+        const aflNotification = {
+          id: AFL_NOTIFICATION_ID,
+          title: 'AFL Launch Update',
+          content: 'AFL is launching soon and will be live before the season begins. We are building the most advanced AFL props and analytics experience on the market.',
+          date: new Date().toISOString(),
+          read: false,
+        };
+        const next = Array.isArray(existing) ? [aflNotification, ...existing] : [aflNotification];
+        localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(next));
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   useEffect(() => {
     setMounted(true);
-    setShowAflComingSoonPopup(true);
+    try {
+      const dismissed = localStorage.getItem(AFL_POPUP_DISMISSED_KEY) === '1';
+      setShowAflComingSoonPopup(!dismissed);
+    } catch {
+      setShowAflComingSoonPopup(true);
+    }
     // Set dropdown container to document.body for portal rendering
     if (typeof document !== 'undefined') {
       setDropdownContainer(document.body);
@@ -5574,7 +5604,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               </div>
               <button
                 type="button"
-                onClick={() => setShowAflComingSoonPopup(false)}
+                onClick={dismissAflComingSoonPopup}
                 className={`rounded p-1 transition-colors ${
                   isDark ? 'text-gray-400 hover:bg-[#10243e] hover:text-gray-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                 }`}
@@ -5587,7 +5617,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             </div>
             <button
               type="button"
-              onClick={() => setShowAflComingSoonPopup(false)}
+              onClick={dismissAflComingSoonPopup}
               className="mt-4 w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
             >
               Got it
