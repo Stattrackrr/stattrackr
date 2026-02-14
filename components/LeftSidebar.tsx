@@ -277,8 +277,9 @@ export default function LeftSidebar({
     );
   };
 
-  const sports = [
-    { name: "NBA", href: "/nba", logo: <SportLogo sport="nba" /> },
+  type SportEntry = { name: string; href: string; logo: React.ReactNode; comingSoon?: boolean; comingSoonText?: string };
+  const sports: SportEntry[] = [
+    { name: "NBA", href: "/props", logo: <SportLogo sport="nba" /> },
     { name: "AFL", href: "#", comingSoon: true, comingSoonText: "EST 1st March", logo: <SportLogo sport="afl" /> },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
@@ -363,7 +364,7 @@ export default function LeftSidebar({
             <ul className="mt-1 space-y-1 pl-2">
               {sports.map((sport) => (
                 <li key={sport.name}>
-                  {sport.comingSoon ? (
+                  {sport.comingSoon === true ? (
                     <div
                       className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between gap-2"
                     >
@@ -372,7 +373,7 @@ export default function LeftSidebar({
                         <span>{sport.name} coming soon</span>
                       </span>
                       <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
-                        {sport.comingSoonText ?? "Coming Soon"}
+                        {sport.comingSoonText ?? 'Coming Soon'}
                       </span>
                     </div>
                   ) : (
@@ -392,7 +393,7 @@ export default function LeftSidebar({
         </div>
         
         {/* Today's Best Pick - NBA pages only (suspended for maintenance) */}
-        {pathname.startsWith('/nba') && (
+        {(pathname.startsWith('/nba') || pathname.startsWith('/props')) && (
           <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div
               className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-300 dark:border-gray-600 cursor-not-allowed"

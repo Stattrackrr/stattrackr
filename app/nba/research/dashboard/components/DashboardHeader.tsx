@@ -142,7 +142,7 @@ export function DashboardHeader({
                         sessionStorage.removeItem('last_prop_click');
                         sessionStorage.removeItem('last_prop_url');
                       } catch {}
-                      window.location.href = '/nba';
+                      window.location.href = '/props';
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
@@ -375,7 +375,7 @@ export function DashboardHeader({
                         sessionStorage.removeItem('last_prop_click');
                         sessionStorage.removeItem('last_prop_url');
                       } catch {}
-                      window.location.href = '/nba';
+                      window.location.href = '/props';
                     }}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >

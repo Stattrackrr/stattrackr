@@ -32,6 +32,8 @@ interface SimpleChartProps {
   withWithoutMode?: 'with' | 'without';
   clearTeammateFilter?: () => void;
   customXAxisTick?: any;
+  /** Optional Y-axis tick label formatter (e.g. show "-" for bottom tick in AFL chart) */
+  yAxisTickFormatter?: (value: number) => string;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -51,6 +53,7 @@ const SimpleChart = memo(function SimpleChart({
   withWithoutMode,
   clearTeammateFilter,
   customXAxisTick,
+  yAxisTickFormatter,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -477,7 +480,7 @@ const SimpleChart = memo(function SimpleChart({
     );
   }, [isDark, formatChartLabel, chartData.length, selectedStat, mergedChartData]);
 
-  // Limit Y-axis ticks to only 4: evenly spaced across the domain
+  // Y-axis ticks: evenly spaced. Use 3 ticks when range is small to avoid uneven/duplicate labels, else 4.
   const limitTicks = useCallback((ticks: number[], domain: [number, number]) => {
     if (!domain || !ticks || ticks.length === 0) {
       return ticks || [];
@@ -485,31 +488,24 @@ const SimpleChart = memo(function SimpleChart({
     
     const [minY, maxY] = domain;
     
-    // Use domain min/max for even spacing (prefer 0 if it's in the domain, otherwise use minY)
     const minTick = minY === 0 || domain[0] === 0 ? 0 : minY;
     const maxTick = maxY;
-    
-    // Calculate evenly spaced ticks: divide range into 3 equal parts for 4 ticks
     const range = maxTick - minTick;
-    const step = range / 3;
     
-    // Create 4 evenly spaced tick values
-    const evenTicks = [
+    if (range <= 3) {
+      // Small range: 3 evenly spaced ticks so labels stay distinct when rounded
+      const mid = minTick + range / 2;
+      return [minTick, mid, maxTick];
+    }
+    
+    // Normal: 4 evenly spaced ticks
+    const step = range / 3;
+    return [
       minTick,
       minTick + step,
-      minTick + (2 * step),
-      maxTick
+      minTick + 2 * step,
+      maxTick,
     ];
-    
-    // Round to reasonable precision for display
-    return evenTicks.map(tick => {
-      // If step is a whole number, round ticks to whole numbers
-      if (step >= 1) {
-        return Math.round(tick);
-      }
-      // For smaller steps, round to 1 decimal place
-      return Math.round(tick * 10) / 10;
-    });
   }, []);
 
   // Limit left Y-axis ticks to only 4
@@ -823,6 +819,7 @@ const SimpleChart = memo(function SimpleChart({
               domain={yAxisConfig.domain}
               ticks={limitedTicks}
               tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }}
+              tickFormatter={yAxisTickFormatter ?? ((v: number) => String(Math.round(v)))}
               axisLine={false}
               tickLine={false}
               width={32}
@@ -1071,7 +1068,9 @@ const SimpleChart = memo(function SimpleChart({
                   </g>
                 );
               } : (props: any) => {
-                const { x, y, width, height, fill } = props;
+                const { x, y, width, height, fill, payload } = props;
+                const barIndex = props['data-bar-index'] ?? props.index ?? -1;
+                const barValue = payload?.value ?? props['data-bar-value'];
                 const HOVER_H = 400;
                 const hoverH = HOVER_H;
                 const hoverY = y - HOVER_H;
@@ -1079,7 +1078,17 @@ const SimpleChart = memo(function SimpleChart({
                   <g>
                     {/* Invisible hover rect: full width, top 2/3 of bar slot */}
                     <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
-                    <rect x={x} y={y} width={width} height={height} fill={fill ?? '#888'} rx={10} ry={10} />
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      fill={fill ?? '#888'}
+                      rx={10}
+                      ry={10}
+                      data-bar-index={barIndex}
+                      data-bar-value={barValue}
+                    />
                   </g>
                 );
               }}

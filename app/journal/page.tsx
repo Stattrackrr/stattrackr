@@ -3987,7 +3987,7 @@ function JournalContent() {
           {/* Props */}
           <button
             data-props-button
-            onClick={() => router.push('/nba')}
+            onClick={() => router.push('/props')}
             className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

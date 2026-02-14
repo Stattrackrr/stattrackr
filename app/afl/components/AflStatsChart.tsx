@@ -220,24 +220,30 @@ export function AflStatsChart({
 
   const sliderStep = hasDecimalValues ? 0.1 : 0.5;
 
+  // Y-axis: 0 at bottom, 4 ticks. Goals/marks: top = max+1; others: top = next multiple of 5 (NBA style)
   const yAxisConfig = useMemo(() => {
-    if (!chartData.length) return { domain: [0, 10] as [number, number], ticks: [0, 2, 4, 6, 8, 10] };
+    if (!chartData.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
     const values = chartData.map((d) => d.value);
-    const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const lower = Math.max(0, Math.floor(minValue * 0.85));
-    const upper = Math.max(lower + 1, Math.ceil(maxValue * 1.2));
-    const range = upper - lower;
-    const step = Math.max(1, Math.ceil(range / 5));
-    const ticks = Array.from({ length: 6 }, (_, i) => lower + i * step);
-    const axisMax = ticks[ticks.length - 1] ?? upper;
+    const useMaxPlusOne = selectedStat === 'goals' || selectedStat === 'marks';
+    const max = useMaxPlusOne
+      ? Math.max(Math.ceil(maxValue) + 1, 1)
+      : Math.max(Math.ceil(maxValue / 5) * 5, 5);
+    const step = max / 3;
+    const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
+    const ticks: number[] = [
+      0,
+      useDecimals ? Math.round(step * 10) / 10 : Math.round(step),
+      useDecimals ? Math.round(step * 2 * 10) / 10 : Math.round(step * 2),
+      max,
+    ];
 
     return {
-      domain: [lower, axisMax] as [number, number],
+      domain: [0, max] as [number, number],
       ticks,
     };
-  }, [chartData]);
+  }, [chartData, selectedStat]);
 
   const selectedStatLabel = useMemo(() => formatStatLabel(selectedStat || 'stat'), [selectedStat]);
 
@@ -407,6 +413,7 @@ export function AflStatsChart({
           selectedTimeframe={selectedTimeframe}
           customTooltip={customTooltip}
           customXAxisTick={aflXAxisTick}
+          yAxisTickFormatter={(value) => String(Math.round(value))}
         />
       </div>
     </div>

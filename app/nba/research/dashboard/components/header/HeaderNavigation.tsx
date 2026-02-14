@@ -49,7 +49,7 @@ export function HeaderNavigation({
     <div className={isDesktop ? 'hidden lg:flex items-center justify-between h-16 px-4 relative' : 'flex items-center justify-between h-16 px-4'}>
       {/* Props */}
       <button
-        onClick={() => router.push('/nba')}
+        onClick={() => router.push('/props')}
         className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -178,7 +178,7 @@ export default function PricingPage() {
       
       // Redirect pro users to props page immediately after checking
       if (premiumStatus) {
-        router.replace('/nba');
+        router.replace('/props');
         return; // Don't set isCheckingSubscription to false, let redirect happen
       }
       
@@ -370,10 +370,10 @@ export default function PricingPage() {
           <button
             onClick={() => {
               if (!isLoggedIn) {
-                router.push('/login?redirect=/nba');
+                router.push('/login?redirect=/props');
                 return;
               }
-              router.push('/nba');
+              router.push('/props');
             }}
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
@@ -461,7 +461,7 @@ export default function PricingPage() {
                 onClick={() => {
                   setShowDashboardDropdown(false);
                   if (!isLoggedIn) {
-                    router.push('/login?redirect=/nba');
+                    router.push('/login?redirect=/props');
                     return;
                   }
                   if (!hasPremium) {
@@ -469,7 +469,7 @@ export default function PricingPage() {
                     element?.scrollIntoView({ behavior: 'smooth' });
                     return;
                   }
-                  router.push('/nba');
+                  router.push('/props');
                 }}
                 className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors flex items-center gap-2 ${
                   !hasPremium
@@ -489,10 +489,10 @@ export default function PricingPage() {
                 onClick={() => {
                   setShowDashboardDropdown(false);
                   if (!isLoggedIn) {
-                    router.push('/login?redirect=/nba');
+                    router.push('/login?redirect=/props');
                     return;
                   }
-                  router.push('/nba');
+                  router.push('/props');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
@@ -543,7 +543,7 @@ export default function PricingPage() {
             data-dashboard-button
             onClick={() => {
               if (!isLoggedIn) {
-                router.push('/login?redirect=/nba');
+                router.push('/login?redirect=/props');
                 return;
               }
               setShowDashboardDropdown(!showDashboardDropdown);
@@ -1653,7 +1653,7 @@ export default function PricingPage() {
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => router.push('/nba')} className="text-gray-400 hover:text-white text-sm transition-colors">
+                    <button onClick={() => router.push('/props')} className="text-gray-400 hover:text-white text-sm transition-colors">
                       Dashboard
                     </button>
                   </li>

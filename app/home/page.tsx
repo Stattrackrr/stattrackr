@@ -181,7 +181,7 @@ export default function HomePage() {
   // Logged-in Pro users: redirect to props page, don't show home
   useEffect(() => {
     if (!isCheckingSubscription && user && hasPremium) {
-      router.replace('/nba');
+      router.replace('/props');
     }
   }, [isCheckingSubscription, user, hasPremium, router]);
 
@@ -325,7 +325,7 @@ export default function HomePage() {
     );
   }
 
-  // Logged-in Pro: redirect to /nba; show loading until redirect
+  // Logged-in Pro: redirect to /props; show loading until redirect
   if (user && hasPremium) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
@@ -362,7 +362,7 @@ export default function HomePage() {
                     <>
                       <span className="text-sm text-gray-400">Pro Member</span>
                       <button
-                        onClick={() => router.push('/nba')}
+                        onClick={() => router.push('/props')}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
                       >
                         Go to App
@@ -1080,7 +1080,7 @@ export default function HomePage() {
           </p>
           <button
             onClick={() => {
-              if (user && hasPremium) router.push('/nba');
+              if (user && hasPremium) router.push('/props');
               else if (user) router.push('/home#pricing');
               else router.push('/login');
             }}
@@ -1116,7 +1116,7 @@ export default function HomePage() {
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><button onClick={() => router.push('/nba')} className="hover:text-white transition-colors">Player Props</button></li>
+                <li><button onClick={() => router.push('/props')} className="hover:text-white transition-colors">Player Props</button></li>
                 <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">Dashboard</button></li>
               </ul>
             </div>
