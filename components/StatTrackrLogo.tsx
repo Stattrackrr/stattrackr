@@ -5,15 +5,15 @@ import { useEffect, useState } from "react";
 
 export function StatTrackrLogo({ className = "w-16 h-16" }: { className?: string }) {
   return (
-    <div className={`${className} relative`}>
-      {/* Your actual logo image */}
+    <div className={`${className} relative flex-shrink-0 overflow-visible`}>
       <Image
-        src="/images/stattrackr-icon.png"
+        src="/images/transparent-photo.png"
         alt="StatTrackr Logo"
         width={200}
         height={200}
         className="w-full h-full object-contain"
         priority
+        unoptimized
       />
     </div>
   );
@@ -23,12 +23,15 @@ export function StatTrackrLogoWithText({
   logoSize = "w-12 h-12", 
   textSize = "text-3xl",
   className = "",
-  isDark = false
+  isDark = false,
+  textGradient = false
 }: { 
   logoSize?: string;
   textSize?: string;
   className?: string;
   isDark?: boolean;
+  /** Purple gradient text (left = purple, right = lighter purple) */
+  textGradient?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -36,12 +39,14 @@ export function StatTrackrLogoWithText({
     setMounted(true);
   }, []);
 
+  const textClassName = textGradient
+    ? `font-bold ${textSize} bg-gradient-to-r from-purple-800 to-purple-400 bg-clip-text text-transparent`
+    : `font-bold ${textSize} ${mounted && isDark ? 'text-white' : 'text-black'}`;
+
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       <StatTrackrLogo className={logoSize} />
-      <span 
-        className={`font-bold ${textSize} ${mounted && isDark ? 'text-white' : 'text-black'}`}
-      >
+      <span className={textClassName}>
         StatTrackr
       </span>
     </div>

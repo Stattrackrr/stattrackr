@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
+import { StatTrackrLogo, StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
 import { getBookmakerInfo } from '@/lib/bookmakers';
@@ -1788,11 +1788,7 @@ function JournalContent() {
              <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4">
                <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4">
                  <div className="flex items-center gap-2 md:gap-3">
-                   <StatTrackrLogoWithText 
-                     logoSize="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" 
-                     textSize="text-sm md:text-base lg:text-lg xl:text-xl" 
-                     isDark={isDark}
-                   />
+                   <StatTrackrLogo className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
                  </div>
                  
                  {/* Currency */}

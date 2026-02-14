@@ -270,9 +270,11 @@ export default function NBALandingPage() {
   const [playerProps, setPlayerProps] = useState<PlayerProp[]>([]);
   const [propsLoading, setPropsLoading] = useState(true);
   const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
+  const [showNoPropsMessage, setShowNoPropsMessage] = useState(false); // After 8s with no props, show "come back later"
   const [mounted, setMounted] = useState(false);
   const propsLoadedRef = useRef(false); // Track if props are already loaded to prevent redundant fetches
   const initialFetchCompletedRef = useRef(false); // Track if initial fetch has completed
+  const playerPropsRef = useRef(playerProps);
   const [dropdownContainer, setDropdownContainer] = useState<HTMLElement | null>(null);
   const [navigatingToPlayer, setNavigatingToPlayer] = useState(false);
   const navigatingRef = useRef(false);
@@ -499,6 +501,21 @@ export default function NBALandingPage() {
     }
     
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Keep playerPropsRef in sync for 8-second no-props check
+  useEffect(() => {
+    playerPropsRef.current = playerProps;
+  }, [playerProps]);
+
+  // After 8 seconds of trying with no props, show "no props found come back later"
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (playerPropsRef.current.length === 0) {
+        setShowNoPropsMessage(true);
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
   }, []);
 
   // Reset to first page and close popups whenever filters or sorting change
@@ -3493,6 +3510,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 </h2>
                 
                 {filteredPlayerProps.length === 0 ? (
+                    showNoPropsMessage ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
+                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p className="text-lg font-medium mb-2">No props found</p>
+                        <p className="text-sm">Come back later</p>
+                      </div>
+                    ) : (
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -3608,6 +3633,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         ))}
                       </div>
                     </>
+                    )
                   ) : filteredPlayerProps.length > 0 ? (
                     <>
                       {/* Desktop Table View - Hidden on mobile */}

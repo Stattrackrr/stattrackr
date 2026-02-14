@@ -315,9 +315,10 @@ export default function LeftSidebar({
           <div className="flex items-center gap-2">
             <Link href="/home" className="cursor-pointer hover:opacity-80 transition-opacity">
               <StatTrackrLogoWithText 
-                logoSize="w-10 h-10" 
+                logoSize="w-12 h-12" 
                 textSize="text-2xl" 
                 isDark={isDark}
+                textGradient
               />
             </Link>
             {pathname === "/journal" && (
