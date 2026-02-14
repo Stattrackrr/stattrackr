@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
-import TimeframeBtn from '@/app/nba/research/dashboard/components/ui/TimeframeBtn';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 
 const STAT_PRIORITY = [
@@ -137,6 +136,9 @@ export function AflStatsChart({
   const [selectedTimeframe, setSelectedTimeframe] =
     useState<(typeof TIMEFRAME_OPTIONS)[number]>('last10');
   const [lineValue, setLineValue] = useState(0);
+  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!availableStats.length) {
@@ -279,7 +281,35 @@ export function AflStatsChart({
       : Math.round(statAverage * 2) / 2;
     setLineValue(next);
     emitTransientLine(next);
+    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+    if (input) input.value = String(next);
   }, [selectedStat, selectedTimeframe, statAverage, hasDecimalValues, emitTransientLine]);
+
+  const timeframeLabels: Record<(typeof TIMEFRAME_OPTIONS)[number], string> = {
+    last5: 'L5',
+    last10: 'L10',
+    last15: 'L15',
+    last20: 'L20',
+    h2h: 'H2H',
+    lastseason: 'Last Season',
+    thisseason: 'This Season',
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(e.target as Node)) {
+        setIsTimeframeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (lineDebounceRef.current) clearTimeout(lineDebounceRef.current);
+    };
+  }, []);
 
   const customTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -374,33 +404,69 @@ export function AflStatsChart({
         </div>
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2 pl-2">
-        {TIMEFRAME_OPTIONS.map((tf) => (
-          <TimeframeBtn
-            key={tf}
-            value={tf}
-            isSelected={selectedTimeframe === tf}
-            onSelect={(value) => setSelectedTimeframe(value as (typeof TIMEFRAME_OPTIONS)[number])}
+      {/* One row: Line input + Timeframe dropdown next to each other */}
+      <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+        <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-2 sm:ml-6">
+          <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
+          <input
+            id="betting-line-input"
+            key={`line-${selectedStat}-${selectedTimeframe}`}
+            type="number"
+            step={sliderStep}
+            defaultValue={lineValue}
+            min={yAxisConfig.domain[0]}
+            max={yAxisConfig.domain[1]}
+            onChange={(e) => {
+              const raw = Number((e.target as HTMLInputElement).value);
+              if (!Number.isFinite(raw)) return;
+              const next = normalizeLineValue(raw);
+              emitTransientLine(next);
+              if (lineDebounceRef.current) clearTimeout(lineDebounceRef.current);
+              lineDebounceRef.current = setTimeout(() => {
+                setLineValue(next);
+                lineDebounceRef.current = null;
+              }, 300);
+            }}
+            className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            aria-label={`Set line value for ${selectedStatLabel}`}
           />
-        ))}
-      </div>
-
-      <div className="mb-3 pl-2 pr-2 flex items-center gap-2">
-        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
-        <input
-          type="number"
-          step={sliderStep}
-          value={lineValue}
-          min={yAxisConfig.domain[0]}
-          max={yAxisConfig.domain[1]}
-          onChange={(e) => {
-            const raw = Number(e.target.value);
-            if (!Number.isFinite(raw)) return;
-            setLineAndEmit(raw);
-          }}
-          className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          aria-label={`Set betting line value for ${selectedStatLabel}`}
-        />
+          <div className="relative" ref={timeframeDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
+              className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <span className="truncate">{timeframeLabels[selectedTimeframe] || 'L10'}</span>
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isTimeframeDropdownOpen && (
+              <>
+                <div className="absolute top-full right-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {TIMEFRAME_OPTIONS.map((tf) => (
+                    <button
+                      key={tf}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTimeframe(tf);
+                        setIsTimeframeDropdownOpen(false);
+                      }}
+                      className={`w-full px-2 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg ${
+                        selectedTimeframe === tf
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {timeframeLabels[tf]}
+                    </button>
+                  ))}
+                </div>
+                <div className="fixed inset-0 z-40" onClick={() => setIsTimeframeDropdownOpen(false)} aria-hidden />
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">

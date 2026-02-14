@@ -15,6 +15,8 @@
     "process:player-props": "node scripts/process-player-props.js",
     "process:player-props:refresh": "node scripts/process-player-props.js --refresh",
     "audit:afl:active-stats": "node scripts/audit-afl-active-player-stats.js",
+    "fetch:afl-roster": "node scripts/fetch-afl-roster.js",
+    "list:afl-roster": "node scripts/list-afl-roster.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
     "check:prediction-data": "node scripts/check-prediction-data-sources.mjs",
     "apply:prediction-tables": "node scripts/apply-prediction-engine-tables.mjs",

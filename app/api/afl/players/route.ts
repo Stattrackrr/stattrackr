@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+import fs from 'fs';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
-const AFL_API_BASE = 'https://v1.afl.api-sports.io';
 const TTL_MS = 1000 * 60 * 60; // 1 hour
+/** Current AFL season year (AFLTables uses e.g. 2025a.html). Use calendar year; override with AFL_CURRENT_SEASON. */
+const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 
 type PlayerIndexEntry = {
   name: string;
@@ -29,67 +32,26 @@ function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
   return parts.every((p) => normalizedName.includes(p));
 }
 
-function getApiResponseArray(data: Record<string, unknown>): unknown[] {
-  const raw = data?.response ?? data?.data ?? data?.results ?? data?.players;
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') return [raw];
-  return [];
-}
-
-function extractApiPlayerName(raw: unknown): string {
-  const obj = raw as Record<string, unknown>;
-  const player = (obj?.player ?? obj) as Record<string, unknown>;
-  const directName = player?.name;
-  if (typeof directName === 'string' && directName.trim()) return directName.trim();
-  const first = player?.firstName ?? player?.firstname;
-  const last = player?.lastName ?? player?.lastname;
-  const combined = [first, last].filter((x) => typeof x === 'string' && String(x).trim()).join(' ').trim();
-  return combined || '';
-}
-
-async function fetchApiSportsFallbackPlayers(query: string, limit: number): Promise<PlayerIndexEntry[]> {
-  const apiKey = process.env.AFL_API_KEY;
-  if (!apiKey || !query.trim()) return [];
-
-  const paramsToTry: Array<Record<string, string>> = [
-    { search: query, season: '2025' },
-    { name: query, season: '2025' },
-    { search: query },
-    { name: query },
-  ];
-
-  const out: PlayerIndexEntry[] = [];
-  const seen = new Set<string>();
-  const normalizedQuery = normalizeName(query);
-
-  for (const params of paramsToTry) {
+/** Read roster from cached file. Tries current year then previous year (e.g. 2026 then 2025). Run scripts/fetch-afl-roster.js to refresh. */
+function readCachedRoster(): Array<{ name: string }> | null {
+  const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
+  const seasonsToTry = [year, year - 1];
+  for (const season of seasonsToTry) {
     try {
-      const qs = new URLSearchParams(params).toString();
-      const url = `${AFL_API_BASE}/players${qs ? `?${qs}` : ''}`;
-      const res = await fetch(url, {
-        headers: { 'x-apisports-key': apiKey },
-        next: { revalidate: 60 },
-      });
-      if (!res.ok) continue;
-
-      const data = (await res.json()) as Record<string, unknown>;
-      const rows = getApiResponseArray(data);
-      for (const row of rows) {
-        const name = extractApiPlayerName(row);
-        if (!name) continue;
-        const normalized = normalizeName(name);
-        if (!normalized || seen.has(normalized)) continue;
-        if (!nameMatchesQuery(name, normalizedQuery)) continue;
-        seen.add(normalized);
-        out.push({ name, href: '' });
-        if (out.length >= limit) return out;
-      }
+      const filePath = path.join(process.cwd(), 'data', `afl-roster-${season}.json`);
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const data = JSON.parse(raw) as { players?: Array<{ name?: string }> };
+      const list = Array.isArray(data?.players) ? data.players : [];
+      const players = list
+        .map((p) => String(p?.name ?? '').trim())
+        .filter((n) => n.length > 0)
+        .map((name) => ({ name }));
+      if (players.length > 0) return players;
     } catch {
-      // Ignore fallback errors; primary AFLTables source still works.
+      continue;
     }
   }
-
-  return out;
+  return null;
 }
 
 function htmlToText(v: string): string {
@@ -105,6 +67,7 @@ function htmlToText(v: string): string {
     .trim();
 }
 
+/** Fetch full players index from AFLTables (scrape). Includes retired. */
 async function fetchPlayersIndex(): Promise<PlayerIndexEntry[]> {
   if (playersIndexCache && playersIndexCache.expiresAt > Date.now()) {
     return playersIndexCache.data;
@@ -134,8 +97,6 @@ async function fetchPlayersIndex(): Promise<PlayerIndexEntry[]> {
     m = linkRegex.exec(html);
   }
 
-  // AFLTables repeats the same player links across multiple stat sections.
-  // Keep only one entry per player page URL.
   const dedupByHref = new Map<string, PlayerIndexEntry>();
   for (const entry of out) {
     if (!dedupByHref.has(entry.href)) dedupByHref.set(entry.href, entry);
@@ -152,34 +113,44 @@ export async function GET(request: NextRequest) {
   const limit = Math.max(1, Math.min(100, Number.isNaN(limitRaw) ? 20 : limitRaw));
 
   try {
-    const allPlayers = await fetchPlayersIndex();
     const q = normalizeName(query);
-    let filtered = allPlayers;
-    if (q) {
-      filtered = allPlayers.filter((p) => nameMatchesQuery(p.name, q));
+    const effectiveLimit = q && !q.includes(' ') ? Math.min(100, Math.max(limit, 60)) : limit;
+
+    // Prefer cached roster (players with stats from AFLTables scrape). Run scripts/fetch-afl-roster.js to refresh.
+    const roster = readCachedRoster();
+    if (roster && roster.length > 0) {
+      let pool = roster;
+      if (q) {
+        pool = pool.filter((p) => nameMatchesQuery(p.name, q));
+      }
+      pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
+      const players = pool.slice(0, effectiveLimit).map((p) => ({ name: p.name }));
+
+      return NextResponse.json({
+        source: 'afltables.com',
+        query,
+        count: players.length,
+        players,
+      });
     }
-    // Also dedupe by normalized display name for search dropdown UX.
+
+    // Fallback: full AFLTables index (includes retired). Run fetch-afl-roster.js for filtered list.
+    const allPlayers = await fetchPlayersIndex();
+    let pool = allPlayers;
+    if (q) {
+      pool = pool.filter((p) => nameMatchesQuery(p.name, q));
+    }
+    pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
     const seenNames = new Set<string>();
-    const players = filtered
+    const players = pool
       .filter((p) => {
         const n = normalizeName(p.name);
         if (seenNames.has(n)) return false;
         seenNames.add(n);
         return true;
       })
-      .slice(0, limit)
+      .slice(0, effectiveLimit)
       .map((p) => ({ name: p.name }));
-
-    if (q && players.length < limit) {
-      const fallback = await fetchApiSportsFallbackPlayers(query, limit - players.length);
-      for (const p of fallback) {
-        const n = normalizeName(p.name);
-        if (seenNames.has(n)) continue;
-        seenNames.add(n);
-        players.push({ name: p.name });
-        if (players.length >= limit) break;
-      }
-    }
 
     return NextResponse.json({
       source: 'afltables.com',
@@ -198,4 +169,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

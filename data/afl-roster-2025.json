@@ -1,0 +1,2010 @@
+{
+  "season": 2025,
+  "generatedAt": "2026-02-14T14:03:11.632Z",
+  "source": "afltables.com",
+  "sourcePage": "2025a.html",
+  "playerCount": 667,
+  "players": [
+    {
+      "name": "Aaron Cadman"
+    },
+    {
+      "name": "Aaron Francis"
+    },
+    {
+      "name": "Aaron Naughton"
+    },
+    {
+      "name": "Adam Cerra"
+    },
+    {
+      "name": "Adam Saad"
+    },
+    {
+      "name": "Adam Treloar"
+    },
+    {
+      "name": "Aidan Corr"
+    },
+    {
+      "name": "Aidan Johnson"
+    },
+    {
+      "name": "Alex Cincotta"
+    },
+    {
+      "name": "Alex Davies"
+    },
+    {
+      "name": "Alex Dodson"
+    },
+    {
+      "name": "Alex Neal-Bullen"
+    },
+    {
+      "name": "Alex Pearce"
+    },
+    {
+      "name": "Alex Sexton"
+    },
+    {
+      "name": "Aliir Aliir"
+    },
+    {
+      "name": "Alix Tauru"
+    },
+    {
+      "name": "Andrew Brayshaw"
+    },
+    {
+      "name": "Andrew McGrath"
+    },
+    {
+      "name": "Angus Clarke"
+    },
+    {
+      "name": "Angus Hastie"
+    },
+    {
+      "name": "Angus McLennan"
+    },
+    {
+      "name": "Angus Sheldrick"
+    },
+    {
+      "name": "Anthony Caminiti"
+    },
+    {
+      "name": "Archer Day-Wicks"
+    },
+    {
+      "name": "Archer Reid"
+    },
+    {
+      "name": "Archie May"
+    },
+    {
+      "name": "Archie Perkins"
+    },
+    {
+      "name": "Archie Roberts"
+    },
+    {
+      "name": "Arie Schoenmaker"
+    },
+    {
+      "name": "Arthur Jones"
+    },
+    {
+      "name": "Ashton Moir"
+    },
+    {
+      "name": "Bailey Banfield"
+    },
+    {
+      "name": "Bailey Dale"
+    },
+    {
+      "name": "Bailey Humphrey"
+    },
+    {
+      "name": "Bailey Laurie"
+    },
+    {
+      "name": "Bailey Macdonald"
+    },
+    {
+      "name": "Bailey Scott"
+    },
+    {
+      "name": "Bailey Smith"
+    },
+    {
+      "name": "Bailey Williams"
+    },
+    {
+      "name": "Bayley Fritsch"
+    },
+    {
+      "name": "Beau McCreery"
+    },
+    {
+      "name": "Ben Ainsworth"
+    },
+    {
+      "name": "Ben Hobbs"
+    },
+    {
+      "name": "Ben Jepson"
+    },
+    {
+      "name": "Ben Keays"
+    },
+    {
+      "name": "Ben King"
+    },
+    {
+      "name": "Ben Long"
+    },
+    {
+      "name": "Ben McKay"
+    },
+    {
+      "name": "Ben Miller"
+    },
+    {
+      "name": "Ben Paton"
+    },
+    {
+      "name": "Billy Dowling"
+    },
+    {
+      "name": "Billy Frampton"
+    },
+    {
+      "name": "Billy Wilson"
+    },
+    {
+      "name": "Blake Acres"
+    },
+    {
+      "name": "Blake Hardwick"
+    },
+    {
+      "name": "Blake Howes"
+    },
+    {
+      "name": "Bo Allan"
+    },
+    {
+      "name": "Bobby Hill"
+    },
+    {
+      "name": "Bodhi Uwland"
+    },
+    {
+      "name": "Brad Close"
+    },
+    {
+      "name": "Bradley Hill"
+    },
+    {
+      "name": "Brady Hough"
+    },
+    {
+      "name": "Braeden Campbell"
+    },
+    {
+      "name": "Brandon Starcevich"
+    },
+    {
+      "name": "Brandon Walker"
+    },
+    {
+      "name": "Brandon Zerk-Thatcher"
+    },
+    {
+      "name": "Brayden Cook"
+    },
+    {
+      "name": "Brayden Fiorini"
+    },
+    {
+      "name": "Brayden Maynard"
+    },
+    {
+      "name": "Brennan Cox"
+    },
+    {
+      "name": "Brent Daniels"
+    },
+    {
+      "name": "Brodie Grundy"
+    },
+    {
+      "name": "Brodie Kemp"
+    },
+    {
+      "name": "Brodie Smith"
+    },
+    {
+      "name": "Brody Mihocek"
+    },
+    {
+      "name": "Bruce Reville"
+    },
+    {
+      "name": "Brynn Teakle"
+    },
+    {
+      "name": "Buku Khamis"
+    },
+    {
+      "name": "Caiden Cleary"
+    },
+    {
+      "name": "Caleb Daniel"
+    },
+    {
+      "name": "Caleb Mitchell"
+    },
+    {
+      "name": "Caleb Poulter"
+    },
+    {
+      "name": "Caleb Serong"
+    },
+    {
+      "name": "Caleb Windsor"
+    },
+    {
+      "name": "Callan Ward"
+    },
+    {
+      "name": "Callum Ah Chee"
+    },
+    {
+      "name": "Callum Brown"
+    },
+    {
+      "name": "Callum Coleman-Jones"
+    },
+    {
+      "name": "Callum Mills"
+    },
+    {
+      "name": "Callum Wilkie"
+    },
+    {
+      "name": "Calsher Dear"
+    },
+    {
+      "name": "Cam Mackenzie"
+    },
+    {
+      "name": "Cam Rayner"
+    },
+    {
+      "name": "Cameron Zurhaar"
+    },
+    {
+      "name": "Campbell Chesser"
+    },
+    {
+      "name": "Campbell Gray"
+    },
+    {
+      "name": "Chad Warner"
+    },
+    {
+      "name": "Changkuoth Jiath"
+    },
+    {
+      "name": "Charlie Ballard"
+    },
+    {
+      "name": "Charlie Cameron"
+    },
+    {
+      "name": "Charlie Comben"
+    },
+    {
+      "name": "Charlie Curnow"
+    },
+    {
+      "name": "Charlie Dean"
+    },
+    {
+      "name": "Charlie Spargo"
+    },
+    {
+      "name": "Charlie West"
+    },
+    {
+      "name": "Chayce Jones"
+    },
+    {
+      "name": "Chris Burgess"
+    },
+    {
+      "name": "Christian Moraes"
+    },
+    {
+      "name": "Christian Petracca"
+    },
+    {
+      "name": "Christian Salem"
+    },
+    {
+      "name": "Clay Hall"
+    },
+    {
+      "name": "Clayton Oliver"
+    },
+    {
+      "name": "Cody Angove"
+    },
+    {
+      "name": "Colby McKercher"
+    },
+    {
+      "name": "Connor Budarick"
+    },
+    {
+      "name": "Connor Idun"
+    },
+    {
+      "name": "Connor Macdonald"
+    },
+    {
+      "name": "Connor OSullivan"
+    },
+    {
+      "name": "Connor Rozee"
+    },
+    {
+      "name": "Conor McKenna"
+    },
+    {
+      "name": "Conor Nash"
+    },
+    {
+      "name": "Conor Stone"
+    },
+    {
+      "name": "Cooper Harvey"
+    },
+    {
+      "name": "Cooper Hynes"
+    },
+    {
+      "name": "Cooper Lord"
+    },
+    {
+      "name": "Cooper Sharman"
+    },
+    {
+      "name": "Cooper Simpson"
+    },
+    {
+      "name": "Cooper Trembath"
+    },
+    {
+      "name": "Corey Durdin"
+    },
+    {
+      "name": "Corey Wagner"
+    },
+    {
+      "name": "Corey Warner"
+    },
+    {
+      "name": "Dan Butler"
+    },
+    {
+      "name": "Dan Houston"
+    },
+    {
+      "name": "Dane Rampe"
+    },
+    {
+      "name": "Daniel Curtin"
+    },
+    {
+      "name": "Daniel McStay"
+    },
+    {
+      "name": "Daniel Rioli"
+    },
+    {
+      "name": "Daniel Turner"
+    },
+    {
+      "name": "Dante Visentini"
+    },
+    {
+      "name": "Darcy Byrne-Jones"
+    },
+    {
+      "name": "Darcy Cameron"
+    },
+    {
+      "name": "Darcy Fogarty"
+    },
+    {
+      "name": "Darcy Fort"
+    },
+    {
+      "name": "Darcy Gardiner"
+    },
+    {
+      "name": "Darcy Jones"
+    },
+    {
+      "name": "Darcy Moore"
+    },
+    {
+      "name": "Darcy Parish"
+    },
+    {
+      "name": "Darcy Tucker"
+    },
+    {
+      "name": "Darcy Wilmot"
+    },
+    {
+      "name": "Darcy Wilson"
+    },
+    {
+      "name": "David Swallow"
+    },
+    {
+      "name": "Dayne Zorko"
+    },
+    {
+      "name": "Deven Robertson"
+    },
+    {
+      "name": "Dion Prestia"
+    },
+    {
+      "name": "Dougal Howard"
+    },
+    {
+      "name": "Dylan Moore"
+    },
+    {
+      "name": "Dylan Shiel"
+    },
+    {
+      "name": "Dylan Stephens"
+    },
+    {
+      "name": "Dylan Williams"
+    },
+    {
+      "name": "Ed Langdon"
+    },
+    {
+      "name": "Ed Richards"
+    },
+    {
+      "name": "Edward Allan"
+    },
+    {
+      "name": "Elijah Hewett"
+    },
+    {
+      "name": "Elijah Hollands"
+    },
+    {
+      "name": "Elijah Tsatas"
+    },
+    {
+      "name": "Eric Hipwood"
+    },
+    {
+      "name": "Errol Gulden"
+    },
+    {
+      "name": "Esava Ratugolea"
+    },
+    {
+      "name": "Ethan Read"
+    },
+    {
+      "name": "Ewan Mackinlay"
+    },
+    {
+      "name": "Finn Callaghan"
+    },
+    {
+      "name": "Finn Maginness"
+    },
+    {
+      "name": "Finn OSullivan"
+    },
+    {
+      "name": "Finnbar Maley"
+    },
+    {
+      "name": "Flynn Young"
+    },
+    {
+      "name": "Francis Evans"
+    },
+    {
+      "name": "Geordie Payne"
+    },
+    {
+      "name": "George Hewett"
+    },
+    {
+      "name": "George Stevens"
+    },
+    {
+      "name": "George Wardlaw"
+    },
+    {
+      "name": "Griffin Logue"
+    },
+    {
+      "name": "Gryan Miers"
+    },
+    {
+      "name": "Hamish Davis"
+    },
+    {
+      "name": "Harley Reid"
+    },
+    {
+      "name": "Harris Andrews"
+    },
+    {
+      "name": "Harrison Ramm"
+    },
+    {
+      "name": "Harry Armstrong"
+    },
+    {
+      "name": "Harry Boyd"
+    },
+    {
+      "name": "Harry Cunningham"
+    },
+    {
+      "name": "Harry Edwards"
+    },
+    {
+      "name": "Harry Himmelberg"
+    },
+    {
+      "name": "Harry Jones"
+    },
+    {
+      "name": "Harry McKay"
+    },
+    {
+      "name": "Harry Morrison"
+    },
+    {
+      "name": "Harry OFarrell"
+    },
+    {
+      "name": "Harry Perryman"
+    },
+    {
+      "name": "Harry Petty"
+    },
+    {
+      "name": "Harry Rowston"
+    },
+    {
+      "name": "Harry Schoenberg"
+    },
+    {
+      "name": "Harry Sharp"
+    },
+    {
+      "name": "Harry Sheezel"
+    },
+    {
+      "name": "Harvey Gallagher"
+    },
+    {
+      "name": "Harvey Langford"
+    },
+    {
+      "name": "Harvey Thomas"
+    },
+    {
+      "name": "Hayden McLean"
+    },
+    {
+      "name": "Hayden Young"
+    },
+    {
+      "name": "Heath Chapman"
+    },
+    {
+      "name": "Henry Hustwaite"
+    },
+    {
+      "name": "Henry Smith"
+    },
+    {
+      "name": "Hudson OKeeffe"
+    },
+    {
+      "name": "Hugh Bond"
+    },
+    {
+      "name": "Hugh Boxshall"
+    },
+    {
+      "name": "Hugh Jackson"
+    },
+    {
+      "name": "Hugh McCluggage"
+    },
+    {
+      "name": "Hugo Garcia"
+    },
+    {
+      "name": "Hugo Ralphsmith"
+    },
+    {
+      "name": "Hunter Clark"
+    },
+    {
+      "name": "Isaac Cumming"
+    },
+    {
+      "name": "Isaac Heeney"
+    },
+    {
+      "name": "Isaac Kako"
+    },
+    {
+      "name": "Isaac Keeler"
+    },
+    {
+      "name": "Isaac Quaynor"
+    },
+    {
+      "name": "Isaiah Dudley"
+    },
+    {
+      "name": "Ivan Soldo"
+    },
+    {
+      "name": "Izak Rankine"
+    },
+    {
+      "name": "Jack Billings"
+    },
+    {
+      "name": "Jack Bowes"
+    },
+    {
+      "name": "Jack Buckley"
+    },
+    {
+      "name": "Jack Buller"
+    },
+    {
+      "name": "Jack Carroll"
+    },
+    {
+      "name": "Jack Crisp"
+    },
+    {
+      "name": "Jack Darling"
+    },
+    {
+      "name": "Jack Ginnivan"
+    },
+    {
+      "name": "Jack Graham"
+    },
+    {
+      "name": "Jack Gunston"
+    },
+    {
+      "name": "Jack Henderson"
+    },
+    {
+      "name": "Jack Henry"
+    },
+    {
+      "name": "Jack Higgins"
+    },
+    {
+      "name": "Jack Hutchinson"
+    },
+    {
+      "name": "Jack Lukosius"
+    },
+    {
+      "name": "Jack Macrae"
+    },
+    {
+      "name": "Jack Martin"
+    },
+    {
+      "name": "Jack Payne"
+    },
+    {
+      "name": "Jack Petruccelle"
+    },
+    {
+      "name": "Jack Ross"
+    },
+    {
+      "name": "Jack Scrimshaw"
+    },
+    {
+      "name": "Jack Silvagni"
+    },
+    {
+      "name": "Jack Sinclair"
+    },
+    {
+      "name": "Jack Steele"
+    },
+    {
+      "name": "Jack Viney"
+    },
+    {
+      "name": "Jack Whitlock"
+    },
+    {
+      "name": "Jack Williams"
+    },
+    {
+      "name": "Jackson Archer"
+    },
+    {
+      "name": "Jackson Mead"
+    },
+    {
+      "name": "Jacob Bauer"
+    },
+    {
+      "name": "Jacob Blight"
+    },
+    {
+      "name": "Jacob Hopper"
+    },
+    {
+      "name": "Jacob Konstanty"
+    },
+    {
+      "name": "Jacob Koschitzke"
+    },
+    {
+      "name": "Jacob Newton"
+    },
+    {
+      "name": "Jacob van Rooyen"
+    },
+    {
+      "name": "Jacob Wehr"
+    },
+    {
+      "name": "Jacob Weitering"
+    },
+    {
+      "name": "Jade Gresham"
+    },
+    {
+      "name": "Jaeger OMeara"
+    },
+    {
+      "name": "Jai Culley"
+    },
+    {
+      "name": "Jai Newcombe"
+    },
+    {
+      "name": "Jake Bowey"
+    },
+    {
+      "name": "Jake Lever"
+    },
+    {
+      "name": "Jake Lloyd"
+    },
+    {
+      "name": "Jake Melksham"
+    },
+    {
+      "name": "Jake Riccardi"
+    },
+    {
+      "name": "Jake Rogers"
+    },
+    {
+      "name": "Jake Soligo"
+    },
+    {
+      "name": "Jake Stringer"
+    },
+    {
+      "name": "Jake Waterman"
+    },
+    {
+      "name": "James Aish"
+    },
+    {
+      "name": "James Borlase"
+    },
+    {
+      "name": "James Harmes"
+    },
+    {
+      "name": "James Jordon"
+    },
+    {
+      "name": "James Leake"
+    },
+    {
+      "name": "James ODonnell"
+    },
+    {
+      "name": "James Peatling"
+    },
+    {
+      "name": "James Rowbottom"
+    },
+    {
+      "name": "James Sicily"
+    },
+    {
+      "name": "James Trezise"
+    },
+    {
+      "name": "James Tunstill"
+    },
+    {
+      "name": "James Worpel"
+    },
+    {
+      "name": "Jamie Cripps"
+    },
+    {
+      "name": "Jamie Elliott"
+    },
+    {
+      "name": "Jarman Impey"
+    },
+    {
+      "name": "Jarrod Berry"
+    },
+    {
+      "name": "Jarrod Witts"
+    },
+    {
+      "name": "Jase Burgoyne"
+    },
+    {
+      "name": "Jason Horne-Francis"
+    },
+    {
+      "name": "Jason Johannisen"
+    },
+    {
+      "name": "Jaspa Fletcher"
+    },
+    {
+      "name": "Jasper Alger"
+    },
+    {
+      "name": "Jaxon Binns"
+    },
+    {
+      "name": "Jaxon Prior"
+    },
+    {
+      "name": "Jayden Hunt"
+    },
+    {
+      "name": "Jayden Laverde"
+    },
+    {
+      "name": "Jayden Nguyen"
+    },
+    {
+      "name": "Jayden Short"
+    },
+    {
+      "name": "Jed Adams"
+    },
+    {
+      "name": "Jed Bews"
+    },
+    {
+      "name": "Jed McEntee"
+    },
+    {
+      "name": "Jed Walter"
+    },
+    {
+      "name": "Jedd Busslinger"
+    },
+    {
+      "name": "Jeremy Cameron"
+    },
+    {
+      "name": "Jeremy Finlayson"
+    },
+    {
+      "name": "Jeremy Howe"
+    },
+    {
+      "name": "Jeremy McGovern"
+    },
+    {
+      "name": "Jeremy Sharp"
+    },
+    {
+      "name": "Jesse Dattoli"
+    },
+    {
+      "name": "Jesse Hogan"
+    },
+    {
+      "name": "Jesse Motlop"
+    },
+    {
+      "name": "Jhye Clark"
+    },
+    {
+      "name": "Jimmy Webster"
+    },
+    {
+      "name": "Jobe Shanahan"
+    },
+    {
+      "name": "Joe Berry"
+    },
+    {
+      "name": "Joe Fonti"
+    },
+    {
+      "name": "Joe Richards"
+    },
+    {
+      "name": "Joel Amartey"
+    },
+    {
+      "name": "Joel Freijah"
+    },
+    {
+      "name": "Joel Hamling"
+    },
+    {
+      "name": "Joel Jeffrey"
+    },
+    {
+      "name": "John Noble"
+    },
+    {
+      "name": "Jonty Faull"
+    },
+    {
+      "name": "Jordan Boyd"
+    },
+    {
+      "name": "Jordan Clark"
+    },
+    {
+      "name": "Jordan Croft"
+    },
+    {
+      "name": "Jordan Dawson"
+    },
+    {
+      "name": "Jordan de Goey"
+    },
+    {
+      "name": "Jordan Ridley"
+    },
+    {
+      "name": "Jordon Butts"
+    },
+    {
+      "name": "Jordon Sweet"
+    },
+    {
+      "name": "Josaia Delana"
+    },
+    {
+      "name": "Josh Battle"
+    },
+    {
+      "name": "Josh Daicos"
+    },
+    {
+      "name": "Josh Dolan"
+    },
+    {
+      "name": "Josh Draper"
+    },
+    {
+      "name": "Josh Dunkley"
+    },
+    {
+      "name": "Josh Gibcus"
+    },
+    {
+      "name": "Josh Kelly"
+    },
+    {
+      "name": "Josh Rachele"
+    },
+    {
+      "name": "Josh Sinn"
+    },
+    {
+      "name": "Josh Treacy"
+    },
+    {
+      "name": "Josh Ward"
+    },
+    {
+      "name": "Josh Weddle"
+    },
+    {
+      "name": "Josh Worrell"
+    },
+    {
+      "name": "Judd McVee"
+    },
+    {
+      "name": "Justin McInerney"
+    },
+    {
+      "name": "Jy Farrar"
+    },
+    {
+      "name": "Jy Simpkin"
+    },
+    {
+      "name": "Jye Amiss"
+    },
+    {
+      "name": "Jye Caldwell"
+    },
+    {
+      "name": "Jye Menzie"
+    },
+    {
+      "name": "Kade Chandler"
+    },
+    {
+      "name": "Kai Lohmann"
+    },
+    {
+      "name": "Kaleb Smith"
+    },
+    {
+      "name": "Kallan Dawson"
+    },
+    {
+      "name": "Kamdyn McIntosh"
+    },
+    {
+      "name": "Kane Farrell"
+    },
+    {
+      "name": "Kane McAuliffe"
+    },
+    {
+      "name": "Karl Amon"
+    },
+    {
+      "name": "Karl Worner"
+    },
+    {
+      "name": "Keidean Coleman"
+    },
+    {
+      "name": "Kieren Briggs"
+    },
+    {
+      "name": "Koltyn Tholstrup"
+    },
+    {
+      "name": "Kyle Langford"
+    },
+    {
+      "name": "Kysaiah Pickett"
+    },
+    {
+      "name": "Lachie Ash"
+    },
+    {
+      "name": "Lachie Fogarty"
+    },
+    {
+      "name": "Lachie Jones"
+    },
+    {
+      "name": "Lachie Neale"
+    },
+    {
+      "name": "Lachie Schultz"
+    },
+    {
+      "name": "Lachie Weller"
+    },
+    {
+      "name": "Lachie Whitfield"
+    },
+    {
+      "name": "Lachlan Blakiston"
+    },
+    {
+      "name": "Lachlan Bramble"
+    },
+    {
+      "name": "Lachlan Cowan"
+    },
+    {
+      "name": "Lachlan Gulbin"
+    },
+    {
+      "name": "Lachlan Keeffe"
+    },
+    {
+      "name": "Lachlan McNeil"
+    },
+    {
+      "name": "Lachlan Murphy"
+    },
+    {
+      "name": "Lachlan Sholl"
+    },
+    {
+      "name": "Lachlan Sullivan"
+    },
+    {
+      "name": "Laitham Vandermeer"
+    },
+    {
+      "name": "Lance Collard"
+    },
+    {
+      "name": "Lawson Humphries"
+    },
+    {
+      "name": "Leek Aleer"
+    },
+    {
+      "name": "Leo Lombard"
+    },
+    {
+      "name": "Levi Ashcroft"
+    },
+    {
+      "name": "Lewis Hayes"
+    },
+    {
+      "name": "Lewis Melican"
+    },
+    {
+      "name": "Lewis Young"
+    },
+    {
+      "name": "Liam Baker"
+    },
+    {
+      "name": "Liam Duggan"
+    },
+    {
+      "name": "Liam Fawcett"
+    },
+    {
+      "name": "Liam Henry"
+    },
+    {
+      "name": "Liam Jones"
+    },
+    {
+      "name": "Liam McMahon"
+    },
+    {
+      "name": "Liam OConnell"
+    },
+    {
+      "name": "Liam Reidy"
+    },
+    {
+      "name": "Liam Ryan"
+    },
+    {
+      "name": "Liam Stocker"
+    },
+    {
+      "name": "Lloyd Meek"
+    },
+    {
+      "name": "Logan Evans"
+    },
+    {
+      "name": "Logan Morris"
+    },
+    {
+      "name": "Luamon Lual"
+    },
+    {
+      "name": "Lucas Camporeale"
+    },
+    {
+      "name": "Lucca Grego"
+    },
+    {
+      "name": "Luke Beecken"
+    },
+    {
+      "name": "Luke Breust"
+    },
+    {
+      "name": "Luke Cleary"
+    },
+    {
+      "name": "Luke Davies-Uniacke"
+    },
+    {
+      "name": "Luke Jackson"
+    },
+    {
+      "name": "Luke McDonald"
+    },
+    {
+      "name": "Luke Nankervis"
+    },
+    {
+      "name": "Luke Parker"
+    },
+    {
+      "name": "Luke Pedlar"
+    },
+    {
+      "name": "Luke Ryan"
+    },
+    {
+      "name": "Luke Trainor"
+    },
+    {
+      "name": "Mabior Chol"
+    },
+    {
+      "name": "Mac Andrew"
+    },
+    {
+      "name": "Malakai Champion"
+    },
+    {
+      "name": "Malcolm Rosas"
+    },
+    {
+      "name": "Mani Liddy"
+    },
+    {
+      "name": "Marc Pittonet"
+    },
+    {
+      "name": "Marcus Bontempelli"
+    },
+    {
+      "name": "Marcus Windhager"
+    },
+    {
+      "name": "Mark Blicavs"
+    },
+    {
+      "name": "Mark Keane"
+    },
+    {
+      "name": "Mark OConnor"
+    },
+    {
+      "name": "Mason Cox"
+    },
+    {
+      "name": "Mason Redman"
+    },
+    {
+      "name": "Mason Wood"
+    },
+    {
+      "name": "Massimo DAmbrosio"
+    },
+    {
+      "name": "Matt Carroll"
+    },
+    {
+      "name": "Matt Crouch"
+    },
+    {
+      "name": "Matt Flynn"
+    },
+    {
+      "name": "Matt Guelfi"
+    },
+    {
+      "name": "Matt Roberts"
+    },
+    {
+      "name": "Matt Rowell"
+    },
+    {
+      "name": "Matt Whitlock"
+    },
+    {
+      "name": "Mattaes Phillipou"
+    },
+    {
+      "name": "Matthew Cottrell"
+    },
+    {
+      "name": "Matthew Jefferson"
+    },
+    {
+      "name": "Matthew Johnson"
+    },
+    {
+      "name": "Matthew Kennedy"
+    },
+    {
+      "name": "Matthew Owies"
+    },
+    {
+      "name": "Maurice Rioli"
+    },
+    {
+      "name": "Max Gawn"
+    },
+    {
+      "name": "Max Gruzewski"
+    },
+    {
+      "name": "Max Hall"
+    },
+    {
+      "name": "Max Heath"
+    },
+    {
+      "name": "Max Holmes"
+    },
+    {
+      "name": "Max Michalanney"
+    },
+    {
+      "name": "Max Ramsden"
+    },
+    {
+      "name": "Michael Frederick"
+    },
+    {
+      "name": "Miles Bergman"
+    },
+    {
+      "name": "Mitch Duncan"
+    },
+    {
+      "name": "Mitch Georgiades"
+    },
+    {
+      "name": "Mitch Hinge"
+    },
+    {
+      "name": "Mitch Knevitt"
+    },
+    {
+      "name": "Mitch Lewis"
+    },
+    {
+      "name": "Mitch McGovern"
+    },
+    {
+      "name": "Mitch Owens"
+    },
+    {
+      "name": "Murphy Reid"
+    },
+    {
+      "name": "Mykelti Lefau"
+    },
+    {
+      "name": "Nasiah Wanganeen-Milera"
+    },
+    {
+      "name": "Nat Fyfe"
+    },
+    {
+      "name": "Nate Caddy"
+    },
+    {
+      "name": "Nathan Broad"
+    },
+    {
+      "name": "Nathan ODriscoll"
+    },
+    {
+      "name": "Ned Long"
+    },
+    {
+      "name": "Ned Moyle"
+    },
+    {
+      "name": "Ned Reeves"
+    },
+    {
+      "name": "Neil Erasmus"
+    },
+    {
+      "name": "Nic Martin"
+    },
+    {
+      "name": "Nick Blakey"
+    },
+    {
+      "name": "Nick Bryan"
+    },
+    {
+      "name": "Nick Coffield"
+    },
+    {
+      "name": "Nick Daicos"
+    },
+    {
+      "name": "Nick Haynes"
+    },
+    {
+      "name": "Nick Holman"
+    },
+    {
+      "name": "Nick Larkey"
+    },
+    {
+      "name": "Nick Madden"
+    },
+    {
+      "name": "Nick Murray"
+    },
+    {
+      "name": "Nick Vlastuin"
+    },
+    {
+      "name": "Nick Watson"
+    },
+    {
+      "name": "Noah Anderson"
+    },
+    {
+      "name": "Noah Answerth"
+    },
+    {
+      "name": "Noah Balta"
+    },
+    {
+      "name": "Noah Long"
+    },
+    {
+      "name": "Oisin Mullin"
+    },
+    {
+      "name": "Oleg Markov"
+    },
+    {
+      "name": "Oliver Dempsey"
+    },
+    {
+      "name": "Oliver Florent"
+    },
+    {
+      "name": "Oliver Henry"
+    },
+    {
+      "name": "Oliver Hollands"
+    },
+    {
+      "name": "Oliver Wiltshire"
+    },
+    {
+      "name": "Ollie Lord"
+    },
+    {
+      "name": "Ollie Wines"
+    },
+    {
+      "name": "Orazio Fantasia"
+    },
+    {
+      "name": "Oscar Adams"
+    },
+    {
+      "name": "Oscar Allen"
+    },
+    {
+      "name": "Oscar McDonald"
+    },
+    {
+      "name": "Oscar McInerney"
+    },
+    {
+      "name": "Oskar Baker"
+    },
+    {
+      "name": "Oskar Smartt"
+    },
+    {
+      "name": "Patrick Cripps"
+    },
+    {
+      "name": "Patrick Dangerfield"
+    },
+    {
+      "name": "Patrick Lipinski"
+    },
+    {
+      "name": "Patrick Voss"
+    },
+    {
+      "name": "Paul Curtis"
+    },
+    {
+      "name": "Peter Ladhams"
+    },
+    {
+      "name": "Peter Wright"
+    },
+    {
+      "name": "Quinton Narkle"
+    },
+    {
+      "name": "Reef McInnes"
+    },
+    {
+      "name": "Reilly OBrien"
+    },
+    {
+      "name": "Reuben Ginbey"
+    },
+    {
+      "name": "Rhett Bazzo"
+    },
+    {
+      "name": "Rhyan Mansell"
+    },
+    {
+      "name": "Rhylee West"
+    },
+    {
+      "name": "Rhys Stanley"
+    },
+    {
+      "name": "Rhys Unwin"
+    },
+    {
+      "name": "Riley Bice"
+    },
+    {
+      "name": "Riley Garcia"
+    },
+    {
+      "name": "Riley Hardeman"
+    },
+    {
+      "name": "Riley Thilthorpe"
+    },
+    {
+      "name": "Roan Steele"
+    },
+    {
+      "name": "Robert Hansen"
+    },
+    {
+      "name": "Rory Atkins"
+    },
+    {
+      "name": "Rory Laird"
+    },
+    {
+      "name": "Rory Lobb"
+    },
+    {
+      "name": "Rowan Marshall"
+    },
+    {
+      "name": "Ryan Angwin"
+    },
+    {
+      "name": "Ryan Burton"
+    },
+    {
+      "name": "Ryan Byrnes"
+    },
+    {
+      "name": "Ryan Gardner"
+    },
+    {
+      "name": "Ryan Lester"
+    },
+    {
+      "name": "Ryan Maric"
+    },
+    {
+      "name": "Ryley Sanders"
+    },
+    {
+      "name": "Saad El-Hawli"
+    },
+    {
+      "name": "Sam Banks"
+    },
+    {
+      "name": "Sam Berry"
+    },
+    {
+      "name": "Sam Butler"
+    },
+    {
+      "name": "Sam Clohesy"
+    },
+    {
+      "name": "Sam Collins"
+    },
+    {
+      "name": "Sam Darcy"
+    },
+    {
+      "name": "Sam Davidson"
+    },
+    {
+      "name": "Sam Day"
+    },
+    {
+      "name": "Sam De Koning"
+    },
+    {
+      "name": "Sam Docherty"
+    },
+    {
+      "name": "Sam Draper"
+    },
+    {
+      "name": "Sam Durham"
+    },
+    {
+      "name": "Sam Flanders"
+    },
+    {
+      "name": "Sam Frost"
+    },
+    {
+      "name": "Sam Lalor"
+    },
+    {
+      "name": "Sam Marshall"
+    },
+    {
+      "name": "Sam Powell-Pepper"
+    },
+    {
+      "name": "Sam Switkowski"
+    },
+    {
+      "name": "Sam Taylor"
+    },
+    {
+      "name": "Sam Walsh"
+    },
+    {
+      "name": "Sam Wicks"
+    },
+    {
+      "name": "Samson Ryan"
+    },
+    {
+      "name": "Sandy Brock"
+    },
+    {
+      "name": "Scott Pendlebury"
+    },
+    {
+      "name": "Seamus Mitchell"
+    },
+    {
+      "name": "Sean Darcy"
+    },
+    {
+      "name": "Sean Lemmens"
+    },
+    {
+      "name": "Seth Campbell"
+    },
+    {
+      "name": "Shai Bolton"
+    },
+    {
+      "name": "Shannon Neale"
+    },
+    {
+      "name": "Shaun Mannagh"
+    },
+    {
+      "name": "Sid Draper"
+    },
+    {
+      "name": "Steele Sidebottom"
+    },
+    {
+      "name": "Steely Green"
+    },
+    {
+      "name": "Stephen Coniglio"
+    },
+    {
+      "name": "Steven May"
+    },
+    {
+      "name": "Taj Hotton"
+    },
+    {
+      "name": "Taj Woewodin"
+    },
+    {
+      "name": "Taylor Adams"
+    },
+    {
+      "name": "Taylor Duryea"
+    },
+    {
+      "name": "Taylor Walker"
+    },
+    {
+      "name": "Ted Clohesy"
+    },
+    {
+      "name": "Thomson Dow"
+    },
+    {
+      "name": "Tim English"
+    },
+    {
+      "name": "Tim Kelly"
+    },
+    {
+      "name": "Tim Membrey"
+    },
+    {
+      "name": "Tim Taranto"
+    },
+    {
+      "name": "Tobie Travaglia"
+    },
+    {
+      "name": "Toby Bedford"
+    },
+    {
+      "name": "Toby Greene"
+    },
+    {
+      "name": "Toby McMullin"
+    },
+    {
+      "name": "Toby Nankervis"
+    },
+    {
+      "name": "Toby Pink"
+    },
+    {
+      "name": "Todd Goldstein"
+    },
+    {
+      "name": "Tom Atkins"
+    },
+    {
+      "name": "Tom Barrass"
+    },
+    {
+      "name": "Tom Brown"
+    },
+    {
+      "name": "Tom Cochrane"
+    },
+    {
+      "name": "Tom Cole"
+    },
+    {
+      "name": "Tom De Koning"
+    },
+    {
+      "name": "Tom Doedee"
+    },
+    {
+      "name": "Tom Edwards"
+    },
+    {
+      "name": "Tom Fullarton"
+    },
+    {
+      "name": "Tom Green"
+    },
+    {
+      "name": "Tom Gross"
+    },
+    {
+      "name": "Tom Hanily"
+    },
+    {
+      "name": "Tom Liberatore"
+    },
+    {
+      "name": "Tom Lynch"
+    },
+    {
+      "name": "Tom McCarthy"
+    },
+    {
+      "name": "Tom McCartin"
+    },
+    {
+      "name": "Tom McDonald"
+    },
+    {
+      "name": "Tom Mitchell"
+    },
+    {
+      "name": "Tom Papley"
+    },
+    {
+      "name": "Tom Powell"
+    },
+    {
+      "name": "Tom Sims"
+    },
+    {
+      "name": "Tom Sparrow"
+    },
+    {
+      "name": "Tom Stewart"
+    },
+    {
+      "name": "Touk Miller"
+    },
+    {
+      "name": "Travis Boak"
+    },
+    {
+      "name": "Trent Rivers"
+    },
+    {
+      "name": "Tristan Xerri"
+    },
+    {
+      "name": "Ty Gallop"
+    },
+    {
+      "name": "Tylar Young"
+    },
+    {
+      "name": "Tyler Brockman"
+    },
+    {
+      "name": "Tyler Sonsie"
+    },
+    {
+      "name": "Tyrell Dewar"
+    },
+    {
+      "name": "Tyson Stengle"
+    },
+    {
+      "name": "Vigo Visentini"
+    },
+    {
+      "name": "Wayne Milera"
+    },
+    {
+      "name": "Wil Dawson"
+    },
+    {
+      "name": "Wil Parker"
+    },
+    {
+      "name": "Wil Powell"
+    },
+    {
+      "name": "Will Ashcroft"
+    },
+    {
+      "name": "Will Day"
+    },
+    {
+      "name": "Will Graham"
+    },
+    {
+      "name": "Will Hayes"
+    },
+    {
+      "name": "Will Hayward"
+    },
+    {
+      "name": "Will Hoskin-Elliott"
+    },
+    {
+      "name": "Will Lorenz"
+    },
+    {
+      "name": "Will McLachlan"
+    },
+    {
+      "name": "Will Phillips"
+    },
+    {
+      "name": "Will Setterfield"
+    },
+    {
+      "name": "Will White"
+    },
+    {
+      "name": "Willem Drew"
+    },
+    {
+      "name": "Willie Rioli"
+    },
+    {
+      "name": "Xavier Duursma"
+    },
+    {
+      "name": "Xavier Lindsay"
+    },
+    {
+      "name": "Xavier OHalloran"
+    },
+    {
+      "name": "Zac Bailey"
+    },
+    {
+      "name": "Zac Banch"
+    },
+    {
+      "name": "Zac Fisher"
+    },
+    {
+      "name": "Zac Taylor"
+    },
+    {
+      "name": "Zac Williams"
+    },
+    {
+      "name": "Zach Guthrie"
+    },
+    {
+      "name": "Zach Merrett"
+    },
+    {
+      "name": "Zach Reid"
+    },
+    {
+      "name": "Zaine Cordy"
+    },
+    {
+      "name": "Zak Butters"
+    },
+    {
+      "name": "Zak Johnson"
+    },
+    {
+      "name": "Zak Jones"
+    },
+    {
+      "name": "Zane Duursma"
+    }
+  ]
+}
