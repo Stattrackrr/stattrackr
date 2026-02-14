@@ -23,10 +23,12 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/images/transparent-photo.png", sizes: "192x192", type: "image/png" },
-      { url: "/images/transparent-photo.png", sizes: "512x512", type: "image/png" },
+      { url: "/images/stattrackr-icon.png", sizes: "192x192", type: "image/png" },
+      { url: "/images/stattrackr-icon.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/images/transparent-photo.png",
+    apple: [
+      { url: "/images/stattrackr-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,
