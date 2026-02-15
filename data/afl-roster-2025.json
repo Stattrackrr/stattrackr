@@ -1,2010 +1,2677 @@
 {
   "season": 2025,
-  "generatedAt": "2026-02-14T14:03:11.632Z",
+  "generatedAt": "2026-02-15T06:35:01.870Z",
   "source": "afltables.com",
   "sourcePage": "2025a.html",
   "playerCount": 667,
   "players": [
     {
-      "name": "Aaron Cadman"
+      "name": "Aaron Cadman",
+      "team": "GW"
     },
     {
-      "name": "Aaron Francis"
+      "name": "Aaron Francis",
+      "team": "SY"
     },
     {
-      "name": "Aaron Naughton"
+      "name": "Aaron Naughton",
+      "team": "WB"
     },
     {
-      "name": "Adam Cerra"
+      "name": "Adam Cerra",
+      "team": "CA"
     },
     {
-      "name": "Adam Saad"
+      "name": "Adam Saad",
+      "team": "CA"
     },
     {
-      "name": "Adam Treloar"
+      "name": "Adam Treloar",
+      "team": "WB"
     },
     {
-      "name": "Aidan Corr"
+      "name": "Aidan Corr",
+      "team": "NM"
     },
     {
-      "name": "Aidan Johnson"
+      "name": "Aidan Johnson",
+      "team": "ME"
     },
     {
-      "name": "Alex Cincotta"
+      "name": "Alex Cincotta",
+      "team": "CA"
     },
     {
-      "name": "Alex Davies"
+      "name": "Alex Davies",
+      "team": "GC"
     },
     {
-      "name": "Alex Dodson"
+      "name": "Alex Dodson",
+      "team": "SK"
     },
     {
-      "name": "Alex Neal-Bullen"
+      "name": "Alex Neal-Bullen",
+      "team": "AD"
     },
     {
-      "name": "Alex Pearce"
+      "name": "Alex Pearce",
+      "team": "FR"
     },
     {
-      "name": "Alex Sexton"
+      "name": "Alex Sexton",
+      "team": "GC"
     },
     {
-      "name": "Aliir Aliir"
+      "name": "Aliir Aliir",
+      "team": "PA"
     },
     {
-      "name": "Alix Tauru"
+      "name": "Alix Tauru",
+      "team": "SK"
     },
     {
-      "name": "Andrew Brayshaw"
+      "name": "Andrew Brayshaw",
+      "team": "FR"
     },
     {
-      "name": "Andrew McGrath"
+      "name": "Andrew McGrath",
+      "team": "ES"
     },
     {
-      "name": "Angus Clarke"
+      "name": "Angus Clarke",
+      "team": "ES"
     },
     {
-      "name": "Angus Hastie"
+      "name": "Angus Hastie",
+      "team": "SK"
     },
     {
-      "name": "Angus McLennan"
+      "name": "Angus McLennan",
+      "team": "SK"
     },
     {
-      "name": "Angus Sheldrick"
+      "name": "Angus Sheldrick",
+      "team": "SY"
     },
     {
-      "name": "Anthony Caminiti"
+      "name": "Anthony Caminiti",
+      "team": "SK"
     },
     {
-      "name": "Archer Day-Wicks"
+      "name": "Archer Day-Wicks",
+      "team": "ES"
     },
     {
-      "name": "Archer Reid"
+      "name": "Archer Reid",
+      "team": "WC"
     },
     {
-      "name": "Archie May"
+      "name": "Archie May",
+      "team": "ES"
     },
     {
-      "name": "Archie Perkins"
+      "name": "Archie Perkins",
+      "team": "ES"
     },
     {
-      "name": "Archie Roberts"
+      "name": "Archie Roberts",
+      "team": "ES"
     },
     {
-      "name": "Arie Schoenmaker"
+      "name": "Arie Schoenmaker",
+      "team": "SK"
     },
     {
-      "name": "Arthur Jones"
+      "name": "Arthur Jones",
+      "team": "WB"
     },
     {
-      "name": "Ashton Moir"
+      "name": "Ashton Moir",
+      "team": "CA"
     },
     {
-      "name": "Bailey Banfield"
+      "name": "Bailey Banfield",
+      "team": "FR"
     },
     {
-      "name": "Bailey Dale"
+      "name": "Bailey Dale",
+      "team": "WB"
     },
     {
-      "name": "Bailey Humphrey"
+      "name": "Bailey Humphrey",
+      "team": "GC"
     },
     {
-      "name": "Bailey Laurie"
+      "name": "Bailey Laurie",
+      "team": "ME"
     },
     {
-      "name": "Bailey Macdonald"
+      "name": "Bailey Macdonald",
+      "team": "HW"
     },
     {
-      "name": "Bailey Scott"
+      "name": "Bailey Scott",
+      "team": "NM"
     },
     {
-      "name": "Bailey Smith"
+      "name": "Bailey Smith",
+      "team": "GE"
     },
     {
-      "name": "Bailey Williams"
+      "name": "Bailey Williams",
+      "team": "WB"
     },
     {
-      "name": "Bayley Fritsch"
+      "name": "Bayley Fritsch",
+      "team": "ME"
     },
     {
-      "name": "Beau McCreery"
+      "name": "Beau McCreery",
+      "team": "CW"
     },
     {
-      "name": "Ben Ainsworth"
+      "name": "Ben Ainsworth",
+      "team": "GC"
     },
     {
-      "name": "Ben Hobbs"
+      "name": "Ben Hobbs",
+      "team": "ES"
     },
     {
-      "name": "Ben Jepson"
+      "name": "Ben Jepson",
+      "team": "GC"
     },
     {
-      "name": "Ben Keays"
+      "name": "Ben Keays",
+      "team": "AD"
     },
     {
-      "name": "Ben King"
+      "name": "Ben King",
+      "team": "GC"
     },
     {
-      "name": "Ben Long"
+      "name": "Ben Long",
+      "team": "GC"
     },
     {
-      "name": "Ben McKay"
+      "name": "Ben McKay",
+      "team": "ES"
     },
     {
-      "name": "Ben Miller"
+      "name": "Ben Miller",
+      "team": "RI"
     },
     {
-      "name": "Ben Paton"
+      "name": "Ben Paton",
+      "team": "SY"
     },
     {
-      "name": "Billy Dowling"
+      "name": "Billy Dowling",
+      "team": "AD"
     },
     {
-      "name": "Billy Frampton"
+      "name": "Billy Frampton",
+      "team": "CW"
     },
     {
-      "name": "Billy Wilson"
+      "name": "Billy Wilson",
+      "team": "CA"
     },
     {
-      "name": "Blake Acres"
+      "name": "Blake Acres",
+      "team": "CA"
     },
     {
-      "name": "Blake Hardwick"
+      "name": "Blake Hardwick",
+      "team": "HW"
     },
     {
-      "name": "Blake Howes"
+      "name": "Blake Howes",
+      "team": "ME"
     },
     {
-      "name": "Bo Allan"
+      "name": "Bo Allan",
+      "team": "WC"
     },
     {
-      "name": "Bobby Hill"
+      "name": "Bobby Hill",
+      "team": "CW"
     },
     {
-      "name": "Bodhi Uwland"
+      "name": "Bodhi Uwland",
+      "team": "GC"
     },
     {
-      "name": "Brad Close"
+      "name": "Brad Close",
+      "team": "GE"
     },
     {
-      "name": "Bradley Hill"
+      "name": "Bradley Hill",
+      "team": "SK"
     },
     {
-      "name": "Brady Hough"
+      "name": "Brady Hough",
+      "team": "WC"
     },
     {
-      "name": "Braeden Campbell"
+      "name": "Braeden Campbell",
+      "team": "SY"
     },
     {
-      "name": "Brandon Starcevich"
+      "name": "Brandon Starcevich",
+      "team": "BL"
     },
     {
-      "name": "Brandon Walker"
+      "name": "Brandon Walker",
+      "team": "FR"
     },
     {
-      "name": "Brandon Zerk-Thatcher"
+      "name": "Brandon Zerk-Thatcher",
+      "team": "PA"
     },
     {
-      "name": "Brayden Cook"
+      "name": "Brayden Cook",
+      "team": "AD"
     },
     {
-      "name": "Brayden Fiorini"
+      "name": "Brayden Fiorini",
+      "team": "GC"
     },
     {
-      "name": "Brayden Maynard"
+      "name": "Brayden Maynard",
+      "team": "CW"
     },
     {
-      "name": "Brennan Cox"
+      "name": "Brennan Cox",
+      "team": "FR"
     },
     {
-      "name": "Brent Daniels"
+      "name": "Brent Daniels",
+      "team": "GW"
     },
     {
-      "name": "Brodie Grundy"
+      "name": "Brodie Grundy",
+      "team": "SY"
     },
     {
-      "name": "Brodie Kemp"
+      "name": "Brodie Kemp",
+      "team": "CA"
     },
     {
-      "name": "Brodie Smith"
+      "name": "Brodie Smith",
+      "team": "AD"
     },
     {
-      "name": "Brody Mihocek"
+      "name": "Brody Mihocek",
+      "team": "CW"
     },
     {
-      "name": "Bruce Reville"
+      "name": "Bruce Reville",
+      "team": "BL"
     },
     {
-      "name": "Brynn Teakle"
+      "name": "Brynn Teakle",
+      "team": "NM"
     },
     {
-      "name": "Buku Khamis"
+      "name": "Buku Khamis",
+      "team": "WB"
     },
     {
-      "name": "Caiden Cleary"
+      "name": "Caiden Cleary",
+      "team": "SY"
     },
     {
-      "name": "Caleb Daniel"
+      "name": "Caleb Daniel",
+      "team": "NM"
     },
     {
-      "name": "Caleb Mitchell"
+      "name": "Caleb Mitchell",
+      "team": "SY"
     },
     {
-      "name": "Caleb Poulter"
+      "name": "Caleb Poulter",
+      "team": "WB"
     },
     {
-      "name": "Caleb Serong"
+      "name": "Caleb Serong",
+      "team": "FR"
     },
     {
-      "name": "Caleb Windsor"
+      "name": "Caleb Windsor",
+      "team": "ME"
     },
     {
-      "name": "Callan Ward"
+      "name": "Callan Ward",
+      "team": "GW"
     },
     {
-      "name": "Callum Ah Chee"
+      "name": "Callum Ah Chee",
+      "team": "BL"
     },
     {
-      "name": "Callum Brown"
+      "name": "Callum Brown",
+      "team": "GW"
     },
     {
-      "name": "Callum Coleman-Jones"
+      "name": "Callum Coleman-Jones",
+      "team": "NM"
     },
     {
-      "name": "Callum Mills"
+      "name": "Callum Mills",
+      "team": "SY"
     },
     {
-      "name": "Callum Wilkie"
+      "name": "Callum Wilkie",
+      "team": "SK"
     },
     {
-      "name": "Calsher Dear"
+      "name": "Calsher Dear",
+      "team": "HW"
     },
     {
-      "name": "Cam Mackenzie"
+      "name": "Cam Mackenzie",
+      "team": "HW"
     },
     {
-      "name": "Cam Rayner"
+      "name": "Cam Rayner",
+      "team": "BL"
     },
     {
-      "name": "Cameron Zurhaar"
+      "name": "Cameron Zurhaar",
+      "team": "NM"
     },
     {
-      "name": "Campbell Chesser"
+      "name": "Campbell Chesser",
+      "team": "WC"
     },
     {
-      "name": "Campbell Gray"
+      "name": "Campbell Gray",
+      "team": "RI"
     },
     {
-      "name": "Chad Warner"
+      "name": "Chad Warner",
+      "team": "SY"
     },
     {
-      "name": "Changkuoth Jiath"
+      "name": "Changkuoth Jiath",
+      "team": "HW"
     },
     {
-      "name": "Charlie Ballard"
+      "name": "Charlie Ballard",
+      "team": "GC"
     },
     {
-      "name": "Charlie Cameron"
+      "name": "Charlie Cameron",
+      "team": "BL"
     },
     {
-      "name": "Charlie Comben"
+      "name": "Charlie Comben",
+      "team": "NM"
     },
     {
-      "name": "Charlie Curnow"
+      "name": "Charlie Curnow",
+      "team": "CA"
     },
     {
-      "name": "Charlie Dean"
+      "name": "Charlie Dean",
+      "team": "CW"
     },
     {
-      "name": "Charlie Spargo"
+      "name": "Charlie Spargo",
+      "team": "ME"
     },
     {
-      "name": "Charlie West"
+      "name": "Charlie West",
+      "team": "CW"
     },
     {
-      "name": "Chayce Jones"
+      "name": "Chayce Jones",
+      "team": "AD"
     },
     {
-      "name": "Chris Burgess"
+      "name": "Chris Burgess",
+      "team": "AD"
     },
     {
-      "name": "Christian Moraes"
+      "name": "Christian Moraes",
+      "team": "PA"
     },
     {
-      "name": "Christian Petracca"
+      "name": "Christian Petracca",
+      "team": "ME"
     },
     {
-      "name": "Christian Salem"
+      "name": "Christian Salem",
+      "team": "ME"
     },
     {
-      "name": "Clay Hall"
+      "name": "Clay Hall",
+      "team": "WC"
     },
     {
-      "name": "Clayton Oliver"
+      "name": "Clayton Oliver",
+      "team": "ME"
     },
     {
-      "name": "Cody Angove"
+      "name": "Cody Angove",
+      "team": "GW"
     },
     {
-      "name": "Colby McKercher"
+      "name": "Colby McKercher",
+      "team": "NM"
     },
     {
-      "name": "Connor Budarick"
+      "name": "Connor Budarick",
+      "team": "GC"
     },
     {
-      "name": "Connor Idun"
+      "name": "Connor Idun",
+      "team": "GW"
     },
     {
-      "name": "Connor Macdonald"
+      "name": "Connor Macdonald",
+      "team": "HW"
     },
     {
-      "name": "Connor OSullivan"
+      "name": "Connor OSullivan",
+      "team": "GE"
     },
     {
-      "name": "Connor Rozee"
+      "name": "Connor Rozee",
+      "team": "PA"
     },
     {
-      "name": "Conor McKenna"
+      "name": "Conor McKenna",
+      "team": "BL"
     },
     {
-      "name": "Conor Nash"
+      "name": "Conor Nash",
+      "team": "HW"
     },
     {
-      "name": "Conor Stone"
+      "name": "Conor Stone",
+      "team": "GW"
     },
     {
-      "name": "Cooper Harvey"
+      "name": "Cooper Harvey",
+      "team": "NM"
     },
     {
-      "name": "Cooper Hynes"
+      "name": "Cooper Hynes",
+      "team": "WB"
     },
     {
-      "name": "Cooper Lord"
+      "name": "Cooper Lord",
+      "team": "CA"
     },
     {
-      "name": "Cooper Sharman"
+      "name": "Cooper Sharman",
+      "team": "SK"
     },
     {
-      "name": "Cooper Simpson"
+      "name": "Cooper Simpson",
+      "team": "FR"
     },
     {
-      "name": "Cooper Trembath"
+      "name": "Cooper Trembath",
+      "team": "NM"
     },
     {
-      "name": "Corey Durdin"
+      "name": "Corey Durdin",
+      "team": "CA"
     },
     {
-      "name": "Corey Wagner"
+      "name": "Corey Wagner",
+      "team": "FR"
     },
     {
-      "name": "Corey Warner"
+      "name": "Corey Warner",
+      "team": "SY"
     },
     {
-      "name": "Dan Butler"
+      "name": "Dan Butler",
+      "team": "SK"
     },
     {
-      "name": "Dan Houston"
+      "name": "Dan Houston",
+      "team": "CW"
     },
     {
-      "name": "Dane Rampe"
+      "name": "Dane Rampe",
+      "team": "SY"
     },
     {
-      "name": "Daniel Curtin"
+      "name": "Daniel Curtin",
+      "team": "AD"
     },
     {
-      "name": "Daniel McStay"
+      "name": "Daniel McStay",
+      "team": "CW"
     },
     {
-      "name": "Daniel Rioli"
+      "name": "Daniel Rioli",
+      "team": "GC"
     },
     {
-      "name": "Daniel Turner"
+      "name": "Daniel Turner",
+      "team": "ME"
     },
     {
-      "name": "Dante Visentini"
+      "name": "Dante Visentini",
+      "team": "PA"
     },
     {
-      "name": "Darcy Byrne-Jones"
+      "name": "Darcy Byrne-Jones",
+      "team": "PA"
     },
     {
-      "name": "Darcy Cameron"
+      "name": "Darcy Cameron",
+      "team": "CW"
     },
     {
-      "name": "Darcy Fogarty"
+      "name": "Darcy Fogarty",
+      "team": "AD"
     },
     {
-      "name": "Darcy Fort"
+      "name": "Darcy Fort",
+      "team": "BL"
     },
     {
-      "name": "Darcy Gardiner"
+      "name": "Darcy Gardiner",
+      "team": "BL"
     },
     {
-      "name": "Darcy Jones"
+      "name": "Darcy Jones",
+      "team": "GW"
     },
     {
-      "name": "Darcy Moore"
+      "name": "Darcy Moore",
+      "team": "CW"
     },
     {
-      "name": "Darcy Parish"
+      "name": "Darcy Parish",
+      "team": "ES"
     },
     {
-      "name": "Darcy Tucker"
+      "name": "Darcy Tucker",
+      "team": "NM"
     },
     {
-      "name": "Darcy Wilmot"
+      "name": "Darcy Wilmot",
+      "team": "BL"
     },
     {
-      "name": "Darcy Wilson"
+      "name": "Darcy Wilson",
+      "team": "SK"
     },
     {
-      "name": "David Swallow"
+      "name": "David Swallow",
+      "team": "GC"
     },
     {
-      "name": "Dayne Zorko"
+      "name": "Dayne Zorko",
+      "team": "BL"
     },
     {
-      "name": "Deven Robertson"
+      "name": "Deven Robertson",
+      "team": "BL"
     },
     {
-      "name": "Dion Prestia"
+      "name": "Dion Prestia",
+      "team": "RI"
     },
     {
-      "name": "Dougal Howard"
+      "name": "Dougal Howard",
+      "team": "SK"
     },
     {
-      "name": "Dylan Moore"
+      "name": "Dylan Moore",
+      "team": "HW"
     },
     {
-      "name": "Dylan Shiel"
+      "name": "Dylan Shiel",
+      "team": "ES"
     },
     {
-      "name": "Dylan Stephens"
+      "name": "Dylan Stephens",
+      "team": "NM"
     },
     {
-      "name": "Dylan Williams"
+      "name": "Dylan Williams",
+      "team": "PA"
     },
     {
-      "name": "Ed Langdon"
+      "name": "Ed Langdon",
+      "team": "ME"
     },
     {
-      "name": "Ed Richards"
+      "name": "Ed Richards",
+      "team": "WB"
     },
     {
-      "name": "Edward Allan"
+      "name": "Edward Allan",
+      "team": "CW"
     },
     {
-      "name": "Elijah Hewett"
+      "name": "Elijah Hewett",
+      "team": "WC"
     },
     {
-      "name": "Elijah Hollands"
+      "name": "Elijah Hollands",
+      "team": "CA"
     },
     {
-      "name": "Elijah Tsatas"
+      "name": "Elijah Tsatas",
+      "team": "ES"
     },
     {
-      "name": "Eric Hipwood"
+      "name": "Eric Hipwood",
+      "team": "BL"
     },
     {
-      "name": "Errol Gulden"
+      "name": "Errol Gulden",
+      "team": "SY"
     },
     {
-      "name": "Esava Ratugolea"
+      "name": "Esava Ratugolea",
+      "team": "PA"
     },
     {
-      "name": "Ethan Read"
+      "name": "Ethan Read",
+      "team": "GC"
     },
     {
-      "name": "Ewan Mackinlay"
+      "name": "Ewan Mackinlay",
+      "team": "PA"
     },
     {
-      "name": "Finn Callaghan"
+      "name": "Finn Callaghan",
+      "team": "GW"
     },
     {
-      "name": "Finn Maginness"
+      "name": "Finn Maginness",
+      "team": "HW"
     },
     {
-      "name": "Finn OSullivan"
+      "name": "Finn OSullivan",
+      "team": "NM"
     },
     {
-      "name": "Finnbar Maley"
+      "name": "Finnbar Maley",
+      "team": "NM"
     },
     {
-      "name": "Flynn Young"
+      "name": "Flynn Young",
+      "team": "CA"
     },
     {
-      "name": "Francis Evans"
+      "name": "Francis Evans",
+      "team": "CA"
     },
     {
-      "name": "Geordie Payne"
+      "name": "Geordie Payne",
+      "team": "NM"
     },
     {
-      "name": "George Hewett"
+      "name": "George Hewett",
+      "team": "CA"
     },
     {
-      "name": "George Stevens"
+      "name": "George Stevens",
+      "team": "GE"
     },
     {
-      "name": "George Wardlaw"
+      "name": "George Wardlaw",
+      "team": "NM"
     },
     {
-      "name": "Griffin Logue"
+      "name": "Griffin Logue",
+      "team": "NM"
     },
     {
-      "name": "Gryan Miers"
+      "name": "Gryan Miers",
+      "team": "GE"
     },
     {
-      "name": "Hamish Davis"
+      "name": "Hamish Davis",
+      "team": "WC"
     },
     {
-      "name": "Harley Reid"
+      "name": "Harley Reid",
+      "team": "WC"
     },
     {
-      "name": "Harris Andrews"
+      "name": "Harris Andrews",
+      "team": "BL"
     },
     {
-      "name": "Harrison Ramm"
+      "name": "Harrison Ramm",
+      "team": "PA"
     },
     {
-      "name": "Harry Armstrong"
+      "name": "Harry Armstrong",
+      "team": "RI"
     },
     {
-      "name": "Harry Boyd"
+      "name": "Harry Boyd",
+      "team": "SK"
     },
     {
-      "name": "Harry Cunningham"
+      "name": "Harry Cunningham",
+      "team": "SY"
     },
     {
-      "name": "Harry Edwards"
+      "name": "Harry Edwards",
+      "team": "WC"
     },
     {
-      "name": "Harry Himmelberg"
+      "name": "Harry Himmelberg",
+      "team": "GW"
     },
     {
-      "name": "Harry Jones"
+      "name": "Harry Jones",
+      "team": "ES"
     },
     {
-      "name": "Harry McKay"
+      "name": "Harry McKay",
+      "team": "CA"
     },
     {
-      "name": "Harry Morrison"
+      "name": "Harry Morrison",
+      "team": "HW"
     },
     {
-      "name": "Harry OFarrell"
+      "name": "Harry OFarrell",
+      "team": "CA"
     },
     {
-      "name": "Harry Perryman"
+      "name": "Harry Perryman",
+      "team": "CW"
     },
     {
-      "name": "Harry Petty"
+      "name": "Harry Petty",
+      "team": "ME"
     },
     {
-      "name": "Harry Rowston"
+      "name": "Harry Rowston",
+      "team": "GW"
     },
     {
-      "name": "Harry Schoenberg"
+      "name": "Harry Schoenberg",
+      "team": "AD"
     },
     {
-      "name": "Harry Sharp"
+      "name": "Harry Sharp",
+      "team": "ME"
     },
     {
-      "name": "Harry Sheezel"
+      "name": "Harry Sheezel",
+      "team": "NM"
     },
     {
-      "name": "Harvey Gallagher"
+      "name": "Harvey Gallagher",
+      "team": "WB"
     },
     {
-      "name": "Harvey Langford"
+      "name": "Harvey Langford",
+      "team": "ME"
     },
     {
-      "name": "Harvey Thomas"
+      "name": "Harvey Thomas",
+      "team": "GW"
     },
     {
-      "name": "Hayden McLean"
+      "name": "Hayden McLean",
+      "team": "SY"
     },
     {
-      "name": "Hayden Young"
+      "name": "Hayden Young",
+      "team": "FR"
     },
     {
-      "name": "Heath Chapman"
+      "name": "Heath Chapman",
+      "team": "FR"
     },
     {
-      "name": "Henry Hustwaite"
+      "name": "Henry Hustwaite",
+      "team": "HW"
     },
     {
-      "name": "Henry Smith"
+      "name": "Henry Smith",
+      "team": "BL"
     },
     {
-      "name": "Hudson OKeeffe"
+      "name": "Hudson OKeeffe",
+      "team": "CA"
     },
     {
-      "name": "Hugh Bond"
+      "name": "Hugh Bond",
+      "team": "AD"
     },
     {
-      "name": "Hugh Boxshall"
+      "name": "Hugh Boxshall",
+      "team": "SK"
     },
     {
-      "name": "Hugh Jackson"
+      "name": "Hugh Jackson",
+      "team": "PA"
     },
     {
-      "name": "Hugh McCluggage"
+      "name": "Hugh McCluggage",
+      "team": "BL"
     },
     {
-      "name": "Hugo Garcia"
+      "name": "Hugo Garcia",
+      "team": "SK"
     },
     {
-      "name": "Hugo Ralphsmith"
+      "name": "Hugo Ralphsmith",
+      "team": "RI"
     },
     {
-      "name": "Hunter Clark"
+      "name": "Hunter Clark",
+      "team": "SK"
     },
     {
-      "name": "Isaac Cumming"
+      "name": "Isaac Cumming",
+      "team": "AD"
     },
     {
-      "name": "Isaac Heeney"
+      "name": "Isaac Heeney",
+      "team": "SY"
     },
     {
-      "name": "Isaac Kako"
+      "name": "Isaac Kako",
+      "team": "ES"
     },
     {
-      "name": "Isaac Keeler"
+      "name": "Isaac Keeler",
+      "team": "SK"
     },
     {
-      "name": "Isaac Quaynor"
+      "name": "Isaac Quaynor",
+      "team": "CW"
     },
     {
-      "name": "Isaiah Dudley"
+      "name": "Isaiah Dudley",
+      "team": "FR"
     },
     {
-      "name": "Ivan Soldo"
+      "name": "Ivan Soldo",
+      "team": "PA"
     },
     {
-      "name": "Izak Rankine"
+      "name": "Izak Rankine",
+      "team": "AD"
     },
     {
-      "name": "Jack Billings"
+      "name": "Jack Billings",
+      "team": "ME"
     },
     {
-      "name": "Jack Bowes"
+      "name": "Jack Bowes",
+      "team": "GE"
     },
     {
-      "name": "Jack Buckley"
+      "name": "Jack Buckley",
+      "team": "GW"
     },
     {
-      "name": "Jack Buller"
+      "name": "Jack Buller",
+      "team": "SY"
     },
     {
-      "name": "Jack Carroll"
+      "name": "Jack Carroll",
+      "team": "SK"
     },
     {
-      "name": "Jack Crisp"
+      "name": "Jack Crisp",
+      "team": "CW"
     },
     {
-      "name": "Jack Darling"
+      "name": "Jack Darling",
+      "team": "NM"
     },
     {
-      "name": "Jack Ginnivan"
+      "name": "Jack Ginnivan",
+      "team": "HW"
     },
     {
-      "name": "Jack Graham"
+      "name": "Jack Graham",
+      "team": "WC"
     },
     {
-      "name": "Jack Gunston"
+      "name": "Jack Gunston",
+      "team": "HW"
     },
     {
-      "name": "Jack Henderson"
+      "name": "Jack Henderson",
+      "team": "ME"
     },
     {
-      "name": "Jack Henry"
+      "name": "Jack Henry",
+      "team": "GE"
     },
     {
-      "name": "Jack Higgins"
+      "name": "Jack Higgins",
+      "team": "SK"
     },
     {
-      "name": "Jack Hutchinson"
+      "name": "Jack Hutchinson",
+      "team": "WC"
     },
     {
-      "name": "Jack Lukosius"
+      "name": "Jack Lukosius",
+      "team": "PA"
     },
     {
-      "name": "Jack Macrae"
+      "name": "Jack Macrae",
+      "team": "SK"
     },
     {
-      "name": "Jack Martin"
+      "name": "Jack Martin",
+      "team": "GE"
     },
     {
-      "name": "Jack Payne"
+      "name": "Jack Payne",
+      "team": "BL"
     },
     {
-      "name": "Jack Petruccelle"
+      "name": "Jack Petruccelle",
+      "team": "WC"
     },
     {
-      "name": "Jack Ross"
+      "name": "Jack Ross",
+      "team": "RI"
     },
     {
-      "name": "Jack Scrimshaw"
+      "name": "Jack Scrimshaw",
+      "team": "HW"
     },
     {
-      "name": "Jack Silvagni"
+      "name": "Jack Silvagni",
+      "team": "CA"
     },
     {
-      "name": "Jack Sinclair"
+      "name": "Jack Sinclair",
+      "team": "SK"
     },
     {
-      "name": "Jack Steele"
+      "name": "Jack Steele",
+      "team": "SK"
     },
     {
-      "name": "Jack Viney"
+      "name": "Jack Viney",
+      "team": "ME"
     },
     {
-      "name": "Jack Whitlock"
+      "name": "Jack Whitlock",
+      "team": "PA"
     },
     {
-      "name": "Jack Williams"
+      "name": "Jack Williams",
+      "team": "WC"
     },
     {
-      "name": "Jackson Archer"
+      "name": "Jackson Archer",
+      "team": "NM"
     },
     {
-      "name": "Jackson Mead"
+      "name": "Jackson Mead",
+      "team": "PA"
     },
     {
-      "name": "Jacob Bauer"
+      "name": "Jacob Bauer",
+      "team": "RI"
     },
     {
-      "name": "Jacob Blight"
+      "name": "Jacob Blight",
+      "team": "RI"
     },
     {
-      "name": "Jacob Hopper"
+      "name": "Jacob Hopper",
+      "team": "RI"
     },
     {
-      "name": "Jacob Konstanty"
+      "name": "Jacob Konstanty",
+      "team": "NM"
     },
     {
-      "name": "Jacob Koschitzke"
+      "name": "Jacob Koschitzke",
+      "team": "RI"
     },
     {
-      "name": "Jacob Newton"
+      "name": "Jacob Newton",
+      "team": "WC"
     },
     {
-      "name": "Jacob van Rooyen"
+      "name": "Jacob van Rooyen",
+      "team": "ME"
     },
     {
-      "name": "Jacob Wehr"
+      "name": "Jacob Wehr",
+      "team": "GW"
     },
     {
-      "name": "Jacob Weitering"
+      "name": "Jacob Weitering",
+      "team": "CA"
     },
     {
-      "name": "Jade Gresham"
+      "name": "Jade Gresham",
+      "team": "ES"
     },
     {
-      "name": "Jaeger OMeara"
+      "name": "Jaeger OMeara",
+      "team": "FR"
     },
     {
-      "name": "Jai Culley"
+      "name": "Jai Culley",
+      "team": "ME"
     },
     {
-      "name": "Jai Newcombe"
+      "name": "Jai Newcombe",
+      "team": "HW"
     },
     {
-      "name": "Jake Bowey"
+      "name": "Jake Bowey",
+      "team": "ME"
     },
     {
-      "name": "Jake Lever"
+      "name": "Jake Lever",
+      "team": "ME"
     },
     {
-      "name": "Jake Lloyd"
+      "name": "Jake Lloyd",
+      "team": "SY"
     },
     {
-      "name": "Jake Melksham"
+      "name": "Jake Melksham",
+      "team": "ME"
     },
     {
-      "name": "Jake Riccardi"
+      "name": "Jake Riccardi",
+      "team": "GW"
     },
     {
-      "name": "Jake Rogers"
+      "name": "Jake Rogers",
+      "team": "GC"
     },
     {
-      "name": "Jake Soligo"
+      "name": "Jake Soligo",
+      "team": "AD"
     },
     {
-      "name": "Jake Stringer"
+      "name": "Jake Stringer",
+      "team": "GW"
     },
     {
-      "name": "Jake Waterman"
+      "name": "Jake Waterman",
+      "team": "WC"
     },
     {
-      "name": "James Aish"
+      "name": "James Aish",
+      "team": "FR"
     },
     {
-      "name": "James Borlase"
+      "name": "James Borlase",
+      "team": "AD"
     },
     {
-      "name": "James Harmes"
+      "name": "James Harmes",
+      "team": "WB"
     },
     {
-      "name": "James Jordon"
+      "name": "James Jordon",
+      "team": "SY"
     },
     {
-      "name": "James Leake"
+      "name": "James Leake",
+      "team": "GW"
     },
     {
-      "name": "James ODonnell"
+      "name": "James ODonnell",
+      "team": "WB"
     },
     {
-      "name": "James Peatling"
+      "name": "James Peatling",
+      "team": "AD"
     },
     {
-      "name": "James Rowbottom"
+      "name": "James Rowbottom",
+      "team": "SY"
     },
     {
-      "name": "James Sicily"
+      "name": "James Sicily",
+      "team": "HW"
     },
     {
-      "name": "James Trezise"
+      "name": "James Trezise",
+      "team": "RI"
     },
     {
-      "name": "James Tunstill"
+      "name": "James Tunstill",
+      "team": "BL"
     },
     {
-      "name": "James Worpel"
+      "name": "James Worpel",
+      "team": "HW"
     },
     {
-      "name": "Jamie Cripps"
+      "name": "Jamie Cripps",
+      "team": "WC"
     },
     {
-      "name": "Jamie Elliott"
+      "name": "Jamie Elliott",
+      "team": "CW"
     },
     {
-      "name": "Jarman Impey"
+      "name": "Jarman Impey",
+      "team": "HW"
     },
     {
-      "name": "Jarrod Berry"
+      "name": "Jarrod Berry",
+      "team": "BL"
     },
     {
-      "name": "Jarrod Witts"
+      "name": "Jarrod Witts",
+      "team": "GC"
     },
     {
-      "name": "Jase Burgoyne"
+      "name": "Jase Burgoyne",
+      "team": "PA"
     },
     {
-      "name": "Jason Horne-Francis"
+      "name": "Jason Horne-Francis",
+      "team": "PA"
     },
     {
-      "name": "Jason Johannisen"
+      "name": "Jason Johannisen",
+      "team": "WB"
     },
     {
-      "name": "Jaspa Fletcher"
+      "name": "Jaspa Fletcher",
+      "team": "BL"
     },
     {
-      "name": "Jasper Alger"
+      "name": "Jasper Alger",
+      "team": "RI"
     },
     {
-      "name": "Jaxon Binns"
+      "name": "Jaxon Binns",
+      "team": "CA"
     },
     {
-      "name": "Jaxon Prior"
+      "name": "Jaxon Prior",
+      "team": "ES"
     },
     {
-      "name": "Jayden Hunt"
+      "name": "Jayden Hunt",
+      "team": "WC"
     },
     {
-      "name": "Jayden Laverde"
+      "name": "Jayden Laverde",
+      "team": "ES"
     },
     {
-      "name": "Jayden Nguyen"
+      "name": "Jayden Nguyen",
+      "team": "ES"
     },
     {
-      "name": "Jayden Short"
+      "name": "Jayden Short",
+      "team": "RI"
     },
     {
-      "name": "Jed Adams"
+      "name": "Jed Adams",
+      "team": "ME"
     },
     {
-      "name": "Jed Bews"
+      "name": "Jed Bews",
+      "team": "GE"
     },
     {
-      "name": "Jed McEntee"
+      "name": "Jed McEntee",
+      "team": "PA"
     },
     {
-      "name": "Jed Walter"
+      "name": "Jed Walter",
+      "team": "GC"
     },
     {
-      "name": "Jedd Busslinger"
+      "name": "Jedd Busslinger",
+      "team": "WB"
     },
     {
-      "name": "Jeremy Cameron"
+      "name": "Jeremy Cameron",
+      "team": "GE"
     },
     {
-      "name": "Jeremy Finlayson"
+      "name": "Jeremy Finlayson",
+      "team": "PA"
     },
     {
-      "name": "Jeremy Howe"
+      "name": "Jeremy Howe",
+      "team": "CW"
     },
     {
-      "name": "Jeremy McGovern"
+      "name": "Jeremy McGovern",
+      "team": "WC"
     },
     {
-      "name": "Jeremy Sharp"
+      "name": "Jeremy Sharp",
+      "team": "FR"
     },
     {
-      "name": "Jesse Dattoli"
+      "name": "Jesse Dattoli",
+      "team": "SY"
     },
     {
-      "name": "Jesse Hogan"
+      "name": "Jesse Hogan",
+      "team": "GW"
     },
     {
-      "name": "Jesse Motlop"
+      "name": "Jesse Motlop",
+      "team": "CA"
     },
     {
-      "name": "Jhye Clark"
+      "name": "Jhye Clark",
+      "team": "GE"
     },
     {
-      "name": "Jimmy Webster"
+      "name": "Jimmy Webster",
+      "team": "SK"
     },
     {
-      "name": "Jobe Shanahan"
+      "name": "Jobe Shanahan",
+      "team": "WC"
     },
     {
-      "name": "Joe Berry"
+      "name": "Joe Berry",
+      "team": "PA"
     },
     {
-      "name": "Joe Fonti"
+      "name": "Joe Fonti",
+      "team": "GW"
     },
     {
-      "name": "Joe Richards"
+      "name": "Joe Richards",
+      "team": "PA"
     },
     {
-      "name": "Joel Amartey"
+      "name": "Joel Amartey",
+      "team": "SY"
     },
     {
-      "name": "Joel Freijah"
+      "name": "Joel Freijah",
+      "team": "WB"
     },
     {
-      "name": "Joel Hamling"
+      "name": "Joel Hamling",
+      "team": "SY"
     },
     {
-      "name": "Joel Jeffrey"
+      "name": "Joel Jeffrey",
+      "team": "GC"
     },
     {
-      "name": "John Noble"
+      "name": "John Noble",
+      "team": "GC"
     },
     {
-      "name": "Jonty Faull"
+      "name": "Jonty Faull",
+      "team": "RI"
     },
     {
-      "name": "Jordan Boyd"
+      "name": "Jordan Boyd",
+      "team": "CA"
     },
     {
-      "name": "Jordan Clark"
+      "name": "Jordan Clark",
+      "team": "FR"
     },
     {
-      "name": "Jordan Croft"
+      "name": "Jordan Croft",
+      "team": "WB"
     },
     {
-      "name": "Jordan Dawson"
+      "name": "Jordan Dawson",
+      "team": "AD"
     },
     {
-      "name": "Jordan de Goey"
+      "name": "Jordan de Goey",
+      "team": "CW"
     },
     {
-      "name": "Jordan Ridley"
+      "name": "Jordan Ridley",
+      "team": "ES"
     },
     {
-      "name": "Jordon Butts"
+      "name": "Jordon Butts",
+      "team": "AD"
     },
     {
-      "name": "Jordon Sweet"
+      "name": "Jordon Sweet",
+      "team": "PA"
     },
     {
-      "name": "Josaia Delana"
+      "name": "Josaia Delana",
+      "team": "GW"
     },
     {
-      "name": "Josh Battle"
+      "name": "Josh Battle",
+      "team": "HW"
     },
     {
-      "name": "Josh Daicos"
+      "name": "Josh Daicos",
+      "team": "CW"
     },
     {
-      "name": "Josh Dolan"
+      "name": "Josh Dolan",
+      "team": "WB"
     },
     {
-      "name": "Josh Draper"
+      "name": "Josh Draper",
+      "team": "FR"
     },
     {
-      "name": "Josh Dunkley"
+      "name": "Josh Dunkley",
+      "team": "BL"
     },
     {
-      "name": "Josh Gibcus"
+      "name": "Josh Gibcus",
+      "team": "RI"
     },
     {
-      "name": "Josh Kelly"
+      "name": "Josh Kelly",
+      "team": "GW"
     },
     {
-      "name": "Josh Rachele"
+      "name": "Josh Rachele",
+      "team": "AD"
     },
     {
-      "name": "Josh Sinn"
+      "name": "Josh Sinn",
+      "team": "PA"
     },
     {
-      "name": "Josh Treacy"
+      "name": "Josh Treacy",
+      "team": "FR"
     },
     {
-      "name": "Josh Ward"
+      "name": "Josh Ward",
+      "team": "HW"
     },
     {
-      "name": "Josh Weddle"
+      "name": "Josh Weddle",
+      "team": "HW"
     },
     {
-      "name": "Josh Worrell"
+      "name": "Josh Worrell",
+      "team": "AD"
     },
     {
-      "name": "Judd McVee"
+      "name": "Judd McVee",
+      "team": "ME"
     },
     {
-      "name": "Justin McInerney"
+      "name": "Justin McInerney",
+      "team": "SY"
     },
     {
-      "name": "Jy Farrar"
+      "name": "Jy Farrar",
+      "team": "GC"
     },
     {
-      "name": "Jy Simpkin"
+      "name": "Jy Simpkin",
+      "team": "NM"
     },
     {
-      "name": "Jye Amiss"
+      "name": "Jye Amiss",
+      "team": "FR"
     },
     {
-      "name": "Jye Caldwell"
+      "name": "Jye Caldwell",
+      "team": "ES"
     },
     {
-      "name": "Jye Menzie"
+      "name": "Jye Menzie",
+      "team": "ES"
     },
     {
-      "name": "Kade Chandler"
+      "name": "Kade Chandler",
+      "team": "ME"
     },
     {
-      "name": "Kai Lohmann"
+      "name": "Kai Lohmann",
+      "team": "BL"
     },
     {
-      "name": "Kaleb Smith"
+      "name": "Kaleb Smith",
+      "team": "RI"
     },
     {
-      "name": "Kallan Dawson"
+      "name": "Kallan Dawson",
+      "team": "NM"
     },
     {
-      "name": "Kamdyn McIntosh"
+      "name": "Kamdyn McIntosh",
+      "team": "RI"
     },
     {
-      "name": "Kane Farrell"
+      "name": "Kane Farrell",
+      "team": "PA"
     },
     {
-      "name": "Kane McAuliffe"
+      "name": "Kane McAuliffe",
+      "team": "RI"
     },
     {
-      "name": "Karl Amon"
+      "name": "Karl Amon",
+      "team": "HW"
     },
     {
-      "name": "Karl Worner"
+      "name": "Karl Worner",
+      "team": "FR"
     },
     {
-      "name": "Keidean Coleman"
+      "name": "Keidean Coleman",
+      "team": "BL"
     },
     {
-      "name": "Kieren Briggs"
+      "name": "Kieren Briggs",
+      "team": "GW"
     },
     {
-      "name": "Koltyn Tholstrup"
+      "name": "Koltyn Tholstrup",
+      "team": "ME"
     },
     {
-      "name": "Kyle Langford"
+      "name": "Kyle Langford",
+      "team": "ES"
     },
     {
-      "name": "Kysaiah Pickett"
+      "name": "Kysaiah Pickett",
+      "team": "ME"
     },
     {
-      "name": "Lachie Ash"
+      "name": "Lachie Ash",
+      "team": "GW"
     },
     {
-      "name": "Lachie Fogarty"
+      "name": "Lachie Fogarty",
+      "team": "CA"
     },
     {
-      "name": "Lachie Jones"
+      "name": "Lachie Jones",
+      "team": "PA"
     },
     {
-      "name": "Lachie Neale"
+      "name": "Lachie Neale",
+      "team": "BL"
     },
     {
-      "name": "Lachie Schultz"
+      "name": "Lachie Schultz",
+      "team": "CW"
     },
     {
-      "name": "Lachie Weller"
+      "name": "Lachie Weller",
+      "team": "GC"
     },
     {
-      "name": "Lachie Whitfield"
+      "name": "Lachie Whitfield",
+      "team": "GW"
     },
     {
-      "name": "Lachlan Blakiston"
+      "name": "Lachlan Blakiston",
+      "team": "ES"
     },
     {
-      "name": "Lachlan Bramble"
+      "name": "Lachlan Bramble",
+      "team": "WB"
     },
     {
-      "name": "Lachlan Cowan"
+      "name": "Lachlan Cowan",
+      "team": "CA"
     },
     {
-      "name": "Lachlan Gulbin"
+      "name": "Lachlan Gulbin",
+      "team": "GC"
     },
     {
-      "name": "Lachlan Keeffe"
+      "name": "Lachlan Keeffe",
+      "team": "GW"
     },
     {
-      "name": "Lachlan McNeil"
+      "name": "Lachlan McNeil",
+      "team": "WB"
     },
     {
-      "name": "Lachlan Murphy"
+      "name": "Lachlan Murphy",
+      "team": "AD"
     },
     {
-      "name": "Lachlan Sholl"
+      "name": "Lachlan Sholl",
+      "team": "AD"
     },
     {
-      "name": "Lachlan Sullivan"
+      "name": "Lachlan Sullivan",
+      "team": "CW"
     },
     {
-      "name": "Laitham Vandermeer"
+      "name": "Laitham Vandermeer",
+      "team": "WB"
     },
     {
-      "name": "Lance Collard"
+      "name": "Lance Collard",
+      "team": "SK"
     },
     {
-      "name": "Lawson Humphries"
+      "name": "Lawson Humphries",
+      "team": "GE"
     },
     {
-      "name": "Leek Aleer"
+      "name": "Leek Aleer",
+      "team": "GW"
     },
     {
-      "name": "Leo Lombard"
+      "name": "Leo Lombard",
+      "team": "GC"
     },
     {
-      "name": "Levi Ashcroft"
+      "name": "Levi Ashcroft",
+      "team": "BL"
     },
     {
-      "name": "Lewis Hayes"
+      "name": "Lewis Hayes",
+      "team": "ES"
     },
     {
-      "name": "Lewis Melican"
+      "name": "Lewis Melican",
+      "team": "SY"
     },
     {
-      "name": "Lewis Young"
+      "name": "Lewis Young",
+      "team": "CA"
     },
     {
-      "name": "Liam Baker"
+      "name": "Liam Baker",
+      "team": "WC"
     },
     {
-      "name": "Liam Duggan"
+      "name": "Liam Duggan",
+      "team": "WC"
     },
     {
-      "name": "Liam Fawcett"
+      "name": "Liam Fawcett",
+      "team": "RI"
     },
     {
-      "name": "Liam Henry"
+      "name": "Liam Henry",
+      "team": "SK"
     },
     {
-      "name": "Liam Jones"
+      "name": "Liam Jones",
+      "team": "WB"
     },
     {
-      "name": "Liam McMahon"
+      "name": "Liam McMahon",
+      "team": "ES"
     },
     {
-      "name": "Liam OConnell"
+      "name": "Liam OConnell",
+      "team": "SK"
     },
     {
-      "name": "Liam Reidy"
+      "name": "Liam Reidy",
+      "team": "FR"
     },
     {
-      "name": "Liam Ryan"
+      "name": "Liam Ryan",
+      "team": "WC"
     },
     {
-      "name": "Liam Stocker"
+      "name": "Liam Stocker",
+      "team": "SK"
     },
     {
-      "name": "Lloyd Meek"
+      "name": "Lloyd Meek",
+      "team": "HW"
     },
     {
-      "name": "Logan Evans"
+      "name": "Logan Evans",
+      "team": "PA"
     },
     {
-      "name": "Logan Morris"
+      "name": "Logan Morris",
+      "team": "BL"
     },
     {
-      "name": "Luamon Lual"
+      "name": "Luamon Lual",
+      "team": "ES"
     },
     {
-      "name": "Lucas Camporeale"
+      "name": "Lucas Camporeale",
+      "team": "CA"
     },
     {
-      "name": "Lucca Grego"
+      "name": "Lucca Grego",
+      "team": "WC"
     },
     {
-      "name": "Luke Beecken"
+      "name": "Luke Beecken",
+      "team": "BL"
     },
     {
-      "name": "Luke Breust"
+      "name": "Luke Breust",
+      "team": "HW"
     },
     {
-      "name": "Luke Cleary"
+      "name": "Luke Cleary",
+      "team": "WB"
     },
     {
-      "name": "Luke Davies-Uniacke"
+      "name": "Luke Davies-Uniacke",
+      "team": "NM"
     },
     {
-      "name": "Luke Jackson"
+      "name": "Luke Jackson",
+      "team": "FR"
     },
     {
-      "name": "Luke McDonald"
+      "name": "Luke McDonald",
+      "team": "NM"
     },
     {
-      "name": "Luke Nankervis"
+      "name": "Luke Nankervis",
+      "team": "AD"
     },
     {
-      "name": "Luke Parker"
+      "name": "Luke Parker",
+      "team": "NM"
     },
     {
-      "name": "Luke Pedlar"
+      "name": "Luke Pedlar",
+      "team": "AD"
     },
     {
-      "name": "Luke Ryan"
+      "name": "Luke Ryan",
+      "team": "FR"
     },
     {
-      "name": "Luke Trainor"
+      "name": "Luke Trainor",
+      "team": "RI"
     },
     {
-      "name": "Mabior Chol"
+      "name": "Mabior Chol",
+      "team": "HW"
     },
     {
-      "name": "Mac Andrew"
+      "name": "Mac Andrew",
+      "team": "GC"
     },
     {
-      "name": "Malakai Champion"
+      "name": "Malakai Champion",
+      "team": "WC"
     },
     {
-      "name": "Malcolm Rosas"
+      "name": "Malcolm Rosas",
+      "team": "GC"
     },
     {
-      "name": "Mani Liddy"
+      "name": "Mani Liddy",
+      "team": "PA"
     },
     {
-      "name": "Marc Pittonet"
+      "name": "Marc Pittonet",
+      "team": "CA"
     },
     {
-      "name": "Marcus Bontempelli"
+      "name": "Marcus Bontempelli",
+      "team": "WB"
     },
     {
-      "name": "Marcus Windhager"
+      "name": "Marcus Windhager",
+      "team": "SK"
     },
     {
-      "name": "Mark Blicavs"
+      "name": "Mark Blicavs",
+      "team": "GE"
     },
     {
-      "name": "Mark Keane"
+      "name": "Mark Keane",
+      "team": "AD"
     },
     {
-      "name": "Mark OConnor"
+      "name": "Mark OConnor",
+      "team": "GE"
     },
     {
-      "name": "Mason Cox"
+      "name": "Mason Cox",
+      "team": "CW"
     },
     {
-      "name": "Mason Redman"
+      "name": "Mason Redman",
+      "team": "ES"
     },
     {
-      "name": "Mason Wood"
+      "name": "Mason Wood",
+      "team": "SK"
     },
     {
-      "name": "Massimo DAmbrosio"
+      "name": "Massimo DAmbrosio",
+      "team": "HW"
     },
     {
-      "name": "Matt Carroll"
+      "name": "Matt Carroll",
+      "team": "CA"
     },
     {
-      "name": "Matt Crouch"
+      "name": "Matt Crouch",
+      "team": "AD"
     },
     {
-      "name": "Matt Flynn"
+      "name": "Matt Flynn",
+      "team": "WC"
     },
     {
-      "name": "Matt Guelfi"
+      "name": "Matt Guelfi",
+      "team": "ES"
     },
     {
-      "name": "Matt Roberts"
+      "name": "Matt Roberts",
+      "team": "SY"
     },
     {
-      "name": "Matt Rowell"
+      "name": "Matt Rowell",
+      "team": "GC"
     },
     {
-      "name": "Matt Whitlock"
+      "name": "Matt Whitlock",
+      "team": "NM"
     },
     {
-      "name": "Mattaes Phillipou"
+      "name": "Mattaes Phillipou",
+      "team": "SK"
     },
     {
-      "name": "Matthew Cottrell"
+      "name": "Matthew Cottrell",
+      "team": "CA"
     },
     {
-      "name": "Matthew Jefferson"
+      "name": "Matthew Jefferson",
+      "team": "ME"
     },
     {
-      "name": "Matthew Johnson"
+      "name": "Matthew Johnson",
+      "team": "FR"
     },
     {
-      "name": "Matthew Kennedy"
+      "name": "Matthew Kennedy",
+      "team": "WB"
     },
     {
-      "name": "Matthew Owies"
+      "name": "Matthew Owies",
+      "team": "WC"
     },
     {
-      "name": "Maurice Rioli"
+      "name": "Maurice Rioli",
+      "team": "RI"
     },
     {
-      "name": "Max Gawn"
+      "name": "Max Gawn",
+      "team": "ME"
     },
     {
-      "name": "Max Gruzewski"
+      "name": "Max Gruzewski",
+      "team": "GW"
     },
     {
-      "name": "Max Hall"
+      "name": "Max Hall",
+      "team": "SK"
     },
     {
-      "name": "Max Heath"
+      "name": "Max Heath",
+      "team": "SK"
     },
     {
-      "name": "Max Holmes"
+      "name": "Max Holmes",
+      "team": "GE"
     },
     {
-      "name": "Max Michalanney"
+      "name": "Max Michalanney",
+      "team": "AD"
     },
     {
-      "name": "Max Ramsden"
+      "name": "Max Ramsden",
+      "team": "HW"
     },
     {
-      "name": "Michael Frederick"
+      "name": "Michael Frederick",
+      "team": "FR"
     },
     {
-      "name": "Miles Bergman"
+      "name": "Miles Bergman",
+      "team": "PA"
     },
     {
-      "name": "Mitch Duncan"
+      "name": "Mitch Duncan",
+      "team": "GE"
     },
     {
-      "name": "Mitch Georgiades"
+      "name": "Mitch Georgiades",
+      "team": "PA"
     },
     {
-      "name": "Mitch Hinge"
+      "name": "Mitch Hinge",
+      "team": "AD"
     },
     {
-      "name": "Mitch Knevitt"
+      "name": "Mitch Knevitt",
+      "team": "GE"
     },
     {
-      "name": "Mitch Lewis"
+      "name": "Mitch Lewis",
+      "team": "HW"
     },
     {
-      "name": "Mitch McGovern"
+      "name": "Mitch McGovern",
+      "team": "CA"
     },
     {
-      "name": "Mitch Owens"
+      "name": "Mitch Owens",
+      "team": "SK"
     },
     {
-      "name": "Murphy Reid"
+      "name": "Murphy Reid",
+      "team": "FR"
     },
     {
-      "name": "Mykelti Lefau"
+      "name": "Mykelti Lefau",
+      "team": "RI"
     },
     {
-      "name": "Nasiah Wanganeen-Milera"
+      "name": "Nasiah Wanganeen-Milera",
+      "team": "SK"
     },
     {
-      "name": "Nat Fyfe"
+      "name": "Nat Fyfe",
+      "team": "FR"
     },
     {
-      "name": "Nate Caddy"
+      "name": "Nate Caddy",
+      "team": "ES"
     },
     {
-      "name": "Nathan Broad"
+      "name": "Nathan Broad",
+      "team": "RI"
     },
     {
-      "name": "Nathan ODriscoll"
+      "name": "Nathan ODriscoll",
+      "team": "FR"
     },
     {
-      "name": "Ned Long"
+      "name": "Ned Long",
+      "team": "CW"
     },
     {
-      "name": "Ned Moyle"
+      "name": "Ned Moyle",
+      "team": "GC"
     },
     {
-      "name": "Ned Reeves"
+      "name": "Ned Reeves",
+      "team": "HW"
     },
     {
-      "name": "Neil Erasmus"
+      "name": "Neil Erasmus",
+      "team": "FR"
     },
     {
-      "name": "Nic Martin"
+      "name": "Nic Martin",
+      "team": "ES"
     },
     {
-      "name": "Nick Blakey"
+      "name": "Nick Blakey",
+      "team": "SY"
     },
     {
-      "name": "Nick Bryan"
+      "name": "Nick Bryan",
+      "team": "ES"
     },
     {
-      "name": "Nick Coffield"
+      "name": "Nick Coffield",
+      "team": "WB"
     },
     {
-      "name": "Nick Daicos"
+      "name": "Nick Daicos",
+      "team": "CW"
     },
     {
-      "name": "Nick Haynes"
+      "name": "Nick Haynes",
+      "team": "CA"
     },
     {
-      "name": "Nick Holman"
+      "name": "Nick Holman",
+      "team": "GC"
     },
     {
-      "name": "Nick Larkey"
+      "name": "Nick Larkey",
+      "team": "NM"
     },
     {
-      "name": "Nick Madden"
+      "name": "Nick Madden",
+      "team": "GW"
     },
     {
-      "name": "Nick Murray"
+      "name": "Nick Murray",
+      "team": "AD"
     },
     {
-      "name": "Nick Vlastuin"
+      "name": "Nick Vlastuin",
+      "team": "RI"
     },
     {
-      "name": "Nick Watson"
+      "name": "Nick Watson",
+      "team": "HW"
     },
     {
-      "name": "Noah Anderson"
+      "name": "Noah Anderson",
+      "team": "GC"
     },
     {
-      "name": "Noah Answerth"
+      "name": "Noah Answerth",
+      "team": "BL"
     },
     {
-      "name": "Noah Balta"
+      "name": "Noah Balta",
+      "team": "RI"
     },
     {
-      "name": "Noah Long"
+      "name": "Noah Long",
+      "team": "WC"
     },
     {
-      "name": "Oisin Mullin"
+      "name": "Oisin Mullin",
+      "team": "GE"
     },
     {
-      "name": "Oleg Markov"
+      "name": "Oleg Markov",
+      "team": "CW"
     },
     {
-      "name": "Oliver Dempsey"
+      "name": "Oliver Dempsey",
+      "team": "GE"
     },
     {
-      "name": "Oliver Florent"
+      "name": "Oliver Florent",
+      "team": "SY"
     },
     {
-      "name": "Oliver Henry"
+      "name": "Oliver Henry",
+      "team": "GE"
     },
     {
-      "name": "Oliver Hollands"
+      "name": "Oliver Hollands",
+      "team": "CA"
     },
     {
-      "name": "Oliver Wiltshire"
+      "name": "Oliver Wiltshire",
+      "team": "GE"
     },
     {
-      "name": "Ollie Lord"
+      "name": "Ollie Lord",
+      "team": "PA"
     },
     {
-      "name": "Ollie Wines"
+      "name": "Ollie Wines",
+      "team": "PA"
     },
     {
-      "name": "Orazio Fantasia"
+      "name": "Orazio Fantasia",
+      "team": "CA"
     },
     {
-      "name": "Oscar Adams"
+      "name": "Oscar Adams",
+      "team": "GC"
     },
     {
-      "name": "Oscar Allen"
+      "name": "Oscar Allen",
+      "team": "WC"
     },
     {
-      "name": "Oscar McDonald"
+      "name": "Oscar McDonald",
+      "team": "FR"
     },
     {
-      "name": "Oscar McInerney"
+      "name": "Oscar McInerney",
+      "team": "BL"
     },
     {
-      "name": "Oskar Baker"
+      "name": "Oskar Baker",
+      "team": "WB"
     },
     {
-      "name": "Oskar Smartt"
+      "name": "Oskar Smartt",
+      "team": "ES"
     },
     {
-      "name": "Patrick Cripps"
+      "name": "Patrick Cripps",
+      "team": "CA"
     },
     {
-      "name": "Patrick Dangerfield"
+      "name": "Patrick Dangerfield",
+      "team": "GE"
     },
     {
-      "name": "Patrick Lipinski"
+      "name": "Patrick Lipinski",
+      "team": "CW"
     },
     {
-      "name": "Patrick Voss"
+      "name": "Patrick Voss",
+      "team": "FR"
     },
     {
-      "name": "Paul Curtis"
+      "name": "Paul Curtis",
+      "team": "NM"
     },
     {
-      "name": "Peter Ladhams"
+      "name": "Peter Ladhams",
+      "team": "SY"
     },
     {
-      "name": "Peter Wright"
+      "name": "Peter Wright",
+      "team": "ES"
     },
     {
-      "name": "Quinton Narkle"
+      "name": "Quinton Narkle",
+      "team": "FR"
     },
     {
-      "name": "Reef McInnes"
+      "name": "Reef McInnes",
+      "team": "CW"
     },
     {
-      "name": "Reilly OBrien"
+      "name": "Reilly OBrien",
+      "team": "AD"
     },
     {
-      "name": "Reuben Ginbey"
+      "name": "Reuben Ginbey",
+      "team": "WC"
     },
     {
-      "name": "Rhett Bazzo"
+      "name": "Rhett Bazzo",
+      "team": "WC"
     },
     {
-      "name": "Rhyan Mansell"
+      "name": "Rhyan Mansell",
+      "team": "RI"
     },
     {
-      "name": "Rhylee West"
+      "name": "Rhylee West",
+      "team": "WB"
     },
     {
-      "name": "Rhys Stanley"
+      "name": "Rhys Stanley",
+      "team": "GE"
     },
     {
-      "name": "Rhys Unwin"
+      "name": "Rhys Unwin",
+      "team": "ES"
     },
     {
-      "name": "Riley Bice"
+      "name": "Riley Bice",
+      "team": "SY"
     },
     {
-      "name": "Riley Garcia"
+      "name": "Riley Garcia",
+      "team": "WB"
     },
     {
-      "name": "Riley Hardeman"
+      "name": "Riley Hardeman",
+      "team": "NM"
     },
     {
-      "name": "Riley Thilthorpe"
+      "name": "Riley Thilthorpe",
+      "team": "AD"
     },
     {
-      "name": "Roan Steele"
+      "name": "Roan Steele",
+      "team": "CW"
     },
     {
-      "name": "Robert Hansen"
+      "name": "Robert Hansen",
+      "team": "NM"
     },
     {
-      "name": "Rory Atkins"
+      "name": "Rory Atkins",
+      "team": "PA"
     },
     {
-      "name": "Rory Laird"
+      "name": "Rory Laird",
+      "team": "AD"
     },
     {
-      "name": "Rory Lobb"
+      "name": "Rory Lobb",
+      "team": "WB"
     },
     {
-      "name": "Rowan Marshall"
+      "name": "Rowan Marshall",
+      "team": "SK"
     },
     {
-      "name": "Ryan Angwin"
+      "name": "Ryan Angwin",
+      "team": "GW"
     },
     {
-      "name": "Ryan Burton"
+      "name": "Ryan Burton",
+      "team": "PA"
     },
     {
-      "name": "Ryan Byrnes"
+      "name": "Ryan Byrnes",
+      "team": "SK"
     },
     {
-      "name": "Ryan Gardner"
+      "name": "Ryan Gardner",
+      "team": "WB"
     },
     {
-      "name": "Ryan Lester"
+      "name": "Ryan Lester",
+      "team": "BL"
     },
     {
-      "name": "Ryan Maric"
+      "name": "Ryan Maric",
+      "team": "WC"
     },
     {
-      "name": "Ryley Sanders"
+      "name": "Ryley Sanders",
+      "team": "WB"
     },
     {
-      "name": "Saad El-Hawli"
+      "name": "Saad El-Hawli",
+      "team": "ES"
     },
     {
-      "name": "Sam Banks"
+      "name": "Sam Banks",
+      "team": "RI"
     },
     {
-      "name": "Sam Berry"
+      "name": "Sam Berry",
+      "team": "AD"
     },
     {
-      "name": "Sam Butler"
+      "name": "Sam Butler",
+      "team": "HW"
     },
     {
-      "name": "Sam Clohesy"
+      "name": "Sam Clohesy",
+      "team": "GC"
     },
     {
-      "name": "Sam Collins"
+      "name": "Sam Collins",
+      "team": "GC"
     },
     {
-      "name": "Sam Darcy"
+      "name": "Sam Darcy",
+      "team": "WB"
     },
     {
-      "name": "Sam Davidson"
+      "name": "Sam Davidson",
+      "team": "WB"
     },
     {
-      "name": "Sam Day"
+      "name": "Sam Day",
+      "team": "BL"
     },
     {
-      "name": "Sam De Koning"
+      "name": "Sam De Koning",
+      "team": "GE"
     },
     {
-      "name": "Sam Docherty"
+      "name": "Sam Docherty",
+      "team": "CA"
     },
     {
-      "name": "Sam Draper"
+      "name": "Sam Draper",
+      "team": "ES"
     },
     {
-      "name": "Sam Durham"
+      "name": "Sam Durham",
+      "team": "ES"
     },
     {
-      "name": "Sam Flanders"
+      "name": "Sam Flanders",
+      "team": "GC"
     },
     {
-      "name": "Sam Frost"
+      "name": "Sam Frost",
+      "team": "HW"
     },
     {
-      "name": "Sam Lalor"
+      "name": "Sam Lalor",
+      "team": "RI"
     },
     {
-      "name": "Sam Marshall"
+      "name": "Sam Marshall",
+      "team": "BL"
     },
     {
-      "name": "Sam Powell-Pepper"
+      "name": "Sam Powell-Pepper",
+      "team": "PA"
     },
     {
-      "name": "Sam Switkowski"
+      "name": "Sam Switkowski",
+      "team": "FR"
     },
     {
-      "name": "Sam Taylor"
+      "name": "Sam Taylor",
+      "team": "GW"
     },
     {
-      "name": "Sam Walsh"
+      "name": "Sam Walsh",
+      "team": "CA"
     },
     {
-      "name": "Sam Wicks"
+      "name": "Sam Wicks",
+      "team": "SY"
     },
     {
-      "name": "Samson Ryan"
+      "name": "Samson Ryan",
+      "team": "RI"
     },
     {
-      "name": "Sandy Brock"
+      "name": "Sandy Brock",
+      "team": "WC"
     },
     {
-      "name": "Scott Pendlebury"
+      "name": "Scott Pendlebury",
+      "team": "CW"
     },
     {
-      "name": "Seamus Mitchell"
+      "name": "Seamus Mitchell",
+      "team": "HW"
     },
     {
-      "name": "Sean Darcy"
+      "name": "Sean Darcy",
+      "team": "FR"
     },
     {
-      "name": "Sean Lemmens"
+      "name": "Sean Lemmens",
+      "team": "GC"
     },
     {
-      "name": "Seth Campbell"
+      "name": "Seth Campbell",
+      "team": "RI"
     },
     {
-      "name": "Shai Bolton"
+      "name": "Shai Bolton",
+      "team": "FR"
     },
     {
-      "name": "Shannon Neale"
+      "name": "Shannon Neale",
+      "team": "GE"
     },
     {
-      "name": "Shaun Mannagh"
+      "name": "Shaun Mannagh",
+      "team": "GE"
     },
     {
-      "name": "Sid Draper"
+      "name": "Sid Draper",
+      "team": "AD"
     },
     {
-      "name": "Steele Sidebottom"
+      "name": "Steele Sidebottom",
+      "team": "CW"
     },
     {
-      "name": "Steely Green"
+      "name": "Steely Green",
+      "team": "RI"
     },
     {
-      "name": "Stephen Coniglio"
+      "name": "Stephen Coniglio",
+      "team": "GW"
     },
     {
-      "name": "Steven May"
+      "name": "Steven May",
+      "team": "ME"
     },
     {
-      "name": "Taj Hotton"
+      "name": "Taj Hotton",
+      "team": "RI"
     },
     {
-      "name": "Taj Woewodin"
+      "name": "Taj Woewodin",
+      "team": "ME"
     },
     {
-      "name": "Taylor Adams"
+      "name": "Taylor Adams",
+      "team": "SY"
     },
     {
-      "name": "Taylor Duryea"
+      "name": "Taylor Duryea",
+      "team": "WB"
     },
     {
-      "name": "Taylor Walker"
+      "name": "Taylor Walker",
+      "team": "AD"
     },
     {
-      "name": "Ted Clohesy"
+      "name": "Ted Clohesy",
+      "team": "GE"
     },
     {
-      "name": "Thomson Dow"
+      "name": "Thomson Dow",
+      "team": "RI"
     },
     {
-      "name": "Tim English"
+      "name": "Tim English",
+      "team": "WB"
     },
     {
-      "name": "Tim Kelly"
+      "name": "Tim Kelly",
+      "team": "WC"
     },
     {
-      "name": "Tim Membrey"
+      "name": "Tim Membrey",
+      "team": "CW"
     },
     {
-      "name": "Tim Taranto"
+      "name": "Tim Taranto",
+      "team": "RI"
     },
     {
-      "name": "Tobie Travaglia"
+      "name": "Tobie Travaglia",
+      "team": "SK"
     },
     {
-      "name": "Toby Bedford"
+      "name": "Toby Bedford",
+      "team": "GW"
     },
     {
-      "name": "Toby Greene"
+      "name": "Toby Greene",
+      "team": "GW"
     },
     {
-      "name": "Toby McMullin"
+      "name": "Toby McMullin",
+      "team": "GW"
     },
     {
-      "name": "Toby Nankervis"
+      "name": "Toby Nankervis",
+      "team": "RI"
     },
     {
-      "name": "Toby Pink"
+      "name": "Toby Pink",
+      "team": "NM"
     },
     {
-      "name": "Todd Goldstein"
+      "name": "Todd Goldstein",
+      "team": "ES"
     },
     {
-      "name": "Tom Atkins"
+      "name": "Tom Atkins",
+      "team": "GE"
     },
     {
-      "name": "Tom Barrass"
+      "name": "Tom Barrass",
+      "team": "HW"
     },
     {
-      "name": "Tom Brown"
+      "name": "Tom Brown",
+      "team": "RI"
     },
     {
-      "name": "Tom Cochrane"
+      "name": "Tom Cochrane",
+      "team": "PA"
     },
     {
-      "name": "Tom Cole"
+      "name": "Tom Cole",
+      "team": "WC"
     },
     {
-      "name": "Tom De Koning"
+      "name": "Tom De Koning",
+      "team": "CA"
     },
     {
-      "name": "Tom Doedee"
+      "name": "Tom Doedee",
+      "team": "BL"
     },
     {
-      "name": "Tom Edwards"
+      "name": "Tom Edwards",
+      "team": "ES"
     },
     {
-      "name": "Tom Fullarton"
+      "name": "Tom Fullarton",
+      "team": "ME"
     },
     {
-      "name": "Tom Green"
+      "name": "Tom Green",
+      "team": "GW"
     },
     {
-      "name": "Tom Gross"
+      "name": "Tom Gross",
+      "team": "WC"
     },
     {
-      "name": "Tom Hanily"
+      "name": "Tom Hanily",
+      "team": "SY"
     },
     {
-      "name": "Tom Liberatore"
+      "name": "Tom Liberatore",
+      "team": "WB"
     },
     {
-      "name": "Tom Lynch"
+      "name": "Tom Lynch",
+      "team": "RI"
     },
     {
-      "name": "Tom McCarthy"
+      "name": "Tom McCarthy",
+      "team": "WC"
     },
     {
-      "name": "Tom McCartin"
+      "name": "Tom McCartin",
+      "team": "SY"
     },
     {
-      "name": "Tom McDonald"
+      "name": "Tom McDonald",
+      "team": "ME"
     },
     {
-      "name": "Tom Mitchell"
+      "name": "Tom Mitchell",
+      "team": "CW"
     },
     {
-      "name": "Tom Papley"
+      "name": "Tom Papley",
+      "team": "SY"
     },
     {
-      "name": "Tom Powell"
+      "name": "Tom Powell",
+      "team": "NM"
     },
     {
-      "name": "Tom Sims"
+      "name": "Tom Sims",
+      "team": "RI"
     },
     {
-      "name": "Tom Sparrow"
+      "name": "Tom Sparrow",
+      "team": "ME"
     },
     {
-      "name": "Tom Stewart"
+      "name": "Tom Stewart",
+      "team": "GE"
     },
     {
-      "name": "Touk Miller"
+      "name": "Touk Miller",
+      "team": "GC"
     },
     {
-      "name": "Travis Boak"
+      "name": "Travis Boak",
+      "team": "PA"
     },
     {
-      "name": "Trent Rivers"
+      "name": "Trent Rivers",
+      "team": "ME"
     },
     {
-      "name": "Tristan Xerri"
+      "name": "Tristan Xerri",
+      "team": "NM"
     },
     {
-      "name": "Ty Gallop"
+      "name": "Ty Gallop",
+      "team": "BL"
     },
     {
-      "name": "Tylar Young"
+      "name": "Tylar Young",
+      "team": "RI"
     },
     {
-      "name": "Tyler Brockman"
+      "name": "Tyler Brockman",
+      "team": "WC"
     },
     {
-      "name": "Tyler Sonsie"
+      "name": "Tyler Sonsie",
+      "team": "RI"
     },
     {
-      "name": "Tyrell Dewar"
+      "name": "Tyrell Dewar",
+      "team": "WC"
     },
     {
-      "name": "Tyson Stengle"
+      "name": "Tyson Stengle",
+      "team": "GE"
     },
     {
-      "name": "Vigo Visentini"
+      "name": "Vigo Visentini",
+      "team": "ES"
     },
     {
-      "name": "Wayne Milera"
+      "name": "Wayne Milera",
+      "team": "AD"
     },
     {
-      "name": "Wil Dawson"
+      "name": "Wil Dawson",
+      "team": "NM"
     },
     {
-      "name": "Wil Parker"
+      "name": "Wil Parker",
+      "team": "CW"
     },
     {
-      "name": "Wil Powell"
+      "name": "Wil Powell",
+      "team": "GC"
     },
     {
-      "name": "Will Ashcroft"
+      "name": "Will Ashcroft",
+      "team": "BL"
     },
     {
-      "name": "Will Day"
+      "name": "Will Day",
+      "team": "HW"
     },
     {
-      "name": "Will Graham"
+      "name": "Will Graham",
+      "team": "GC"
     },
     {
-      "name": "Will Hayes"
+      "name": "Will Hayes",
+      "team": "CW"
     },
     {
-      "name": "Will Hayward"
+      "name": "Will Hayward",
+      "team": "SY"
     },
     {
-      "name": "Will Hoskin-Elliott"
+      "name": "Will Hoskin-Elliott",
+      "team": "CW"
     },
     {
-      "name": "Will Lorenz"
+      "name": "Will Lorenz",
+      "team": "PA"
     },
     {
-      "name": "Will McLachlan"
+      "name": "Will McLachlan",
+      "team": "BL"
     },
     {
-      "name": "Will Phillips"
+      "name": "Will Phillips",
+      "team": "NM"
     },
     {
-      "name": "Will Setterfield"
+      "name": "Will Setterfield",
+      "team": "ES"
     },
     {
-      "name": "Will White"
+      "name": "Will White",
+      "team": "CA"
     },
     {
-      "name": "Willem Drew"
+      "name": "Willem Drew",
+      "team": "PA"
     },
     {
-      "name": "Willie Rioli"
+      "name": "Willie Rioli",
+      "team": "PA"
     },
     {
-      "name": "Xavier Duursma"
+      "name": "Xavier Duursma",
+      "team": "ES"
     },
     {
-      "name": "Xavier Lindsay"
+      "name": "Xavier Lindsay",
+      "team": "ME"
     },
     {
-      "name": "Xavier OHalloran"
+      "name": "Xavier OHalloran",
+      "team": "GW"
     },
     {
-      "name": "Zac Bailey"
+      "name": "Zac Bailey",
+      "team": "BL"
     },
     {
-      "name": "Zac Banch"
+      "name": "Zac Banch",
+      "team": "NM"
     },
     {
-      "name": "Zac Fisher"
+      "name": "Zac Fisher",
+      "team": "NM"
     },
     {
-      "name": "Zac Taylor"
+      "name": "Zac Taylor",
+      "team": "AD"
     },
     {
-      "name": "Zac Williams"
+      "name": "Zac Williams",
+      "team": "CA"
     },
     {
-      "name": "Zach Guthrie"
+      "name": "Zach Guthrie",
+      "team": "GE"
     },
     {
-      "name": "Zach Merrett"
+      "name": "Zach Merrett",
+      "team": "ES"
     },
     {
-      "name": "Zach Reid"
+      "name": "Zach Reid",
+      "team": "ES"
     },
     {
-      "name": "Zaine Cordy"
+      "name": "Zaine Cordy",
+      "team": "SK"
     },
     {
-      "name": "Zak Butters"
+      "name": "Zak Butters",
+      "team": "PA"
     },
     {
-      "name": "Zak Johnson"
+      "name": "Zak Johnson",
+      "team": "ES"
     },
     {
-      "name": "Zak Jones"
+      "name": "Zak Jones",
+      "team": "SK"
     },
     {
-      "name": "Zane Duursma"
+      "name": "Zane Duursma",
+      "team": "NM"
     }
   ]
 }

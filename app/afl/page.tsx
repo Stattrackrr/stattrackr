@@ -4,6 +4,8 @@ import { DashboardStyles } from '@/app/nba/research/dashboard/components/Dashboa
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import { AflStatsChart } from '@/app/afl/components/AflStatsChart';
+import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
+import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -39,6 +41,7 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
+  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries'>('breakdown');
   const [season] = useState(() => {
     const y = new Date().getFullYear();
     // Use 2025 for AFL (most recent completed season with data)
@@ -103,7 +106,10 @@ export default function AFLPage() {
         throw new Error(errorMsg);
       }
       const list = Array.isArray(data?.players) ? data.players : [];
-      setSearchResults(list.map((p: Record<string, unknown>) => ({ name: String(p.name ?? '-') })));
+      setSearchResults(list.map((p: Record<string, unknown>) => ({
+        name: String(p.name ?? '-'),
+        team: typeof p.team === 'string' ? p.team : undefined,
+      })));
     } catch (err) {
       console.error('[AFL] Failed to fetch players:', err);
       setSearchResults([]);
@@ -373,21 +379,49 @@ export default function AFLPage() {
                   <div className={`flex items-center justify-center min-h-[180px] p-4 ${emptyText} text-sm`}>—</div>
                 </div>
               </div>
-              {/* Right panel - same structure as DashboardRightPanel */}
+              {/* Right panel - Team Rankings & Injuries (like NBA DVP) */}
               <div className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 sm:px-1 md:px-0 lg:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                 sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
               }`}>
-                <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
-                  </div>
-                  <div className={`${emptyText} text-sm`}>—</div>
-                </div>
                 <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
-                  <div className={`flex items-center justify-center min-h-[200px] ${emptyText} text-sm`}>—</div>
-                </div>
-                <div className="hidden lg:block w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-4 border border-gray-200 dark:border-gray-700">
-                  <div className={`flex items-center justify-center min-h-[200px] ${emptyText} text-sm`}>—</div>
+                  <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
+                    <button
+                      onClick={() => setAflRightTab('breakdown')}
+                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                        aflRightTab === 'breakdown'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      Opponent Breakdown
+                    </button>
+                    <button
+                      onClick={() => setAflRightTab('injuries')}
+                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                        aflRightTab === 'injuries'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      Injuries
+                    </button>
+                  </div>
+                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col">
+                    {aflRightTab === 'breakdown' && (
+                      <AflOpponentBreakdownCard
+                        isDark={!!mounted && isDark}
+                        season={season}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        lastOpponent={typeof selectedPlayer?.last_opponent === 'string' ? selectedPlayer.last_opponent : null}
+                      />
+                    )}
+                    {aflRightTab === 'injuries' && (
+                      <AflInjuriesCard
+                        isDark={!!mounted && isDark}
+                        playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

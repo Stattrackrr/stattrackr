@@ -114,7 +114,7 @@ async function main() {
   }
   const players = Array.from(seen.values())
     .sort((a, b) => a.name.localeCompare(b.name, 'en'))
-    .map((p) => ({ name: p.name }));
+    .map((p) => (p.team ? { name: p.name, team: p.team } : { name: p.name }));
 
   const output = {
     season,

@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-02-15T06:03:02.462Z",
+  "source": "footywire.com",
+  "sourcePage": "injury_list",
+  "injuryCount": 11,
+  "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Eric Hipwood",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Jack Payne",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Jarrod Berry",
+      "injury": "Shoulder",
+      "returning": "Test"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Keidean Coleman",
+      "injury": "Quad",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Lachie Neale",
+      "injury": "Leg/Calf",
+      "returning": "Test"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Lincoln McCarthy",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Noah Answerth",
+      "injury": "Leg/Calf",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Tom Doedee",
+      "injury": "Wrist",
+      "returning": "Season"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jake Kolodjashnij",
+      "injury": "Hip/Groin",
+      "returning": "Season"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Thomas Stewart",
+      "injury": "Head",
+      "returning": "Concussion protocols"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Toby Conway",
+      "injury": "Foot",
+      "returning": "Season"
+    }
+  ]
+}

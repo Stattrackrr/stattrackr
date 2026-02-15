@@ -33,19 +33,21 @@ function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
 }
 
 /** Read roster from cached file. Tries current year then previous year (e.g. 2026 then 2025). Run scripts/fetch-afl-roster.js to refresh. */
-function readCachedRoster(): Array<{ name: string }> | null {
+function readCachedRoster(): Array<{ name: string; team?: string }> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
   const seasonsToTry = [year, year - 1];
   for (const season of seasonsToTry) {
     try {
       const filePath = path.join(process.cwd(), 'data', `afl-roster-${season}.json`);
       const raw = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(raw) as { players?: Array<{ name?: string }> };
+      const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
-        .map((p) => String(p?.name ?? '').trim())
-        .filter((n) => n.length > 0)
-        .map((name) => ({ name }));
+        .map((p) => {
+          const name = String(p?.name ?? '').trim();
+          return name.length > 0 ? { name, team: p?.team } : null;
+        })
+        .filter((p): p is { name: string; team?: string } => p != null);
       if (players.length > 0) return players;
     } catch {
       continue;
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
         pool = pool.filter((p) => nameMatchesQuery(p.name, q));
       }
       pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
-      const players = pool.slice(0, effectiveLimit).map((p) => ({ name: p.name }));
+      const players = pool.slice(0, effectiveLimit).map((p) => ({ name: p.name, team: p.team }));
 
       return NextResponse.json({
         source: 'afltables.com',
