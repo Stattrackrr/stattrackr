@@ -57,6 +57,11 @@ const GOALS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'marks_inside_50', label: 'Marks inside 50' },
 ];
 
+/** For main chart stats that don't have their own supporting options yet, show TOG only. */
+const DEFAULT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG' },
+];
+
 interface AflSupportingStatsProps {
   gameLogs: Array<Record<string, unknown>>;
   timeframe: AflChartTimeframe;
@@ -76,8 +81,13 @@ export function AflSupportingStats({
 }: AflSupportingStatsProps) {
   const showDisposalsToggle = mainChartStat === 'disposals';
   const showGoalsToggle = mainChartStat === 'goals';
-  const showSupportingToggle = showDisposalsToggle || showGoalsToggle;
-  const supportingOptions = showGoalsToggle ? GOALS_TOGGLE_OPTIONS : DISPOSALS_TOGGLE_OPTIONS;
+  const supportingOptions =
+    showGoalsToggle
+      ? GOALS_TOGGLE_OPTIONS
+      : showDisposalsToggle
+        ? DISPOSALS_TOGGLE_OPTIONS
+        : DEFAULT_TOGGLE_OPTIONS;
+  const showSupportingToggle = true;
 
   const baseData = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
@@ -103,9 +113,7 @@ export function AflSupportingStats({
       const behinds = Math.max(0, toNumericValue(g.behinds) ?? 0);
       const inside50s = Math.max(0, toNumericValue(g.inside_50s) ?? 0);
       const marksInside50 = Math.max(0, toNumericValue(g.marks_inside_50) ?? 0);
-      const useTog =
-        (showDisposalsToggle && supportingStatKind === 'tog') ||
-        (showGoalsToggle && supportingStatKind === 'tog');
+      const useTog = supportingStatKind === 'tog';
       const value =
         useTog
           ? percentPlayed
@@ -133,7 +141,7 @@ export function AflSupportingStats({
         isPercent,
       };
     });
-  }, [gameLogs, supportingStatKind, showDisposalsToggle, showGoalsToggle]);
+  }, [gameLogs, supportingStatKind]);
 
   const chartData = useMemo(
     () => applyTimeframe(baseData, timeframe),

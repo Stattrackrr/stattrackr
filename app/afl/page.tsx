@@ -68,9 +68,7 @@ export default function AFLPage() {
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
   useEffect(() => {
-    if (mainChartStat === 'goals' || mainChartStat === 'disposals') {
-      setSupportingStatKind('tog');
-    }
+    setSupportingStatKind('tog');
   }, [mainChartStat]);
   const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
