@@ -3,10 +3,11 @@
 import { DashboardStyles } from '@/app/nba/research/dashboard/components/DashboardStyles';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
-import { AflStatsChart } from '@/app/afl/components/AflStatsChart';
+import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
+import { AflSupportingStats } from '@/app/afl/components/AflSupportingStats';
 import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -44,6 +45,7 @@ export default function AFLPage() {
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
   const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries' | 'lineup'>('breakdown');
+  const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
   const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
   const [season] = useState(() => {
@@ -379,6 +381,19 @@ export default function AFLPage() {
                       setTeammateFilterName(null);
                       setWithWithoutMode('with');
                     }}
+                    selectedTimeframe={aflChartTimeframe}
+                    onTimeframeChange={setAflChartTimeframe}
+                  />
+                </div>
+                {/* 4. Supporting stats - percent played bars */}
+                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700 mt-0.5">
+                  <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Supporting stats
+                  </h3>
+                  <AflSupportingStats
+                    gameLogs={selectedPlayerGameLogs}
+                    timeframe={aflChartTimeframe}
+                    isDark={!!mounted && isDark}
                   />
                 </div>
                 {/* 6. Mobile analysis - same as DashboardMobileAnalysis */}

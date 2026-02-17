@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
@@ -30,6 +31,159 @@ const STAT_PRIORITY = [
 const META_SKIP = new Set(['season', 'game_number', 'guernsey']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'] as const;
 
+interface AflChartTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  coordinate?: { x: number; y: number };
+  isDark: boolean;
+  selectedStatLabel: string;
+}
+
+function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel }: AflChartTooltipProps) {
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    checkMobile();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!active) {
+      setMousePosition(null);
+      return;
+    }
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches?.length > 0) {
+        const t = e.touches[0];
+        setMousePosition({ x: t.clientX, y: t.clientY });
+      }
+    };
+    if (coordinate?.x != null && coordinate?.y != null) {
+      setMousePosition({ x: coordinate.x, y: coordinate.y });
+    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchstart', handleTouchStart);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouchStart);
+    };
+  }, [active, coordinate?.x, coordinate?.y]);
+
+  if (!active || !payload?.length) return null;
+  const point = payload[0]?.payload as
+    | { round?: string; opponent?: string; result?: string; value?: number }
+    | undefined;
+  if (!point) return null;
+
+  const tooltipBg = isDark ? '#1f2937' : '#ffffff';
+  const tooltipText = isDark ? '#ffffff' : '#000000';
+  const tooltipBorder = isDark ? '#374151' : '#e5e7eb';
+  const labelColor = isDark ? '#9ca3af' : '#6b7280';
+  const winColor = isDark ? '#10b981' : '#059669';
+  const lossColor = isDark ? '#ef4444' : '#dc2626';
+
+  const getTooltipPosition = () => {
+    const currentPosition = mousePosition ?? (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
+    if (!currentPosition) return { left: undefined, top: undefined };
+    if (isMobile) {
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+      const tooltipWidth = 280;
+      const tooltipHeight = 120;
+      const left = Math.max(10, (viewportWidth - tooltipWidth) / 2);
+      const top = Math.max(10, Math.min(viewportHeight * 0.4, viewportHeight - tooltipHeight - 20));
+      return { left: `${left}px`, top: `${top}px` };
+    }
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const tooltipWidth = 280;
+    const offsetX = 15;
+    const offsetY = -10;
+    let left = currentPosition.x + offsetX;
+    if (left + tooltipWidth > viewportWidth - 10) left = viewportWidth - tooltipWidth - 10;
+    return { left: `${left}px`, top: `${currentPosition.y + offsetY}px` };
+  };
+
+  const position = getTooltipPosition();
+  const isWin = point.result?.toLowerCase().startsWith('w');
+  const resultColor = point.result ? (isWin ? winColor : lossColor) : labelColor;
+
+  const tooltipStyle: React.CSSProperties = {
+    backgroundColor: tooltipBg,
+    border: `1px solid ${tooltipBorder}`,
+    borderRadius: '8px',
+    padding: '12px',
+    minWidth: isMobile ? '280px' : '200px',
+    maxWidth: isMobile ? '90vw' : 'none',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    zIndex: 999999,
+    pointerEvents: 'none',
+    position: 'fixed',
+    left: position.left,
+    top: position.top,
+    transform: 'none',
+  };
+
+  const formattedValue =
+    typeof point.value === 'number'
+      ? Number.isInteger(point.value)
+        ? String(point.value)
+        : point.value.toFixed(1)
+      : '-';
+
+  const tooltipContent = (
+    <div style={tooltipStyle}>
+      <div
+        style={{
+          marginBottom: '12px',
+          paddingBottom: '8px',
+          borderBottom: `1px solid ${tooltipBorder}`,
+          fontSize: '13px',
+          fontWeight: '600',
+          color: tooltipText,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span>{point.round ?? '-'} vs {point.opponent ?? '-'}</span>
+        {point.result && (
+          <span style={{ color: resultColor, fontWeight: '600', fontSize: '12px' }}>
+            {point.result}
+          </span>
+        )}
+      </div>
+      <div
+        style={{
+          padding: '8px',
+          backgroundColor: isDark ? '#374151' : '#f3f4f6',
+          borderRadius: '6px',
+          fontSize: '14px',
+          fontWeight: '600',
+          color: tooltipText,
+        }}
+      >
+        {selectedStatLabel}: {formattedValue}
+      </div>
+    </div>
+  );
+
+  const shouldRender = typeof window !== 'undefined' && active && (mousePosition ?? (isMobile && coordinate));
+  if (shouldRender) {
+    return createPortal(tooltipContent, document.body);
+  }
+  return null;
+}
+
 function formatStatLabel(key: string): string {
   return key
     .replace(/_/g, ' ')
@@ -51,6 +205,8 @@ function normalizeTeamName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+export type AflChartTimeframe = (typeof TIMEFRAME_OPTIONS)[number];
+
 interface AflStatsChartProps {
   stats: Record<string, string | number>;
   gameLogs?: Array<Record<string, unknown>>;
@@ -58,6 +214,13 @@ interface AflStatsChartProps {
   isLoading?: boolean;
   hasSelectedPlayer?: boolean;
   apiErrorHint?: string | null;
+  teammateFilterName?: string | null;
+  withWithoutMode?: 'with' | 'without';
+  season?: number;
+  clearTeammateFilter?: () => void;
+  /** When provided, chart timeframe is controlled by parent (e.g. to sync Supporting stats). */
+  selectedTimeframe?: AflChartTimeframe;
+  onTimeframeChange?: (timeframe: AflChartTimeframe) => void;
 }
 
 export function AflStatsChart({
@@ -67,8 +230,49 @@ export function AflStatsChart({
   isLoading,
   hasSelectedPlayer,
   apiErrorHint,
+  teammateFilterName,
+  withWithoutMode = 'with',
+  season = 2025,
+  clearTeammateFilter,
+  selectedTimeframe: controlledTimeframe,
+  onTimeframeChange,
 }: AflStatsChartProps) {
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
+  const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
+  const [internalTimeframe, setInternalTimeframe] =
+    useState<AflChartTimeframe>('last10');
+  const selectedTimeframe = controlledTimeframe ?? internalTimeframe;
+  const setSelectedTimeframe = useCallback(
+    (t: AflChartTimeframe) => {
+      if (onTimeframeChange) onTimeframeChange(t);
+      if (controlledTimeframe == null) setInternalTimeframe(t);
+    },
+    [onTimeframeChange, controlledTimeframe]
+  );
+
+  useEffect(() => {
+    if (!teammateFilterName?.trim()) {
+      setTeammateRounds(new Set());
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
+    )
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const games = Array.isArray(json?.games) ? json.games : [];
+        const rounds = new Set<string>(
+          games.map((g: Record<string, unknown>) => String(g.round ?? '').trim()).filter(Boolean)
+        );
+        setTeammateRounds(rounds);
+      })
+      .catch(() => {
+        if (!cancelled) setTeammateRounds(new Set());
+      });
+    return () => { cancelled = true; };
+  }, [teammateFilterName, season]);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,8 +337,6 @@ export function AflStatsChart({
   }, [gameLogs]);
 
   const [selectedStat, setSelectedStat] = useState<string>('');
-  const [selectedTimeframe, setSelectedTimeframe] =
-    useState<(typeof TIMEFRAME_OPTIONS)[number]>('last10');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
@@ -150,9 +352,20 @@ export function AflStatsChart({
     }
   }, [availableStats, selectedStat]);
 
+  const filteredGameLogs = useMemo(() => {
+    if (!teammateFilterName?.trim()) return gameLogs;
+    if (teammateRounds.size === 0) return gameLogs;
+    return gameLogs.filter((g) => {
+      const round = String(g.round ?? '').trim();
+      const playedWithTeammate = teammateRounds.has(round);
+      if (withWithoutMode === 'with') return playedWithTeammate;
+      return !playedWithTeammate;
+    });
+  }, [gameLogs, teammateFilterName, teammateRounds, withWithoutMode]);
+
   const baseChartData = useMemo(() => {
     if (!selectedStat) return [];
-    return [...gameLogs]
+    return [...filteredGameLogs]
       .sort((a, b) => {
         const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
         const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
@@ -189,7 +402,7 @@ export function AflStatsChart({
           },
         };
       });
-  }, [gameLogs, selectedStat]);
+  }, [filteredGameLogs, selectedStat]);
 
   const chartData = useMemo(() => {
     if (!baseChartData.length) return [];
@@ -311,43 +524,17 @@ export function AflStatsChart({
     };
   }, []);
 
-  const customTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-    const point = payload[0]?.payload as
-      | { round?: string; opponent?: string; result?: string; value?: number }
-      | undefined;
-    if (!point) return null;
-
-    const bg = isDark ? '#1f2937' : '#ffffff';
-    const border = isDark ? '#374151' : '#e5e7eb';
-    const text = isDark ? '#f8fafc' : '#111827';
-    const muted = isDark ? '#cbd5e1' : '#6b7280';
-
+  const customTooltip = useCallback((props: any) => {
     return (
-      <div
-        style={{
-          backgroundColor: bg,
-          border: `1px solid ${border}`,
-          borderRadius: '8px',
-          padding: '10px 12px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-          minWidth: '180px',
-        }}
-      >
-        <div style={{ color: muted, fontSize: '12px', marginBottom: '6px' }}>
-          {point.round ?? '-'} vs {point.opponent ?? '-'} ({point.result ?? '-'})
-        </div>
-        <div style={{ color: text, fontSize: '14px', fontWeight: 600 }}>
-          {selectedStatLabel}:{' '}
-          {typeof point.value === 'number'
-            ? Number.isInteger(point.value)
-              ? point.value
-              : point.value.toFixed(1)
-            : '-'}
-        </div>
-      </div>
+      <AflChartTooltip
+        active={props.active}
+        payload={props.payload}
+        coordinate={props.coordinate}
+        isDark={isDark}
+        selectedStatLabel={selectedStatLabel}
+      />
     );
-  };
+  }, [isDark, selectedStatLabel]);
 
   const aflXAxisTick = useMemo(() => (
     <AflXAxisTick data={chartData} logoByTeam={logoByTeam} isDark={isDark} />
@@ -469,7 +656,7 @@ export function AflStatsChart({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 relative">
         <SimpleChart
           chartData={chartData}
           yAxisConfig={yAxisConfig}
@@ -480,6 +667,9 @@ export function AflStatsChart({
           customTooltip={customTooltip}
           customXAxisTick={aflXAxisTick}
           yAxisTickFormatter={(value) => String(Math.round(value))}
+          teammateFilterName={teammateFilterName}
+          withWithoutMode={withWithoutMode}
+          clearTeammateFilter={clearTeammateFilter}
         />
       </div>
     </div>
