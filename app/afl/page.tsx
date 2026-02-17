@@ -6,6 +6,8 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { AflStatsChart } from '@/app/afl/components/AflStatsChart';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
+import AflLineupCard from '@/app/afl/components/AflLineupCard';
+import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -41,7 +43,9 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
-  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries'>('breakdown');
+  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries' | 'lineup'>('breakdown');
+  const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
+  const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
   const [season] = useState(() => {
     const y = new Date().getFullYear();
     // Use 2025 for AFL (most recent completed season with data)
@@ -368,13 +372,20 @@ export default function AFLPage() {
                     isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
                     hasSelectedPlayer={!!selectedPlayer}
                     apiErrorHint={lastStatsError}
+                    teammateFilterName={teammateFilterName}
+                    withWithoutMode={withWithoutMode}
+                    season={season}
+                    clearTeammateFilter={() => {
+                      setTeammateFilterName(null);
+                      setWithWithoutMode('with');
+                    }}
                   />
                 </div>
-                {/* 4. Mobile analysis - same as DashboardMobileAnalysis */}
+                {/* 6. Mobile analysis - same as DashboardMobileAnalysis */}
                 <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0 mt-2 sm:mt-3 md:mt-4 lg:mt-2">
                   <div className={`flex items-center justify-center min-h-[100px] ${emptyText} text-sm`}>—</div>
                 </div>
-                {/* 5. Mobile content - same as DashboardMobileContent */}
+                {/* 7. Mobile content - same as DashboardMobileContent */}
                 <div className="lg:hidden w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700 mt-2">
                   <div className={`flex items-center justify-center min-h-[180px] p-4 ${emptyText} text-sm`}>—</div>
                 </div>
@@ -405,8 +416,18 @@ export default function AFLPage() {
                     >
                       Injuries
                     </button>
+                    <button
+                      onClick={() => setAflRightTab('lineup')}
+                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                        aflRightTab === 'lineup'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      Team list
+                    </button>
                   </div>
-                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col">
+                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
                     {aflRightTab === 'breakdown' && (
                       <AflOpponentBreakdownCard
                         isDark={!!mounted && isDark}
@@ -418,8 +439,34 @@ export default function AFLPage() {
                     {aflRightTab === 'injuries' && (
                       <AflInjuriesCard
                         isDark={!!mounted && isDark}
+                        season={season}
                         playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        gameLogs={selectedPlayerGameLogs}
+                        teammateFilterName={teammateFilterName}
+                        setTeammateFilterName={setTeammateFilterName}
+                        withWithoutMode={withWithoutMode}
+                        setWithWithoutMode={setWithWithoutMode}
+                        clearTeammateFilter={() => {
+                          setTeammateFilterName(null);
+                          setWithWithoutMode('with');
+                        }}
                       />
+                    )}
+                    {aflRightTab === 'lineup' && (
+                      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                        <AflLineupCard
+                          isDark={!!mounted && isDark}
+                          gameLogs={selectedPlayerGameLogs as Array<{ round?: string; opponent?: string; result?: string; match_url?: string }>}
+                          team={
+                            typeof selectedPlayer?.team === 'string'
+                              ? (rosterTeamToInjuryTeam(selectedPlayer.team) || selectedPlayer.team)
+                              : null
+                          }
+                          season={season}
+                          selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
