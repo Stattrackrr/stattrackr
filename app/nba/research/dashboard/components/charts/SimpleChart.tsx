@@ -728,8 +728,8 @@ const SimpleChart = memo(function SimpleChart({
           )}
         </div>
       )}
-      {/* In-chart teammate filter - center horizontally, inline with average (same top) */}
-      {teammateFilterId && teammateFilterName && clearTeammateFilter && (
+      {/* In-chart teammate filter - center horizontally, inline with average (same top). NBA: teammateFilterId + name; AFL: teammateFilterName only */}
+      {(teammateFilterId != null || teammateFilterName) && clearTeammateFilter && (
         <div
           className="absolute top-1 left-1/2 -translate-x-1/2 pointer-events-none z-[100]"
           aria-hidden

@@ -75,8 +75,10 @@ export function opponentToFootywireTeam(opponent: string): string | null {
   // Exact match first
   const exact = Object.keys(AFL_TEAM_TO_FOOTYWIRE).find((k) => k.toLowerCase() === lower);
   if (exact) return AFL_TEAM_TO_FOOTYWIRE[exact];
-  // Then try contains (e.g. "North Melbourne Kangaroos" -> Kangaroos)
-  const partial = Object.keys(AFL_TEAM_TO_FOOTYWIRE).find((k) => lower.includes(k.toLowerCase()));
+  // Then try contains (e.g. "North Melbourne Kangaroos" -> Kangaroos). Prefer longer keys
+  // so "Port Adelaide Power" matches "Port Adelaide" -> Power, not "Adelaide" -> Crows.
+  const keysByLength = Object.keys(AFL_TEAM_TO_FOOTYWIRE).sort((a, b) => b.length - a.length);
+  const partial = keysByLength.find((k) => lower.includes(k.toLowerCase()));
   return partial ? AFL_TEAM_TO_FOOTYWIRE[partial] : null;
 }
 
@@ -101,4 +103,42 @@ export function rosterTeamToInjuryTeam(team: string): string | null {
     if (injuryName.toLowerCase().includes(lower)) return injuryName;
   }
   return null;
+}
+
+/** Official AFL API team names (same as ROSTER_TEAM_TO_INJURY_TEAM values). */
+const OFFICIAL_TEAM_NAMES = new Set(Object.values(ROSTER_TEAM_TO_INJURY_TEAM));
+
+/** FootyWire nickname (e.g. "Blues", "Eagles") -> official full name (e.g. "Carlton Blues"). */
+const FOOTYWIRE_TO_OFFICIAL: Record<string, string> = {};
+for (const full of Object.values(ROSTER_TEAM_TO_INJURY_TEAM)) {
+  const nick = opponentToFootywireTeam(full);
+  if (nick) FOOTYWIRE_TO_OFFICIAL[nick] = full;
+}
+
+/** Convert FootyWire team nickname to official full name. */
+export function footywireNicknameToOfficial(nickname: string): string | null {
+  if (!nickname || typeof nickname !== 'string') return null;
+  const key = nickname.trim();
+  if (FOOTYWIRE_TO_OFFICIAL[key]) return FOOTYWIRE_TO_OFFICIAL[key];
+  const lower = key.toLowerCase();
+  const entry = Object.entries(FOOTYWIRE_TO_OFFICIAL).find(([k]) => k.toLowerCase() === lower);
+  return entry ? entry[1] : opponentToOfficialTeamName(key) ?? null;
+}
+
+/**
+ * Map game log opponent string (e.g. "Geelong", "vs North Melbourne") to the full
+ * team name used by the AFL official API (e.g. "Geelong Cats", "North Melbourne Kangaroos").
+ * Used for lineup card when using AFL API only.
+ */
+export function opponentToOfficialTeamName(opponent: string): string | null {
+  if (!opponent || typeof opponent !== 'string') return null;
+  const s = opponent.replace(/^vs\.?\s*/i, '').trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  for (const name of OFFICIAL_TEAM_NAMES) {
+    if (name.toLowerCase() === lower) return name;
+    if (name.toLowerCase().includes(lower)) return name;
+  }
+  const partial = [...OFFICIAL_TEAM_NAMES].find((n) => lower.includes(n.toLowerCase().split(' ')[0]));
+  return partial ?? null;
 }

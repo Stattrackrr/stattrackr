@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 
 const DISPLAY_STATS = ['D', 'K', 'HB', 'M', 'G', 'T', 'CL', 'I50', 'R50'] as const;
@@ -33,7 +33,7 @@ export interface AflOpponentBreakdownCardProps {
  * (what they allow - disposals against, kicks against, etc.).
  * Higher OA rank = allow more = easier matchup (green). Lower rank = tougher (red).
  */
-const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
+export function AflOpponentBreakdownCard({
   isDark,
   season,
   playerName,
@@ -131,7 +131,7 @@ const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
       <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
         <div className="flex items-center gap-2 mb-3">
           <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
-          <h4 className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <h4 className={`text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {footywireTeam ?? lastOpponent ?? 'TBD'} allowed averages
           </h4>
         </div>
@@ -146,7 +146,7 @@ const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
           </div>
         ) : (
           <>
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
               {DISPLAY_STATS.map((statKey) => {
               const val = teamRow.stats?.[statKey];
               const r = getRankForStat(statKey);
@@ -154,19 +154,19 @@ const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
               return (
                 <div
                   key={statKey}
-                  className={`flex items-center justify-between rounded border px-2 py-1.5 ${
+                  className={`flex items-center justify-between rounded border px-3 py-2 ${
                     isDark ? 'border-gray-600/60' : 'border-gray-200/80'
                   }`}
                 >
-                  <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                  <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     {label} Allowed
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-bold font-mono ${isDark ? 'text-white' : 'text-black'}`}>
+                    <span className={`text-base font-bold font-mono ${isDark ? 'text-white' : 'text-black'}`}>
                       {fmt(val)}
                     </span>
                     <span
-                      className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-bold ${getRankColor(r)}`}
+                      className={`inline-flex items-center justify-center px-2.5 py-1 rounded text-xs font-bold ${getRankColor(r)}`}
                     >
                       #{r ?? '—'}
                     </span>
@@ -175,7 +175,7 @@ const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
               );
             })}
             </div>
-            <div className={`flex items-center justify-center gap-4 mt-2 pt-2 flex-shrink-0 text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center justify-center gap-4 mt-2 pt-2 flex-shrink-0 text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded bg-red-600 dark:bg-red-500" aria-hidden />
               Hardest
@@ -190,6 +190,6 @@ const AflOpponentBreakdownCard = memo(function AflOpponentBreakdownCard({
       </div>
     </div>
   );
-});
+}
 
 export default AflOpponentBreakdownCard;

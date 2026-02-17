@@ -15,20 +15,19 @@ const STAT_PRIORITY = [
   'handballs',
   'behinds',
   'clearances',
-  'inside_50s',
   'hitouts',
   'free_kicks_for',
   'free_kicks_against',
   'contested_possessions',
   'uncontested_possessions',
   'contested_marks',
-  'marks_inside_50',
   'one_percenters',
-  'bounces',
   'goal_assists',
   'percent_played',
 ];
 const META_SKIP = new Set(['season', 'game_number', 'guernsey']);
+/** Hide from main chart stat pills (bounces, brownlow_votes; effective_disposals, disposal_efficiency, inside_50s, marks_inside_50 moved to supporting stats). */
+const STATS_HIDDEN = new Set(['bounces', 'brownlow_votes', 'effective_disposals', 'disposal_efficiency', 'inside_50s', 'marks_inside_50']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'] as const;
 
 interface AflChartTooltipProps {
@@ -221,6 +220,8 @@ interface AflStatsChartProps {
   /** When provided, chart timeframe is controlled by parent (e.g. to sync Supporting stats). */
   selectedTimeframe?: AflChartTimeframe;
   onTimeframeChange?: (timeframe: AflChartTimeframe) => void;
+  /** Called when the selected stat changes (e.g. to show TOG/Kicks/Handballs toggle when Disposals). */
+  onSelectedStatChange?: (stat: string) => void;
 }
 
 export function AflStatsChart({
@@ -236,6 +237,7 @@ export function AflStatsChart({
   clearTeammateFilter,
   selectedTimeframe: controlledTimeframe,
   onTimeframeChange,
+  onSelectedStatChange,
 }: AflStatsChartProps) {
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
@@ -325,7 +327,7 @@ export function AflStatsChart({
     const keys = new Set<string>();
     for (const row of gameLogs) {
       for (const [k, v] of Object.entries(row)) {
-        if (META_SKIP.has(k)) continue;
+        if (META_SKIP.has(k) || STATS_HIDDEN.has(k)) continue;
         const num = toNumericValue(v);
         if (num !== null) keys.add(k);
       }
@@ -351,6 +353,10 @@ export function AflStatsChart({
       setSelectedStat(availableStats[0]);
     }
   }, [availableStats, selectedStat]);
+
+  useEffect(() => {
+    if (selectedStat && onSelectedStatChange) onSelectedStatChange(selectedStat);
+  }, [selectedStat, onSelectedStatChange]);
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return gameLogs;
@@ -585,6 +591,7 @@ export function AflStatsChart({
                 isSelected={selectedStat === k}
                 onSelect={setSelectedStat}
                 isDark={isDark}
+                darker
               />
             ))}
           </div>
@@ -614,14 +621,14 @@ export function AflStatsChart({
                 lineDebounceRef.current = null;
               }, 300);
             }}
-            className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             aria-label={`Set line value for ${selectedStatLabel}`}
           />
           <div className="relative" ref={timeframeDropdownRef}>
             <button
               type="button"
               onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
-              className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <span className="truncate">{timeframeLabels[selectedTimeframe] || 'L10'}</span>
               <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,7 +637,7 @@ export function AflStatsChart({
             </button>
             {isTimeframeDropdownOpen && (
               <>
-                <div className="absolute top-full right-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className="absolute top-full right-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                   {TIMEFRAME_OPTIONS.map((tf) => (
                     <button
                       key={tf}
@@ -639,7 +646,7 @@ export function AflStatsChart({
                         setSelectedTimeframe(tf);
                         setIsTimeframeDropdownOpen(false);
                       }}
-                      className={`w-full px-2 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg ${
+                      className={`w-full px-2 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
                         selectedTimeframe === tf
                           ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                           : 'text-gray-900 dark:text-white'

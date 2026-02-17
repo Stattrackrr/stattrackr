@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
+const FOOTYWIRE_BASE = 'https://www.footywire.com';
+const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
+let footyWireCache: Map<string, { expiresAt: number; games: GameLogRow[]; height: string | null; guernsey: number | null }> = new Map();
 
 type PlayerIndexEntry = {
   name: string;
@@ -38,12 +42,14 @@ type GameLogRow = {
   bounces: number;
   goal_assists: number;
   percent_played: number | null;
+  effective_disposals: number;
+  disposal_efficiency: number; // percentage 0–100
   match_url: string | null;
 };
 
 const TTL_MS = 1000 * 60 * 60; // 1 hour
 let playersIndexCache: { expiresAt: number; data: PlayerIndexEntry[] } | null = null;
-const playerPageCache = new Map<string, { expiresAt: number; data: GameLogRow[]; titleNorm: string }>();
+const playerPageCache = new Map<string, { expiresAt: number; data: GameLogRow[]; titleNorm: string; height: string | null }>();
 
 function normalizeName(v: string): string {
   return v
@@ -107,6 +113,225 @@ function htmlToText(v: string): string {
     .replace(/&quot;/gi, '"')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** Parse "Height: 185 cm" or "185 cm" from AFLTables player page HTML. */
+function parseHeightFromHtml(html: string): string | null {
+  const heightMatch = html.match(/Height[:\s]*(\d+)\s*cm/i) ?? html.match(/(\d{3})\s*cm/);
+  if (heightMatch && heightMatch[1]) {
+    return `${heightMatch[1]} cm`;
+  }
+  return null;
+}
+
+// ---------- FootyWire (player game logs) ----------
+function footyWireGameLogUrl(teamName: string, playerName: string, year: number, advanced = false): string {
+  const teamSlug = teamName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const playerSlug = playerName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const base = `${FOOTYWIRE_BASE}/afl/footy/pg-${teamSlug}--${playerSlug}?year=${year}`;
+  return advanced ? `${base}&advv=Y` : base;
+}
+
+function descriptionToRound(description: string): string {
+  const t = description.trim();
+  const m = t.match(/Round\s*(\d+)/i);
+  if (m) return 'R' + m[1];
+  if (/Preliminary\s*Final/i.test(t)) return 'PF';
+  if (/Qualifying\s*Final/i.test(t)) return 'QF';
+  if (/Semi\s*Final/i.test(t)) return 'SF';
+  if (/Grand\s*Final/i.test(t)) return 'GF';
+  if (/Elimination\s*Final/i.test(t)) return 'EF';
+  return t || '—';
+}
+
+function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: string[][] } {
+  const result = { headers: [] as string[], rows: [] as string[][] };
+  if (!html || !html.includes('footywire')) return result;
+  const gamesLogBlock = html.match(/Games Log for[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/i);
+  const tableContent = gamesLogBlock ? gamesLogBlock[1] : html;
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const rows: string[][] = [];
+  let trm: RegExpExecArray | null;
+  while ((trm = trRegex.exec(tableContent)) !== null) {
+    const cells: string[] = [];
+    const tdRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    let cm: RegExpExecArray | null;
+    while ((cm = tdRegex.exec(trm[1])) !== null) cells.push(htmlToText(cm[1]).trim());
+    if (cells.length >= 5) rows.push(cells);
+  }
+  const headerIdx = rows.findIndex(
+    (r) =>
+      r.some((c) => /^Description$/i.test(c)) &&
+      r.some((c) => /^Opponent$/i.test(c)) &&
+      r.some((c) => /^Result$/i.test(c)) &&
+      (r.some((c) => /^K$/i.test(c)) || r.some((c) => /^CP$/i.test(c)))
+  );
+  if (headerIdx < 0) return result;
+  result.headers = rows[headerIdx];
+  result.rows = rows.slice(headerIdx + 1).filter((r) => {
+    const first = (r[0] || '').trim();
+    if (!first) return false;
+    const hasRound = /Round|Final|Semi|Qualifying|Preliminary|Grand|Description/i.test(first) || /^R\d+$/i.test(first);
+    const hasNumbers = r.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
+    return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.length >= 10);
+  });
+  return result;
+}
+
+function colIndex(headers: string[], name: string): number {
+  const i = headers.findIndex((h) => h.toUpperCase() === name.toUpperCase());
+  return i >= 0 ? i : -1;
+}
+
+function footyWireRowToGameLogRow(row: string[], headers: string[], season: number): GameLogRow {
+  const get = (key: string): string => {
+    const i = colIndex(headers, key);
+    return i >= 0 ? (row[i] ?? '').trim() : '';
+  };
+  const num = (key: string): number => parseIntSafe(get(key));
+  const description = get('Description');
+  const round = descriptionToRound(description);
+  const opponent = get('Opponent') || '—';
+  const result = get('Result') || '—';
+  return {
+    season,
+    game_number: 0, // FootyWire doesn't expose game number; chart uses index
+    opponent,
+    round,
+    result,
+    guernsey: null,
+    kicks: num('K'),
+    marks: num('M'),
+    handballs: num('HB'),
+    disposals: num('D'),
+    goals: num('G'),
+    behinds: num('B'),
+    hitouts: num('HO'),
+    tackles: num('T'),
+    rebounds: num('R50'),
+    inside_50s: num('I50'),
+    clearances: num('CL'),
+    clangers: num('CG'),
+    free_kicks_for: num('FF'),
+    free_kicks_against: num('FA'),
+    brownlow_votes: 0,
+    contested_possessions: 0,
+    uncontested_possessions: 0,
+    contested_marks: 0,
+    marks_inside_50: 0,
+    one_percenters: 0,
+    bounces: 0,
+    goal_assists: num('GA'),
+    percent_played: null,
+    effective_disposals: 0,
+    disposal_efficiency: 0,
+    match_url: null,
+  };
+}
+
+/** Get numeric value from advanced row; support "1%", "TOG%", "DE%" header variants. */
+function advNum(row: string[], headers: string[], name: string): number {
+  let i = colIndex(headers, name);
+  if (i < 0 && name === '1%') i = headers.findIndex((h) => /^1\s*%$|^1%$/i.test(h.trim()));
+  if (i < 0 && name === 'TOG%') i = headers.findIndex((h) => /TOG\s*%|TOG%/i.test(h.trim()));
+  if (i < 0 && (name === 'DE%' || name === 'DE')) i = headers.findIndex((h) => /^DE\s*%$|^DE%$/i.test(h.trim()) || h.trim().toUpperCase() === 'DE');
+  if (i < 0) return 0;
+  const v = (row[i] ?? '').trim();
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Extract advanced stats from one FootyWire advanced table row into partial GameLogRow. */
+function footyWireAdvancedRowToPartial(row: string[], headers: string[], season: number): Partial<GameLogRow> {
+  return {
+    contested_possessions: advNum(row, headers, 'CP'),
+    uncontested_possessions: advNum(row, headers, 'UP'),
+    contested_marks: advNum(row, headers, 'CM'),
+    marks_inside_50: advNum(row, headers, 'MI5'),
+    one_percenters: advNum(row, headers, '1%'),
+    bounces: advNum(row, headers, 'BO'),
+    percent_played: advNum(row, headers, 'TOG%') || null,
+    effective_disposals: advNum(row, headers, 'ED'),
+    disposal_efficiency: advNum(row, headers, 'DE%'),
+  };
+}
+
+/** Compute disposal_efficiency from effective_disposals / disposals when DE% column is missing (FootyWire advanced has ED but not DE%). Round up to nearest integer. */
+function applyDisposalEfficiency(games: GameLogRow[]): void {
+  for (const g of games) {
+    if (g.disposal_efficiency === 0 && g.disposals > 0 && g.effective_disposals >= 0) {
+      const pct = (g.effective_disposals / g.disposals) * 100;
+      g.disposal_efficiency = Math.ceil(pct);
+    }
+  }
+}
+
+function parseFootyWireProfile(html: string): { height: string | null; guernsey: number | null } {
+  let height: string | null = null;
+  let guernsey: number | null = null;
+  const heightMatch = html.match(/Height:\s*(\d+)\s*cm/i);
+  if (heightMatch?.[1]) height = `${heightMatch[1]} cm`;
+  const guernseyMatch = html.match(/#(\d+)\s*<\/?b>/i) ?? html.match(/playerProfileTeamDiv[\s\S]*?#(\d+)/i);
+  if (guernseyMatch?.[1]) {
+    const n = parseInt(guernseyMatch[1], 10);
+    if (Number.isFinite(n)) guernsey = n;
+  }
+  return { height, guernsey };
+}
+
+const FOOTYWIRE_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  Referer: 'https://www.footywire.com/',
+};
+
+async function fetchFootyWireGameLogs(
+  teamName: string,
+  playerName: string,
+  season: number
+): Promise<{ games: GameLogRow[]; height: string | null; guernsey: number | null; player_name: string } | null> {
+  const cacheKey = `${teamName}|${playerName}|${season}`;
+  const cached = footyWireCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { games: cached.games, height: cached.height, guernsey: cached.guernsey, player_name: playerName.trim() };
+  }
+  const url = footyWireGameLogUrl(teamName, playerName, season);
+  const res = await fetch(url, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const { headers, rows } = parseFootyWireGameLogTable(html);
+  if (headers.length === 0 || rows.length === 0) return null;
+  const games: GameLogRow[] = rows.map((row, idx) => {
+    const g = footyWireRowToGameLogRow(row, headers, season);
+    g.game_number = idx + 1;
+    return g;
+  });
+
+  // Fetch advanced stats (CP, UP, CM, MI5, 1%, BO, TOG%, ED) and merge by row index
+  const advUrl = footyWireGameLogUrl(teamName, playerName, season, true);
+  const advRes = await fetch(advUrl, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+  if (advRes.ok) {
+    const advHtml = await advRes.text();
+    const adv = parseFootyWireGameLogTable(advHtml);
+    if (adv.headers.length > 0 && adv.rows.length >= games.length) {
+      for (let i = 0; i < games.length; i++) {
+        const partial = footyWireAdvancedRowToPartial(adv.rows[i], adv.headers, season);
+        Object.assign(games[i], partial);
+      }
+    }
+  }
+  // FootyWire advanced has ED but no DE% column; derive disposal_efficiency from effective_disposals / disposals
+  applyDisposalEfficiency(games);
+
+  const { height, guernsey } = parseFootyWireProfile(html);
+  footyWireCache.set(cacheKey, {
+    expiresAt: Date.now() + FOOTYWIRE_TTL_MS,
+    games,
+    height,
+    guernsey,
+  });
+  return { games, height, guernsey, player_name: playerName.trim() };
 }
 
 function parseIntSafe(v: string): number {
@@ -395,25 +620,25 @@ async function findBestSeasonCandidate(
     if (!urlToName.has(url)) urlToName.set(url, queryName.trim());
   }
 
-  let best: { match: PlayerIndexEntry; allGames: GameLogRow[]; seasonCount: number; totalCount: number } | null = null;
+  let best: { match: PlayerIndexEntry; allGames: GameLogRow[]; seasonCount: number; totalCount: number; height: string | null } | null = null;
 
   for (const [url, name] of urlToName.entries()) {
     try {
       const expectedSurname = qMeta?.surname;
-      const logs = await fetchPlayerGameLogs(url, expectedSurname);
+      const { games: logs, height } = await fetchPlayerGameLogsWithValidation(url, expectedSurname);
       if (!logs.length) continue;
       const seasonCount = logs.filter((g) => g.season === season).length;
       const totalCount = logs.length;
       if (!best) {
-        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount };
+        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount, height };
         continue;
       }
       if (seasonCount > best.seasonCount) {
-        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount };
+        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount, height };
         continue;
       }
       if (seasonCount === best.seasonCount && totalCount > best.totalCount) {
-        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount };
+        best = { match: { name, href: url }, allGames: logs, seasonCount, totalCount, height };
       }
     } catch {
       // Ignore bad candidates and continue.
@@ -421,19 +646,38 @@ async function findBestSeasonCandidate(
   }
 
   if (!best) return null;
-  return { match: best.match, allGames: best.allGames };
+  return { match: best.match, allGames: best.allGames, height: best.height };
+}
+
+// AFLTables match links: /afl/stats/games/2025/xxx.html, ../games/2025/xxx.html, stats/games/2025/xxx.html
+const GAME_LINK_REGEX = /href\s*=\s*['"]([^'"]*(?:\/afl\/)?stats\/games\/\d+\/[^'"]+\.html?)['"]/i;
+const GAME_LINK_ALT = /href\s*=\s*['"]([^'"]*\/games\/\d+\/[^'"]+\.html?)['"]/i;
+const GAME_LINK_REL = /href\s*=\s*['"](\.\.\/games\/\d+\/[^'"]+\.html?)['"]/i;
+
+function normalizeMatchUrl(href: string): string {
+  const h = href.trim();
+  if (h.startsWith('http://') || h.startsWith('https://')) return h;
+  if (h.startsWith('//')) return `https:${h}`;
+  if (h.startsWith('/')) return `${AFL_TABLES_BASE}${h}`;
+  if (h.startsWith('../')) return `${AFL_TABLES_BASE}/afl/stats/${h.replace(/^\.\.\//, '')}`;
+  return `${AFL_TABLES_BASE}/afl/stats/${h.replace(/^\.\//, '')}`;
+}
+
+function extractMatchUrlFromRow(cells: { text: string; raw: string }[]): string | null {
+  for (const cell of cells) {
+    let m = cell.raw.match(GAME_LINK_REGEX);
+    if (!m) m = cell.raw.match(GAME_LINK_ALT);
+    if (!m) m = cell.raw.match(GAME_LINK_REL);
+    if (m?.[1]) return normalizeMatchUrl(m[1]);
+  }
+  return null;
 }
 
 function toGameLogRow(cells: { text: string; raw: string }[], season: number): GameLogRow | null {
   if (cells.length < 28) return null;
   if (!/^\d+$/.test(cells[0].text)) return null;
 
-  const opponentHrefMatch = cells[1].raw.match(/href=['"]([^'"]+)['"]/i);
-  const matchUrl = opponentHrefMatch
-    ? opponentHrefMatch[1].startsWith('http')
-      ? opponentHrefMatch[1]
-      : `${AFL_TABLES_BASE}${opponentHrefMatch[1]}`
-    : null;
+  const matchUrl = extractMatchUrlFromRow(cells);
 
   return {
     season,
@@ -465,24 +709,35 @@ function toGameLogRow(cells: { text: string; raw: string }[], season: number): G
     bounces: parseIntSafe(cells[25].text),
     goal_assists: parseIntSafe(cells[26].text),
     percent_played: parsePercent(cells[27].text),
+    effective_disposals: 0,
+    disposal_efficiency: 0,
     match_url: matchUrl,
   };
 }
 
 async function fetchPlayerGameLogs(playerPageUrl: string, expectedSurname?: string): Promise<GameLogRow[]> {
-  return fetchPlayerGameLogsWithValidation(playerPageUrl, expectedSurname);
+  const r = await fetchPlayerGameLogsWithValidation(playerPageUrl, expectedSurname);
+  return r.games;
 }
 
 async function fetchPlayerGameLogsWithValidation(
   playerPageUrl: string,
   expectedSurname?: string
-): Promise<GameLogRow[]> {
+): Promise<{ games: GameLogRow[]; height: string | null }> {
   const cached = playerPageCache.get(playerPageUrl);
   if (cached && cached.expiresAt > Date.now()) {
-    if (expectedSurname && cached.titleNorm && !cached.titleNorm.includes(expectedSurname)) return [];
-    return cached.data;
+    if (expectedSurname && cached.titleNorm && !cached.titleNorm.includes(expectedSurname)) {
+      return { games: [], height: null };
+    }
+    return { games: cached.data, height: cached.height };
   }
+  return fetchPlayerGameLogsWithValidationUncached(playerPageUrl, expectedSurname);
+}
 
+async function fetchPlayerGameLogsWithValidationUncached(
+  playerPageUrl: string,
+  expectedSurname?: string
+): Promise<{ games: GameLogRow[]; height: string | null }> {
   const res = await fetch(playerPageUrl, { next: { revalidate: 60 * 60 } });
   if (!res.ok) {
     throw new Error(`Failed to fetch player page (${res.status})`);
@@ -491,9 +746,11 @@ async function fetchPlayerGameLogsWithValidation(
   const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
   const titleNorm = titleMatch ? normalizeName(htmlToText(titleMatch[1])) : '';
   if (expectedSurname && titleNorm && !titleNorm.includes(expectedSurname)) {
-    playerPageCache.set(playerPageUrl, { expiresAt: Date.now() + TTL_MS, data: [], titleNorm });
-    return [];
+    playerPageCache.set(playerPageUrl, { expiresAt: Date.now() + TTL_MS, data: [], titleNorm, height: null });
+    return { games: [], height: null };
   }
+
+  const height = parseHeightFromHtml(html);
 
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const allRows: string[] = [];
@@ -517,7 +774,6 @@ async function fetchPlayerGameLogsWithValidation(
     }
     if (cells.length === 0) continue;
 
-    // Season marker row pattern like "Richmond - 2007"
     const fullRowText = htmlToText(rowHtml);
     const seasonMarker = fullRowText.match(/-\s*(19|20)\d{2}$/);
     if (seasonMarker) {
@@ -527,7 +783,6 @@ async function fetchPlayerGameLogsWithValidation(
       continue;
     }
 
-    // Header row for game logs.
     if (cells[0].text === 'Gm' && cells[1]?.text === 'Opponent') {
       inGameTable = true;
       continue;
@@ -540,13 +795,14 @@ async function fetchPlayerGameLogsWithValidation(
     if (row) logs.push(row);
   }
 
-  playerPageCache.set(playerPageUrl, { expiresAt: Date.now() + TTL_MS, data: logs, titleNorm });
-  return logs;
+  playerPageCache.set(playerPageUrl, { expiresAt: Date.now() + TTL_MS, data: logs, titleNorm, height });
+  return { games: logs, height };
 }
 
 export async function GET(request: NextRequest) {
   const seasonParam = request.nextUrl.searchParams.get('season');
   const playerNameParam = request.nextUrl.searchParams.get('player_name');
+  const teamParam = request.nextUrl.searchParams.get('team');
 
   const season = seasonParam ? parseInt(seasonParam, 10) : null;
   if (!season || Number.isNaN(season)) {
@@ -556,7 +812,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
   }
 
+  // Resolve team to full name (e.g. CW -> Collingwood Magpies) for FootyWire URL
+  const teamFull = teamParam?.trim()
+    ? (rosterTeamToInjuryTeam(teamParam.trim()) || teamParam.trim())
+    : null;
+
   try {
+    // Prefer FootyWire when team is provided (one URL per player/season, simpler)
+    if (teamFull) {
+      const fw = await fetchFootyWireGameLogs(teamFull, playerNameParam.trim(), season);
+      if (fw && fw.games.length > 0) {
+        return NextResponse.json({
+          season,
+          source: 'footywire.com',
+          player_name: fw.player_name,
+          games: fw.games,
+          game_count: fw.games.length,
+          height: fw.height ?? undefined,
+          guernsey: fw.guernsey ?? undefined,
+        });
+      }
+    }
+
+    // Fallback: AFLTables (no team, or FootyWire returned no games)
     const playersIndex = await fetchPlayersIndex();
     let matched = pickBestPlayerMatch(playerNameParam, playersIndex);
     if (!matched) {
@@ -564,21 +842,23 @@ export async function GET(request: NextRequest) {
     }
     if (!matched) {
       return NextResponse.json(
-        { error: `No AFLTables player page found for '${playerNameParam}'`, season, games: [] },
+        { error: `No game logs found for '${playerNameParam}'`, season, games: [] },
         { status: 404 }
       );
     }
 
     const expectedSurname = queryInitialAndSurname(playerNameParam)?.surname;
-    let allGames = await fetchPlayerGameLogsWithValidation(matched.href, expectedSurname);
+    let result = await fetchPlayerGameLogsWithValidation(matched.href, expectedSurname);
+    let allGames = result.games;
+    let height: string | null = result.height;
     let games = allGames.filter((g) => g.season === season);
 
-    // If matched profile has no games for requested season, try alternate candidates.
     if (games.length === 0) {
       const bestAlt = await findBestSeasonCandidate(playerNameParam, season, playersIndex);
       if (bestAlt) {
         matched = bestAlt.match;
         allGames = bestAlt.allGames;
+        height = bestAlt.height;
         games = allGames.filter((g) => g.season === season);
       }
     }
@@ -590,6 +870,7 @@ export async function GET(request: NextRequest) {
       player_page: matched.href,
       games,
       game_count: games.length,
+      height: height ?? undefined,
     });
   } catch (err) {
     console.error('[AFL player-game-logs]', err);

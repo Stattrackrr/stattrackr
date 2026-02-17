@@ -7,8 +7,8 @@ import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflS
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
-import { AflSupportingStats } from '@/app/afl/components/AflSupportingStats';
-import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
+import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
+import { rosterTeamToInjuryTeam, opponentToOfficialTeamName } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -18,6 +18,23 @@ import { Search, Loader2 } from 'lucide-react';
 
 type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
+
+function normalizeTeamNameForLogo(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/** Convert "185 cm" to "6'1"" (feet and inches). */
+function heightCmToFeet(cmStr: string): string | null {
+  const match = String(cmStr).match(/(\d+)\s*cm/i);
+  if (!match || !match[1]) return null;
+  const cm = parseInt(match[1], 10);
+  if (!Number.isFinite(cm) || cm <= 0) return null;
+  const totalInches = cm * 0.393700787;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  if (inches === 12) return `${feet + 1}'0`;
+  return `${feet}'${inches}`;
+}
 
 export default function AFLPage() {
   const router = useRouter();
@@ -45,21 +62,25 @@ export default function AFLPage() {
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
   const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries' | 'lineup'>('breakdown');
+  const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
+  const [mainChartStat, setMainChartStat] = useState<string>('');
+  const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
-  const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
-  const [season] = useState(() => {
-    const y = new Date().getFullYear();
-    // Use 2025 for AFL (most recent completed season with data)
-    // AFL season typically runs March-September, so use previous year if we're before March
-    const month = new Date().getMonth();
-    if (y >= 2026 || (y === 2025 && month < 2)) {
-      return 2025;
+  useEffect(() => {
+    if (mainChartStat === 'goals' || mainChartStat === 'disposals') {
+      setSupportingStatKind('tog');
     }
-    return y;
+  }, [mainChartStat]);
+  const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
+  const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
+  const [season] = useState(() => {
+    // Use 2026 for AFL fixture (FootyWire ft_match_list?year=2026) and season context
+    return 2026;
   });
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
@@ -94,6 +115,31 @@ export default function AFLPage() {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadTeamLogos = async () => {
+      try {
+        const res = await fetch(`/api/afl/teams?league=1&season=${season}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const rows = Array.isArray(json?.response) ? json.response : Array.isArray(json) ? json : [];
+        const nextMap: Record<string, string> = {};
+        for (const row of rows) {
+          const team = row?.team ?? row;
+          const name = String(team?.name ?? '').trim();
+          const logo = String(team?.logo ?? team?.image ?? '').trim();
+          if (!name || !logo) continue;
+          nextMap[normalizeTeamNameForLogo(name)] = logo;
+        }
+        if (!cancelled && Object.keys(nextMap).length > 0) setLogoByTeam(nextMap);
+      } catch {
+        // ignore
+      }
+    };
+    loadTeamLogos();
+    return () => { cancelled = true; };
+  }, [season]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
@@ -175,21 +221,37 @@ export default function AFLPage() {
       setSelectedPlayer((prev) => (prev ? { ...prev, ...cachedStats } : prev));
     }
 
+    const teamForApi = selectedPlayer?.team
+      ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+      : '';
+    const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
+
     let cancelled = false;
     setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        const res = await fetch(
-          `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}`
+        let res = await fetch(
+          `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`
         );
-        const data = await res.json();
+        let data = await res.json();
         if (cancelled) return;
         if (!res.ok) {
           setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
           return;
         }
 
-        const games = Array.isArray(data?.games) ? data.games as Record<string, unknown>[] : [];
+        let games = Array.isArray(data?.games) ? data.games as Record<string, unknown>[] : [];
+        // When using 2026, often no games yet; use 2025 for chart/supporting stats.
+        if (games.length === 0 && season === 2026) {
+          res = await fetch(
+            `/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`
+          );
+          data = await res.json();
+          if (cancelled) return;
+          if (res.ok && Array.isArray(data?.games)) {
+            games = data.games as Record<string, unknown>[];
+          }
+        }
         setSelectedPlayerGameLogs(games);
         if (games.length === 0) {
           setLastStatsError('No game logs found for this player/season');
@@ -235,6 +297,8 @@ export default function AFLPage() {
         if (typeof latest.opponent === 'string') toMerge.last_opponent = latest.opponent;
         if (typeof latest.round === 'string') toMerge.last_round = latest.round;
         if (typeof latest.result === 'string') toMerge.last_result = latest.result;
+        if (typeof latest.guernsey === 'number' && Number.isFinite(latest.guernsey)) toMerge.guernsey = latest.guernsey;
+        if (typeof data?.height === 'string' && data.height.trim()) toMerge.height = data.height.trim();
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
@@ -243,10 +307,53 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, season]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+
+  // Last round from game logs (so we can pass to next-game even before merge).
+  const lastRoundFromLogs =
+    selectedPlayerGameLogs.length > 0
+      ? String((selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.round ?? '')
+      : '';
+
+  // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent.
+  useEffect(() => {
+    const team = selectedPlayer?.team;
+    if (!team || typeof team !== 'string' || !team.trim()) {
+      setNextGameOpponent(null);
+      return;
+    }
+    let cancelled = false;
+    const lastRound =
+      (typeof selectedPlayer?.last_round === 'string' && selectedPlayer.last_round.trim()
+        ? selectedPlayer.last_round.trim()
+        : lastRoundFromLogs) || '';
+    const params = new URLSearchParams({ team: team.trim(), season: String(season) });
+    if (lastRound) params.set('last_round', lastRound);
+    fetch(`/api/afl/next-game?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setNextGameOpponent(typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null);
+      })
+      .catch(() => {
+        if (!cancelled) setNextGameOpponent(null);
+      });
+    return () => { cancelled = true; };
+  }, [selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
 
   const bg = mounted && isDark ? 'bg-[#050d1a]' : '';
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
+
+  // Single source of truth for opponent: same value for Team vs Team header and Opponent Breakdown.
+  const displayOpponent = selectedPlayer?.team
+    ? (nextGameOpponent && nextGameOpponent !== '—'
+        ? nextGameOpponent
+        : typeof selectedPlayer?.last_opponent === 'string' && selectedPlayer.last_opponent
+          ? selectedPlayer.last_opponent
+          : selectedPlayerGameLogs.length > 0
+            ? String((selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.opponent ?? '')
+            : null)
+    : null;
 
   return (
     <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
@@ -278,11 +385,86 @@ export default function AFLPage() {
                   </div>
                   <div className={`flex items-center gap-2 ${emptyText} text-sm`}>—</div>
                 </div>
-                {/* 2. Header - AFL search in top container */}
-                <div className="relative z-[90] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-0 sm:mr-0 md:mr-0 overflow-visible" ref={searchDropdownRef}>
+                {/* 2. Header - same layout as NBA DashboardHeader: left (player/select), middle (matchup), bottom (Journal) */}
+                <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible" ref={searchDropdownRef}>
                   <div className="flex flex-col gap-2 lg:gap-3">
+                    {/* Desktop: one row - player info (left) | team vs opponent (center) | spacer (right) */}
+                    <div className="hidden lg:flex items-center flex-1">
+                      <div className="flex-1 min-w-0">
+                        {selectedPlayer ? (
+                          <div>
+                            <div className="flex items-baseline gap-3 mb-1">
+                              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{String(selectedPlayer.name ?? '—')}</h1>
+                              {(() => {
+                                const num = selectedPlayer.guernsey != null && selectedPlayer.guernsey !== ''
+                                  ? selectedPlayer.guernsey
+                                  : selectedPlayerGameLogs.length > 0
+                                    ? (selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.guernsey
+                                    : null;
+                                return num != null && num !== '' ? (
+                                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">#{String(num)}</span>
+                                ) : null;
+                              })()}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {selectedPlayer.team
+                                ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+                                : '—'}
+                            </div>
+                            {selectedPlayer.height ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                Height: {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-baseline gap-3 mb-1">
+                              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Player</h1>
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              Search for a player below
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Middle: Team vs Opponent (from last game) - centered with logos like NBA */}
+                      <div className="hidden lg:flex flex-shrink-0 items-end justify-center">
+                        {selectedPlayer && selectedPlayer.team ? (() => {
+                          const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
+                          const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                          const teamKey = normalizeTeamNameForLogo(teamFull);
+                          const opponentKey = opponentFull !== '—' ? normalizeTeamNameForLogo(opponentFull) : '';
+                          const teamLogo = logoByTeam[teamKey];
+                          const opponentLogo = opponentKey ? logoByTeam[opponentKey] : null;
+                          return (
+                            <div className="flex items-center gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                {teamLogo ? (
+                                  <img src={teamLogo} alt={teamFull} className="w-8 h-8 object-contain flex-shrink-0" />
+                                ) : null}
+                                <span className="font-bold text-gray-900 dark:text-white text-sm">{teamFull}</span>
+                              </div>
+                              <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
+                              <div className="flex items-center gap-1.5">
+                                {opponentLogo ? (
+                                  <img src={opponentLogo} alt={opponentFull} className="w-8 h-8 object-contain flex-shrink-0" />
+                                ) : null}
+                                <span className="font-bold text-gray-900 dark:text-white text-sm">{opponentFull}</span>
+                              </div>
+                            </div>
+                          );
+                        })() : (
+                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
+                            <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0" aria-hidden />
+                    </div>
+                    {/* Search row - full width on mobile, below title on desktop */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                      <div className="flex-1 relative">
+                      <div className="flex-1 relative min-w-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                         <input
                           type="text"
@@ -353,13 +535,32 @@ export default function AFLPage() {
                           </div>
                         )}
                       </div>
-                      {selectedPlayer && (
-                        <div className={`flex-shrink-0 px-3 py-2 rounded-lg ${isDark ? 'bg-[#1e293b]' : 'bg-gray-100'}`}>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Selected</p>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{String(selectedPlayer.name ?? '—')}</p>
-                        </div>
-                      )}
                     </div>
+                    {/* Journal button - same as NBA */}
+                    {selectedPlayer && (selectedPlayer.team || selectedPlayerGameLogs.length > 0) && (
+                      <div className="flex gap-2 px-0">
+                        <button
+                          type="button"
+                          onClick={() => isPro && router.push('/journal')}
+                          disabled={!isPro}
+                          className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                            !isPro ? 'bg-gray-400 cursor-not-allowed opacity-50' : 'bg-purple-600 hover:bg-purple-700'
+                          }`}
+                          title={!isPro ? 'Journal is a Pro feature' : 'Add to journal'}
+                        >
+                          {!isPro ? (
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          )}
+                          Journal
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* 3. Chart container - AFL stats line (bar chart by stat) */}
@@ -383,16 +584,20 @@ export default function AFLPage() {
                     }}
                     selectedTimeframe={aflChartTimeframe}
                     onTimeframeChange={setAflChartTimeframe}
+                    onSelectedStatChange={setMainChartStat}
                   />
                 </div>
                 {/* 4. Supporting stats - percent played bars */}
-                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700 mt-0.5">
-                  <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm pt-3 px-5 pb-5 sm:pt-4 sm:px-6 sm:pb-6 border border-gray-200 dark:border-gray-700 mt-0.5">
+                  <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     Supporting stats
                   </h3>
                   <AflSupportingStats
                     gameLogs={selectedPlayerGameLogs}
                     timeframe={aflChartTimeframe}
+                    mainChartStat={mainChartStat}
+                    supportingStatKind={supportingStatKind}
+                    onSupportingStatKindChange={setSupportingStatKind}
                     isDark={!!mounted && isDark}
                   />
                 </div>
@@ -405,10 +610,41 @@ export default function AFLPage() {
                   <div className={`flex items-center justify-center min-h-[180px] p-4 ${emptyText} text-sm`}>—</div>
                 </div>
               </div>
-              {/* Right panel - Team Rankings & Injuries (like NBA DVP) */}
+              {/* Right panel - Filter By (Player / Game props) + Opponent Breakdown & Injuries (like NBA) */}
               <div className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 sm:px-1 md:px-0 lg:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                 sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
               }`}>
+                {/* Filter By - Player Props / Game Props (same as NBA DashboardRightPanel) */}
+                <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                  </div>
+                  <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+                    <button
+                      onClick={() => setAflPropsMode('player')}
+                      className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                        aflPropsMode === 'player'
+                          ? 'bg-purple-600 text-white border-purple-500'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      Player Props
+                    </button>
+                    <button
+                      onClick={() => setAflPropsMode('team')}
+                      className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                        aflPropsMode === 'team'
+                          ? 'bg-purple-600 text-white border-purple-500'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      Game Props
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                    {aflPropsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
+                  </p>
+                </div>
                 <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
                   <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
                     <button
@@ -445,10 +681,11 @@ export default function AFLPage() {
                   <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
                     {aflRightTab === 'breakdown' && (
                       <AflOpponentBreakdownCard
+                        key={displayOpponent ?? 'no-opponent'}
                         isDark={!!mounted && isDark}
                         season={season}
                         playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                        lastOpponent={typeof selectedPlayer?.last_opponent === 'string' ? selectedPlayer.last_opponent : null}
+                        lastOpponent={displayOpponent ?? null}
                       />
                     )}
                     {aflRightTab === 'injuries' && (
