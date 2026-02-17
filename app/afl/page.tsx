@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
+import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search, Loader2 } from 'lucide-react';
 
 type AflPlayerRecord = Record<string, string | number>;
@@ -21,6 +22,40 @@ type AflGameLogRecord = Record<string, unknown>;
 
 function normalizeTeamNameForLogo(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const AFL_LOGO_ALIASES: Record<string, string[]> = {
+  adelaide: ['adelaide', 'adelaidecrows', 'crows'],
+  brisbane: ['brisbane', 'brisbanelions', 'lions'],
+  carlton: ['carlton', 'carltonblues', 'blues'],
+  collingwood: ['collingwood', 'collingwoodmagpies', 'magpies'],
+  essendon: ['essendon', 'essendonbombers', 'bombers'],
+  fremantle: ['fremantle', 'fremantledockers', 'dockers'],
+  geelong: ['geelong', 'geelongcats', 'cats'],
+  goldcoast: ['goldcoast', 'goldcoastsuns', 'suns'],
+  gws: ['gws', 'gwsgiants', 'greaterwesternsydney', 'greaterwesternsydneygiants', 'giants'],
+  hawthorn: ['hawthorn', 'hawthornhawks', 'hawks'],
+  melbourne: ['melbourne', 'melbournedemons', 'demons'],
+  northmelbourne: ['northmelbourne', 'northmelbournekangaroos', 'kangaroos', 'north'],
+  portadelaide: ['portadelaide', 'portadelaidepower', 'power'],
+  richmond: ['richmond', 'richmondtigers', 'tigers'],
+  stkilda: ['stkilda', 'stkildasaints', 'saints'],
+  sydney: ['sydney', 'sydneyswans', 'swans'],
+  westcoast: ['westcoast', 'westcoasteagles', 'eagles'],
+  westernbulldogs: ['westernbulldogs', 'bulldogs', 'footscray'],
+};
+
+function resolveTeamLogo(teamName: string, logoByTeam: Record<string, string>): string | null {
+  const normalized = normalizeTeamNameForLogo(teamName);
+  if (!normalized) return null;
+  if (logoByTeam[normalized]) return logoByTeam[normalized];
+  for (const aliases of Object.values(AFL_LOGO_ALIASES)) {
+    if (!aliases.includes(normalized)) continue;
+    for (const alias of aliases) {
+      if (logoByTeam[alias]) return logoByTeam[alias];
+    }
+  }
+  return null;
 }
 
 /** Convert "185 cm" to "6'1"" (feet and inches). */
@@ -72,6 +107,10 @@ export default function AFLPage() {
   }, [mainChartStat]);
   const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
+  const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
+  const [isGameInProgress, setIsGameInProgress] = useState(false);
+  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
   const [season] = useState(() => {
     // Use 2026 for AFL fixture (FootyWire ft_match_list?year=2026) and season context
     return 2026;
@@ -313,11 +352,13 @@ export default function AFLPage() {
       ? String((selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.round ?? '')
       : '';
 
-  // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent.
+  // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
   useEffect(() => {
     const team = selectedPlayer?.team;
     if (!team || typeof team !== 'string' || !team.trim()) {
       setNextGameOpponent(null);
+      setNextGameTipoff(null);
+      setIsGameInProgress(false);
       return;
     }
     let cancelled = false;
@@ -332,12 +373,34 @@ export default function AFLPage() {
       .then((data) => {
         if (cancelled) return;
         setNextGameOpponent(typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null);
+        const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
+        setNextGameTipoff(tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null);
       })
       .catch(() => {
-        if (!cancelled) setNextGameOpponent(null);
+        if (!cancelled) {
+          setNextGameOpponent(null);
+          setNextGameTipoff(null);
+        }
       });
     return () => { cancelled = true; };
   }, [selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
+
+  // Mark game as in progress when tipoff has passed and within ~3.5h (AFL match duration)
+  const AFL_MATCH_DURATION_MS = 3.5 * 60 * 60 * 1000;
+  useEffect(() => {
+    if (!nextGameTipoff) {
+      setIsGameInProgress(false);
+      return;
+    }
+    const check = () => {
+      const now = Date.now();
+      const tip = nextGameTipoff.getTime();
+      setIsGameInProgress(now >= tip && now < tip + AFL_MATCH_DURATION_MS);
+    };
+    check();
+    const interval = setInterval(check, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [nextGameTipoff]);
 
   const bg = mounted && isDark ? 'bg-[#050d1a]' : '';
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
@@ -427,28 +490,67 @@ export default function AFLPage() {
                         )}
                       </div>
                       {/* Middle: Team vs Opponent (from last game) - centered with logos like NBA */}
-                      <div className="hidden lg:flex flex-shrink-0 items-end justify-center">
+                      <div className="hidden lg:flex flex-shrink-0 items-end mx-4">
                         {selectedPlayer && selectedPlayer.team ? (() => {
                           const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
                           const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
-                          const teamKey = normalizeTeamNameForLogo(teamFull);
-                          const opponentKey = opponentFull !== '—' ? normalizeTeamNameForLogo(opponentFull) : '';
-                          const teamLogo = logoByTeam[teamKey];
-                          const opponentLogo = opponentKey ? logoByTeam[opponentKey] : null;
+                          const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
+                          const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
                           return (
                             <div className="flex items-center gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
                               <div className="flex items-center gap-1.5">
                                 {teamLogo ? (
-                                  <img src={teamLogo} alt={teamFull} className="w-8 h-8 object-contain flex-shrink-0" />
+                                  <img
+                                    src={teamLogo}
+                                    alt={teamFull}
+                                    className="w-8 h-8 object-contain flex-shrink-0"
+                                    style={{
+                                      filter: isDark
+                                        ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
+                                        : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
+                                    }}
+                                  />
                                 ) : null}
                                 <span className="font-bold text-gray-900 dark:text-white text-sm">{teamFull}</span>
                               </div>
-                              <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
+                              {displayOpponent && countdown && !isGameInProgress ? (
+                                <div className="flex flex-col items-center min-w-[80px]">
+                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Bounce in</div>
+                                  <div className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
+                                    {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                  </div>
+                                </div>
+                              ) : displayOpponent && isGameInProgress ? (
+                                <div className="flex flex-col items-center min-w-[80px]">
+                                  <div className="text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                                </div>
+                              ) : displayOpponent && nextGameTipoff ? (
+                                <div className="flex flex-col items-center min-w-[80px]">
+                                  <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500 dark:text-gray-400 font-medium text-xs">VS</span>
+                              )}
                               <div className="flex items-center gap-1.5">
-                                {opponentLogo ? (
-                                  <img src={opponentLogo} alt={opponentFull} className="w-8 h-8 object-contain flex-shrink-0" />
-                                ) : null}
-                                <span className="font-bold text-gray-900 dark:text-white text-sm">{opponentFull}</span>
+                                {displayOpponent && opponentFull !== '—' ? (
+                                  <>
+                                    {opponentLogo ? (
+                                      <img
+                                        src={opponentLogo}
+                                        alt={opponentFull}
+                                        className="w-8 h-8 object-contain flex-shrink-0"
+                                        style={{
+                                          filter: isDark
+                                            ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
+                                            : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span className="font-bold text-gray-900 dark:text-white text-sm">{opponentFull}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-gray-500 text-sm font-medium min-w-[60px]">—</span>
+                                )}
                               </div>
                             </div>
                           );
