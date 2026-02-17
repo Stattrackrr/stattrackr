@@ -17,6 +17,14 @@ function toNumericValue(v: unknown): number | null {
 
 type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string };
 
+function parseRoundIndex(round: unknown): number {
+  const text = String(round ?? '').trim().toUpperCase();
+  if (!text) return Number.POSITIVE_INFINITY;
+  const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
+  if (!match) return Number.POSITIVE_INFINITY;
+  return parseInt(match[1], 10);
+}
+
 /** Apply same timeframe filter as AflStatsChart so bars match the main chart. */
 function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTimeframe): T[] {
   if (!baseData.length) return [];
@@ -92,12 +100,17 @@ export function AflSupportingStats({
   const baseData = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
     const sorted = [...gameLogs].sort((a, b) => {
-      const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
-      const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
-      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
+      const aRound = parseRoundIndex(a.round);
+      const bRound = parseRoundIndex(b.round);
+      if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
+
       const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
       const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
       if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
+
+      const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
+      const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
+      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
       return 0;
     });
     return sorted.map((g, idx) => {
@@ -139,24 +152,38 @@ export function AflSupportingStats({
         opponent,
         value,
         isPercent,
+        gameDate: String(g.date ?? g.game_date ?? ''),
       };
     });
   }, [gameLogs, supportingStatKind]);
 
-  const chartData = useMemo(
-    () => applyTimeframe(baseData, timeframe),
-    [baseData, timeframe]
-  );
+  const chartData = useMemo(() => {
+    const data = applyTimeframe(baseData, timeframe);
+    return [...data].sort((a, b) => {
+      const aRi = parseRoundIndex(a.round);
+      const bRi = parseRoundIndex(b.round);
+      if (aRi !== bRi) return aRi - bRi;
+      const aDate = new Date((a as { gameDate?: string }).gameDate ?? 0).getTime();
+      const bDate = new Date((b as { gameDate?: string }).gameDate ?? 0).getTime();
+      if (Number.isFinite(aDate) && Number.isFinite(bDate)) return aDate - bDate;
+      return 0;
+    });
+  }, [baseData, timeframe]);
 
   const baseDataAll = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
     const sorted = [...gameLogs].sort((a, b) => {
-      const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
-      const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
-      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
+      const aRound = parseRoundIndex(a.round);
+      const bRound = parseRoundIndex(b.round);
+      if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
+
       const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
       const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
       if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
+
+      const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
+      const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
+      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
       return 0;
     });
     return sorted.map((g, idx) => {
