@@ -42,32 +42,99 @@ function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTim
 
 export type SupportingStatKind =
   | 'tog'
+  | 'tackles'
+  | 'goals'
+  | 'goal_assists'
+  | 'disposals'
   | 'kicks'
   | 'handballs'
   | 'effective_disposals'
   | 'disposal_efficiency'
   | 'behinds'
   | 'inside_50s'
-  | 'marks_inside_50';
+  | 'marks_inside_50'
+  | 'contested_marks'
+  | 'meters_gained'
+  | 'intercepts'
+  | 'free_kicks_for'
+  | 'contested_possessions'
+  | 'tackles_inside_50'
+  | 'free_kicks_against'
+  | 'one_percenters'
+  | 'clangers';
 
 const DISPOSALS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
-  { value: 'tog', label: 'TOG' },
+  { value: 'tog', label: 'TOG %' },
   { value: 'kicks', label: 'Kicks' },
   { value: 'handballs', label: 'Handballs' },
-  { value: 'effective_disposals', label: 'Effective disposals' },
-  { value: 'disposal_efficiency', label: 'Disposal efficiency' },
+  { value: 'meters_gained', label: 'Meters gained' },
+  { value: 'intercepts', label: 'Intercepts' },
+  { value: 'free_kicks_for', label: 'Free kicks for' },
+  { value: 'contested_possessions', label: 'Contested possessions' },
 ];
 
 const GOALS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
-  { value: 'tog', label: 'TOG' },
+  { value: 'tog', label: 'TOG %' },
   { value: 'behinds', label: 'Behinds' },
   { value: 'inside_50s', label: 'Inside 50s' },
   { value: 'marks_inside_50', label: 'Marks inside 50' },
 ];
 
+const MARKS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'marks_inside_50', label: 'Marks inside 50' },
+  { value: 'contested_marks', label: 'Contested marks' },
+];
+
+const TACKLES_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'tackles_inside_50', label: 'Tackles inside 50' },
+  { value: 'free_kicks_against', label: 'Free kicks against' },
+  { value: 'one_percenters', label: 'One percenters' },
+  { value: 'clangers', label: 'Clangers' },
+];
+
+const KICKS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'disposals', label: 'Disposals' },
+  { value: 'handballs', label: 'Handballs' },
+  { value: 'meters_gained', label: 'Meters gained' },
+  { value: 'intercepts', label: 'Intercepts' },
+  { value: 'free_kicks_for', label: 'Free kicks for' },
+  { value: 'contested_possessions', label: 'Contested possessions' },
+];
+
+const HANDBALLS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'disposals', label: 'Disposals' },
+  { value: 'kicks', label: 'Kicks' },
+  { value: 'meters_gained', label: 'Meters gained' },
+  { value: 'intercepts', label: 'Intercepts' },
+  { value: 'free_kicks_for', label: 'Free kicks for' },
+  { value: 'contested_possessions', label: 'Contested possessions' },
+];
+
+const BEHINDS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'goals', label: 'Goals' },
+  { value: 'marks_inside_50', label: 'Marks inside 50' },
+];
+
+const TACKLES_INSIDE_50_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'tackles', label: 'Tackles' },
+  { value: 'inside_50s', label: 'Inside 50s' },
+];
+
+const SCORE_INVOLVEMENTS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'tog', label: 'TOG %' },
+  { value: 'goal_assists', label: 'Goals assisted' },
+  { value: 'meters_gained', label: 'Meters gained' },
+];
+
 /** For main chart stats that don't have their own supporting options yet, show TOG only. */
 const DEFAULT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
-  { value: 'tog', label: 'TOG' },
+  { value: 'tog', label: 'TOG %' },
 ];
 
 interface AflSupportingStatsProps {
@@ -89,8 +156,29 @@ export function AflSupportingStats({
 }: AflSupportingStatsProps) {
   const showDisposalsToggle = mainChartStat === 'disposals';
   const showGoalsToggle = mainChartStat === 'goals';
+  const showMarksToggle = mainChartStat === 'marks';
+  const showTacklesToggle = mainChartStat === 'tackles';
+  const showKicksToggle = mainChartStat === 'kicks';
+  const showHandballsToggle = mainChartStat === 'handballs';
+  const showBehindsToggle = mainChartStat === 'behinds';
+  const showTacklesInside50Toggle = mainChartStat === 'tackles_inside_50';
+  const showScoreInvolvementsToggle = mainChartStat === 'score_involvements';
   const supportingOptions =
-    showGoalsToggle
+    showScoreInvolvementsToggle
+      ? SCORE_INVOLVEMENTS_TOGGLE_OPTIONS
+      : showTacklesInside50Toggle
+      ? TACKLES_INSIDE_50_TOGGLE_OPTIONS
+      : showBehindsToggle
+      ? BEHINDS_TOGGLE_OPTIONS
+      : showHandballsToggle
+      ? HANDBALLS_TOGGLE_OPTIONS
+      : showKicksToggle
+      ? KICKS_TOGGLE_OPTIONS
+      : showTacklesToggle
+      ? TACKLES_TOGGLE_OPTIONS
+      : showMarksToggle
+      ? MARKS_TOGGLE_OPTIONS
+      : showGoalsToggle
       ? GOALS_TOGGLE_OPTIONS
       : showDisposalsToggle
         ? DISPOSALS_TOGGLE_OPTIONS
@@ -121,28 +209,67 @@ export function AflSupportingStats({
       const percentPlayed = Math.max(0, Math.min(100, toNumericValue(g.percent_played) ?? 0));
       const kicks = Math.max(0, toNumericValue(g.kicks) ?? 0);
       const handballs = Math.max(0, toNumericValue(g.handballs) ?? 0);
+      const tackles = Math.max(0, toNumericValue(g.tackles) ?? 0);
+      const goalAssists = Math.max(0, toNumericValue(g.goal_assists) ?? 0);
+      const disposals = Math.max(0, toNumericValue(g.disposals) ?? 0);
       const effectiveDisposals = Math.max(0, toNumericValue(g.effective_disposals) ?? 0);
       const disposalEfficiency = Math.max(0, Math.min(100, toNumericValue(g.disposal_efficiency) ?? 0));
       const behinds = Math.max(0, toNumericValue(g.behinds) ?? 0);
+      const goals = Math.max(0, toNumericValue(g.goals) ?? 0);
       const inside50s = Math.max(0, toNumericValue(g.inside_50s) ?? 0);
       const marksInside50 = Math.max(0, toNumericValue(g.marks_inside_50) ?? 0);
+      const contestedMarks = Math.max(0, toNumericValue(g.contested_marks) ?? 0);
+      const metersGained = Math.max(0, toNumericValue(g.meters_gained) ?? 0);
+      const intercepts = Math.max(0, toNumericValue(g.intercepts) ?? 0);
+      const freeKicksFor = Math.max(0, toNumericValue(g.free_kicks_for) ?? 0);
+      const contestedPossessions = Math.max(0, toNumericValue(g.contested_possessions) ?? 0);
+      const tacklesInside50 = Math.max(0, toNumericValue(g.tackles_inside_50) ?? 0);
+      const freeKicksAgainst = Math.max(0, toNumericValue(g.free_kicks_against) ?? 0);
+      const onePercenters = Math.max(0, toNumericValue(g.one_percenters) ?? 0);
+      const clangers = Math.max(0, toNumericValue(g.clangers) ?? 0);
       const useTog = supportingStatKind === 'tog';
       const value =
         useTog
           ? percentPlayed
+          : supportingStatKind === 'tackles'
+            ? tackles
+          : supportingStatKind === 'goal_assists'
+            ? goalAssists
+          : supportingStatKind === 'disposals'
+            ? disposals
           : supportingStatKind === 'kicks'
             ? kicks
             : supportingStatKind === 'handballs'
               ? handballs
+              : supportingStatKind === 'meters_gained'
+                ? metersGained
+                : supportingStatKind === 'intercepts'
+                  ? intercepts
+                  : supportingStatKind === 'free_kicks_for'
+                    ? freeKicksFor
+                    : supportingStatKind === 'contested_possessions'
+                      ? contestedPossessions
               : supportingStatKind === 'effective_disposals'
                 ? effectiveDisposals
                 : supportingStatKind === 'disposal_efficiency'
                   ? disposalEfficiency
+                  : supportingStatKind === 'goals'
+                    ? goals
                   : supportingStatKind === 'behinds'
                     ? behinds
                     : supportingStatKind === 'inside_50s'
                       ? inside50s
-                      : marksInside50;
+                      : supportingStatKind === 'contested_marks'
+                        ? contestedMarks
+                        : supportingStatKind === 'tackles_inside_50'
+                          ? tacklesInside50
+                          : supportingStatKind === 'free_kicks_against'
+                            ? freeKicksAgainst
+                            : supportingStatKind === 'one_percenters'
+                              ? onePercenters
+                              : supportingStatKind === 'clangers'
+                                ? clangers
+                        : marksInside50;
       const isPercent = useTog || supportingStatKind === 'disposal_efficiency';
       return {
         key,
@@ -192,14 +319,27 @@ export function AflSupportingStats({
       const opponent = String(g.opponent ?? '-');
       const key = `${gameNum}-${round}-${opponent}-${idx}`;
       const tog = Math.max(0, Math.min(100, toNumericValue(g.percent_played) ?? 0));
+      const disposals = Math.max(0, toNumericValue(g.disposals) ?? 0);
       const kicks = Math.max(0, toNumericValue(g.kicks) ?? 0);
       const handballs = Math.max(0, toNumericValue(g.handballs) ?? 0);
+      const tackles = Math.max(0, toNumericValue(g.tackles) ?? 0);
+      const goal_assists = Math.max(0, toNumericValue(g.goal_assists) ?? 0);
       const effective_disposals = Math.max(0, toNumericValue(g.effective_disposals) ?? 0);
       const disposal_efficiency = Math.max(0, Math.min(100, toNumericValue(g.disposal_efficiency) ?? 0));
       const behinds = Math.max(0, toNumericValue(g.behinds) ?? 0);
+      const goals = Math.max(0, toNumericValue(g.goals) ?? 0);
       const inside_50s = Math.max(0, toNumericValue(g.inside_50s) ?? 0);
       const marks_inside_50 = Math.max(0, toNumericValue(g.marks_inside_50) ?? 0);
-      return { key, xKey: `G${gameNum}`, tickLabel: opponent, round, opponent, tog, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50 };
+      const contested_marks = Math.max(0, toNumericValue(g.contested_marks) ?? 0);
+      const meters_gained = Math.max(0, toNumericValue(g.meters_gained) ?? 0);
+      const intercepts = Math.max(0, toNumericValue(g.intercepts) ?? 0);
+      const free_kicks_for = Math.max(0, toNumericValue(g.free_kicks_for) ?? 0);
+      const contested_possessions = Math.max(0, toNumericValue(g.contested_possessions) ?? 0);
+      const tackles_inside_50 = Math.max(0, toNumericValue(g.tackles_inside_50) ?? 0);
+      const free_kicks_against = Math.max(0, toNumericValue(g.free_kicks_against) ?? 0);
+      const one_percenters = Math.max(0, toNumericValue(g.one_percenters) ?? 0);
+      const clangers = Math.max(0, toNumericValue(g.clangers) ?? 0);
+      return { key, xKey: `G${gameNum}`, tickLabel: opponent, round, opponent, tog, tackles, goals, goal_assists, disposals, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50, contested_marks, meters_gained, intercepts, free_kicks_for, contested_possessions, tackles_inside_50, free_kicks_against, one_percenters, clangers };
     });
   }, [gameLogs]);
 
@@ -210,9 +350,35 @@ export function AflSupportingStats({
 
   const averagesByStat = useMemo(() => {
     if (!filteredAll.length)
-      return { tog: null, kicks: null, handballs: null, effective_disposals: null, disposal_efficiency: null, behinds: null, inside_50s: null, marks_inside_50: null };
+      return {
+        tog: null,
+        tackles: null,
+        goals: null,
+        goal_assists: null,
+        disposals: null,
+        kicks: null,
+        handballs: null,
+        effective_disposals: null,
+        disposal_efficiency: null,
+        behinds: null,
+        inside_50s: null,
+        marks_inside_50: null,
+        contested_marks: null,
+        meters_gained: null,
+        intercepts: null,
+        free_kicks_for: null,
+        contested_possessions: null,
+        tackles_inside_50: null,
+        free_kicks_against: null,
+        one_percenters: null,
+        clangers: null,
+      };
     const n = filteredAll.length;
     const tog = filteredAll.reduce((s, r) => s + r.tog, 0) / n;
+    const tackles = filteredAll.reduce((s, r) => s + r.tackles, 0) / n;
+    const goals = filteredAll.reduce((s, r) => s + r.goals, 0) / n;
+    const goal_assists = filteredAll.reduce((s, r) => s + r.goal_assists, 0) / n;
+    const disposals = filteredAll.reduce((s, r) => s + r.disposals, 0) / n;
     const kicks = filteredAll.reduce((s, r) => s + r.kicks, 0) / n;
     const handballs = filteredAll.reduce((s, r) => s + r.handballs, 0) / n;
     const effective_disposals = filteredAll.reduce((s, r) => s + r.effective_disposals, 0) / n;
@@ -220,7 +386,16 @@ export function AflSupportingStats({
     const behinds = filteredAll.reduce((s, r) => s + r.behinds, 0) / n;
     const inside_50s = filteredAll.reduce((s, r) => s + r.inside_50s, 0) / n;
     const marks_inside_50 = filteredAll.reduce((s, r) => s + r.marks_inside_50, 0) / n;
-    return { tog, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50 };
+    const contested_marks = filteredAll.reduce((s, r) => s + r.contested_marks, 0) / n;
+    const meters_gained = filteredAll.reduce((s, r) => s + r.meters_gained, 0) / n;
+    const intercepts = filteredAll.reduce((s, r) => s + r.intercepts, 0) / n;
+    const free_kicks_for = filteredAll.reduce((s, r) => s + r.free_kicks_for, 0) / n;
+    const contested_possessions = filteredAll.reduce((s, r) => s + r.contested_possessions, 0) / n;
+    const tackles_inside_50 = filteredAll.reduce((s, r) => s + r.tackles_inside_50, 0) / n;
+    const free_kicks_against = filteredAll.reduce((s, r) => s + r.free_kicks_against, 0) / n;
+    const one_percenters = filteredAll.reduce((s, r) => s + r.one_percenters, 0) / n;
+    const clangers = filteredAll.reduce((s, r) => s + r.clangers, 0) / n;
+    return { tog, tackles, goals, goal_assists, disposals, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50, contested_marks, meters_gained, intercepts, free_kicks_for, contested_possessions, tackles_inside_50, free_kicks_against, one_percenters, clangers };
   }, [filteredAll]);
 
   const average = useMemo(() => {
@@ -248,24 +423,66 @@ export function AflSupportingStats({
       ? 'No % on ground data'
       : supportingStatKind === 'disposal_efficiency'
         ? 'No disposal efficiency data'
+      : supportingStatKind === 'tackles'
+        ? 'No tackles data'
+      : supportingStatKind === 'goal_assists'
+        ? 'No goals assisted data'
+      : supportingStatKind === 'disposals'
+        ? 'No disposals data'
+      : supportingStatKind === 'goals'
+        ? 'No goals data'
         : supportingStatKind === 'effective_disposals'
           ? 'No effective disposals data'
+          : supportingStatKind === 'meters_gained'
+            ? 'No meters gained data'
+            : supportingStatKind === 'intercepts'
+              ? 'No intercepts data'
+              : supportingStatKind === 'free_kicks_for'
+                ? 'No free kicks for data'
+                : supportingStatKind === 'contested_possessions'
+                  ? 'No contested possessions data'
           : supportingStatKind === 'behinds'
             ? 'No behinds data'
             : supportingStatKind === 'inside_50s'
               ? 'No inside 50s data'
               : supportingStatKind === 'marks_inside_50'
                 ? 'No marks inside 50 data'
+              : supportingStatKind === 'contested_marks'
+                ? 'No contested marks data'
+                : supportingStatKind === 'tackles_inside_50'
+                  ? 'No tackles inside 50 data'
+                  : supportingStatKind === 'free_kicks_against'
+                    ? 'No free kicks against data'
+                    : supportingStatKind === 'one_percenters'
+                      ? 'No one percenters data'
+                      : supportingStatKind === 'clangers'
+                        ? 'No clangers data'
                 : `No ${supportingStatKind} data`;
 
   const formatAvg = (kind: SupportingStatKind) => {
     const v =
       kind === 'tog'
         ? averagesByStat.tog
+        : kind === 'tackles'
+          ? averagesByStat.tackles
+        : kind === 'goal_assists'
+          ? averagesByStat.goal_assists
+        : kind === 'goals'
+          ? averagesByStat.goals
+        : kind === 'disposals'
+          ? averagesByStat.disposals
         : kind === 'kicks'
           ? averagesByStat.kicks
           : kind === 'handballs'
             ? averagesByStat.handballs
+            : kind === 'meters_gained'
+              ? averagesByStat.meters_gained
+              : kind === 'intercepts'
+                ? averagesByStat.intercepts
+                : kind === 'free_kicks_for'
+                  ? averagesByStat.free_kicks_for
+                  : kind === 'contested_possessions'
+                    ? averagesByStat.contested_possessions
             : kind === 'effective_disposals'
               ? averagesByStat.effective_disposals
               : kind === 'disposal_efficiency'
@@ -274,7 +491,17 @@ export function AflSupportingStats({
                   ? averagesByStat.behinds
                   : kind === 'inside_50s'
                     ? averagesByStat.inside_50s
-                    : averagesByStat.marks_inside_50;
+                    : kind === 'marks_inside_50'
+                      ? averagesByStat.marks_inside_50
+                      : kind === 'contested_marks'
+                        ? averagesByStat.contested_marks
+                        : kind === 'tackles_inside_50'
+                          ? averagesByStat.tackles_inside_50
+                          : kind === 'free_kicks_against'
+                            ? averagesByStat.free_kicks_against
+                            : kind === 'one_percenters'
+                              ? averagesByStat.one_percenters
+                              : averagesByStat.clangers;
     if (v == null || !Number.isFinite(v)) return '—';
     if (kind === 'tog' || kind === 'disposal_efficiency') return `${v.toFixed(1)}%`;
     return v.toFixed(1);

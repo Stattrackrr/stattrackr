@@ -7,6 +7,7 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 
 const STAT_PRIORITY = [
+  'percent_played',
   'goals',
   'disposals',
   'marks',
@@ -14,20 +15,36 @@ const STAT_PRIORITY = [
   'kicks',
   'handballs',
   'behinds',
+  'inside_50s',
+  'intercepts',
+  'uncontested_possessions',
+  'contested_possessions',
+  'tackles_inside_50',
   'clearances',
+  'score_involvements',
+  'meters_gained',
   'hitouts',
   'free_kicks_for',
   'free_kicks_against',
-  'contested_possessions',
-  'uncontested_possessions',
   'contested_marks',
   'one_percenters',
   'goal_assists',
-  'percent_played',
 ];
 const META_SKIP = new Set(['season', 'game_number', 'guernsey']);
-/** Hide from main chart stat pills (bounces, brownlow_votes; effective_disposals, disposal_efficiency, inside_50s, marks_inside_50 moved to supporting stats). */
-const STATS_HIDDEN = new Set(['bounces', 'brownlow_votes', 'effective_disposals', 'disposal_efficiency', 'inside_50s', 'marks_inside_50']);
+/** Hide from main chart stat pills (keep focused list; secondary metrics live in supporting stats). */
+const STATS_HIDDEN = new Set([
+  'bounces',
+  'brownlow_votes',
+  'effective_disposals',
+  'disposal_efficiency',
+  'marks_inside_50',
+  'intercepts',
+  'rebounds',
+  'clangers',
+  'one_percenters',
+  'hitouts',
+  'meters_gained',
+]);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'] as const;
 
 interface AflChartTooltipProps {
@@ -184,6 +201,7 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 }
 
 function formatStatLabel(key: string): string {
+  if (key === 'percent_played') return 'TOG %';
   return key
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
@@ -346,6 +364,13 @@ export function AflStatsChart({
     return ordered;
   }, [gameLogs]);
 
+  const preferredDefaultStat = useMemo(() => {
+    if (!availableStats.length) return '';
+    return availableStats.includes('percent_played')
+      ? 'percent_played'
+      : availableStats[0];
+  }, [availableStats]);
+
   const [selectedStat, setSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
@@ -358,9 +383,15 @@ export function AflStatsChart({
       return;
     }
     if (!selectedStat || !availableStats.includes(selectedStat)) {
-      setSelectedStat(availableStats[0]);
+      setSelectedStat(preferredDefaultStat);
     }
-  }, [availableStats, selectedStat]);
+  }, [availableStats, selectedStat, preferredDefaultStat]);
+
+  // Whenever a new player's logs are loaded, default back to Disposals first.
+  useEffect(() => {
+    if (!availableStats.length) return;
+    setSelectedStat(preferredDefaultStat);
+  }, [gameLogs, availableStats, preferredDefaultStat]);
 
   useEffect(() => {
     if (selectedStat && onSelectedStatChange) onSelectedStatChange(selectedStat);
@@ -575,8 +606,31 @@ export function AflStatsChart({
 
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center p-4">
-        <div className="animate-pulse text-gray-500 dark:text-gray-400 text-sm">Loading stats...</div>
+      <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+        <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+          {[...Array(20)].map((_, idx) => {
+            const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+            const height = heights[idx] || 48;
+            return (
+              <div
+                key={idx}
+                className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                style={{ height: '100%' }}
+              >
+                <div
+                  className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                  style={{
+                    height: `${height}%`,
+                    animationDelay: `${idx * 0.08}s`,
+                    minHeight: '30px',
+                    transition: 'height 0.3s ease',
+                    minWidth: '28px',
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }

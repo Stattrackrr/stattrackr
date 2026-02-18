@@ -5,6 +5,7 @@ const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
+const FOOTYWIRE_SCHEMA_VERSION = 'v2';
 let footyWireCache: Map<string, { expiresAt: number; games: GameLogRow[]; height: string | null; guernsey: number | null }> = new Map();
 
 type PlayerIndexEntry = {
@@ -30,6 +31,10 @@ type GameLogRow = {
   rebounds: number;
   inside_50s: number;
   clearances: number;
+  intercepts: number;
+  tackles_inside_50: number;
+  score_involvements: number;
+  meters_gained: number;
   clangers: number;
   free_kicks_for: number;
   free_kicks_against: number;
@@ -211,6 +216,10 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
     rebounds: num('R50'),
     inside_50s: num('I50'),
     clearances: num('CL'),
+    intercepts: 0,
+    tackles_inside_50: 0,
+    score_involvements: 0,
+    meters_gained: 0,
     clangers: num('CG'),
     free_kicks_for: num('FF'),
     free_kicks_against: num('FA'),
@@ -235,6 +244,8 @@ function advNum(row: string[], headers: string[], name: string): number {
   if (i < 0 && name === '1%') i = headers.findIndex((h) => /^1\s*%$|^1%$/i.test(h.trim()));
   if (i < 0 && name === 'TOG%') i = headers.findIndex((h) => /TOG\s*%|TOG%/i.test(h.trim()));
   if (i < 0 && (name === 'DE%' || name === 'DE')) i = headers.findIndex((h) => /^DE\s*%$|^DE%$/i.test(h.trim()) || h.trim().toUpperCase() === 'DE');
+  if (i < 0 && name === 'ITC') i = headers.findIndex((h) => /^ITC$|^INT$|^INTERCEPTS?$/i.test(h.trim()));
+  if (i < 0 && name === 'TI5') i = headers.findIndex((h) => /^TI5$|^T5$|^TACKLES?\s*INSIDE\s*50$/i.test(h.trim()));
   if (i < 0) return 0;
   const v = (row[i] ?? '').trim();
   const n = parseFloat(v);
@@ -253,6 +264,10 @@ function footyWireAdvancedRowToPartial(row: string[], headers: string[], season:
     percent_played: advNum(row, headers, 'TOG%') || null,
     effective_disposals: advNum(row, headers, 'ED'),
     disposal_efficiency: advNum(row, headers, 'DE%'),
+    meters_gained: advNum(row, headers, 'MG'),
+    intercepts: advNum(row, headers, 'ITC'),
+    tackles_inside_50: advNum(row, headers, 'TI5'),
+    score_involvements: advNum(row, headers, 'SI'),
   };
 }
 
@@ -291,7 +306,7 @@ async function fetchFootyWireGameLogs(
   playerName: string,
   season: number
 ): Promise<{ games: GameLogRow[]; height: string | null; guernsey: number | null; player_name: string } | null> {
-  const cacheKey = `${teamName}|${playerName}|${season}`;
+  const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}|${teamName}|${playerName}|${season}`;
   const cached = footyWireCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return { games: cached.games, height: cached.height, guernsey: cached.guernsey, player_name: playerName.trim() };
@@ -697,6 +712,10 @@ function toGameLogRow(cells: { text: string; raw: string }[], season: number): G
     rebounds: parseIntSafe(cells[13].text),
     inside_50s: parseIntSafe(cells[14].text),
     clearances: parseIntSafe(cells[15].text),
+    intercepts: 0,
+    tackles_inside_50: 0,
+    score_involvements: 0,
+    meters_gained: 0,
     clangers: parseIntSafe(cells[16].text),
     free_kicks_for: parseIntSafe(cells[17].text),
     free_kicks_against: parseIntSafe(cells[18].text),

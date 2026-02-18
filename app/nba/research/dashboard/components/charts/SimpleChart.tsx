@@ -61,6 +61,7 @@ const SimpleChart = memo(function SimpleChart({
   const [isDragging, setIsDragging] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const lastPayloadRef = useRef<{ payload: any[]; coordinate?: { x: number; y: number }; props: any } | null>(null);
+  const isTogStat = selectedStat === 'percent_played';
   
   useEffect(() => {
     const checkMobile = () => {
@@ -155,6 +156,7 @@ const SimpleChart = memo(function SimpleChart({
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
   // OPTIMIZATION: Single pass through array instead of two filters
   const initialBackgroundGradient = useMemo(() => {
+    if (isTogStat) return '';
     if (!chartData || chartData.length === 0) return '';
     const total = chartData.length;
     let overCount = 0;
@@ -167,7 +169,7 @@ const SimpleChart = memo(function SimpleChart({
     const overPercent = total > 0 ? (overCount / total) * 100 : 0;
     const underPercent = total > 0 ? (underCount / total) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);
-  }, [chartData, bettingLine, getBackgroundGradient]);
+  }, [chartData, bettingLine, getBackgroundGradient, isTogStat]);
   
   const backgroundGradientRef = useRef(initialBackgroundGradient);
   const getBackgroundGradientRef = useRef(getBackgroundGradient);
@@ -180,10 +182,11 @@ const SimpleChart = memo(function SimpleChart({
 
   // Determine bar color based on value vs betting line
   const getBarColor = useCallback((value: number, line: number) => {
+    if (isTogStat) return '#6b7280'; // neutral gray for TOG%
     if (value > line) return '#10b981'; // green
     if (value < line) return '#ef4444'; // red
     return '#6b7280'; // gray for equal
-  }, []);
+  }, [isTogStat]);
 
   const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
 
@@ -255,17 +258,19 @@ const SimpleChart = memo(function SimpleChart({
       // Handle spread stat (reversed logic) - same as original recolorBarsFast
       const isOver = selectedStat === 'spread' ? (barValue < line) : (barValue > line);
       const isPush = barValue === line;
-      const newState = isOver ? 'over' : isPush ? 'push' : 'under';
+      const newState = isTogStat ? 'neutral' : (isOver ? 'over' : isPush ? 'push' : 'under');
       const currentState = el.getAttribute('data-state');
       if (currentState === newState) return; // Skip if state hasn't changed
       
-      const newColor = newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444';
+      const newColor = isTogStat
+        ? '#6b7280'
+        : (newState === 'over' ? '#10b981' : newState === 'push' ? '#9ca3af' : '#ef4444');
       
       // Update using setAttribute only (matching original recolorBarsFast pattern)
       el.setAttribute('data-state', newState);
       el.setAttribute('fill', newColor);
     });
-  }, [selectedStat]);
+  }, [selectedStat, isTogStat]);
 
   // Update bar colors and background glow via DOM when betting line changes (prevents re-renders)
   useEffect(() => {
@@ -276,6 +281,14 @@ const SimpleChart = memo(function SimpleChart({
     
     // Update background glow gradient (use setTimeout to ensure DOM is ready)
     const timeoutId = setTimeout(() => {
+      if (isTogStat) {
+        backgroundGradientRef.current = '';
+        const glowElement = document.querySelector('[data-chart-glow]') as HTMLElement;
+        if (glowElement) {
+          glowElement.style.background = '';
+        }
+        return;
+      }
       const total = chartData.length;
       const overCount = chartData.filter(d => d.value > bettingLine).length;
       const underCount = chartData.filter(d => d.value < bettingLine).length;
@@ -293,7 +306,7 @@ const SimpleChart = memo(function SimpleChart({
     }, 0);
     
     return () => clearTimeout(timeoutId);
-  }, [bettingLine, chartData, getBackgroundGradient, updateBarColors]);
+  }, [bettingLine, chartData, getBackgroundGradient, updateBarColors, isTogStat]);
 
   // Ensure colors are set correctly on initial render (after DOM is ready)
   useEffect(() => {
@@ -332,6 +345,7 @@ const SimpleChart = memo(function SimpleChart({
         // Also update background glow
         const data = chartDataRef.current;
         if (data && data.length > 0) {
+          if (isTogStat) return;
           const total = data.length;
           const stat = selectedStatRef.current;
           const overCount = stat === 'spread'
@@ -358,7 +372,7 @@ const SimpleChart = memo(function SimpleChart({
         delete (window as any).__simpleChartRecolorBars;
       };
     }
-  }, []); // Empty deps - use refs for everything
+  }, [isTogStat]); // Use refs for runtime data; include TOG mode
 
   // Listen for transient-line event for instant updates while dragging
   useEffect(() => {
@@ -374,6 +388,7 @@ const SimpleChart = memo(function SimpleChart({
       // Update background glow gradient instantly (also DOM manipulation)
       const data = chartDataRef.current;
       if (data && data.length > 0) {
+        if (isTogStat) return;
         const total = data.length;
         const stat = selectedStatRef.current;
         const overCount = stat === 'spread' 
@@ -406,7 +421,7 @@ const SimpleChart = memo(function SimpleChart({
         window.removeEventListener('transient-line', handleTransientLine);
       };
     }
-  }, [selectedStat]); // Only depend on selectedStat for spread logic
+  }, [selectedStat, isTogStat]); // Only depend on selectedStat/TOG mode for spread logic
 
   // Calculate Y-axis config for second axis
   const secondAxisConfig = useMemo(() => {
@@ -707,7 +722,7 @@ const SimpleChart = memo(function SimpleChart({
       {/* In-chart average + hit rate - center when second axis visible, else top right (z-[1] so dropdowns appear on top) */}
       {averageDisplay && (
         <div
-          className={`absolute top-1 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${hasSecondAxis ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+          className={`absolute -top-3 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${hasSecondAxis ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,

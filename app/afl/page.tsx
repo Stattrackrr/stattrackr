@@ -404,6 +404,8 @@ export default function AFLPage() {
 
   const bg = mounted && isDark ? 'bg-[#050d1a]' : '';
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
+  const showEmptyShell = !selectedPlayer;
+  const showStatsLoadingShell = !!selectedPlayer && statsLoadingForPlayer;
 
   // Single source of truth for opponent: same value for Team vs Team header and Opponent Breakdown.
   const displayOpponent = selectedPlayer?.team
@@ -665,41 +667,96 @@ export default function AFLPage() {
                 </div>
                 {/* 3. Chart container - AFL stats line (bar chart by stat) */}
                 <div
-                  className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border border-gray-200 dark:border-gray-700 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden"
+                  className={`chart-container-no-focus relative z-10 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${
+                    showEmptyShell
+                      ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                      : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                  }`}
                   style={{ outline: 'none', boxShadow: 'none' }}
                 >
-                  <AflStatsChart
-                    stats={selectedPlayer ?? {}}
-                    gameLogs={selectedPlayerGameLogs}
-                    isDark={!!mounted && isDark}
-                    isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
-                    hasSelectedPlayer={!!selectedPlayer}
-                    apiErrorHint={lastStatsError}
-                    teammateFilterName={teammateFilterName}
-                    withWithoutMode={withWithoutMode}
-                    season={season}
-                    clearTeammateFilter={() => {
-                      setTeammateFilterName(null);
-                      setWithWithoutMode('with');
-                    }}
-                    selectedTimeframe={aflChartTimeframe}
-                    onTimeframeChange={setAflChartTimeframe}
-                    onSelectedStatChange={setMainChartStat}
-                  />
+                  {showEmptyShell ? (
+                    <div className="h-full w-full" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+                      <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+                        {[...Array(20)].map((_, idx) => {
+                          const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+                          const height = heights[idx] || 48;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                              style={{ height: '100%' }}
+                            >
+                              <div
+                                className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                                style={{
+                                  height: `${height}%`,
+                                  animationDelay: `${idx * 0.08}s`,
+                                  minHeight: '30px',
+                                  transition: 'height 0.3s ease',
+                                  minWidth: '28px',
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <AflStatsChart
+                      stats={selectedPlayer ?? {}}
+                      gameLogs={selectedPlayerGameLogs}
+                      isDark={!!mounted && isDark}
+                      isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
+                      hasSelectedPlayer={!!selectedPlayer}
+                      apiErrorHint={lastStatsError}
+                      teammateFilterName={teammateFilterName}
+                      withWithoutMode={withWithoutMode}
+                      season={season}
+                      clearTeammateFilter={() => {
+                        setTeammateFilterName(null);
+                        setWithWithoutMode('with');
+                      }}
+                      selectedTimeframe={aflChartTimeframe}
+                      onTimeframeChange={setAflChartTimeframe}
+                      onSelectedStatChange={setMainChartStat}
+                    />
+                  )}
                 </div>
                 {/* 4. Supporting stats - percent played bars */}
-                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm pt-3 px-5 pb-5 sm:pt-4 sm:px-6 sm:pb-6 border border-gray-200 dark:border-gray-700 mt-0.5">
-                  <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    Supporting stats
-                  </h3>
-                  <AflSupportingStats
-                    gameLogs={selectedPlayerGameLogs}
-                    timeframe={aflChartTimeframe}
-                    mainChartStat={mainChartStat}
-                    supportingStatKind={supportingStatKind}
-                    onSupportingStatKindChange={setSupportingStatKind}
-                    isDark={!!mounted && isDark}
-                  />
+                <div className={`w-full min-w-0 flex flex-col rounded-lg shadow-sm pt-3 px-5 pb-5 sm:pt-4 sm:px-6 sm:pb-6 border mt-0.5 ${
+                  showEmptyShell
+                    ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                    : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                }`}>
+                  {showEmptyShell ? (
+                    <div className="min-h-[220px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="space-y-3 w-full max-w-md">
+                        <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                          <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        Supporting stats
+                      </h3>
+                      <AflSupportingStats
+                        gameLogs={selectedPlayerGameLogs}
+                        timeframe={aflChartTimeframe}
+                        mainChartStat={mainChartStat}
+                        supportingStatKind={supportingStatKind}
+                        onSupportingStatKindChange={setSupportingStatKind}
+                        isDark={!!mounted && isDark}
+                      />
+                    </>
+                  )}
                 </div>
                 {/* 6. Mobile analysis - same as DashboardMobileAnalysis */}
                 <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0 mt-2 sm:mt-3 md:mt-4 lg:mt-2">
@@ -715,112 +772,152 @@ export default function AFLPage() {
                 sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
               }`}>
                 {/* Filter By - Player Props / Game Props (same as NBA DashboardRightPanel) */}
-                <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 pt-3 pb-4 border border-gray-200 dark:border-gray-700 relative overflow-visible">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
-                  </div>
-                  <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
-                    <button
-                      onClick={() => setAflPropsMode('player')}
-                      className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        aflPropsMode === 'player'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Player Props
-                    </button>
-                    <button
-                      onClick={() => setAflPropsMode('team')}
-                      className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        aflPropsMode === 'team'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Game Props
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                    {aflPropsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
-                  </p>
-                </div>
-                <div className="hidden lg:block bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0">
-                  <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
-                    <button
-                      onClick={() => setAflRightTab('breakdown')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        aflRightTab === 'breakdown'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Opponent Breakdown
-                    </button>
-                    <button
-                      onClick={() => setAflRightTab('injuries')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        aflRightTab === 'injuries'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Injuries
-                    </button>
-                    <button
-                      onClick={() => setAflRightTab('lineup')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        aflRightTab === 'lineup'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Team list
-                    </button>
-                  </div>
-                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
-                    {aflRightTab === 'breakdown' && (
-                      <AflOpponentBreakdownCard
-                        key={displayOpponent ?? 'no-opponent'}
-                        isDark={!!mounted && isDark}
-                        season={season}
-                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                        lastOpponent={displayOpponent ?? null}
-                      />
-                    )}
-                    {aflRightTab === 'injuries' && (
-                      <AflInjuriesCard
-                        isDark={!!mounted && isDark}
-                        season={season}
-                        playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
-                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                        gameLogs={selectedPlayerGameLogs}
-                        teammateFilterName={teammateFilterName}
-                        setTeammateFilterName={setTeammateFilterName}
-                        withWithoutMode={withWithoutMode}
-                        setWithWithoutMode={setWithWithoutMode}
-                        clearTeammateFilter={() => {
-                          setTeammateFilterName(null);
-                          setWithWithoutMode('with');
-                        }}
-                      />
-                    )}
-                    {aflRightTab === 'lineup' && (
-                      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                        <AflLineupCard
-                          isDark={!!mounted && isDark}
-                          gameLogs={selectedPlayerGameLogs as Array<{ round?: string; opponent?: string; result?: string; match_url?: string }>}
-                          team={
-                            typeof selectedPlayer?.team === 'string'
-                              ? (rosterTeamToInjuryTeam(selectedPlayer.team) || selectedPlayer.team)
-                              : null
-                          }
-                          season={season}
-                          selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                        />
+                <div className={`hidden lg:block rounded-lg shadow-sm px-3 pt-3 pb-4 border relative overflow-visible ${
+                  showEmptyShell
+                    ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                    : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                }`}>
+                  {showEmptyShell ? (
+                    <div className="h-[96px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="space-y-3 w-full max-w-md">
+                        <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className={`h-10 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                          <div className={`h-10 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                      </div>
+                      <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+                        <button
+                          onClick={() => setAflPropsMode('player')}
+                          className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                            aflPropsMode === 'player'
+                              ? 'bg-purple-600 text-white border-purple-500'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                          }`}
+                        >
+                          Player Props
+                        </button>
+                        <button
+                          onClick={() => setAflPropsMode('team')}
+                          className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                            aflPropsMode === 'team'
+                              ? 'bg-purple-600 text-white border-purple-500'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                          }`}
+                        >
+                          Game Props
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                        {aflPropsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
+                      </p>
+                    </>
+                  )}
+                </div>
+                <div className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 ${
+                  showEmptyShell
+                    ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                    : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                }`}>
+                  {showEmptyShell ? (
+                    <div className="h-[420px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center h-[420px]">
+                      <div className="space-y-3 w-full max-w-md px-2">
+                        <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                        <div className={`h-10 w-full rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                        <div className={`h-10 w-full rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                        <div className={`h-10 w-full rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.3s' }}></div>
+                        <div className={`h-44 w-full rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
+                        <button
+                          onClick={() => setAflRightTab('breakdown')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'breakdown'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Opponent Breakdown
+                        </button>
+                        <button
+                          onClick={() => setAflRightTab('injuries')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'injuries'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Injuries
+                        </button>
+                        <button
+                          onClick={() => setAflRightTab('lineup')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'lineup'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Team list
+                        </button>
+                      </div>
+                      <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
+                        {aflRightTab === 'breakdown' && (
+                          <AflOpponentBreakdownCard
+                            key={displayOpponent ?? 'no-opponent'}
+                            isDark={!!mounted && isDark}
+                            season={season}
+                            playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            lastOpponent={displayOpponent ?? null}
+                          />
+                        )}
+                        {aflRightTab === 'injuries' && (
+                          <AflInjuriesCard
+                            isDark={!!mounted && isDark}
+                            season={season}
+                            playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                            playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            gameLogs={selectedPlayerGameLogs}
+                            teammateFilterName={teammateFilterName}
+                            setTeammateFilterName={setTeammateFilterName}
+                            withWithoutMode={withWithoutMode}
+                            setWithWithoutMode={setWithWithoutMode}
+                            clearTeammateFilter={() => {
+                              setTeammateFilterName(null);
+                              setWithWithoutMode('with');
+                            }}
+                          />
+                        )}
+                        {aflRightTab === 'lineup' && (
+                          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                            <AflLineupCard
+                              isDark={!!mounted && isDark}
+                              gameLogs={selectedPlayerGameLogs as Array<{ round?: string; opponent?: string; result?: string; match_url?: string }>}
+                              team={
+                                typeof selectedPlayer?.team === 'string'
+                                  ? (rosterTeamToInjuryTeam(selectedPlayer.team) || selectedPlayer.team)
+                                  : null
+                              }
+                              season={season}
+                              selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
