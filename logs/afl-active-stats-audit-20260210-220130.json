@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-02-10T11:01:30.650Z",
+  "season": "2025",
+  "baseUrl": "http://localhost:3000",
+  "totals": {
+    "teams": 1,
+    "uniquePlayers": 20,
+    "withStats": 3,
+    "missing": 17,
+    "coveragePct": 15
+  },
+  "missingPlayers": [
+    {
+      "name": "Brendon Goddard",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Brent Harvey",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Craig Bradley",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Dustin Martin",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Gary Ablett",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Joel Selwood",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jordan Lewis",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Josh Kennedy",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Kevin Bartlett",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Leigh Matthews",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Luke Hodge",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Michael Tuck",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Nick Dal Santo",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Robert Harvey",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Sam Mitchell",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Simon Black",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Tony Shaw",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    }
+  ]
+}

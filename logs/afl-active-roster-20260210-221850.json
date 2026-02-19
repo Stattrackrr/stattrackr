@@ -1,0 +1,3497 @@
+{
+  "generatedAt": "2026-02-10T11:18:50.608Z",
+  "season": "2025",
+  "teams": 18,
+  "players": [
+    {
+      "id": 1718,
+      "name": "Aaron Cadman",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1058,
+      "name": "Aaron Francis",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 944,
+      "name": "Aaron Naughton",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1109,
+      "name": "Adam Cerra",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1099,
+      "name": "Adam Saad",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 679,
+      "name": "Adam Treloar",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 770,
+      "name": "Aidan Corr",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1892,
+      "name": "Aidan Johnson",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1119,
+      "name": "Alex Cincotta",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1795,
+      "name": "Alex Davies",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1079,
+      "name": "Alex Neal-Bullen",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 845,
+      "name": "Alex Pearce",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 710,
+      "name": "Alex Sexton",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1005,
+      "name": "Aliir Aliir",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1994,
+      "name": "Alixzander Tauru",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 849,
+      "name": "Andrew Brayshaw",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 733,
+      "name": "Andrew McGrath",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1969,
+      "name": "Angus Clarke",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1765,
+      "name": "Angus Hastie",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1850,
+      "name": "Angus McLennan",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1666,
+      "name": "Angus Sheldrick",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1711,
+      "name": "Anthony Caminiti",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1927,
+      "name": "Archer Day-Wicks",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1992,
+      "name": "Archer May",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1857,
+      "name": "Archer Reid",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 741,
+      "name": "Archie Perkins",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1779,
+      "name": "Archie Roberts",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1752,
+      "name": "Arie Schoenmaker",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1714,
+      "name": "Arthur Jones",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1697,
+      "name": "Ash Johnson",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1866,
+      "name": "Ashton Moir",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1474,
+      "name": "Bailey Banfield",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 938,
+      "name": "Bailey Dale",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1715,
+      "name": "Bailey Humphrey",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 969,
+      "name": "Bailey J. Williams",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1090,
+      "name": "Bailey Laurie",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1953,
+      "name": "Bailey Macdonald",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 780,
+      "name": "Bailey Scott",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1999,
+      "name": "Bailey Smith",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 941,
+      "name": "Bailey Williams",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1084,
+      "name": "Bayley Fritsch",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1632,
+      "name": "Beau McCreery",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 804,
+      "name": "Ben Ainsworth",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 744,
+      "name": "Ben Hobbs",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1967,
+      "name": "Ben Jepson",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 983,
+      "name": "Ben Keays",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1550,
+      "name": "Ben King",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1440,
+      "name": "Ben Long",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 774,
+      "name": "Ben McKay",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1040,
+      "name": "Ben Miller",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1802,
+      "name": "Ben Paton",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1777,
+      "name": "Billy Dowling",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 760,
+      "name": "Billy Frampton",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1870,
+      "name": "Billy Wilson",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1097,
+      "name": "Blake Acres",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 821,
+      "name": "Blake Hardwick",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1736,
+      "name": "Blake Howes",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1930,
+      "name": "Bo Allan",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1710,
+      "name": "Bodhi Uwland",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1595,
+      "name": "Bradley Close",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 689,
+      "name": "Bradley Hill",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 972,
+      "name": "Brady Hough",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1070,
+      "name": "Braeden Campbell",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 880,
+      "name": "Brandon Starcevich",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1651,
+      "name": "Brandon Walker",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 736,
+      "name": "Brandon Zerk-Thatcher",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1661,
+      "name": "Brayden Cook",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 803,
+      "name": "Brayden Fiorini",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 755,
+      "name": "Brayden Maynard",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 847,
+      "name": "Brennan Cox",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1130,
+      "name": "Brent Daniels",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1250,
+      "name": "Brodie Grundy",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1116,
+      "name": "Brodie Kemp",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 122,
+      "name": "Brodie Smith",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 761,
+      "name": "Brody Mihocek",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1791,
+      "name": "Bruce Reville",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1832,
+      "name": "Brynn Teakle",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1644,
+      "name": "Buku Khamis",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1782,
+      "name": "Caiden Cleary",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 939,
+      "name": "Caleb Daniel",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1894,
+      "name": "Caleb Graham",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1744,
+      "name": "Caleb Mitchell",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 952,
+      "name": "Caleb Poulter",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 856,
+      "name": "Caleb Serong",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1737,
+      "name": "Caleb Windsor",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 306,
+      "name": "Callan Ward",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 873,
+      "name": "Callum Ah Chee",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1552,
+      "name": "Callum Coleman-Jones",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1133,
+      "name": "Callum M. Brown",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1848,
+      "name": "Callum Mills",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 906,
+      "name": "Callum Wilkie",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1790,
+      "name": "Calsher Dear",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 840,
+      "name": "Cam Mackenzie",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 879,
+      "name": "Cameron Rayner",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1462,
+      "name": "Cameron Zurhaar",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 975,
+      "name": "Campbell Chesser",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1933,
+      "name": "Campbell Gray",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1069,
+      "name": "Chad Warner",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1811,
+      "name": "Changkuoth Jiath",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 805,
+      "name": "Charlie Ballard",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 868,
+      "name": "Charlie Cameron",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1662,
+      "name": "Charlie Comben",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1102,
+      "name": "Charlie Curnow",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1743,
+      "name": "Charlie Dean",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1493,
+      "name": "Charlie Spargo",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1939,
+      "name": "Charlie West",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1534,
+      "name": "Chayce Jones",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 806,
+      "name": "Chris Burgess",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1917,
+      "name": "Christian Moraes",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1082,
+      "name": "Christian Petracca",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1076,
+      "name": "Christian Salem",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1859,
+      "name": "Clay Hall",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1081,
+      "name": "Clayton Oliver",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1901,
+      "name": "Cody Angove",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1748,
+      "name": "Colby McKercher",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 808,
+      "name": "Connor Budarick",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1134,
+      "name": "Connor Idun",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 834,
+      "name": "Connor Macdonald",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 823,
+      "name": "Connor Nash",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1778,
+      "name": "Connor O'Sullivan",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1017,
+      "name": "Connor Rozee",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 871,
+      "name": "Conor McKenna",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1800,
+      "name": "Conor Stone",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1941,
+      "name": "Cooper Hynes",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1868,
+      "name": "Cooper Lord",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 908,
+      "name": "Cooper Sharman",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1760,
+      "name": "Cooper Simpson",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 2021,
+      "name": "Cooper Trembath",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1117,
+      "name": "Corey Durdin",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1793,
+      "name": "Corey Wagner",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1716,
+      "name": "Corey Warner",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 895,
+      "name": "Dan Butler",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1009,
+      "name": "Dan Houston",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1052,
+      "name": "Dane Rampe",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1788,
+      "name": "Daniel Curtin",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1854,
+      "name": "Daniel McStay",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1032,
+      "name": "Daniel Rioli",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1092,
+      "name": "Daniel Turner",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1024,
+      "name": "Dante Visentini",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1004,
+      "name": "Darcy Byrne-Jones",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 758,
+      "name": "Darcy Cameron",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 986,
+      "name": "Darcy Fogarty",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 882,
+      "name": "Darcy Fort",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 869,
+      "name": "Darcy Gardiner",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1785,
+      "name": "Darcy Jones",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1363,
+      "name": "Darcy Moore",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 728,
+      "name": "Darcy Parish",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 773,
+      "name": "Darcy Tucker",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 887,
+      "name": "Darcy Wilmot",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1751,
+      "name": "Darcy Wilson",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1519,
+      "name": "Darragh Joyce",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 384,
+      "name": "David Swallow",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 707,
+      "name": "Dayne Zorko",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 883,
+      "name": "Deven Robertson",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 385,
+      "name": "Dion Prestia",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1388,
+      "name": "Dougal Howard",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 827,
+      "name": "Dylan Moore",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1794,
+      "name": "Dylan Shiel",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1068,
+      "name": "Dylan Stephens",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1019,
+      "name": "Dylan Williams",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1080,
+      "name": "Ed Langdon",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 946,
+      "name": "Ed Richards",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1797,
+      "name": "Edward Allan",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1876,
+      "name": "Elijah Hewett",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1699,
+      "name": "Elijah Hollands",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 750,
+      "name": "Elijah Tsatas",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 872,
+      "name": "Eric Hipwood",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1071,
+      "name": "Errol Gulden",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1480,
+      "name": "Esava Ratugolea",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1773,
+      "name": "Ethan Read",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1998,
+      "name": "Ewan Mackinlay",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1673,
+      "name": "Finn Callaghan",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 830,
+      "name": "Finn Maginness",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1900,
+      "name": "Finn O'Sullivan",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1886,
+      "name": "Finnbar Maley",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1988,
+      "name": "Flynn Young",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1021,
+      "name": "Francis Evans",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1963,
+      "name": "Geordie Payne",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1098,
+      "name": "George Hewett",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1950,
+      "name": "George Stevens",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1724,
+      "name": "George Wardlaw",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1855,
+      "name": "Griffin Logue",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 924,
+      "name": "Gryan Miers",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1947,
+      "name": "Hamish Davis",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1759,
+      "name": "Harley Reid",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 870,
+      "name": "Harris Andrews",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1124,
+      "name": "Harrison Himmelberg",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1624,
+      "name": "Harrison Jones",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1520,
+      "name": "Harrison Petty",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 2027,
+      "name": "Harrison Ramm",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1877,
+      "name": "Harry Armstrong",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1897,
+      "name": "Harry Boyd",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 658,
+      "name": "Harry Cunningham",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1864,
+      "name": "Harry DeMattia",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1600,
+      "name": "Harry Edwards",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1869,
+      "name": "Harry Lemmey",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1103,
+      "name": "Harry McKay",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 822,
+      "name": "Harry Morrison",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1971,
+      "name": "Harry O'Farrell",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1128,
+      "name": "Harry Perryman",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1826,
+      "name": "Harry Rowston",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1814,
+      "name": "Harry Schoenberg",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 885,
+      "name": "Harry Sharp",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 793,
+      "name": "Harry Sheezel",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1757,
+      "name": "Harvey Gallagher",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1766,
+      "name": "Harvey Johnston",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1891,
+      "name": "Harvey Langford",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1931,
+      "name": "Harvey Langford",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1742,
+      "name": "Harvey Thomas",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1067,
+      "name": "Hayden McLean",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 857,
+      "name": "Hayden Young",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1631,
+      "name": "Heath Chapman",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 839,
+      "name": "Henry Hustwaite",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1786,
+      "name": "Henry Smith",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1781,
+      "name": "Hudson O'Keeffe",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1896,
+      "name": "Hugh Boxshall",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1772,
+      "name": "Hugh Davies",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 875,
+      "name": "Hugh McCluggage",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1754,
+      "name": "Hugo Garcia",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1645,
+      "name": "Hugo Ralphsmith",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1820,
+      "name": "Hunter Clark",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 763,
+      "name": "Ian Hill",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1840,
+      "name": "Isaac Cumming",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1053,
+      "name": "Isaac Heeney",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1898,
+      "name": "Isaac Kako",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1888,
+      "name": "Isaac Keeler",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 762,
+      "name": "Isaac Quaynor",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1936,
+      "name": "Isaiah Dudley",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1932,
+      "name": "Isaiah Dudley",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1033,
+      "name": "Ivan Soldo",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 990,
+      "name": "Izak Rankine",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 894,
+      "name": "Jack Billings",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 920,
+      "name": "Jack Bowes",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1129,
+      "name": "Jack Buckley",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1977,
+      "name": "Jack Buller",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1677,
+      "name": "Jack Carroll",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 686,
+      "name": "Jack Crisp",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 286,
+      "name": "Jack Darling",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 766,
+      "name": "Jack Ginnivan",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1037,
+      "name": "Jack Graham",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 498,
+      "name": "Jack Gunston",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1893,
+      "name": "Jack Henderson",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1485,
+      "name": "Jack Henry",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 902,
+      "name": "Jack Higgins",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1822,
+      "name": "Jack Hutchinson",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1837,
+      "name": "Jack Hutchinson",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1538,
+      "name": "Jack Lukosius",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1792,
+      "name": "Jack Martin",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 878,
+      "name": "Jack Payne",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 968,
+      "name": "Jack Petruccelle",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1041,
+      "name": "Jack Ross",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 824,
+      "name": "Jack Scrimshaw",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1880,
+      "name": "Jack Silvagni",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 897,
+      "name": "Jack Sinclair",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 896,
+      "name": "Jack Steele",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1074,
+      "name": "Jack Viney",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 2018,
+      "name": "Jack Whitlock",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 973,
+      "name": "Jack Williams",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1701,
+      "name": "Jackson Archer",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1206,
+      "name": "Jackson Macrae",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1667,
+      "name": "Jackson Mead",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1862,
+      "name": "Jacob Bauer",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1836,
+      "name": "Jacob Blight",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1034,
+      "name": "Jacob Hopper",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1768,
+      "name": "Jacob Konstanty",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 828,
+      "name": "Jacob Koschitzke",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 2029,
+      "name": "Jacob Newton",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1093,
+      "name": "Jacob van Rooyen",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1686,
+      "name": "Jacob Wehr",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1104,
+      "name": "Jacob Weitering",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 899,
+      "name": "Jade Gresham",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1183,
+      "name": "Jaeger O'Meara",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1696,
+      "name": "Jai Culley",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 833,
+      "name": "Jai Newcombe",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 838,
+      "name": "Jai Serong",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1089,
+      "name": "Jake Bowey",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 916,
+      "name": "Jake Kolodjashnij",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1078,
+      "name": "Jake Lever",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1051,
+      "name": "Jake Lloyd",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1842,
+      "name": "Jake Melksham",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1138,
+      "name": "Jake Riccardi",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1783,
+      "name": "Jake Rogers",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 998,
+      "name": "Jake Soligo",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1209,
+      "name": "Jake Stringer",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1482,
+      "name": "Jake Waterman",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 844,
+      "name": "James Aish",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1000,
+      "name": "James Borlase",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1365,
+      "name": "James Harmes",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1622,
+      "name": "James Jordon",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1873,
+      "name": "James Leake",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 957,
+      "name": "James O'Donnell",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1660,
+      "name": "James Peatling",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1065,
+      "name": "James Rowbottom",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 818,
+      "name": "James Sicily",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1050,
+      "name": "James Trezise",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1689,
+      "name": "James Tunstill",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 826,
+      "name": "James Worpel",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 468,
+      "name": "Jamie Cripps",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 715,
+      "name": "Jamie Elliott",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 820,
+      "name": "Jarman Impey",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 876,
+      "name": "Jarrod Berry",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 796,
+      "name": "Jarrod Witts",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1691,
+      "name": "Jase Burgoyne",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1025,
+      "name": "Jason Horne-Francis",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1169,
+      "name": "Jason Johannissen",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 888,
+      "name": "Jaspa Fletcher",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1960,
+      "name": "Jasper Alger",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1738,
+      "name": "Jaxon Binns",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1629,
+      "name": "Jaxon Prior",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1962,
+      "name": "Jay Polkinghorne",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 959,
+      "name": "Jayden Hunt",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 726,
+      "name": "Jayden Laverde",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 2020,
+      "name": "Jayden Nguyen",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1030,
+      "name": "Jayden Short",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1948,
+      "name": "Jed Adams",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1839,
+      "name": "Jed Bews",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1023,
+      "name": "Jed McEntee",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1763,
+      "name": "Jed Walter",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1823,
+      "name": "Jedd Busslinger",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 648,
+      "name": "Jeremy Cameron",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1006,
+      "name": "Jeremy Finlayson",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 537,
+      "name": "Jeremy Howe",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 958,
+      "name": "Jeremy McGovern",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1605,
+      "name": "Jeremy Sharp",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 2013,
+      "name": "Jesse Dattoli",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1122,
+      "name": "Jesse Hogan",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1824,
+      "name": "Jesse Motlop",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1721,
+      "name": "Jhye Clark",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 889,
+      "name": "Jimmy Webster",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1978,
+      "name": "Jobe Shanahan",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1905,
+      "name": "Joe Berry",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1841,
+      "name": "Joe Fonti",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1774,
+      "name": "Joe Richards",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1063,
+      "name": "Joel Amartey",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1846,
+      "name": "Joel Freijah",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1807,
+      "name": "Joel Freijah",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 843,
+      "name": "Joel Hamling",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1659,
+      "name": "Joel Jeffrey",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 764,
+      "name": "John Noble",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1942,
+      "name": "Jonty Faull",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1944,
+      "name": "Jonty Faull",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1672,
+      "name": "Jordan Boyd",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 853,
+      "name": "Jordan Clark",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 2023,
+      "name": "Jordan Croft",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 982,
+      "name": "Jordan Dawson",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 753,
+      "name": "Jordan de Goey",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1821,
+      "name": "Jordan Ridley",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1615,
+      "name": "Jordon Butts",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 947,
+      "name": "Jordon Sweet",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1958,
+      "name": "Josaia Delana",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 900,
+      "name": "Josh Battle",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 757,
+      "name": "Josh Daicos",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1884,
+      "name": "Josh Dolan",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 874,
+      "name": "Josh Dunkley",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 2026,
+      "name": "Josh Lai",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1669,
+      "name": "Josh Sinn",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 859,
+      "name": "Josh Treacy",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 836,
+      "name": "Josh Ward",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 841,
+      "name": "Josh Weddle",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 992,
+      "name": "Josh Worrell",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1761,
+      "name": "Joshua Draper",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1664,
+      "name": "Joshua Gibcus",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1123,
+      "name": "Joshua Kelly",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 997,
+      "name": "Joshua Rachele",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1091,
+      "name": "Judd McVee",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1688,
+      "name": "Judson Clarke",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1541,
+      "name": "Justin McInerney",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1975,
+      "name": "Jy Farrar",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 776,
+      "name": "Jy Simpkin",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 863,
+      "name": "Jye Amiss",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1567,
+      "name": "Jye Caldwell",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 746,
+      "name": "Jye Menzie",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1085,
+      "name": "Kade Chandler",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 886,
+      "name": "Kai Lohmann",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1810,
+      "name": "Kaleb Smith",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 792,
+      "name": "Kallan Dawson",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1027,
+      "name": "Kamdyn McIntosh",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1013,
+      "name": "Kane Farrell",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1767,
+      "name": "Kane McAuliffe",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 819,
+      "name": "Karl Amon",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 862,
+      "name": "Karl Worner",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 2025,
+      "name": "Kayle Gerreyn",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 884,
+      "name": "Keidean Coleman",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1132,
+      "name": "Kieren Briggs",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1755,
+      "name": "Koltyn Tholstrup",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 724,
+      "name": "Kyle Langford",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1087,
+      "name": "Kysaiah Pickett",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1111,
+      "name": "Lachie Fogarty",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1980,
+      "name": "Lachie Jaques",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 682,
+      "name": "Lachie Neale",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1856,
+      "name": "Lachie Weller",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1121,
+      "name": "Lachie Whitfield",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1136,
+      "name": "Lachlan Ash",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1993,
+      "name": "Lachlan Blakiston",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1652,
+      "name": "Lachlan Bramble",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1707,
+      "name": "Lachlan Cowan",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 2030,
+      "name": "Lachlan Gulbin",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1022,
+      "name": "Lachlan Jones",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 600,
+      "name": "Lachlan Keeffe",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 953,
+      "name": "Lachlan McNeil",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 987,
+      "name": "Lachlan Murphy",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 851,
+      "name": "Lachlan Schultz",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1603,
+      "name": "Lachlan Sholl",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1784,
+      "name": "Lachlan Sullivan",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 948,
+      "name": "Laitham Vandermeer",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1753,
+      "name": "Lance Collard",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1834,
+      "name": "Lawson Humphries",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1700,
+      "name": "Leek Aleer",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1976,
+      "name": "Leonardo Lombard",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1904,
+      "name": "Levi Ashcroft",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1915,
+      "name": "Lewis Hayes",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1054,
+      "name": "Lewis Melican",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1463,
+      "name": "Lewis Young",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1038,
+      "name": "Liam Baker",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 960,
+      "name": "Liam Duggan",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1970,
+      "name": "Liam Fawcett",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 858,
+      "name": "Liam Henry",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 230,
+      "name": "Liam Jones",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 2006,
+      "name": "Liam McMahon",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1889,
+      "name": "Liam O'Connell",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 865,
+      "name": "Liam Reidy",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1481,
+      "name": "Liam Ryan",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 905,
+      "name": "Liam Stocker",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 825,
+      "name": "Lloyd Meek",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1771,
+      "name": "Loch Rawlinson",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1847,
+      "name": "Logan Evans",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1769,
+      "name": "Logan Morris",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1916,
+      "name": "Luamon Lual",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1895,
+      "name": "Lucas Camporeale",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 2028,
+      "name": "Lucca Grego",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1973,
+      "name": "Luke Beecken",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 509,
+      "name": "Luke Breust",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1806,
+      "name": "Luke Cleary",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1475,
+      "name": "Luke Davies-Uniacke",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 854,
+      "name": "Luke Jackson",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1270,
+      "name": "Luke McDonald",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1002,
+      "name": "Luke Nankervis",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 505,
+      "name": "Luke Parker",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 995,
+      "name": "Luke Pedlar",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 848,
+      "name": "Luke Ryan",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1921,
+      "name": "Luke Trainor",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1878,
+      "name": "Luke Trainor",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 801,
+      "name": "Mabior Chol",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 815,
+      "name": "Mac Andrew",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1991,
+      "name": "Malakai Champion",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 811,
+      "name": "Malcolm Rosas",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1997,
+      "name": "Mani Liddy",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1100,
+      "name": "Marc Pittonet",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 937,
+      "name": "Marcus Bontempelli",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 912,
+      "name": "Marcus Windhager",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1196,
+      "name": "Mark Blicavs",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 989,
+      "name": "Mark Keane",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 922,
+      "name": "Mark O'Connor",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 754,
+      "name": "Mason Cox",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 730,
+      "name": "Mason Redman",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 892,
+      "name": "Mason Wood",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1693,
+      "name": "Massimo D'Ambrosio",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1487,
+      "name": "Matt Guelfi",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1934,
+      "name": "Matt Whitlock",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 913,
+      "name": "Mattaes Phillipou",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1940,
+      "name": "Matthew Carroll",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1115,
+      "name": "Matthew Cottrell",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 980,
+      "name": "Matthew Crouch",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1861,
+      "name": "Matthew Jefferson",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 864,
+      "name": "Matthew Johnson",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1408,
+      "name": "Matthew Kennedy",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1113,
+      "name": "Matthew Owies",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 809,
+      "name": "Matthew Rowell",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1073,
+      "name": "Matty Roberts",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1045,
+      "name": "Maurice Rioli",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 538,
+      "name": "Max Gawn",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1776,
+      "name": "Max Gruzewski",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1844,
+      "name": "Max Hall",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1849,
+      "name": "Max Heath",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 929,
+      "name": "Max Holmes",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1001,
+      "name": "Max Michalanney",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1720,
+      "name": "Max Ramsden",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 2012,
+      "name": "Michael Sellwood",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1020,
+      "name": "Miles Bergman",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 789,
+      "name": "Miller Bergman",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 855,
+      "name": "Minairo Frederick",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 931,
+      "name": "Mitch Knevitt",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1505,
+      "name": "Mitch Lewis",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1105,
+      "name": "Mitch McGovern",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 910,
+      "name": "Mitch Owens",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 54,
+      "name": "Mitchell Duncan",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1576,
+      "name": "Mitchell Georgiades",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 985,
+      "name": "Mitchell Hinge",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1903,
+      "name": "Murphy Reid",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1907,
+      "name": "Murphy Reid",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1764,
+      "name": "Mykelti Lefau",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 911,
+      "name": "Nasiah Wanganeen-Milera",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1775,
+      "name": "Nate Caddy",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1031,
+      "name": "Nathan Broad",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 155,
+      "name": "Nathan Fyfe",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1860,
+      "name": "Nathan O'Driscoll",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1956,
+      "name": "Ned Bowman",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1838,
+      "name": "Ned Long",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 813,
+      "name": "Ned Moyle",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 832,
+      "name": "Ned Reeves",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 861,
+      "name": "Neil Erasmus",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1981,
+      "name": "Nicholas Madden",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 745,
+      "name": "Nicholas Martin",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1064,
+      "name": "Nick Blakey",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1804,
+      "name": "Nick Bryan",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 904,
+      "name": "Nick Coffield",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1665,
+      "name": "Nick Daicos",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 720,
+      "name": "Nick Haynes",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1322,
+      "name": "Nick Holman",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 775,
+      "name": "Nick Larkey",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1028,
+      "name": "Nick Vlastuin",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1746,
+      "name": "Nick Watson",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 807,
+      "name": "Noah Anderson",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1546,
+      "name": "Noah Answerth",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1039,
+      "name": "Noah Balta",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 977,
+      "name": "Noah Long",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 934,
+      "name": "Oisin Mullin",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 756,
+      "name": "Oleg Markov",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 930,
+      "name": "Oliver Dempsey",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1059,
+      "name": "Oliver Florent",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1902,
+      "name": "Oliver Hannaford",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 926,
+      "name": "Oliver Henry",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1120,
+      "name": "Oliver Hollands",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1951,
+      "name": "Oliver Wiltshire",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1003,
+      "name": "Oliver Wines",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1825,
+      "name": "Ollie Lord",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1317,
+      "name": "Orazio Fantasia",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1996,
+      "name": "Oscar Adams",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 967,
+      "name": "Oscar Allen",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1378,
+      "name": "Oscar McDonald",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 877,
+      "name": "Oscar McInerney",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1974,
+      "name": "Oscar Steene",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 945,
+      "name": "Oskar Baker",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 2005,
+      "name": "Oskar Smartt",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1801,
+      "name": "Paddy Dow",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1096,
+      "name": "Patrick Cripps",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 127,
+      "name": "Patrick Dangerfield",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 759,
+      "name": "Patrick Lipinski",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 749,
+      "name": "Patrick Voss",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 790,
+      "name": "Paul Curtis",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1551,
+      "name": "Peter Ladhams",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1360,
+      "name": "Peter Wright",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1828,
+      "name": "Quinton Narkle",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 767,
+      "name": "Reef McInnes",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 981,
+      "name": "Reilly O'Brien",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1708,
+      "name": "Reuben Ginbey",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1989,
+      "name": "Rhett Bazzo",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1044,
+      "name": "Rhyan Mansell",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 949,
+      "name": "Rhylee West",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 423,
+      "name": "Rhys Stanley",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 2017,
+      "name": "Rhys Unwin",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1929,
+      "name": "Ricky Mentha",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1882,
+      "name": "Riley Bice",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 951,
+      "name": "Riley Garcia",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1787,
+      "name": "Riley Hardeman",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1995,
+      "name": "Roan Steele",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1733,
+      "name": "Robert Hansen Jr",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 797,
+      "name": "Rory Atkins",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 979,
+      "name": "Rory Laird",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 936,
+      "name": "Rory Lobb",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 901,
+      "name": "Rowan Marshall",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1139,
+      "name": "Ryan Angwin",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1007,
+      "name": "Ryan Burton",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 907,
+      "name": "Ryan Byrnes",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 144,
+      "name": "Ryan Lester",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 978,
+      "name": "Ryan Maric",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1756,
+      "name": "Ryley Sanders",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1881,
+      "name": "Saad El-Hawli",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1047,
+      "name": "Sam Banks",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 993,
+      "name": "Sam Berry",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1684,
+      "name": "Sam Butler",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1762,
+      "name": "Sam Clohesy",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 800,
+      "name": "Sam Collins",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1702,
+      "name": "Sam Darcy",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1885,
+      "name": "Sam Davidson",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 488,
+      "name": "Sam Day",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 927,
+      "name": "Sam De Koning",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1210,
+      "name": "Sam Docherty",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1597,
+      "name": "Sam Draper",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 742,
+      "name": "Sam Durham",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 810,
+      "name": "Sam Flanders",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1163,
+      "name": "Sam Frost",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1879,
+      "name": "Sam Lalor",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1945,
+      "name": "Sam Marshall",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1010,
+      "name": "Sam Powell-Pepper",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 850,
+      "name": "Sam Switkowski",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1131,
+      "name": "Sam Taylor",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1114,
+      "name": "Sam Walsh",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1653,
+      "name": "Samson Ryan",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1066,
+      "name": "Samuel Wicks",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 156,
+      "name": "Scott Pendlebury",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 835,
+      "name": "Seamus Mitchell",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1457,
+      "name": "Sean Darcy",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 1833,
+      "name": "Sean Lemmens",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1741,
+      "name": "Seth Campbell",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1803,
+      "name": "Shadeau Brain",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1036,
+      "name": "Shai Bolton",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 928,
+      "name": "Shannon Neale",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1750,
+      "name": "Shaun Mannagh",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1887,
+      "name": "Sid Draper",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 164,
+      "name": "Steele Sidebottom",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1740,
+      "name": "Steely Green",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 649,
+      "name": "Stephen Coniglio",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 475,
+      "name": "Steven May",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 2001,
+      "name": "Taj Hotton",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1094,
+      "name": "Taj Woewodin",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 694,
+      "name": "Taylor Adams",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1204,
+      "name": "Taylor Duryea",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 2011,
+      "name": "Taylor Goad",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 116,
+      "name": "Taylor Walker",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1851,
+      "name": "Ted Clohesy",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1579,
+      "name": "Thomas Berry",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1899,
+      "name": "Thomas Edwards",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1613,
+      "name": "Thomas Fullarton",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 309,
+      "name": "Thomas Liberatore",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 486,
+      "name": "Thomas Lynch",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1961,
+      "name": "Thomas Sims",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1043,
+      "name": "Thomson Dow",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 966,
+      "name": "Tim Kelly",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 893,
+      "name": "Tim Membrey",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1035,
+      "name": "Tim Taranto",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 942,
+      "name": "Timothy English",
+      "team": "Western Bulldogs"
+    },
+    {
+      "id": 1918,
+      "name": "Tobie Travaglia",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1135,
+      "name": "Toby Bedford",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 651,
+      "name": "Toby Greene",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1141,
+      "name": "Toby McMullin",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1875,
+      "name": "Toby Murray",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1029,
+      "name": "Toby Nankervis",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1747,
+      "name": "Toby Pink",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 355,
+      "name": "Todd Goldstein",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 925,
+      "name": "Tom Atkins",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1370,
+      "name": "Tom Barrass",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1046,
+      "name": "Tom Brown",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 890,
+      "name": "Tom Campbell",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1935,
+      "name": "Tom Cochrane",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 961,
+      "name": "Tom Cole",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1112,
+      "name": "Tom De Koning",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1954,
+      "name": "Tom Doedee",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1137,
+      "name": "Tom Green",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 1946,
+      "name": "Tom Gross",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1872,
+      "name": "Tom Hanily",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1909,
+      "name": "Tom Hanily",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1990,
+      "name": "Tom McCarthy",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1062,
+      "name": "Tom McCartin",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 630,
+      "name": "Tom McDonald",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 751,
+      "name": "Tom Mitchell",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1056,
+      "name": "Tom Papley",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 788,
+      "name": "Tom Powell",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1086,
+      "name": "Tom Sparrow",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 919,
+      "name": "Tom Stewart",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 799,
+      "name": "Touk Miller",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 104,
+      "name": "Travis Boak",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1088,
+      "name": "Trent Rivers",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 779,
+      "name": "Tristan Xerri",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1968,
+      "name": "Ty Gallop",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1048,
+      "name": "Tylar Young",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 831,
+      "name": "Tyler Brockman",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 1698,
+      "name": "Tyler Sonsie",
+      "team": "Richmond Tigers"
+    },
+    {
+      "id": 1758,
+      "name": "Tyrell Dewar",
+      "team": "West Coast Eagles"
+    },
+    {
+      "id": 921,
+      "name": "Tyson Stengle",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 1984,
+      "name": "Vigo Visentini",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 984,
+      "name": "Wayne Milera",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1809,
+      "name": "Wil Dawson",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1816,
+      "name": "Wil Parker",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1517,
+      "name": "Wil Powell",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1830,
+      "name": "Will Ashcroft",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1452,
+      "name": "Will Brodie",
+      "team": "Fremantle Dockers"
+    },
+    {
+      "id": 829,
+      "name": "Will Day",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1739,
+      "name": "Will Graham",
+      "team": "Gold Coast Suns"
+    },
+    {
+      "id": 1061,
+      "name": "Will Hayward",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 643,
+      "name": "Will Hoskin-Elliott",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1835,
+      "name": "Will Lorenz",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1883,
+      "name": "Will McLachlan",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 787,
+      "name": "Will Phillips",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 734,
+      "name": "Will Setterfield",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1928,
+      "name": "Will White",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 1008,
+      "name": "Willem Drew",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 2022,
+      "name": "William Green",
+      "team": "Sydney Swans"
+    },
+    {
+      "id": 1952,
+      "name": "William Hayes",
+      "team": "Collingwood Magpies"
+    },
+    {
+      "id": 1983,
+      "name": "William McCabe",
+      "team": "Hawthorn Hawks"
+    },
+    {
+      "id": 1012,
+      "name": "Willie Rioli",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1016,
+      "name": "Xavier Duursma",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1890,
+      "name": "Xavier Lindsay",
+      "team": "Melbourne Demons"
+    },
+    {
+      "id": 1606,
+      "name": "Xavier O'Halloran",
+      "team": "Greater Western Sydney Giants"
+    },
+    {
+      "id": 881,
+      "name": "Zac Bailey",
+      "team": "Brisbane Lions"
+    },
+    {
+      "id": 1987,
+      "name": "Zac Banch",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1108,
+      "name": "Zac Fisher",
+      "team": "North Melbourne Kangaroos"
+    },
+    {
+      "id": 1819,
+      "name": "Zac Taylor",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1845,
+      "name": "Zac Taylor",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 917,
+      "name": "Zach Guthrie",
+      "team": "Geelong Cats"
+    },
+    {
+      "id": 723,
+      "name": "Zach Merrett",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1638,
+      "name": "Zach Reid",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1214,
+      "name": "Zachary Williams",
+      "team": "Carlton Blues"
+    },
+    {
+      "id": 898,
+      "name": "Zaine Cordy",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1015,
+      "name": "Zak Butters",
+      "team": "Port Adelaide Power"
+    },
+    {
+      "id": 1959,
+      "name": "Zak Johnson",
+      "team": "Essendon Bombers"
+    },
+    {
+      "id": 1305,
+      "name": "Zak Jones",
+      "team": "St Kilda Saints"
+    },
+    {
+      "id": 1749,
+      "name": "Zane Duursma",
+      "team": "North Melbourne Kangaroos"
+    }
+  ]
+}

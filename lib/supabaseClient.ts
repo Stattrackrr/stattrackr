@@ -202,18 +202,38 @@ const authConfig = isBrowser ? {
   storage: undefined,
 };
 
+// Browser singleton on window so all chunks share one client (avoids "Multiple GoTrueClient instances")
+const WIN_SUPABASE_KEY = '__STATTACKR_SUPABASE_CLIENT__';
+
+function getBrowserSupabase(): ReturnType<typeof createClient> | null {
+  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>)[WIN_SUPABASE_KEY]) {
+    return (window as unknown as Record<string, unknown>)[WIN_SUPABASE_KEY] as ReturnType<typeof createClient>;
+  }
+  return null;
+}
+
+function setBrowserSupabase(client: ReturnType<typeof createClient>) {
+  if (typeof window !== 'undefined') {
+    (window as unknown as Record<string, unknown>)[WIN_SUPABASE_KEY] = client;
+  }
+}
+
 // Only enable autoRefreshToken in browser - during build/server there's no session to refresh
 // Wrap in try-catch to suppress any initialization errors during build
 let supabase: ReturnType<typeof createClient>;
 try {
-  supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: authConfig,
-  });
-  
-  // In browser, set up error handler to catch and clear invalid refresh tokens
-  if (isBrowser && typeof window !== 'undefined') {
-    // Set up global error handler for unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+  if (isBrowser) {
+    const existing = getBrowserSupabase();
+    if (existing) {
+      supabase = existing;
+    } else {
+      supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: authConfig,
+      });
+      setBrowserSupabase(supabase);
+      // Set up error handler only for the client we just created (avoid duplicate listeners)
+      if (typeof window !== 'undefined') {
+        window.addEventListener('unhandledrejection', (event) => {
       const error = event.reason;
       const errorMessage = error?.message || error?.toString() || '';
       
@@ -294,6 +314,12 @@ try {
         throw error;
       }
     };
+      }
+    }
+  } else {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: authConfig,
+    });
   }
 } catch (error: any) {
   // During build, create a minimal client that won't cause errors
@@ -314,75 +340,13 @@ try {
   }
 }
 
-// Session-only auth config
-const sessionAuthConfig = isBrowser ? {
-  persistSession: true,
-  storageKey: SESSION_STORAGE_KEY,
-  storage: sessionOnlyStorage,
-  autoRefreshToken: true,
-  detectSessionInUrl: true,
-  flowType: 'pkce' as const,
-} : {
-  persistSession: false,
-  autoRefreshToken: false,
-  detectSessionInUrl: false,
-  // No storage during build - prevents refresh token errors
-  storage: undefined,
-};
-
-// Create a session-only client for non-remember-me logins (per-tab isolation)
-let supabaseSessionOnly: ReturnType<typeof createClient>;
-try {
-  supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: sessionAuthConfig,
-  });
-  
-  // In browser, set up error handler to catch and clear invalid refresh tokens
-  if (isBrowser) {
-    // Override the auth error handler to clear invalid tokens
-    const originalGetSessionSessionOnly = supabaseSessionOnly.auth.getSession.bind(supabaseSessionOnly.auth);
-    supabaseSessionOnly.auth.getSession = async () => {
-      try {
-        return await originalGetSessionSessionOnly();
-      } catch (error: any) {
-        // If it's a refresh token error or network error, clear storage and return null session
-        if (
-          error?.message?.includes('Invalid Refresh Token') ||
-          error?.message?.includes('Refresh Token Not Found') ||
-          error?.message?.includes('refresh') ||
-          error?.message?.includes('Failed to fetch') ||
-          error?.message?.includes('NetworkError') ||
-          error?.message?.includes('Network request failed')
-        ) {
-          // Clear all auth storage
-          if (sessionOnlyStorage) {
-            sessionOnlyStorage.removeItem(SESSION_STORAGE_KEY);
-          }
-          // Return empty session instead of throwing
-          return { data: { session: null }, error: null };
-        }
-        throw error;
-      }
-    };
-  }
-} catch (error: any) {
-  // During build, create a minimal client that won't cause errors
-  if (!isBrowser && (error?.message?.includes('refresh') || error?.message?.includes('token'))) {
-    supabaseSessionOnly = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storage: undefined,
-      },
-      global: {
-        fetch: () => Promise.reject(new Error('Supabase not available during build')),
-      },
-    });
-  } else {
-    throw error;
-  }
+// Session-only export: same client as supabase to avoid "Multiple GoTrueClient instances" in the same browser context.
+// Callers (e.g. useSessionManager) still check both persistent and session storage via the single client's getSession.
+function getSupabaseSessionOnly(): ReturnType<typeof createClient> {
+  return supabase;
 }
+
+const supabaseSessionOnly = supabase;
 
 // Restore console methods after client creation
 if (!isBrowser && originalConsoleError && originalConsoleWarn) {
@@ -394,7 +358,7 @@ if (!isBrowser && originalConsoleError && originalConsoleWarn) {
   }, 0);
 }
 
-export { supabase, supabaseSessionOnly };
+export { supabase, supabaseSessionOnly, getSupabaseSessionOnly };
 
 // Types for the database schema
 export type Json =

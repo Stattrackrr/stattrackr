@@ -1,0 +1,18 @@
+[2026-02-08 00:00:02] [INFO] ========================================
+[2026-02-08 00:00:02] [INFO] Daily Player Cache Refresh
+[2026-02-08 00:00:02] [INFO] ========================================
+[2026-02-08 00:00:02] [INFO] 
+[2026-02-08 00:00:02] [INFO] Dev server is already running
+[2026-02-08 00:00:02] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2026-02-08 00:00:02] [INFO] 
+[2026-02-08 00:23:41] [INFO] ✅ Refresh completed successfully!
+[2026-02-08 00:23:41] [INFO] 
+[2026-02-08 00:23:41] [INFO] Results:
+[2026-02-08 00:23:41] [INFO]   Total Players: 510
+[2026-02-08 00:23:41] [INFO]   Shot Charts: 510 success, 0 failed
+[2026-02-08 00:23:41] [INFO]   Play Types: 510 success, 0 failed
+[2026-02-08 00:23:41] [INFO]   Duration: 1417.70s
+[2026-02-08 00:23:41] [INFO] 
+[2026-02-08 00:23:41] [INFO] ========================================
+[2026-02-08 00:23:41] [INFO] Refresh completed successfully
+[2026-02-08 00:23:41] [INFO] ========================================

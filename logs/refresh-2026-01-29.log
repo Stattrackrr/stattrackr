@@ -1,0 +1,7 @@
+[2026-01-29 00:00:02] [INFO] ========================================
+[2026-01-29 00:00:02] [INFO] Daily Player Cache Refresh
+[2026-01-29 00:00:02] [INFO] ========================================
+[2026-01-29 00:00:02] [INFO] 
+[2026-01-29 00:00:02] [INFO] Dev server is already running
+[2026-01-29 00:00:02] [INFO] Calling refresh endpoint: http://localhost:3000/api/cron/refresh-all-player-caches
+[2026-01-29 00:00:02] [INFO] 

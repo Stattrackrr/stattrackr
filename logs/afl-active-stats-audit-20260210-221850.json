@@ -1,0 +1,679 @@
+{
+  "generatedAt": "2026-02-10T11:19:09.130Z",
+  "season": "2025",
+  "baseUrl": "http://localhost:3000",
+  "totals": {
+    "teams": 18,
+    "uniquePlayers": 698,
+    "withStats": 603,
+    "missing": 95,
+    "coveragePct": 86.39
+  },
+  "missingPlayers": [
+    {
+      "name": "Alixzander Tauru",
+      "team": "St Kilda Saints",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Alixzander Tauru'"
+    },
+    {
+      "name": "Angus McLennan",
+      "team": "St Kilda Saints",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Archer May",
+      "team": "Essendon Bombers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Archer May'"
+    },
+    {
+      "name": "Archie Roberts",
+      "team": "Essendon Bombers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Arthur Jones",
+      "team": "Western Bulldogs",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ash Johnson",
+      "team": "Collingwood Magpies",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Bailey Laurie",
+      "team": "Melbourne Demons",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Bailey Macdonald",
+      "team": "Hawthorn Hawks",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ben Long",
+      "team": "Gold Coast Suns",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Bo Allan",
+      "team": "West Coast Eagles",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Caleb Graham",
+      "team": "Gold Coast Suns",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Callum Coleman-Jones",
+      "team": "North Melbourne Kangaroos",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Callum M. Brown",
+      "team": "Greater Western Sydney Giants",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Cameron Rayner",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Charlie Ballard",
+      "team": "Gold Coast Suns",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Charlie West",
+      "team": "Collingwood Magpies",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Chayce Jones",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Darragh Joyce",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Deven Robertson",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ed Richards",
+      "team": "Western Bulldogs",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Harrison Himmelberg",
+      "team": "Greater Western Sydney Giants",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Harrison Jones",
+      "team": "Essendon Bombers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Harrison Jones'"
+    },
+    {
+      "name": "Harrison Petty",
+      "team": "Melbourne Demons",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Harrison Petty'"
+    },
+    {
+      "name": "Harry DeMattia",
+      "team": "Collingwood Magpies",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Harry DeMattia'"
+    },
+    {
+      "name": "Harry Lemmey",
+      "team": "Carlton Blues",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Harry Lemmey'"
+    },
+    {
+      "name": "Harry Schoenberg",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Harvey Johnston",
+      "team": "West Coast Eagles",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Henry Smith",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Hugh Davies",
+      "team": "Fremantle Dockers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ian Hill",
+      "team": "Collingwood Magpies",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Ian Hill'"
+    },
+    {
+      "name": "Ivan Soldo",
+      "team": "Port Adelaide Power",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jack Carroll",
+      "team": "St Kilda Saints",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jack Henry",
+      "team": "Geelong Cats",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jack Petruccelle",
+      "team": "West Coast Eagles",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jai Serong",
+      "team": "Hawthorn Hawks",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jake Kolodjashnij",
+      "team": "Geelong Cats",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jamie Elliott",
+      "team": "Collingwood Magpies",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jason Johannissen",
+      "team": "Western Bulldogs",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Jason Johannissen'"
+    },
+    {
+      "name": "Jay Polkinghorne",
+      "team": "Geelong Cats",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Jay Polkinghorne'"
+    },
+    {
+      "name": "Jhye Clark",
+      "team": "Geelong Cats",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Jordan Clark",
+      "team": "Fremantle Dockers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Josh Lai",
+      "team": "Port Adelaide Power",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Josh Lai'"
+    },
+    {
+      "name": "Joshua Draper",
+      "team": "Fremantle Dockers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Joshua Draper'"
+    },
+    {
+      "name": "Joshua Gibcus",
+      "team": "Richmond Tigers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Joshua Gibcus'"
+    },
+    {
+      "name": "Joshua Kelly",
+      "team": "Greater Western Sydney Giants",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Joshua Rachele",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Joshua Rachele'"
+    },
+    {
+      "name": "Judson Clarke",
+      "team": "Richmond Tigers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Kayle Gerreyn",
+      "team": "Essendon Bombers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Kayle Gerreyn'"
+    },
+    {
+      "name": "Lachie Jaques",
+      "team": "Western Bulldogs",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Lachie Jaques'"
+    },
+    {
+      "name": "Lachlan Ash",
+      "team": "Greater Western Sydney Giants",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Lachlan Ash'"
+    },
+    {
+      "name": "Lachlan Jones",
+      "team": "Port Adelaide Power",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Lachlan Jones'"
+    },
+    {
+      "name": "Lachlan Schultz",
+      "team": "Collingwood Magpies",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Lachlan Schultz'"
+    },
+    {
+      "name": "Leonardo Lombard",
+      "team": "Gold Coast Suns",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Leonardo Lombard'"
+    },
+    {
+      "name": "Lewis Hayes",
+      "team": "Essendon Bombers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Loch Rawlinson",
+      "team": "West Coast Eagles",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Luke Beecken",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Luke Trainor",
+      "team": "North Melbourne Kangaroos",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Luke Trainor",
+      "team": "Richmond Tigers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Malakai Champion",
+      "team": "West Coast Eagles",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Matt Whitlock",
+      "team": "North Melbourne Kangaroos",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Matthew Carroll",
+      "team": "Carlton Blues",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Matthew Carroll'"
+    },
+    {
+      "name": "Matthew Kennedy",
+      "team": "Western Bulldogs",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Matty Roberts",
+      "team": "Sydney Swans",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Matty Roberts'"
+    },
+    {
+      "name": "Maurice Rioli",
+      "team": "Richmond Tigers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Michael Sellwood",
+      "team": "Western Bulldogs",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Michael Sellwood'"
+    },
+    {
+      "name": "Miller Bergman",
+      "team": "North Melbourne Kangaroos",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Minairo Frederick",
+      "team": "Fremantle Dockers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Minairo Frederick'"
+    },
+    {
+      "name": "Mykelti Lefau",
+      "team": "Richmond Tigers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ned Bowman",
+      "team": "Sydney Swans",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Ned Bowman'"
+    },
+    {
+      "name": "Nicholas Madden",
+      "team": "Greater Western Sydney Giants",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Nicholas Madden'"
+    },
+    {
+      "name": "Oliver Hannaford",
+      "team": "Greater Western Sydney Giants",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Oliver Hannaford'"
+    },
+    {
+      "name": "Oliver Wiltshire",
+      "team": "Geelong Cats",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Oscar Steene",
+      "team": "Collingwood Magpies",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Oscar Steene'"
+    },
+    {
+      "name": "Paddy Dow",
+      "team": "St Kilda Saints",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Quinton Narkle",
+      "team": "Fremantle Dockers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Ricky Mentha",
+      "team": "Melbourne Demons",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Ricky Mentha'"
+    },
+    {
+      "name": "Robert Hansen Jr",
+      "team": "North Melbourne Kangaroos",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Robert Hansen Jr'"
+    },
+    {
+      "name": "Sam Butler",
+      "team": "Hawthorn Hawks",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Sam Frost",
+      "team": "Hawthorn Hawks",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Samuel Wicks",
+      "team": "Sydney Swans",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Samuel Wicks'"
+    },
+    {
+      "name": "Seamus Mitchell",
+      "team": "Hawthorn Hawks",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Shadeau Brain",
+      "team": "Brisbane Lions",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Taj Woewodin",
+      "team": "Melbourne Demons",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Taylor Goad",
+      "team": "North Melbourne Kangaroos",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Taylor Goad'"
+    },
+    {
+      "name": "Thomas Berry",
+      "team": "Gold Coast Suns",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Thomas Berry'"
+    },
+    {
+      "name": "Thomas Edwards",
+      "team": "Essendon Bombers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Thomas Edwards'"
+    },
+    {
+      "name": "Thomas Fullarton",
+      "team": "Melbourne Demons",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Thomas Fullarton'"
+    },
+    {
+      "name": "Thomas Sims",
+      "team": "Richmond Tigers",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Thomas Sims'"
+    },
+    {
+      "name": "Toby Murray",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Toby Murray'"
+    },
+    {
+      "name": "Tom Campbell",
+      "team": "Melbourne Demons",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Will Brodie",
+      "team": "Fremantle Dockers",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "William Green",
+      "team": "Sydney Swans",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'William Green'"
+    },
+    {
+      "name": "William Hayes",
+      "team": "Collingwood Magpies",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'William Hayes'"
+    },
+    {
+      "name": "William McCabe",
+      "team": "Hawthorn Hawks",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'William McCabe'"
+    },
+    {
+      "name": "Zachary Williams",
+      "team": "Carlton Blues",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Zachary Williams'"
+    }
+  ]
+}

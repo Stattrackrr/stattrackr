@@ -1,0 +1,197 @@
+{
+  "generatedAt": "2026-02-10T11:12:49.458Z",
+  "season": "2025",
+  "teams": 1,
+  "players": [
+    {
+      "id": 1079,
+      "name": "Alex Neal-Bullen",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 983,
+      "name": "Ben Keays",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1777,
+      "name": "Billy Dowling",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1661,
+      "name": "Brayden Cook",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 122,
+      "name": "Brodie Smith",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1534,
+      "name": "Chayce Jones",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 806,
+      "name": "Chris Burgess",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1788,
+      "name": "Daniel Curtin",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 986,
+      "name": "Darcy Fogarty",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1814,
+      "name": "Harry Schoenberg",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1840,
+      "name": "Isaac Cumming",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 990,
+      "name": "Izak Rankine",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1822,
+      "name": "Jack Hutchinson",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 998,
+      "name": "Jake Soligo",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1000,
+      "name": "James Borlase",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1660,
+      "name": "James Peatling",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1846,
+      "name": "Joel Freijah",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 982,
+      "name": "Jordan Dawson",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1615,
+      "name": "Jordon Butts",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 992,
+      "name": "Josh Worrell",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 997,
+      "name": "Joshua Rachele",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 987,
+      "name": "Lachlan Murphy",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1603,
+      "name": "Lachlan Sholl",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1002,
+      "name": "Luke Nankervis",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 995,
+      "name": "Luke Pedlar",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 989,
+      "name": "Mark Keane",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 980,
+      "name": "Matthew Crouch",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1001,
+      "name": "Max Michalanney",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 985,
+      "name": "Mitchell Hinge",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 981,
+      "name": "Reilly O'Brien",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 979,
+      "name": "Rory Laird",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 993,
+      "name": "Sam Berry",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1887,
+      "name": "Sid Draper",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 116,
+      "name": "Taylor Walker",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1875,
+      "name": "Toby Murray",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 984,
+      "name": "Wayne Milera",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1819,
+      "name": "Zac Taylor",
+      "team": "Adelaide Crows"
+    },
+    {
+      "id": 1845,
+      "name": "Zac Taylor",
+      "team": "Adelaide Crows"
+    }
+  ]
+}

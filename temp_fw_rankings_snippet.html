@@ -1,0 +1,123 @@
+e="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<TITLE>AFL Statistics Team Rankings for Season 2025</TITLE>
+<meta NAME="description" CONTENT="AFL Statistics Team Rankings for Season 2025."> 
+<meta NAME="keywords" CONTENT="AFL Team Statistics, AFL Team Stats">
+
+
+<meta name="robots" content="noindex">
+
+<script>
+var template = "pages/team-rankings";
+var slashIndex = template.indexOf('/');
+var templateName = template.substring(slashIndex + 1);
+var originalTemplate = templateName;
+var progressIsLoading = false;
+checkForFantasyTemplate();
+checkForPreSeasonTemplate();
+
+var advv = 'N';
+var skipImages = 'Y';
+
+var sby = null;
+var orderBy = null;
+
+function checkForPreSeasonTemplate() {
+  if (templateName.startsWith('pre-season')) {
+    var typeKey = 'TA';
+    var type = "";
+    console.log(type);
+    if (typeKey == 'S') {
+    	type = 'supercoach';
+    } else {
+    	type = 'dreamteam';
+    }
+    var currentTemplate = templateName;
+    templateName = type + '-' + currentTemplate;
+  }
+}
+
+function checkForFantasyTemplate() {
+  if (templateName.startsWith('fantasy')) {
+    if (!templateName.includes('round') && !templateName.includes('season')) {
+	    var newTemplate = window.location.pathname;
+	    newTemplate = newTemplate.substring(newTemplate.lastIndexOf('/') + 1);
+	    if (newTemplate.includes('_')) {
+	      templateName = newTemplate.replaceAll('_', '-');
+	    }
+    }
+  }
+}
+
+function getOrderByValue(value) {
+	orderBy = value;
+}
+
+function getSbyValue(value) {
+	sby = value;
+	sortBy();
+}
+
+function refreshStats(sortByFragment) {
+   var divName = originalTemplate + '-div';
+   var fragmentDiv = document.getElementById(divName);
+   if (fragmentDiv != null) {
+      fragmentDiv.innerHTML = sortByFragment;
+   }
+}
+
+function refreshTeamBlock(sortFragment, teamNumber) {
+   var divName = originalTemplate + '-team' + teamNumber + '-row';
+   var fragmentDiv = document.getElementById(divName);
+   if (fragmentDiv != null) {
+      fragmentDiv.innerHTML = sortFragment;
+   }
+}
+
+function buildBlockFragment(blockFragment) {
+	var divName = 'match-statistics-block-div';
+	var fragmentDiv = document.getElementById(divName);
+	if (fragmentDiv != null) {
+	   fragmentDiv.innerHTML = blockFragment;
+	}
+}
+
+function getProgressBarDiv() {
+	var progressBar = document.getElementById("progressBar");
+	return progressBar;
+}
+
+function showProgressCall(bar) {
+	bar.style.width = 33 + '%';
+	progressIsLoading = true;
+	loadUnfinishedBar(bar);
+}
+
+function showProgressResponse(bar) {
+	bar.style.width = 66 + '%';
+}
+
+function showProgressPost(bar) {
+    progressIsLoading = false;
+	bar.style.width = 100 + '%';
+}
+
+function loadUnfinishedBar(bar) {
+	var id = setInterval(frame, 30);
+	var width = 33;
+    function frame() {
+       if (width >= 66 || !progressIsLoading) {
+         clearInterval(id);
+       } else {
+         width++;
+         bar.style.width = width + '%';
+       }
+    } 
+}
+function sortBy() {
+	var bar = getProgressBarDiv();
+	showProgressCall(bar);
+	var baseUrl = "/afl/json/json-sort-stats-" + templateName + ".json";
+	var params = "sby=" + sby + "&template=" + templ

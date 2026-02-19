@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-02-10T11:02:46.470Z",
+  "season": "2025",
+  "baseUrl": "http://localhost:3000",
+  "totals": {
+    "teams": 1,
+    "uniquePlayers": 38,
+    "withStats": 31,
+    "missing": 7,
+    "coveragePct": 81.58
+  },
+  "missingPlayers": [
+    {
+      "name": "Alex Neal-Bullen",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Alex Neal-Bullen'"
+    },
+    {
+      "name": "Chayce Jones",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Harry Schoenberg",
+      "team": "Adelaide Crows",
+      "status": 200,
+      "gameCount": 0,
+      "error": null
+    },
+    {
+      "name": "Joshua Rachele",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Joshua Rachele'"
+    },
+    {
+      "name": "Matthew Crouch",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Matthew Crouch'"
+    },
+    {
+      "name": "Mitchell Hinge",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Mitchell Hinge'"
+    },
+    {
+      "name": "Toby Murray",
+      "team": "Adelaide Crows",
+      "status": 404,
+      "gameCount": 0,
+      "error": "No AFLTables player page found for 'Toby Murray'"
+    }
+  ]
+}
