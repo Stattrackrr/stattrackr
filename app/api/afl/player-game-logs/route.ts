@@ -108,7 +108,7 @@ function entryMatchesQuery(entry: PlayerIndexEntry, normalizedQuery: string): bo
 }
 
 function htmlToText(v: string): string {
-  return v
+  const decoded = v
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, ' ')
@@ -116,6 +116,22 @@ function htmlToText(v: string): string {
     .replace(/&amp;/gi, '&')
     .replace(/&#39;/gi, "'")
     .replace(/&quot;/gi, '"')
+    // Decode numeric HTML entities like &#x2199; and &#8595;
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => {
+      const code = parseInt(hex, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    })
+    .replace(/&#([0-9]+);/g, (_, dec: string) => {
+      const code = parseInt(dec, 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    });
+  return decoded.replace(/\s+/g, ' ').trim();
+}
+
+function cleanResultLabel(raw: string): string {
+  return String(raw || '')
+    // Remove directional arrows and misc arrow symbols carried by some source rows.
+    .replace(/[\u2190-\u21ff]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -197,7 +213,7 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
   const description = get('Description');
   const round = descriptionToRound(description);
   const opponent = get('Opponent') || '—';
-  const result = get('Result') || '—';
+  const result = cleanResultLabel(get('Result')) || '—';
   return {
     season,
     game_number: 0, // FootyWire doesn't expose game number; chart uses index

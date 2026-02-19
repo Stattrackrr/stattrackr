@@ -159,12 +159,12 @@ const AflLineupCard = memo(function AflLineupCard({
   const [error, setError] = useState<string | null>(null);
   const games = gameLogs?.length ? gameLogs : [];
   const lastGame = games.length > 0 ? games[games.length - 1] : undefined;
-  const selectedGame = lastGame;
-  const matchUrl = selectedGame?.match_url ?? null;
+  const matchUrl = lastGame?.match_url ?? null;
+  const fallbackOpponent = (lastGame?.opponent || '').replace(/^vs\.?\s*/i, '').trim();
 
   const canFetch =
     team?.trim() &&
-    (matchUrl?.trim() || (season && selectedGame?.round && selectedGame?.opponent) || selectedGame?.round != null);
+    (games.length > 0 || !!matchUrl?.trim());
 
   useEffect(() => {
     if (!canFetch) {
@@ -177,24 +177,79 @@ const AflLineupCard = memo(function AflLineupCard({
     setLoading(true);
     setError(null);
 
+    const fetchTeamRoster = async (teamName: string): Promise<LineupPlayer[]> => {
+      const rr = await fetch(`/api/afl/team-roster?team=${encodeURIComponent(teamName)}&season=${encodeURIComponent(String(season))}`);
+      const rj = (await rr.json()) as { players?: LineupPlayer[] };
+      return Array.isArray(rj?.players) ? rj.players : [];
+    };
+
     const tryFootyWire = (): void => {
       if (!team?.trim()) return;
       fetch(`/api/afl/footywire-lineup?team=${encodeURIComponent(team.trim())}`)
         .then((r) => r.json())
-        .then((json: { players?: LineupPlayer[]; error?: string }) => {
+        .then(async (json: { players?: LineupPlayer[]; error?: string }) => {
           if (cancelled) return;
           if (json?.players?.length) {
             setData({ players: json.players });
             setError(null);
           } else {
-            setError('Lineup not available for this match.');
-            setData(null);
+            // Final fallback: season rosters for both teams when available.
+            try {
+              const teamRoster = await fetchTeamRoster(team.trim());
+              const oppRoster = fallbackOpponent ? await fetchTeamRoster(fallbackOpponent) : [];
+              if (cancelled) return;
+              if (teamRoster.length > 0 || oppRoster.length > 0) {
+                if (teamRoster.length > 0 && oppRoster.length > 0) {
+                  setData({
+                    home_team: team.trim(),
+                    away_team: fallbackOpponent,
+                    home_players: teamRoster,
+                    away_players: oppRoster,
+                  });
+                } else {
+                  setData({ players: teamRoster.length > 0 ? teamRoster : oppRoster });
+                }
+                setError(null);
+              } else {
+                setError('Lineup not available for this match.');
+                setData(null);
+              }
+            } catch {
+              if (!cancelled) {
+                setError('Lineup not available for this match.');
+                setData(null);
+              }
+            }
           }
         })
-        .catch(() => {
+        .catch(async () => {
           if (!cancelled) {
-            setError('Lineup not available for this match.');
-            setData(null);
+            try {
+              const teamRoster = await fetchTeamRoster(team.trim());
+              const oppRoster = fallbackOpponent ? await fetchTeamRoster(fallbackOpponent) : [];
+              if (cancelled) return;
+              if (teamRoster.length > 0 || oppRoster.length > 0) {
+                if (teamRoster.length > 0 && oppRoster.length > 0) {
+                  setData({
+                    home_team: team.trim(),
+                    away_team: fallbackOpponent,
+                    home_players: teamRoster,
+                    away_players: oppRoster,
+                  });
+                } else {
+                  setData({ players: teamRoster.length > 0 ? teamRoster : oppRoster });
+                }
+                setError(null);
+              } else {
+                setError('Lineup not available for this match.');
+                setData(null);
+              }
+            } catch {
+              if (!cancelled) {
+                setError('Lineup not available for this match.');
+                setData(null);
+              }
+            }
           }
         })
         .finally(() => {
@@ -202,44 +257,52 @@ const AflLineupCard = memo(function AflLineupCard({
         });
     };
 
-    const rawOpponent = selectedGame?.opponent ?? '';
-    const opponentNorm = rawOpponent.replace(/^vs\.?\s*/i, '').trim() || rawOpponent;
-    const params = new URLSearchParams({ team: team!.trim() });
-    if (matchUrl?.trim()) {
-      params.set('match_url', normalizeMatchUrl(matchUrl));
-    } else if (season && selectedGame?.round) {
-      params.set('season', String(season));
-      params.set('round', String(selectedGame.round));
-      if (opponentNorm) params.set('opponent', opponentNorm);
-    }
+    const recentGames = [...games].slice(-8).reverse();
+    const tryMatchLineupFromRecentGames = async (): Promise<boolean> => {
+      for (const g of recentGames) {
+        if (cancelled) return false;
+        const gMatchUrl = g?.match_url?.trim();
+        const rawOpponent = g?.opponent ?? '';
+        const opponentNorm = rawOpponent.replace(/^vs\.?\s*/i, '').trim() || rawOpponent;
+        const params = new URLSearchParams({ team: team!.trim() });
+        if (gMatchUrl) {
+          params.set('match_url', normalizeMatchUrl(gMatchUrl));
+        } else if (season && g?.round) {
+          params.set('season', String(season));
+          params.set('round', String(g.round));
+          if (opponentNorm) params.set('opponent', opponentNorm);
+        } else {
+          continue;
+        }
 
-    const hasMatchLineupParams = matchUrl?.trim() || (season && selectedGame?.round);
-
-    if (hasMatchLineupParams) {
-      fetch(`/api/afl/match-lineup?${params}`)
-        .then((r) => r.json())
-        .then((json: LineupResponse & { debug?: Record<string, unknown> }) => {
-          if (cancelled) return;
+        try {
+          const r = await fetch(`/api/afl/match-lineup?${params}`);
+          const json = (await r.json()) as LineupResponse & { debug?: Record<string, unknown> };
           const hasAny =
             (json?.home_players?.length ?? 0) > 0 || (json?.away_players?.length ?? 0) > 0 || (json?.players?.length ?? 0) > 0;
-          if (json?.error || !hasAny) {
-            tryFootyWire();
-            return;
+          if (!json?.error && hasAny) {
+            if (!cancelled) {
+              setData(json);
+              setError(null);
+            }
+            return true;
           }
-          setData(json);
-          setError(null);
-          if (!cancelled) setLoading(false);
-        })
-        .catch(() => {
-          if (!cancelled) tryFootyWire();
-        });
-    } else {
-      tryFootyWire();
-    }
+        } catch {
+          // try next game candidate
+        }
+      }
+      return false;
+    };
+
+    (async () => {
+      const found = await tryMatchLineupFromRecentGames();
+      if (!found && !cancelled) tryFootyWire();
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [matchUrl, team, season, selectedGame?.round, selectedGame?.opponent]);
+  }, [team, season, games, matchUrl, fallbackOpponent]);
 
   const team1Label = stripAflTablesPrefix(data?.home_team?.trim() || 'Team 1');
   const team2Label = stripAflTablesPrefix(data?.away_team?.trim() || 'Team 2');

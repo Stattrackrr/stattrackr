@@ -7,6 +7,7 @@ import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflS
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
+import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
 import { rosterTeamToInjuryTeam, opponentToOfficialTeamName } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -96,7 +97,7 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
-  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries' | 'lineup'>('breakdown');
+  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'injuries' | 'lineup' | 'dvp'>('dvp');
   const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
   const [mainChartStat, setMainChartStat] = useState<string>('');
@@ -843,6 +844,16 @@ export default function AFLPage() {
                     <>
                       <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
                         <button
+                          onClick={() => setAflRightTab('dvp')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'dvp'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          DVP
+                        </button>
+                        <button
                           onClick={() => setAflRightTab('breakdown')}
                           className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                             aflRightTab === 'breakdown'
@@ -912,6 +923,17 @@ export default function AFLPage() {
                               }
                               season={season}
                               selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            />
+                          </div>
+                        )}
+                        {aflRightTab === 'dvp' && (
+                          <div className="flex-1 min-h-0 overflow-y-auto">
+                            <AflDvpCard
+                              isDark={!!mounted && isDark}
+                              season={Math.min(season, 2025)}
+                              playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              opponentTeam={displayOpponent || ''}
+                              logoByTeam={logoByTeam}
                             />
                           </div>
                         )}
