@@ -601,20 +601,27 @@ export function AflSupportingStats({
               dataKey="value"
               radius={CHART_CONFIG.bar.radius}
               isAnimationActive={false}
-              label={({ x, y, width, value, payload }) => (
-                <text
-                  x={(x ?? 0) + (width ?? 0) / 2}
-                  y={(y ?? 0) - 6}
-                  textAnchor="middle"
-                  fill={labelFill}
-                  fontSize={12}
-                  fontWeight={500}
-                >
-                  {Number.isFinite(value)
-                    ? formatLabel(value, (payload as { isPercent?: boolean })?.isPercent ?? isPercent)
-                    : ''}
-                </text>
-              )}
+              label={(props) => {
+                const { x, y, width, value } = props;
+                const payload = (props as { payload?: { isPercent?: boolean } }).payload;
+                const labelX = Number(x ?? 0) + Number(width ?? 0) / 2;
+                const labelY = Number(y ?? 0) - 6;
+                const numericValue = Number(value);
+                return (
+                  <text
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    fill={labelFill}
+                    fontSize={12}
+                    fontWeight={500}
+                  >
+                    {Number.isFinite(numericValue)
+                      ? formatLabel(numericValue, payload?.isPercent ?? isPercent)
+                      : ''}
+                  </text>
+                );
+              }}
             >
               {chartData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={barFill} />

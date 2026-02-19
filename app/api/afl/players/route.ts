@@ -47,7 +47,7 @@ function readCachedRoster(): Array<{ name: string; team?: string }> | null {
           const name = String(p?.name ?? '').trim();
           return name.length > 0 ? { name, team: p?.team } : null;
         })
-        .filter((p): p is { name: string; team?: string } => p != null);
+        .filter((p): p is { name: string; team: string | undefined } => p != null);
       if (players.length > 0) return players;
     } catch {
       continue;

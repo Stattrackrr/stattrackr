@@ -622,7 +622,7 @@ async function findBestSeasonCandidate(
   queryName: string,
   season: number,
   entries: PlayerIndexEntry[]
-): Promise<{ match: PlayerIndexEntry; allGames: GameLogRow[] } | null> {
+): Promise<{ match: PlayerIndexEntry; allGames: GameLogRow[]; height: string | null } | null> {
   const qMeta = queryInitialAndSurname(queryName);
   const surnameMatchesUrl = (url: string): boolean => {
     if (!qMeta) return true;
