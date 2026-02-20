@@ -72,6 +72,24 @@ function heightCmToFeet(cmStr: string): string | null {
   return `${feet}'${inches}`;
 }
 
+function toDvpPositionLabel(raw: unknown): 'DEF' | 'MID' | 'FWD' | 'RUC' | null {
+  const pos = String(raw ?? '').trim().toUpperCase();
+  if (!pos) return null;
+  if (pos === 'DEF' || pos === 'MID' || pos === 'FWD' || pos === 'RUC') return pos;
+
+  // Handle known short labels used elsewhere in AFL flows.
+  if (pos === 'KD' || pos === 'MD') return 'DEF';
+  if (pos === 'KF' || pos === 'MF') return 'FWD';
+  if (pos === 'M/F') return 'MID';
+
+  // Fallback for verbose labels (e.g. MEDIUM_DEFENDER, MIDFIELDER_FORWARD).
+  if (pos.includes('RUC')) return 'RUC';
+  if (pos.includes('MID')) return 'MID';
+  if (pos.includes('DEF')) return 'DEF';
+  if (pos.includes('FWD') || pos.includes('FORWARD')) return 'FWD';
+  return null;
+}
+
 export default function AFLPage() {
   const router = useRouter();
   const { theme, setTheme, isDark } = useTheme();
@@ -347,6 +365,53 @@ export default function AFLPage() {
     return () => { cancelled = true; };
   }, [selectedPlayer?.name, selectedPlayer?.team, season]);
 
+  // Fetch player position from AFL Fantasy positions list for top header context.
+  useEffect(() => {
+    const playerName = selectedPlayer?.name;
+    if (!playerName) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const name = String(playerName).trim();
+        const team = selectedPlayer?.team ? String(selectedPlayer.team).trim().toLowerCase() : '';
+        const trySeasons = [season, 2025];
+
+        for (const s of trySeasons) {
+          const res = await fetch(
+            `/api/afl/fantasy-positions?season=${s}&player=${encodeURIComponent(name)}`
+          );
+          if (!res.ok) continue;
+          const data = await res.json();
+          const players = Array.isArray(data?.players) ? data.players : [];
+          if (!players.length) continue;
+
+          const exact = players.find((p: Record<string, unknown>) => {
+            const n = String(p?.name ?? '').trim().toLowerCase();
+            return n === name.toLowerCase();
+          });
+          const byTeam = team
+            ? players.find((p: Record<string, unknown>) => String(p?.team ?? '').trim().toLowerCase() === team)
+            : null;
+          const chosen = exact ?? byTeam ?? players[0];
+          const position = toDvpPositionLabel(chosen?.position);
+          if (!position) continue;
+
+          if (!cancelled) {
+            setSelectedPlayer((prev) => (prev ? { ...prev, position } : prev));
+          }
+          break;
+        }
+      } catch {
+        // ignore position lookup failures
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+
   // Last round from game logs (so we can pass to next-game even before merge).
   const lastRoundFromLogs =
     selectedPlayerGameLogs.length > 0
@@ -475,6 +540,11 @@ export default function AFLPage() {
                                 ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
                                 : '—'}
                             </div>
+                            {selectedPlayer.position ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                Position: {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                              </div>
+                            ) : null}
                             {selectedPlayer.height ? (
                               <div className="text-xs text-gray-600 dark:text-gray-400">
                                 Height: {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
@@ -941,6 +1011,13 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
+                <div
+                  className={`hidden lg:block rounded-lg shadow-sm p-3 border min-h-[120px] ${
+                    showEmptyShell
+                      ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                      : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                  }`}
+                />
               </div>
             </div>
           </div>

@@ -82,7 +82,7 @@ function TeamLineupList({
     return (
     <li
       key={`${prefix}-${i}`}
-      className={`flex flex-nowrap items-center gap-2 text-[13px] ${isDark ? 'text-gray-200' : 'text-gray-800'} ${
+      className={`flex flex-nowrap items-start gap-2 text-[13px] ${isDark ? 'text-gray-200' : 'text-gray-800'} ${
         isHighlight ? (isDark ? 'bg-purple-900/50 ring-1 ring-purple-500/60 rounded px-1.5 py-0.5' : 'bg-purple-100 ring-1 ring-purple-400/60 rounded px-1.5 py-0.5')
       : ''}`}
     >
@@ -91,18 +91,17 @@ function TeamLineupList({
       >
         {p.number != null ? p.number : ''}
       </span>
-      <span className="truncate min-w-0 flex-1">{nameFirstLast(p.name)}</span>
-      {p.position && (
-        <span
-          className={`flex-shrink-0 text-[10px] px-1 py-0.5 rounded font-medium ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
-          title="Position"
-        >
-          {p.position}
-        </span>
-      )}
+      <div className="min-w-0 flex-1 flex flex-col leading-tight">
+        <span className="truncate">{nameFirstLast(p.name)}</span>
+        {p.position ? (
+          <span className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} title="Position">
+            {p.position}
+          </span>
+        ) : null}
+      </div>
       {(p.subbedOn || p.subbedOff) && (
         <span
-          className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
+          className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded mt-0.5 ${
             p.subbedOn
               ? isDark
                 ? 'bg-emerald-900/60 text-emerald-300'
@@ -145,7 +144,7 @@ function normalizeMatchUrl(url: string): string {
 
 /**
  * Team selections: lineups from AFLTables scrape (match-lineup) or FootyWire fallback.
- * No positions — team lists only (number + name).
+ * Displays number + name and position when available.
  */
 const AflLineupCard = memo(function AflLineupCard({
   isDark,

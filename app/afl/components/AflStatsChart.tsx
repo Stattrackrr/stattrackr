@@ -366,8 +366,8 @@ export function AflStatsChart({
 
   const preferredDefaultStat = useMemo(() => {
     if (!availableStats.length) return '';
-    return availableStats.includes('percent_played')
-      ? 'percent_played'
+    return availableStats.includes('disposals')
+      ? 'disposals'
       : availableStats[0];
   }, [availableStats]);
 
