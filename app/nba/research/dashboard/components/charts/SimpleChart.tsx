@@ -31,6 +31,12 @@ interface SimpleChartProps {
   teammateFilterName?: string | null;
   withWithoutMode?: 'with' | 'without';
   clearTeammateFilter?: () => void;
+  homeAway?: 'ALL' | 'HOME' | 'AWAY' | string;
+  excludeBlowouts?: boolean;
+  excludeBackToBack?: boolean;
+  onChangeHomeAway?: (value: 'ALL' | 'HOME' | 'AWAY') => void;
+  onExcludeBlowoutsChange?: (value: boolean) => void;
+  onExcludeBackToBackChange?: (value: boolean) => void;
   customXAxisTick?: any;
   /** Optional Y-axis tick label formatter (e.g. show "-" for bottom tick in AFL chart) */
   yAxisTickFormatter?: (value: number) => string;
@@ -52,6 +58,12 @@ const SimpleChart = memo(function SimpleChart({
   teammateFilterName,
   withWithoutMode,
   clearTeammateFilter,
+  homeAway = 'ALL',
+  excludeBlowouts = false,
+  excludeBackToBack = false,
+  onChangeHomeAway,
+  onExcludeBlowoutsChange,
+  onExcludeBackToBackChange,
   customXAxisTick,
   yAxisTickFormatter,
 }: SimpleChartProps) {
@@ -189,6 +201,14 @@ const SimpleChart = memo(function SimpleChart({
   }, [isTogStat]);
 
   const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
+  const hasTeammateOverlay = (teammateFilterId != null || teammateFilterName) && !!clearTeammateFilter;
+  const activeSplitFilters = useMemo(() => {
+    const out: string[] = [];
+    if (homeAway === 'HOME' || homeAway === 'AWAY') out.push(`H/A: ${homeAway}`);
+    if (excludeBlowouts) out.push('Exclude Blowouts');
+    if (excludeBackToBack) out.push('No B2B');
+    return out;
+  }, [homeAway, excludeBlowouts, excludeBackToBack]);
 
   // Memoize cells - skip for composite stats (they use custom chopped shape)
   const barCells = useMemo(() => {
@@ -744,7 +764,7 @@ const SimpleChart = memo(function SimpleChart({
         </div>
       )}
       {/* In-chart teammate filter - center horizontally, inline with average (same top). NBA: teammateFilterId + name; AFL: teammateFilterName only */}
-      {(teammateFilterId != null || teammateFilterName) && clearTeammateFilter && (
+      {hasTeammateOverlay && (
         <div
           className="absolute top-1 left-1/2 -translate-x-1/2 pointer-events-none z-[100]"
           aria-hidden
@@ -772,6 +792,43 @@ const SimpleChart = memo(function SimpleChart({
                 <path d="M1 1L7 7M7 1L1 7" />
               </svg>
             </button>
+          </div>
+        </div>
+      )}
+      {activeSplitFilters.length > 0 && (
+        <div
+          className={`absolute left-1/2 -translate-x-1/2 pointer-events-none z-[99] ${hasTeammateOverlay ? 'top-8' : 'top-1'}`}
+          aria-hidden
+        >
+          <div
+            className="pointer-events-auto flex items-center gap-1.5 px-2 py-1 rounded shadow leading-none"
+            style={{
+              backgroundColor: isDark ? 'rgba(88, 28, 135, 0.9)' : 'rgba(147, 51, 234, 0.2)',
+              border: `1px solid ${isDark ? 'rgba(167, 139, 250, 0.4)' : 'rgba(126, 34, 206, 0.5)'}`,
+            }}
+          >
+            <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-purple-100' : 'text-purple-800'}`}>
+              {activeSplitFilters.join(' • ')}
+            </span>
+            {(onChangeHomeAway || onExcludeBlowoutsChange || onExcludeBackToBackChange) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (homeAway !== 'ALL' && onChangeHomeAway) onChangeHomeAway('ALL');
+                  if (excludeBlowouts && onExcludeBlowoutsChange) onExcludeBlowoutsChange(false);
+                  if (excludeBackToBack && onExcludeBackToBackChange) onExcludeBackToBackChange(false);
+                }}
+                className={`flex-shrink-0 w-4 h-4 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity ${
+                  isDark ? 'bg-white/20 text-purple-100' : 'bg-purple-600/20 text-purple-800'
+                }`}
+                aria-label="Clear splits filters"
+              >
+                <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M1 1L7 7M7 1L1 7" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1147,7 +1204,10 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.customTooltip !== nextProps.customTooltip ||
     prevProps.teammateFilterId !== nextProps.teammateFilterId ||
     prevProps.teammateFilterName !== nextProps.teammateFilterName ||
-    prevProps.withWithoutMode !== nextProps.withWithoutMode;
+    prevProps.withWithoutMode !== nextProps.withWithoutMode ||
+    prevProps.homeAway !== nextProps.homeAway ||
+    prevProps.excludeBlowouts !== nextProps.excludeBlowouts ||
+    prevProps.excludeBackToBack !== nextProps.excludeBackToBack;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

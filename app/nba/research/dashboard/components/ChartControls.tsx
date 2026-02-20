@@ -2320,7 +2320,49 @@ const ChartControls = function ChartControls({
                   selectedTimeframe={selectedTimeframe}
                 />
               </div>
-              <div className="-ml-2"><HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} /></div>
+              <div className="relative -ml-1">
+                <button
+                  onClick={() => setIsSplitsOpen((v: boolean) => !v)}
+                  className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center"
+                >
+                  Splits
+                </button>
+                {isSplitsOpen && (
+                  <div className="absolute left-0 mt-1 w-64 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3 z-50">
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Splits</div>
+                    <div className="space-y-2">
+                      <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                        <div className="mb-1 text-[10px] text-gray-500 dark:text-gray-400">Home/Away</div>
+                        <HomeAwaySelect value={homeAway} onChange={onChangeHomeAway} isDark={isDark} />
+                      </div>
+                      <button
+                        onClick={() => onExcludeBlowoutsChange(!excludeBlowouts)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Exclude Blowouts (±21)</span>
+                        <span className={`inline-block h-4 w-7 rounded-full ${excludeBlowouts ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                          <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBlowouts ? 'translate-x-4' : 'translate-x-1'}`} />
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => onExcludeBackToBackChange(!excludeBackToBack)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Back-to-Back</span>
+                        <span className={`inline-block h-4 w-7 rounded-full ${excludeBackToBack ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                          <span className={`block h-3 w-3 bg-white rounded-full transform ${excludeBackToBack ? 'translate-x-4' : 'translate-x-1'}`} />
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {isSplitsOpen && (
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsSplitsOpen(false)}
+                  />
+                )}
+              </div>
               <div className="flex-shrink-0 mr-1">
                 {TimeframeButtons}
               </div>

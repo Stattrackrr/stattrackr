@@ -262,6 +262,12 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
           teammateFilterName={teammateFilterName}
           withWithoutMode={withWithoutMode}
           clearTeammateFilter={clearTeammateFilter}
+          homeAway={homeAway}
+          excludeBlowouts={excludeBlowouts}
+          excludeBackToBack={excludeBackToBack}
+          onChangeHomeAway={onChangeHomeAway}
+          onExcludeBlowoutsChange={onExcludeBlowoutsChange}
+          onExcludeBackToBackChange={onExcludeBackToBackChange}
         />
       </div>
     </div>
