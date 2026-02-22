@@ -493,8 +493,12 @@ async function fetchFootyWireQuarterSplitForResult(
     }
   }
 
-  const teamQ = splitCumulativeToQuarter(teamRow.cumulative);
-  const oppQ = splitCumulativeToQuarter(oppRow.cumulative);
+  const teamCumulative = teamRow.cumulative;
+  const oppCumulative = oppRow.cumulative;
+  if (teamCumulative == null || oppCumulative == null) return null;
+
+  const teamQ = splitCumulativeToQuarter(teamCumulative);
+  const oppQ = splitCumulativeToQuarter(oppCumulative);
   const teamGoalQ = teamRow.goalsCumulative ? splitCumulativeToQuarter(teamRow.goalsCumulative) : null;
   const oppGoalQ = oppRow.goalsCumulative ? splitCumulativeToQuarter(oppRow.goalsCumulative) : null;
   return {
