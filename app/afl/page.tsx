@@ -20,6 +20,16 @@ import { Search, Loader2 } from 'lucide-react';
 
 type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
+const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
+
+type PersistedAflPageState = {
+  selectedPlayer: AflPlayerRecord | null;
+  aflPropsMode: 'player' | 'team';
+  aflRightTab: 'breakdown' | 'dvp';
+  aflLowerTab: 'lineup' | 'injuries';
+  aflChartTimeframe: AflChartTimeframe;
+  withWithoutMode: 'with' | 'without';
+};
 
 function normalizeTeamNameForLogo(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -203,6 +213,53 @@ export default function AFLPage() {
       // Ignore localStorage read errors.
     }
   }, []);
+
+  // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AFL_PAGE_STATE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<PersistedAflPageState>;
+      if (parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
+        setSelectedPlayer(parsed.selectedPlayer as AflPlayerRecord);
+      }
+      if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
+        setAflPropsMode(parsed.aflPropsMode);
+      }
+      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown') {
+        setAflRightTab(parsed.aflRightTab);
+      }
+      if (parsed.aflLowerTab === 'lineup' || parsed.aflLowerTab === 'injuries') {
+        setAflLowerTab(parsed.aflLowerTab);
+      }
+      const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
+      if (parsed.aflChartTimeframe && validTimeframes.includes(parsed.aflChartTimeframe)) {
+        setAflChartTimeframe(parsed.aflChartTimeframe);
+      }
+      if (parsed.withWithoutMode === 'with' || parsed.withWithoutMode === 'without') {
+        setWithWithoutMode(parsed.withWithoutMode);
+      }
+    } catch {
+      // Ignore malformed local state.
+    }
+  }, []);
+
+  // Persist AFL page context as user navigates tabs/filters/players.
+  useEffect(() => {
+    const payload: PersistedAflPageState = {
+      selectedPlayer,
+      aflPropsMode,
+      aflRightTab,
+      aflLowerTab,
+      aflChartTimeframe,
+      withWithoutMode,
+    };
+    try {
+      localStorage.setItem(AFL_PAGE_STATE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [selectedPlayer, aflPropsMode, aflRightTab, aflLowerTab, aflChartTimeframe, withWithoutMode]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -1032,13 +1089,22 @@ export default function AFLPage() {
                         {aflPropsMode === 'player' && (
                           <button
                             onClick={() => setAflRightTab('dvp')}
-                            className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                               aflRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                             }`}
                           >
                             DVP
+                            <span
+                              className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
+                                isDark
+                                  ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100'
+                                  : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                              }`}
+                            >
+                              90% accuracy
+                            </span>
                           </button>
                         )}
                         <button
