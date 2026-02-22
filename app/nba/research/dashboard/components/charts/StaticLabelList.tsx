@@ -59,13 +59,20 @@ export default memo(function StaticLabelList({
           return null;
         }
         
-        // For zero values, position the label at the baseline (floor)
-        const isZero = value === 0;
-        
-        let labelY = y;
-        if (!isZero) {
-          // For non-zero values, move label up slightly above the bar
-          labelY = y - 4;
+        const numericValue = Number(value);
+        const isZero = numericValue === 0;
+        const heightNum = Number(height ?? viewBox?.height ?? 0);
+        const yNum = Number(y ?? 0);
+        const barTop = Math.min(yNum, yNum + heightNum);
+        const barBottom = Math.max(yNum, yNum + heightNum);
+
+        let labelY = yNum;
+        if (numericValue < 0) {
+          // Keep negative labels below the bar for spread/margin readability.
+          labelY = barBottom + 14;
+        } else if (!isZero) {
+          // Positive bars: show just above bar top.
+          labelY = barTop - 4;
         }
         
         // Composite stats (PR, PRA, RA, PA) - numbers are inside each segment, hide default label

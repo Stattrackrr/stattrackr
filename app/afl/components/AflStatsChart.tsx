@@ -7,6 +7,22 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 
 const STAT_PRIORITY = [
+  'moneyline',
+  'total_goals',
+  'spread',
+  'total_points',
+  'q1_total',
+  'q1_spread',
+  'q1_total_goals',
+  'q2_total',
+  'q2_spread',
+  'q2_total_goals',
+  'q3_total',
+  'q3_spread',
+  'q3_total_goals',
+  'q4_total',
+  'q4_spread',
+  'q4_total_goals',
   'percent_played',
   'goals',
   'disposals',
@@ -226,8 +242,16 @@ function parseRoundIndex(round: unknown): number {
   const text = String(round ?? '').trim().toUpperCase();
   if (!text) return Number.POSITIVE_INFINITY;
   const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
-  if (!match) return Number.POSITIVE_INFINITY;
-  return parseInt(match[1], 10);
+  if (match) return parseInt(match[1], 10);
+
+  // Finals ordering after regular rounds so "last X" includes recent finals.
+  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 29;
+  if (/\b(PF|PRELIM)\b/.test(text)) return 28;
+  if (/\b(SF|SEMI)\b/.test(text)) return 27;
+  if (/\b(QF|QUAL)\b/.test(text)) return 26;
+  if (/\b(EF|ELIM)\b/.test(text)) return 25;
+
+  return Number.POSITIVE_INFINITY;
 }
 
 export type AflChartTimeframe = (typeof TIMEFRAME_OPTIONS)[number];
@@ -366,6 +390,9 @@ export function AflStatsChart({
 
   const preferredDefaultStat = useMemo(() => {
     if (!availableStats.length) return '';
+    if (availableStats.includes('moneyline')) return 'moneyline';
+    if (availableStats.includes('spread')) return 'spread';
+    if (availableStats.includes('total_points')) return 'total_points';
     return availableStats.includes('disposals')
       ? 'disposals'
       : availableStats[0];
@@ -499,11 +526,38 @@ export function AflStatsChart({
 
   const sliderStep = hasDecimalValues ? 0.1 : 0.5;
 
-  // Y-axis: 0 at bottom, 4 ticks. Goals/marks: top = max+1; others: top = next multiple of 5 (NBA style)
+  // Y-axis: defaults to positive-only stats; spread uses symmetric negative/positive domain like NBA team mode.
   const yAxisConfig = useMemo(() => {
     if (!chartData.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
+    if (selectedStat === 'moneyline') {
+      return {
+        domain: [0, 1] as [number, number],
+        ticks: [0, 1],
+      };
+    }
+
     const values = chartData.map((d) => d.value);
+    if (selectedStat === 'spread' || /^q[1-4]_spread$/.test(selectedStat)) {
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+      const absMax = Math.max(Math.abs(minValue), Math.abs(maxValue));
+      const bound = Math.max(Math.ceil(absMax / 5) * 5, 5);
+      const step = bound / 3;
+      const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
+      const ticks: number[] = [
+        -bound,
+        useDecimals ? Math.round((-step) * 10) / 10 : Math.round(-step),
+        0,
+        useDecimals ? Math.round(step * 10) / 10 : Math.round(step),
+        bound,
+      ];
+      return {
+        domain: [-bound, bound] as [number, number],
+        ticks,
+      };
+    }
+
     const maxValue = Math.max(...values);
     const useMaxPlusOne = selectedStat === 'goals' || selectedStat === 'marks';
     const max = useMaxPlusOne

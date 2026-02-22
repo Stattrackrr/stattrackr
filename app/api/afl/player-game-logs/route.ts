@@ -5,12 +5,26 @@ const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const FOOTYWIRE_SCHEMA_VERSION = 'v2';
+const FOOTYWIRE_SCHEMA_VERSION = 'v6';
 let footyWireCache: Map<string, { expiresAt: number; games: GameLogRow[]; height: string | null; guernsey: number | null }> = new Map();
+const footyWireMatchCache = new Map<string, { expiresAt: number; data: FootyWireMatchQuarterRows | null }>();
 
 type PlayerIndexEntry = {
   name: string;
   href: string;
+};
+
+type FootyWireTableRow = { cells: string[]; matchId: number | null };
+
+type FootyWireMatchQuarterRow = {
+  final: number | null;
+  cumulative: [number, number, number, number] | null;
+  goalsCumulative: [number, number, number, number] | null;
+  goalsFinal: number | null;
+};
+
+type FootyWireMatchQuarterRows = {
+  rows: FootyWireMatchQuarterRow[];
 };
 
 type GameLogRow = {
@@ -50,6 +64,24 @@ type GameLogRow = {
   effective_disposals: number;
   disposal_efficiency: number; // percentage 0–100
   match_url: string | null;
+  team_q1?: number;
+  team_q2?: number;
+  team_q3?: number;
+  team_q4?: number;
+  opponent_q1?: number;
+  opponent_q2?: number;
+  opponent_q3?: number;
+  opponent_q4?: number;
+  team_goals?: number;
+  opponent_goals?: number;
+  team_goal_q1?: number;
+  team_goal_q2?: number;
+  team_goal_q3?: number;
+  team_goal_q4?: number;
+  opponent_goal_q1?: number;
+  opponent_goal_q2?: number;
+  opponent_goal_q3?: number;
+  opponent_goal_q4?: number;
 };
 
 const TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -165,36 +197,53 @@ function descriptionToRound(description: string): string {
   return t || '—';
 }
 
-function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: string[][] } {
-  const result = { headers: [] as string[], rows: [] as string[][] };
+function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: FootyWireTableRow[] } {
+  const result = { headers: [] as string[], rows: [] as FootyWireTableRow[] };
   if (!html || !html.includes('footywire')) return result;
   const gamesLogBlock = html.match(/Games Log for[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/i);
   const tableContent = gamesLogBlock ? gamesLogBlock[1] : html;
   const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const rows: string[][] = [];
+  const rows: FootyWireTableRow[] = [];
   let trm: RegExpExecArray | null;
   while ((trm = trRegex.exec(tableContent)) !== null) {
     const cells: string[] = [];
-    const tdRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    const rawCells: string[] = [];
+    const tdRegex = /<t[dh][^>]*>([\s\S]*?)(?=<t[dh]\b|$)/gi;
     let cm: RegExpExecArray | null;
-    while ((cm = tdRegex.exec(trm[1])) !== null) cells.push(htmlToText(cm[1]).trim());
-    if (cells.length >= 5) rows.push(cells);
+    while ((cm = tdRegex.exec(trm[1])) !== null) {
+      rawCells.push(cm[1]);
+      cells.push(htmlToText(cm[1]).trim());
+    }
+    if (cells.length >= 5) {
+      let matchId: number | null = null;
+      for (const raw of rawCells) {
+        const mid = raw.match(/ft_match_statistics\?mid=(\d+)/i);
+        if (mid?.[1]) {
+          const n = parseInt(mid[1], 10);
+          if (Number.isFinite(n)) {
+            matchId = n;
+            break;
+          }
+        }
+      }
+      rows.push({ cells, matchId });
+    }
   }
   const headerIdx = rows.findIndex(
     (r) =>
-      r.some((c) => /^Description$/i.test(c)) &&
-      r.some((c) => /^Opponent$/i.test(c)) &&
-      r.some((c) => /^Result$/i.test(c)) &&
-      (r.some((c) => /^K$/i.test(c)) || r.some((c) => /^CP$/i.test(c)))
+      r.cells.some((c) => /^Description$/i.test(c)) &&
+      r.cells.some((c) => /^Opponent$/i.test(c)) &&
+      r.cells.some((c) => /^Result$/i.test(c)) &&
+      (r.cells.some((c) => /^K$/i.test(c)) || r.cells.some((c) => /^CP$/i.test(c)))
   );
   if (headerIdx < 0) return result;
-  result.headers = rows[headerIdx];
+  result.headers = rows[headerIdx].cells;
   result.rows = rows.slice(headerIdx + 1).filter((r) => {
-    const first = (r[0] || '').trim();
+    const first = (r.cells[0] || '').trim();
     if (!first) return false;
     const hasRound = /Round|Final|Semi|Qualifying|Preliminary|Grand|Description/i.test(first) || /^R\d+$/i.test(first);
-    const hasNumbers = r.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
-    return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.length >= 10);
+    const hasNumbers = r.cells.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
+    return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.cells.length >= 10);
   });
   return result;
 }
@@ -297,6 +346,179 @@ function applyDisposalEfficiency(games: GameLogRow[]): void {
   }
 }
 
+function parseResultScores(result: string): { teamFinal: number; opponentFinal: number } | null {
+  const m = String(result || '').match(/(\d+)\s*-\s*(\d+)/);
+  if (!m) return null;
+  const teamFinal = parseInt(m[1], 10);
+  const opponentFinal = parseInt(m[2], 10);
+  if (!Number.isFinite(teamFinal) || !Number.isFinite(opponentFinal)) return null;
+  return { teamFinal, opponentFinal };
+}
+
+function parseGoalsBehindsToPoints(cellText: string): number | null {
+  const text = String(cellText || '').trim();
+  if (!text) return null;
+  const gb = text.match(/(\d+)\s*\.\s*(\d+)/);
+  if (gb) {
+    const goals = parseInt(gb[1], 10);
+    const behinds = parseInt(gb[2], 10);
+    if (Number.isFinite(goals) && Number.isFinite(behinds)) return goals * 6 + behinds;
+  }
+  const n = parseInt(text, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseGoalsFromGoalsBehinds(cellText: string): number | null {
+  const m = String(cellText || '').trim().match(/(\d+)\s*\.\s*(\d+)/);
+  if (!m) return null;
+  const goals = parseInt(m[1], 10);
+  return Number.isFinite(goals) ? goals : null;
+}
+
+function parseFootyWireMatchQuarterRows(html: string): FootyWireMatchQuarterRows | null {
+  const tableMatch = html.match(/<table[^>]*id=["']matchscoretable["'][^>]*>([\s\S]*?)<\/table>/i);
+  if (!tableMatch?.[1]) return null;
+
+  const tableBody = tableMatch[1];
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const rows: string[][] = [];
+  let tr: RegExpExecArray | null = trRegex.exec(tableBody);
+  while (tr) {
+    const rowCells: string[] = [];
+    const cellRegex = /<t[dh][^>]*>([\s\S]*?)(?=<t[dh]\b|$)/gi;
+    let cm: RegExpExecArray | null = cellRegex.exec(tr[1]);
+    while (cm) {
+      rowCells.push(htmlToText(cm[1]).trim());
+      cm = cellRegex.exec(tr[1]);
+    }
+    if (rowCells.length > 0) rows.push(rowCells);
+    tr = trRegex.exec(tableBody);
+  }
+  if (rows.length < 3) return null;
+
+  const header = rows[0].map((c) => c.toUpperCase());
+  const q1Idx = header.findIndex((c) => c === 'Q1');
+  const q2Idx = header.findIndex((c) => c === 'Q2');
+  const q3Idx = header.findIndex((c) => c === 'Q3');
+  const q4Idx = header.findIndex((c) => c === 'Q4');
+  const finalIdx = header.findIndex((c) => c === 'FINAL');
+  if (q1Idx < 0 || q2Idx < 0 || q3Idx < 0 || q4Idx < 0 || finalIdx < 0) return null;
+
+  const parsed: FootyWireMatchQuarterRow[] = [];
+  for (const row of rows.slice(1)) {
+    const c1 = parseGoalsBehindsToPoints(row[q1Idx] ?? '');
+    const c2 = parseGoalsBehindsToPoints(row[q2Idx] ?? '');
+    const c3 = parseGoalsBehindsToPoints(row[q3Idx] ?? '');
+    const c4 = parseGoalsBehindsToPoints(row[q4Idx] ?? '');
+    const g1 = parseGoalsFromGoalsBehinds(row[q1Idx] ?? '');
+    const g2 = parseGoalsFromGoalsBehinds(row[q2Idx] ?? '');
+    const g3 = parseGoalsFromGoalsBehinds(row[q3Idx] ?? '');
+    const g4 = parseGoalsFromGoalsBehinds(row[q4Idx] ?? '');
+    const final = parseGoalsBehindsToPoints(row[finalIdx] ?? '');
+    const cumulative =
+      c1 != null && c2 != null && c3 != null && c4 != null && c2 >= c1 && c3 >= c2 && c4 >= c3
+        ? ([c1, c2, c3, c4] as [number, number, number, number])
+        : null;
+    const goalsCumulative =
+      g1 != null && g2 != null && g3 != null && g4 != null && g2 >= g1 && g3 >= g2 && g4 >= g3
+        ? ([g1, g2, g3, g4] as [number, number, number, number])
+        : null;
+    const goalsFinal = parseGoalsFromGoalsBehinds(row[q4Idx] ?? '');
+    parsed.push({ final, cumulative, goalsCumulative, goalsFinal });
+  }
+
+  const valid = parsed.filter((r) => r.cumulative != null).slice(0, 2);
+  if (valid.length < 2) return null;
+  return { rows: valid };
+}
+
+async function fetchFootyWireMatchQuarterRows(matchId: number): Promise<FootyWireMatchQuarterRows | null> {
+  const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}:${matchId}`;
+  const cached = footyWireMatchCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const url = `${FOOTYWIRE_BASE}/afl/footy/ft_match_statistics?mid=${matchId}`;
+    const res = await fetch(url, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+    if (!res.ok) {
+      footyWireMatchCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data: null });
+      return null;
+    }
+    const html = await res.text();
+    const data = parseFootyWireMatchQuarterRows(html);
+    footyWireMatchCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data });
+    return data;
+  } catch {
+    footyWireMatchCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data: null });
+    return null;
+  }
+}
+
+function splitCumulativeToQuarter(c: [number, number, number, number]): [number, number, number, number] {
+  return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2]];
+}
+
+async function fetchFootyWireQuarterSplitForResult(
+  matchId: number,
+  resultLabel: string
+): Promise<Pick<
+  GameLogRow,
+  'team_q1' | 'team_q2' | 'team_q3' | 'team_q4' | 'opponent_q1' | 'opponent_q2' | 'opponent_q3' | 'opponent_q4' | 'team_goals' | 'opponent_goals'
+  | 'team_goal_q1' | 'team_goal_q2' | 'team_goal_q3' | 'team_goal_q4'
+  | 'opponent_goal_q1' | 'opponent_goal_q2' | 'opponent_goal_q3' | 'opponent_goal_q4'
+> | null> {
+  const scores = parseResultScores(resultLabel);
+  if (!scores) return null;
+  const parsed = await fetchFootyWireMatchQuarterRows(matchId);
+  if (!parsed || parsed.rows.length < 2) return null;
+
+  const [a, b] = parsed.rows;
+  const aFinal = a.final;
+  const bFinal = b.final;
+  if (a.cumulative == null || b.cumulative == null || aFinal == null || bFinal == null) return null;
+
+  let teamRow = a;
+  let oppRow = b;
+  const directMatch = aFinal === scores.teamFinal && bFinal === scores.opponentFinal;
+  const swappedMatch = bFinal === scores.teamFinal && aFinal === scores.opponentFinal;
+  if (!directMatch && swappedMatch) {
+    teamRow = b;
+    oppRow = a;
+  } else if (!directMatch && !swappedMatch) {
+    const aDistance = Math.abs(aFinal - scores.teamFinal) + Math.abs(bFinal - scores.opponentFinal);
+    const bDistance = Math.abs(bFinal - scores.teamFinal) + Math.abs(aFinal - scores.opponentFinal);
+    if (bDistance < aDistance) {
+      teamRow = b;
+      oppRow = a;
+    }
+  }
+
+  const teamQ = splitCumulativeToQuarter(teamRow.cumulative);
+  const oppQ = splitCumulativeToQuarter(oppRow.cumulative);
+  const teamGoalQ = teamRow.goalsCumulative ? splitCumulativeToQuarter(teamRow.goalsCumulative) : null;
+  const oppGoalQ = oppRow.goalsCumulative ? splitCumulativeToQuarter(oppRow.goalsCumulative) : null;
+  return {
+    team_q1: teamQ[0],
+    team_q2: teamQ[1],
+    team_q3: teamQ[2],
+    team_q4: teamQ[3],
+    opponent_q1: oppQ[0],
+    opponent_q2: oppQ[1],
+    opponent_q3: oppQ[2],
+    opponent_q4: oppQ[3],
+    team_goals: teamRow.goalsFinal ?? undefined,
+    opponent_goals: oppRow.goalsFinal ?? undefined,
+    team_goal_q1: teamGoalQ?.[0],
+    team_goal_q2: teamGoalQ?.[1],
+    team_goal_q3: teamGoalQ?.[2],
+    team_goal_q4: teamGoalQ?.[3],
+    opponent_goal_q1: oppGoalQ?.[0],
+    opponent_goal_q2: oppGoalQ?.[1],
+    opponent_goal_q3: oppGoalQ?.[2],
+    opponent_goal_q4: oppGoalQ?.[3],
+  };
+}
+
 function parseFootyWireProfile(html: string): { height: string | null; guernsey: number | null } {
   let height: string | null = null;
   let guernsey: number | null = null;
@@ -334,7 +556,7 @@ async function fetchFootyWireGameLogs(
   const { headers, rows } = parseFootyWireGameLogTable(html);
   if (headers.length === 0 || rows.length === 0) return null;
   const games: GameLogRow[] = rows.map((row, idx) => {
-    const g = footyWireRowToGameLogRow(row, headers, season);
+    const g = footyWireRowToGameLogRow(row.cells, headers, season);
     g.game_number = idx + 1;
     return g;
   });
@@ -347,13 +569,22 @@ async function fetchFootyWireGameLogs(
     const adv = parseFootyWireGameLogTable(advHtml);
     if (adv.headers.length > 0 && adv.rows.length >= games.length) {
       for (let i = 0; i < games.length; i++) {
-        const partial = footyWireAdvancedRowToPartial(adv.rows[i], adv.headers, season);
+        const partial = footyWireAdvancedRowToPartial(adv.rows[i].cells, adv.headers, season);
         Object.assign(games[i], partial);
       }
     }
   }
   // FootyWire advanced has ED but no DE% column; derive disposal_efficiency from effective_disposals / disposals
   applyDisposalEfficiency(games);
+
+  // Enrich each game from FootyWire match page (ft_match_statistics) for quarter-by-quarter totals.
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      if (!row.matchId || !games[idx]) return;
+      const quarters = await fetchFootyWireQuarterSplitForResult(row.matchId, games[idx].result);
+      if (quarters) Object.assign(games[idx], quarters);
+    })
+  );
 
   const { height, guernsey } = parseFootyWireProfile(html);
   footyWireCache.set(cacheKey, {

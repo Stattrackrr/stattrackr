@@ -165,6 +165,11 @@ const SimpleChart = memo(function SimpleChart({
     return '';
   }, [isDark]);
 
+  const isSpreadLikeStat = useMemo(
+    () => selectedStat === 'spread' || /^q[1-4]_spread$/.test(selectedStat),
+    [selectedStat]
+  );
+
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
   // OPTIMIZATION: Single pass through array instead of two filters
   const initialBackgroundGradient = useMemo(() => {
@@ -175,13 +180,18 @@ const SimpleChart = memo(function SimpleChart({
     let underCount = 0;
     for (let i = 0; i < total; i++) {
       const value = chartData[i].value;
-      if (value > bettingLine) overCount++;
-      else if (value < bettingLine) underCount++;
+      if (isSpreadLikeStat) {
+        if (value <= bettingLine) overCount++;
+        else underCount++;
+      } else {
+        if (value > bettingLine) overCount++;
+        else if (value < bettingLine) underCount++;
+      }
     }
     const overPercent = total > 0 ? (overCount / total) * 100 : 0;
     const underPercent = total > 0 ? (underCount / total) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);
-  }, [chartData, bettingLine, getBackgroundGradient, isTogStat]);
+  }, [chartData, bettingLine, getBackgroundGradient, isTogStat, isSpreadLikeStat]);
   
   const backgroundGradientRef = useRef(initialBackgroundGradient);
   const getBackgroundGradientRef = useRef(getBackgroundGradient);
@@ -195,10 +205,11 @@ const SimpleChart = memo(function SimpleChart({
   // Determine bar color based on value vs betting line
   const getBarColor = useCallback((value: number, line: number) => {
     if (isTogStat) return '#6b7280'; // neutral gray for TOG%
+    if (isSpreadLikeStat) return value <= line ? '#10b981' : '#ef4444'; // cover vs no-cover
     if (value > line) return '#10b981'; // green
     if (value < line) return '#ef4444'; // red
     return '#6b7280'; // gray for equal
-  }, [isTogStat]);
+  }, [isTogStat, isSpreadLikeStat]);
 
   const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
   const hasTeammateOverlay = (teammateFilterId != null || teammateFilterName) && !!clearTeammateFilter;
@@ -275,9 +286,8 @@ const SimpleChart = memo(function SimpleChart({
       if (!Number.isFinite(i) || !data[i]) return;
       
       const barValue = data[i].value;
-      // Handle spread stat (reversed logic) - same as original recolorBarsFast
-      const isOver = selectedStat === 'spread' ? (barValue < line) : (barValue > line);
-      const isPush = barValue === line;
+      const isOver = isSpreadLikeStat ? (barValue <= line) : (barValue > line);
+      const isPush = !isSpreadLikeStat && barValue === line;
       const newState = isTogStat ? 'neutral' : (isOver ? 'over' : isPush ? 'push' : 'under');
       const currentState = el.getAttribute('data-state');
       if (currentState === newState) return; // Skip if state hasn't changed
@@ -290,7 +300,7 @@ const SimpleChart = memo(function SimpleChart({
       el.setAttribute('data-state', newState);
       el.setAttribute('fill', newColor);
     });
-  }, [selectedStat, isTogStat]);
+  }, [isTogStat, isSpreadLikeStat]);
 
   // Update bar colors and background glow via DOM when betting line changes (prevents re-renders)
   useEffect(() => {
@@ -310,8 +320,8 @@ const SimpleChart = memo(function SimpleChart({
         return;
       }
       const total = chartData.length;
-      const overCount = chartData.filter(d => d.value > bettingLine).length;
-      const underCount = chartData.filter(d => d.value < bettingLine).length;
+      const overCount = chartData.filter((d) => (isSpreadLikeStat ? d.value <= bettingLine : d.value > bettingLine)).length;
+      const underCount = chartData.filter((d) => (isSpreadLikeStat ? d.value > bettingLine : d.value < bettingLine)).length;
       const overPercent = total > 0 ? (overCount / total) * 100 : 0;
       const underPercent = total > 0 ? (underCount / total) * 100 : 0;
       const newGradient = getBackgroundGradient(overPercent, underPercent);
@@ -326,7 +336,7 @@ const SimpleChart = memo(function SimpleChart({
     }, 0);
     
     return () => clearTimeout(timeoutId);
-  }, [bettingLine, chartData, getBackgroundGradient, updateBarColors, isTogStat]);
+  }, [bettingLine, chartData, getBackgroundGradient, updateBarColors, isTogStat, isSpreadLikeStat]);
 
   // Ensure colors are set correctly on initial render (after DOM is ready)
   useEffect(() => {
@@ -681,11 +691,11 @@ const SimpleChart = memo(function SimpleChart({
     // Hit rate: % of games over the line in selected timeframe
     let hitRate: number | null = null;
     if (Number.isFinite(bettingLine) && validEntries.length > 0) {
-      const overCount = validEntries.filter(({ value }) => value > bettingLine).length;
+      const overCount = validEntries.filter(({ value }) => (isSpreadLikeStat ? value <= bettingLine : value > bettingLine)).length;
       hitRate = Math.round((overCount / validEntries.length) * 100);
     }
     return { formatted, tfLabel, hitRate };
-  }, [chartData, selectedStat, selectedTimeframe, bettingLine]);
+  }, [chartData, selectedStat, selectedTimeframe, bettingLine, isSpreadLikeStat]);
 
   // Loading state
   // Chart is independent - only depends on its own data, not global isLoading
@@ -829,6 +839,30 @@ const SimpleChart = memo(function SimpleChart({
                 </svg>
               </button>
             )}
+          </div>
+        </div>
+      )}
+      {isSpreadLikeStat && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: isMobile ? '0px' : '32px',
+            right: isMobile ? '0px' : '14px',
+            top: '22px',
+            bottom: '57px',
+            zIndex: 5,
+          }}
+          aria-hidden
+        >
+          <div className="absolute left-1/2 -translate-x-1/2 top-[18%]">
+            <span className={`text-[10px] sm:text-xs tracking-[0.2em] font-semibold ${isDark ? 'text-white/25' : 'text-black/20'}`}>
+              LOSS
+            </span>
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[18%]">
+            <span className={`text-[10px] sm:text-xs tracking-[0.2em] font-semibold ${isDark ? 'text-white/25' : 'text-black/20'}`}>
+              WON
+            </span>
           </div>
         </div>
       )}
@@ -1143,18 +1177,20 @@ const SimpleChart = memo(function SimpleChart({
                 const { x, y, width, height, fill, payload } = props;
                 const barIndex = props['data-bar-index'] ?? props.index ?? -1;
                 const barValue = payload?.value ?? props['data-bar-value'];
+                const rectHeight = Math.abs(Number(height) || 0);
+                const rectY = (Number(height) || 0) < 0 ? (Number(y) || 0) + (Number(height) || 0) : (Number(y) || 0);
                 const HOVER_H = 400;
                 const hoverH = HOVER_H;
-                const hoverY = y - HOVER_H;
+                const hoverY = rectY - HOVER_H;
                 return (
                   <g>
                     {/* Invisible hover rect: full width, top 2/3 of bar slot */}
                     <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
                     <rect
                       x={x}
-                      y={y}
+                      y={rectY}
                       width={width}
-                      height={height}
+                      height={rectHeight}
                       fill={fill ?? '#888'}
                       rx={10}
                       ry={10}
@@ -1202,6 +1238,7 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.selectedFilterForAxis !== nextProps.selectedFilterForAxis ||
     prevProps.selectedTimeframe !== nextProps.selectedTimeframe ||
     prevProps.customTooltip !== nextProps.customTooltip ||
+    prevProps.customXAxisTick !== nextProps.customXAxisTick ||
     prevProps.teammateFilterId !== nextProps.teammateFilterId ||
     prevProps.teammateFilterName !== nextProps.teammateFilterName ||
     prevProps.withWithoutMode !== nextProps.withWithoutMode ||
