@@ -49,3 +49,7 @@ next-env.d.ts
 *_backup_*.tsx
 *_backup_*.ts
 *_backup_*.js
+
+# local logs/temp artifacts
+/logs/
+/temp_*.html

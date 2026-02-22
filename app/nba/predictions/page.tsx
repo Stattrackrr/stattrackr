@@ -36,25 +36,11 @@ interface PredictionResult {
   expiresAt: string;
 }
 
-interface DailyPick {
-  type: 'player';
-  prop: { playerName: string; team: string; opponent: string; statType: string; line: number; bookmakerCount?: number };
-  result: PredictionResult;
-  readScore: number;
-  direction: 'OVER' | 'UNDER';
-  scanned: number;
-  successful: number;
-}
-
 export default function PredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPrediction, setSelectedPrediction] = useState<PredictionResult | null>(null);
-
-  const [dailyPick, setDailyPick] = useState<DailyPick | null>(null);
-  const [dailyPickLoading, setDailyPickLoading] = useState(false);
-  const [dailyPickError, setDailyPickError] = useState<string | null>(null);
 
   // Test data for manual lookup
   const [playerId, setPlayerId] = useState('237'); // LeBron James
@@ -62,32 +48,6 @@ export default function PredictionsPage() {
   const [opponent, setOpponent] = useState('');
   const [line, setLine] = useState('');
   
-  const fetchDailyPick = async () => {
-    setDailyPickLoading(true);
-    setDailyPickError(null);
-    setDailyPick(null);
-    try {
-      const response = await fetch('/api/prediction-engine/daily-pick');
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch daily pick');
-      }
-      setDailyPick(data.dailyPick);
-      if (data.dailyPick?.result) {
-        setSelectedPrediction(data.dailyPick.result);
-        setPlayerId(String(data.dailyPick.result.playerId || data.dailyPick.prop.playerId));
-        const st = (data.dailyPick.prop.statType || 'PTS').toUpperCase();
-        setStatType(st === 'THREES' ? 'fg3m' : st.toLowerCase());
-        setOpponent(data.dailyPick.prop.opponent || '');
-        setLine(String(data.dailyPick.prop.line ?? ''));
-      }
-    } catch (err: any) {
-      setDailyPickError(err.message);
-    } finally {
-      setDailyPickLoading(false);
-    }
-  };
-
   const fetchPrediction = async () => {
     setLoading(true);
     setError(null);
@@ -143,52 +103,8 @@ export default function PredictionsPage() {
             NBA Prediction Engine
           </h1>
           <p className="text-gray-600">
-            AI-powered predictions using 48 advanced models — 1 best pick per day
+            AI-powered predictions using 48 advanced models
           </p>
-        </div>
-
-        {/* Daily Pick - Primary Feature */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 mb-8">
-          <h2 className="text-xl font-bold text-amber-900 mb-2">🏆 Today&apos;s Best Read</h2>
-          <p className="text-amber-800 text-sm mb-4">
-            Scans all player props from today&apos;s games and returns the single prop with the strongest signal.
-          </p>
-          <button
-            onClick={fetchDailyPick}
-            disabled={dailyPickLoading}
-            className="px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 disabled:bg-amber-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {dailyPickLoading ? 'Scanning props...' : 'Find Best Pick'}
-          </button>
-          {dailyPickError && (
-            <p className="mt-3 text-red-600 text-sm">{dailyPickError}</p>
-          )}
-          {dailyPick && (
-            <div className="mt-6 p-4 bg-white rounded-lg border border-amber-200">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {dailyPick.prop.playerName} — {dailyPick.prop.statType} {dailyPick.direction}{' '}
-                    <span className="text-amber-700">Line {dailyPick.prop.line}</span>
-                  </p>
-                  <p className="text-gray-600">
-                    {dailyPick.prop.team} vs {dailyPick.prop.opponent}
-                    {dailyPick.prop.bookmakerCount != null && dailyPick.prop.bookmakerCount >= 2 && (
-                      <span className="ml-2 text-xs text-green-600">({dailyPick.prop.bookmakerCount} books)</span>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">
-                    Scanned {dailyPick.scanned} props • {dailyPick.successful} with predictions
-                  </p>
-                  <p className="text-lg font-bold text-green-600">
-                    Edge: {dailyPick.result?.edge > 0 ? '+' : ''}{dailyPick.result?.edge?.toFixed(1)} • {Math.round((dailyPick.result?.confidence ?? 0) * 100)}% confidence
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
         
         {/* Input Form - Manual lookup */}

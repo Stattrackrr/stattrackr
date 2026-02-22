@@ -52,8 +52,7 @@ export function useSessionPersistence({
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(baseSave));
         
-        // Don't strip player params while we're still loading from URL
-        // (e.g. "View on dashboard" from Today's Best Pick navigates with player=... in URL)
+        // Don't strip player params while we're still loading from URL.
         const currentUrl = new URL(window.location.href);
         const hasPlayerParam = currentUrl.searchParams.has('player');
         const hasPidParam = currentUrl.searchParams.has('pid');

@@ -7,7 +7,6 @@ import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
 import { supabase } from "@/lib/supabaseClient";
-import { DailyPickModal } from "./DailyPickModal";
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -61,7 +60,6 @@ export default function LeftSidebar({
   const [profileAvatarPreviewUrl, setProfileAvatarPreviewUrl] = useState<string | null>(null);
   const profileAvatarInputRef = useRef<HTMLInputElement>(null);
   const [showUnitSettingsModal, setShowUnitSettingsModal] = useState(false);
-  const [showDailyPickModal, setShowDailyPickModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [bankroll, setBankroll] = useState<string>('');
   const [bankrollCurrency, setBankrollCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
@@ -393,22 +391,6 @@ export default function LeftSidebar({
           )}
         </div>
         
-        {/* Today's Best Pick - NBA pages only (suspended for maintenance) */}
-        {(pathname.startsWith('/nba') || pathname.startsWith('/props')) && (
-          <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <div
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-300 dark:border-gray-600 cursor-not-allowed"
-              title="Under maintenance"
-            >
-              <span className="flex items-center gap-2">
-                <span aria-hidden title="Maintenance">🔧</span>
-                <span>Today&apos;s Best Pick</span>
-                <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">(maintenance)</span>
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Journal section - right under Sports */}
         <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
           <Link
@@ -554,12 +536,6 @@ export default function LeftSidebar({
           </li>
         </ul>
       </div>
-
-      {/* Daily Pick Modal */}
-      {showDailyPickModal && mounted && createPortal(
-        <DailyPickModal isOpen={showDailyPickModal} onClose={() => setShowDailyPickModal(false)} />,
-        document.body
-      )}
 
       {/* Profile Modal - opens only when "Profile" is clicked in the dropdown */}
       {showProfileModal && mounted && createPortal(

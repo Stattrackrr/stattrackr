@@ -5,6 +5,7 @@
 import cache from "@/lib/cache";
 import { getNBACache, setNBACache } from "@/lib/nbaCache";
 import { normalizeAbbr } from "@/lib/nbaAbbr";
+import JSON5 from "json5";
 
 const BETTINGPROS_URL = 'https://www.bettingpros.com/nba/defense-vs-position/';
 
@@ -126,27 +127,18 @@ export function extractStatsFromHTML(html: string): any {
     throw new Error(`Extracted data does not start with '{'. First 50 chars: ${jsonStr.substring(0, 50)}`);
   }
   
-  // BettingPros uses JavaScript object literal syntax (unquoted keys), not JSON
-  // Try JSON.parse first, but if it fails, use Function constructor to parse JS object literal
+  // BettingPros may return JSON5-style object literals (unquoted keys/trailing commas).
+  // Parse as data only; never execute remote content.
   let parsed: any;
   try {
     // Try direct JSON parse first (in case they've changed to JSON format)
     parsed = JSON.parse(jsonStr);
   } catch (jsonError: any) {
-    // JSON parse failed - likely JavaScript object literal syntax
-    // Use Function constructor (safer than eval) to parse JS object literal
+    // Fallback to JSON5 parser for JS object-literal syntax.
     try {
-      // Create a function that returns the object literal
-      // This safely evaluates JavaScript object syntax
-      const func = new Function('return ' + jsonStr);
-      parsed = func();
-      
-      // Validate it's an object (not array or primitive)
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('Function constructor did not return a valid object');
-      }
+      parsed = JSON5.parse(jsonStr);
     } catch (funcError: any) {
-      // If Function constructor also fails, log detailed error
+      // If JSON5 parse also fails, log detailed error
       const errorPos = parseInt(jsonError.message.match(/position (\d+)/)?.[1] || '0', 10);
       const startPos = Math.max(0, errorPos - 200);
       const endPos = Math.min(jsonStr.length, errorPos + 200);

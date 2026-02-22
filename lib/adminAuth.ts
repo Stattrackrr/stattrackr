@@ -11,7 +11,6 @@ type AdminAuthResult =
  * Checks:
  * - Authorization: Bearer <ADMIN_SECRET>
  * - X-Admin-Secret: <ADMIN_SECRET>
- * - Query parameter: ?secret=<ADMIN_SECRET>
  * - OR authenticated user with admin email in ADMIN_EMAILS env var
  */
 export async function authorizeAdminRequest(request: Request): Promise<AdminAuthResult> {
@@ -26,15 +25,7 @@ export async function authorizeAdminRequest(request: Request): Promise<AdminAuth
       ? authHeader.slice(7).trim()
       : null;
 
-    let querySecret = null;
-    try {
-      const url = new URL(request.url);
-      querySecret = url.searchParams.get('secret');
-    } catch (e) {
-      // Ignore URL parsing errors
-    }
-
-    const providedSecret = querySecret || headerSecret || bearerSecret;
+    const providedSecret = headerSecret || bearerSecret;
     if (providedSecret && providedSecret === adminSecret) {
       return { authorized: true, userId: 'admin-secret' };
     }
