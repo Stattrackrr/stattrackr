@@ -4,14 +4,19 @@ import "./globals.css";
 import RootLayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
-  title: "StatTrackr - NBA Sports Analytics & Data Analysis Platform",
-  description: "Advanced NBA sports analytics and data analysis platform. Track player statistics, team performance metrics, and defensive analytics. Data-driven insights for sports research and analysis.",
+  title: "StatTrackr - Multi-Sport Research Platform (NBA & AFL)",
+  description: "Multi-sport research platform for NBA and AFL. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   keywords: [
     "sports analytics",
+    "multi-sport research",
+    "multi-sport analytics",
     "NBA statistics",
+    "AFL statistics",
+    "AFL analytics",
     "data analysis",
     "sports data",
     "basketball analytics",
+    "AFL player stats",
     "player statistics",
     "team analytics",
     "sports metrics",
@@ -40,8 +45,8 @@ export const metadata: Metadata = {
     title: "StatTrackr",
   },
   openGraph: {
-    title: "StatTrackr - NBA Sports Analytics & Data Analysis",
-    description: "Advanced NBA sports analytics and data analysis platform for tracking player statistics and team performance metrics.",
+    title: "StatTrackr - Multi-Sport Research Platform (NBA & AFL)",
+    description: "Analyze NBA and AFL player stats, team trends, and game props with a fast multi-sport research dashboard.",
     type: "website",
     siteName: "StatTrackr",
   },

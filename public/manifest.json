@@ -1,7 +1,7 @@
 {
   "name": "StatTrackr",
   "short_name": "StatTrackr",
-  "description": "NBA Sports Analytics & Data Analysis Platform - Track player statistics, team performance metrics, and defensive analytics.",
+  "description": "Multi-sport research platform for NBA and AFL with player stats, team analysis, and game prop tools.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
