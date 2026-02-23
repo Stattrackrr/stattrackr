@@ -346,32 +346,16 @@ export function AflStatsChart({
 
     const loadTeamLogos = async () => {
       try {
-        const tryUrls = [
-          '/api/afl/teams?league=1&season=2025',
-          '/api/afl/teams?season=2025',
-        ];
-
-        let rows: any[] = [];
-        for (const url of tryUrls) {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const json = await res.json();
-          rows = Array.isArray(json?.response)
-            ? json.response
-            : Array.isArray(json)
-              ? json
-              : [];
-          if (rows.length > 0) break;
-        }
-        if (rows.length === 0) return;
-
         const nextMap: Record<string, string> = {};
-        for (const row of rows) {
-          const team = row?.team ?? row;
-          const name = String(team?.name ?? '').trim();
-          const logo = normalizeLogoUrl(String(team?.logo ?? team?.image ?? ''));
-          if (!name || !logo) continue;
-          nextMap[normalizeTeamName(name)] = logo;
+        const res = await fetch('/api/afl/team-logos');
+        if (!res.ok) return;
+        const json = await res.json();
+        const logos = json?.logos && typeof json.logos === 'object' ? json.logos : {};
+        for (const [name, rawLogo] of Object.entries(logos as Record<string, unknown>)) {
+          const normalizedName = normalizeTeamName(String(name));
+          const logo = normalizeLogoUrl(String(rawLogo ?? ''));
+          if (!normalizedName || !logo) continue;
+          nextMap[normalizedName] = logo;
         }
 
         if (!cancelled && Object.keys(nextMap).length > 0) {

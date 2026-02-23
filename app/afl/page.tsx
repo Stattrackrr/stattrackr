@@ -291,17 +291,16 @@ export default function AFLPage() {
     let cancelled = false;
     const loadTeamLogos = async () => {
       try {
-        const res = await fetch(`/api/afl/teams?league=1&season=${season}`);
+        const res = await fetch('/api/afl/team-logos');
         if (!res.ok) return;
         const json = await res.json();
-        const rows = Array.isArray(json?.response) ? json.response : Array.isArray(json) ? json : [];
         const nextMap: Record<string, string> = {};
-        for (const row of rows) {
-          const team = row?.team ?? row;
-          const name = String(team?.name ?? '').trim();
-          const logo = normalizeLogoUrl(String(team?.logo ?? team?.image ?? ''));
-          if (!name || !logo) continue;
-          nextMap[normalizeTeamNameForLogo(name)] = logo;
+        const logos = json?.logos && typeof json.logos === 'object' ? json.logos : {};
+        for (const [name, rawLogo] of Object.entries(logos as Record<string, unknown>)) {
+          const normalizedName = normalizeTeamNameForLogo(String(name));
+          const logo = normalizeLogoUrl(String(rawLogo ?? ''));
+          if (!normalizedName || !logo) continue;
+          nextMap[normalizedName] = logo;
         }
         if (!cancelled && Object.keys(nextMap).length > 0) setLogoByTeam(nextMap);
       } catch {

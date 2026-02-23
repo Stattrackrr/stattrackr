@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 
 export type AflGameForLineup = {
   round?: string;
   opponent?: string;
   result?: string;
   match_url?: string;
+  season?: number | string;
+  date?: string;
+  game_date?: string;
 };
 
 export interface AflLineupCardProps {
@@ -155,6 +158,51 @@ function normalizeMatchUrl(url: string): string {
   }
 }
 
+function normalizeTeamText(value: string): string {
+  return (value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function teamLooksLikeMatch(actual: string, expected: string): boolean {
+  const a = normalizeTeamText(actual);
+  const b = normalizeTeamText(expected);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  const aWords = a.split(' ').filter(Boolean);
+  const bWords = b.split(' ').filter(Boolean);
+  return aWords.some((w) => b.includes(w)) || bWords.some((w) => a.includes(w));
+}
+
+function getGameSeason(game: AflGameForLineup, fallbackSeason: number): number {
+  const seasonRaw = game?.season;
+  const seasonNum = typeof seasonRaw === 'number' ? seasonRaw : parseInt(String(seasonRaw ?? ''), 10);
+  if (Number.isFinite(seasonNum) && seasonNum > 1900) return seasonNum;
+
+  const dateRaw = String(game?.date ?? game?.game_date ?? '').trim();
+  if (dateRaw) {
+    const dt = new Date(dateRaw);
+    if (Number.isFinite(dt.getTime())) return dt.getFullYear();
+  }
+  return fallbackSeason;
+}
+
+function parseRoundOrder(round: unknown): number {
+  const text = String(round ?? '').trim().toUpperCase();
+  if (!text) return -1;
+  const m = text.match(/(?:ROUND|R)?\s*(\d+)/);
+  if (m?.[1]) return parseInt(m[1], 10);
+  if (/\b(EF|ELIM)\b/.test(text)) return 25;
+  if (/\b(QF|QUAL)\b/.test(text)) return 26;
+  if (/\b(SF|SEMI)\b/.test(text)) return 27;
+  if (/\b(PF|PRELIM)\b/.test(text)) return 28;
+  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 29;
+  return -1;
+}
+
 /**
  * Team selections: lineups from AFLTables scrape (match-lineup) or FootyWire fallback.
  * Displays number + name and position when available.
@@ -170,13 +218,35 @@ const AflLineupCard = memo(function AflLineupCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const games = gameLogs?.length ? gameLogs : [];
-  const lastGame = games.length > 0 ? games[games.length - 1] : undefined;
+  const orderedGames = useMemo(
+    () =>
+      [...games]
+        .map((g, idx) => ({ g, idx }))
+        .sort((a, b) => {
+          const aRound = parseRoundOrder(a.g.round);
+          const bRound = parseRoundOrder(b.g.round);
+          if (aRound !== bRound) return bRound - aRound;
+
+          const aDate = new Date(String(a.g.date ?? a.g.game_date ?? '')).getTime();
+          const bDate = new Date(String(b.g.date ?? b.g.game_date ?? '')).getTime();
+          const aHasDate = Number.isFinite(aDate);
+          const bHasDate = Number.isFinite(bDate);
+          if (aHasDate && bHasDate && aDate !== bDate) return bDate - aDate;
+          if (aHasDate !== bHasDate) return aHasDate ? -1 : 1;
+
+          // Prefer later items when only source order is available.
+          return b.idx - a.idx;
+        })
+        .map((x) => x.g),
+    [games]
+  );
+  const lastGame = orderedGames.length > 0 ? orderedGames[0] : undefined;
   const matchUrl = lastGame?.match_url ?? null;
   const fallbackOpponent = (lastGame?.opponent || '').replace(/^vs\.?\s*/i, '').trim();
 
   const canFetch =
     team?.trim() &&
-    (games.length > 0 || !!matchUrl?.trim());
+    (orderedGames.length > 0 || !!matchUrl?.trim());
 
   useEffect(() => {
     if (!canFetch) {
@@ -269,18 +339,19 @@ const AflLineupCard = memo(function AflLineupCard({
         });
     };
 
-    const recentGames = [...games].slice(-3).reverse();
+    const recentGames = orderedGames.slice(0, 4);
     const tryMatchLineupFromRecentGames = async (): Promise<boolean> => {
       for (const g of recentGames) {
         if (cancelled) return false;
         const gMatchUrl = g?.match_url?.trim();
         const rawOpponent = g?.opponent ?? '';
         const opponentNorm = rawOpponent.replace(/^vs\.?\s*/i, '').trim() || rawOpponent;
+        const gameSeason = getGameSeason(g, season);
         const params = new URLSearchParams({ team: team!.trim() });
         if (gMatchUrl) {
           params.set('match_url', normalizeMatchUrl(gMatchUrl));
         } else if (season && g?.round) {
-          params.set('season', String(season));
+          params.set('season', String(gameSeason));
           params.set('round', String(g.round));
           if (opponentNorm) params.set('opponent', opponentNorm);
         } else {
@@ -292,6 +363,23 @@ const AflLineupCard = memo(function AflLineupCard({
           const hasAny =
             (json?.home_players?.length ?? 0) > 0 || (json?.away_players?.length ?? 0) > 0 || (json?.players?.length ?? 0) > 0;
           if (!json?.error && hasAny) {
+            const selectedTeam = team!.trim();
+            const jsonHome = String(json?.home_team ?? '');
+            const jsonAway = String(json?.away_team ?? '');
+            const jsonLabel = String(json?.team_label ?? '');
+            const hasSelectedTeam =
+              teamLooksLikeMatch(jsonHome, selectedTeam) ||
+              teamLooksLikeMatch(jsonAway, selectedTeam) ||
+              teamLooksLikeMatch(jsonLabel, selectedTeam);
+            if (!hasSelectedTeam) continue;
+
+            if (opponentNorm) {
+              const hasExpectedOpponent =
+                teamLooksLikeMatch(jsonHome, opponentNorm) ||
+                teamLooksLikeMatch(jsonAway, opponentNorm);
+              if (!hasExpectedOpponent) continue;
+            }
+
             if (!cancelled) {
               setData(json);
               setError(null);
@@ -313,7 +401,7 @@ const AflLineupCard = memo(function AflLineupCard({
     return () => {
       cancelled = true;
     };
-  }, [team, season, games, matchUrl, fallbackOpponent]);
+  }, [team, season, orderedGames, matchUrl, fallbackOpponent]);
 
   const team1Label = stripAflTablesPrefix(data?.home_team?.trim() || 'Team 1');
   const team2Label = stripAflTablesPrefix(data?.away_team?.trim() || 'Team 2');
@@ -324,7 +412,7 @@ const AflLineupCard = memo(function AflLineupCard({
   const legacyPlayers = ([...(data?.players ?? [])] as LineupPlayer[]).sort(sortByNumber);
   const hasAnyPlayers = team1Players.length > 0 || team2Players.length > 0 || legacyPlayers.length > 0;
 
-  const showCard = team && games.length > 0;
+  const showCard = team && orderedGames.length > 0;
   const hasMatchUrl = !!matchUrl?.trim();
   const emptyText = isDark ? 'text-gray-500' : 'text-gray-400';
   const hasBothTeams = team1Players.length > 0 && team2Players.length > 0;

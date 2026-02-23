@@ -19,7 +19,9 @@ function resolveTeamCodes(teamInput: string): string[] {
   for (const [code, full] of Object.entries(ROSTER_TEAM_TO_INJURY_TEAM)) {
     const fullNorm = normalize(full);
     const firstWordNorm = normalize(full.split(/\s+/)[0] || '');
-    if (n === fullNorm || n === firstWordNorm || fullNorm.includes(n) || n.includes(firstWordNorm)) {
+    // Keep matching strict enough to avoid cross-team collisions
+    // like "North Melbourne" incorrectly including "Melbourne".
+    if (n === fullNorm || n === firstWordNorm || fullNorm.includes(n) || n.includes(fullNorm)) {
       out.add(code);
     }
   }
