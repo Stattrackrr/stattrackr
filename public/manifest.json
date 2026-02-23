@@ -10,12 +10,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/images/stattrackr-icon.png",
+      "src": "/images/stattrackr-icon.png?v=20260223",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/images/stattrackr-icon.png",
+      "src": "/images/stattrackr-icon.png?v=20260223",
       "sizes": "512x512",
       "type": "image/png"
     }

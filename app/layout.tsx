@@ -23,11 +23,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/images/stattrackr-icon.png", sizes: "192x192", type: "image/png" },
-      { url: "/images/stattrackr-icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/images/stattrackr-icon.png?v=20260223", sizes: "48x48", type: "image/png" },
+      { url: "/images/stattrackr-icon.png?v=20260223", sizes: "192x192", type: "image/png" },
+      { url: "/images/stattrackr-icon.png?v=20260223", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: [
+      { url: "/images/stattrackr-icon.png?v=20260223", type: "image/png" },
     ],
     apple: [
-      { url: "/images/stattrackr-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/images/stattrackr-icon.png?v=20260223", sizes: "180x180", type: "image/png" },
     ],
   },
   appleWebApp: {
