@@ -35,8 +35,7 @@ export async function GET(
 
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
-  } catch (err) {
-    console.error('[AFL API]', err);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch AFL data' },
       { status: 502 }

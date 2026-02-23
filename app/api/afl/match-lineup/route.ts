@@ -494,10 +494,7 @@ async function fetchSeasonMatches(season: number): Promise<SeasonMatch[]> {
     },
     next: { revalidate: 60 * 60 },
   });
-  if (!res.ok) {
-    console.warn('[AFL match-lineup] Season page fetch failed', season, res.status, url);
-    return [];
-  }
+  if (!res.ok) return [];
   const html = await res.text();
 
   const matches: SeasonMatch[] = [];
@@ -595,7 +592,7 @@ async function fetchSeasonMatches(season: number): Promise<SeasonMatch[]> {
     }
   }
   if (matches.length === 0) {
-    console.warn('[AFL match-lineup] No match links found on season page', season, 'htmlLength=', html.length);
+    // no-op
   }
   seasonMatchesCache.set(season, { expiresAt: Date.now() + SEASON_CACHE_TTL, matches });
   return matches;
@@ -608,7 +605,7 @@ function resolveMatchUrlFromSeason(
   round: string,
   team: string,
   opponent: string | null
-): Promise<{ url: string | null; debug?: { matchCount: number; rounds: string[] } }> {
+): Promise<{ url: string | null }> {
   return fetchSeasonMatches(season).then((matches) => {
     const roundLabels = roundLabelsToTry(round);
     const teamAlts = [team, shortTeamName(team)].filter(Boolean);
@@ -636,8 +633,7 @@ function resolveMatchUrlFromSeason(
       const anyForTeam = matches.filter((m) => teamInMatch(m, t));
       if (anyForTeam.length > 0) return { url: anyForTeam[anyForTeam.length - 1].match_url };
     }
-    const rounds = [...new Set(matches.map((m) => m.round))];
-    return { url: null, debug: { matchCount: matches.length, rounds } };
+    return { url: null };
   });
 }
 
@@ -670,9 +666,6 @@ export async function GET(request: NextRequest) {
   const seasonParam = request.nextUrl.searchParams.get('season');
   const roundParam = request.nextUrl.searchParams.get('round');
   const opponentParam = request.nextUrl.searchParams.get('opponent');
-  const debugParam = request.nextUrl.searchParams.get('debug');
-  const withDebug = debugParam === '1' || debugParam === 'true';
-
   let matchUrl: string | null = matchUrlParam?.trim() ?? null;
   if (matchUrl && !matchUrl.startsWith('http')) {
     matchUrl = matchUrl.startsWith('/') ? `${AFL_TABLES_BASE}${matchUrl}` : `${AFL_TABLES_BASE}/afl/stats/games/${matchUrl}`;
@@ -708,14 +701,8 @@ export async function GET(request: NextRequest) {
         opponentNorm
       );
       if (result.url) matchUrl = result.url;
-      if (!matchUrl && result.debug) {
-        return NextResponse.json(
-          { error: 'Could not resolve match URL from season page', debug: result.debug },
-          { status: 404 }
-        );
-      }
-    } catch (e) {
-      console.error('[AFL match-lineup] resolve from season', e);
+    } catch {
+      return NextResponse.json({ error: 'Failed to resolve match URL from season page' }, { status: 502 });
     }
   }
 
@@ -727,7 +714,7 @@ export async function GET(request: NextRequest) {
   }
 
   const cacheKey = `${matchUrl}|${teamParam ?? ''}`;
-  const cached = !withDebug && cache.get(cacheKey);
+  const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.data);
   }
@@ -747,22 +734,17 @@ export async function GET(request: NextRequest) {
       );
     }
     const html = await res.text();
-    const lineupDebug: MatchLineupDebug | undefined = withDebug
-      ? { tableCount: 0, homeCount: 0, awayCount: 0, perTable: [] }
-      : undefined;
-    const data = parseMatchPage(html, matchUrl, lineupDebug);
+    const data = parseMatchPage(html, matchUrl);
     if (!data) {
-      const debug = { match_url: matchUrl, htmlLength: html.length, homeCount: 0, awayCount: 0, ...lineupDebug };
       return NextResponse.json(
-        { error: 'Could not parse lineup from match page', match_url: matchUrl, debug, players: [], home_players: [], away_players: [] },
+        { error: 'Could not parse lineup from match page', match_url: matchUrl, players: [], home_players: [], away_players: [] },
         { status: 422 }
       );
     }
-    if (!withDebug) cache.set(cacheKey, { expiresAt: Date.now() + TTL_MS, data });
+    cache.set(cacheKey, { expiresAt: Date.now() + TTL_MS, data });
 
-    return NextResponse.json(withDebug && lineupDebug ? { ...data, debug: lineupDebug } : data);
+    return NextResponse.json(data);
   } catch (err) {
-    console.error('[AFL match-lineup]', err);
     return NextResponse.json(
       {
         error: 'Failed to fetch match lineup',

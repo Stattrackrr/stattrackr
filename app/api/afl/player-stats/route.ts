@@ -448,9 +448,6 @@ export async function GET(request: NextRequest) {
         return false;
       };
 
-      let lastRawResponse: unknown = null;
-      let lastTriedUrl = '';
-
       for (const trySeason of seasonsToTrySingle) {
         // 1) Try GET /players/statistics with different parameter names
         // API-Sports AFL might use 'player', 'player_id', or 'id'
@@ -459,15 +456,12 @@ export async function GET(request: NextRequest) {
             [idParam]: idStr,
             season: trySeason,
           });
-          lastTriedUrl = `${AFL_BASE}/players/statistics?${idParam}=${idStr}&season=${trySeason}`;
           if (statsResult.ok && statsResult.data) {
-            lastRawResponse = statsResult.data;
             if (tryParseStatsFromResponse(statsResult.data as Record<string, unknown>)) {
-              console.log(`[AFL] Successfully fetched stats for player ${idStr} using parameter '${idParam}'`);
               seasonUsed = trySeason;
               break;
             }
-          } else if (statsResult.data) lastRawResponse = statsResult.data;
+          }
         }
         if (Object.keys(statsFlat).length > 0) break;
 
@@ -477,29 +471,23 @@ export async function GET(request: NextRequest) {
             [idParam]: idStr,
             season: trySeason,
           });
-          lastTriedUrl = `${AFL_BASE}/players?${idParam}=${idStr}&season=${trySeason}`;
           if (playerResult.ok && playerResult.data) {
-            lastRawResponse = playerResult.data;
             if (tryParseStatsFromResponse(playerResult.data as Record<string, unknown>)) {
-              console.log(`[AFL] Successfully fetched player ${idStr} using parameter '${idParam}'`);
               seasonUsed = trySeason;
               break;
             }
-          } else if (playerResult.data) lastRawResponse = playerResult.data;
+          }
         }
         if (Object.keys(statsFlat).length > 0) break;
 
         // 3) Try REST-style GET /players/{id}?season=Y
         const playerPathResult = await aflFetchWithRetry(apiKey, `players/${idStr}`, { season: trySeason });
-        lastTriedUrl = `${AFL_BASE}/players/${idStr}?season=${trySeason}`;
         if (playerPathResult.ok && playerPathResult.data) {
-          lastRawResponse = playerPathResult.data;
           if (tryParseStatsFromResponse(playerPathResult.data as Record<string, unknown>)) {
-            console.log(`[AFL] Successfully fetched player ${idStr} using REST path`);
             seasonUsed = trySeason;
             break;
           }
-        } else if (playerPathResult.data) lastRawResponse = playerPathResult.data;
+        }
         if (Object.keys(statsFlat).length > 0) break;
       }
 
@@ -532,13 +520,6 @@ export async function GET(request: NextRequest) {
       };
       if (!hasStats) {
         body._hint = 'No statistics returned. Verify endpoint at https://api-sports.io/documentation/afl/v1';
-        body._debug = {
-          player_id: idStr,
-          last_tried_url: lastTriedUrl,
-          api_response_sample: lastRawResponse != null
-            ? JSON.stringify(lastRawResponse).slice(0, 1200)
-            : 'no response',
-        };
       }
       return NextResponse.json(body);
     }
@@ -581,7 +562,6 @@ export async function GET(request: NextRequest) {
         if (teamsResult.ok && teamsResult.data) {
           teamIds = extractTeamIds(teamsResult.data as Record<string, unknown>);
           if (teamIds.length > 0) {
-            console.log(`[AFL] Found ${teamIds.length} teams for league ${leagueId}`);
             break;
           }
         }
@@ -591,7 +571,6 @@ export async function GET(request: NextRequest) {
         const teamsOnlyResult = await aflFetchWithRetry(apiKey, 'teams', { season: trySeason });
         if (teamsOnlyResult.ok && teamsOnlyResult.data) {
           teamIds = extractTeamIds(teamsOnlyResult.data as Record<string, unknown>);
-          console.log(`[AFL] Found ${teamIds.length} teams (no league filter)`);
         }
         if (!teamsOnlyResult.ok && teamsOnlyResult.message) lastApiError = teamsOnlyResult.message;
       }
@@ -621,14 +600,11 @@ export async function GET(request: NextRequest) {
         
         if (playersResult.ok && playersResult.data) {
           const list = extractPlayerList(playersResult.data as Record<string, unknown>);
-          console.log(`[AFL] Found ${list.length} players for team ${teamId}`);
           for (const p of list) {
             const id = p?.id ?? (p?.player as Record<string, unknown>)?.id;
             const key = id != null ? String(id) : JSON.stringify(p);
             if (!playerMap.has(key)) playerMap.set(key, p);
           }
-        } else if (!playersResult.ok) {
-          console.warn(`[AFL] Failed to fetch players for team ${teamId}:`, playersResult.message);
         }
       }
 
@@ -660,7 +636,6 @@ export async function GET(request: NextRequest) {
       } else {
         const maxPlayers = parseInt(process.env.AFL_BULK_STATS_MAX_PLAYERS ?? '200', 10) || 200;
         const limitedPlayers = players.slice(0, Math.max(0, maxPlayers));
-        console.log(`[AFL] include_stats=1: fetching per-player stats for ${limitedPlayers.length}/${players.length} players (rate-limited)`);
 
         for (const p of limitedPlayers) {
           const playerObj = (p?.player ?? p) as Record<string, unknown>;
@@ -680,14 +655,10 @@ export async function GET(request: NextRequest) {
           if (statsResult.ok) {
             const payload = extractStatsPayloadFromApiResponse(statsResult.data as Record<string, unknown>);
             statsFlat = addPerGameAndSanitize(flattenStats(payload));
-          } else {
-            console.warn(`[AFL] Failed to fetch stats for player ${idStr}:`, statsResult.message);
           }
           normalized.push(normalizePlayer(p, statsFlat));
         }
       }
-
-      console.log(`[AFL] Returning ${normalized.length} players${includeBulkStats ? ' (bulk stats enabled)' : ''}`);
 
       if (!includeBulkStats) {
         SEASON_CACHE.set(cacheKey, {
@@ -712,7 +683,6 @@ export async function GET(request: NextRequest) {
       _apiError: lastApiError || undefined,
     });
   } catch (err) {
-    console.error('[AFL player-stats]', err);
     return NextResponse.json(
       {
         error: 'Failed to fetch player stats',

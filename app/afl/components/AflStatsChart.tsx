@@ -260,6 +260,7 @@ interface AflStatsChartProps {
   stats: Record<string, string | number>;
   gameLogs?: Array<Record<string, unknown>>;
   isDark: boolean;
+  logoByTeam?: Record<string, string>;
   isLoading?: boolean;
   hasSelectedPlayer?: boolean;
   apiErrorHint?: string | null;
@@ -278,6 +279,7 @@ export function AflStatsChart({
   stats: _stats,
   gameLogs = [],
   isDark,
+  logoByTeam: externalLogoByTeam,
   isLoading,
   hasSelectedPlayer,
   apiErrorHint,
@@ -289,7 +291,7 @@ export function AflStatsChart({
   onTimeframeChange,
   onSelectedStatChange,
 }: AflStatsChartProps) {
-  const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
+  const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
   const [internalTimeframe, setInternalTimeframe] =
     useState<AflChartTimeframe>('last10');
@@ -327,6 +329,10 @@ export function AflStatsChart({
   }, [teammateFilterName, season]);
 
   useEffect(() => {
+    if (externalLogoByTeam && Object.keys(externalLogoByTeam).length > 0) {
+      setChartLogoByTeam(externalLogoByTeam);
+      return;
+    }
     let cancelled = false;
 
     const loadTeamLogos = async () => {
@@ -360,7 +366,7 @@ export function AflStatsChart({
         }
 
         if (!cancelled && Object.keys(nextMap).length > 0) {
-          setLogoByTeam(nextMap);
+          setChartLogoByTeam(nextMap);
         }
       } catch {
         // Leave fallback text ticks when logos are unavailable.
@@ -371,7 +377,7 @@ export function AflStatsChart({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [externalLogoByTeam]);
 
   const availableStats = useMemo(() => {
     const keys = new Set<string>();
@@ -655,8 +661,8 @@ export function AflStatsChart({
   }, [isDark, selectedStatLabel]);
 
   const aflXAxisTick = useMemo(() => (
-    <AflXAxisTick data={chartData} logoByTeam={logoByTeam} isDark={isDark} />
-  ), [chartData, logoByTeam, isDark]);
+    <AflXAxisTick data={chartData} logoByTeam={chartLogoByTeam} isDark={isDark} />
+  ), [chartData, chartLogoByTeam, isDark]);
 
   if (isLoading) {
     return (

@@ -308,14 +308,12 @@ export async function GET(request: NextRequest) {
   const teamParam = request.nextUrl.searchParams.get('team')?.trim();
   const seasonParam = request.nextUrl.searchParams.get('season');
   const lastRoundParam = request.nextUrl.searchParams.get('last_round')?.trim();
-  const debug = request.nextUrl.searchParams.get('debug') === '1' || request.nextUrl.searchParams.get('debug') === 'true';
 
   if (!teamParam) {
     return NextResponse.json(
       {
         error: 'team query param required',
         example: `${request.nextUrl.origin}/api/afl/next-game?team=Essendon&season=2026`,
-        example_with_debug: `${request.nextUrl.origin}/api/afl/next-game?team=Essendon&season=2026&debug=1`,
       },
       { status: 400 }
     );
@@ -342,7 +340,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const emptyResponse = (source: string, debugPayload?: object) =>
+    const emptyResponse = (source: string) =>
       NextResponse.json({
         season,
         team: teamFull,
@@ -351,7 +349,6 @@ export async function GET(request: NextRequest) {
         next_game_tipoff: null,
         match_url: null,
         source,
-        ...(debug ? { _debug: debugPayload } : {}),
       });
 
     // Prefer FootyWire fixture (shows upcoming games; AFLTables often only after completion).
@@ -372,25 +369,16 @@ export async function GET(request: NextRequest) {
           match_url: null,
           source: 'footywire.com',
         };
-        if (debug) {
-          const withTipoff = fwMatches.filter((m) => m.tipoff_iso).length;
-          body._debug = {
-            next_match: { round: nextMatch.round, home: nextMatch.home, away: nextMatch.away, tipoff_iso: nextMatch.tipoff_iso ?? null },
-            fixture_total_matches: fwMatches.length,
-            fixture_matches_with_parsed_time: withTipoff,
-            first_three_matches: fwMatches.slice(0, 3).map((m) => ({ round: m.round, home: m.home, away: m.away, tipoff_iso: m.tipoff_iso ?? null })),
-          };
-        }
         return NextResponse.json(body);
       }
     }
 
     // Fallback: AFLTables season page (often only has completed matches).
     const matches = await fetchSeasonMatches(season);
-    if (matches.length === 0) return emptyResponse('afltables.com', debug ? { reason: 'no_matches_from_afltables' } : undefined);
+    if (matches.length === 0) return emptyResponse('afltables.com');
 
     const nextMatch = findNextMatch(matches, teamFull, nextRoundStart);
-    if (!nextMatch) return emptyResponse('afltables.com', debug ? { reason: 'no_next_match_found' } : undefined);
+    if (!nextMatch) return emptyResponse('afltables.com');
 
     const opponentRaw =
       teamMatches(nextMatch.home, teamFull) || teamMatches(nextMatch.home, shortName(teamFull))
@@ -407,10 +395,8 @@ export async function GET(request: NextRequest) {
       match_url: nextMatch.match_url,
       source: 'afltables.com',
     };
-    if (debug) aflTablesBody._debug = { note: 'AFLTables does not provide match times; only FootyWire fixture can return next_game_tipoff' };
     return NextResponse.json(aflTablesBody);
   } catch (err) {
-    console.error('[AFL next-game]', err);
     return NextResponse.json(
       { error: 'Failed to fetch next game', details: err instanceof Error ? err.message : String(err) },
       { status: 502 }

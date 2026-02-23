@@ -44,7 +44,6 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   });
   if (!res.ok) {
     const text = await res.text();
-    console.error('[AFL official-players] OAuth token failed', res.status, text);
     throw new Error(`OAuth token failed: ${res.status}`);
   }
   const data = (await res.json()) as { access_token?: string; expires_in?: number };
@@ -191,7 +190,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ players, source: 'afl', totalResults: players.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[AFL official-players]', message);
     const isTimeout = typeof message === 'string' && (message.includes('abort') || message.includes('timeout'));
     return NextResponse.json(
       {

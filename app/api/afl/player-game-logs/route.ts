@@ -546,9 +546,10 @@ const FOOTYWIRE_HEADERS = {
 async function fetchFootyWireGameLogs(
   teamName: string,
   playerName: string,
-  season: number
+  season: number,
+  includeQuarterEnrichment = false
 ): Promise<{ games: GameLogRow[]; height: string | null; guernsey: number | null; player_name: string } | null> {
-  const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}|${teamName}|${playerName}|${season}`;
+  const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}|${teamName}|${playerName}|${season}|quarters:${includeQuarterEnrichment ? '1' : '0'}`;
   const cached = footyWireCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return { games: cached.games, height: cached.height, guernsey: cached.guernsey, player_name: playerName.trim() };
@@ -581,14 +582,16 @@ async function fetchFootyWireGameLogs(
   // FootyWire advanced has ED but no DE% column; derive disposal_efficiency from effective_disposals / disposals
   applyDisposalEfficiency(games);
 
-  // Enrich each game from FootyWire match page (ft_match_statistics) for quarter-by-quarter totals.
-  await Promise.all(
-    rows.map(async (row, idx) => {
-      if (!row.matchId || !games[idx]) return;
-      const quarters = await fetchFootyWireQuarterSplitForResult(row.matchId, games[idx].result);
-      if (quarters) Object.assign(games[idx], quarters);
-    })
-  );
+  if (includeQuarterEnrichment) {
+    // Enrich each game from FootyWire match page (ft_match_statistics) for quarter-by-quarter totals.
+    await Promise.all(
+      rows.map(async (row, idx) => {
+        if (!row.matchId || !games[idx]) return;
+        const quarters = await fetchFootyWireQuarterSplitForResult(row.matchId, games[idx].result);
+        if (quarters) Object.assign(games[idx], quarters);
+      })
+    );
+  }
 
   const { height, guernsey } = parseFootyWireProfile(html);
   footyWireCache.set(cacheKey, {
@@ -1073,6 +1076,7 @@ export async function GET(request: NextRequest) {
   const seasonParam = request.nextUrl.searchParams.get('season');
   const playerNameParam = request.nextUrl.searchParams.get('player_name');
   const teamParam = request.nextUrl.searchParams.get('team');
+  const includeQuartersParam = request.nextUrl.searchParams.get('include_quarters');
 
   const season = seasonParam ? parseInt(seasonParam, 10) : null;
   if (!season || Number.isNaN(season)) {
@@ -1086,11 +1090,12 @@ export async function GET(request: NextRequest) {
   const teamFull = teamParam?.trim()
     ? (rosterTeamToInjuryTeam(teamParam.trim()) || teamParam.trim())
     : null;
+  const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true';
 
   try {
     // Prefer FootyWire when team is provided (one URL per player/season, simpler)
     if (teamFull) {
-      const fw = await fetchFootyWireGameLogs(teamFull, playerNameParam.trim(), season);
+      const fw = await fetchFootyWireGameLogs(teamFull, playerNameParam.trim(), season, includeQuarterEnrichment);
       if (fw && fw.games.length > 0) {
         return NextResponse.json({
           season,
@@ -1143,7 +1148,6 @@ export async function GET(request: NextRequest) {
       height: height ?? undefined,
     });
   } catch (err) {
-    console.error('[AFL player-game-logs]', err);
     return NextResponse.json(
       {
         error: 'Failed to fetch AFL game logs',

@@ -318,7 +318,6 @@ export default function AFLPage() {
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || 'Failed to load players';
-        console.error('[AFL] API error:', errorMsg, data);
         throw new Error(errorMsg);
       }
       const list = Array.isArray(data?.players) ? data.players : [];
@@ -326,8 +325,7 @@ export default function AFLPage() {
         name: String(p.name ?? '-'),
         team: typeof p.team === 'string' ? p.team : undefined,
       })));
-    } catch (err) {
-      console.error('[AFL] Failed to fetch players:', err);
+    } catch {
       setSearchResults([]);
     } finally {
       setPlayersLoading(false);
@@ -389,13 +387,14 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
+    const quarterQuery = aflPropsMode === 'team' ? '&include_quarters=1' : '';
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
     (async () => {
       try {
         let res = await fetch(
-          `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`
+          `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}${quarterQuery}`
         );
         let data = await res.json();
         if (cancelled) return;
@@ -408,7 +407,7 @@ export default function AFLPage() {
         // When using 2026, often no games yet; use 2025 for chart/supporting stats.
         if (games.length === 0 && season === 2026) {
           res = await fetch(
-            `/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`
+            `/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}${quarterQuery}`
           );
           data = await res.json();
           if (cancelled) return;
@@ -471,7 +470,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season, aflPropsMode]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
@@ -946,6 +945,7 @@ export default function AFLPage() {
                       stats={selectedPlayer ?? {}}
                       gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
                       isDark={!!mounted && isDark}
+                      logoByTeam={logoByTeam}
                       isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
                       hasSelectedPlayer={!!selectedPlayer}
                       apiErrorHint={lastStatsError}

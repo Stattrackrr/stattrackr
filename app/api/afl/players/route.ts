@@ -161,7 +161,6 @@ export async function GET(request: NextRequest) {
       players,
     });
   } catch (err) {
-    console.error('[AFL players]', err);
     return NextResponse.json(
       {
         error: 'Failed to fetch AFL players',

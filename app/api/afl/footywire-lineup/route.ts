@@ -120,11 +120,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ players, source: 'footywire.com' });
     }
     return NextResponse.json(
-      { error: 'Could not parse lineup from FootyWire', players: [], debug: { htmlLength: html.length, aliases } },
+      { error: 'Could not parse lineup from FootyWire', players: [] },
       { status: 422 }
     );
   } catch (err) {
-    console.error('[AFL footywire-lineup]', err);
     return NextResponse.json(
       { error: 'Failed to fetch FootyWire lineup', players: [], details: err instanceof Error ? err.message : String(err) },
       { status: 502 }
