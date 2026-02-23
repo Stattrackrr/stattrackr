@@ -42,6 +42,19 @@ type LineupResponse = {
   error?: string;
 };
 
+const FETCH_TIMEOUT_MS = 6000;
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** "Surname, First" → "First Surname" for display. */
 function nameFirstLast(name: string): string {
   const s = (name || '').trim();
@@ -177,15 +190,15 @@ const AflLineupCard = memo(function AflLineupCard({
     setError(null);
 
     const fetchTeamRoster = async (teamName: string): Promise<LineupPlayer[]> => {
-      const rr = await fetch(`/api/afl/team-roster?team=${encodeURIComponent(teamName)}&season=${encodeURIComponent(String(season))}`);
-      const rj = (await rr.json()) as { players?: LineupPlayer[] };
+      const rj = await fetchJsonWithTimeout<{ players?: LineupPlayer[] }>(
+        `/api/afl/team-roster?team=${encodeURIComponent(teamName)}&season=${encodeURIComponent(String(season))}`
+      );
       return Array.isArray(rj?.players) ? rj.players : [];
     };
 
     const tryFootyWire = (): void => {
       if (!team?.trim()) return;
-      fetch(`/api/afl/footywire-lineup?team=${encodeURIComponent(team.trim())}`)
-        .then((r) => r.json())
+      fetchJsonWithTimeout<{ players?: LineupPlayer[]; error?: string }>(`/api/afl/footywire-lineup?team=${encodeURIComponent(team.trim())}`)
         .then(async (json: { players?: LineupPlayer[]; error?: string }) => {
           if (cancelled) return;
           if (json?.players?.length) {
@@ -256,7 +269,7 @@ const AflLineupCard = memo(function AflLineupCard({
         });
     };
 
-    const recentGames = [...games].slice(-8).reverse();
+    const recentGames = [...games].slice(-3).reverse();
     const tryMatchLineupFromRecentGames = async (): Promise<boolean> => {
       for (const g of recentGames) {
         if (cancelled) return false;
@@ -275,8 +288,7 @@ const AflLineupCard = memo(function AflLineupCard({
         }
 
         try {
-          const r = await fetch(`/api/afl/match-lineup?${params}`);
-          const json = (await r.json()) as LineupResponse & { debug?: Record<string, unknown> };
+          const json = await fetchJsonWithTimeout<LineupResponse>(`/api/afl/match-lineup?${params}`);
           const hasAny =
             (json?.home_players?.length ?? 0) > 0 || (json?.away_players?.length ?? 0) > 0 || (json?.players?.length ?? 0) > 0;
           if (!json?.error && hasAny) {

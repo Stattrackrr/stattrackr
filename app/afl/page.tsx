@@ -35,6 +35,13 @@ function normalizeTeamNameForLogo(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function normalizeLogoUrl(url: string): string {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  // Production is HTTPS; avoid mixed-content blocking for http logo links.
+  return raw.replace(/^http:\/\//i, 'https://');
+}
+
 const AFL_LOGO_ALIASES: Record<string, string[]> = {
   adelaide: ['adelaide', 'adelaidecrows', 'crows'],
   brisbane: ['brisbane', 'brisbanelions', 'lions'],
@@ -292,7 +299,7 @@ export default function AFLPage() {
         for (const row of rows) {
           const team = row?.team ?? row;
           const name = String(team?.name ?? '').trim();
-          const logo = String(team?.logo ?? team?.image ?? '').trim();
+          const logo = normalizeLogoUrl(String(team?.logo ?? team?.image ?? ''));
           if (!name || !logo) continue;
           nextMap[normalizeTeamNameForLogo(name)] = logo;
         }

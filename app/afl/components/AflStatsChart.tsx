@@ -238,6 +238,12 @@ function normalizeTeamName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function normalizeLogoUrl(url: string): string {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  return raw.replace(/^http:\/\//i, 'https://');
+}
+
 function parseRoundIndex(round: unknown): number {
   const text = String(round ?? '').trim().toUpperCase();
   if (!text) return Number.POSITIVE_INFINITY;
@@ -330,7 +336,10 @@ export function AflStatsChart({
 
   useEffect(() => {
     if (externalLogoByTeam && Object.keys(externalLogoByTeam).length > 0) {
-      setChartLogoByTeam(externalLogoByTeam);
+      const normalizedExternal = Object.fromEntries(
+        Object.entries(externalLogoByTeam).map(([k, v]) => [k, normalizeLogoUrl(v)])
+      );
+      setChartLogoByTeam(normalizedExternal);
       return;
     }
     let cancelled = false;
@@ -360,7 +369,7 @@ export function AflStatsChart({
         for (const row of rows) {
           const team = row?.team ?? row;
           const name = String(team?.name ?? '').trim();
-          const logo = String(team?.logo ?? team?.image ?? '').trim();
+          const logo = normalizeLogoUrl(String(team?.logo ?? team?.image ?? ''));
           if (!name || !logo) continue;
           nextMap[normalizeTeamName(name)] = logo;
         }
