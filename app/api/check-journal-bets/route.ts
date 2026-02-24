@@ -14,6 +14,18 @@ if (!BALLDONTLIE_API_KEY) {
   throw new Error('BALLDONTLIE_API_KEY environment variable is required');
 }
 
+const GAME_TOTAL_STAT_TYPES = [
+  'total_pts',
+  'home_total',
+  'away_total',
+  'first_half_total',
+  'second_half_total',
+  'q1_total',
+  'q2_total',
+  'q3_total',
+  'q4_total',
+];
+
 function isGameFinal(game: any): boolean {
   const rawStatus = String(game?.status || '');
   const status = rawStatus.toLowerCase();
@@ -109,6 +121,41 @@ function findGameForBet(games: any[], bet: any) {
       return (homeMatch && awayOppMatch) || (awayMatch && homeOppMatch);
     }) || null
   );
+}
+
+function getGameTotalValue(game: any, statType: string, betTeam?: string): number | null {
+  const homeScore = Number(game?.home_team_score ?? 0);
+  const awayScore = Number(game?.visitor_team_score ?? 0);
+
+  switch (statType) {
+    case 'total_pts':
+      return homeScore + awayScore;
+    case 'home_total':
+      return homeScore;
+    case 'away_total':
+      return awayScore;
+    // For half/quarter totals we rely on BallDontLie period fields if present.
+    case 'first_half_total':
+      return Number(game?.home_q1 ?? 0) +
+        Number(game?.home_q2 ?? 0) +
+        Number(game?.visitor_q1 ?? 0) +
+        Number(game?.visitor_q2 ?? 0);
+    case 'second_half_total':
+      return Number(game?.home_q3 ?? 0) +
+        Number(game?.home_q4 ?? 0) +
+        Number(game?.visitor_q3 ?? 0) +
+        Number(game?.visitor_q4 ?? 0);
+    case 'q1_total':
+      return Number(game?.home_q1 ?? 0) + Number(game?.visitor_q1 ?? 0);
+    case 'q2_total':
+      return Number(game?.home_q2 ?? 0) + Number(game?.visitor_q2 ?? 0);
+    case 'q3_total':
+      return Number(game?.home_q3 ?? 0) + Number(game?.visitor_q3 ?? 0);
+    case 'q4_total':
+      return Number(game?.home_q4 ?? 0) + Number(game?.visitor_q4 ?? 0);
+    default:
+      return null;
+  }
 }
 
 function isParlayBet(bet: any): boolean {
@@ -345,8 +392,8 @@ export async function GET(request: Request) {
           continue;
         }
 
-        // Very simple game props support: moneyline + spread only (based on final score).
-        if (statType === 'moneyline' || statType === 'spread') {
+        // Game props: moneyline, spread, and totals based on final score.
+        if (statType === 'moneyline' || statType === 'spread' || GAME_TOTAL_STAT_TYPES.includes(statType)) {
           const homeScore = Number(game?.home_team_score ?? 0);
           const awayScore = Number(game?.visitor_team_score ?? 0);
           const homeTeamFull = game?.home_team?.full_name;
@@ -357,17 +404,26 @@ export async function GET(request: Request) {
           const betTeam = bet?.team;
           const isHome = betTeam === homeTeamFull || betTeam === homeTeamAbbr;
           const isAway = betTeam === awayTeamFull || betTeam === awayTeamAbbr;
-          if (!isHome && !isAway) continue;
 
-          let actualValue: number;
+          // For pure totals (not team-specific), we don't need to know which side was bet on.
+          if (!GAME_TOTAL_STAT_TYPES.includes(statType) && !isHome && !isAway) continue;
+
+          let actualValue: number | null = null;
+
           if (statType === 'moneyline') {
             actualValue = isHome ? (homeScore > awayScore ? 1 : 0) : awayScore > homeScore ? 1 : 0;
-          } else {
+          } else if (statType === 'spread') {
             // spread: positive margin if bet team wins, negative if loses
             actualValue = isHome ? homeScore - awayScore : awayScore - homeScore;
+          } else {
+            // Totals: use combined score / partial totals
+            actualValue = getGameTotalValue(game, statType, betTeam);
           }
 
-          const ou: 'over' | 'under' = overUnder === 'over' || overUnder === 'under' ? overUnder : 'over';
+          if (actualValue == null) continue;
+
+          const ou: 'over' | 'under' =
+            overUnder === 'over' || overUnder === 'under' ? overUnder : 'over';
           const ln = Number.isFinite(line) ? line : 0;
           const result = calculateUniversalBetResult(actualValue, ln, ou, statType);
 
@@ -526,8 +582,8 @@ export async function GET(request: Request) {
             continue;
           }
 
-          // Simple game prop legs: moneyline or spread based on team + score
-          if (statType === 'moneyline' || statType === 'spread') {
+          // Simple game prop legs: moneyline, spread, and totals based on team + score
+          if (statType === 'moneyline' || statType === 'spread' || GAME_TOTAL_STAT_TYPES.includes(statType)) {
             const homeScore = Number(game?.home_team_score ?? 0);
             const awayScore = Number(game?.visitor_team_score ?? 0);
             const homeTeamFull = game?.home_team?.full_name;
@@ -540,9 +596,12 @@ export async function GET(request: Request) {
               legTeam === homeTeamFull || legTeam === homeTeamAbbr;
             const isAway =
               legTeam === awayTeamFull || legTeam === awayTeamAbbr;
-            if (!isHome && !isAway) continue;
 
-            let actualValue: number;
+            // Totals do not require a specific team; other game props do.
+            if (!GAME_TOTAL_STAT_TYPES.includes(statType) && !isHome && !isAway) continue;
+
+            let actualValue: number | null = null;
+
             if (statType === 'moneyline') {
               actualValue = isHome
                 ? homeScore > awayScore
@@ -551,11 +610,15 @@ export async function GET(request: Request) {
                 : awayScore > homeScore
                 ? 1
                 : 0;
-            } else {
+            } else if (statType === 'spread') {
               actualValue = isHome
                 ? homeScore - awayScore
                 : awayScore - homeScore;
+            } else {
+              actualValue = getGameTotalValue(game, statType, legTeam);
             }
+
+            if (actualValue == null) continue;
 
             const ou: 'over' | 'under' =
               overUnder === 'over' || overUnder === 'under' ? overUnder : 'over';

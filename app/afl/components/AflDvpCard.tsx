@@ -15,6 +15,7 @@ const DVP_METRICS = [
 ] as const;
 
 const AFL_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
+const SEASON_OPTIONS = [2025, 2026] as const;
 const DVP_CACHE_TTL = 2 * 60 * 1000;
 const dvpBatchCache = new Map<string, { data: DvpBatchResponse; timestamp: number }>();
 
@@ -118,6 +119,7 @@ export default function AflDvpCard({
   logoByTeam: Record<string, string>;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [perStat, setPerStat] = useState<Record<string, number | null>>({});
@@ -140,7 +142,7 @@ export default function AflDvpCard({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/afl/fantasy-positions?season=${season}&player=${encodeURIComponent(name)}`);
+        const res = await fetch(`/api/afl/fantasy-positions?season=${selectedSeason}&player=${encodeURIComponent(name)}`);
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         const rows = Array.isArray(json?.players) ? (json.players as FantasyPositionRow[]) : [];
@@ -151,7 +153,7 @@ export default function AflDvpCard({
       }
     })();
     return () => { cancelled = true; };
-  }, [playerName, season]);
+  }, [playerName, selectedSeason]);
 
   useEffect(() => {
     let abort = false;
@@ -165,7 +167,7 @@ export default function AflDvpCard({
         return;
       }
 
-      const cacheKey = `${season}:${targetPos}`;
+      const cacheKey = `${selectedSeason}:${targetPos}`;
       const cached = dvpBatchCache.get(cacheKey);
       const now = Date.now();
       const isFresh = cached && (now - cached.timestamp) < DVP_CACHE_TTL;
@@ -194,7 +196,7 @@ export default function AflDvpCard({
       try {
         const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
         const res = await fetch(
-          `/api/afl/dvp/batch?season=${season}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}`
+          `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}`
         );
         const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
         if (abort) return;
@@ -227,7 +229,7 @@ export default function AflDvpCard({
     };
     run();
     return () => { abort = true; };
-  }, [oppSel, posSel, opponentTeam, season]);
+  }, [oppSel, posSel, opponentTeam, selectedSeason]);
 
   const posLabel = posSel || 'Select Position';
   const teamCount = allTeams.length || 18;
@@ -242,9 +244,26 @@ export default function AflDvpCard({
 
   return (
     <div className="mb-4 sm:mb-6 w-full min-w-0">
-      <div className="flex items-center justify-between mb-2 sm:mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2 sm:mb-2">
         <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
-        <span className="text-xs sm:text-[10px] text-gray-500 dark:text-gray-400">Current season stats</span>
+        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          {SEASON_OPTIONS.map((y) => (
+            <button
+              key={y}
+              type="button"
+              onClick={() => setSelectedSeason(y)}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                selectedSeason === y
+                  ? 'bg-purple-600 text-white'
+                  : mounted && isDark
+                    ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
       </div>
       <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} w-full min-w-0`}>
         <div className="px-3 sm:px-3 py-3 sm:py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
@@ -311,11 +330,11 @@ export default function AflDvpCard({
           </div>
         </div>
 
-        <div className={`px-3 pb-2 text-[10px] ${mounted && isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-          Team Total conceded to selected position (per team-game).
-        </div>
-
-        {error ? (
+        {selectedSeason === 2026 && (error || (posSel && !loading && Object.keys(perStat).length === 0)) ? (
+          <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            2026 stats will show once all teams have played 1 game.
+          </div>
+        ) : error ? (
           <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading DvP stats: {error}</div>
         ) : !posSel ? (
           <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>

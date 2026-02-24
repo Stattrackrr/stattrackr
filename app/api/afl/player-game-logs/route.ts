@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
+import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl } from '@/lib/aflTeamMapping';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
@@ -303,14 +303,19 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
   };
 }
 
-/** Get numeric value from advanced row; support "1%", "TOG%", "DE%" header variants. */
+/** Get numeric value from advanced row; support "1%", "TOG%", "DE%", "MG", "ITC" and common alternate headers. */
 function advNum(row: string[], headers: string[], name: string): number {
   let i = colIndex(headers, name);
   if (i < 0 && name === '1%') i = headers.findIndex((h) => /^1\s*%$|^1%$/i.test(h.trim()));
-  if (i < 0 && name === 'TOG%') i = headers.findIndex((h) => /TOG\s*%|TOG%/i.test(h.trim()));
-  if (i < 0 && (name === 'DE%' || name === 'DE')) i = headers.findIndex((h) => /^DE\s*%$|^DE%$/i.test(h.trim()) || h.trim().toUpperCase() === 'DE');
+  if (i < 0 && name === 'TOG%') i = headers.findIndex((h) => /TOG\s*%|TOG%|Time\s*on\s*Ground\s*%?/i.test(h.trim()));
+  if (i < 0 && (name === 'DE%' || name === 'DE')) i = headers.findIndex((h) => /^DE\s*%$|^DE%$|Disposal\s*Efficiency/i.test(h.trim()) || h.trim().toUpperCase() === 'DE');
   if (i < 0 && name === 'ITC') i = headers.findIndex((h) => /^ITC$|^INT$|^INTERCEPTS?$/i.test(h.trim()));
   if (i < 0 && name === 'TI5') i = headers.findIndex((h) => /^TI5$|^T5$|^TACKLES?\s*INSIDE\s*50$/i.test(h.trim()));
+  if (i < 0 && name === 'MG') i = headers.findIndex((h) => /^MG$|Metres?\s*Gained|Meters?\s*Gained/i.test(h.trim()));
+  if (i < 0 && name === 'SI') i = headers.findIndex((h) => /^SI$|Score\s*Involvements?/i.test(h.trim()));
+  if (i < 0 && name === 'CP') i = headers.findIndex((h) => /^CP$|Contested\s*Possessions?/i.test(h.trim()));
+  if (i < 0 && name === 'UP') i = headers.findIndex((h) => /^UP$|Uncontested\s*Possessions?/i.test(h.trim()));
+  if (i < 0 && name === 'ED') i = headers.findIndex((h) => /^ED$|Effective\s*Disposals?/i.test(h.trim()));
   if (i < 0) return 0;
   const v = (row[i] ?? '').trim();
   const n = parseFloat(v);
@@ -555,7 +560,12 @@ async function fetchFootyWireGameLogs(
     return { games: cached.games, height: cached.height, guernsey: cached.guernsey, player_name: playerName.trim() };
   }
   const url = footyWireGameLogUrl(teamName, playerName, season);
-  const res = await fetch(url, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+  const advUrl = footyWireGameLogUrl(teamName, playerName, season, true);
+  const fetchOpts = { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } as RequestInit['next'] };
+  const [res, advRes] = await Promise.all([
+    fetch(url, fetchOpts),
+    fetch(advUrl, fetchOpts),
+  ]);
   if (!res.ok) return null;
   const html = await res.text();
   const { headers, rows } = parseFootyWireGameLogTable(html);
@@ -566,9 +576,7 @@ async function fetchFootyWireGameLogs(
     return g;
   });
 
-  // Fetch advanced stats (CP, UP, CM, MI5, 1%, BO, TOG%, ED) and merge by row index
-  const advUrl = footyWireGameLogUrl(teamName, playerName, season, true);
-  const advRes = await fetch(advUrl, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+  // Merge advanced stats (CP, UP, CM, MI5, 1%, BO, TOG%, ED) from parallel fetch
   if (advRes.ok) {
     const advHtml = await advRes.text();
     const adv = parseFootyWireGameLogTable(advHtml);
@@ -1086,16 +1094,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
   }
 
-  // Resolve team to full name (e.g. CW -> Collingwood Magpies) for FootyWire URL
+  // Resolve team to full name (e.g. NM -> North Melbourne Kangaroos), then to FootyWire URL name.
+  // FootyWire player page slug varies: North Melbourne uses "kangaroos", GWS uses "greater-western-sydney-giants", most use hyphenated full name.
   const teamFull = teamParam?.trim()
     ? (rosterTeamToInjuryTeam(teamParam.trim()) || teamParam.trim())
     : null;
+  const teamForFootyWire = teamFull ? getFootyWireTeamNameForPlayerUrl(teamFull) : null;
   const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true';
 
   try {
     // Prefer FootyWire when team is provided (one URL per player/season, simpler)
-    if (teamFull) {
-      const fw = await fetchFootyWireGameLogs(teamFull, playerNameParam.trim(), season, includeQuarterEnrichment);
+    if (teamForFootyWire) {
+      const fw = await fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, includeQuarterEnrichment);
       if (fw && fw.games.length > 0) {
         return NextResponse.json({
           season,

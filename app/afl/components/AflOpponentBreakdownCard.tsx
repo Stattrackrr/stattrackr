@@ -33,12 +33,15 @@ export interface AflOpponentBreakdownCardProps {
  * (what they allow - disposals against, kicks against, etc.).
  * Higher OA rank = allow more = easier matchup (green). Lower rank = tougher (red).
  */
+const SEASON_OPTIONS = [2025, 2026] as const;
+
 export function AflOpponentBreakdownCard({
   isDark,
   season,
   playerName,
   lastOpponent,
 }: AflOpponentBreakdownCardProps) {
+  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
   const [oaData, setOaData] = useState<OAData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +73,7 @@ export function AflOpponentBreakdownCard({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(`/api/afl/team-rankings?season=${season}&type=oa`)
+    fetch(`/api/afl/team-rankings?season=${selectedSeason}&type=oa`)
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;
@@ -79,7 +82,8 @@ export function AflOpponentBreakdownCard({
           setOaData(null);
           return;
         }
-        setOaData({ season: json.season ?? season, teams: json.teams ?? [] });
+        const dataSeason = json.season ?? selectedSeason;
+        setOaData({ season: dataSeason, teams: json.teams ?? [] });
       })
       .catch(() => {
         if (!cancelled) {
@@ -91,7 +95,7 @@ export function AflOpponentBreakdownCard({
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [season, footywireTeam]);
+  }, [selectedSeason, footywireTeam]);
 
   /** Defence rank: 1 = hardest (red), 18 = easiest (green) */
   const getRankColor = (rank: number | null): string => {
@@ -121,11 +125,26 @@ export function AflOpponentBreakdownCard({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">
-          {oaData?.season ?? season} opponent averages
-        </span>
+        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          {SEASON_OPTIONS.map((y) => (
+            <button
+              key={y}
+              type="button"
+              onClick={() => setSelectedSeason(y)}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                selectedSeason === y
+                  ? 'bg-purple-600 text-white'
+                  : isDark
+                    ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
@@ -138,6 +157,10 @@ export function AflOpponentBreakdownCard({
 
         {loading ? (
           <div className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</div>
+        ) : selectedSeason === 2026 && (error || !teamRow || oaData?.season !== 2026) ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            2026 stats will show once all teams have played 1 game.
+          </div>
         ) : error ? (
           <div className="text-sm text-amber-600 dark:text-amber-400">{error}</div>
         ) : !teamRow ? (

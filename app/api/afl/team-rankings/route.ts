@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
   if (!cached) {
     const prev = readCachedTeamRankings(season - 1, type);
     if (prev) {
+      // Return previous season's data with its actual season so clients can show "2026 stats when ready" instead of 2025 data.
       return NextResponse.json({
         ...prev,
-        season,
         _note: `No data for ${season}; returning ${season - 1}`,
       });
     }

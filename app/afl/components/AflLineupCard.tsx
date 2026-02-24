@@ -454,7 +454,7 @@ const AflLineupCard = memo(function AflLineupCard({
             <div className="grid grid-cols-2 gap-3 xl:gap-4 min-w-0">
               {team1Players.length > 0 && (
                 <div className="min-w-0 flex flex-col">
-                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {team1Label}
                   </h4>
                   <TeamLineupList players={team1Players} isDark={isDark} prefix="1-" highlightPlayerName={selectedPlayerName} />
@@ -462,7 +462,7 @@ const AflLineupCard = memo(function AflLineupCard({
               )}
               {team2Players.length > 0 && (
                 <div className="min-w-0 flex flex-col">
-                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {team2Label}
                   </h4>
                   <TeamLineupList players={team2Players} isDark={isDark} prefix="2-" highlightPlayerName={selectedPlayerName} />

@@ -91,6 +91,23 @@ export const ROSTER_TEAM_TO_INJURY_TEAM: Record<string, string> = {
   WB: 'Western Bulldogs', WC: 'West Coast Eagles',
 };
 
+/**
+ * Official team name -> name to use in FootyWire player page URL (pg-{slug}--{player}).
+ * FootyWire slug = this string lowercased, spaces to hyphens, non-alnum stripped.
+ * Only overrides where FootyWire uses a different slug than hyphenated full name.
+ */
+const OFFICIAL_TO_FOOTYWIRE_PG_NAME: Partial<Record<string, string>> = {
+  'North Melbourne Kangaroos': 'Kangaroos',           // pg-kangaroos-- not north-melbourne-kangaroos
+  'GWS Giants': 'Greater Western Sydney Giants',      // pg-greater-western-sydney-giants-- not gws-giants
+};
+
+/** Get the team name string to use for FootyWire player game log URL (so slug matches FootyWire). */
+export function getFootyWireTeamNameForPlayerUrl(officialTeamName: string): string {
+  if (!officialTeamName || typeof officialTeamName !== 'string') return officialTeamName;
+  const override = OFFICIAL_TO_FOOTYWIRE_PG_NAME[officialTeamName.trim()];
+  return override ?? officialTeamName.trim();
+}
+
 export function rosterTeamToInjuryTeam(team: string): string | null {
   if (!team || typeof team !== 'string') return null;
   const t = team.trim();

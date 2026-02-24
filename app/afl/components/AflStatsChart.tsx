@@ -461,6 +461,7 @@ export function AflStatsChart({
         const gameDate = String(g.date ?? g.game_date ?? '');
         const value = toNumericValue(g[selectedStat]) ?? 0;
         const key = `${gameNum}-${round}-${opponent}-${idx}`;
+        const gameSeason = typeof (g as Record<string, unknown>).season === 'number' ? (g as Record<string, unknown>).season as number : season;
 
         return {
           key,
@@ -472,6 +473,7 @@ export function AflStatsChart({
           value,
           gameId: key,
           gameDate,
+          gameSeason,
           game: {
             id: key,
             date: gameDate,
@@ -480,14 +482,19 @@ export function AflStatsChart({
           },
         };
       });
-  }, [filteredGameLogs, selectedStat]);
+  }, [filteredGameLogs, selectedStat, season]);
 
   const chartData = useMemo(() => {
     if (!baseChartData.length) return [];
 
+    const thisSeasonYear = season;
+    const lastSeasonYear = season - 1;
+
     let data: typeof baseChartData;
-    if (selectedTimeframe === 'thisseason' || selectedTimeframe === 'lastseason') {
-      data = baseChartData;
+    if (selectedTimeframe === 'thisseason') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === thisSeasonYear);
+    } else if (selectedTimeframe === 'lastseason') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === lastSeasonYear);
     } else if (selectedTimeframe === 'h2h') {
       const latestOpponent = baseChartData[baseChartData.length - 1]?.opponent;
       if (!latestOpponent) data = baseChartData;
@@ -511,7 +518,7 @@ export function AflStatsChart({
       return 0;
     });
     return ordered;
-  }, [baseChartData, selectedTimeframe]);
+  }, [baseChartData, selectedTimeframe, season]);
 
   const statAverage = useMemo(() => {
     if (!chartData.length) return 0;
@@ -696,7 +703,7 @@ export function AflStatsChart({
     );
   }
 
-  if (hasSelectedPlayer && (!availableStats.length || !selectedStat || !chartData.length)) {
+  if (hasSelectedPlayer && (!availableStats.length || !selectedStat)) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">No game stat data for this player this season</p>

@@ -173,6 +173,7 @@ export default function AFLPage() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<AflPlayerRecord | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<AflGameLogRecord[]>([]);
+  const [selectedPlayerGameLogsWithQuarters, setSelectedPlayerGameLogsWithQuarters] = useState<AflGameLogRecord[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
@@ -393,18 +394,21 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
-    const quarterQuery = aflPropsMode === 'team' ? '&include_quarters=1' : '';
+    const baseUrl = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`;
+    const urlWithQuarters = `${baseUrl}&include_quarters=1`;
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        let res = await fetch(
-          `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}${quarterQuery}`
-        );
-        let data = await res.json();
+        // Fetch player props (no quarters) and game props (with quarters) in parallel so both are ready when switching modes.
+        const [resBase, resQuarters] = await Promise.all([
+          fetch(baseUrl),
+          fetch(urlWithQuarters),
+        ]);
+        let data = await resBase.json();
         if (cancelled) return;
-        if (!res.ok) {
+        if (!resBase.ok) {
           setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
           return;
         }
@@ -412,13 +416,27 @@ export default function AFLPage() {
         let games = Array.isArray(data?.games) ? data.games as Record<string, unknown>[] : [];
         // When using 2026, often no games yet; use 2025 for chart/supporting stats.
         if (games.length === 0 && season === 2026) {
-          res = await fetch(
-            `/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}${quarterQuery}`
-          );
-          data = await res.json();
+          const [res2025, res2025Q] = await Promise.all([
+            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`),
+            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_quarters=1`),
+          ]);
+          const data2025 = await res2025.json();
           if (cancelled) return;
-          if (res.ok && Array.isArray(data?.games)) {
-            games = data.games as Record<string, unknown>[];
+          if (res2025.ok && Array.isArray(data2025?.games)) {
+            games = data2025.games as Record<string, unknown>[];
+          }
+          if (res2025Q.ok) {
+            const data2025Q = await res2025Q.json();
+            if (!cancelled && Array.isArray(data2025Q?.games) && data2025Q.games.length > 0) {
+              setSelectedPlayerGameLogsWithQuarters(data2025Q.games as Record<string, unknown>[]);
+            }
+          }
+        } else {
+          if (resQuarters.ok) {
+            const dataQ = await resQuarters.json();
+            if (!cancelled && Array.isArray(dataQ?.games) && dataQ.games.length > 0) {
+              setSelectedPlayerGameLogsWithQuarters(dataQ.games as Record<string, unknown>[]);
+            }
           }
         }
         setSelectedPlayerGameLogs(games);
@@ -476,7 +494,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season, aflPropsMode]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
@@ -533,8 +551,8 @@ export default function AFLPage() {
 
   const aflTeamGamePropsLogs = useMemo(() => {
     if (aflPropsMode !== 'team') return [];
-
-    return selectedPlayerGameLogs.map((g, idx) => {
+    const source = selectedPlayerGameLogsWithQuarters.length > 0 ? selectedPlayerGameLogsWithQuarters : selectedPlayerGameLogs;
+    return source.map((g, idx) => {
       const result = String(g.result ?? '').trim();
       const scores = parseAflScoresFromResult(result);
       const parsedGoals = parseAflGoalsFromResult(result);
@@ -588,7 +606,7 @@ export default function AFLPage() {
 
       return row;
     });
-  }, [selectedPlayerGameLogs, aflPropsMode]);
+  }, [selectedPlayerGameLogs, selectedPlayerGameLogsWithQuarters, aflPropsMode]);
 
   // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
   useEffect(() => {
@@ -858,6 +876,7 @@ export default function AFLPage() {
                                     onClick={() => {
                                       setSelectedPlayer(p);
                                       setSelectedPlayerGameLogs([]);
+                                      setSelectedPlayerGameLogsWithQuarters([]);
                                       setSearchQuery('');
                                       setShowSearchDropdown(false);
                                     }}
@@ -994,12 +1013,13 @@ export default function AFLPage() {
                     </div>
                   ) : (
                     <>
-                      <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                         Supporting stats
                       </h3>
                       <AflSupportingStats
                         gameLogs={selectedPlayerGameLogs}
                         timeframe={aflChartTimeframe}
+                        season={season}
                         mainChartStat={mainChartStat}
                         supportingStatKind={supportingStatKind}
                         onSupportingStatKindChange={setSupportingStatKind}

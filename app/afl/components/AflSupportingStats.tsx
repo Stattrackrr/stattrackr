@@ -15,7 +15,7 @@ function toNumericValue(v: unknown): number | null {
   return null;
 }
 
-type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string };
+type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string; gameSeason?: number };
 
 function parseRoundIndex(round: unknown): number {
   const text = String(round ?? '').trim().toUpperCase();
@@ -34,8 +34,14 @@ function parseRoundIndex(round: unknown): number {
 }
 
 /** Apply same timeframe filter as AflStatsChart so bars match the main chart. */
-function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTimeframe): T[] {
+function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTimeframe, season?: number): T[] {
   if (!baseData.length) return [];
+  if (timeframe === 'thisseason' && season != null) {
+    return baseData.filter((row) => (row.gameSeason ?? season) === season) as T[];
+  }
+  if (timeframe === 'lastseason' && season != null) {
+    return baseData.filter((row) => (row.gameSeason ?? season - 1) === season - 1) as T[];
+  }
   if (timeframe === 'thisseason' || timeframe === 'lastseason') return baseData;
   if (timeframe === 'h2h') {
     const latestOpponent = baseData[baseData.length - 1]?.opponent;
@@ -148,6 +154,7 @@ const DEFAULT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
 interface AflSupportingStatsProps {
   gameLogs: Array<Record<string, unknown>>;
   timeframe: AflChartTimeframe;
+  season?: number;
   mainChartStat?: string;
   supportingStatKind: SupportingStatKind;
   onSupportingStatKindChange: (kind: SupportingStatKind) => void;
@@ -157,6 +164,7 @@ interface AflSupportingStatsProps {
 export function AflSupportingStats({
   gameLogs,
   timeframe,
+  season = 2026,
   mainChartStat,
   supportingStatKind,
   onSupportingStatKindChange,
@@ -347,13 +355,14 @@ export function AflSupportingStats({
       const free_kicks_against = Math.max(0, toNumericValue(g.free_kicks_against) ?? 0);
       const one_percenters = Math.max(0, toNumericValue(g.one_percenters) ?? 0);
       const clangers = Math.max(0, toNumericValue(g.clangers) ?? 0);
-      return { key, xKey: `G${gameNum}`, tickLabel: opponent, round, opponent, tog, tackles, goals, goal_assists, disposals, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50, contested_marks, meters_gained, intercepts, free_kicks_for, contested_possessions, tackles_inside_50, free_kicks_against, one_percenters, clangers };
+      const gameSeason = typeof (g as Record<string, unknown>).season === 'number' ? (g as Record<string, unknown>).season as number : season;
+      return { key, xKey: `G${gameNum}`, tickLabel: opponent, round, opponent, gameSeason, tog, tackles, goals, goal_assists, disposals, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50, contested_marks, meters_gained, intercepts, free_kicks_for, contested_possessions, tackles_inside_50, free_kicks_against, one_percenters, clangers };
     });
-  }, [gameLogs]);
+  }, [gameLogs, season]);
 
   const filteredAll = useMemo(
-    () => applyTimeframe(baseDataAll, timeframe),
-    [baseDataAll, timeframe]
+    () => applyTimeframe(baseDataAll, timeframe, season),
+    [baseDataAll, timeframe, season]
   );
 
   const averagesByStat = useMemo(() => {
@@ -467,6 +476,20 @@ export function AflSupportingStats({
                         ? 'No clangers data'
                 : `No ${supportingStatKind} data`;
 
+  /** Stats that often come only from advanced/supplementary source; show "No data" when all zeros but other stats exist. */
+  const advancedSourceStatKinds: SupportingStatKind[] = [
+    'tog',
+    'meters_gained',
+    'intercepts',
+    'contested_possessions',
+    'contested_marks',
+    'marks_inside_50',
+    'one_percenters',
+    'tackles_inside_50',
+    'effective_disposals',
+    'disposal_efficiency',
+  ];
+
   const formatAvg = (kind: SupportingStatKind) => {
     const v =
       kind === 'tog'
@@ -511,6 +534,40 @@ export function AflSupportingStats({
                               ? averagesByStat.one_percenters
                               : averagesByStat.clangers;
     if (v == null || !Number.isFinite(v)) return '—';
+    const hasCoreStats =
+      (averagesByStat.kicks != null && averagesByStat.kicks > 0) ||
+      (averagesByStat.handballs != null && averagesByStat.handballs > 0) ||
+      (averagesByStat.disposals != null && averagesByStat.disposals > 0);
+    const isAllZerosForKind =
+      kind === 'tog'
+        ? filteredAll.every((r) => r.tog === 0)
+        : kind === 'meters_gained'
+          ? filteredAll.every((r) => r.meters_gained === 0)
+          : kind === 'intercepts'
+            ? filteredAll.every((r) => r.intercepts === 0)
+            : kind === 'contested_possessions'
+              ? filteredAll.every((r) => r.contested_possessions === 0)
+              : kind === 'contested_marks'
+                ? filteredAll.every((r) => r.contested_marks === 0)
+                : kind === 'marks_inside_50'
+                  ? filteredAll.every((r) => r.marks_inside_50 === 0)
+                  : kind === 'one_percenters'
+                    ? filteredAll.every((r) => r.one_percenters === 0)
+                    : kind === 'tackles_inside_50'
+                      ? filteredAll.every((r) => r.tackles_inside_50 === 0)
+                      : kind === 'effective_disposals'
+                        ? filteredAll.every((r) => r.effective_disposals === 0)
+                        : kind === 'disposal_efficiency'
+                          ? filteredAll.every((r) => r.disposal_efficiency === 0)
+                          : false;
+    if (
+      hasCoreStats &&
+      advancedSourceStatKinds.includes(kind) &&
+      v === 0 &&
+      isAllZerosForKind
+    ) {
+      return 'No data';
+    }
     if (kind === 'tog' || kind === 'disposal_efficiency') return `${v.toFixed(1)}%`;
     return v.toFixed(1);
   };
