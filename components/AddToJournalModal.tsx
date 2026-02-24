@@ -1323,9 +1323,6 @@ export default function AddToJournalModal({
     setError('');
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       if (isParlayMode) {
         // Handle parlay submission
         // Use user-entered parlay odds instead of calculating
@@ -1378,37 +1375,47 @@ export default function AddToJournalModal({
           variantLabel: sel.variantLabel || null, // Include variant label for PrizePicks
         }));
 
-        const { error: insertError } = await (supabase
-          .from('bets') as any)
-          .insert({
-            user_id: user.id,
-            date: parlaySelections[0].gameDate, // Use first selection's date
-            sport: 'NBA',
-            market,
-            selection,
-            stake: (() => {
-              // Convert units to money if preferred input is units
-              let finalStake = parseFloat(stake);
-              if (preferredJournalInput === 'units' && unitSize && unitSize > 0) {
-                if (unitType === 'percent' && bankroll && bankroll > 0) {
-                  // Percentage-based: units * (bankroll * unitSize / 100)
-                  finalStake = finalStake * (bankroll * unitSize / 100);
-                } else if (unitType === 'value') {
-                  // Value-based: units * unitSize
-                  finalStake = finalStake * unitSize;
-                }
-              }
-              return finalStake;
-            })(),
-            currency,
-            odds: combinedOdds,
-            result: 'pending',
-            status: 'pending',
-            bookmaker: bookmakers.length > 0 ? JSON.stringify(bookmakers) : null,
-            parlay_legs: parlayLegs, // Store structured leg data for efficient resolution
-          });
+        const parlayStake = (() => {
+          // Convert units to money if preferred input is units
+          let finalStake = parseFloat(stake);
+          if (preferredJournalInput === 'units' && unitSize && unitSize > 0) {
+            if (unitType === 'percent' && bankroll && bankroll > 0) {
+              // Percentage-based: units * (bankroll * unitSize / 100)
+              finalStake = finalStake * (bankroll * unitSize / 100);
+            } else if (unitType === 'value') {
+              // Value-based: units * unitSize
+              finalStake = finalStake * unitSize;
+            }
+          }
+          return finalStake;
+        })();
 
-        if (insertError) throw insertError;
+        const parlayBetPayload = {
+          date: parlaySelections[0].gameDate, // Use first selection's date
+          sport: 'NBA',
+          market,
+          selection,
+          stake: parlayStake,
+          currency,
+          odds: combinedOdds,
+          result: 'pending',
+          status: 'pending',
+          bookmaker: bookmakers.length > 0 ? JSON.stringify(bookmakers) : null,
+          parlay_legs: parlayLegs, // Store structured leg data for efficient resolution
+        };
+
+        const response = await fetch('/api/journal/add-bet', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: 'parlay', bet: parlayBetPayload }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to add parlay to journal');
+        }
       } else {
         // Handle single bet submission
         const statOptions = isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
@@ -1469,31 +1476,39 @@ export default function AddToJournalModal({
           }
         }
 
-        const { error: insertError } = await (supabase
-          .from('bets') as any)
-          .insert({
-            user_id: user.id,
-            date: gameDate,
-            sport: 'NBA',
-            market,
-            selection,
-            stake: finalStake,
-            currency,
-            odds: finalOdds,
-            result: 'pending',
-            player_id: playerId,
-            player_name: playerName,
-            team: betTeam, // Use the actual team that was bet on (for moneylines/spreads)
-            opponent: betOpponent, // Use the opponent of the team that was bet on
-            stat_type: statType,
-            line: finalLine,
-            over_under: overUnder,
-            game_date: gameDate,
-            status: 'pending',
-            bookmaker: bookmakerName,
-          });
+        const singleBetPayload = {
+          date: gameDate,
+          sport: 'NBA',
+          market,
+          selection,
+          stake: finalStake,
+          currency,
+          odds: finalOdds,
+          result: 'pending',
+          player_id: playerId,
+          player_name: playerName,
+          team: betTeam, // Use the actual team that was bet on (for moneylines/spreads)
+          opponent: betOpponent, // Use the opponent of the team that was bet on
+          stat_type: statType,
+          line: finalLine,
+          over_under: overUnder,
+          game_date: gameDate,
+          status: 'pending',
+          bookmaker: bookmakerName,
+        };
 
-        if (insertError) throw insertError;
+        const response = await fetch('/api/journal/add-bet', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: 'single', bet: singleBetPayload }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to add bet to journal');
+        }
       }
 
       // Show success message

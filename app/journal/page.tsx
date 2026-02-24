@@ -308,51 +308,7 @@ function JournalContent() {
     }
   };
   
-  // Expose manual trigger function to window for testing
-  useEffect(() => {
-    (window as any).checkJournalBets = async (recalculate = false) => {
-      console.log(`🔄 Manually triggering check-journal-bets${recalculate ? ' (recalculate mode)' : ''}...`);
-      try {
-        const response = await fetch(`/api/check-journal-bets${recalculate ? '?recalculate=true' : ''}`, {
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          const text = await response.text();
-          console.error('❌ Failed:', response.status, response.statusText);
-          console.error('Response:', text);
-          return;
-        }
-        
-        const data = await response.json();
-        console.log('✅ Response:', data);
-        console.log(`📊 Updated ${data.updated || 0} bet(s)`);
-        
-        // Refresh bets
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const BATCH_SIZE = 200;
-          const { data: refreshedBets, count } = await supabase
-            .from('bets')
-            .select('*', { count: 'exact' })
-            .eq('user_id', session.user.id)
-            .order('date', { ascending: false })
-            .limit(BATCH_SIZE);
-          
-          if (refreshedBets) {
-            setBets(refreshedBets);
-            setHasMoreBets((count || 0) > BATCH_SIZE);
-            console.log('✅ Bets refreshed');
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error:', error);
-      }
-    };
-    
-    console.log('💡 To manually check journal bets, run: checkJournalBets() or checkJournalBets(true) for recalculate mode');
-    console.log('📝 Server-side logs (with detailed debugging) appear in your terminal where "npm run dev" is running');
-  }, []);
+  // Previously exposed a manual checkJournalBets helper on window; removed as part of resetting the journal resolving system.
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
   const [dateRange, setDateRange] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
     if (typeof window !== 'undefined') {
@@ -862,7 +818,7 @@ function JournalContent() {
           }
         }
         
-        // Fetch bets immediately (don't wait for check-journal-bets)
+        // Fetch bets immediately
         // OPTIMIZATION: Explicitly filter by user_id and order by date DESC for better index usage
         // RLS handles security, but explicit filter helps query planner
         // EGRESS OPTIMIZATION: Limit to last 200 bets initially to reduce data transfer
@@ -891,48 +847,6 @@ function JournalContent() {
         
         // Expose loadMoreBets to window for testing
         (window as any).loadMoreBets = loadMoreBets;
-
-        // Run check-journal-bets in background (non-blocking) to update completed games
-        // This will refresh the data after the page loads
-        fetch('/api/check-journal-bets', {
-          credentials: 'include',
-        })
-          .then(async (response) => {
-            if (!response.ok) {
-              // Silently handle 401 (Unauthorized) - expected if user is not logged in
-              // Only log other errors in development
-              if (response.status !== 401) {
-                console.error('[Journal] check-journal-bets failed:', response.status, response.statusText);
-              }
-              return;
-            }
-            const data = await response.json();
-            console.log('[Journal] ✅ check-journal-bets response:', JSON.stringify(data, null, 2));
-            
-            // Refresh bets after check completes to show updated results
-            if (isMounted) {
-              const { data: { session: refreshSession } } = await supabase.auth.getSession();
-              if (refreshSession?.user) {
-                const BATCH_SIZE = 200;
-                const { data: refreshedBets, count } = await supabase
-                  .from('bets')
-                  .select('*', { count: 'exact' })
-                  .eq('user_id', refreshSession.user.id)
-                  .order('date', { ascending: false })
-                  .limit(BATCH_SIZE);
-              
-                if (isMounted && refreshedBets) {
-                  setBets(refreshedBets);
-                  setHasMoreBets((count || 0) > BATCH_SIZE);
-                }
-              }
-            }
-          })
-          .catch((error) => {
-            // Silently handle errors - this is a non-blocking background operation
-            // Only log in development for debugging
-            console.error('[Journal] check-journal-bets error (non-critical):', error);
-          });
       } catch (error) {
         console.error('Error checking subscription:', error);
         // If we have a cached active subscription, keep it (never log out active subscribers)
@@ -960,29 +874,12 @@ function JournalContent() {
       }
     }, 5 * 60 * 1000); // 5 minutes
     
-    // Periodic refresh of bets every 10 minutes to check for completed games
+    // Periodic refresh of bets every 10 minutes
     let betsRefreshInterval: NodeJS.Timeout | null = null;
     betsRefreshInterval = setInterval(async () => {
       if (isMounted) {
         try {
-          // Trigger check-journal-bets to update completed games
-          // Debug logging removed('[Journal] Periodic refresh: calling /api/check-journal-bets...');
-          const response = await fetch('/api/check-journal-bets', {
-            credentials: 'include', // Include cookies for authentication
-          });
-          
-          // Silently handle 401 (Unauthorized) - expected if user is not logged in
-          if (!response.ok && response.status !== 401) {
-            console.warn('[Journal] Periodic refresh failed:', response.status);
-            return;
-          }
-          
-          if (response.ok) {
-            const data = await response.json();
-            // Debug logging removed('[Journal] Periodic refresh response:', data);
-          }
-          
-          // Then refresh bets from database
+          // Refresh bets from database
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user && isMounted) {
             const BATCH_SIZE = 200;
