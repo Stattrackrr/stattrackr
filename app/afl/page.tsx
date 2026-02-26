@@ -7,10 +7,11 @@ import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflS
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import AflLeagueRankingCard from '@/app/afl/components/AflLeagueRankingCard';
+import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
-import { rosterTeamToInjuryTeam, opponentToOfficialTeamName } from '@/lib/aflTeamMapping';
+import { rosterTeamToInjuryTeam, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -23,6 +24,27 @@ type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
 
+const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
+  disposals: 'disposals',
+  kicks: 'kicks',
+  marks: 'marks',
+  goals: 'goals',
+  tackles: 'tackles',
+  clearances: 'clearances',
+  inside_50s: 'inside_50s',
+};
+
+const CHART_STAT_TO_OA_CODE: Record<string, string> = {
+  disposals: 'D',
+  kicks: 'K',
+  handballs: 'HB',
+  marks: 'M',
+  goals: 'G',
+  tackles: 'T',
+  clearances: 'CL',
+  inside_50s: 'I50',
+};
+
 type PersistedAflPageState = {
   selectedPlayer: AflPlayerRecord | null;
   aflPropsMode: 'player' | 'team';
@@ -30,6 +52,7 @@ type PersistedAflPageState = {
   aflLowerTab: 'lineup' | 'injuries';
   aflChartTimeframe: AflChartTimeframe;
   withWithoutMode: 'with' | 'without';
+  aflGameFilters?: AflGameFiltersState | null;
 };
 
 function normalizeTeamNameForLogo(value: string): string {
@@ -195,6 +218,13 @@ export default function AFLPage() {
     }
   }, [aflPropsMode]);
   const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
+  const [aflGameFilters, setAflGameFilters] = useState<AflGameFiltersState>(() => ({
+    ...DEFAULT_AFL_GAME_FILTERS,
+    dvpPosition: 'MID',
+  }));
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [aflFilterDataDvp, setAflFilterDataDvp] = useState<{ opponents: string[]; metrics: Record<string, { teamTotalRanks: Record<string, number> }> } | null>(null);
+  const [aflFilterDataOa, setAflFilterDataOa] = useState<{ teams: Array<{ team: string; stats?: Record<string, number | string | null> }> } | null>(null);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
@@ -248,10 +278,31 @@ export default function AFLPage() {
       if (parsed.withWithoutMode === 'with' || parsed.withWithoutMode === 'without') {
         setWithWithoutMode(parsed.withWithoutMode);
       }
+      if (parsed.aflGameFilters && typeof parsed.aflGameFilters === 'object') {
+        const g = parsed.aflGameFilters as AflGameFiltersState;
+        setAflGameFilters({
+          dvpRankMin: g.dvpRankMin ?? null,
+          dvpRankMax: g.dvpRankMax ?? null,
+          dvpPosition: typeof g.dvpPosition === 'string' ? g.dvpPosition : 'MID',
+          dvpMetric: typeof g.dvpMetric === 'string' ? g.dvpMetric : 'disposals',
+          opponentRankMin: g.opponentRankMin ?? null,
+          opponentRankMax: g.opponentRankMax ?? null,
+          opponentStat: typeof g.opponentStat === 'string' ? g.opponentStat : 'D',
+          togMin: g.togMin ?? null,
+          togMax: g.togMax ?? null,
+        });
+      }
     } catch {
       // Ignore malformed local state.
     }
   }, []);
+
+  // Sync game filter DVP position to selected player when player changes.
+  useEffect(() => {
+    if (selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))) {
+      setAflGameFilters((prev) => ({ ...prev, dvpPosition: String(selectedPlayer!.position) }));
+    }
+  }, [selectedPlayer?.id]);
 
   // Persist AFL page context as user navigates tabs/filters/players.
   useEffect(() => {
@@ -262,13 +313,14 @@ export default function AFLPage() {
       aflLowerTab,
       aflChartTimeframe,
       withWithoutMode,
+      aflGameFilters,
     };
     try {
       localStorage.setItem(AFL_PAGE_STATE_KEY, JSON.stringify(payload));
     } catch {
       // Ignore localStorage write failures.
     }
-  }, [selectedPlayer, aflPropsMode, aflRightTab, aflLowerTab, aflChartTimeframe, withWithoutMode]);
+  }, [selectedPlayer, aflPropsMode, aflRightTab, aflLowerTab, aflChartTimeframe, withWithoutMode, aflGameFilters]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -411,6 +463,7 @@ export default function AFLPage() {
         if (cancelled) return;
         if (!resBase.ok) {
           setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
+          setSelectedPlayerGameLogs([]);
           return;
         }
 
@@ -443,6 +496,7 @@ export default function AFLPage() {
         setSelectedPlayerGameLogs(games);
         if (games.length === 0) {
           setLastStatsError('No game logs found for this player/season');
+          setStatsLoadingForPlayer(false);
           return;
         }
         const latest = games[games.length - 1];
@@ -490,6 +544,11 @@ export default function AFLPage() {
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
+      } catch (e) {
+        if (!cancelled) {
+          setLastStatsError(e instanceof Error ? e.message : 'Failed to load game logs');
+          setSelectedPlayerGameLogs([]);
+        }
       } finally {
         if (!cancelled) setStatsLoadingForPlayer(false);
       }
@@ -608,6 +667,173 @@ export default function AFLPage() {
       return row;
     });
   }, [selectedPlayerGameLogs, selectedPlayerGameLogsWithQuarters, aflPropsMode]);
+
+  // Fetch DVP batch and OA for game filters (player mode only). Use filter's dvpPosition so changing the dropdown refetches.
+  const dvpSeason = Math.min(season, 2025);
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !selectedPlayer || selectedPlayerGameLogs.length === 0) {
+      setAflFilterDataDvp(null);
+      setAflFilterDataOa(null);
+      return;
+    }
+    const pos = ['DEF', 'MID', 'FWD', 'RUC'].includes(aflGameFilters.dvpPosition) ? aflGameFilters.dvpPosition : 'MID';
+    let cancelled = false;
+    Promise.all([
+      fetch(`/api/afl/dvp/batch?season=${dvpSeason}&position=${pos}&stats=disposals,kicks,marks,goals,tackles,clearances,inside_50s`).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/afl/team-rankings?season=${dvpSeason}&type=oa`).then((r) => r.ok ? r.json() : null),
+    ]).then(([dvpRes, oaRes]) => {
+      if (cancelled) return;
+      if (dvpRes?.success && dvpRes?.metrics) {
+        setAflFilterDataDvp({ opponents: dvpRes.opponents || [], metrics: dvpRes.metrics });
+      } else {
+        setAflFilterDataDvp(null);
+      }
+      if (oaRes?.teams?.length) {
+        setAflFilterDataOa({ teams: oaRes.teams });
+      } else {
+        setAflFilterDataOa(null);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setAflFilterDataDvp(null);
+        setAflFilterDataOa(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [aflPropsMode, selectedPlayer?.id, selectedPlayerGameLogs.length, dvpSeason, aflGameFilters.dvpPosition]);
+
+  // OA stat code -> game log key for fallback rankings from player's own games
+  const OA_STAT_TO_GAME_KEY: Record<string, string> = {
+    D: 'disposals',
+    K: 'kicks',
+    HB: 'handballs',
+    M: 'marks',
+    G: 'goals',
+    T: 'tackles',
+    CL: 'clearances',
+    I50: 'inside_50s',
+  };
+
+  // Per-game filter data for the current player's games (DVP rank, opponent rank, TOG). Use API when available, else stale rankings from player's game log.
+  const perGameFilterData = useMemo((): AflGameFilterDataItem[] | null => {
+    if (!selectedPlayerGameLogs.length) return null;
+    const dvp = aflFilterDataDvp;
+    const oa = aflFilterDataOa;
+    const metric = CHART_STAT_TO_DVP_METRIC[mainChartStat] ?? aflGameFilters.dvpMetric ?? 'disposals';
+    const oaStat = CHART_STAT_TO_OA_CODE[mainChartStat] ?? aflGameFilters.opponentStat ?? 'D';
+
+    const dvpRanksByOpp: Record<string, number> = {};
+    if (dvp?.metrics?.[metric]?.teamTotalRanks) {
+      Object.assign(dvpRanksByOpp, dvp.metrics[metric].teamTotalRanks);
+    }
+
+    const oaRankByTeam: Record<string, number> = {};
+    if (oa?.teams?.length && oaStat) {
+      const withStat = oa.teams
+        .map((t) => ({ team: String(t.team ?? '').toLowerCase(), val: Number(t.stats?.[oaStat] ?? NaN) }))
+        .filter((x) => Number.isFinite(x.val));
+      withStat.sort((a, b) => a.val - b.val);
+      withStat.forEach((x, i) => { oaRankByTeam[x.team] = i + 1; });
+    }
+
+    // Stale rankings from player's own game log: rank opponents by average stat in games vs them (lowest avg = rank 1 = toughest).
+    const gameKeyForDvp = metric; // disposals, kicks, etc.
+    const gameKeyForOa = OA_STAT_TO_GAME_KEY[oaStat] ?? 'disposals';
+    const oppToSumCount: Record<string, { sum: number; count: number }> = {};
+    for (const g of selectedPlayerGameLogs) {
+      const opp = String((g as Record<string, unknown>)?.opponent ?? '').trim();
+      if (!opp) continue;
+      const norm = opp.toLowerCase();
+      const valDvp = Number((g as Record<string, unknown>)?.[gameKeyForDvp]);
+      const valOa = Number((g as Record<string, unknown>)?.[gameKeyForOa]);
+      if (!oppToSumCount[norm]) oppToSumCount[norm] = { sum: 0, count: 0 };
+      if (Number.isFinite(valDvp)) {
+        oppToSumCount[norm].sum += valDvp;
+        oppToSumCount[norm].count += 1;
+      }
+    }
+    const staleDvpRanks: Record<string, number> = {};
+    const entriesDvp = Object.entries(oppToSumCount)
+      .map(([opp, { sum, count }]) => ({ opp, avg: count > 0 ? sum / count : NaN }))
+      .filter((x) => Number.isFinite(x.avg));
+    entriesDvp.sort((a, b) => a.avg - b.avg);
+    entriesDvp.forEach(({ opp }, i) => { staleDvpRanks[opp] = i + 1; });
+
+    const oppToSumCountOa: Record<string, { sum: number; count: number }> = {};
+    for (const g of selectedPlayerGameLogs) {
+      const opp = String((g as Record<string, unknown>)?.opponent ?? '').trim();
+      if (!opp) continue;
+      const norm = opp.toLowerCase();
+      const val = Number((g as Record<string, unknown>)?.[gameKeyForOa]);
+      if (!oppToSumCountOa[norm]) oppToSumCountOa[norm] = { sum: 0, count: 0 };
+      if (Number.isFinite(val)) {
+        oppToSumCountOa[norm].sum += val;
+        oppToSumCountOa[norm].count += 1;
+      }
+    }
+    const staleOppRanks: Record<string, number> = {};
+    const entriesOa = Object.entries(oppToSumCountOa)
+      .map(([opp, { sum, count }]) => ({ opp, avg: count > 0 ? sum / count : NaN }))
+      .filter((x) => Number.isFinite(x.avg));
+    entriesOa.sort((a, b) => a.avg - b.avg);
+    entriesOa.forEach(({ opp }, i) => { staleOppRanks[opp] = i + 1; });
+
+    return selectedPlayerGameLogs.map((g, gameIndex) => {
+      const oppRaw = String((g as Record<string, unknown>)?.opponent ?? '').trim();
+      const oppFooty = opponentToFootywireTeam(oppRaw) || oppRaw;
+      const oppNorm = oppRaw.toLowerCase();
+      const dvpRank =
+        dvpRanksByOpp[oppFooty] ?? dvpRanksByOpp[oppNorm] ?? staleDvpRanks[oppNorm] ?? null;
+      const opponentRank =
+        oaRankByTeam[oppNorm] ?? oaRankByTeam[oppFooty?.toLowerCase() ?? ''] ?? staleOppRanks[oppNorm] ?? null;
+      const togRaw = (g as Record<string, unknown>)?.percent_played;
+      const tog = typeof togRaw === 'number' && Number.isFinite(togRaw) ? togRaw : null;
+      return { gameIndex, opponent: oppRaw, dvpRank, opponentRank, tog };
+    });
+  }, [selectedPlayerGameLogs, aflFilterDataDvp, aflFilterDataOa, mainChartStat, aflGameFilters.dvpMetric, aflGameFilters.opponentStat]);
+
+  // Apply game filters to get the list of games used for chart and supporting stats.
+  const filteredPlayerGameLogs = useMemo(() => {
+    const withSourceIndex = (logs: AflGameLogRecord[]) =>
+      logs.map((g, i) => ({ ...(g as Record<string, unknown>), __aflGameIndex: i }));
+
+    if (aflPropsMode !== 'player' || !perGameFilterData?.length) return withSourceIndex(selectedPlayerGameLogs);
+    const f = aflGameFilters;
+    const hasDvp = f.dvpRankMin != null || f.dvpRankMax != null;
+    const hasOpp = f.opponentRankMin != null || f.opponentRankMax != null;
+    const hasTog = f.togMin != null || f.togMax != null;
+    if (!hasDvp && !hasOpp && !hasTog) return withSourceIndex(selectedPlayerGameLogs);
+
+    // When a filter is active, only include games that have that filter's data AND are in range. Exclude games missing data so the chart actually updates (e.g. DVP filter only shows games with DVP rank in range).
+    const indices = new Set(
+      perGameFilterData
+        .filter((row) => {
+          if (hasDvp) {
+            if (row.dvpRank == null) return false;
+            if (f.dvpRankMin != null && row.dvpRank < f.dvpRankMin) return false;
+            if (f.dvpRankMax != null && row.dvpRank > f.dvpRankMax) return false;
+          }
+          if (hasOpp) {
+            if (row.opponentRank == null) return false;
+            if (f.opponentRankMin != null && row.opponentRank < f.opponentRankMin) return false;
+            if (f.opponentRankMax != null && row.opponentRank > f.opponentRankMax) return false;
+          }
+          if (hasTog) {
+            if (row.tog == null) return false;
+            if (f.togMin != null && row.tog < f.togMin) return false;
+            if (f.togMax != null && row.tog > f.togMax) return false;
+          }
+          return true;
+        })
+        .map((row) => row.gameIndex)
+    );
+    const filtered = selectedPlayerGameLogs
+      .map((g, i) => ({ ...(g as Record<string, unknown>), __aflGameIndex: i }))
+      .filter((g) => indices.has(Number((g as Record<string, unknown>).__aflGameIndex)));
+    // If filters excluded everything but we have games, show all games (avoids "no data" when only filter data was missing).
+    if (filtered.length === 0 && selectedPlayerGameLogs.length > 0) return withSourceIndex(selectedPlayerGameLogs);
+    return filtered;
+  }, [aflPropsMode, selectedPlayerGameLogs, perGameFilterData, aflGameFilters]);
 
   // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
   useEffect(() => {
@@ -878,6 +1104,7 @@ export default function AFLPage() {
                                       setSelectedPlayer(p);
                                       setSelectedPlayerGameLogs([]);
                                       setSelectedPlayerGameLogsWithQuarters([]);
+                                      setStatsLoadingForPlayer(true);
                                       setSearchQuery('');
                                       setShowSearchDropdown(false);
                                     }}
@@ -969,7 +1196,7 @@ export default function AFLPage() {
                   ) : (
                     <AflStatsChart
                       stats={selectedPlayer ?? {}}
-                      gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
+                      gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : filteredPlayerGameLogs}
                       isDark={!!mounted && isDark}
                       logoByTeam={logoByTeam}
                       isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
@@ -985,6 +1212,12 @@ export default function AFLPage() {
                       selectedTimeframe={aflChartTimeframe}
                       onTimeframeChange={setAflChartTimeframe}
                       onSelectedStatChange={setMainChartStat}
+                      showAdvancedFilters={aflPropsMode === 'player' ? showAdvancedFilters : false}
+                      setShowAdvancedFilters={aflPropsMode === 'player' ? setShowAdvancedFilters : undefined}
+                      aflGameFilters={aflPropsMode === 'player' ? aflGameFilters : undefined}
+                      setAflGameFilters={aflPropsMode === 'player' ? setAflGameFilters : undefined}
+                      perGameFilterData={aflPropsMode === 'player' ? perGameFilterData : null}
+                      playerPositionForFilters={aflPropsMode === 'player' && selectedPlayer?.position ? String(selectedPlayer.position) : null}
                     />
                   )}
                 </div>
@@ -1018,7 +1251,7 @@ export default function AFLPage() {
                         Supporting stats
                       </h3>
                       <AflSupportingStats
-                        gameLogs={selectedPlayerGameLogs}
+                        gameLogs={filteredPlayerGameLogs}
                         timeframe={aflChartTimeframe}
                         season={season}
                         mainChartStat={mainChartStat}

@@ -5,6 +5,14 @@ import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
+import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
+
+type AflAdvancedFilterKey = 'dvp_rank' | 'opponent_rank' | 'tog' | null;
+const AFL_ADVANCED_FILTER_OPTIONS: { key: AflAdvancedFilterKey; label: string }[] = [
+  { key: 'dvp_rank', label: 'DVP Rank' },
+  { key: 'opponent_rank', label: 'Opponent Rank' },
+  { key: 'tog', label: 'TOG %' },
+];
 
 const STAT_PRIORITY = [
   'moneyline',
@@ -279,6 +287,13 @@ interface AflStatsChartProps {
   onTimeframeChange?: (timeframe: AflChartTimeframe) => void;
   /** Called when the selected stat changes (e.g. to show TOG/Kicks/Handballs toggle when Disposals). */
   onSelectedStatChange?: (stat: string) => void;
+  /** Advanced filter toggle (inline with chart, like NBA). */
+  showAdvancedFilters?: boolean;
+  setShowAdvancedFilters?: (show: boolean) => void;
+  aflGameFilters?: import('@/app/afl/components/AflGameFilters').AflGameFiltersState;
+  setAflGameFilters?: (f: import('@/app/afl/components/AflGameFilters').AflGameFiltersState) => void;
+  perGameFilterData?: import('@/app/afl/components/AflGameFilters').AflGameFilterDataItem[] | null;
+  playerPositionForFilters?: string | null;
 }
 
 export function AflStatsChart({
@@ -296,11 +311,18 @@ export function AflStatsChart({
   selectedTimeframe: controlledTimeframe,
   onTimeframeChange,
   onSelectedStatChange,
+  showAdvancedFilters = false,
+  setShowAdvancedFilters,
+  aflGameFilters,
+  setAflGameFilters,
+  perGameFilterData = null,
+  playerPositionForFilters = null,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
   const [internalTimeframe, setInternalTimeframe] =
     useState<AflChartTimeframe>('last10');
+  const [selectedAdvancedFilter, setSelectedAdvancedFilter] = useState<AflAdvancedFilterKey>(null);
   const selectedTimeframe = controlledTimeframe ?? internalTimeframe;
   const setSelectedTimeframe = useCallback(
     (t: AflChartTimeframe) => {
@@ -462,6 +484,10 @@ export function AflStatsChart({
         const value = toNumericValue(g[selectedStat]) ?? 0;
         const key = `${gameNum}-${round}-${opponent}-${idx}`;
         const gameSeason = typeof (g as Record<string, unknown>).season === 'number' ? (g as Record<string, unknown>).season as number : season;
+        const sourceGameIndexRaw = (g as Record<string, unknown>).__aflGameIndex;
+        const sourceGameIndex = typeof sourceGameIndexRaw === 'number' && Number.isFinite(sourceGameIndexRaw)
+          ? sourceGameIndexRaw
+          : null;
 
         return {
           key,
@@ -474,6 +500,7 @@ export function AflStatsChart({
           gameId: key,
           gameDate,
           gameSeason,
+          sourceGameIndex,
           game: {
             id: key,
             date: gameDate,
@@ -519,6 +546,32 @@ export function AflStatsChart({
     });
     return ordered;
   }, [baseChartData, selectedTimeframe, season]);
+
+  const secondAxisData = useMemo(() => {
+    if (!showAdvancedFilters || !selectedAdvancedFilter || !perGameFilterData?.length) return null;
+
+    const byGameIndex = new Map<number, number | null>();
+    for (const row of perGameFilterData) {
+      const value =
+        selectedAdvancedFilter === 'dvp_rank'
+          ? row.dvpRank
+          : selectedAdvancedFilter === 'opponent_rank'
+            ? row.opponentRank
+            : row.tog;
+      byGameIndex.set(row.gameIndex, value ?? null);
+    }
+
+    return baseChartData.map((row) => {
+      const gameIndex = typeof (row as { sourceGameIndex?: unknown }).sourceGameIndex === 'number'
+        ? (row as { sourceGameIndex: number }).sourceGameIndex
+        : null;
+      return {
+        gameId: row.xKey,
+        gameDate: row.gameDate,
+        value: gameIndex != null ? (byGameIndex.get(gameIndex) ?? null) : null,
+      };
+    });
+  }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
 
   const statAverage = useMemo(() => {
     if (!chartData.length) return 0;
@@ -698,7 +751,20 @@ export function AflStatsChart({
   if (!gameLogs.length) {
     return (
       <div className="h-full w-full flex items-center justify-center p-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to see game chart</p>
+        <div className="text-center max-w-sm">
+          {hasSelectedPlayer ? (
+            <>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {isLoading ? 'Loading game data…' : 'No game data for this player'}
+              </p>
+              {apiErrorHint && !isLoading && (
+                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{apiErrorHint}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to see game chart</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -801,8 +867,144 @@ export function AflStatsChart({
               </>
             )}
           </div>
+          {setShowAdvancedFilters != null && (
+            <button
+              type="button"
+              onClick={() => {
+              if (showAdvancedFilters) setSelectedAdvancedFilter(null);
+              setShowAdvancedFilters(!showAdvancedFilters);
+            }}
+              className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative ${showAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
+            >
+              Advanced
+            </button>
+          )}
         </div>
       </div>
+
+      {showAdvancedFilters && (
+        <>
+          <div className="mb-2 sm:mb-3 flex items-center gap-3 flex-wrap">
+            {aflGameFilters != null && setAflGameFilters != null && (
+            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar min-w-0">
+              <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
+                {AFL_ADVANCED_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.key ?? 'none'}
+                    type="button"
+                    onClick={() => setSelectedAdvancedFilter(selectedAdvancedFilter === option.key ? null : option.key)}
+                    className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
+                      selectedAdvancedFilter === option.key
+                        ? 'bg-purple-600 text-white border-purple-400/30'
+                        : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+            {selectedAdvancedFilter && aflGameFilters != null && setAflGameFilters != null && (() => {
+              const f = aflGameFilters;
+              const data = perGameFilterData ?? [];
+              let min = 1;
+              let max = 18;
+              let valueMin = 1;
+              let valueMax = 18;
+              let step = 1;
+              let formatValue = (v: number) => Math.round(v).toString();
+              if (selectedAdvancedFilter === 'dvp_rank') {
+                const vals = data.map((d) => d.dvpRank).filter((r): r is number => r != null);
+                min = vals.length ? Math.min(...vals) : 1;
+                max = vals.length ? Math.max(...vals) : 18;
+                valueMin = f.dvpRankMin ?? min;
+                valueMax = f.dvpRankMax ?? max;
+              } else if (selectedAdvancedFilter === 'opponent_rank') {
+                const vals = data.map((d) => d.opponentRank).filter((r): r is number => r != null);
+                min = vals.length ? Math.min(...vals) : 1;
+                max = vals.length ? Math.max(...vals) : 18;
+                valueMin = f.opponentRankMin ?? min;
+                valueMax = f.opponentRankMax ?? max;
+              } else if (selectedAdvancedFilter === 'tog') {
+                const vals = data.map((d) => d.tog).filter((r): r is number => r != null);
+                min = vals.length ? Math.min(...vals) : 0;
+                max = vals.length ? Math.max(...vals) : 100;
+                valueMin = f.togMin ?? min;
+                valueMax = f.togMax ?? max;
+                formatValue = (v) => `${Math.round(v)}%`;
+              }
+              const slider = (
+                <RangeSlider
+                  min={min}
+                  max={max}
+                  valueMin={valueMin}
+                  valueMax={valueMax}
+                  onChange={(newMin, newMax) => {
+                    if (selectedAdvancedFilter === 'dvp_rank') setAflGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
+                    else if (selectedAdvancedFilter === 'opponent_rank') setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
+                    else if (selectedAdvancedFilter === 'tog') setAflGameFilters({ ...f, togMin: newMin, togMax: newMax });
+                  }}
+                  step={step}
+                  formatValue={formatValue}
+                />
+              );
+              return (
+                <>
+                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-12">{slider}</div>
+                </>
+              );
+            })()}
+          </div>
+          {selectedAdvancedFilter && aflGameFilters && setAflGameFilters && (() => {
+            const f = aflGameFilters;
+            const data = perGameFilterData ?? [];
+            let min = 1;
+            let max = 18;
+            let valueMin = 1;
+            let valueMax = 18;
+            let step = 1;
+            let formatValue = (v: number) => Math.round(v).toString();
+            if (selectedAdvancedFilter === 'dvp_rank') {
+              const vals = data.map((d) => d.dvpRank).filter((r): r is number => r != null);
+              min = vals.length ? Math.min(...vals) : 1;
+              max = vals.length ? Math.max(...vals) : 18;
+              valueMin = f.dvpRankMin ?? min;
+              valueMax = f.dvpRankMax ?? max;
+            } else if (selectedAdvancedFilter === 'opponent_rank') {
+              const vals = data.map((d) => d.opponentRank).filter((r): r is number => r != null);
+              min = vals.length ? Math.min(...vals) : 1;
+              max = vals.length ? Math.max(...vals) : 18;
+              valueMin = f.opponentRankMin ?? min;
+              valueMax = f.opponentRankMax ?? max;
+            } else if (selectedAdvancedFilter === 'tog') {
+              const vals = data.map((d) => d.tog).filter((r): r is number => r != null);
+              min = vals.length ? Math.min(...vals) : 0;
+              max = vals.length ? Math.max(...vals) : 100;
+              valueMin = f.togMin ?? min;
+              valueMax = f.togMax ?? max;
+              formatValue = (v) => `${Math.round(v)}%`;
+            }
+            return (
+              <div className="sm:hidden mb-2 flex justify-center px-4">
+                <RangeSlider
+                  min={min}
+                  max={max}
+                  valueMin={valueMin}
+                  valueMax={valueMax}
+                  onChange={(newMin, newMax) => {
+                    if (selectedAdvancedFilter === 'dvp_rank') setAflGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
+                    else if (selectedAdvancedFilter === 'opponent_rank') setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
+                    else if (selectedAdvancedFilter === 'tog') setAflGameFilters({ ...f, togMin: newMin, togMax: newMax });
+                  }}
+                  step={step}
+                  formatValue={formatValue}
+                />
+              </div>
+            );
+          })()}
+        </>
+      )}
 
       <div className="flex-1 min-h-0 relative">
         <SimpleChart
@@ -812,12 +1014,15 @@ export function AflStatsChart({
           bettingLine={lineValue}
           selectedStat={selectedStat}
           selectedTimeframe={selectedTimeframe}
+          secondAxisData={showAdvancedFilters ? secondAxisData : null}
+          selectedFilterForAxis={showAdvancedFilters ? selectedAdvancedFilter : null}
           customTooltip={customTooltip}
           customXAxisTick={aflXAxisTick}
           yAxisTickFormatter={(value) => String(Math.round(value))}
           teammateFilterName={teammateFilterName}
           withWithoutMode={withWithoutMode}
           clearTeammateFilter={clearTeammateFilter}
+          centerAverageOverlay={true}
         />
       </div>
     </div>

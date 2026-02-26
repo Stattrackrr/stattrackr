@@ -40,6 +40,10 @@ interface SimpleChartProps {
   customXAxisTick?: any;
   /** Optional Y-axis tick label formatter (e.g. show "-" for bottom tick in AFL chart) */
   yAxisTickFormatter?: (value: number) => string;
+  /** When true, hide the in-chart Avg + Hit overlay (e.g. when parent shows it in advanced row) */
+  hideAverageOverlay?: boolean;
+  /** When true, position the Avg + Hit overlay in the center (e.g. when AFL Advanced is open, like NBA second axis) */
+  centerAverageOverlay?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -66,6 +70,8 @@ const SimpleChart = memo(function SimpleChart({
   onExcludeBackToBackChange,
   customXAxisTick,
   yAxisTickFormatter,
+  hideAverageOverlay = false,
+  centerAverageOverlay = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -750,9 +756,9 @@ const SimpleChart = memo(function SimpleChart({
       )}
       
       {/* In-chart average + hit rate - center when second axis visible, else top right (z-[1] so dropdowns appear on top) */}
-      {averageDisplay && (
+      {averageDisplay && !hideAverageOverlay && (
         <div
-          className={`absolute -top-3 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${hasSecondAxis ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+          className={`absolute -top-3 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -938,6 +944,7 @@ const SimpleChart = memo(function SimpleChart({
                 domain={secondAxisConfig.domain}
                 ticks={limitedRightTicks}
                 tick={{ fill: isDark ? '#a855f7' : '#9333ea', fontSize: 12 }}
+                tickFormatter={(value: number) => String(Math.round(value))}
                 axisLine={false}
                 tickLine={false}
                 width={isMobile ? 30 : 70}
