@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -7,17 +8,18 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    let user: { id: string } | null = null;
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error('[journal/add-bet] Failed to get user:', userError.message);
-      return NextResponse.json({ error: 'Failed to authenticate user' }, { status: 401 });
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(token);
+      if (!tokenError && tokenUser) user = tokenUser;
     }
-
+    if (!user) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (!sessionError && session?.user) user = session.user;
+    }
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -35,13 +37,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing bet payload' }, { status: 400 });
     }
 
-    // Always enforce user_id on the server for safety
+    // Always enforce user_id on the server for safety. Use admin client so insert succeeds
+    // regardless of cookie/session context (RLS would block when auth is via Bearer token only).
     const insertPayload = {
       ...bet,
       user_id: user.id,
     };
 
-    const { error: insertError } = await supabase.from('bets').insert(insertPayload);
+    const { error: insertError } = await supabaseAdmin.from('bets').insert(insertPayload);
 
     if (insertError) {
       console.error('[journal/add-bet] Insert error:', insertError.message);

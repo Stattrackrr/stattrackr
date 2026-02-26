@@ -1323,6 +1323,12 @@ export default function AddToJournalModal({
     setError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       if (isParlayMode) {
         // Handle parlay submission
         // Use user-entered parlay odds instead of calculating
@@ -1406,9 +1412,7 @@ export default function AddToJournalModal({
 
         const response = await fetch('/api/journal/add-bet', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authHeaders,
           body: JSON.stringify({ type: 'parlay', bet: parlayBetPayload }),
         });
 
@@ -1499,9 +1503,7 @@ export default function AddToJournalModal({
 
         const response = await fetch('/api/journal/add-bet', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authHeaders,
           body: JSON.stringify({ type: 'single', bet: singleBetPayload }),
         });
 

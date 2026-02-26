@@ -6,6 +6,7 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
+import AflLeagueRankingCard from '@/app/afl/components/AflLeagueRankingCard';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
@@ -25,7 +26,7 @@ const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
 type PersistedAflPageState = {
   selectedPlayer: AflPlayerRecord | null;
   aflPropsMode: 'player' | 'team';
-  aflRightTab: 'breakdown' | 'dvp';
+  aflRightTab: 'breakdown' | 'dvp' | 'rank';
   aflLowerTab: 'lineup' | 'injuries';
   aflChartTimeframe: AflChartTimeframe;
   withWithoutMode: 'with' | 'without';
@@ -177,7 +178,7 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
-  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'dvp'>('dvp');
+  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'dvp' | 'rank'>('dvp');
   const [aflLowerTab, setAflLowerTab] = useState<'lineup' | 'injuries'>('lineup');
   const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
@@ -234,7 +235,7 @@ export default function AFLPage() {
       if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
         setAflPropsMode(parsed.aflPropsMode);
       }
-      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown') {
+      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'rank') {
         setAflRightTab(parsed.aflRightTab);
       }
       if (parsed.aflLowerTab === 'lineup' || parsed.aflLowerTab === 'injuries') {
@@ -1143,6 +1144,16 @@ export default function AFLPage() {
                         >
                           Opponent Breakdown
                         </button>
+                        <button
+                          onClick={() => setAflRightTab('rank')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'rank'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Compare
+                        </button>
                       </div>
                       <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
                         {aflRightTab === 'breakdown' && (
@@ -1154,6 +1165,15 @@ export default function AFLPage() {
                             lastOpponent={displayOpponent ?? null}
                           />
                         )}
+                        {aflRightTab === 'rank' && (
+                          <AflLeagueRankingCard
+                            isDark={!!mounted && isDark}
+                            season={season}
+                            playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            playerTeam={selectedPlayer?.team ? String(selectedPlayer.team) : null}
+                            playerStats={selectedPlayer ?? null}
+                          />
+                        )}
                         {aflPropsMode === 'player' && aflRightTab === 'dvp' && (
                           <div className="flex-1 min-h-0 overflow-y-auto">
                             <AflDvpCard
@@ -1162,6 +1182,11 @@ export default function AFLPage() {
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                               opponentTeam={displayOpponent || ''}
                               logoByTeam={logoByTeam}
+                              playerPosition={
+                                selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))
+                                  ? (selectedPlayer.position as 'DEF' | 'MID' | 'FWD' | 'RUC')
+                                  : undefined
+                              }
                             />
                           </div>
                         )}

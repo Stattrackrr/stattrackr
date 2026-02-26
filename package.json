@@ -20,6 +20,7 @@
     "list:afl-roster": "node scripts/list-afl-roster.js",
     "fetch:footywire-team-rankings": "node scripts/fetch-footywire-team-rankings.js",
     "fetch:footywire-injuries": "node scripts/fetch-footywire-injuries.js",
+    "fetch:footywire-league-player-stats": "node scripts/fetch-footywire-league-player-stats.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
     "check:prediction-data": "node scripts/check-prediction-data-sources.mjs",
     "apply:prediction-tables": "node scripts/apply-prediction-engine-tables.mjs",

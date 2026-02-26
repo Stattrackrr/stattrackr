@@ -111,12 +111,15 @@ export default function AflDvpCard({
   opponentTeam,
   season,
   logoByTeam,
+  playerPosition,
 }: {
   isDark: boolean;
   playerName: string | null;
   opponentTeam: string;
   season: number;
   logoByTeam: Record<string, string>;
+  /** Player's position from page (DEF/MID/FWD/RUC). When set, DvP uses this instead of defaulting to MID. */
+  playerPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
 }) {
   const [mounted, setMounted] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
@@ -133,10 +136,16 @@ export default function AflDvpCard({
   useEffect(() => setMounted(true), []);
   useEffect(() => setOppSel(opponentTeam || ''), [opponentTeam]);
 
+  // Prefer page's player position so DvP matches the header (e.g. DEF for Jaspa Fletcher)
   useEffect(() => {
     const name = String(playerName || '').trim();
     if (!name) {
       setPosSel(null);
+      return;
+    }
+    const posFromPage = playerPosition && AFL_POSITIONS.includes(playerPosition) ? playerPosition : null;
+    if (posFromPage) {
+      setPosSel(posFromPage);
       return;
     }
     let cancelled = false;
@@ -153,7 +162,7 @@ export default function AflDvpCard({
       }
     })();
     return () => { cancelled = true; };
-  }, [playerName, selectedSeason]);
+  }, [playerName, selectedSeason, playerPosition]);
 
   useEffect(() => {
     let abort = false;
