@@ -51,7 +51,7 @@ function getRank(players: LeaguePlayerRow[], statKey: keyof LeaguePlayerRow, val
   );
   const total = eligible.length;
   if (total === 0) return null;
-  const above = eligible.filter((p) => (p as Record<string, number>)[key] > value).length;
+  const above = eligible.filter((p) => (p as unknown as Record<string, number>)[key] > value).length;
   const rank = above + 1;
   return { rank, total };
 }
@@ -198,7 +198,7 @@ export function AflLeagueRankingCard({
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
               {RANK_STATS.map(({ key, label, playerKey }) => {
                 const rawVal = playerStats?.[playerKey];
-                const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : (playerMatch as Record<string, number>)[key];
+                const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : (playerMatch as unknown as Record<string, number>)[key];
                 const rankResult = getRank(comparePool, key as keyof LeaguePlayerRow, value, minGames);
                 if (!rankResult) return null;
                 const { rank, total } = rankResult;
