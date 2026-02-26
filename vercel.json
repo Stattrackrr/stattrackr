@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "bash scripts/vercel-ignore-build-if-only-league-stats.sh",
   "crons": [
     {
       "path": "/api/check-journal-bets",
