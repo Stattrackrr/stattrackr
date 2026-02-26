@@ -151,12 +151,7 @@ async function fetchOne(season, st) {
 
 const DEBUG_HTML = process.argv.includes('--debug-html');
 
-async function main() {
-  const year = new Date().getFullYear();
-  let season = parseInt(getArg('season', String(year)), 10) || year;
-
-  console.log(`Fetching FootyWire league player stats for ${season}...`);
-
+async function fetchSeason(season) {
   const allStats = [];
   for (const { key, st } of STAT_PAGES) {
     const { ok, html, url } = await fetchOne(season, st);
@@ -179,6 +174,22 @@ async function main() {
     }
     console.log(`  ${key}: ${rows.length} players`);
     allStats.push(rows);
+  }
+  return allStats;
+}
+
+async function main() {
+  const year = new Date().getFullYear();
+  let season = parseInt(getArg('season', String(year)), 10) || year;
+
+  console.log(`Fetching FootyWire league player stats for ${season}...`);
+  let allStats = await fetchSeason(season);
+
+  if (allStats.length === 0 && season === year && season > 2020) {
+    const fallback = season - 1;
+    console.log(`No data for ${season}; trying previous season ${fallback}...`);
+    season = fallback;
+    allStats = await fetchSeason(season);
   }
 
   const players = mergeByPlayer(allStats);
