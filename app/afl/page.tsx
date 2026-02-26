@@ -724,7 +724,24 @@ export default function AFLPage() {
 
     const dvpRanksByOpp: Record<string, number> = {};
     if (dvp?.metrics?.[metric]?.teamTotalRanks) {
-      Object.assign(dvpRanksByOpp, dvp.metrics[metric].teamTotalRanks);
+      for (const [teamRaw, rankRaw] of Object.entries(dvp.metrics[metric].teamTotalRanks)) {
+        const rank = Number(rankRaw);
+        const team = String(teamRaw ?? '').trim();
+        if (!team || !Number.isFinite(rank)) continue;
+        // Store multiple key variants so game-log opponent strings map to API rank keys reliably.
+        dvpRanksByOpp[team] = rank;
+        dvpRanksByOpp[team.toLowerCase()] = rank;
+        const footy = opponentToFootywireTeam(team);
+        if (footy) {
+          dvpRanksByOpp[footy] = rank;
+          dvpRanksByOpp[footy.toLowerCase()] = rank;
+        }
+        const official = opponentToOfficialTeamName(team) || (footy ? opponentToOfficialTeamName(footy) : null);
+        if (official) {
+          dvpRanksByOpp[official] = rank;
+          dvpRanksByOpp[official.toLowerCase()] = rank;
+        }
+      }
     }
 
     const oaRankByTeam: Record<string, number> = {};
@@ -781,9 +798,17 @@ export default function AFLPage() {
     return selectedPlayerGameLogs.map((g, gameIndex) => {
       const oppRaw = String((g as Record<string, unknown>)?.opponent ?? '').trim();
       const oppFooty = opponentToFootywireTeam(oppRaw) || oppRaw;
+      const oppOfficial = opponentToOfficialTeamName(oppRaw) || oppRaw;
       const oppNorm = oppRaw.toLowerCase();
       const dvpRank =
-        dvpRanksByOpp[oppFooty] ?? dvpRanksByOpp[oppNorm] ?? staleDvpRanks[oppNorm] ?? null;
+        dvpRanksByOpp[oppRaw] ??
+        dvpRanksByOpp[oppNorm] ??
+        dvpRanksByOpp[oppFooty] ??
+        dvpRanksByOpp[oppFooty.toLowerCase()] ??
+        dvpRanksByOpp[oppOfficial] ??
+        dvpRanksByOpp[oppOfficial.toLowerCase()] ??
+        staleDvpRanks[oppNorm] ??
+        null;
       const opponentRank =
         oaRankByTeam[oppNorm] ?? oaRankByTeam[oppFooty?.toLowerCase() ?? ''] ?? staleOppRanks[oppNorm] ?? null;
       const togRaw = (g as Record<string, unknown>)?.percent_played;
@@ -830,8 +855,6 @@ export default function AFLPage() {
     const filtered = selectedPlayerGameLogs
       .map((g, i) => ({ ...(g as Record<string, unknown>), __aflGameIndex: i }))
       .filter((g) => indices.has(Number((g as Record<string, unknown>).__aflGameIndex)));
-    // If filters excluded everything but we have games, show all games (avoids "no data" when only filter data was missing).
-    if (filtered.length === 0 && selectedPlayerGameLogs.length > 0) return withSourceIndex(selectedPlayerGameLogs);
     return filtered;
   }, [aflPropsMode, selectedPlayerGameLogs, perGameFilterData, aflGameFilters]);
 
@@ -1197,6 +1220,7 @@ export default function AFLPage() {
                     <AflStatsChart
                       stats={selectedPlayer ?? {}}
                       gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : filteredPlayerGameLogs}
+                      allGameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
                       isDark={!!mounted && isDark}
                       logoByTeam={logoByTeam}
                       isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}

@@ -44,6 +44,8 @@ interface SimpleChartProps {
   hideAverageOverlay?: boolean;
   /** When true, position the Avg + Hit overlay in the center (e.g. when AFL Advanced is open, like NBA second axis) */
   centerAverageOverlay?: boolean;
+  /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
+  secondaryRankAxisMax?: number;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -72,6 +74,7 @@ const SimpleChart = memo(function SimpleChart({
   yAxisTickFormatter,
   hideAverageOverlay = false,
   centerAverageOverlay = false,
+  secondaryRankAxisMax,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -472,11 +475,17 @@ const SimpleChart = memo(function SimpleChart({
     const dataMin = Math.min(...values);
     const dataMax = Math.max(...values);
     
-    // Special handling for DvP ranks: always use 0-30 domain (30 teams in NBA)
-    if (selectedFilterForAxis === 'dvp_rank') {
+    // Special handling for rank filters: configurable team count (NBA=30, AFL=18).
+    if (selectedFilterForAxis === 'dvp_rank' || selectedFilterForAxis === 'opponent_rank') {
+      const rankMax = Number.isFinite(secondaryRankAxisMax as number)
+        ? Math.max(1, Math.round(secondaryRankAxisMax as number))
+        : 30;
       const min = 0;
-      const max = 30;
-      const ticks = [0, 5, 10, 15, 20, 25, 30];
+      const max = rankMax;
+      const tickStep = max <= 20 ? 3 : 5;
+      const ticks: number[] = [];
+      for (let t = min; t <= max; t += tickStep) ticks.push(t);
+      if (ticks[ticks.length - 1] !== max) ticks.push(max);
       return { domain: [min, max] as [number, number], ticks, dataMin, dataMax };
     }
     
@@ -758,7 +767,7 @@ const SimpleChart = memo(function SimpleChart({
       {/* In-chart average + hit rate - center when second axis visible, else top right (z-[1] so dropdowns appear on top) */}
       {averageDisplay && !hideAverageOverlay && (
         <div
-          className={`absolute -top-3 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+          className={`absolute -top-5 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
