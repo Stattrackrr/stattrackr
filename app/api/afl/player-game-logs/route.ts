@@ -562,7 +562,7 @@ async function fetchFootyWireGameLogs(
   const url = footyWireGameLogUrl(teamName, playerName, season);
   const advUrl = footyWireGameLogUrl(teamName, playerName, season, true);
   const fetchOpts = { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } as RequestInit['next'] };
-  const [res, advRes] = await Promise.all([
+  const [res, advResInitial] = await Promise.all([
     fetch(url, fetchOpts),
     fetch(advUrl, fetchOpts),
   ]);
@@ -576,7 +576,11 @@ async function fetchFootyWireGameLogs(
     return g;
   });
 
-  // Merge advanced stats (CP, UP, CM, MI5, 1%, BO, TOG%, ED) from parallel fetch
+  // Merge advanced stats (CP, UP, CM, MI5, 1%, BO, TOG%, ED). Retry advanced fetch once on failure (helps production where first request can timeout).
+  let advRes = advResInitial;
+  if (!advRes.ok) {
+    advRes = await fetch(advUrl, fetchOpts);
+  }
   if (advRes.ok) {
     const advHtml = await advRes.text();
     const adv = parseFootyWireGameLogTable(advHtml);
@@ -602,12 +606,16 @@ async function fetchFootyWireGameLogs(
   }
 
   const { height, guernsey } = parseFootyWireProfile(html);
-  footyWireCache.set(cacheKey, {
-    expiresAt: Date.now() + FOOTYWIRE_TTL_MS,
-    games,
-    height,
-    guernsey,
-  });
+  // Only cache when we got advanced stats (advRes.ok). On production the advanced fetch can fail
+  // (timeout, blocking, rate limit); caching that would serve incomplete data for all later requests.
+  if (advRes.ok) {
+    footyWireCache.set(cacheKey, {
+      expiresAt: Date.now() + FOOTYWIRE_TTL_MS,
+      games,
+      height,
+      guernsey,
+    });
+  }
   return { games, height, guernsey, player_name: playerName.trim() };
 }
 
