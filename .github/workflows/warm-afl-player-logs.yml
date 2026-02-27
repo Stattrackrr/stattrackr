@@ -51,4 +51,4 @@ jobs:
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025' }}
-          AFL_WARM_CONCURRENCY: '12'
+          AFL_WARM_CONCURRENCY: '24'
