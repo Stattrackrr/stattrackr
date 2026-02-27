@@ -42,7 +42,7 @@ export function buildAflPlayerLogsCacheKey(params: {
   includeQuarters: boolean;
 }): string {
   const player = params.playerName.trim().toLowerCase().replace(/\s+/g, ' ');
-  const team = (params.teamForRequest || 'none').trim().toLowerCase();
+  const team = (params.teamForRequest || 'none').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   const quarters = params.includeQuarters ? '1' : '0';
   return `${AFL_CACHE_PREFIX}:${params.season}:${team}:${player}:q${quarters}`;
 }

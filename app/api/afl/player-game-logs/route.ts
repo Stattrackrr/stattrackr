@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl } from '@/lib/aflTeamMapping';
+import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl, footywireNicknameToOfficial } from '@/lib/aflTeamMapping';
 import {
   buildAflPlayerLogsCacheKey,
   getAflPlayerLogsCache,
@@ -1107,10 +1107,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
   }
 
-  // Resolve team to full name (e.g. NM -> North Melbourne Kangaroos), then to FootyWire URL name.
-  // FootyWire player page slug varies: North Melbourne uses "kangaroos", GWS uses "greater-western-sydney-giants", most use hyphenated full name.
+  // Resolve team to full name so FootyWire URL and cache key are consistent (warm script sends nickname e.g. "Cats", frontend may send "Geelong Cats").
+  // Then get the name used in FootyWire player URL (full name or override e.g. Kangaroos for North Melbourne).
   const teamFull = teamParam?.trim()
-    ? (rosterTeamToInjuryTeam(teamParam.trim()) || teamParam.trim())
+    ? (rosterTeamToInjuryTeam(teamParam.trim()) || footywireNicknameToOfficial(teamParam.trim()) || teamParam.trim())
     : null;
   const teamForFootyWire = teamFull ? getFootyWireTeamNameForPlayerUrl(teamFull) : null;
   const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true';
