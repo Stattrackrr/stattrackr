@@ -1145,7 +1145,14 @@ export async function GET(request: NextRequest) {
     // Cache-only: prod only reads cache; warm job is allowed to fetch and fill.
     if (cacheOnly) {
       const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
-      return NextResponse.json(empty, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss' } });
+      return NextResponse.json(empty, {
+        headers: {
+          ...sourceHeaders,
+          'X-AFL-Player-Logs-Source': 'cache-miss',
+          'X-AFL-Cache-Key-Base': keyBase,
+          'X-AFL-Cache-Key-Quarters': keyQuarters,
+        },
+      });
     }
     // Warm job or no cache: fetch from FootyWire
     const [fwBase, fwQuarters] = await Promise.all([
@@ -1202,7 +1209,9 @@ export async function GET(request: NextRequest) {
   // Cache-only: prod only reads cache; warm job can fetch and fill.
   if (cacheOnly) {
     const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0 };
-    return NextResponse.json(empty, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss' } });
+    return NextResponse.json(empty, {
+      headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss', 'X-AFL-Cache-Key': responseCacheKey },
+    });
   }
 
   try {
