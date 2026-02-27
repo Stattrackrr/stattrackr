@@ -1123,7 +1123,9 @@ export async function GET(request: NextRequest) {
 
   const cachedResponse = await getAflPlayerLogsCache(responseCacheKey);
   if (cachedResponse) {
-    return NextResponse.json(cachedResponse);
+    return NextResponse.json(cachedResponse, {
+      headers: { 'X-AFL-Player-Logs-Source': 'cache' },
+    });
   }
 
   try {
@@ -1147,7 +1149,9 @@ export async function GET(request: NextRequest) {
         if (hasAdvancedStats) {
           await setAflPlayerLogsCache(responseCacheKey, payload);
         }
-        return NextResponse.json(payload);
+        return NextResponse.json(payload, {
+          headers: { 'X-AFL-Player-Logs-Source': 'footywire' },
+        });
       }
     }
 
@@ -1190,7 +1194,9 @@ export async function GET(request: NextRequest) {
       height: height ?? undefined,
     };
     await setAflPlayerLogsCache(responseCacheKey, payload);
-    return NextResponse.json(payload);
+    return NextResponse.json(payload, {
+      headers: { 'X-AFL-Player-Logs-Source': 'afltables' },
+    });
   } catch (err) {
     return NextResponse.json(
       {
