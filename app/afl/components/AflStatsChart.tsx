@@ -286,7 +286,9 @@ interface AflStatsChartProps {
   /** When provided, chart timeframe is controlled by parent (e.g. to sync Supporting stats). */
   selectedTimeframe?: AflChartTimeframe;
   onTimeframeChange?: (timeframe: AflChartTimeframe) => void;
-  /** Called when the selected stat changes (e.g. to show TOG/Kicks/Handballs toggle when Disposals). */
+  /** When provided, the currently selected main stat is controlled by the parent (e.g. AFL page). */
+  selectedStat?: string;
+  /** Called when the selected stat changes (e.g. to show TOG/Kicks/Handballs toggle when Disposals). Required when selectedStat is controlled. */
   onSelectedStatChange?: (stat: string) => void;
   /** Advanced filter toggle (inline with chart, like NBA). */
   showAdvancedFilters?: boolean;
@@ -310,6 +312,7 @@ export function AflStatsChart({
   withWithoutMode = 'with',
   season = 2025,
   clearTeammateFilter,
+  selectedStat: selectedStatProp,
   selectedTimeframe: controlledTimeframe,
   onTimeframeChange,
   onSelectedStatChange,
@@ -449,31 +452,46 @@ export function AflStatsChart({
       : availableStats[0];
   }, [availableStats]);
 
-  const [selectedStat, setSelectedStat] = useState<string>('');
+  const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const selectedStat = selectedStatProp ?? internalSelectedStat;
+
+  // Ensure we always have a valid selected stat. When the parent controls the stat,
+  // ask it to adopt the preferred default; otherwise, fall back to internal state.
   useEffect(() => {
     if (!availableStats.length) {
-      setSelectedStat('');
+      if (selectedStatProp == null) {
+        setInternalSelectedStat('');
+      }
       return;
     }
-    if (!selectedStat || !availableStats.includes(selectedStat)) {
-      setSelectedStat(preferredDefaultStat);
+    const current = selectedStat;
+    if (!current || !availableStats.includes(current)) {
+      const next = preferredDefaultStat;
+      if (onSelectedStatChange) {
+        onSelectedStatChange(next);
+      } else {
+        setInternalSelectedStat(next);
+      }
     }
-  }, [availableStats, selectedStat, preferredDefaultStat]);
+  }, [availableStats, preferredDefaultStat, selectedStat, selectedStatProp, onSelectedStatChange]);
 
-  // Whenever a new player's logs are loaded, default back to Disposals first.
+  // When game logs change significantly (e.g. new player), ensure we have a sensible default.
+  // If the user has already picked a valid stat, don't override their choice.
   useEffect(() => {
     if (!availableStats.length) return;
-    setSelectedStat(preferredDefaultStat);
-  }, [gameLogs, availableStats, preferredDefaultStat]);
-
-  useEffect(() => {
-    if (selectedStat && onSelectedStatChange) onSelectedStatChange(selectedStat);
-  }, [selectedStat, onSelectedStatChange]);
+    if (selectedStat && availableStats.includes(selectedStat)) return;
+    const next = preferredDefaultStat;
+    if (onSelectedStatChange) {
+      onSelectedStatChange(next);
+    } else {
+      setInternalSelectedStat(next);
+    }
+  }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange]);
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return gameLogs;
@@ -828,7 +846,13 @@ export function AflStatsChart({
                 label={formatStatLabel(k)}
                 value={k}
                 isSelected={selectedStat === k}
-                onSelect={setSelectedStat}
+                onSelect={(v) => {
+                  if (onSelectedStatChange) {
+                    onSelectedStatChange(v);
+                  } else {
+                    setInternalSelectedStat(v);
+                  }
+                }}
                 isDark={isDark}
                 darker
               />

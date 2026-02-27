@@ -255,6 +255,24 @@ export default function AFLPage() {
 
   useEffect(() => setMounted(true), []);
 
+  // Keep DVP metric / opponentStat in sync with the main chart stat so the filters
+  // and right-hand panels reflect the stat the user has actually selected.
+  useEffect(() => {
+    if (!mainChartStat) return;
+    setAflGameFilters((prev) => {
+      const nextMetric = CHART_STAT_TO_DVP_METRIC[mainChartStat] ?? prev.dvpMetric ?? 'disposals';
+      const nextOpponentStat = CHART_STAT_TO_OA_CODE[mainChartStat] ?? prev.opponentStat ?? 'D';
+      if (prev.dvpMetric === nextMetric && prev.opponentStat === nextOpponentStat) {
+        return prev;
+      }
+      return {
+        ...prev,
+        dvpMetric: nextMetric,
+        opponentStat: nextOpponentStat,
+      };
+    });
+  }, [mainChartStat]);
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem('oddsFormat');
@@ -1280,6 +1298,7 @@ export default function AFLPage() {
                         setTeammateFilterName(null);
                         setWithWithoutMode('with');
                       }}
+                      selectedStat={mainChartStat}
                       selectedTimeframe={aflChartTimeframe}
                       onTimeframeChange={setAflChartTimeframe}
                       onSelectedStatChange={setMainChartStat}
