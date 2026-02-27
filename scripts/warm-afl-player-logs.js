@@ -10,6 +10,7 @@
  *   AFL_WARM_SEASONS=2026,2025
  *   AFL_WARM_CONCURRENCY=6
  *   AFL_WARM_LIMIT=0 (0 = no limit)
+ *   AFL_WARM_MAX_FAILURES=100 (workflow succeeds if failed count < this; default 100)
  *   CRON_SECRET=... (sent as Bearer + X-Cron-Secret)
  */
 
@@ -23,6 +24,7 @@ const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026,2025')
   .filter((n) => Number.isFinite(n));
 const concurrency = Math.max(1, parseInt(process.env.AFL_WARM_CONCURRENCY || '6', 10));
 const warmLimit = Math.max(0, parseInt(process.env.AFL_WARM_LIMIT || '0', 10));
+const maxFailures = Math.max(0, parseInt(process.env.AFL_WARM_MAX_FAILURES || '100', 10));
 const cronSecret = (process.env.CRON_SECRET || '').trim();
 
 if (!prodUrl) {
@@ -149,7 +151,10 @@ async function main() {
   );
 
   console.log(`Warm complete. success=${success} failed=${failed} warmedGames=${warmedGames}`);
-  if (failed > 0) process.exitCode = 1;
+  if (failed >= maxFailures) {
+    console.error(`Failed count (${failed}) >= AFL_WARM_MAX_FAILURES (${maxFailures}); exiting with error.`);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {

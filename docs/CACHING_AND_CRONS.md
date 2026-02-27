@@ -355,6 +355,7 @@ Optional env controls:
 - `AFL_WARM_SEASONS=2026,2025`
 - `AFL_WARM_CONCURRENCY=24` (default; increase for faster runs if prod can handle it)
 - `AFL_WARM_LIMIT=0` (0 = all active players)
+- `AFL_WARM_MAX_FAILURES=100` (workflow succeeds if failed requests &lt; this; default 100)
 - `PROD_URL=https://...`
 - `CRON_SECRET=...` (optional)
 
@@ -424,6 +425,7 @@ jobs:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025' }}
           AFL_WARM_CONCURRENCY: '24'
+          AFL_WARM_MAX_FAILURES: '100'
 ```
 
 ## Troubleshooting
