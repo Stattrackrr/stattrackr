@@ -553,7 +553,7 @@ export default function AFLPage() {
       setSelectedPlayerGameLogs(prefetched.games);
       setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
       if (Object.keys(prefetched.mergedStats).length) {
-        setSelectedPlayer((prev) => (prev ? { ...prev, ...prefetched.mergedStats } : prev));
+        setSelectedPlayer((prev) => (prev ? ({ ...prev, ...prefetched.mergedStats } as AflPlayerRecord) : prev));
         playerStatsCacheRef.current.set(cacheKey, prefetched.mergedStats as AflPlayerRecord);
       }
       setStatsLoadingForPlayer(false);
