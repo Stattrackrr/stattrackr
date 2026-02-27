@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl } from '@/lib/aflTeamMapping';
+import {
+  buildAflPlayerLogsCacheKey,
+  getAflPlayerLogsCache,
+  setAflPlayerLogsCache,
+} from '@/lib/cache/aflPlayerLogsCache';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
@@ -1109,13 +1114,24 @@ export async function GET(request: NextRequest) {
     : null;
   const teamForFootyWire = teamFull ? getFootyWireTeamNameForPlayerUrl(teamFull) : null;
   const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true';
+  const responseCacheKey = buildAflPlayerLogsCacheKey({
+    season,
+    playerName: playerNameParam.trim(),
+    teamForRequest: teamForFootyWire,
+    includeQuarters: includeQuarterEnrichment,
+  });
+
+  const cachedResponse = await getAflPlayerLogsCache(responseCacheKey);
+  if (cachedResponse) {
+    return NextResponse.json(cachedResponse);
+  }
 
   try {
     // Prefer FootyWire when team is provided (one URL per player/season, simpler)
     if (teamForFootyWire) {
       const fw = await fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, includeQuarterEnrichment);
       if (fw && fw.games.length > 0) {
-        return NextResponse.json({
+        const payload = {
           season,
           source: 'footywire.com',
           player_name: fw.player_name,
@@ -1123,7 +1139,9 @@ export async function GET(request: NextRequest) {
           game_count: fw.games.length,
           height: fw.height ?? undefined,
           guernsey: fw.guernsey ?? undefined,
-        });
+        };
+        await setAflPlayerLogsCache(responseCacheKey, payload);
+        return NextResponse.json(payload);
       }
     }
 
@@ -1156,7 +1174,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const payload = {
       season,
       source: 'afltables.com',
       player_name: matched.name,
@@ -1164,7 +1182,9 @@ export async function GET(request: NextRequest) {
       games,
       game_count: games.length,
       height: height ?? undefined,
-    });
+    };
+    await setAflPlayerLogsCache(responseCacheKey, payload);
+    return NextResponse.json(payload);
   } catch (err) {
     return NextResponse.json(
       {

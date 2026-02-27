@@ -319,6 +319,99 @@ Return to User
 6. **Use `?refresh=1` sparingly (only for debugging)**
 7. **Let background refreshes handle stale data automatically**
 
+## AFL Upstash Cache (AFL only)
+
+### Overview
+
+- AFL `player-game-logs` now supports a dedicated Upstash-backed cache path.
+- Read flow is:
+  1. In-memory L1 cache
+  2. Upstash Redis L2 cache
+  3. Source fetch (FootyWire/AFLTables)
+- NBA remains unchanged.
+
+### Required environment variables
+
+- `AFL_USE_UPSTASH_CACHE=true`
+- `UPSTASH_REDIS_REST_URL=...`
+- `UPSTASH_REDIS_REST_TOKEN=...`
+
+### Cache key shape
+
+```
+afl:player-logs:v1:{season}:{team}:{player}:q{includeQuarters}
+```
+
+### AFL cache warming script
+
+- Script: `scripts/warm-afl-player-logs.js`
+- NPM command:
+
+```bash
+npm run warm:afl:player-logs
+```
+
+Optional env controls:
+- `AFL_WARM_SEASONS=2026,2025`
+- `AFL_WARM_CONCURRENCY=6`
+- `AFL_WARM_LIMIT=0` (0 = all active players)
+- `PROD_URL=https://...`
+- `CRON_SECRET=...` (optional)
+
+### GitHub workflow (manual paste)
+
+If your environment blocks direct edits under `.github/workflows`, create
+`.github/workflows/warm-afl-player-logs.yml` with:
+
+```yaml
+name: Warm AFL Player Logs Cache
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      warm_limit:
+        description: 'Optional player limit (0 = all)'
+        required: false
+        default: '0'
+      seasons:
+        description: 'Comma-separated seasons to warm'
+        required: false
+        default: '2026,2025'
+
+concurrency:
+  group: warm-afl-player-logs
+  cancel-in-progress: false
+
+jobs:
+  warm_cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Warm AFL player logs cache
+        run: npm run warm:afl:player-logs
+        env:
+          AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
+          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025' }}
+          AFL_WARM_CONCURRENCY: '6'
+```
+
 ## Troubleshooting
 
 ### Issue: Stale Data
