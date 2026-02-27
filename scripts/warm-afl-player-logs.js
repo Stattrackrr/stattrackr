@@ -126,15 +126,20 @@ async function main() {
     }
   }
 
-  console.log(`Warming AFL player logs cache`);
-  console.log(`Players: ${selectedPlayers.length}`);
-  console.log(`Seasons: ${warmSeasons.join(', ')}`);
-  console.log(`Requests: ${jobs.length}`);
-  console.log(`Concurrency: ${concurrency}`);
+  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache`);
+  console.log(`[AFL Warm] 👥 Players: ${selectedPlayers.length}`);
+  console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
+  console.log(`[AFL Warm] 📤 Requests: ${jobs.length}`);
+  console.log(`[AFL Warm] ⚡ Concurrency: ${concurrency}`);
+  const sample = selectedPlayers.slice(0, 10).map((p) => `${p.name} (${p.team})`);
+  console.log(`[AFL Warm] 🎯 Sample: ${sample.join(', ')}${selectedPlayers.length > 10 ? '...' : ''}`);
 
   let success = 0;
   let failed = 0;
   let warmedGames = 0;
+  let done = 0;
+  const failedPlayers = [];
+  const progressInterval = Math.max(1, Math.floor(jobs.length / 20)); // ~20 progress lines
 
   await runPool(
     jobs,
@@ -145,12 +150,21 @@ async function main() {
         warmedGames += Number(result.count || 0);
       } else {
         failed += 1;
+        const key = `${job.player.name} (${job.player.team}) ${job.season}`;
+        if (failedPlayers.length < 50) failedPlayers.push(key);
+      }
+      done += 1;
+      if (done % progressInterval === 0 || done === jobs.length) {
+        console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${job.player.team}) ${job.season} ${job.includeQuarters ? 'q' : ''} — ${result.ok ? `✅ ${result.count ?? 0} games` : `❌ ${result.status}`}`);
       }
     },
     concurrency
   );
 
-  console.log(`Warm complete. success=${success} failed=${failed} warmedGames=${warmedGames}`);
+  console.log(`[AFL Warm] ✅ Warm complete. success=${success} failed=${failed} warmedGames=${warmedGames}`);
+  if (failedPlayers.length > 0) {
+    console.log(`[AFL Warm] ❌ Failed (sample): ${failedPlayers.slice(0, 15).join('; ')}${failedPlayers.length > 15 ? ` ... +${failedPlayers.length - 15} more` : ''}`);
+  }
   if (failed >= maxFailures) {
     console.error(`Failed count (${failed}) >= AFL_WARM_MAX_FAILURES (${maxFailures}); exiting with error.`);
     process.exitCode = 1;

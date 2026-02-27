@@ -1170,8 +1170,7 @@ export async function GET(request: NextRequest) {
           height: fw2025Base.height ?? undefined,
           guernsey: fw2025Base.guernsey ?? undefined,
         };
-        const hasAdvanced = fw2025Base.games.some((g) => (typeof g.percent_played === 'number' && g.percent_played > 0) || (typeof g.meters_gained === 'number' && g.meters_gained > 0));
-        if (hasAdvanced && cacheEnabled) {
+        if (cacheEnabled) {
           const baseCache: AflPlayerLogsCachePayload = { season: actualSeason, source: 'footywire.com', player_name: fw2025Base.player_name, games: fw2025Base.games as unknown as Record<string, unknown>[], game_count: fw2025Base.games.length, height: fw2025Base.height ?? undefined, guernsey: fw2025Base.guernsey ?? undefined };
           const quartersCache: AflPlayerLogsCachePayload = { season: actualSeason, source: 'footywire.com', player_name: fw2025Base.player_name, games: quartersGames as unknown as Record<string, unknown>[], game_count: quartersGames.length, height: fw2025Base.height ?? undefined, guernsey: fw2025Base.guernsey ?? undefined };
           await Promise.all([setAflPlayerLogsCache(keyBase, baseCache), setAflPlayerLogsCache(keyQuarters, quartersCache)]);
@@ -1184,8 +1183,7 @@ export async function GET(request: NextRequest) {
       const actualSeason = fw.games[0]?.season ?? season;
       const gamesWithQuarters = (fwQuarters?.games?.length ? fwQuarters.games : fw.games) as unknown as Record<string, unknown>[];
       const payload = { season: actualSeason, source: 'footywire.com', player_name: fw.player_name, games: fw.games, game_count: fw.games.length, gamesWithQuarters, height: fw.height ?? undefined, guernsey: fw.guernsey ?? undefined };
-      const hasAdvanced = fw.games.some((g) => (typeof g.percent_played === 'number' && g.percent_played > 0) || (typeof g.meters_gained === 'number' && g.meters_gained > 0));
-      if (hasAdvanced && cacheEnabled) {
+      if (cacheEnabled) {
         const baseCache: AflPlayerLogsCachePayload = { season: payload.season, source: payload.source, player_name: payload.player_name, games: payload.games as unknown as Record<string, unknown>[], game_count: payload.game_count, height: payload.height, guernsey: payload.guernsey };
         const quartersCache: AflPlayerLogsCachePayload = { season: payload.season, source: payload.source, player_name: payload.player_name, games: gamesWithQuarters, game_count: gamesWithQuarters.length, height: payload.height, guernsey: payload.guernsey };
         await Promise.all([setAflPlayerLogsCache(keyBase, baseCache), setAflPlayerLogsCache(keyQuarters, quartersCache)]);
@@ -1225,8 +1223,7 @@ export async function GET(request: NextRequest) {
           height: fw.height ?? undefined,
           guernsey: fw.guernsey ?? undefined,
         };
-        const hasAdvanced = fw.games.some((g) => (typeof g.percent_played === 'number' && g.percent_played > 0) || (typeof g.meters_gained === 'number' && g.meters_gained > 0));
-        if (hasAdvanced && cacheEnabled) await setAflPlayerLogsCache(responseCacheKey, payload as AflPlayerLogsCachePayload);
+        if (cacheEnabled) await setAflPlayerLogsCache(responseCacheKey, payload as AflPlayerLogsCachePayload);
         return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } });
       }
     }

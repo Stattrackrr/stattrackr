@@ -47,7 +47,11 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=512'
 
       - name: Warm AFL player logs cache
-        run: npm run warm:afl:player-logs
+        run: |
+          echo "🔄 Warming AFL player logs cache (production API with CRON_SECRET)..."
+          echo "📅 Seasons: ${{ github.event.inputs.seasons || '2026,2025' }}"
+          echo "👥 Player limit: ${{ github.event.inputs.warm_limit || '0' }} (0 = all)"
+          npm run warm:afl:player-logs
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025' }}
