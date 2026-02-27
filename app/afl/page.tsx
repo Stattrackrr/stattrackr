@@ -474,28 +474,12 @@ export default function AFLPage() {
     const logsCacheKey = getAflPlayerLogsCacheKey(season, name, teamForApi);
     if (prefetchedLogsRef.current.has(logsCacheKey)) return;
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
-    const baseUrl = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(name)}${teamQuery}`;
-    const urlWithQuarters = `${baseUrl}&include_quarters=1`;
-    Promise.all([fetch(baseUrl), fetch(urlWithQuarters)])
-      .then(async ([resBase, resQuarters]) => {
-        const data = await resBase.json();
-        let games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
-        let gamesWithQuarters: Record<string, unknown>[] = [];
-        if (games.length === 0 && season === 2026) {
-          const [r2025, r2025Q] = await Promise.all([
-            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(name)}${teamQuery}`),
-            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(name)}${teamQuery}&include_quarters=1`),
-          ]);
-          const d2025 = await r2025.json();
-          if (r2025.ok && Array.isArray(d2025?.games)) games = d2025.games as Record<string, unknown>[];
-          if (r2025Q.ok) {
-            const d2025Q = await r2025Q.json();
-            if (Array.isArray(d2025Q?.games) && d2025Q.games.length > 0) gamesWithQuarters = d2025Q.games as Record<string, unknown>[];
-          }
-        } else if (resQuarters.ok) {
-          const dataQ = await resQuarters.json();
-          if (Array.isArray(dataQ?.games) && dataQ.games.length > 0) gamesWithQuarters = dataQ.games as Record<string, unknown>[];
-        }
+    const url = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(name)}${teamQuery}&include_both=1`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+        const gamesWithQuarters = Array.isArray(data?.gamesWithQuarters) ? (data.gamesWithQuarters as Record<string, unknown>[]) : games;
         if (games.length === 0) return;
         const latest = games[games.length - 1];
         const numericKeys = new Set<string>();
@@ -579,56 +563,24 @@ export default function AFLPage() {
       // Ignore malformed local cache.
     }
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
-    const baseUrl = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`;
-    const urlWithQuarters = `${baseUrl}&include_quarters=1`;
+    const url = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_both=1`;
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        // Fetch player props (no quarters) and game props (with quarters) in parallel so both are ready when switching modes.
-        const [resBase, resQuarters] = await Promise.all([
-          fetch(baseUrl),
-          fetch(urlWithQuarters),
-        ]);
-        let data = await resBase.json();
+        const res = await fetch(url);
+        const data = await res.json();
         if (cancelled) return;
-        if (!resBase.ok) {
+        if (!res.ok) {
           setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
           setSelectedPlayerGameLogs([]);
           return;
         }
-
-        let games = Array.isArray(data?.games) ? data.games as Record<string, unknown>[] : [];
-        let gamesWithQuarters: Record<string, unknown>[] = [];
-        // When using 2026, often no games yet; use 2025 for chart/supporting stats.
-        if (games.length === 0 && season === 2026) {
-          const [res2025, res2025Q] = await Promise.all([
-            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`),
-            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_quarters=1`),
-          ]);
-          const data2025 = await res2025.json();
-          if (cancelled) return;
-          if (res2025.ok && Array.isArray(data2025?.games)) {
-            games = data2025.games as Record<string, unknown>[];
-          }
-          if (res2025Q.ok) {
-            const data2025Q = await res2025Q.json();
-            if (!cancelled && Array.isArray(data2025Q?.games) && data2025Q.games.length > 0) {
-              gamesWithQuarters = data2025Q.games as Record<string, unknown>[];
-              setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
-            }
-          }
-        } else {
-          if (resQuarters.ok) {
-            const dataQ = await resQuarters.json();
-            if (!cancelled && Array.isArray(dataQ?.games) && dataQ.games.length > 0) {
-              gamesWithQuarters = dataQ.games as Record<string, unknown>[];
-              setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
-            }
-          }
-        }
+        const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+        const gamesWithQuarters = Array.isArray(data?.gamesWithQuarters) ? (data.gamesWithQuarters as Record<string, unknown>[]) : games;
         setSelectedPlayerGameLogs(games);
+        setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
         if (games.length === 0) {
           setLastStatsError('No game logs found for this player/season');
           setStatsLoadingForPlayer(false);
