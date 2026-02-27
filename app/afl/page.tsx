@@ -23,6 +23,8 @@ import { Search, Loader2 } from 'lucide-react';
 type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v1';
+const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
   disposals: 'disposals',
@@ -54,6 +56,17 @@ type PersistedAflPageState = {
   withWithoutMode: 'with' | 'without';
   aflGameFilters?: AflGameFiltersState | null;
 };
+
+type CachedAflPlayerLogs = {
+  createdAt: number;
+  games: AflGameLogRecord[];
+  gamesWithQuarters: AflGameLogRecord[];
+  mergedStats: AflPlayerRecord;
+};
+
+function getAflPlayerLogsCacheKey(season: number, playerName: string, team: string): string {
+  return `${AFL_PLAYER_LOGS_CACHE_PREFIX}:${season}:${playerName.trim().toLowerCase()}:${team.trim().toLowerCase()}`;
+}
 
 function normalizeTeamNameForLogo(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -446,6 +459,26 @@ export default function AFLPage() {
     const teamForApi = selectedPlayer?.team
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
+    const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
+    try {
+      const raw = localStorage.getItem(logsCacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CachedAflPlayerLogs;
+        const isFresh = Number.isFinite(parsed?.createdAt) && (Date.now() - Number(parsed.createdAt) <= AFL_PLAYER_LOGS_CACHE_TTL_MS);
+        if (isFresh && Array.isArray(parsed.games)) {
+          setSelectedPlayerGameLogs(parsed.games);
+          setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
+          if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
+            setSelectedPlayer((prev) => (prev ? { ...prev, ...parsed.mergedStats } : prev));
+            playerStatsCacheRef.current.set(cacheKey, parsed.mergedStats);
+          }
+          setStatsLoadingForPlayer(false);
+          return;
+        }
+      }
+    } catch {
+      // Ignore malformed local cache.
+    }
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
     const baseUrl = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}`;
     const urlWithQuarters = `${baseUrl}&include_quarters=1`;
@@ -468,6 +501,7 @@ export default function AFLPage() {
         }
 
         let games = Array.isArray(data?.games) ? data.games as Record<string, unknown>[] : [];
+        let gamesWithQuarters: Record<string, unknown>[] = [];
         // When using 2026, often no games yet; use 2025 for chart/supporting stats.
         if (games.length === 0 && season === 2026) {
           const [res2025, res2025Q] = await Promise.all([
@@ -482,14 +516,16 @@ export default function AFLPage() {
           if (res2025Q.ok) {
             const data2025Q = await res2025Q.json();
             if (!cancelled && Array.isArray(data2025Q?.games) && data2025Q.games.length > 0) {
-              setSelectedPlayerGameLogsWithQuarters(data2025Q.games as Record<string, unknown>[]);
+              gamesWithQuarters = data2025Q.games as Record<string, unknown>[];
+              setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
             }
           }
         } else {
           if (resQuarters.ok) {
             const dataQ = await resQuarters.json();
             if (!cancelled && Array.isArray(dataQ?.games) && dataQ.games.length > 0) {
-              setSelectedPlayerGameLogsWithQuarters(dataQ.games as Record<string, unknown>[]);
+              gamesWithQuarters = dataQ.games as Record<string, unknown>[];
+              setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
             }
           }
         }
@@ -544,6 +580,17 @@ export default function AFLPage() {
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
+        try {
+          const cachePayload: CachedAflPlayerLogs = {
+            createdAt: Date.now(),
+            games,
+            gamesWithQuarters,
+            mergedStats: toMerge,
+          };
+          localStorage.setItem(logsCacheKey, JSON.stringify(cachePayload));
+        } catch {
+          // Ignore localStorage write failures.
+        }
       } catch (e) {
         if (!cancelled) {
           setLastStatsError(e instanceof Error ? e.message : 'Failed to load game logs');
