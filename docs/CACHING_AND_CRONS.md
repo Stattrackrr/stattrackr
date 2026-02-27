@@ -358,6 +358,10 @@ Optional env controls:
 - `PROD_URL=https://...`
 - `CRON_SECRET=...` (optional)
 
+**Advanced stats (TOG %, meters gained, intercepts, etc.):** The player-game-logs API only writes to the Upstash cache when the FootyWire response includes advanced stats (e.g. at least one game with `percent_played` or `meters_gained`). That way the warm workflow fills the cache with full data so the Supporting stats panel shows values instead of "No data".
+
+**Team list / search:** The workflow fetches the latest league player list (`fetch:footywire-league-player-stats`) before warming so the warm uses the most recent names and teams. The `/api/afl/players` search endpoint prefers `data/afl-league-player-stats-*.json` when present, so the app can serve search from that file without calling an external API. Commit updated `data/afl-league-player-stats-*.json` (e.g. after a manual run or a separate data-update workflow) so production has the latest list.
+
 ### GitHub workflow (manual paste)
 
 If your environment blocks direct edits under `.github/workflows`, create
@@ -403,6 +407,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Fetch latest league player stats
+        run: |
+          npm run fetch:footywire-league-player-stats -- --season=2026
+          npm run fetch:footywire-league-player-stats -- --season=2025
+        env:
+          NODE_OPTIONS: '--max-old-space-size=512'
 
       - name: Warm AFL player logs cache
         run: npm run warm:afl:player-logs

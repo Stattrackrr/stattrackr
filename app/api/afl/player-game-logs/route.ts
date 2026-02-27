@@ -1140,7 +1140,13 @@ export async function GET(request: NextRequest) {
           height: fw.height ?? undefined,
           guernsey: fw.guernsey ?? undefined,
         };
-        await setAflPlayerLogsCache(responseCacheKey, payload);
+        // Only cache when we have advanced stats (TOG%, meters gained, etc.) so the warm workflow fills cache with full data.
+        const hasAdvancedStats = fw.games.some(
+          (g) => (typeof g.percent_played === 'number' && g.percent_played > 0) || (typeof g.meters_gained === 'number' && g.meters_gained > 0)
+        );
+        if (hasAdvancedStats) {
+          await setAflPlayerLogsCache(responseCacheKey, payload);
+        }
         return NextResponse.json(payload);
       }
     }

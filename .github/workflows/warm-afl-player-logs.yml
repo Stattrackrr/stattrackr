@@ -38,6 +38,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch latest league player stats
+        run: |
+          npm run fetch:footywire-league-player-stats -- --season=2026
+          npm run fetch:footywire-league-player-stats -- --season=2025
+        env:
+          NODE_OPTIONS: '--max-old-space-size=512'
+
       - name: Warm AFL player logs cache
         run: npm run warm:afl:player-logs
         env:
