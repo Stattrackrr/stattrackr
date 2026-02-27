@@ -4,6 +4,7 @@ import {
   buildAflPlayerLogsCacheKey,
   getAflPlayerLogsCache,
   setAflPlayerLogsCache,
+  isAflPlayerLogsCacheEnabled,
 } from '@/lib/cache/aflPlayerLogsCache';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
@@ -1121,12 +1122,17 @@ export async function GET(request: NextRequest) {
     includeQuarters: includeQuarterEnrichment,
   });
 
-  const cachedResponse = await getAflPlayerLogsCache(responseCacheKey);
+  const cacheEnabled = isAflPlayerLogsCacheEnabled();
+  const cachedResponse = cacheEnabled ? await getAflPlayerLogsCache(responseCacheKey) : null;
   if (cachedResponse) {
     return NextResponse.json(cachedResponse, {
-      headers: { 'X-AFL-Player-Logs-Source': 'cache' },
+      headers: {
+        'X-AFL-Player-Logs-Source': 'cache',
+        'X-AFL-Cache-Enabled': 'true',
+      },
     });
   }
+  const sourceHeaders = { 'X-AFL-Cache-Enabled': cacheEnabled ? 'true' : 'false' };
 
   try {
     // Prefer FootyWire when team is provided (one URL per player/season, simpler)
@@ -1150,7 +1156,7 @@ export async function GET(request: NextRequest) {
           await setAflPlayerLogsCache(responseCacheKey, payload);
         }
         return NextResponse.json(payload, {
-          headers: { 'X-AFL-Player-Logs-Source': 'footywire' },
+          headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' },
         });
       }
     }
@@ -1164,7 +1170,7 @@ export async function GET(request: NextRequest) {
     if (!matched) {
       return NextResponse.json(
         { error: `No game logs found for '${playerNameParam}'`, season, games: [] },
-        { status: 404 }
+        { status: 404, headers: sourceHeaders }
       );
     }
 
@@ -1195,15 +1201,16 @@ export async function GET(request: NextRequest) {
     };
     await setAflPlayerLogsCache(responseCacheKey, payload);
     return NextResponse.json(payload, {
-      headers: { 'X-AFL-Player-Logs-Source': 'afltables' },
+      headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'afltables' },
     });
   } catch (err) {
+    const cacheEnabled = isAflPlayerLogsCacheEnabled();
     return NextResponse.json(
       {
         error: 'Failed to fetch AFL game logs',
         details: err instanceof Error ? err.message : String(err),
       },
-      { status: 502 }
+      { status: 502, headers: { 'X-AFL-Cache-Enabled': cacheEnabled ? 'true' : 'false' } }
     );
   }
 }

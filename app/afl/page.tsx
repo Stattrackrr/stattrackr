@@ -11,7 +11,7 @@ import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterD
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
-import { rosterTeamToInjuryTeam, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -249,6 +249,7 @@ export default function AFLPage() {
   });
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
@@ -463,6 +464,74 @@ export default function AFLPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Prefetch game logs when user hovers over a search result so data is ready on click.
+  const prefetchPlayerLogs = useCallback((player: AflPlayerRecord) => {
+    const name = String(player?.name ?? '').trim();
+    if (!name) return;
+    const teamForApi = player?.team
+      ? (rosterTeamToInjuryTeam(String(player.team)) || footywireNicknameToOfficial(String(player.team)) || String(player.team))
+      : '';
+    const logsCacheKey = getAflPlayerLogsCacheKey(season, name, teamForApi);
+    if (prefetchedLogsRef.current.has(logsCacheKey)) return;
+    const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
+    const baseUrl = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(name)}${teamQuery}`;
+    const urlWithQuarters = `${baseUrl}&include_quarters=1`;
+    Promise.all([fetch(baseUrl), fetch(urlWithQuarters)])
+      .then(async ([resBase, resQuarters]) => {
+        const data = await resBase.json();
+        let games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+        let gamesWithQuarters: Record<string, unknown>[] = [];
+        if (games.length === 0 && season === 2026) {
+          const [r2025, r2025Q] = await Promise.all([
+            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(name)}${teamQuery}`),
+            fetch(`/api/afl/player-game-logs?season=2025&player_name=${encodeURIComponent(name)}${teamQuery}&include_quarters=1`),
+          ]);
+          const d2025 = await r2025.json();
+          if (r2025.ok && Array.isArray(d2025?.games)) games = d2025.games as Record<string, unknown>[];
+          if (r2025Q.ok) {
+            const d2025Q = await r2025Q.json();
+            if (Array.isArray(d2025Q?.games) && d2025Q.games.length > 0) gamesWithQuarters = d2025Q.games as Record<string, unknown>[];
+          }
+        } else if (resQuarters.ok) {
+          const dataQ = await resQuarters.json();
+          if (Array.isArray(dataQ?.games) && dataQ.games.length > 0) gamesWithQuarters = dataQ.games as Record<string, unknown>[];
+        }
+        if (games.length === 0) return;
+        const latest = games[games.length - 1];
+        const numericKeys = new Set<string>();
+        const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
+        for (const g of games) {
+          for (const [k, v] of Object.entries(g)) {
+            if (typeof v === 'number' && Number.isFinite(v) && !numericMetaKeys.has(k)) numericKeys.add(k);
+          }
+        }
+        const toMerge: Partial<AflPlayerRecord> = { games_played: games.length };
+        for (const key of numericKeys) {
+          const values = games.map((g) => g[key]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+          if (!values.length) continue;
+          const total = values.reduce((s, v) => s + v, 0);
+          const seasonAvg = Math.round((total / values.length) * 10) / 10;
+          const lastGame = typeof latest[key] === 'number' && Number.isFinite(latest[key]) ? (latest[key] as number) : 0;
+          const last5Values = values.slice(-5);
+          const last5Avg = last5Values.length ? Math.round((last5Values.reduce((s, v) => s + v, 0) / last5Values.length) * 10) / 10 : 0;
+          toMerge[`${key}_season_avg`] = seasonAvg;
+          toMerge[`${key}_last_game`] = lastGame;
+          toMerge[`${key}_last5_avg`] = last5Avg;
+        }
+        if (typeof latest.opponent === 'string') toMerge.last_opponent = latest.opponent;
+        if (typeof latest.round === 'string') toMerge.last_round = latest.round;
+        if (typeof latest.result === 'string') toMerge.last_result = latest.result;
+        if (typeof latest.guernsey === 'number' && Number.isFinite(latest.guernsey)) toMerge.guernsey = latest.guernsey;
+        if (typeof data?.height === 'string' && data.height.trim()) toMerge.height = data.height.trim();
+        prefetchedLogsRef.current.set(logsCacheKey, {
+          games: games as AflGameLogRecord[],
+          gamesWithQuarters: gamesWithQuarters as AflGameLogRecord[],
+          mergedStats: toMerge,
+        });
+      })
+      .catch(() => {});
+  }, [season]);
+
   // Fetch scraped AFLTables game logs for the selected player.
   useEffect(() => {
     const playerName = selectedPlayer?.name;
@@ -475,9 +544,21 @@ export default function AFLPage() {
     }
 
     const teamForApi = selectedPlayer?.team
-      ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+      ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || footywireNicknameToOfficial(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
+    const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
+    if (prefetched) {
+      prefetchedLogsRef.current.delete(logsCacheKey);
+      setSelectedPlayerGameLogs(prefetched.games);
+      setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
+      if (Object.keys(prefetched.mergedStats).length) {
+        setSelectedPlayer((prev) => (prev ? { ...prev, ...prefetched.mergedStats } : prev));
+        playerStatsCacheRef.current.set(cacheKey, prefetched.mergedStats as AflPlayerRecord);
+      }
+      setStatsLoadingForPlayer(false);
+      return;
+    }
     try {
       const raw = localStorage.getItem(logsCacheKey);
       if (raw) {
@@ -1188,6 +1269,7 @@ export default function AFLPage() {
                                   <button
                                     key={String(p.id ?? playerName)}
                                     type="button"
+                                    onMouseEnter={() => prefetchPlayerLogs(p)}
                                     onClick={() => {
                                       setSelectedPlayer(p);
                                       setSelectedPlayerGameLogs([]);
