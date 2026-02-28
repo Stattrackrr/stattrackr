@@ -58,6 +58,8 @@ interface AddToJournalModalProps {
   gameDate: string;
   oddsFormat: 'american' | 'decimal';
   isGameProp?: boolean;
+  /** When 'afl', shows AFL stat options (disposals, goals, etc.) and skips NBA odds fetch. */
+  sport?: 'nba' | 'afl';
 }
 
 const PLAYER_STAT_OPTIONS = [
@@ -88,6 +90,25 @@ const GAME_PROP_STAT_OPTIONS = [
   { value: 'q2_moneyline', label: 'Q2 Moneyline' },
   { value: 'q3_moneyline', label: 'Q3 Moneyline' },
   { value: 'q4_moneyline', label: 'Q4 Moneyline' },
+];
+
+const AFL_PLAYER_STAT_OPTIONS = [
+  { value: 'goals', label: 'Goals' },
+  { value: 'disposals', label: 'Disposals' },
+  { value: 'kicks', label: 'Kicks' },
+  { value: 'handballs', label: 'Handballs' },
+  { value: 'marks', label: 'Marks' },
+  { value: 'behinds', label: 'Behinds' },
+  { value: 'tackles', label: 'Tackles' },
+  { value: 'clearances', label: 'Clearances' },
+];
+
+/** Game-level markets for AFL (moneyline, spread, total goals). */
+const AFL_GAME_PROP_STAT_OPTIONS = [
+  { value: 'moneyline', label: 'Moneyline' },
+  { value: 'spread', label: 'Spread' },
+  { value: 'total_goals', label: 'Total Goals' },
+  { value: 'total_points', label: 'Total Points' },
 ];
 
 const CURRENCIES = ['USD', 'AUD', 'GBP', 'EUR'] as const;
@@ -144,6 +165,7 @@ export default function AddToJournalModal({
   gameDate,
   oddsFormat,
   isGameProp = false,
+  sport = 'nba',
 }: AddToJournalModalProps) {
   // Parlay mode (declare first so it can be used in currentIsGameProp)
   const [isParlayMode, setIsParlayMode] = useState(false);
@@ -151,11 +173,13 @@ export default function AddToJournalModal({
   const [showBetSlipMobile, setShowBetSlipMobile] = useState(false);
   const [parlayOdds, setParlayOdds] = useState(''); // User-entered parlay odds
   
-  // In parlay mode, allow switching between game prop and player prop
-  const [parlayModeType, setParlayModeType] = useState<'game' | 'player'>(isGameProp ? 'game' : 'player');
-  const currentIsGameProp = isParlayMode ? (parlayModeType === 'game') : isGameProp;
-  const STAT_OPTIONS = currentIsGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
-  const [statType, setStatType] = useState(isGameProp ? 'moneyline' : 'pts');
+  // In parlay mode, allow switching between game prop and player prop (AFL only has player props in parlay)
+  const [parlayModeType, setParlayModeType] = useState<'game' | 'player'>(isGameProp && (sport === 'nba' || sport === 'afl') ? 'game' : 'player');
+  const currentIsGameProp = (sport === 'nba' && (isParlayMode ? (parlayModeType === 'game') : isGameProp)) || (sport === 'afl' && isGameProp);
+  const effectivePlayerStatOptions = sport === 'afl' ? AFL_PLAYER_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+  const effectiveGamePropOptions = sport === 'afl' ? AFL_GAME_PROP_STAT_OPTIONS : GAME_PROP_STAT_OPTIONS;
+  const STAT_OPTIONS = currentIsGameProp ? effectiveGamePropOptions : effectivePlayerStatOptions;
+  const [statType, setStatType] = useState(isGameProp && sport === 'nba' ? 'moneyline' : (isGameProp && sport === 'afl' ? 'moneyline' : (sport === 'afl' ? 'goals' : 'pts')));
   const [selectedOdds, setSelectedOdds] = useState<BookmakerOdds | null>(null);
   const [overUnder, setOverUnder] = useState<'over' | 'under'>('over');
   const [stake, setStake] = useState('');
@@ -360,6 +384,14 @@ export default function AddToJournalModal({
         let data: any;
         let props: BookmakerOdds[] = [];
 
+        // AFL: no odds API yet; use manual entry only
+        if (sport === 'afl') {
+          setAvailableOdds([]);
+          setIsManualMode(true);
+          setOddsLoading(false);
+          return;
+        }
+
         if (currentIsGameProp) {
           // Fetch game props odds (moneyline, spread, total, etc.)
           if (!team.trim() || !statType.trim()) {
@@ -539,7 +571,7 @@ export default function AddToJournalModal({
     };
 
     fetchOdds();
-  }, [isOpen, playerName, statType, currentIsGameProp, team]);
+  }, [isOpen, playerName, statType, currentIsGameProp, team, sport]);
 
   // Game search (left side) - fetch games from odds API
   useEffect(() => {
@@ -1305,9 +1337,15 @@ export default function AddToJournalModal({
         return;
       }
     } else {
-      // Single bet validation
-      if (isManualMode) {
-        if (!manualLine || !manualOdds) {
+      // Single bet validation: accept manual entry if line+odds filled, even when no bookmaker odds (e.g. AFL)
+      const usingManualEntry = isManualMode || (manualLine && manualOdds && !selectedOdds) || (currentIsGameProp && sport === 'afl' && !selectedOdds && !!manualOdds);
+      if (usingManualEntry) {
+        if (currentIsGameProp && statType === 'moneyline') {
+          if (!manualOdds) {
+            setError('Please enter odds');
+            return;
+          }
+        } else if (!manualLine || !manualOdds) {
           setError('Please enter both line and odds');
           return;
         }
@@ -1336,7 +1374,7 @@ export default function AddToJournalModal({
           ? americanToDecimal(parseFloat(parlayOdds)) 
           : parseFloat(parlayOdds);
         const selectionTexts = parlaySelections.map(sel => {
-          const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+          const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : effectivePlayerStatOptions;
           const statLabel = statOptions.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
           // For game props, use team name or "Game" instead of player name
           const displayName = sel.isGameProp 
@@ -1422,12 +1460,15 @@ export default function AddToJournalModal({
         }
       } else {
         // Handle single bet submission
-        const statOptions = isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+        const statOptions = isGameProp ? effectiveGamePropOptions : effectivePlayerStatOptions;
         const statLabel = statOptions.find(opt => opt.value === statType)?.label || statType.toUpperCase();
         
-        // Determine line and odds based on mode
-        const finalLine = isManualMode ? parseFloat(manualLine) : selectedOdds!.line;
-        const finalOdds = isManualMode ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
+        // Use manual entry when toggled on or when user filled manual fields and there's no bookmaker selection (e.g. AFL)
+        const usingManualEntry = isManualMode || (manualLine && manualOdds && !selectedOdds) || (currentIsGameProp && sport === 'afl' && !selectedOdds && !!manualOdds);
+        const finalLine = usingManualEntry
+          ? (currentIsGameProp && statType === 'moneyline' && !manualLine ? 0 : parseFloat(manualLine || '0'))
+          : selectedOdds!.line;
+        const finalOdds = usingManualEntry ? parseFloat(manualOdds) : (overUnder === 'over' ? selectedOdds!.overPrice : selectedOdds!.underPrice);
         
         // For game props, determine the actual team that was bet on and format selection text
         let betTeam = team;
@@ -1465,8 +1506,8 @@ export default function AddToJournalModal({
         
         const market = isGameProp ? `Game ${statLabel}` : `Player ${statLabel}`;
         
-        // Get bookmaker name if odds were selected from a bookmaker
-        const bookmakerName = !isManualMode && selectedOdds ? selectedOdds.bookmaker : null;
+        // Get bookmaker name if odds were selected from a bookmaker (null when using manual entry)
+        const bookmakerName = !usingManualEntry && selectedOdds ? selectedOdds.bookmaker : null;
 
         // Convert units to money if preferred input is units
         let finalStake = parseFloat(stake);
@@ -1482,7 +1523,7 @@ export default function AddToJournalModal({
 
         const singleBetPayload = {
           date: gameDate,
-          sport: 'NBA',
+          sport: sport === 'afl' ? 'AFL' : 'NBA',
           market,
           selection,
           stake: finalStake,
@@ -1622,7 +1663,7 @@ export default function AddToJournalModal({
                     setSelectedPlayer(playerInfo);
                     setPlayerSearchQuery(playerName);
                     // Set playerStatType to match current statType to ensure odds fetch
-                    if (statType && PLAYER_STAT_OPTIONS.some(opt => opt.value === statType)) {
+                    if (statType && effectivePlayerStatOptions.some(opt => opt.value === statType)) {
                       setPlayerStatType(statType);
                     }
                     // Auto-fill game for player's team - construct directly from props
@@ -1731,7 +1772,7 @@ export default function AddToJournalModal({
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0d1f35] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     disabled={!selectedPlayer}
                   >
-                    {PLAYER_STAT_OPTIONS.map(opt => (
+                    {effectivePlayerStatOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
@@ -2653,8 +2694,8 @@ export default function AddToJournalModal({
           </div>
 
               {/* Over/Under Toggle or Team Selection for Moneylines/Spreads */}
-              {((statType === 'moneyline' && isGameProp && selectedOdds?.homeTeam && selectedOdds?.awayTeam) ||
-            (statType === 'spread' && isGameProp && selectedOdds?.favoriteTeam && selectedOdds?.underdogTeam)) ? (
+              {((statType === 'moneyline' && currentIsGameProp && (selectedOdds?.homeTeam && selectedOdds?.awayTeam || (team && opponent))) ||
+            (statType === 'spread' && currentIsGameProp && (selectedOdds?.favoriteTeam && selectedOdds?.underdogTeam || (team && opponent)))) ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select Team
@@ -2669,7 +2710,8 @@ export default function AddToJournalModal({
                       : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {getTeamNameOnly(selectedOdds.homeTeam || '')} {formatOdds(selectedOdds.homeOdds || selectedOdds.overPrice || 0, oddsFormat)}
+                  {getTeamNameOnly(statType === 'moneyline' ? (selectedOdds?.homeTeam || team || '') : (selectedOdds?.favoriteTeam || team || ''))}
+                  {selectedOdds && (statType === 'moneyline' ? (selectedOdds.homeOdds ?? selectedOdds.overPrice) : selectedOdds.favoriteOdds ?? selectedOdds.overPrice) != null && ` ${formatOdds(statType === 'moneyline' ? (selectedOdds.homeOdds || selectedOdds.overPrice || 0) : (selectedOdds.favoriteOdds || selectedOdds.overPrice || 0), oddsFormat)}`}
                 </button>
                 <button
                   type="button"
@@ -2680,7 +2722,8 @@ export default function AddToJournalModal({
                       : 'bg-gray-100 dark:bg-[#0d1f35] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {getTeamNameOnly(selectedOdds.awayTeam || '')} {formatOdds(selectedOdds.awayOdds || selectedOdds.underPrice || 0, oddsFormat)}
+                  {getTeamNameOnly(statType === 'moneyline' ? (selectedOdds?.awayTeam || opponent || '') : (selectedOdds?.underdogTeam || opponent || ''))}
+                  {selectedOdds && (statType === 'moneyline' ? (selectedOdds.awayOdds ?? selectedOdds.underPrice) : selectedOdds.underdogOdds ?? selectedOdds.underPrice) != null && ` ${formatOdds(statType === 'moneyline' ? (selectedOdds.awayOdds || selectedOdds.underPrice || 0) : (selectedOdds.underdogOdds || selectedOdds.underPrice || 0), oddsFormat)}`}
                 </button>
               </div>
             </div>
@@ -2892,7 +2935,7 @@ export default function AddToJournalModal({
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                         {parlaySelections.map((sel) => {
-                          const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+                          const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : effectivePlayerStatOptions;
                           const statLabel = statOptions.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
                           const displayName = sel.isGameProp 
                             ? (sel.team ? `${getTeamNameOnly(sel.team)} vs ${getTeamNameOnly(sel.opponent)}` : 'Game')
@@ -3099,7 +3142,7 @@ export default function AddToJournalModal({
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                   {parlaySelections.map((sel) => {
-                    const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : PLAYER_STAT_OPTIONS;
+                    const statOptions = sel.isGameProp ? GAME_PROP_STAT_OPTIONS : effectivePlayerStatOptions;
                     const statLabel = statOptions.find(opt => opt.value === sel.statType)?.label || sel.statType.toUpperCase();
                     const displayName = sel.isGameProp 
                       ? (sel.team ? `${getTeamNameOnly(sel.team)} vs ${getTeamNameOnly(sel.opponent)}` : 'Game')

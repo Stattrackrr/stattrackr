@@ -698,10 +698,109 @@ export async function GET(request: Request) {
       }
     }
 
+    // --- AFL single-bet resolution ---
+    const AFL_STAT_TYPES = ['disposals', 'kicks', 'handballs', 'marks', 'goals', 'behinds', 'tackles', 'clearances'];
+    let aflOffset = 0;
+    let aflHasMore = true;
+    const aflCandidates: any[] = [];
+
+    while (aflHasMore) {
+      let aflQuery = supabaseAdmin
+        .from('bets')
+        .select('id, user_id, sport, team, opponent, player_name, stat_type, over_under, line, game_date, status, result')
+        .eq('sport', 'AFL')
+        .in('status', ['pending', 'live'])
+        .eq('result', 'pending')
+        .order('game_date', { ascending: false })
+        .range(aflOffset, aflOffset + BATCH_SIZE - 1);
+
+      if (userId) aflQuery = aflQuery.eq('user_id', userId);
+
+      const { data: aflBatch, error: aflErr } = await aflQuery;
+      if (aflErr) break;
+      if (aflBatch && aflBatch.length > 0) {
+        aflCandidates.push(...aflBatch);
+        aflHasMore = aflBatch.length === BATCH_SIZE;
+        aflOffset += BATCH_SIZE;
+      } else {
+        aflHasMore = false;
+      }
+    }
+
+    const aflSingleBets = aflCandidates.filter((b) => !isParlayBet(b));
+    const baseUrl =
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      'http://localhost:3000';
+
+    for (const bet of aflSingleBets) {
+      const gameDate = String(bet?.game_date ?? '').split('T')[0];
+      const playerName = String(bet?.player_name ?? '').trim();
+      const team = String(bet?.team ?? '').trim();
+      const opponent = String(bet?.opponent ?? '').trim();
+      const statType = String(bet?.stat_type ?? '').trim();
+      const overUnder = bet?.over_under === 'under' ? 'under' : 'over';
+      const line = typeof bet?.line === 'number' ? bet.line : Number(bet?.line);
+
+      if (!gameDate || !playerName || !team || !AFL_STAT_TYPES.includes(statType) || !Number.isFinite(line)) continue;
+
+      const season = parseInt(gameDate.slice(0, 4), 10);
+      if (!Number.isFinite(season)) continue;
+
+      try {
+        const params = new URLSearchParams({
+          season: String(season),
+          player_name: playerName,
+          team,
+        });
+        const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, { cache: 'no-store' });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const games = Array.isArray(data?.games) ? data.games : [];
+        const betOpp = opponent.toLowerCase();
+        let game = games.find((g: any) => {
+          const gDate = String(g?.date ?? g?.game_date ?? '').split('T')[0];
+          const gOpp = String(g?.opponent ?? '').trim().toLowerCase();
+          const oppMatch = gOpp === betOpp || gOpp.includes(betOpp) || betOpp.includes(gOpp);
+          if (gDate && gameDate) return gDate === gameDate && oppMatch;
+          return false;
+        });
+        if (!game && games.length > 0) {
+          game = games.find((g: any) => {
+            const gOpp = String(g?.opponent ?? '').trim().toLowerCase();
+            return gOpp === betOpp || gOpp.includes(betOpp) || betOpp.includes(gOpp);
+          });
+        }
+        if (!game) continue;
+
+        const raw = (game as any)[statType];
+        const actualValue = typeof raw === 'number' && Number.isFinite(raw) ? raw : Number(raw);
+        if (!Number.isFinite(actualValue)) continue;
+
+        const result = calculateUniversalBetResult(actualValue, line, overUnder, statType);
+
+        const { error: updateErr } = await supabaseAdmin
+          .from('bets')
+          .update({
+            status: 'completed',
+            result,
+            actual_value: actualValue,
+          })
+          .eq('id', bet.id)
+          .in('status', ['pending', 'live'])
+          .eq('result', 'pending');
+
+        if (!updateErr) updated++;
+      } catch {
+        // Skip this bet on error (e.g. API not reachable)
+      }
+    }
+
     return NextResponse.json({
       message: 'Journal bet check completed',
       updated,
-      total,
+      total: total + aflSingleBets.length,
       scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
     });
   } catch (error: any) {

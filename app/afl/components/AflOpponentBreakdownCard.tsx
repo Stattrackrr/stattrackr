@@ -33,7 +33,7 @@ export interface AflOpponentBreakdownCardProps {
  * (what they allow - disposals against, kicks against, etc.).
  * Higher OA rank = allow more = easier matchup (green). Lower rank = tougher (red).
  */
-const SEASON_OPTIONS = [2025, 2026] as const;
+const SEASON_OPTIONS = [2026, 2025] as const;
 
 export function AflOpponentBreakdownCard({
   isDark,

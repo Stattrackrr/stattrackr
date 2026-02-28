@@ -32,6 +32,8 @@ type GameLogRow = {
   game_number: number;
   opponent: string;
   round: string;
+  /** Game date YYYY-MM-DD when available (e.g. from FootyWire Date column); used for journal resolution. */
+  date?: string;
   result: string;
   guernsey: number | null;
   kicks: number;
@@ -199,11 +201,18 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
   const round = descriptionToRound(description);
   const opponent = get('Opponent') || '—';
   const result = cleanResultLabel(get('Result')) || '—';
+  const dateRaw = get('Date').trim();
+  let date: string | undefined;
+  if (dateRaw) {
+    const d = new Date(dateRaw);
+    if (Number.isFinite(d.getTime())) date = d.toISOString().slice(0, 10);
+  }
   return {
     season,
     game_number: 0, // FootyWire doesn't expose game number; chart uses index
     opponent,
     round,
+    ...(date && { date }),
     result,
     guernsey: null,
     kicks: num('K'),

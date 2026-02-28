@@ -15,7 +15,7 @@ const DVP_METRICS = [
 ] as const;
 
 const AFL_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
-const SEASON_OPTIONS = [2025, 2026] as const;
+const SEASON_OPTIONS = [2026, 2025] as const;
 const DVP_CACHE_TTL = 2 * 60 * 1000;
 const dvpBatchCache = new Map<string, { data: DvpBatchResponse; timestamp: number }>();
 

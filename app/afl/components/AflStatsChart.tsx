@@ -54,7 +54,7 @@ const STAT_PRIORITY = [
   'one_percenters',
   'goal_assists',
 ];
-const META_SKIP = new Set(['season', 'game_number', 'guernsey']);
+const META_SKIP = new Set(['season', 'game_number', 'guernsey', '__aflGameIndex']);
 /** Hide from main chart stat pills (keep focused list; secondary metrics live in supporting stats). */
 const STATS_HIDDEN = new Set([
   'bounces',

@@ -21,6 +21,7 @@
     "fetch:footywire-team-rankings": "node scripts/fetch-footywire-team-rankings.js",
     "fetch:footywire-injuries": "node scripts/fetch-footywire-injuries.js",
     "fetch:footywire-league-player-stats": "node scripts/fetch-footywire-league-player-stats.js",
+    "fetch:footywire-ladder": "node scripts/fetch-footywire-ladder.js",
     "warm:afl:player-logs": "node scripts/warm-afl-player-logs.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
     "check:prediction-data": "node scripts/check-prediction-data-sources.mjs",
