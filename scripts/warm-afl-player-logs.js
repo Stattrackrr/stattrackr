@@ -179,6 +179,46 @@ async function main() {
   if (failedPlayers.length > 0) {
     console.log(`[AFL Warm] ❌ Failed (sample): ${failedPlayers.slice(0, 15).join('; ')}${failedPlayers.length > 15 ? ` ... +${failedPlayers.length - 15} more` : ''}`);
   }
+
+  // Cache health check: GET without cron secret (same as a user). Fail workflow if we warmed but prod returns cache-miss.
+  let cacheHealthOk = false;
+  let ranCacheHealthCheck = false;
+  if (selectedPlayers.length > 0 && success > 0) {
+    ranCacheHealthCheck = true;
+    const probe = selectedPlayers[0];
+    const team = teamForRequest(probe.team);
+    const verifySeason = warmSeasons.includes(2025) ? 2025 : warmSeasons[0];
+    const verifyUrl = `${prodUrl}/api/afl/player-game-logs?season=${verifySeason}&player_name=${encodeURIComponent(probe.name)}&team=${encodeURIComponent(team)}&include_both=1`;
+    console.log(`[AFL Warm] 🔍 Cache health check: GET (no cron secret) ${verifyUrl}`);
+    try {
+      const res = await fetch(verifyUrl, { headers: { Accept: 'application/json' } });
+      const source = (res.headers.get('x-afl-player-logs-source') || res.headers.get('X-AFL-Player-Logs-Source') || '').toLowerCase();
+      const cacheEnabled = (res.headers.get('x-afl-cache-enabled') || res.headers.get('X-AFL-Cache-Enabled') || '').toLowerCase();
+      const keyBase = res.headers.get('x-afl-cache-key-base') || res.headers.get('X-AFL-Cache-Key-Base') || '';
+      const key2025 = res.headers.get('x-afl-cache-key-2025-fallback') || res.headers.get('X-AFL-Cache-Key-2025-Fallback') || '';
+      const json = await res.json().catch(() => ({}));
+      const gameCount = Number(json?.game_count ?? (Array.isArray(json?.games) ? json.games.length : 0));
+
+      if (source === 'cache' && gameCount > 0) {
+        console.log(`[AFL Warm] ✅ Cache health OK: ${probe.name} (${verifySeason}) → HTTP ${res.status}, cache hit, ${gameCount} games`);
+        cacheHealthOk = true;
+      } else {
+        console.log(`[AFL Warm] ❌ Cache health FAIL: ${probe.name} (${verifySeason}) → HTTP ${res.status}, source=${source || 'unknown'}, games=${gameCount}`);
+        console.log(`[AFL Warm]    X-AFL-Cache-Enabled: ${cacheEnabled || '(missing)'}`);
+        if (keyBase) console.log(`[AFL Warm]    X-AFL-Cache-Key-Base: ${keyBase}`);
+        if (key2025) console.log(`[AFL Warm]    X-AFL-Cache-Key-2025-Fallback: ${key2025}`);
+        console.log(`[AFL Warm]    Fix: ensure PROD_URL deployment has same UPSTASH_REDIS_REST_URL/TOKEN as Upstash; AFL_USE_UPSTASH_CACHE=true; re-run warm.`);
+      }
+    } catch (e) {
+      console.log(`[AFL Warm] ❌ Cache health request failed:`, e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (ranCacheHealthCheck && !cacheHealthOk) {
+    console.error(`[AFL Warm] Cache health check failed (prod returned cache-miss after warm). Workflow failing.`);
+    process.exitCode = 1;
+  }
+
   if (failed >= maxFailures) {
     console.error(`Failed count (${failed}) >= AFL_WARM_MAX_FAILURES (${maxFailures}); exiting with error.`);
     process.exitCode = 1;

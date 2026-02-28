@@ -377,6 +377,11 @@ Optional env controls:
 4. **Optional: inspect keys in Upstash**  
    In [Upstash Console](https://console.upstash.com/) → your database → CLI or Data Browser: `KEYS afl:player-logs:*` to list AFL cache keys. You should see keys like `afl:player-logs:v1:2025:brisbane lions:josh dunkley:q0` after a successful warm.
 
+**Cache not working?**  
+- The app at **PROD_URL** must use the **same** Redis as the one you see in the Upstash dashboard. In Vercel → your project → Settings → Environment Variables, set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to the exact values from Upstash (REST tab). Copy-paste; no typos.  
+- **After changing the token or URL in Vercel**, run the warm workflow again. The warm writes to whatever Redis that deployment uses; if you pointed prod at a new/empty Redis, the old keys are in the old Redis.  
+- In the workflow log, look for **`[AFL Warm] 🔍 Cache health check:`** and **`✅ Cache health OK`** or **`❌ Cache health FAIL`**. The script does one GET to prod (no cron secret) after warming; if prod returns cache-miss, the **workflow fails** so you get a hard pass/fail. On FAIL, the log prints `X-AFL-Cache-Enabled`, `X-AFL-Cache-Key-Base`, and fix steps.
+
 **Advanced stats (TOG %, meters gained, intercepts, etc.):** The player-game-logs API only writes to the Upstash cache when the FootyWire response includes advanced stats (e.g. at least one game with `percent_played` or `meters_gained`). That way the warm workflow fills the cache with full data so the Supporting stats panel shows values instead of "No data".
 
 **Team list / search:** The workflow fetches the latest league player list (`fetch:footywire-league-player-stats`) before warming so the warm uses the most recent names and teams. The `/api/afl/players` search endpoint prefers `data/afl-league-player-stats-*.json` when present, so the app can serve search from that file without calling an external API. Commit updated `data/afl-league-player-stats-*.json` (e.g. after a manual run or a separate data-update workflow) so production has the latest list.
