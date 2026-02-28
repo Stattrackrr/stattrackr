@@ -610,7 +610,9 @@ export async function GET(request: NextRequest) {
     const [cachedBase, cachedQuarters] = cacheEnabled
       ? await Promise.all([getAflPlayerLogsCache(keyBase), getAflPlayerLogsCache(keyQuarters)])
       : [null, null];
-    if (cachedBase && (cachedBase.game_count ?? cachedBase.games?.length ?? 0) > 0) {
+    const baseGames = cachedBase?.games;
+    const hasBaseGames = Array.isArray(baseGames) && baseGames.length > 0;
+    if (cachedBase && hasBaseGames) {
       const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games };
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
@@ -625,12 +627,13 @@ export async function GET(request: NextRequest) {
         : null;
       if (keyBase2025 && keyQuarters2025) {
         const [cachedBase2025, cachedQuarters2025] = await Promise.all([getAflPlayerLogsCache(keyBase2025), getAflPlayerLogsCache(keyQuarters2025)]);
-        if (cachedBase2025 && (cachedBase2025.game_count ?? cachedBase2025.games?.length ?? 0) > 0) {
+        const base2025 = cachedBase2025?.games;
+        if (cachedBase2025 && Array.isArray(base2025) && base2025.length > 0) {
           const payload = { ...cachedBase2025, gamesWithQuarters: cachedQuarters2025?.games ?? cachedBase2025.games };
           return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
         }
       }
-      const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
+      const empty = { season, source: 'cache-miss', player_name: playerNameParam.trim(), games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
       const missHeaders: Record<string, string> = {
         ...sourceHeaders,
         'X-AFL-Player-Logs-Source': 'cache-miss',
@@ -686,7 +689,8 @@ export async function GET(request: NextRequest) {
   }
 
   const cachedResponse = cacheEnabled ? await getAflPlayerLogsCache(responseCacheKey) : null;
-  if (cachedResponse && (cachedResponse.game_count ?? cachedResponse.games?.length ?? 0) > 0) {
+  const cachedGames = cachedResponse?.games;
+  if (cachedResponse && Array.isArray(cachedGames) && cachedGames.length > 0) {
     return NextResponse.json(cachedResponse, {
       headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' },
     });
@@ -702,13 +706,14 @@ export async function GET(request: NextRequest) {
         includeQuarters: includeQuarterEnrichment,
       });
       const cached2025 = await getAflPlayerLogsCache(key2025);
-      if (cached2025 && (cached2025.game_count ?? cached2025.games?.length ?? 0) > 0) {
+      const games2025 = cached2025?.games;
+      if (cached2025 && Array.isArray(games2025) && games2025.length > 0) {
         return NextResponse.json(cached2025, {
           headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' },
         });
       }
     }
-    const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0 };
+    const empty = { season, source: 'cache-miss', player_name: playerNameParam.trim(), games: [], game_count: 0 };
     return NextResponse.json(empty, {
       headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss', 'X-AFL-Cache-Key': responseCacheKey },
     });

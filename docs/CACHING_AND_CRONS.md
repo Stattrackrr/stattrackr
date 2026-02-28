@@ -361,6 +361,22 @@ Optional env controls:
 
 **Checking cache vs API on prod:** Each response from `GET /api/afl/player-game-logs` includes: `X-AFL-Player-Logs-Source` (`cache`, `cache-miss`, or `footywire`) and `X-AFL-Cache-Enabled` (`true` if Upstash is configured, else `false`). If you see `X-AFL-Cache-Enabled: false`, the cache is off and the warm job will not persist data—set `AFL_USE_UPSTASH_CACHE=true` and the Upstash env vars in Vercel (and ensure PROD_URL points at that deployment). On cache-miss, response headers include `X-AFL-Cache-Key-Base` and `X-AFL-Cache-Key-2025-Fallback` so you can verify in the Upstash dashboard that the key exists.
 
+**Verify cache is being written (after deploy):**
+
+1. **Confirm cache is enabled on prod**  
+   Request any player (e.g. `GET https://your-domain.com/api/afl/player-game-logs?season=2025&player_name=Josh+Dunkley&team=Brisbane+Lions&include_both=1`) and check the response header **`X-AFL-Cache-Enabled`**. It must be **`true`**. If it’s `false`, the app is not using Upstash (env vars missing or `AFL_USE_UPSTASH_CACHE` not set).
+
+2. **Run the warm workflow**  
+   In GitHub: Actions → “Warm AFL Player Logs Cache” → Run workflow. Wait for it to finish (see “Warm AFL player logs cache” step for success/fail counts).
+
+3. **Confirm reads hit the cache**  
+   Call the same URL again (or open a player on the AFL dashboard). Check **`X-AFL-Player-Logs-Source`**:
+   - **`cache`** → Key was found; warm wrote to Upstash and the app read from it.
+   - **`cache-miss`** → Key not found. Check header **`X-AFL-Cache-Key-Base`** (or **`X-AFL-Cache-Key-2025-Fallback`** for 2026 requests), then in the Upstash dashboard → your Redis → Data Browser / CLI run `GET <that-key>`. If the key is missing, the warm didn’t write (e.g. wrong PROD_URL or cache disabled on that deployment). If the key exists, the read path or key format may differ.
+
+4. **Optional: inspect keys in Upstash**  
+   In [Upstash Console](https://console.upstash.com/) → your database → CLI or Data Browser: `KEYS afl:player-logs:*` to list AFL cache keys. You should see keys like `afl:player-logs:v1:2025:brisbane lions:josh dunkley:q0` after a successful warm.
+
 **Advanced stats (TOG %, meters gained, intercepts, etc.):** The player-game-logs API only writes to the Upstash cache when the FootyWire response includes advanced stats (e.g. at least one game with `percent_played` or `meters_gained`). That way the warm workflow fills the cache with full data so the Supporting stats panel shows values instead of "No data".
 
 **Team list / search:** The workflow fetches the latest league player list (`fetch:footywire-league-player-stats`) before warming so the warm uses the most recent names and teams. The `/api/afl/players` search endpoint prefers `data/afl-league-player-stats-*.json` when present, so the app can serve search from that file without calling an external API. Commit updated `data/afl-league-player-stats-*.json` (e.g. after a manual run or a separate data-update workflow) so production has the latest list.
