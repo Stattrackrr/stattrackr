@@ -75,6 +75,8 @@ function teamForRequest(team) {
   return NICKNAME_TO_FULL[t] || NICKNAME_TO_FULL[t.replace(/\s+/g, ' ')] || t;
 }
 
+const WARM_REQUEST_TIMEOUT_MS = 45000; // 45s per request so slow/hanging requests don't block the run
+
 async function warmOne(player, season) {
   const team = teamForRequest(player.team);
   const params = new URLSearchParams({
@@ -91,14 +93,24 @@ async function warmOne(player, season) {
   }
 
   const url = `${prodUrl}/api/afl/player-game-logs?${params.toString()}`;
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    return { ok: false, status: res.status, body };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WARM_REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, { headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      return { ok: false, status: res.status, body };
+    }
+    const json = await res.json().catch(() => ({}));
+    const count = Number(json?.game_count || (Array.isArray(json?.games) ? json.games.length : 0));
+    return { ok: true, count };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const isAbort = err?.name === 'AbortError';
+    return { ok: false, status: isAbort ? 408 : 0, body: isAbort ? 'timeout' : String(err?.message || err) };
   }
-  const json = await res.json().catch(() => ({}));
-  const count = Number(json?.game_count || (Array.isArray(json?.games) ? json.games.length : 0));
-  return { ok: true, count };
 }
 
 async function runPool(jobs, worker, size) {
