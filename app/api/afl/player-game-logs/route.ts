@@ -204,8 +204,15 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
   const dateRaw = get('Date').trim();
   let date: string | undefined;
   if (dateRaw) {
-    const d = new Date(dateRaw);
-    if (Number.isFinite(d.getTime())) date = d.toISOString().slice(0, 10);
+    let d = new Date(dateRaw);
+    if (Number.isFinite(d.getTime())) {
+      // If parsed year is way off from season (e.g. "27 Sept 01" -> 2001 instead of 2025), use season year
+      const parsedYear = d.getFullYear();
+      if (Math.abs(parsedYear - season) > 1) {
+        d = new Date(season, d.getMonth(), d.getDate());
+      }
+      date = d.toISOString().slice(0, 10);
+    }
   }
   return {
     season,

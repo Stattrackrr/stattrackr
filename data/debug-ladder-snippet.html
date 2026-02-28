@@ -1,0 +1,1743 @@
+
+
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+
+
+<HTML>
+<HEAD>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<TITLE>AFL Ladder 2025</TITLE>
+<meta NAME="description" CONTENT="AFL Ladder 2025."> 
+<meta NAME="keywords" CONTENT="AFL Ladder">
+
+
+<script>
+var template = "pages/ladder";
+var slashIndex = template.indexOf('/');
+var templateName = template.substring(slashIndex + 1);
+var originalTemplate = templateName;
+var progressIsLoading = false;
+checkForFantasyTemplate();
+checkForPreSeasonTemplate();
+
+var advv = 'N';
+var skipImages = 'Y';
+
+var sby = null;
+var orderBy = null;
+
+function checkForPreSeasonTemplate() {
+  if (templateName.startsWith('pre-season')) {
+    var typeKey = '';
+    var type = "";
+    console.log(type);
+    if (typeKey == 'S') {
+    	type = 'supercoach';
+    } else {
+    	type = 'dreamteam';
+    }
+    var currentTemplate = templateName;
+    templateName = type + '-' + currentTemplate;
+  }
+}
+
+function checkForFantasyTemplate() {
+  if (templateName.startsWith('fantasy')) {
+    if (!templateName.includes('round') && !templateName.includes('season')) {
+	    var newTemplate = window.location.pathname;
+	    newTemplate = newTemplate.substring(newTemplate.lastIndexOf('/') + 1);
+	    if (newTemplate.includes('_')) {
+	      templateName = newTemplate.replaceAll('_', '-');
+	    }
+    }
+  }
+}
+
+function getOrderByValue(value) {
+	orderBy = value;
+}
+
+function getSbyValue(value) {
+	sby = value;
+	sortBy();
+}
+
+function refreshStats(sortByFragment) {
+   var divName = originalTemplate + '-div';
+   var fragmentDiv = document.getElementById(divName);
+   if (fragmentDiv != null) {
+      fragmentDiv.innerHTML = sortByFragment;
+   }
+}
+
+function refreshTeamBlock(sortFragment, teamNumber) {
+   var divName = originalTemplate + '-team' + teamNumber + '-row';
+   var fragmentDiv = document.getElementById(divName);
+   if (fragmentDiv != null) {
+      fragmentDiv.innerHTML = sortFragment;
+   }
+}
+
+function buildBlockFragment(blockFragment) {
+	var divName = 'match-statistics-block-div';
+	var fragmentDiv = document.getElementById(divName);
+	if (fragmentDiv != null) {
+	   fragmentDiv.innerHTML = blockFragment;
+	}
+}
+
+function getProgressBarDiv() {
+	var progressBar = document.getElementById("progressBar");
+	return progressBar;
+}
+
+function showProgressCall(bar) {
+	bar.style.width = 33 + '%';
+	progressIsLoading = true;
+	loadUnfinishedBar(bar);
+}
+
+function showProgressResponse(bar) {
+	bar.style.width = 66 + '%';
+}
+
+function showProgressPost(bar) {
+    progressIsLoading = false;
+	bar.style.width = 100 + '%';
+}
+
+function loadUnfinishedBar(bar) {
+	var id = setInterval(frame, 30);
+	var width = 33;
+    function frame() {
+       if (width >= 66 || !progressIsLoading) {
+         clearInterval(id);
+       } else {
+         width++;
+         bar.style.width = width + '%';
+       }
+    } 
+}
+function sortBy() {
+	var bar = getProgressBarDiv();
+	showProgressCall(bar);
+	var baseUrl = "/afl/json/json-sort-stats-" + templateName + ".json";
+	var params = "sby=" + sby + "&template=" + templateName + '&advv=' + advv + '&skipImg=' + skipImages;
+	var queryString = window.location.search;
+	if (queryString.includes('?')) {
+		queryString = queryString.split('?')[1];
+		if (queryString != null) {
+			queryString = queryString.replace('?', '').replace(/&sby=[0-9]+/, '');
+			queryString = '&' + queryString;
+			if (queryString.includes('advv=') && params.includes('advv=')) {
+				params = params.replace(/&advv=[A-Za-z]/, '');
+			}
+			params = params + queryString;
+		}
+	} else {
+	    queryString = window.location.pathname;
+	    if (queryString.includes('--')) {
+			var doubleDashIndex = queryString.indexOf('--');
+			var pid = queryString.substring(doubleDashIndex + 2);
+			var idparam = '&pid=' + pid;
+			params = params + idparam;
+		}
+		else if (queryString.includes('-')) {
+		   var dashIndex = queryString.indexOf('-');
+		   var tkey = queryString.substring(dashIndex + 1);
+		   var tkeyparam = '&tkey=' + tkey;
+		   params = params + tkeyparam;
+		}
+	}
+	
+	if (orderBy != null && !params.includes('&order')) {
+		params = params + '&order=' + orderBy;
+	}
+	
+	var request = new XMLHttpRequest();
+    request.open("POST", baseUrl, true);
+    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    request.onreadystatechange = function () {
+      if (request.readyState == 4) {
+        if (request.status == 200 || request.status == 0) {
+          responseString = request.responseText.trim();
+          showProgressResponse(bar);
+          if (responseString.startsWith("Error:")) {
+            alert(responseString);
+          }
+          else {
+                        var jsonObject = JSON.parse(responseString);
+            if (templateName == 'match-statistics') {
+               var sortTeam1Fragment = jsonObject.sortByTeam1;
+               var sortTeam2Fragment = jsonObject.sortByTeam2;
+               refreshTeamBlock(sortTeam1Fragment, '1');
+               refreshTeamBlock(sortTeam2Fragment, '2');
+               showProgressPost(bar);
+               setTimeout(function() { bar.style.width = 0;}, 100);
+            } else {
+               var sortByFragment = jsonObject.sortBy;
+               refreshStats(sortByFragment);
+               showProgressPost(bar);
+               setTimeout(function() { bar.style.width = 0;}, 100);
+               if (templateName.includes("fantasy") || templateName.includes("supercoach") || templateName.includes("dream-team")) {
+			       filterPlayers();
+			   }
+            }
+          }
+        }
+      }
+    }
+    request.send(params);
+}
+</script>
+<link rel="canonical" href="https://www.footywire.com/afl/footy/ft_ladder?year=2025"/>
+
+<style id="styleMainDesktop">
+
+.tabbg { background-color: #000077; vertical-align: middle; }
+.blkbg { background-color: #000000; vertical-align: middle; }
+.tabbdr { background-color: #d8dfea; vertical-align: middle; }
+.wspace { background-color: #ffffff; vertical-align: middle; }
+
+.greybg { background-color: #f4f5f1; }
+.greybdr { background-color: #e3e4e0; }
+.blackbdr { background-color: #000000; }
+.lbgrey { background-color: #d4d5d1; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; font-weight: bold; }
+
+.caprow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; font-weight: bold; }
+
+.ylwbg { background-color: #eeffee; text-decoration: none; color: #000000; vertical-align: middle;  }
+.ylwbgmid { background-color: #eeffee; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; }
+.ylwbgtop { background-color: #eeffee; text-decoration: none; color: #000000; vertical-align: top;  }
+.ylwbgbottom { background-color: #eeffee; text-decoration: none; color: #000000; vertical-align: bottom; text-align: center;  }
+.ylwbg2 { background-color: #ddeedd; }
+.ylwbdr { background-color: #ccddcc; }
+
+.mtabbg { background-color: #f2f4f7; vertical-align: top; text-align: center; }
+
+.error { background-color: #ffffff; text-decoration: none; color: #ff0000; vertical-align: middle; text-align: left; font-weight: bold; }
+.cerror { background-color: #ffffff; text-decoration: none; color: #ff0000; vertical-align: middle; text-align: center; font-weight: bold; }
+
+.greytxt { color: #777777; }
+.bluetxt { color: #003399; }
+.normtxt { color: #000000; }
+.norm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; }
+.drow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; }
+.lnorm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; }
+.rnorm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: right; }
+.rdrow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: right; }
+.ldrow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; }
+.bnorm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; font-weight: bold; }
+.rbnorm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: right; font-weight: bold; }
+.lbnorm { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; font-weight: bold; }
+.bdrow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; font-weight: bold; }
+.lbdrow { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; font-weight: bold; }
+.lylw { background-color: #eeffee; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; }
+
+.normtop { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: top; text-align: center; }
+.lnormtop { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: top; text-align: left; }
+.drowtop { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: top; text-align: center; }
+.ldrowtop { background-color: #f2f4f7; text-decoration: none; color: #000000; vertical-align: top; text-align: left; }
+
+a.tblink:link {
+  color: #ffffff;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.dvr { color: #999999; font-weight: normal; vertical-align: middle; }
+.hltitle { text-decoration: none; color: #000000; font-size: 24px; font-weight: bold; }
+.whltitle { background-color: #ffffff; text-decoration: none; color: #000000; font-size: 24px; font-weight: bold; }
+.idxhltitle { text-decoration: none; color: #990099; font-size: 24px; font-weight: bold; }
+
+.tbtitle {
+  text-decoration:none;
+  color:#3B5998;
+  font-weight:bold;
+  border-top:1px solid #e4ebf6;
+  border-bottom:1px solid #D8DFEA;
+  background-color:#D8DFEA;
+}
+
+.innertbtitle {
+  background-color:#D8DFEA;
+  text-decoration:none;
+  color:#3B5998;
+  font-weight:normal;
+}
+
+.tabopt { background-color: #5555cc; vertical-align: middle; text-align: center; }
+.tabsel { background-color: #ffffff; text-decoration: underline; color: #000000; font-weight: bold; vertical-align: middle; text-align: center; }
+
+a.tablink {
+  font-weight:bold;
+  vertical-align:middle;
+}
+
+a.tablink:link { color: #ffffff; }
+a.tablink:hover { color: #eeeeee; }
+
+.lnitxt { }
+.lseltxt { }
+.lselbldtxt { font-weight: bold; }
+.formcls {  background-color:#f2f4f7; vertical-align:middle; text-align:left; }
+.formclsright {  background-color:#f2f4f7; vertical-align:middle; text-align:right }
+
+li { background-color: #ffffff; color: #000000;  }
+p { color: #000000;  }
+th { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; font-weight: bold; }
+
+a.wire { font-weight:bold }
+
+.menubg { background-color: #000077; text-decoration: none; color: #000000; vertical-align: middle; text-align: center; }
+.menubdr { background-color: #f2f4f7; vertical-align: middle; }
+
+table#wiretab {
+  border-spacing:0px;
+  border-collapse:collapse;
+  background-color:#F2F4F7;
+  width:450px;
+  height:250px;
+}
+
+table#wiretab td.section {
+  border-bottom:1px solid #D8DFEA;
+}
+
+table#wirecell {
+  background-color:#F2F4F7;
+  border:0px;
+}
+
+table#wirecell td#wirecelltitle {
+  vertical-align:top;
+}
+
+table#wirecell td#wirecellblurb {
+  vertical-align:top;
+}
+
+.smnt { background-color: #ffffff; text-decoration: none; color: #000000; vertical-align: middle; text-align: left; }
+
+a.peep { font-weight:bold; font-size: 14px; }
+
+table.peeptable {
+  border:1px solid #D8DFEA;
+  padding:5px;
+}
+
+table.peeptable td {
+  padding:5px;
+}
+
+form {
+  padding:0px;
+  margin:0px;
+}
+
+table.thickouter {
+  border:1px solid #D8DFEA;
+}
+
+table.thickouter td.padded {
+  padding:4px;
+}
+
+div.notice {
+  border:1px solid #D8DFEA;
+  padding:8px;
+  background-color:#D8DFEA;
+  text-align:center;
+  vertical-align:middle;
+  margin-bottom:12px;
+  font-size: 14px;
+}
+
+div.notice div.clickable {
+  font-weight:bold;
+  cursor:pointer;
+  display:inline;
+  color:#3B5998;
+}
+
+div.datadiv td.data, div.datadiv td.bdata {
+  padding:3px;
+  vertical-align:top;
+}
+
+div.datadiv td.bdata {
+  font-weight:bold;
+}
+
+a:focus { outline:none; }
+
+h1.centertitle {
+  padding-top:10px;
+  font-size:24px;
+  font-weight:bold;
+  text-align:center;
+}
+
+#matchscoretable {
+  background-color : #eeffee;
+  border:1px solid #ccddcc;
+}
+
+#matchscoretable td, #matchscoretable th {
+  background-color : #eeffee;
+  text-decoration: none;
+  color: #000000;
+  vertical-align: middle;
+}
+
+#matchscoretable th, #matchscoretable th.leftbold {
+  border-bottom:1px solid #ccddcc;
+  font-weight:bold;
+}
+
+#matchscoretable td.leftbold {
+  font-weight:bold;
+}
+
+#matchscoretable td.leftbold, #matchscoretable th.leftbold {
+  text-align:left;
+  padding-left:10px;
+}
+
+span.playerflag {
+  font-style:italic;
+  font-weight:bold;
+  font-size:11px;
+  color:#FF4500;
+  cursor:default;
+}
+
+span.scoreflag {
+  font-style:italic;
+  font-size:11px;
+  cursor:default;
+}
+
+td.formleftlabel {
+  background-color:#f2f4f7;
+  vertical-align:middle;
+  text-align:left;
+  padding-left:10px;
+  padding-right: 5px;
+}
+
+td.formmidlabel {
+  background-color:#f2f4f7;
+  vertical-align:middle;
+  text-align:left;
+  padding-left:22px;
+}
+
+td.formgo {
+  background-color:#f2f4f7;
+  vertical-align:middle;
+  text-align:left;
+  padding-left:10px;
+  padding-right:10px;
+}
+
+td.formleftlabel, td.formmidlabel, td.gormgo {
+  height:40px;
+}
+
+span.bulletspan {
+  color:#555555;
+}
+
+td.vspacecol {
+  width: 1px;
+  background-color: #b7b7b7;
+}
+
+td.hspacecol {
+  height: 1px;
+  background-color: #b7b7b7;
+}
+td.ladderhspacecol {
+  height: 10px;
+  background-color: #ffffff;
+}
+
+tr.darkcolor {
+  background-color: #f2f4f7;
+}
+
+tr.lightcolor {
+  background-color: #ffffff;
+}
+tr.highlightcolor {
+  background-color: #cbcdd0;
+}
+.hspacecolwhite {
+  background-color: #ffffff;
+}
+
+.hspacecolblack {
+  background-color: #000000;
+}
+
+.hspacecolrowwhite {
+  background-color: #ffffff;
+}
+
+.hspacecolrowblack {
+  background-color: #000000;
+}
+.hspacecollightgrey {
+  background-color: #b7b7b7;
+}
+
+span.sortByAjaxLink {
+  color: #3B5998; 
+  font-size: 14px;
+  font-weight: bold;
+}
+
+html.waiting * { cursor: progress !important; }
+
+span.sortByAjaxLink:hover {
+  text-decoration:underline;
+  cursor: pointer;	
+}
+
+div.progressbar {
+   position: fixed;
+   top: 0px;
+   left: 0px;
+   height: 3px;
+   width: 0;
+   background-color: #870101;
+   z-index: 100;
+   display: block;
+}
+
+span.barsep {
+  padding:0px 1px 0px 1px;
+}
+
+td.smallpaddingright {
+	padding-right: 10px;
+}
+
+tr#emptyResultsRow, div#emptyResultsRow { display: none;}
+
+td.livehighlight {
+	background: #b6d3f6;
+	color: #333333;
+}
+
+td.livehighlight a {
+	color: #333333;
+}
+
+span.hiddenspan {
+   display: none;
+}
+
+div.videodiv {
+	color: #000000;
+}
+
+.d-flex {
+  display: flex !important;
+}
+
+.align-items-center {
+  align-items-center: center !important;
+}
+
+.justify-content-end {
+  justify-content: flex-end !important;
+}
+
+.justify-content-center {
+  justify-content: center !important;
+}
+
+.position-relative {
+  position: relative !important;
+}
+
+.px-0 {
+  padding-right: 0px !important;
+  padding-left: 0px !important;
+}
+
+.p-0 {
+  padding: 0 !important;
+}
+
+.menu-separator {
+  height: 1px;
+  background: #999999;
+  opacity: 30%;
+  margin: 1rem;
+}
+
+.me-2 {
+  margin-right: 0.5rem !important;
+}
+
+/* Filter Form Css */
+
+#sortDropdown > .floating-sort-menu {
+  width: 186px;
+  top: 31px;
+  left: -16px;
+  z-index: 99;
+  padding: 1rem;
+  opacity: 0;
+  border: 1px solid #3a414a;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  box-shadow: 0px 2px 5px rgba(0, 0 , 0 , 0.1);
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  position: absolute;
+  pointer-events: none;
+}
+
+#sortDropdown.active > .floating-sort-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  border: 1px solid #d8dfea;
+}
+
+#sortDropdown > .floating-sort-menu ul {
+  list-style: none;
+}
+
+li.filter-item {
+  color: #4c4c4c;
+  margin-bottom: 5px !important;
+}
+
+li.filter-item span:hover {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+li.filter-item[data-sort-selected] span, li.filter-item:hover span {
+  font-weight: 700;
+}
+
+li.filter-item span::before, li.filter-item strong::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background-size: 100%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+li.filter-item[data-sort-selected] span::before, li.filter-item:hover span::before {
+  background: transparent url('data:image/svg+xml; utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>') no-repeat;
+  content: '';
+  width: 10px;
+  height: 10px;
+  background-size: 100%;
+  display: inline-block;
+  margin-right: 0.5rem;
+  filter: invert(34%) sepia(12%) saturate(2598%) hue-rotate(183deg) brightness(91%) contrast(89%);
+}
+
+#sortDropdown.active > .floating-sort-menu {
+  color: #6a6a6a !important;
+}
+
+#genreDropdown > .floating-genre-menu, #sortDropdown > .floating-sort-menu {
+  background-color: #fff;
+}
+
+.btn {
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 0;
+}
+
+.mpt-2 {
+  margin-top: 1px;
+}
+
+button#sortButton {
+  cursor: pointer;
+  color: #ffffff;
+  background: #3b5998;
+}
+body {
+  margin-top:0px;
+  margin-bottom:5px;
+  margin-left:5px;
+  margin-right:5px;
+  background-color:#ffffff; 
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+body, p, td, th, textarea, input, select, h1, h2, h3, h4, h5, h6 {
+	font-family: Arial,sans-serif,"lucida grande",tahoma,verdana;
+	font-size:14px;
+	text-decoration: none;
+	line-height:19px;
+	color: #000000;
+}
+
+table.plain {
+  border-spacing:0px;
+  border-collapse:collapse;
+  padding:0px;
+}
+
+table.leftmenu {
+  background-color:#F7F7F7;
+}
+
+table.leftmenu td {
+  padding:3px 2px 3px 5px;
+}
+
+table.leftmenu td#skyscraper {
+  background-color:#ffffff;
+}
+
+table.leftmenu td#topborder {
+  padding:0px 0px 0px 0px;
+  border-top:5px solid #b7b7b7;
+  font-size:5px;
+}
+
+table.leftmenu td#bottomborder {
+  padding:0px 0px 0px 0px;
+  border-bottom:1px solid #b7b7b7;
+  font-size:5px;
+}
+
+table.leftmenu td#bottomborderpad {
+  padding:0px 0px 0px 0px;
+  border-bottom:0px solid #b7b7b7;
+  font-size:3px;
+}
+
+td#headercell {
+  text-align:left;
+  vertical-align:bottom;  
+  background:#3B5998 url(/afl/img/logo/fw_header_1200x102.jpg);
+}
+
+a.leftmenu {
+  color:#3B5998;
+  display:block;
+  width:100%;
+  text-decoration:none;
+}
+a.leftmenu:hover {
+  text-decoration:none;
+}
+
+a {
+  color:#3B5998;
+  line-height:19px;
+}
+a:link {
+  text-decoration:none;
+}
+a:visited {
+  text-decoration:none;
+}
+a:active {
+  text-decoration:none;
+}
+a:hover {
+  text-decoration:underline;
+}
+
+table#footer {
+  border-spacing:0px;
+  border-collapse:collapse;
+  padding:0px;
+  color:#868686;
+  width:1023px;
+}
+
+table#footer td#footercopy {
+  text-align:left;
+}
+
+table#footer td#footerlinks {
+  text-align:right;
+}
+
+table#footer a {
+  padding:0px 2px 0px 2px;
+}
+
+.textinput {
+  border:1px solid #BDC7D8;
+  padding:2px 2px 2px 2px;
+}
+
+div#fieldDiv {
+  position: relative;
+  display: inline-block;
+}
+
+div#fieldDiv > #inputClear {
+  position: absolute;
+  top: 3px;
+  right: 7px;
+  font-weight: bold;
+  font-size: 20px;
+  padding: 0 0.2em;
+  line-height: 1em;
+  cursor: pointer;
+  visibility: hidden;
+  opacity: 50%;
+}
+
+div#fieldDiv > #searchIcon {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 15px;
+  padding: 0 0.2em;
+  line-height: 1em;
+  filter: invert(34%) sepia(13%) saturate(2475%) hue-rotate(183deg) brightness(90%) contrast(88%);
+}
+
+div#fieldDiv > input:: -ms-clear {
+  display: none;
+}
+
+div#fieldHeaderDiv {
+  position: relative;
+  display: inline-block;
+}
+
+div#fieldHeaderDiv > #inputClearHeader {
+  position: absolute;
+  top: 2px;
+  right: 12px;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 0 0.2em;
+  line-height: 1em;
+  cursor: pointer;
+  visibility: hidden;
+  opacity: 50%;
+}
+
+div#fieldHeaderDiv > #searchHeaderIcon {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 11px;
+  padding: 0 0.2em;
+  line-height: 1em;
+  filter: invert(34%) sepia(13%) saturate(2475%) hue-rotate(183deg) brightness(90%) contrast(88%);
+}
+
+div#fieldHeaderDiv > input:: -ms-clear {
+  display: none;
+}
+
+.searchinput {
+  border:1px solid #BDC7D8;
+  padding:3px 28px 2px 35px;
+  border-radius: 13px;
+  color: #000000;
+  width: 270px;
+}
+
+.searchinput:focus {
+  outline: none !important;
+  border: 1px solid #BDC7D8;
+}
+
+.searchinput:focus::placeholder {
+  transition: all 0.2s ease-in-out;
+  color: transparent;
+}
+
+.searchinput:not(:focus)::placeholder {
+  transition: all 0.2s ease-out;
+}
+
+.searchinputheader {
+  border:1px solid #BDC7D8;
+  padding:2px 9px 2px 26px;
+  color: #000000;
+  width: 170px;
+  margin-right: 5px;
+  height: 19px;
+  font-size: 12px;
+  border-radius: 13px;
+}
+
+.searchinputheader:focus {
+  outline: none !important;
+  border: 1px solid #BDC7D8;
+}
+
+.searchinputheader:focus::placeholder {
+  transition: all 0.2s ease-in-out;
+  color: transparent;
+}
+
+.searchinputheader:not(:focus)::placeholder {
+  transition: all 0.2s ease-out;
+}
+
+.button {
+  color:#ffffff;
+  padding: 3px 4px 3px 4px;
+  border:1px solid #3B5998;
+  background:#3B5998;
+  vertical-align:middle;
+  cursor:pointer;
+  border-radius: 5px 5px 5px 5px;
+}
+
+.button:focus { outline:none; }
+.button::-moz-focus-inner { border: 0; }
+
+a.button:link, a.button:visited, a.button:hover {
+  text-decoration:none;
+}
+
+td.blocklink {
+  padding:3px 3px 3px 3px;
+}
+a.blocklink {
+  padding:2px 2px 2px 2px;
+}
+a.blocklink:hover {
+  background-color:#3B5998;
+  color:#ffffff;
+  text-decoration:none;
+}
+table#teammenu, table#playermenu, table#playerrankmenu, table#teamrankmenu,
+    table#draftmenu, table#risingstarmenu, table#matchmenu, table#laddermenu,
+    table#brownlowmenu, table#allaustralianmenu, table#attendancemenu, table#coachmenu, table#supercoachmenu,
+    table#dreamteammenu, table#highlightsmenu, table#selectionsmenu, table#pastplayermenu,
+    table#tweetmenu, table#contractsmenu {
+  border-spacing:0px;
+  border-collapse:collapse;
+  background-color:#F7F7F7;
+  z-index:1;
+  position:absolute;
+  left:0px;
+  top:0px;
+  visibility:hidden;
+  border:1px solid #b7b7b7;
+  opacity:.95;
+  filter:alpha(opacity=95);
+  width:280px;
+}
+
+a.submenuitem {
+  padding:8px;
+  line-height:22px;
+  color:#3B5998;
+  text-decoration:none;
+  border:0px solid #3B5998;
+}
+a.submenuitem:link {
+  text-decoration:none;
+}
+a.submenuitem:hover {
+  text-decoration:underline;
+}
+
+div.submenux, div.submenuxb, div.submenutitle {
+  font-size:14px;
+  color:#676767;
+  font-weight:bold;
+}
+
+div.submenux {
+  padding-right:4px;
+}
+
+div.submenuxb {
+  padding:6px 4px 5px 0px;
+}
+
+div.submenux, div.submenuxb {
+  color:#676767;
+  cursor:pointer;
+}
+
+div.submenutitle {
+  color:#353535;
+  padding:6px 8px 4px 8px;
+}
+
+td#teamArrow, td#playerArrow, td#playerrankArrow, td#teamrankArrow,
+    td#draftArrow, td#risingstarArrow, td#matchArrow, td#ladderArrow,
+    td#brownlowArrow, td#allaustralianArrow, td#attendanceArrow, td#coachArrow, td#supercoachArrow,
+    td#dreamteamArrow, td#highlightsArrow, td#selectionsArrow, td#pastplayerArrow, 
+    td#tweetArrow, td#contractsArrow {
+  color:#888888;
+  font-weight:bold;
+  display:block;
+  text-decoration:none;
+  border-left:1px solid #F7F7F7;
+  cursor:pointer;
+  text-align:center;
+  width:15px;
+}
+
+td.submenu {
+	color:#353535;
+}
+.highlightcell {
+  background-color: #e7e7e7;
+}
+
+.dehighlightcell {
+  background-color: transparent;
+}table#header {
+  border-spacing:0px;
+  border-collapse:collapse;
+  margin:auto;
+  width:100%;
+}
+
+table#header td {
+  border:0px solid #3B5998;
+}
+
+table#header td#logo {
+  vertical-align:middle;
+  text-align:center;
+}
+
+table#header td#mainlinks {
+  vertical-align:bottom;
+  text-align:left;
+  padding-bottom:10px;
+}
+
+table#header td#memberStatus {
+  vertical-align:bottom;
+  text-align:right;
+  padding-bottom:10px;
+  position: relative;
+}
+
+a.emptylink, a.emptylink:link, a.emptylink:visited, a.emptylink:active, a.emptylink:hover {
+  border:0px;
+  margin:0px;
+  text-decoration:none;
+}
+
+table#header a.headerlink {
+  font-size:12px;
+  font-weight:bold;
+  color:#ffffff;
+  padding:4px;
+}
+table#header a.headerlink:link {
+  background-color:#3B5998;
+  text-decoration:none;
+}
+table#header a.headerlink:visited {
+  background-color:#3B5998;
+  text-decoration:none;
+}
+table#header a.headerlink:active {
+  background-color:#3B5998;
+  text-decoration:none;
+}
+table#header a.headerlink:hover {
+  background-color:#6D84B4;
+  text-decoration:none;
+}
+
+table#header a.userlink {
+  font-size:11px;
+  font-weight:normal;
+  color:#D8DFEA;
+  padding:5px;
+}
+table#header a.userlink:link {
+  color:#D8DFEA;
+  text-decoration:none;
+}
+table#header a.userlink:visited {
+  color:#D8DFEA;
+  text-decoration:none;
+}
+table#header a.userlink:active {
+  color:#D8DFEA;
+  text-decoration:none;
+}
+table#header a.userlink:hover {
+  color:#ffffff;
+  text-decoration:underline;
+}
+
+table#header div#welcome {
+  display:inline;
+  font-size:11px;
+  font-weight:bold;
+  color:#D8DFEA;
+  padding:5px;
+}
+td.menubar {
+  position: relative;
+}
+td.hdbar {
+  text-decoration:none;
+  border-top:1px solid #92201e;
+  border-bottom:1px solid #760402;
+  background-color: #870101;
+  padding:0px 25px 0px 5px;
+}
+
+td.hdbar div {
+  color:#ffffff;
+  display:inline;
+  padding:0px 5px 0px 5px;
+}
+
+td.hdbar div a {
+  font-size:13px;
+  font-weight:normal;
+  color:#ffffff;
+  font-weight:bold;
+}
+
+td.hdbar div a:link { text-decoration:none; }
+td.hdbar div a:hover { text-decoration:underline; }
+
+div#welcome {
+  font-size:13px;
+}div#membersbgdiv {
+  background:#888888;
+  opacity:.50;
+  filter:alpha(opacity=50);
+  z-index:1;
+  position:absolute;
+  left:0px;
+  top:0px;
+  width:100%;
+  height:100%;
+  text-align:center;
+  vertical-align:middle;
+  display:none;
+}
+
+div#memberswhitediv {
+  border:3px solid #222222;
+  background:#ffffff;
+  opacity:1;
+  filter:alpha(opacity=100);
+  z-index:2;
+  border-radius:20px;
+  -moz-border-radius:20px; /* Old Firefox */
+  padding:15px;
+  display:none;
+}
+
+#membersx {
+  color:#222222;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+}
+
+table.bottommargin {
+  margin-bottom: 20px;
+}
+
+td.privacystatement li {
+  color: #000000;
+}
+
+span.dialogajaxlink {
+  color: #3B5998;
+  cursor:pointer;
+}form#feedbackFormMain {
+	--content-width: 280px;
+	--content-height: 150px;
+	--textarea-height: 65px;
+}
+
+div#feedbackbutton {
+	font-size: 12px;
+	font-weight:bold;
+	width: 20px;
+	height: auto;
+	writing-mode: vertical-lr;
+	transform: rotate(-180deg);
+	background: #870101;
+	color: #fff;
+	padding: 8px 5px 8px 5px;
+	bottom: 20px;
+	right: 1px;
+	position: fixed;
+	cursor: pointer;
+	font-family: Arial,sans-serif,"lucida grande",tahoma,verdana;
+	letter-spacing: 1px;
+	border-radius: 0 5px 5px 0;
+}
+
+div#feedbackform {
+	width: var(--content-width);
+	min-height: var(--content-height);	
+	border: 1px solid #999999;
+	background: #fff;
+	bottom: 20px;
+	right: 1px;
+	position: fixed;
+	padding: 5px;
+	display: none;
+	
+}
+
+div#feedbackleftform {
+	width: 5px;
+	cursor: w-resize;
+	position: absolute;
+	left: 0px;
+	top: 10px;
+	height:calc(100% - 10px);
+	z-index: 99;
+}
+
+div#feedbacktopleftform {
+   width: 10px;
+   height: 10px;
+   position: absolute;
+   left: 0px;
+   top: 0px;
+   cursor: nw-resize;
+   z-index: 99;
+}
+
+div#feedbackrightform {
+   width: 100%;
+}
+
+div#feedbacktopform {
+	width: calc(100% - 10px);
+	cursor: n-resize;
+	position: absolute;
+	left: 10px;
+	top: 0px;
+	height: 10px;
+}
+
+div#feedbackTAtopborder {
+   width: calc(100% - 15px);
+   position: absolute;
+   left: 10px;
+   height: 3px;
+   cursor: n-resize;
+}
+
+div#feedbackTAtopleftborder {
+   width: 5px;
+   left: 5px;
+   position: absolute;
+   height: 3px;
+   cursor: nw-resize;
+   z-index: 99;
+}
+
+div#feedbackclosebutton {
+	float: right;
+	margin-bottom: 10px;
+	background: #fff;
+	color: #999;
+	padding:0px 4px 5px 4px;
+	cursor: pointer;
+}
+
+textarea#feedbackcomments {
+	margin:3px 3px 5px 0;
+	width: 100%;
+	height: var(--textarea-height);
+	resize: none;
+}
+
+div#feedbacktext {
+	margin-top: 3px;
+	margin-right: 23px;
+	margin-bottom:10px;
+	padding-left:2px;
+}
+div#feedbackdivpadding {
+	padding:2px;
+}
+div#feedbackwarningprompt {
+	text-align:center;
+	display: none;
+	color: red;
+	margin:0px 0px 5px 0px;
+	font-size:12px;
+}
+body.resizingw {
+   cursor: w-resize;
+}
+
+body.resizingh {
+   cursor: n-resize;
+}
+
+body.resizingc {
+   cursor: nw-resize;
+}
+div#appearanceSettingsIcon {
+  color:white;
+  cursor:pointer;
+  position:absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 99;
+}
+
+div#appearanceSettingsOptions {
+  display:none;
+  background-color: #870101;
+  color: white;
+  position: absolute;
+  right: 0;
+  top:26;
+  width: 155px;
+  z-index: 99;
+}
+
+table#appearanceSettingsTable {
+  border-collapse:collapse;
+}
+
+table#appearanceSettingsTable tr.settingsPlain {
+  background:#870101;
+}
+
+table#appearanceSettingsTable tr.settingsHighlight {
+  background:#db2b2b;
+}
+
+table#appearanceSettingsTable th {
+  background:#870101;
+}
+
+table#appearanceSettingsTable td, table#appearanceSettingsTable th {
+  padding:5px 6px 5px 3px;
+  color:white;
+  font-size:14px;
+}
+
+table#appearanceSettingsTable td {
+  cursor:pointer;
+}
+
+table#appearanceSettingsTable td.settingsCheck {
+  text-align:center;
+}
+
+table#appearanceSettingsTable td.settingsLabel, table#appearanceSettingsTable th {
+  text-align:left;
+}
+
+table#appearanceSettingsTable th {
+  border-bottom:1px solid white;
+}
+
+#appearanceSettingsCheckS, #appearanceSettingsCheckD, #appearanceSettingsCheckL {
+  visibility:hidden;
+  padding-left:6px;
+}
+</style>
+
+<style>
+div#loginDialog {
+   display: none;
+}
+
+div#resetPassWordDialog {
+  display: none;
+}
+
+div#changePasswordDialog {
+  display: none;
+}
+
+div#manageSettingsDialog {
+  display: none;
+}
+div#memberswhitediv {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+}
+
+span.dialogajaxlink {
+  font-size: 14px;
+  cursor:pointer;
+}
+
+span.ajaxlink:hover {
+  text-decoration:underline;
+  cursor: pointer;
+}
+
+span.membersajaxlink {
+  font-size: 13px;
+  font-weight:bold;
+}
+
+span.membersajaxlink:hover {
+  text-decoration:underline;
+  cursor: pointer;
+}
+</style>
+
+<script type="text/javascript">
+
+function flipSubMenu(cellid, tableid) {
+	var table = document.getElementById(tableid);
+	if (table.style.visibility == 'visible') {
+		hideSubMenu(tableid);
+	}
+	else {
+		showSubMenu(cellid, tableid);
+	}
+}
+
+function showSubMenu(cellid, tableid) {
+	hideAllSubMenus();
+    var cell = document.getElementById(cellid);
+    var coors = findPos(cell);
+    var table = document.getElementById(tableid);
+    table.style.visibility = 'visible';
+    table.style.top = (coors[1]) + 'px';
+    table.style.left = (coors[0] + 175) + 'px';
+}
+
+function hideSubMenu(tableid) {
+    var table = document.getElementById(tableid);
+    if (table != null) {
+	    table.style.visibility = 'hidden';
+    }
+}
+
+function findPos(obj) {
+    var curleft = curtop = 0;
+    if (obj.offsetParent) {
+        curleft = obj.offsetLeft
+        curtop = obj.offsetTop
+        while (obj = obj.offsetParent) {
+            curleft += obj.offsetLeft
+            curtop += obj.offsetTop
+        }
+    }
+    return [curleft,curtop];
+}
+
+function highlightCell(tag) {
+	var cell = document.getElementById(tag + 'linkcell');
+	cell.className = 'highlightcell';
+	highlightArrow(tag + 'Arrow');
+}
+
+function dehighlightCell(tag) {
+	var cell = document.getElementById(tag + 'linkcell');
+	cell.className = 'dehighlightcell';
+	dehighlightArrow(tag + 'Arrow');
+}
+
+function highlightWithoutSub(cell) {
+	cell.className = 'highlightcell';
+}
+
+function dehighlightWithoutSub(cell) {
+	cell.className = 'dehighlightcell';
+}
+
+function highlightArrow(arrowId) {
+	var arrow = document.getElementById(arrowId);
+	arrow.className = 'highlightcell';
+}
+
+function dehighlightArrow(arrowId) {
+	var arrow = document.getElementById(arrowId);
+	arrow.className = 'dehighlightcell';
+}
+
+function hideAllSubMenus() {
+	hideSubMenu('teammenu');
+	hideSubMenu('playermenu');
+	hideSubMenu('teamrankmenu');
+	hideSubMenu('playerrankmenu');
+	hideSubMenu('draftmenu');
+	hideSubMenu('risingstarmenu');
+	hideSubMenu('matchmenu');
+	hideSubMenu('brownlowmenu');
+	hideSubMenu('laddermenu');
+	hideSubMenu('attendancemenu');
+	hideSubMenu('supercoachmenu');
+	hideSubMenu('dreamteammenu');
+	hideSubMenu('coachmenu');
+	hideSubMenu('highlightsmenu');
+	hideSubMenu('selectionsmenu');
+	hideSubMenu('pastplayermenu');
+	hideSubMenu('contractsmenu');
+	hideSubMenu('tweetmenu');
+	hideSubMenu('allaustralianmenu');
+}
+
+function getWindowWidth() {
+	return window.innerWidth;
+}
+
+function setupBodyListenerForSubMenus() {
+  if (document.body.addEventListener) {
+    document.body.addEventListener("click", mainBodyClick);
+  }
+  else {
+    document.body.attachEvent("onclick", mainBodyClick);
+  }
+}
+
+function mainBodyClick(event) {
+	  var targetElement = event.target;
+	  if (targetElement.id && (targetElement.id.indexOf('Arrow') >= 0 || targetElement.id.indexOf('menu') >= 0)) {
+	    return;
+	  }
+	  else if (targetElement.className && targetElement.className.toString().indexOf('submenu') >= 0) {
+	    return;
+	  }
+	  else {
+	    hideAllSubMenus();
+	  }
+}
+
+function GetMemberStatusXmlHttpObject() {
+  var xmlMemberStatusHttp=null;
+  try {
+    // Firefox, Opera 8.0+, Safari
+    xmlMemberStatusHttp=new XMLHttpRequest();
+  }
+  catch (e) {
+    // Internet Explorer
+    try {
+      xmlMemberStatusHttp=new ActiveXObject("Msxml2.XMLHTTP");
+    }
+    catch (e) {
+      xmlMemberStatusHttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+  }
+  return xmlMemberStatusHttp;
+}
+
+function rememberMember() {
+  xmlMemberStatusHttp=GetMemberStatusXmlHttpObject();
+  url="/club/sports/member-remember.html?sid=" + Math.random();
+  xmlMemberStatusHttp.onreadystatechange=showAlert;
+  xmlMemberStatusHttp.open("GET",url,true);
+  xmlMemberStatusHttp.send(null);
+}
+
+function quickLogout() {
+  xmlMemberStatusHttp=GetMemberStatusXmlHttpObject();
+  url="/afl/club/quick-logout.html?sid=" + Math.random();
+  xmlMemberStatusHttp.onreadystatechange=showAlert;
+  xmlMemberStatusHttp.open("GET",url,true);
+  xmlMemberStatusHttp.send(null);
+}
+
+function showMemberStatus() {
+  xmlMemberStatusHttp = GetMemberStatusXmlHttpObject();
+  url = "/afl/club/member-status.html?sid=" + Math.random();
+  fetchShowMemberStatus(xmlMemberStatusHttp, url);
+}
+
+function showMemberStatusWithUrl(url) {
+  xmlMemberStatusHttp = GetMemberStatusXmlHttpObject();
+  url = "/afl/club/member-status.html?url=" + url + "&sid=" + Math.random();
+  fetchShowMemberStatus(xmlMemberStatusHttp, url);
+}
+
+function showMemberStatusSkipAds() {
+  xmlMemberStatusHttp = GetMemberStatusXmlHttpObject();
+  url = "/afl/club/member-status.html?skipAds=Y&sid=" + Math.random();
+  fetchShowMemberStatus(xmlMemberStatusHttp, url);
+}
+
+function showMemberStatusWithUrlSkipAds(url) {
+  xmlMemberStatusHttp = GetMemberStatusXmlHttpObject();
+  url = "/afl/club/member-status.html?skipAds=Y&url=" + url + "&sid=" + Math.random();
+  fetchShowMemberStatus(xmlMemberStatusHttp, url);
+}
+
+function fetchShowMemberStatus(xmlMemberStatusHttp, url) {
+  xmlMemberStatusHttp.onreadystatechange = memberStatusChanged;
+  xmlMemberStatusHttp.open("GET", url, true);
+  xmlMemberStatusHttp.send(null);
+}
+
+function showAlert() { 
+  if (xmlMemberStatusHttp.readyState==4) {
+  	alertMessage = xmlMemberStatusHttp.responseText;
+  	showMemberStatus();
+  	alert(alertMessage);
+  }	
+}
+
+function memberStatusChanged() { 
+  if (xmlMemberStatusHttp.readyState==4) {
+  	response = xmlMemberStatusHttp.responseText;
+  	if (response.indexOf("<!-- MEMBER STATUS -->") < 0) {
+  		response = " ";
+  	}
+    document.getElementById("memberStatus").innerHTML = response;
+  }
+}
+
+function pushSignUpEvent(signUpSource) {
+  _gaq.push(['_trackEvent', 'Member Activity', 'Sign Up', signUpSource]);
+}
+
+function pushContent(category, page) {
+  _gaq.push(['_trackEvent', 'Content', category, page]);
+  pushContentGA4(category, page);
+}
+
+function pushContentGA4(category, page) {
+  gtag('event', 'Content', {
+    'category': category,
+    'page': page
+  });
+}
+function GetXmlHttpObject() {
+  var xmlWireHttp=null;
+  try {
+    // Firefox, Opera 8.0+, Safari
+    xmlWireHttp=new XMLHttpRequest();
+  }
+  catch (e) {
+    // Internet Explorer
+    try {
+      xmlWireHttp=new ActiveXObject("Msxml2.XMLHTTP");
+    }
+    catch (e) {
+      xmlWireHttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+  }
+  return xmlWireHttp;
+}
+
+function showWire() {
+  xmlWireHttp=GetXmlHttpObject()
+  url="/afl/club/forum-threads-wire.html?sid=" + Math.random();
+  fetchWire(xmlWireHttp, url);
+}
+
+function showWireSkipAds() {
+  xmlWireHttp=GetXmlHttpObject()
+  url="/afl/club/forum-threads-wire.html?skipAds=Y&sid=" + Math.random();
+  fetchWire(xmlWireHttp, url);
+}
+
+function fetchWire(xmlWireHttp, url) {
+  xmlWireHttp.onreadystatechange = wireChanged;
+  xmlWireHttp.open("GET", url, true);
+  xmlWireHttp.send(null);
+}
+
+function wireChanged() {
+  if (xmlWireHttp.readyState==4) { 
+  	response = xmlWireHttp.responseText;
+  	if (response.indexOf("<!-- WIRE -->") < 0) {
+  		response = " ";
+  	}
+    document.getElementById("threadsWire").innerHTML=response;
+  }
+}
+
+function positionMemberDivs() {
+  var bodyOffsetHeight = document.body.offsetHeight;
+  document.getElementById('membersbgdiv').style.width = '100%';
+  document.getElementById('membersbgdiv').style.height = '100%';
+  var leftOffset = (document.getElementById('membersbgdiv').offsetWidth - document.getElementById('memberswhitediv').offsetWidth) / 2;
+  var topOffset = ((document.getElementById('membersbgdiv').offsetHeight - document.getElementById('memberswhitediv').offsetHeight) / 2);
+  document.getElementById('memberswhitediv').style.left = leftOffset;
+  document.getElementById('memberswhitediv').style.top = topOffset;
+  document.getElementById('membersbgdiv').style.height = bodyOffsetHeight;
+}
+
+function closeMemberDivs() {
+  document.getElementById('membersbgdiv').style.display = 'none';
+  document.getElementById('memberswhitediv').style.display = 'none';
+  var membersContentDiv = document.getElementById('memberscontent');
+  emptyDivContents(membersContentDiv);
+}
+
+function displayMemberDivs() {
+  document.getElementById('membersbgdiv').style.display = 'block';
+  document.getElementById('memberswhitediv').style.display = 'block';
+  positionMemberDivs();
+}
+
+function openRegistrationLoginDialog() {
+  document.getElementById('memberscontent').innerHTML = loginContent;
+  displayMemberDivs();
+}
+
+function openRegistrationLoginDialogWithNextPage(nextPage) {
+  document.getElementById('memberscontent').innerHTML = "<div><iframe src='/afl/footy/custom_login?p=" + nextPage + "' width=864 height=430 hspace=0 vspace=0 frameborder=0 marginheight=0 marginwidth=0 scrolling=no></iframe></div>"
+  document.getElementById('memberscontent').style.display = 'block';
+  document.getElementById('memberswhitediv').style.width = '874px';
+  document.getElementById('memberswhitediv').style.height = '460px';
+    displayMemberDivs();
+}
+
+function openChangePasswordDialog() {
+  document.getElementById('memberscontent').innerHTML = changePasswordContent;
+  displayMemberDivs();
+}
+
+function openManageSettingsDialog() {
+  document.getElementById('memberscontent').innerHTML = manageSettingsContent;
+  displayMemberDivs();
+  populateSettingsFields();
+}
+
+function openResetPasswordDialog() {
+  document.getElementById('memberscontent').innerHTML = resetPasswordContent;
+  displayMemberDivs();
+}
+
+var xmlLoginHttp;
+
+function GetLoginXmlHttpObject() {
+  var xmlLoginHttp=null;
+  try {
+    // Firefox, Opera 8.0+, Safari
+    xmlLoginHttp=new XMLHttpRequest();
+  }
+  catch (e) {
+    // Internet Explorer
+    try {
+      xmlLoginHttp=new ActiveXObject("Msxml2.XMLHTTP");
+    }
+    catch (e) {
+      xmlLoginHttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+  }

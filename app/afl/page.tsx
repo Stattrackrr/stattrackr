@@ -11,6 +11,7 @@ import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterD
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflLadderCard } from '@/app/afl/components/AflLadderCard';
+import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
 import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -1416,6 +1417,17 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
+                {/* 5. Game Log (Box Score) - same as NBA PlayerBoxScore, player mode only */}
+                {aflPropsMode === 'player' && (
+                  <div className="w-full min-w-0 mt-0.5">
+                    <AflBoxScore
+                      gameLogs={selectedPlayerGameLogs}
+                      isDark={!!mounted && isDark}
+                      selectedPlayer={selectedPlayer}
+                      isLoading={statsLoadingForPlayer}
+                    />
+                  </div>
+                )}
                 {/* 6. Mobile analysis - same as DashboardMobileAnalysis */}
                 <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0 mt-2 sm:mt-3 md:mt-4 lg:mt-2">
                   <div className={`flex items-center justify-center min-h-[100px] ${emptyText} text-sm`}>—</div>
@@ -1670,7 +1682,7 @@ export default function AFLPage() {
                 </div>
                 {/* AFL Ladder (wins, losses, points for/against, percentage) under team list */}
                 <div
-                  className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 mt-1 ${
+                  className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 mt-0 ${
                     showEmptyShell
                       ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
                       : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'

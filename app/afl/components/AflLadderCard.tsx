@@ -87,7 +87,6 @@ export function AflLadderCard({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
     fetch(`/api/afl/ladder?season=${selectedSeason}`)
       .then((r) => r.json())
       .then((json) => {
@@ -98,10 +97,8 @@ export function AflLadderCard({
           return;
         }
         const teams = json.teams ?? [];
-        setData({
-          season: json.season ?? selectedSeason,
-          teams,
-        });
+        setData({ season: json.season ?? selectedSeason, teams });
+        setError(null);
       })
       .catch(() => {
         if (!cancelled) {
@@ -120,14 +117,6 @@ export function AflLadderCard({
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[160px] text-sm text-gray-500 dark:text-gray-400">
-        Loading ladder…
-      </div>
-    );
-  }
-
   // For 2026: show all 18 teams with empty stats when there's no real 2026 data (API may return 2025 fallback—don't use it)
   const isEmpty2026 = selectedSeason === 2026 && (error || !data?.teams?.length || data.season !== 2026);
   const teams: LadderRow[] = isEmpty2026
@@ -144,6 +133,15 @@ export function AflLadderCard({
         premiership_points: null,
       }))
     : (data?.teams ?? []);
+
+  // Only show full-screen loading when we have no rows (initial load); keep showing table when switching seasons to avoid flash
+  if (loading && teams.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[160px] text-sm text-gray-500 dark:text-gray-400">
+        Loading ladder…
+      </div>
+    );
+  }
 
   if (!isEmpty2026 && (error || !data)) {
     return (
