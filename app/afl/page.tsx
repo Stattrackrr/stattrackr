@@ -221,6 +221,8 @@ export default function AFLPage() {
   /** Tracks which right tabs have been opened so we keep their content mounted (no re-render on tab switch). */
   const [aflRightTabsVisited, setAflRightTabsVisited] = useState<Set<'breakdown' | 'dvp' | 'rank'>>(() => new Set(['dvp']));
   const [aflLowerTab, setAflLowerTab] = useState<'lineup' | 'injuries'>('lineup');
+  /** Tracks which lower tabs (Team list / Injuries) have been opened so we keep content mounted and don't re-fetch. */
+  const [aflLowerTabsVisited, setAflLowerTabsVisited] = useState<Set<'lineup' | 'injuries'>>(() => new Set(['lineup']));
   const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
   const [mainChartStat, setMainChartStat] = useState<string>('');
@@ -238,6 +240,9 @@ export default function AFLPage() {
   useEffect(() => {
     setAflRightTabsVisited((prev) => new Set(prev).add(aflRightTab));
   }, [aflRightTab]);
+  useEffect(() => {
+    setAflLowerTabsVisited((prev) => new Set(prev).add(aflLowerTab));
+  }, [aflLowerTab]);
   const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
   const [aflGameFilters, setAflGameFilters] = useState<AflGameFiltersState>(() => ({
     ...DEFAULT_AFL_GAME_FILTERS,
@@ -1625,8 +1630,8 @@ export default function AFLPage() {
                         </button>
                       </div>
                       <div className="relative h-[320px] w-full min-w-0 flex flex-col min-h-0">
-                        {aflLowerTab === 'lineup' ? (
-                          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                        {aflLowerTabsVisited.has('lineup') && (
+                          <div className={aflLowerTab === 'lineup' ? 'flex-1 min-h-0 overflow-hidden flex flex-col' : 'hidden'}>
                             <AflLineupCard
                               isDark={!!mounted && isDark}
                               gameLogs={selectedPlayerGameLogs as Array<{ round?: string; opponent?: string; result?: string; match_url?: string }>}
@@ -1639,22 +1644,25 @@ export default function AFLPage() {
                               selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                             />
                           </div>
-                        ) : (
-                          <AflInjuriesCard
-                            isDark={!!mounted && isDark}
-                            season={season}
-                            playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
-                            playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                            gameLogs={selectedPlayerGameLogs}
-                            teammateFilterName={teammateFilterName}
-                            setTeammateFilterName={setTeammateFilterName}
-                            withWithoutMode={withWithoutMode}
-                            setWithWithoutMode={setWithWithoutMode}
-                            clearTeammateFilter={() => {
-                              setTeammateFilterName(null);
-                              setWithWithoutMode('with');
-                            }}
-                          />
+                        )}
+                        {aflLowerTabsVisited.has('injuries') && (
+                          <div className={aflLowerTab === 'injuries' ? 'flex-1 min-h-0 overflow-hidden flex flex-col' : 'hidden'}>
+                            <AflInjuriesCard
+                              isDark={!!mounted && isDark}
+                              season={season}
+                              playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                              playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              gameLogs={selectedPlayerGameLogs}
+                              teammateFilterName={teammateFilterName}
+                              setTeammateFilterName={setTeammateFilterName}
+                              withWithoutMode={withWithoutMode}
+                              setWithWithoutMode={setWithWithoutMode}
+                              clearTeammateFilter={() => {
+                                setTeammateFilterName(null);
+                                setWithWithoutMode('with');
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
                     </>
