@@ -14,7 +14,8 @@ const redis = hasRemoteCache
 
 const memoryCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
-export const AFL_PLAYER_LOGS_CACHE_TTL_SECONDS = 60 * 60 * 2; // 2 hours
+/** Long TTL so cache persists until the next successful warm overwrites it; stats always available. */
+export const AFL_PLAYER_LOGS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export type AflPlayerLogsCachePayload = {
   season: number;
@@ -72,10 +73,14 @@ export async function getAflPlayerLogsCache(
   }
 }
 
+/** Only write when we have a successful payload with at least one game; never overwrite with empty. */
 export async function setAflPlayerLogsCache(
   key: string,
   payload: AflPlayerLogsCachePayload
 ): Promise<void> {
+  const games = payload?.games;
+  if (!Array.isArray(games) || games.length === 0) return;
+
   memoryCache.set(key, {
     expiresAt: nowMs() + AFL_PLAYER_LOGS_CACHE_TTL_SECONDS * 1000,
     payload,
