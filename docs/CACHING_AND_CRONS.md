@@ -359,7 +359,7 @@ Optional env controls:
 - `PROD_URL=https://...`
 - `CRON_SECRET=...` (optional)
 
-**Checking cache vs API on prod:** Each response from `GET /api/afl/player-game-logs` includes: `X-AFL-Player-Logs-Source` (`cache`, `footywire`, or `afltables`) and `X-AFL-Cache-Enabled` (`true` if Upstash is configured, else `false`). If you see `X-AFL-Cache-Enabled: false`, set `AFL_USE_UPSTASH_CACHE=true` and the Upstash env vars in Vercel. In the browser: DevTools → Network → select a player-game-logs request → Response Headers.
+**Checking cache vs API on prod:** Each response from `GET /api/afl/player-game-logs` includes: `X-AFL-Player-Logs-Source` (`cache`, `cache-miss`, or `footywire`) and `X-AFL-Cache-Enabled` (`true` if Upstash is configured, else `false`). If you see `X-AFL-Cache-Enabled: false`, the cache is off and the warm job will not persist data—set `AFL_USE_UPSTASH_CACHE=true` and the Upstash env vars in Vercel (and ensure PROD_URL points at that deployment). On cache-miss, response headers include `X-AFL-Cache-Key-Base` and `X-AFL-Cache-Key-2025-Fallback` so you can verify in the Upstash dashboard that the key exists.
 
 **Advanced stats (TOG %, meters gained, intercepts, etc.):** The player-game-logs API only writes to the Upstash cache when the FootyWire response includes advanced stats (e.g. at least one game with `percent_played` or `meters_gained`). That way the warm workflow fills the cache with full data so the Supporting stats panel shows values instead of "No data".
 

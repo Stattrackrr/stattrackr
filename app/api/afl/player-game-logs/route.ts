@@ -600,8 +600,7 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization') ?? '';
   const xCron = request.headers.get('x-cron-secret') ?? '';
   const isWarmRequest = !!(cronSecret && (authHeader === `Bearer ${cronSecret}` || xCron === cronSecret));
-  const isProduction = process.env.VERCEL_ENV === 'production';
-  const cacheOnly = cacheEnabled && !isWarmRequest && isProduction; // Prod: only cache. Local/preview: fetch FootyWire on miss.
+  const cacheOnly = cacheEnabled && !isWarmRequest; // Cache-only: no FootyWire on miss. Warm job fills cache.
   const sourceHeaders = { 'X-AFL-Cache-Enabled': cacheEnabled ? 'true' : 'false' as string };
 
   // include_both=1: one request returns games + gamesWithQuarters (2 cache lookups in parallel). When cacheOnly we only serve from cache.
@@ -617,15 +616,29 @@ export async function GET(request: NextRequest) {
     }
     // Cache-only: prod only reads cache; warm job is allowed to fetch and fill.
     if (cacheOnly) {
+      // 2026 often not warmed or empty; try 2025 from cache so UI can show last season.
+      const keyBase2025 = season === 2026 && teamForFootyWire
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: false })
+        : null;
+      const keyQuarters2025 = season === 2026 && teamForFootyWire
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: true })
+        : null;
+      if (keyBase2025 && keyQuarters2025) {
+        const [cachedBase2025, cachedQuarters2025] = await Promise.all([getAflPlayerLogsCache(keyBase2025), getAflPlayerLogsCache(keyQuarters2025)]);
+        if (cachedBase2025 && (cachedBase2025.game_count ?? cachedBase2025.games?.length ?? 0) > 0) {
+          const payload = { ...cachedBase2025, gamesWithQuarters: cachedQuarters2025?.games ?? cachedBase2025.games };
+          return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
+        }
+      }
       const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
-      return NextResponse.json(empty, {
-        headers: {
-          ...sourceHeaders,
-          'X-AFL-Player-Logs-Source': 'cache-miss',
-          'X-AFL-Cache-Key-Base': keyBase,
-          'X-AFL-Cache-Key-Quarters': keyQuarters,
-        },
-      });
+      const missHeaders: Record<string, string> = {
+        ...sourceHeaders,
+        'X-AFL-Player-Logs-Source': 'cache-miss',
+        'X-AFL-Cache-Key-Base': keyBase,
+        'X-AFL-Cache-Key-Quarters': keyQuarters,
+      };
+      if (keyBase2025) missHeaders['X-AFL-Cache-Key-2025-Fallback'] = keyBase2025;
+      return NextResponse.json(empty, { headers: missHeaders });
     }
     // Warm job or no cache: fetch from FootyWire
     const [fwBase, fwQuarters] = await Promise.all([
@@ -679,8 +692,22 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Cache-only: prod only reads cache; warm job can fetch and fill.
+  // Cache-only: only read from cache. On 2026 miss, try 2025 so UI can show last season.
   if (cacheOnly) {
+    if (season === 2026 && teamForFootyWire) {
+      const key2025 = buildAflPlayerLogsCacheKey({
+        season: 2025,
+        playerName: playerNameParam.trim(),
+        teamForRequest: teamForFootyWire,
+        includeQuarters: includeQuarterEnrichment,
+      });
+      const cached2025 = await getAflPlayerLogsCache(key2025);
+      if (cached2025 && (cached2025.game_count ?? cached2025.games?.length ?? 0) > 0) {
+        return NextResponse.json(cached2025, {
+          headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' },
+        });
+      }
+    }
     const empty = { season, source: 'cache', player_name: playerNameParam.trim(), games: [], game_count: 0 };
     return NextResponse.json(empty, {
       headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss', 'X-AFL-Cache-Key': responseCacheKey },

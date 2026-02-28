@@ -61,13 +61,28 @@ function loadActiveAflPlayers() {
   return [];
 }
 
-async function warmOne(player, season, includeQuarters) {
+// Same team normalization as API (footywireNicknameToOfficial) so we hit the same cache keys the frontend uses.
+const NICKNAME_TO_FULL = {
+  Crows: 'Adelaide Crows', Lions: 'Brisbane Lions', Blues: 'Carlton Blues', Magpies: 'Collingwood Magpies',
+  Bombers: 'Essendon Bombers', Dockers: 'Fremantle Dockers', Cats: 'Geelong Cats', Suns: 'Gold Coast Suns',
+  Giants: 'GWS Giants', Hawks: 'Hawthorn Hawks', Demons: 'Melbourne Demons', Kangaroos: 'North Melbourne Kangaroos',
+  Power: 'Port Adelaide Power', Tigers: 'Richmond Tigers', Saints: 'St Kilda Saints', Swans: 'Sydney Swans',
+  Eagles: 'West Coast Eagles', Bulldogs: 'Western Bulldogs',
+};
+
+function teamForRequest(team) {
+  const t = String(team || '').trim();
+  return NICKNAME_TO_FULL[t] || NICKNAME_TO_FULL[t.replace(/\s+/g, ' ')] || t;
+}
+
+async function warmOne(player, season) {
+  const team = teamForRequest(player.team);
   const params = new URLSearchParams({
     season: String(season),
     player_name: player.name,
-    team: player.team,
+    team,
+    include_both: '1',
   });
-  if (includeQuarters) params.set('include_quarters', '1');
 
   const headers = { Accept: 'application/json' };
   if (cronSecret) {
@@ -121,17 +136,16 @@ async function main() {
   const jobs = [];
   for (const season of warmSeasons) {
     for (const player of selectedPlayers) {
-      jobs.push({ player, season, includeQuarters: false });
-      jobs.push({ player, season, includeQuarters: true });
+      jobs.push({ player, season });
     }
   }
 
-  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache`);
+  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (include_both=1, same path as frontend)`);
   console.log(`[AFL Warm] 👥 Players: ${selectedPlayers.length}`);
   console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
   console.log(`[AFL Warm] 📤 Requests: ${jobs.length}`);
   console.log(`[AFL Warm] ⚡ Concurrency: ${concurrency}`);
-  const sample = selectedPlayers.slice(0, 10).map((p) => `${p.name} (${p.team})`);
+  const sample = selectedPlayers.slice(0, 10).map((p) => `${p.name} (${teamForRequest(p.team)})`);
   console.log(`[AFL Warm] 🎯 Sample: ${sample.join(', ')}${selectedPlayers.length > 10 ? '...' : ''}`);
 
   let success = 0;
@@ -144,7 +158,7 @@ async function main() {
   await runPool(
     jobs,
     async (job) => {
-      const result = await warmOne(job.player, job.season, job.includeQuarters);
+      const result = await warmOne(job.player, job.season);
       if (result.ok) {
         success += 1;
         warmedGames += Number(result.count || 0);
@@ -155,7 +169,7 @@ async function main() {
       }
       done += 1;
       if (done % progressInterval === 0 || done === jobs.length) {
-        console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${job.player.team}) ${job.season} ${job.includeQuarters ? 'q' : ''} — ${result.ok ? `✅ ${result.count ?? 0} games` : `❌ ${result.status}`}`);
+        console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${teamForRequest(job.player.team)}) ${job.season} — ${result.ok ? `✅ ${result.count ?? 0} games` : `❌ ${result.status}`}`);
       }
     },
     concurrency
