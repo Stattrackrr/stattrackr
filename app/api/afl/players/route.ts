@@ -13,6 +13,8 @@ type PlayerIndexEntry = {
   href: string;
 };
 
+type PlayerListEntry = { name: string; team?: string; number?: number | null };
+
 let playersIndexCache: { expiresAt: number; data: PlayerIndexEntry[] } | null = null;
 
 function normalizeName(v: string): string {
@@ -33,7 +35,7 @@ function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
 }
 
 /** Read from league player stats (FootyWire). Prefer this so search uses same data as warm script; no API call. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
-function readCachedLeaguePlayerList(): Array<{ name: string; team?: string; number?: number | null }> | null {
+function readCachedLeaguePlayerList(): Array<PlayerListEntry> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
   const seasonsToTry = [year, year - 1];
   for (const season of seasonsToTry) {
@@ -43,13 +45,13 @@ function readCachedLeaguePlayerList(): Array<{ name: string; team?: string; numb
       const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string; number?: number | null }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
-        .map((p) => {
+        .map((p): PlayerListEntry | null => {
           const name = String(p?.name ?? '').trim();
           if (name.length === 0) return null;
           const num = typeof p?.number === 'number' && Number.isFinite(p.number) ? p.number : null;
           return { name, team: p?.team, number: num };
         })
-        .filter((p): p is { name: string; team: string | undefined; number: number | null } => p != null);
+        .filter((p): p is PlayerListEntry => p != null);
       if (players.length > 0) return players;
     } catch {
       continue;
@@ -59,7 +61,7 @@ function readCachedLeaguePlayerList(): Array<{ name: string; team?: string; numb
 }
 
 /** Read roster from cached file. Tries current year then previous year (e.g. 2026 then 2025). Run scripts/fetch-afl-roster.js to refresh. */
-function readCachedRoster(): Array<{ name: string; team?: string }> | null {
+function readCachedRoster(): Array<PlayerListEntry> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
   const seasonsToTry = [year, year - 1];
   for (const season of seasonsToTry) {
@@ -69,11 +71,11 @@ function readCachedRoster(): Array<{ name: string; team?: string }> | null {
       const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
-        .map((p) => {
+        .map((p): PlayerListEntry | null => {
           const name = String(p?.name ?? '').trim();
           return name.length > 0 ? { name, team: p?.team } : null;
         })
-        .filter((p): p is { name: string; team: string | undefined } => p != null);
+        .filter((p): p is PlayerListEntry => p != null);
       if (players.length > 0) return players;
     } catch {
       continue;
