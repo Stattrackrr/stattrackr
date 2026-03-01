@@ -431,6 +431,7 @@ export default function AFLPage() {
       setSearchResults(list.map((p: Record<string, unknown>) => ({
         name: String(p.name ?? '-'),
         team: typeof p.team === 'string' ? p.team : undefined,
+        ...(typeof p.number === 'number' && Number.isFinite(p.number) ? { guernsey: p.number } : {}),
       })));
     } catch {
       setSearchResults([]);
@@ -1252,6 +1253,11 @@ export default function AFLPage() {
                                     }`}
                                   >
                                     <span className="font-medium">{playerName}</span>
+                                    {(p.guernsey != null && p.guernsey !== '') && (
+                                      <span className={`ml-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        #{String(p.guernsey)}
+                                      </span>
+                                    )}
                                     {p.team && (
                                       <span className={`ml-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                         {String(p.team)}

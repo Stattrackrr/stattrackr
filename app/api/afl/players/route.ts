@@ -33,21 +33,23 @@ function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
 }
 
 /** Read from league player stats (FootyWire). Prefer this so search uses same data as warm script; no API call. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
-function readCachedLeaguePlayerList(): Array<{ name: string; team?: string }> | null {
+function readCachedLeaguePlayerList(): Array<{ name: string; team?: string; number?: number | null }> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
   const seasonsToTry = [year, year - 1];
   for (const season of seasonsToTry) {
     try {
       const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
       const raw = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
+      const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string; number?: number | null }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
         .map((p) => {
           const name = String(p?.name ?? '').trim();
-          return name.length > 0 ? { name, team: p?.team } : null;
+          if (name.length === 0) return null;
+          const num = typeof p?.number === 'number' && Number.isFinite(p.number) ? p.number : null;
+          return { name, team: p?.team, number: num };
         })
-        .filter((p): p is { name: string; team: string | undefined } => p != null);
+        .filter((p): p is { name: string; team: string | undefined; number: number | null } => p != null);
       if (players.length > 0) return players;
     } catch {
       continue;
@@ -151,7 +153,11 @@ export async function GET(request: NextRequest) {
         pool = pool.filter((p) => nameMatchesQuery(p.name, q));
       }
       pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
-      const players = pool.slice(0, effectiveLimit).map((p) => ({ name: p.name, team: p.team }));
+      const players = pool.slice(0, effectiveLimit).map((p) => ({
+        name: p.name,
+        team: p.team,
+        ...(p.number != null ? { number: p.number } : {}),
+      }));
 
       return NextResponse.json({
         source: leagueList && leagueList.length > 0 ? 'footywire.com' : 'afltables.com',

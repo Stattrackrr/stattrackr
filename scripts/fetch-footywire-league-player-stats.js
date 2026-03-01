@@ -95,10 +95,13 @@ function parsePlayerRankingsTable(html, statKey) {
     if (!Number.isFinite(valueNum)) continue;
     const gamesNum = parseInt(cells[3], 10);
     const team = (cells[2] || '').trim();
+    const numberRaw = parseInt(cells[0], 10);
+    const number = Number.isFinite(numberRaw) && numberRaw >= 1 && numberRaw <= 99 ? numberRaw : null;
     rows.push({
       name,
       team: team || '—',
       games: Number.isFinite(gamesNum) ? gamesNum : 0,
+      number,
       [statKey]: valueNum,
     });
   }
@@ -116,6 +119,7 @@ function mergeByPlayer(statArrays) {
           name: row.name,
           team: row.team,
           games: row.games || 0,
+          number: row.number ?? null,
           disposals: 0,
           kicks: 0,
           handballs: 0,
@@ -129,7 +133,8 @@ function mergeByPlayer(statArrays) {
         byKey.set(key, existing);
       }
       if (row.games && row.games > existing.games) existing.games = row.games;
-      const statKey = Object.keys(row).find((k) => !['name', 'team', 'games'].includes(k));
+      if (row.number != null && existing.number == null) existing.number = row.number;
+      const statKey = Object.keys(row).find((k) => !['name', 'team', 'games', 'number'].includes(k));
       if (statKey && existing.hasOwnProperty(statKey)) existing[statKey] = row[statKey];
     }
   }
