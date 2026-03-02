@@ -115,7 +115,9 @@ export function AflLineSelector({
     : null;
   const data = isGoalsOver
     ? (goalsData as { line?: string; over?: string } | undefined)
-    : (selectedBook?.[displayKey] as { home?: string; away?: string; line?: string; over?: string; under?: string; yes?: string; no?: string } | undefined);
+    : (displayKey != null && selectedBook
+        ? (selectedBook[displayKey] as { home?: string; away?: string; line?: string; over?: string; under?: string; yes?: string; no?: string } | undefined)
+        : undefined);
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
   const displayHomeTeam = opponentToFootywireTeam(homeTeam) || homeTeam;
   const displayAwayTeam = opponentToFootywireTeam(awayTeam) || awayTeam;
@@ -510,7 +512,7 @@ export function AflLineSelector({
                   const goalsLineOver = isGoalsOver ? getGoalsMarketLineOver(book) : null;
                   const d = isGoalsOver
                     ? (goalsLineOver as { line?: string; over?: string } | undefined)
-                    : (book[key] as { home?: string; away?: string; line?: string; over?: string; under?: string; yes?: string; no?: string } | undefined);
+                    : (key != null ? (book[key] as { home?: string; away?: string; line?: string; over?: string; under?: string; yes?: string; no?: string } | undefined) : undefined);
                   const isSelected = idx === selectedBookIndex;
                   const hasData = d && (isMoneyline ? ((d as { home?: string; away?: string }).home !== 'N/A' || (d as { home?: string; away?: string }).away !== 'N/A') : isYesNo ? ((d as { yes?: string; no?: string }).yes !== 'N/A' || (d as { yes?: string; no?: string }).no !== 'N/A') : (d.line !== 'N/A' || d.over !== 'N/A'));
                   if (!hasData) return null;
