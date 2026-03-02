@@ -105,14 +105,14 @@ export function AflLineSelector({
   const hasDisplayableOdds =
     books.length > 0 &&
     (isMoneyline
-      ? data && data.home !== 'N/A' && data.away !== 'N/A'
+      ? data && (data as { home?: string; away?: string }).home !== 'N/A' && (data as { home?: string; away?: string }).away !== 'N/A'
       : isYesNo
-        ? data && (data.yes !== 'N/A' || data.no !== 'N/A')
+        ? data && ((data as { yes?: string; no?: string }).yes !== 'N/A' || (data as { yes?: string; no?: string }).no !== 'N/A')
         : isGoalsOver
           ? goalsData != null
           : isDisposals
             ? data && (data.over !== 'N/A' || (data as { under?: string }).under !== 'N/A')
-            : data && (data.over !== 'N/A' || data.under !== 'N/A'));
+            : data && (data.over !== 'N/A' || (data as { under?: string }).under !== 'N/A'));
 
   const selectedBookLineMismatch =
     currentLineValue != null &&
@@ -213,27 +213,27 @@ export function AflLineSelector({
                     </>
                   ) : isYesNo && data ? (
                     <>
-                      {data.yes != null && data.yes !== 'N/A' && (
+                      {(data as { yes?: string }).yes != null && (data as { yes?: string }).yes !== 'N/A' && (
                         <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                          Yes {fmtOdds(data.yes, oddsFormat)}
+                          Yes {fmtOdds((data as { yes?: string }).yes!, oddsFormat)}
                         </span>
                       )}
-                      {data.no != null && data.no !== 'N/A' && (
+                      {(data as { no?: string }).no != null && (data as { no?: string }).no !== 'N/A' && (
                         <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                          No {fmtOdds(data.no, oddsFormat)}
+                          No {fmtOdds((data as { no?: string }).no!, oddsFormat)}
                         </span>
                       )}
                     </>
                   ) : (
                     <>
-                      {data?.over != null && data.over !== 'N/A' && (
+                      {(data as { over?: string })?.over != null && (data as { over?: string }).over !== 'N/A' && (
                         <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                          O&nbsp;{fmtOdds(data.over, oddsFormat)}
+                          O&nbsp;{fmtOdds((data as { over?: string }).over!, oddsFormat)}
                         </span>
                       )}
-                      {data?.under != null && data.under !== 'N/A' && (
+                      {(data as { under?: string })?.under != null && (data as { under?: string }).under !== 'N/A' && (
                         <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
-                          U&nbsp;{fmtOdds(data.under, oddsFormat)}
+                          U&nbsp;{fmtOdds((data as { under?: string }).under!, oddsFormat)}
                         </span>
                       )}
                     </>
@@ -494,7 +494,7 @@ export function AflLineSelector({
                     ? (goalsLineOver as { line?: string; over?: string } | undefined)
                     : (book[key] as { home?: string; away?: string; line?: string; over?: string; under?: string; yes?: string; no?: string } | undefined);
                   const isSelected = idx === selectedBookIndex;
-                  const hasData = d && (isMoneyline ? (d.home !== 'N/A' || d.away !== 'N/A') : isYesNo ? (d.yes !== 'N/A' || d.no !== 'N/A') : (d.line !== 'N/A' || d.over !== 'N/A'));
+                  const hasData = d && (isMoneyline ? ((d as { home?: string; away?: string }).home !== 'N/A' || (d as { home?: string; away?: string }).away !== 'N/A') : isYesNo ? ((d as { yes?: string; no?: string }).yes !== 'N/A' || (d as { yes?: string; no?: string }).no !== 'N/A') : (d.line !== 'N/A' || d.over !== 'N/A'));
                   if (!hasData) return null;
                   const displayData = d;
                   const info = getBookmakerInfo(book.name);
@@ -563,26 +563,26 @@ export function AflLineSelector({
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                        {isMoneyline && d?.home != null && d?.away != null && (
+                        {isMoneyline && (d as { home?: string; away?: string }).home != null && (d as { home?: string; away?: string }).away != null && (
                           <>
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                              {displayHomeTeam} {fmtOdds(d.home, oddsFormat)}
+                              {displayHomeTeam} {fmtOdds((d as { home: string; away: string }).home, oddsFormat)}
                             </span>
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
-                              {displayAwayTeam} {fmtOdds(d.away, oddsFormat)}
+                              {displayAwayTeam} {fmtOdds((d as { home: string; away: string }).away, oddsFormat)}
                             </span>
                           </>
                         )}
-                        {isYesNo && (d?.yes != null || d?.no != null) && (
+                        {isYesNo && ((d as { yes?: string; no?: string }).yes != null || (d as { yes?: string; no?: string }).no != null) && (
                           <>
-                            {d.yes != null && d.yes !== 'N/A' && (
+                            {(d as { yes?: string }).yes != null && (d as { yes?: string }).yes !== 'N/A' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                Yes {fmtOdds(d.yes, oddsFormat)}
+                                Yes {fmtOdds((d as { yes: string }).yes, oddsFormat)}
                               </span>
                             )}
-                            {d.no != null && d.no !== 'N/A' && (
+                            {(d as { no?: string }).no != null && (d as { no?: string }).no !== 'N/A' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                                No {fmtOdds(d.no, oddsFormat)}
+                                No {fmtOdds((d as { no: string }).no, oddsFormat)}
                               </span>
                             )}
                           </>
@@ -596,7 +596,7 @@ export function AflLineSelector({
                             )}
                             {(displayData as { under?: string })?.under != null && (displayData as { under?: string }).under !== 'N/A' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                                U {fmtOdds((displayData as { under?: string }).under, oddsFormat)}
+                                U {fmtOdds((displayData as { under?: string }).under!, oddsFormat)}
                               </span>
                             )}
                           </>

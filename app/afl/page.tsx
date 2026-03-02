@@ -646,8 +646,8 @@ export default function AFLPage() {
       }
       for (const col of PLAYER_PROP_COLUMNS) {
         const nextVal = row[col];
-        if (hasPropData(nextVal)) (existing as Record<string, unknown>)[col] = nextVal;
-        else if (!hasPropData(existing[col])) (existing as Record<string, unknown>)[col] = nextVal ?? existing[col];
+        if (hasPropData(nextVal)) (existing as unknown as Record<string, unknown>)[col] = nextVal;
+        else if (!hasPropData(existing[col])) (existing as unknown as Record<string, unknown>)[col] = nextVal ?? existing[col];
       }
     }
     return Array.from(byName.values());
@@ -755,14 +755,14 @@ export default function AFLPage() {
             if (config.type === 'ou') {
               const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
               const under = typeof p.underPrice === 'number' ? toAmerican(p.underPrice) : 'N/A';
-              (row as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
+              (row as unknown as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
             } else if (config.type === 'over') {
               const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
-              (row as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
+              (row as unknown as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
             } else if (config.type === 'yesno') {
               const yes = typeof p.yesPrice === 'number' ? toAmerican(p.yesPrice) : 'N/A';
               const no = typeof p.noPrice === 'number' ? toAmerican(p.noPrice) : 'N/A';
-              (row as Record<string, AflPropYesNo>)[col] = { yes, no };
+              (row as unknown as Record<string, AflPropYesNo>)[col] = { yes, no };
             }
           }
         });

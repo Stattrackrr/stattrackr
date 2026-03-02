@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Serve the app icon at /favicon.ico for legacy requests
+  async rewrites() {
+    return [{ source: "/favicon.ico", destination: "/images/stattrackr-icon.png" }];
+  },
   typescript: {
     // Enable type checking during builds
     // Note: If you need to temporarily disable this during development,

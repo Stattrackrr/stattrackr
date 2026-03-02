@@ -87,7 +87,7 @@ function parseOutcomesToBookRow(
 
   let homeH2H = 'N/A';
   let awayH2H = 'N/A';
-  if (h2h?.outcomes?.length >= 2) {
+  if (h2h?.outcomes && h2h.outcomes.length >= 2) {
     const homeOut = h2h.outcomes.find((o) => o.name === homeTeam || o.name?.toLowerCase() === homeTeam?.toLowerCase());
     const awayOut = h2h.outcomes.find((o) => o.name === awayTeam || o.name?.toLowerCase() === awayTeam?.toLowerCase());
     if (homeOut != null) homeH2H = formatAmerican(homeOut.price);
@@ -97,7 +97,7 @@ function parseOutcomesToBookRow(
   let spreadLine = 'N/A';
   let spreadOver = 'N/A';
   let spreadUnder = 'N/A';
-  if (spreads?.outcomes?.length >= 2) {
+  if (spreads?.outcomes && spreads.outcomes.length >= 2) {
     const homeOut = spreads.outcomes.find((o) => o.name === homeTeam || o.name?.toLowerCase() === homeTeam?.toLowerCase());
     const awayOut = spreads.outcomes.find((o) => o.name === awayTeam || o.name?.toLowerCase() === awayTeam?.toLowerCase());
     if (homeOut != null && typeof homeOut.point === 'number') {
@@ -114,7 +114,7 @@ function parseOutcomesToBookRow(
   let totalLine = 'N/A';
   let totalOver = 'N/A';
   let totalUnder = 'N/A';
-  if (totals?.outcomes?.length >= 2) {
+  if (totals?.outcomes && totals.outcomes.length >= 2) {
     const overOut = totals.outcomes.find((o) => o.name?.toLowerCase() === 'over');
     const underOut = totals.outcomes.find((o) => o.name?.toLowerCase() === 'under');
     const pointOut = totals.outcomes.find((o) => typeof (o as OddsApiOutcome & { point?: number }).point === 'number');
