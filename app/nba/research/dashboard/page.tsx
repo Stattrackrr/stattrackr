@@ -1082,7 +1082,7 @@ export function NBADashboardContent() {
   const [navigatingBackToProps, setNavigatingBackToProps] = useState(false);
   
   return (
-    <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+    <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
       <DashboardStyles />
       {/* Loading bar at top when navigating back to props page */}
       <LoadingBar isLoading={navigatingBackToProps} isDark={isDark} showImmediately={navigatingBackToProps} mobileOffset={2} />

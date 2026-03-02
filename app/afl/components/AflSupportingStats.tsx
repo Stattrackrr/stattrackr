@@ -424,7 +424,7 @@ export function AflSupportingStats({
   }, [chartData, supportingStatKind]);
 
   const barFill = isDark ? '#6b7280' : '#9ca3af';
-  const margin = { top: 24, right: 14, left: 0, bottom: 4 };
+  const margin = { top: 24, right: 0, left: 0, bottom: 4 };
   const labelFill = isDark ? '#e5e7eb' : '#374151';
   const xAxisHeight = 8;
   const emptyTick = useMemo(
@@ -574,16 +574,56 @@ export function AflSupportingStats({
 
   if (chartData.length === 0) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 min-w-0">
         {showSupportingToggle && (
-        <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 min-w-0 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
+            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar px-3 sm:px-4" style={{ scrollbarWidth: 'thin' }}>
+              <div className="flex flex-nowrap gap-2 justify-start min-w-min pb-1">
+                {supportingOptions.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => onSupportingStatKindChange(o.value)}
+                    className={`flex-shrink-0 min-w-[80px] sm:min-w-[100px] px-3 sm:px-5 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-colors flex flex-col items-center justify-center gap-0.5 ${
+                      supportingStatKind === o.value
+                        ? isDark
+                          ? 'bg-gray-600 text-gray-100'
+                          : 'bg-gray-500 text-white'
+                        : isDark
+                          ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    }`}
+                  >
+                    <span>{o.label}</span>
+                    <span className="text-xs font-normal opacity-90">{formatAvg(o.value)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={`h-px w-full shrink-0 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} aria-hidden />
+          </div>
+        )}
+        <div className={`min-h-[120px] flex items-center justify-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          {emptyMessage}
+        </div>
+      </div>
+    );
+  }
+
+  const isPercent = chartData[0]?.isPercent ?? supportingStatKind === 'tog';
+
+  return (
+    <div className="flex flex-col gap-3 min-w-0">
+      {showSupportingToggle && (
+        <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 min-w-0 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
+          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar px-3 sm:px-4" style={{ scrollbarWidth: 'thin' }}>
+            <div className="flex flex-nowrap gap-2 justify-start min-w-min pb-1">
               {supportingOptions.map((o) => (
                 <button
                   key={o.value}
                   type="button"
                   onClick={() => onSupportingStatKindChange(o.value)}
-                  className={`min-w-[100px] px-5 py-3 rounded-lg text-base font-semibold transition-colors flex flex-col items-center justify-center gap-0.5 ${
+                  className={`flex-shrink-0 min-w-[80px] sm:min-w-[100px] px-3 sm:px-5 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-colors flex flex-col items-center justify-center gap-0.5 ${
                     supportingStatKind === o.value
                       ? isDark
                         ? 'bg-gray-600 text-gray-100'
@@ -598,49 +638,6 @@ export function AflSupportingStats({
                 </button>
               ))}
             </div>
-            <div
-              className={`h-px w-full shrink-0 ${
-                isDark ? 'bg-gray-600' : 'bg-gray-300'
-              }`}
-              aria-hidden
-            />
-          </div>
-        )}
-        <div
-          className={`min-h-[120px] flex items-center justify-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-        >
-          {emptyMessage}
-        </div>
-      </div>
-    );
-  }
-
-  const isPercent = chartData[0]?.isPercent ?? supportingStatKind === 'tog';
-
-  return (
-    <div className="flex flex-col gap-3">
-      {showSupportingToggle && (
-        <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {supportingOptions.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => onSupportingStatKindChange(o.value)}
-                className={`min-w-[100px] px-5 py-3 rounded-lg text-base font-semibold transition-colors flex flex-col items-center justify-center gap-0.5 ${
-                  supportingStatKind === o.value
-                    ? isDark
-                      ? 'bg-gray-600 text-gray-100'
-                      : 'bg-gray-500 text-white'
-                    : isDark
-                      ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
-              >
-                <span>{o.label}</span>
-                <span className="text-xs font-normal opacity-90">{formatAvg(o.value)}</span>
-              </button>
-            ))}
           </div>
           <div
             className={`h-px w-full shrink-0 ${
@@ -650,7 +647,7 @@ export function AflSupportingStats({
           />
         </div>
       )}
-      <div className="w-full h-[380px] min-h-[340px] -mx-1 flex-shrink-0">
+      <div className="w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={margin} barCategoryGap="5%">
             <XAxis

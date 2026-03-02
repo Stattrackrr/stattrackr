@@ -23,12 +23,30 @@ function fmtOdds(americanStr: string, format: 'american' | 'decimal'): string {
   return am > 0 ? `+${am}` : String(am);
 }
 
-type AflGameStat = 'moneyline' | 'spread' | 'total_goals';
+type AflGameStat =
+  | 'moneyline'
+  | 'spread'
+  | 'total_goals'
+  | 'total_points'
+  | 'q1_total'
+  | 'q1_spread'
+  | 'q1_total_goals'
+  | 'q2_total'
+  | 'q2_spread'
+  | 'q2_total_goals'
+  | 'q3_total'
+  | 'q3_spread'
+  | 'q3_total_goals'
+  | 'q4_total'
+  | 'q4_spread'
+  | 'q4_total_goals';
 
-const STAT_TO_KEY: Record<AflGameStat, keyof AflBookRow> = {
+const STAT_TO_KEY: Partial<Record<AflGameStat, keyof AflBookRow>> = {
   moneyline: 'H2H',
   spread: 'Spread',
   total_goals: 'Total',
+  total_points: 'Total',
+  // Quarter stats have no bookmaker column → selector shows skeleton
 };
 
 type AflPlayerPropKey = 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver';
@@ -83,8 +101,8 @@ export function AflLineSelector({
   }, []);
 
   const isDisposals = playerPropColumn === 'Disposals';
-  const displayKey = (isDisposals ? selectedDisposalsColumn : playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow;
-  const key = (playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow;
+  const displayKey = (isDisposals ? selectedDisposalsColumn : playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow | undefined;
+  const key = (playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow | undefined;
   const isGoalsOver = playerPropColumn === 'GoalsOver';
   const selectedBook = books[selectedBookIndex];
   const isMoneyline = !playerPropColumn && selectedStat === 'moneyline';

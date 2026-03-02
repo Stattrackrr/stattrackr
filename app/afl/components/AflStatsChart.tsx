@@ -54,7 +54,7 @@ const STAT_PRIORITY = [
   'one_percenters',
   'goal_assists',
 ];
-const META_SKIP = new Set(['season', 'game_number', 'guernsey', '__aflGameIndex']);
+const META_SKIP = new Set(['season', 'game_number', 'guernsey', '__aflGameIndex', 'date', 'game_date']);
 /** Hide from main chart stat pills (keep focused list; secondary metrics live in supporting stats). */
 const STATS_HIDDEN = new Set([
   'bounces',
@@ -719,6 +719,7 @@ export function AflStatsChart({
   }, [emitTransientLine, normalizeLineValue]);
 
   useEffect(() => {
+    if (externalLineValue != null && Number.isFinite(externalLineValue)) return;
     if (!Number.isFinite(statAverage)) return;
     const next = hasDecimalValues
       ? Math.round(statAverage * 10) / 10
@@ -727,7 +728,7 @@ export function AflStatsChart({
     emitTransientLine(next);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
     if (input) input.value = String(next);
-  }, [selectedStat, selectedTimeframe, statAverage, hasDecimalValues, emitTransientLine]);
+  }, [selectedStat, selectedTimeframe, statAverage, hasDecimalValues, emitTransientLine, externalLineValue]);
 
   // When external line (e.g. from selected bookmaker) is provided, sync chart line to it.
   useEffect(() => {

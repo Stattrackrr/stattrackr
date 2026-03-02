@@ -76,6 +76,17 @@ function formatAmerican(price: number): string {
   return p > 0 ? `+${p}` : String(p);
 }
 
+function norm(s: string | undefined): string {
+  return String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function outcomeMatchesTeam(o: OddsApiOutcome, team: string): boolean {
+  const n = norm(o.name);
+  const t = norm(team);
+  if (!t) return false;
+  return n === t || n.includes(t) || t.includes(n);
+}
+
 function parseOutcomesToBookRow(
   homeTeam: string,
   awayTeam: string,
@@ -88,8 +99,8 @@ function parseOutcomesToBookRow(
   let homeH2H = 'N/A';
   let awayH2H = 'N/A';
   if (h2h?.outcomes && h2h.outcomes.length >= 2) {
-    const homeOut = h2h.outcomes.find((o) => o.name === homeTeam || o.name?.toLowerCase() === homeTeam?.toLowerCase());
-    const awayOut = h2h.outcomes.find((o) => o.name === awayTeam || o.name?.toLowerCase() === awayTeam?.toLowerCase());
+    const homeOut = h2h.outcomes.find((o) => outcomeMatchesTeam(o, homeTeam));
+    const awayOut = h2h.outcomes.find((o) => outcomeMatchesTeam(o, awayTeam));
     if (homeOut != null) homeH2H = formatAmerican(homeOut.price);
     if (awayOut != null) awayH2H = formatAmerican(awayOut.price);
   }
@@ -98,15 +109,21 @@ function parseOutcomesToBookRow(
   let spreadOver = 'N/A';
   let spreadUnder = 'N/A';
   if (spreads?.outcomes && spreads.outcomes.length >= 2) {
-    const homeOut = spreads.outcomes.find((o) => o.name === homeTeam || o.name?.toLowerCase() === homeTeam?.toLowerCase());
-    const awayOut = spreads.outcomes.find((o) => o.name === awayTeam || o.name?.toLowerCase() === awayTeam?.toLowerCase());
-    if (homeOut != null && typeof homeOut.point === 'number') {
-      spreadLine = String(homeOut.point);
-      spreadOver = formatAmerican(homeOut.price);
+    const homeOut = spreads.outcomes.find((o) => outcomeMatchesTeam(o, homeTeam));
+    const awayOut = spreads.outcomes.find((o) => outcomeMatchesTeam(o, awayTeam));
+    const homePoint = homeOut != null && typeof (homeOut as OddsApiOutcome & { point?: number }).point === 'number'
+      ? (homeOut as OddsApiOutcome & { point: number }).point
+      : undefined;
+    const awayPoint = awayOut != null && typeof (awayOut as OddsApiOutcome & { point?: number }).point === 'number'
+      ? (awayOut as OddsApiOutcome & { point: number }).point
+      : undefined;
+    if (typeof homePoint === 'number') {
+      spreadLine = String(homePoint);
+      spreadOver = formatAmerican(homeOut!.price);
       spreadUnder = awayOut != null ? formatAmerican(awayOut.price) : 'N/A';
-    } else if (awayOut != null && typeof awayOut.point === 'number') {
-      spreadLine = String(awayOut.point);
-      spreadOver = formatAmerican(awayOut.price);
+    } else if (typeof awayPoint === 'number') {
+      spreadLine = String(awayPoint);
+      spreadOver = formatAmerican(awayOut!.price);
       spreadUnder = homeOut != null ? formatAmerican(homeOut.price) : 'N/A';
     }
   }
@@ -152,7 +169,7 @@ export async function refreshAflOddsData(): Promise<{ success: boolean; gamesCou
   const now = new Date();
   const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
-  const url = `${ODDS_API_BASE}/sports/${AFL_SPORT_KEY}/odds?regions=au&oddsFormat=american&apiKey=${encodeURIComponent(apiKey)}`;
+  const url = `${ODDS_API_BASE}/sports/${AFL_SPORT_KEY}/odds?regions=au&oddsFormat=american&markets=h2h,spreads,totals&apiKey=${encodeURIComponent(apiKey)}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 0 } });

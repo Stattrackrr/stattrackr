@@ -285,6 +285,8 @@ export default function AFLPage() {
   /** When mainChartStat is 'disposals', which column to use: O/U or Over-only (alt lines). */
   const [selectedAflDisposalsColumn, setSelectedAflDisposalsColumn] = useState<'Disposals' | 'DisposalsOver'>('Disposals');
   const [aflCurrentLineValue, setAflCurrentLineValue] = useState<number | null>(null);
+  /** Game props (team mode): current line from chart input; used so line selector hides bookmaker when it doesn't match. */
+  const [aflGameLineValue, setAflGameLineValue] = useState<number | null>(null);
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
   const [aflPlayerPropsLoading, setAflPlayerPropsLoading] = useState(false);
   const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
@@ -317,10 +319,9 @@ export default function AFLPage() {
     }
   }, [aflPropsMode, aflPlayerPropsBooks]);
 
-  // When user changes the line input (transient-line), find a book that has that line and switch to it; skip if we just switched stat (chart emits stat average and would overwrite our book-based line). For disposals, match against both O/U and Over-only.
+  // When user changes the line input (transient-line), find a book that has that line and switch to it; skip if we just switched stat. Same logic for player props (disposals/goals/other) and game props (spread/total).
   useEffect(() => {
-    const col = CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat];
-    if (aflPropsMode !== 'player' || !col || !aflPlayerPropsBooks.length) return;
+    const tol = 0.01;
     const onTransientLine = (e: Event) => {
       if (ignoreNextTransientLineRef.current) {
         ignoreNextTransientLineRef.current = false;
@@ -328,49 +329,65 @@ export default function AFLPage() {
       }
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
-      setAflCurrentLineValue(value);
-      const tol = 0.01;
-      if (mainChartStat === 'disposals') {
-        for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
-          const book = aflPlayerPropsBooks[idx];
-          for (const c of ['Disposals', 'DisposalsOver'] as const) {
-            const lineStr = (book[c] as { line?: string } | undefined)?.line;
-            if (!lineStr || lineStr === 'N/A') continue;
-            const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
-            if (Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol) {
+
+      if (aflPropsMode === 'player' && aflPlayerPropsBooks.length) {
+        const col = CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat];
+        if (!col) return;
+        setAflCurrentLineValue(value);
+        if (mainChartStat === 'disposals') {
+          for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
+            const book = aflPlayerPropsBooks[idx];
+            for (const c of ['Disposals', 'DisposalsOver'] as const) {
+              const lineStr = (book[c] as { line?: string } | undefined)?.line;
+              if (!lineStr || lineStr === 'N/A') continue;
+              const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+              if (Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol) {
+                setSelectedAflBookIndex(idx);
+                setSelectedAflDisposalsColumn(c);
+                return;
+              }
+            }
+          }
+          return;
+        }
+        if (mainChartStat === 'goals') {
+          for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
+            const book = aflPlayerPropsBooks[idx];
+            const hasLine = getGoalsMarketLines(book).some((x) => {
+              const lineNum = parseFloat(String(x.line).replace(/[^0-9.-]/g, ''));
+              return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
+            });
+            if (hasLine) {
               setSelectedAflBookIndex(idx);
-              setSelectedAflDisposalsColumn(c);
               return;
             }
           }
+          return;
         }
+        const idx = aflPlayerPropsBooks.findIndex((book) => {
+          const lineStr = col === 'GoalsOver' ? getGoalsMarketLineOver(book)?.line : (book[col] as { line?: string } | undefined)?.line;
+          if (!lineStr || lineStr === 'N/A') return false;
+          const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+          return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
+        });
+        if (idx >= 0) setSelectedAflBookIndex(idx);
         return;
       }
-      if (mainChartStat === 'goals') {
-        for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
-          const book = aflPlayerPropsBooks[idx];
-          const hasLine = getGoalsMarketLines(book).some((x) => {
-            const lineNum = parseFloat(String(x.line).replace(/[^0-9.-]/g, ''));
-            return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
-          });
-          if (hasLine) {
-            setSelectedAflBookIndex(idx);
-            return;
-          }
-        }
-        return;
+
+      if (aflPropsMode === 'team' && aflOddsBooks.length && (mainChartStat === 'spread' || mainChartStat === 'total_goals' || mainChartStat === 'total_points')) {
+        setAflGameLineValue(value);
+        const idx = aflOddsBooks.findIndex((book) => {
+          const lineStr = mainChartStat === 'spread' ? book.Spread?.line : book.Total?.line;
+          if (!lineStr || lineStr === 'N/A') return false;
+          const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+          return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
+        });
+        if (idx >= 0) setSelectedAflBookIndex(idx);
       }
-      const idx = aflPlayerPropsBooks.findIndex((book) => {
-        const lineStr = col === 'GoalsOver' ? getGoalsMarketLineOver(book)?.line : (book[col] as { line?: string } | undefined)?.line;
-        if (!lineStr || lineStr === 'N/A') return false;
-        const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
-        return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
-      });
-      if (idx >= 0) setSelectedAflBookIndex(idx);
     };
     window.addEventListener('transient-line', onTransientLine);
     return () => window.removeEventListener('transient-line', onTransientLine);
-  }, [aflPropsMode, mainChartStat, aflPlayerPropsBooks]);
+  }, [aflPropsMode, mainChartStat, aflPlayerPropsBooks, aflOddsBooks]);
 
   // Effective player-prop column: for disposals use selected O/U vs Over-only; for goals use GoalsOver (with Anytime 0.5); else chart stat mapping
   const effectivePlayerPropColumn = mainChartStat === 'disposals'
@@ -427,6 +444,34 @@ export default function AFLPage() {
       setAflCurrentLineValue(n);
     }
   }, [aflPropsMode, mainChartStat, selectedAflDisposalsColumn, aflPlayerPropsBooks]);
+
+  // When game props stat changes (spread / total_goals / total_points): pick a book that has a line for that stat; if current has none, switch to first that does. Ignore next transient-line so chart's initial emit doesn't overwrite. Sync aflGameLineValue to the selected book's line.
+  useEffect(() => {
+    if (aflPropsMode !== 'team' || !aflOddsBooks.length) return;
+    if (mainChartStat !== 'spread' && mainChartStat !== 'total_goals' && mainChartStat !== 'total_points') return;
+    const getLineStr = (book: AflBookRow) =>
+      mainChartStat === 'spread' ? book.Spread?.line : book.Total?.line;
+    const book = aflOddsBooks[selectedAflBookIndex];
+    const lineStr = book ? getLineStr(book) : undefined;
+    if (lineStr && lineStr !== 'N/A') {
+      const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+      if (Number.isFinite(n)) setAflGameLineValue(n);
+      return;
+    }
+    const withData = aflOddsBooks.findIndex((b) => {
+      const s = getLineStr(b);
+      return s && s !== 'N/A';
+    });
+    if (withData >= 0) {
+      setSelectedAflBookIndex(withData);
+      const newLineStr = getLineStr(aflOddsBooks[withData]);
+      const n = newLineStr && newLineStr !== 'N/A' ? parseFloat(String(newLineStr).replace(/[^0-9.-]/g, '')) : 0.5;
+      if (Number.isFinite(n)) setAflGameLineValue(n);
+      ignoreNextTransientLineRef.current = true;
+    } else {
+      setAflGameLineValue(0.5);
+    }
+  }, [aflPropsMode, mainChartStat, aflOddsBooks, selectedAflBookIndex]);
 
   // Keep DVP metric / opponentStat in sync with the main chart stat so the filters
   // and right-hand panels reflect the stat the user has actually selected.
@@ -1399,7 +1444,6 @@ export default function AFLPage() {
     return () => clearInterval(interval);
   }, [nextGameTipoff]);
 
-  const bg = mounted && isDark ? 'bg-[#050d1a]' : '';
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
   const showEmptyShell = !selectedPlayer;
   const showStatsLoadingShell = !!selectedPlayer && statsLoadingForPlayer;
@@ -1416,11 +1460,11 @@ export default function AFLPage() {
     : null;
 
   return (
-    <div className="min-h-screen lg:h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+    <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
       <DashboardStyles />
-      <div className={`px-0 dashboard-container ${bg}`} style={containerStyle}>
+      <div className="px-0 dashboard-container" style={containerStyle}>
         <div className={innerContainerClassName} style={innerContainerStyle}>
-          <div className={`pt-4 min-h-0 lg:h-full dashboard-container ${bg}`} style={{ paddingLeft: 0 }}>
+          <div className="pt-4 min-h-0 lg:h-full dashboard-container" style={{ paddingLeft: 0 }}>
             <DashboardLeftSidebarWrapper
               sidebarOpen={sidebarOpen}
               setSidebarOpen={setSidebarOpen}
@@ -1435,15 +1479,39 @@ export default function AFLPage() {
               onSignOutClick={async () => { await supabase.auth.signOut(); router.push('/'); }}
               onProfileUpdated={({ username: u, avatar_url: a }) => { if (u !== undefined) setUsername(u ?? null); if (a !== undefined) setAvatarUrl(a ?? null); }}
             />
-            <div className="flex flex-col lg:flex-row gap-0 min-h-0">
-              {/* Main content - same containers as NBA dashboard, empty */}
-              <div className={`${mainContentClassName} pr-0 sm:pr-0 md:pr-0`} style={mainContentStyle}>
-                {/* 1. Filter By (Mode toggle) - same as DashboardModeToggle */}
-                <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 md:px-4 lg:px-6 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
+            <div className="flex flex-col lg:flex-row gap-0 lg:gap-1 min-h-0">
+              {/* Main content - same containers as NBA dashboard */}
+              <div className={mainContentClassName} style={mainContentStyle}>
+                {/* 1. Filter By (Mode toggle) - mobile only, at top; desktop Filter By is in right panel */}
+                <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm px-3 md:px-4 pt-3 md:pt-4 pb-4 md:pb-5 border border-gray-200 dark:border-gray-700 relative overflow-visible">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
+                    <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Filter By</h3>
                   </div>
-                  <div className={`flex items-center gap-2 ${emptyText} text-sm`}>—</div>
+                  <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+                    <button
+                      onClick={() => setAflPropsMode('player')}
+                      className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors border ${
+                        aflPropsMode === 'player'
+                          ? 'bg-purple-600 text-white border-purple-500'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      Player Props
+                    </button>
+                    <button
+                      onClick={() => setAflPropsMode('team')}
+                      className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors border ${
+                        aflPropsMode === 'team'
+                          ? 'bg-purple-600 text-white border-purple-500'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      Game Props
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                    {aflPropsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
+                  </p>
                 </div>
                 {/* 2. Header - same layout as NBA DashboardHeader: left (player/select), middle (matchup), bottom (Journal) */}
                 <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible" ref={searchDropdownRef}>
@@ -1566,8 +1634,112 @@ export default function AFLPage() {
                       </div>
                       <div className="flex-1 min-w-0" aria-hidden />
                     </div>
+                    {/* Mobile: two-row layout like NBA - Row 1: Player name + number, Row 2: Team/position/height (left) | Team vs Opponent (right) */}
+                    <div className="lg:hidden flex items-center justify-between">
+                      <div className="flex-shrink-0 min-w-0">
+                        {selectedPlayer ? (
+                          <div>
+                            <div className="flex items-baseline gap-3">
+                              <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{String(selectedPlayer.name ?? '—')}</h1>
+                              {(() => {
+                                const num = selectedPlayer.guernsey != null && selectedPlayer.guernsey !== ''
+                                  ? selectedPlayer.guernsey
+                                  : selectedPlayerGameLogs.length > 0
+                                    ? (selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.guernsey
+                                    : null;
+                                return num != null && num !== '' ? (
+                                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex-shrink-0">#{String(num)}</span>
+                                ) : null;
+                              })()}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Player</h1>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="lg:hidden flex items-center justify-between gap-2 mt-1">
+                      <div className="flex-shrink-0 min-w-0">
+                        {selectedPlayer ? (
+                          <div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {selectedPlayer.team ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team)) : '—'}
+                            </div>
+                            {selectedPlayer.position && (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                              </div>
+                            )}
+                            {selectedPlayer.height && (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Search for a player below</div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 min-w-0">
+                        {selectedPlayer?.team ? (
+                          (() => {
+                            const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
+                            const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                            const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
+                            const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
+                            return (
+                              <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
+                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    {teamLogo ? (
+                                      <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                    ) : null}
+                                    <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamFull}</span>
+                                  </div>
+                                  <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    {displayOpponent && opponentFull !== '—' ? (
+                                      <>
+                                        {opponentLogo ? (
+                                          <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                        ) : null}
+                                        <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentFull}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
+                                    )}
+                                  </div>
+                                </div>
+                                {displayOpponent && countdown && !isGameInProgress ? (
+                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                    <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
+                                    <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                                      {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                    </div>
+                                  </div>
+                                ) : displayOpponent && isGameInProgress ? (
+                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                    <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                                  </div>
+                                ) : displayOpponent && nextGameTipoff ? (
+                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                    <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
+                            <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     {/* Search row - full width on mobile, below title on desktop */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 lg:mt-0">
                       <div className="flex-1 relative min-w-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                         <input
@@ -1787,8 +1959,8 @@ export default function AFLPage() {
                             <AflLineSelector
                               books={aflOddsBooks}
                               selectedStat={
-                                mainChartStat === 'moneyline' || mainChartStat === 'spread' || mainChartStat === 'total_goals'
-                                  ? mainChartStat
+                                mainChartStat === 'moneyline' || mainChartStat === 'spread' || mainChartStat === 'total_goals' || mainChartStat === 'total_points' || /^q[1-4]_(total|spread|total_goals)$/.test(mainChartStat)
+                                  ? (mainChartStat as 'moneyline' | 'spread' | 'total_goals' | 'total_points' | 'q1_total' | 'q1_spread' | 'q1_total_goals' | 'q2_total' | 'q2_spread' | 'q2_total_goals' | 'q3_total' | 'q3_spread' | 'q3_total_goals' | 'q4_total' | 'q4_spread' | 'q4_total_goals')
                                   : 'moneyline'
                               }
                               selectedBookIndex={selectedAflBookIndex}
@@ -1798,32 +1970,53 @@ export default function AFLPage() {
                               homeTeam={aflOddsHomeTeam}
                               awayTeam={aflOddsAwayTeam}
                               disabled={!selectedPlayer}
+                              currentLineValue={
+                                mainChartStat === 'spread' || mainChartStat === 'total_goals' || mainChartStat === 'total_points'
+                                  ? aflGameLineValue ?? undefined
+                                  : undefined
+                              }
                             />
                           )
                         ) : undefined}
                         externalLineValue={(() => {
-                          if (aflPropsMode !== 'player') return undefined;
-                          const col = effectivePlayerPropColumn;
-                          if (!col) return undefined;
-                          const book = aflPlayerPropsBooks[selectedAflBookIndex];
-                          if (mainChartStat === 'goals' && aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue)) {
-                            return aflCurrentLineValue;
+                          if (aflPropsMode === 'player') {
+                            const col = effectivePlayerPropColumn;
+                            if (!col) return 0.5;
+                            const book = aflPlayerPropsBooks[selectedAflBookIndex];
+                            if (mainChartStat === 'goals' && aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue)) {
+                              return aflCurrentLineValue;
+                            }
+                            const lineStr = col === 'GoalsOver' && book ? getGoalsMarketLineOver(book)?.line : (book?.[col] as { line?: string } | undefined)?.line;
+                            if (!lineStr || lineStr === 'N/A') return 0.5;
+                            const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+                            return Number.isFinite(n) ? n : 0.5;
                           }
-                          const lineStr = col === 'GoalsOver' && book ? getGoalsMarketLineOver(book)?.line : (book?.[col] as { line?: string } | undefined)?.line;
-                          if (!lineStr || lineStr === 'N/A') return 0.5;
-                          const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
-                          return Number.isFinite(n) ? n : 0.5;
+                          if (aflPropsMode === 'team') {
+                            if (/^q[1-4]_(total|spread|total_goals)$/.test(mainChartStat)) return 0.5;
+                            const book = aflOddsBooks[selectedAflBookIndex];
+                            if (!book) return 0.5;
+                            if (mainChartStat === 'spread') {
+                              const lineStr = book.Spread?.line;
+                              if (!lineStr || lineStr === 'N/A') return 0.5;
+                              const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+                              return Number.isFinite(n) ? n : 0.5;
+                            }
+                            if (mainChartStat === 'total_goals' || mainChartStat === 'total_points') {
+                              const lineStr = book.Total?.line;
+                              if (!lineStr || lineStr === 'N/A') return 0.5;
+                              const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+                              return Number.isFinite(n) ? n : 0.5;
+                            }
+                            return 0.5;
+                          }
+                          return undefined;
                         })()}
                       />
                     </>
                   )}
                 </div>
-                {/* 4. Supporting stats - percent played bars */}
-                <div className={`w-full min-w-0 flex flex-col rounded-lg shadow-sm pt-3 px-5 pb-12 sm:pt-4 sm:px-6 sm:pb-14 border mt-0.5 ${
-                  showEmptyShell
-                    ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
-                    : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
-                }`}>
+                {/* 4. Supporting stats - no horizontal padding on mobile (full-width bars); desktop: padding restored */}
+                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 border border-gray-200 dark:border-gray-700">
                   {showEmptyShell ? (
                     <div className="min-h-[220px]" />
                   ) : showStatsLoadingShell ? (
@@ -1844,7 +2037,7 @@ export default function AFLPage() {
                     </div>
                   ) : (
                     <>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                         Supporting stats
                       </h3>
                       <AflSupportingStats
@@ -1859,9 +2052,191 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
+                {/* 4.5. DVP | Opponent Breakdown | Compare - mobile only; desktop uses right panel */}
+                {aflPropsMode === 'player' && (
+                  <div className="lg:hidden w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-4 border border-gray-200 dark:border-gray-700 max-h-[60vh] min-h-0">
+                    <div className="flex gap-2 sm:gap-2 mb-3 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          setAflRightTab('dvp');
+                          setAflRightTabsVisited((prev) => new Set(prev).add('dvp'));
+                        }}
+                        className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          aflRightTab === 'dvp'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        DVP
+                        <span
+                          className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
+                            isDark ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                          }`}
+                        >
+                          90% accuracy
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAflRightTab('breakdown');
+                          setAflRightTabsVisited((prev) => new Set(prev).add('breakdown'));
+                        }}
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          aflRightTab === 'breakdown'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Opponent Breakdown
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAflRightTab('rank');
+                          setAflRightTabsVisited((prev) => new Set(prev).add('rank'));
+                        }}
+                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          aflRightTab === 'rank'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Compare
+                      </button>
+                    </div>
+                    {showEmptyShell || showStatsLoadingShell ? (
+                      <div className="flex-1 min-h-0 flex items-center justify-center">
+                        <div className={`text-sm ${emptyText}`}>Select a player to view</div>
+                      </div>
+                    ) : (
+                      <div className="relative flex-1 min-h-0 w-full min-w-0 flex flex-col overflow-y-auto">
+                        {aflRightTab === 'breakdown' && (
+                          <div className="flex flex-col min-h-0">
+                            <AflOpponentBreakdownCard
+                              key={displayOpponent ?? 'no-opponent'}
+                              isDark={!!mounted && isDark}
+                              season={season}
+                              playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              lastOpponent={displayOpponent ?? null}
+                            />
+                          </div>
+                        )}
+                        {aflRightTab === 'rank' && (
+                          <div className="flex flex-col min-h-0">
+                            <AflLeagueRankingCard
+                              isDark={!!mounted && isDark}
+                              season={season}
+                              playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              playerTeam={selectedPlayer?.team ? String(selectedPlayer.team) : null}
+                              playerStats={selectedPlayer ?? null}
+                            />
+                          </div>
+                        )}
+                        {aflRightTab === 'dvp' && (
+                          <div className="flex flex-col min-h-0 overflow-y-auto">
+                            <AflDvpCard
+                              isDark={!!mounted && isDark}
+                              season={Math.min(season, 2025)}
+                              playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              opponentTeam={displayOpponent || ''}
+                              logoByTeam={logoByTeam}
+                              playerPosition={
+                                selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))
+                                  ? (selectedPlayer.position as 'DEF' | 'MID' | 'FWD' | 'RUC')
+                                  : undefined
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 4.6. Team list / Injuries - mobile only; desktop uses right panel */}
+                {aflPropsMode === 'player' && (
+                  <div
+                    className={`lg:hidden rounded-lg shadow-sm p-3 sm:p-4 border w-full min-w-0 bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700 flex flex-col max-h-[50vh] min-h-0`}
+                  >
+                    {showEmptyShell || showStatsLoadingShell ? (
+                      <div className="flex-1 min-h-0 flex items-center justify-center">
+                        <div className={`text-sm ${emptyText}`}>Select a player to view</div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              setAflLowerTab('lineup');
+                              setAflLowerTabsVisited((prev) => new Set(prev).add('lineup'));
+                            }}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs font-medium rounded-lg transition-colors border ${
+                              aflLowerTab === 'lineup'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Team list
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAflLowerTab('injuries');
+                              setAflLowerTabsVisited((prev) => new Set(prev).add('injuries'));
+                            }}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs font-medium rounded-lg transition-colors border ${
+                              aflLowerTab === 'injuries'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Injuries
+                          </button>
+                        </div>
+                        <div className="relative flex-1 min-h-0 w-full min-w-0 flex flex-col overflow-y-auto overscroll-contain max-h-[calc(50vh-4rem)]">
+                          {aflLowerTab === 'lineup' && (
+                            <div className="flex flex-col min-w-0">
+                              <AflLineupCard
+                                isDark={!!mounted && isDark}
+                                gameLogs={selectedPlayerGameLogs as Array<{ round?: string; opponent?: string; result?: string; match_url?: string }>}
+                                team={
+                                  typeof selectedPlayer?.team === 'string'
+                                    ? (rosterTeamToInjuryTeam(selectedPlayer.team) || selectedPlayer.team)
+                                    : null
+                                }
+                                season={season}
+                                selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                              />
+                            </div>
+                          )}
+                          {aflLowerTab === 'injuries' && (
+                            <div className="flex flex-col min-w-0">
+                              <AflInjuriesCard
+                                isDark={!!mounted && isDark}
+                                season={season}
+                                playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                                playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                                gameLogs={selectedPlayerGameLogs}
+                                teammateFilterName={teammateFilterName}
+                                setTeammateFilterName={setTeammateFilterName}
+                                withWithoutMode={withWithoutMode}
+                                setWithWithoutMode={setWithWithoutMode}
+                                clearTeammateFilter={() => {
+                                  setTeammateFilterName(null);
+                                  setWithWithoutMode('with');
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                {/* 4.7. AFL Ladder - mobile only; desktop uses right panel */}
+                <div className="lg:hidden w-full min-w-0 rounded-lg shadow-sm p-3 sm:p-4 border bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700">
+                  <AflLadderCard isDark={!!mounted && isDark} season={Math.min(season, 2025)} logoByTeam={logoByTeam} />
+                </div>
                 {/* 5. Game Log (Box Score) - same as NBA PlayerBoxScore, player mode only */}
                 {aflPropsMode === 'player' && (
-                  <div className="w-full min-w-0 mt-0.5">
+                  <div className="w-full min-w-0 pb-6 lg:pb-0">
                     <AflBoxScore
                       gameLogs={selectedPlayerGameLogs}
                       isDark={!!mounted && isDark}
@@ -1871,20 +2246,12 @@ export default function AFLPage() {
                     />
                   </div>
                 )}
-                {/* 6. Mobile analysis - same as DashboardMobileAnalysis */}
-                <div className="lg:hidden bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-2 md:p-3 border border-gray-200 dark:border-gray-700 w-full min-w-0 mt-2 sm:mt-3 md:mt-4 lg:mt-2">
-                  <div className={`flex items-center justify-center min-h-[100px] ${emptyText} text-sm`}>—</div>
-                </div>
-                {/* 7. Mobile content - same as DashboardMobileContent */}
-                <div className="lg:hidden w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-0 sm:p-4 gap-4 border border-gray-200 dark:border-gray-700 mt-2">
-                  <div className={`flex items-center justify-center min-h-[180px] p-4 ${emptyText} text-sm`}>—</div>
-                </div>
               </div>
-              {/* Right panel - Filter By (Player / Game props) + Opponent Breakdown & Injuries (like NBA) */}
-              <div className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-0 sm:px-1 md:px-0 lg:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
+              {/* Right panel - Filter By (Player / Game props) + Opponent Breakdown & Injuries (same as NBA DashboardRightPanel) */}
+              <div className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                 sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
               }`}>
-                {/* Filter By - Player Props / Game Props (same as NBA DashboardRightPanel) */}
+                {/* Filter By - Player Props / Game Props (desktop only; mobile uses the one at top of main content) */}
                 <div className={`hidden lg:block rounded-lg shadow-sm px-3 pt-3 pb-4 border relative overflow-visible ${
                   showEmptyShell
                     ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
@@ -1935,11 +2302,14 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
-                <div className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 ${
-                  showEmptyShell
-                    ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
-                    : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
-                }`}>
+                {/* DVP | Opponent Breakdown | Compare - desktop right panel */}
+                <div
+                  className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 ${
+                    showEmptyShell
+                      ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                      : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
+                  }`}
+                >
                   {showEmptyShell ? (
                     <div className="h-[420px]" />
                   ) : showStatsLoadingShell ? (
@@ -1957,7 +2327,10 @@ export default function AFLPage() {
                       <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
                         {aflPropsMode === 'player' && (
                           <button
-                            onClick={() => setAflRightTab('dvp')}
+                            onClick={() => {
+                              setAflRightTab('dvp');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('dvp'));
+                            }}
                             className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                               aflRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
@@ -1977,7 +2350,10 @@ export default function AFLPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => setAflRightTab('breakdown')}
+                          onClick={() => {
+                            setAflRightTab('breakdown');
+                            setAflRightTabsVisited((prev) => new Set(prev).add('breakdown'));
+                          }}
                           className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                             aflRightTab === 'breakdown'
                               ? 'bg-purple-600 text-white border-purple-600'
@@ -1988,7 +2364,10 @@ export default function AFLPage() {
                         </button>
                         {aflPropsMode === 'player' && (
                           <button
-                            onClick={() => setAflRightTab('rank')}
+                            onClick={() => {
+                              setAflRightTab('rank');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('rank'));
+                            }}
                             className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                               aflRightTab === 'rank'
                                 ? 'bg-purple-600 text-white border-purple-600'
@@ -2000,7 +2379,6 @@ export default function AFLPage() {
                         )}
                       </div>
                       <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
-                        {/* Mount each panel once visited; hide inactive with CSS so switching back doesn't re-render/recalculate */}
                         {((aflPropsMode === 'team' && aflRightTab === 'breakdown') || (aflPropsMode === 'player' && aflRightTabsVisited.has('breakdown'))) && (
                           <div className={aflRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'}>
                             <AflOpponentBreakdownCard
@@ -2043,6 +2421,7 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
+                {/* Team list / Injuries - desktop right panel */}
                 <div
                   className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 pb-12 xl:pb-14 border w-full min-w-0 ${
                     showEmptyShell
@@ -2064,7 +2443,10 @@ export default function AFLPage() {
                     <>
                       <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
                         <button
-                          onClick={() => setAflLowerTab('lineup')}
+                          onClick={() => {
+                            setAflLowerTab('lineup');
+                            setAflLowerTabsVisited((prev) => new Set(prev).add('lineup'));
+                          }}
                           className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                             aflLowerTab === 'lineup'
                               ? 'bg-purple-600 text-white border-purple-600'
@@ -2074,7 +2456,10 @@ export default function AFLPage() {
                           Team list
                         </button>
                         <button
-                          onClick={() => setAflLowerTab('injuries')}
+                          onClick={() => {
+                            setAflLowerTab('injuries');
+                            setAflLowerTabsVisited((prev) => new Set(prev).add('injuries'));
+                          }}
                           className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                             aflLowerTab === 'injuries'
                               ? 'bg-purple-600 text-white border-purple-600'
@@ -2123,7 +2508,7 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
-                {/* AFL Ladder (wins, losses, points for/against, percentage) under team list */}
+                {/* AFL Ladder - desktop right panel */}
                 <div
                   className={`hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 mt-0 ${
                     showEmptyShell
