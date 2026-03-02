@@ -1,4 +1,4 @@
- #!/usr/bin/env node
+#!/usr/bin/env node
 
 /*
  * Warm upcoming rosters via internal endpoint.

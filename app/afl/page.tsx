@@ -13,6 +13,20 @@ import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflLadderCard } from '@/app/afl/components/AflLadderCard';
 import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
+import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
+import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
+
+/** Map chart stat to Best Odds player-prop column for the line selector in player mode. Use O/U columns (e.g. Disposals) where available so Over and Under both appear. */
+const CHART_STAT_TO_PLAYER_PROP_COLUMN: Partial<Record<string, keyof Pick<AflBookRow, 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver'>>> = {
+  disposals: 'Disposals', // O/U so both Over and Under show; use DisposalsOver only for over-only view
+  goals: 'GoalsOver',
+  marks: 'MarksOver',
+  tackles: 'TacklesOver',
+};
+
+/** In-memory cache for AFL player props (key = playerName-team-opponent). Survives refetches in same session; cleared on full page reload. */
+const aflPlayerPropsMemoryCache = new Map<string, AflBookRow[]>();
+
 import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -262,6 +276,20 @@ export default function AFLPage() {
     // Use 2026 for AFL fixture (FootyWire ft_match_list?year=2026) and season context
     return 2026;
   });
+  const [aflOddsBooks, setAflOddsBooks] = useState<AflBookRow[]>([]);
+  const [aflOddsLoading, setAflOddsLoading] = useState(false);
+  const [aflOddsError, setAflOddsError] = useState<string | null>(null);
+  const [aflOddsHomeTeam, setAflOddsHomeTeam] = useState<string>('');
+  const [aflOddsAwayTeam, setAflOddsAwayTeam] = useState<string>('');
+  const [selectedAflBookIndex, setSelectedAflBookIndex] = useState(0);
+  /** When mainChartStat is 'disposals', which column to use: O/U or Over-only (alt lines). */
+  const [selectedAflDisposalsColumn, setSelectedAflDisposalsColumn] = useState<'Disposals' | 'DisposalsOver'>('Disposals');
+  const [aflCurrentLineValue, setAflCurrentLineValue] = useState<number | null>(null);
+  const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
+  const [aflPlayerPropsLoading, setAflPlayerPropsLoading] = useState(false);
+  const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
+  const lastPlayerPropsKeyRef = useRef<string | null>(null);
+  const ignoreNextTransientLineRef = useRef(false);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
@@ -270,6 +298,135 @@ export default function AFLPage() {
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
   useEffect(() => setMounted(true), []);
+
+  // Refetch player props when tab becomes visible so all bookmakers (e.g. PointsBet) show without full page refresh
+  useEffect(() => {
+    const onVisible = () => setAflPlayerPropsRefetchKey((k) => k + 1);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  // Prefer PointsBet as the selected book when in player mode so the line selector shows PointsBet + O/U, not Fanatics/other
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !aflPlayerPropsBooks.length) return;
+    const pointsBetIndex = aflPlayerPropsBooks.findIndex(
+      (b) => b.name && String(b.name).toLowerCase().includes('pointsbet')
+    );
+    if (pointsBetIndex >= 0) {
+      setSelectedAflBookIndex(pointsBetIndex);
+    }
+  }, [aflPropsMode, aflPlayerPropsBooks]);
+
+  // When user changes the line input (transient-line), find a book that has that line and switch to it; skip if we just switched stat (chart emits stat average and would overwrite our book-based line). For disposals, match against both O/U and Over-only.
+  useEffect(() => {
+    const col = CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat];
+    if (aflPropsMode !== 'player' || !col || !aflPlayerPropsBooks.length) return;
+    const onTransientLine = (e: Event) => {
+      if (ignoreNextTransientLineRef.current) {
+        ignoreNextTransientLineRef.current = false;
+        return;
+      }
+      const value = (e as CustomEvent<{ value: number }>).detail?.value;
+      if (value == null || !Number.isFinite(value)) return;
+      setAflCurrentLineValue(value);
+      const tol = 0.01;
+      if (mainChartStat === 'disposals') {
+        for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
+          const book = aflPlayerPropsBooks[idx];
+          for (const c of ['Disposals', 'DisposalsOver'] as const) {
+            const lineStr = (book[c] as { line?: string } | undefined)?.line;
+            if (!lineStr || lineStr === 'N/A') continue;
+            const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+            if (Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol) {
+              setSelectedAflBookIndex(idx);
+              setSelectedAflDisposalsColumn(c);
+              return;
+            }
+          }
+        }
+        return;
+      }
+      if (mainChartStat === 'goals') {
+        for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
+          const book = aflPlayerPropsBooks[idx];
+          const hasLine = getGoalsMarketLines(book).some((x) => {
+            const lineNum = parseFloat(String(x.line).replace(/[^0-9.-]/g, ''));
+            return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
+          });
+          if (hasLine) {
+            setSelectedAflBookIndex(idx);
+            return;
+          }
+        }
+        return;
+      }
+      const idx = aflPlayerPropsBooks.findIndex((book) => {
+        const lineStr = col === 'GoalsOver' ? getGoalsMarketLineOver(book)?.line : (book[col] as { line?: string } | undefined)?.line;
+        if (!lineStr || lineStr === 'N/A') return false;
+        const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+        return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
+      });
+      if (idx >= 0) setSelectedAflBookIndex(idx);
+    };
+    window.addEventListener('transient-line', onTransientLine);
+    return () => window.removeEventListener('transient-line', onTransientLine);
+  }, [aflPropsMode, mainChartStat, aflPlayerPropsBooks]);
+
+  // Effective player-prop column: for disposals use selected O/U vs Over-only; for goals use GoalsOver (with Anytime 0.5); else chart stat mapping
+  const effectivePlayerPropColumn = mainChartStat === 'disposals'
+    ? selectedAflDisposalsColumn
+    : (CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat] ?? null);
+
+  // When stat changes: pick a book that has data for the new stat (switch if current doesn't), set line from that book, and ignore the next transient-line so chart's stat-average emit doesn't overwrite. For disposals, prefer O/U then Over-only.
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !aflPlayerPropsBooks.length) return;
+    const baseCol = CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat];
+    if (!baseCol) return;
+    const disposalsCols = baseCol === 'Disposals' ? (['Disposals', 'DisposalsOver'] as const) : null;
+    const getLineStr = (book: AflBookRow, col: keyof AflBookRow) =>
+      col === 'GoalsOver' ? getGoalsMarketLineOver(book)?.line : (book[col] as { line?: string } | undefined)?.line;
+    const col = mainChartStat === 'disposals' ? selectedAflDisposalsColumn : baseCol;
+    let book = aflPlayerPropsBooks[selectedAflBookIndex];
+    let lineStr = book ? getLineStr(book, col) : undefined;
+    let resolvedCol = col;
+    if (!lineStr || lineStr === 'N/A') {
+      if (disposalsCols) {
+        const withData = aflPlayerPropsBooks.findIndex((b) => {
+          const s1 = getLineStr(b, 'Disposals');
+          const s2 = getLineStr(b, 'DisposalsOver');
+          return (s1 && s1 !== 'N/A') || (s2 && s2 !== 'N/A');
+        });
+        if (withData >= 0) {
+          book = aflPlayerPropsBooks[withData];
+          const hasOu = getLineStr(book, 'Disposals') && getLineStr(book, 'Disposals') !== 'N/A';
+          resolvedCol = hasOu ? 'Disposals' : 'DisposalsOver';
+          lineStr = getLineStr(book, resolvedCol) ?? undefined;
+          setSelectedAflBookIndex(withData);
+          setSelectedAflDisposalsColumn(resolvedCol);
+        }
+      } else {
+        const pointsBetIdx = aflPlayerPropsBooks.findIndex((b) => b.name && String(b.name).toLowerCase().includes('pointsbet'));
+        const withData = pointsBetIdx >= 0 && getLineStr(aflPlayerPropsBooks[pointsBetIdx], col)
+          ? pointsBetIdx
+          : aflPlayerPropsBooks.findIndex((b) => {
+              const s = getLineStr(b, col);
+              return s && s !== 'N/A';
+            });
+        if (withData >= 0) {
+          setSelectedAflBookIndex(withData);
+          book = aflPlayerPropsBooks[withData];
+          lineStr = getLineStr(book, col);
+        }
+      }
+    }
+    const n = lineStr && lineStr !== 'N/A'
+      ? parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''))
+      : 0.5;
+    if (Number.isFinite(n)) {
+      ignoreNextTransientLineRef.current = true;
+      setAflCurrentLineValue(n);
+    }
+  }, [aflPropsMode, mainChartStat, selectedAflDisposalsColumn, aflPlayerPropsBooks]);
 
   // Keep DVP metric / opponentStat in sync with the main chart stat so the filters
   // and right-hand panels reflect the stat the user has actually selected.
@@ -411,6 +568,226 @@ export default function AFLPage() {
     loadTeamLogos();
     return () => { cancelled = true; };
   }, [season]);
+
+  const aflOddsTeam = selectedPlayer?.team ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team)) : '';
+  const aflOddsOpponent =
+    nextGameOpponent && nextGameOpponent !== '—'
+      ? (opponentToOfficialTeamName(nextGameOpponent) || nextGameOpponent)
+      : '';
+  const aflOddsGameDate = nextGameTipoff ? nextGameTipoff.toISOString().split('T')[0] : '';
+
+  useEffect(() => {
+    if (!aflOddsTeam || !aflOddsOpponent) {
+      setAflOddsBooks([]);
+      setAflOddsHomeTeam('');
+      setAflOddsAwayTeam('');
+      setAflOddsError(null);
+      return;
+    }
+    let cancelled = false;
+    setAflOddsLoading(true);
+    setAflOddsError(null);
+    fetch(
+      `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}&game_date=${encodeURIComponent(aflOddsGameDate)}`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.success && Array.isArray(data.data)) {
+          setAflOddsBooks(data.data);
+          setAflOddsHomeTeam(data.homeTeam || aflOddsTeam);
+          setAflOddsAwayTeam(data.awayTeam || aflOddsOpponent);
+          setSelectedAflBookIndex((i) => (i >= data.data.length ? 0 : i));
+        } else {
+          setAflOddsBooks([]);
+          setAflOddsHomeTeam('');
+          setAflOddsAwayTeam('');
+        }
+        setAflOddsError(data?.error || null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAflOddsBooks([]);
+          setAflOddsError(err?.message || 'Failed to load odds');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAflOddsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [aflOddsTeam, aflOddsOpponent, aflOddsGameDate]);
+
+  type PlayerPropFetchCol = keyof Pick<AflBookRow, 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver'>;
+  const AFL_PLAYER_PROP_FETCH: { stat: string; column: PlayerPropFetchCol; type: 'ou' | 'over' | 'yesno' }[] = [
+    { stat: 'disposals', column: 'Disposals', type: 'ou' },
+    { stat: 'disposals_over', column: 'DisposalsOver', type: 'over' },
+    { stat: 'anytime_goal_scorer', column: 'AnytimeGoalScorer', type: 'yesno' },
+    { stat: 'goals_over', column: 'GoalsOver', type: 'over' },
+    { stat: 'marks_over', column: 'MarksOver', type: 'over' },
+    { stat: 'tackles_over', column: 'TacklesOver', type: 'over' },
+  ];
+
+  const PLAYER_PROP_COLUMNS: PlayerPropFetchCol[] = ['Disposals', 'DisposalsOver', 'AnytimeGoalScorer', 'GoalsOver', 'MarksOver', 'TacklesOver'];
+
+  function hasPropData(val: unknown): boolean {
+    if (val == null || typeof val !== 'object') return false;
+    const o = val as Record<string, string>;
+    return Object.values(o).some((v) => v != null && String(v).trim() !== '' && v !== 'N/A');
+  }
+
+  function mergePlayerPropsBooks(prev: AflBookRow[], next: AflBookRow[]): AflBookRow[] {
+    const byName = new Map<string, AflBookRow>();
+    for (const row of prev) byName.set(row.name, { ...row });
+    for (const row of next) {
+      const existing = byName.get(row.name);
+      if (!existing) {
+        byName.set(row.name, { ...row });
+        continue;
+      }
+      for (const col of PLAYER_PROP_COLUMNS) {
+        const nextVal = row[col];
+        if (hasPropData(nextVal)) (existing as Record<string, unknown>)[col] = nextVal;
+        else if (!hasPropData(existing[col])) (existing as Record<string, unknown>)[col] = nextVal ?? existing[col];
+      }
+    }
+    return Array.from(byName.values());
+  }
+
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
+      setAflPlayerPropsBooks([]);
+      return;
+    }
+    const playerName = String(selectedPlayer.name).trim();
+    if (!playerName) {
+      setAflPlayerPropsBooks([]);
+      return;
+    }
+    const teamRaw = selectedPlayer?.team;
+    if (!teamRaw || typeof teamRaw !== 'string' || !teamRaw.trim()) {
+      setAflPlayerPropsBooks([]);
+      return;
+    }
+    // Wait for game odds request to finish first when we have an opponent, so the event-ID cache is warm and player-props API gets all bookmakers (e.g. PointsBet) on first call
+    if (aflOddsOpponent && aflOddsLoading) return;
+    const playerKey = `${playerName}-${teamRaw}`;
+    const teamForProps = rosterTeamToInjuryTeam(String(teamRaw)) || String(teamRaw);
+    const lastRound =
+      (typeof selectedPlayer?.last_round === 'string' && selectedPlayer.last_round.trim()
+        ? selectedPlayer.last_round.trim()
+        : '') || '';
+
+    let cancelled = false;
+    setAflPlayerPropsLoading(true);
+
+    const toAmerican = (dec: number): string => {
+      if (!Number.isFinite(dec) || dec <= 1) return 'N/A';
+      if (dec >= 2) return `+${Math.round((dec - 1) * 100)}`;
+      return `-${Math.round(100 / (dec - 1))}`;
+    };
+
+    type PropItem = {
+      bookmaker: string;
+      line?: number | string;
+      overPrice?: number;
+      underPrice?: number;
+      yesPrice?: number;
+      noPrice?: number;
+    };
+
+    const params = new URLSearchParams({ team: teamRaw.trim(), season: String(season) });
+    if (lastRound) params.set('last_round', lastRound);
+    fetch(`/api/afl/next-game?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return null;
+        const opponent =
+          typeof data?.next_opponent === 'string' && data.next_opponent && data.next_opponent !== '—'
+            ? (opponentToOfficialTeamName(data.next_opponent) || data.next_opponent)
+            : '';
+        const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
+        const gameDateForProps = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff.toISOString().split('T')[0] : '';
+        if (!opponent) {
+          setAflPlayerPropsBooks([]);
+          return null;
+        }
+        const cacheKey = `${playerName}-${teamRaw}-${opponent}`;
+        const cached = aflPlayerPropsMemoryCache.get(cacheKey);
+        if (cached?.length) {
+          setAflPlayerPropsBooks(cached);
+          setAflPlayerPropsLoading(false);
+          return null;
+        }
+        const teamOpp = [
+          `team=${encodeURIComponent(teamForProps)}`,
+          `opponent=${encodeURIComponent(opponent)}`,
+          gameDateForProps && `game_date=${encodeURIComponent(gameDateForProps)}`,
+        ]
+          .filter(Boolean)
+          .join('&');
+        const base = `/api/afl/player-props?player=${encodeURIComponent(playerName)}`;
+        return Promise.all(
+          AFL_PLAYER_PROP_FETCH.map(({ stat }) =>
+            fetch(`${base}&stat=${encodeURIComponent(stat)}&${teamOpp}`).then((r) =>
+              r.json().then((dataInner: { props?: PropItem[] }) => ({ stat, data: dataInner }))
+            )
+          )
+        ).then((results) => ({ results, cacheKey }));
+      })
+      .then((data) => {
+        if (cancelled || !data) return;
+        const { results, cacheKey } = data as { results: { stat: string; data: { props?: PropItem[] } }[]; cacheKey: string };
+        if (!results?.length) return;
+        const bookMap = new Map<string, AflBookRow>();
+        results.forEach(({ data: dataInner }, i) => {
+          const config = AFL_PLAYER_PROP_FETCH[i];
+          if (!config) return;
+          const props = dataInner?.props ?? [];
+          const col = config.column;
+          for (const p of props) {
+            const name = (p.bookmaker || '').trim() || 'Unknown';
+            let row = bookMap.get(name);
+            if (!row) {
+              row = { name, H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' } };
+              bookMap.set(name, row);
+            }
+            const lineStr = p.line != null ? String(p.line) : 'N/A';
+            if (config.type === 'ou') {
+              const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+              const under = typeof p.underPrice === 'number' ? toAmerican(p.underPrice) : 'N/A';
+              (row as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
+            } else if (config.type === 'over') {
+              const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+              (row as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
+            } else if (config.type === 'yesno') {
+              const yes = typeof p.yesPrice === 'number' ? toAmerican(p.yesPrice) : 'N/A';
+              const no = typeof p.noPrice === 'number' ? toAmerican(p.noPrice) : 'N/A';
+              (row as Record<string, AflPropYesNo>)[col] = { yes, no };
+            }
+          }
+        });
+        const nextBooks = Array.from(bookMap.values());
+        setAflPlayerPropsBooks((prev) => {
+          const isSamePlayer = lastPlayerPropsKeyRef.current === playerKey;
+          const final =
+            prev.length === 0 || !isSamePlayer
+              ? (() => {
+                  lastPlayerPropsKeyRef.current = playerKey;
+                  return nextBooks;
+                })()
+              : mergePlayerPropsBooks(prev, nextBooks);
+          aflPlayerPropsMemoryCache.set(cacheKey, final);
+          return final;
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setAflPlayerPropsBooks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAflPlayerPropsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsLoading]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
@@ -1353,33 +1730,92 @@ export default function AFLPage() {
                       </div>
                     </div>
                   ) : (
-                    <AflStatsChart
-                      stats={selectedPlayer ?? {}}
-                      gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : filteredPlayerGameLogs}
-                      allGameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
-                      isDark={!!mounted && isDark}
-                      logoByTeam={logoByTeam}
-                      isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
-                      hasSelectedPlayer={!!selectedPlayer}
-                      apiErrorHint={lastStatsError}
-                      teammateFilterName={aflPropsMode === 'team' ? null : teammateFilterName}
-                      withWithoutMode={aflPropsMode === 'team' ? 'with' : withWithoutMode}
-                      season={season}
-                      clearTeammateFilter={aflPropsMode === 'team' ? undefined : () => {
-                        setTeammateFilterName(null);
-                        setWithWithoutMode('with');
-                      }}
-                      selectedStat={mainChartStat}
-                      selectedTimeframe={aflChartTimeframe}
-                      onTimeframeChange={setAflChartTimeframe}
-                      onSelectedStatChange={setMainChartStat}
-                      showAdvancedFilters={aflPropsMode === 'player' ? showAdvancedFilters : false}
-                      setShowAdvancedFilters={aflPropsMode === 'player' ? setShowAdvancedFilters : undefined}
-                      aflGameFilters={aflPropsMode === 'player' ? aflGameFilters : undefined}
-                      setAflGameFilters={aflPropsMode === 'player' ? setAflGameFilters : undefined}
-                      perGameFilterData={aflPropsMode === 'player' ? perGameFilterData : null}
-                      playerPositionForFilters={aflPropsMode === 'player' && selectedPlayer?.position ? String(selectedPlayer.position) : null}
-                    />
+                    <>
+                      <AflStatsChart
+                        stats={selectedPlayer ?? {}}
+                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : filteredPlayerGameLogs}
+                        allGameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
+                        isDark={!!mounted && isDark}
+                        logoByTeam={logoByTeam}
+                        isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
+                        hasSelectedPlayer={!!selectedPlayer}
+                        apiErrorHint={lastStatsError}
+                        teammateFilterName={aflPropsMode === 'team' ? null : teammateFilterName}
+                        withWithoutMode={aflPropsMode === 'team' ? 'with' : withWithoutMode}
+                        season={season}
+                        clearTeammateFilter={aflPropsMode === 'team' ? undefined : () => {
+                          setTeammateFilterName(null);
+                          setWithWithoutMode('with');
+                        }}
+                        selectedStat={mainChartStat}
+                        selectedTimeframe={aflChartTimeframe}
+                        onTimeframeChange={setAflChartTimeframe}
+                        onSelectedStatChange={setMainChartStat}
+                        showAdvancedFilters={aflPropsMode === 'player' ? showAdvancedFilters : false}
+                        setShowAdvancedFilters={aflPropsMode === 'player' ? setShowAdvancedFilters : undefined}
+                        aflGameFilters={aflPropsMode === 'player' ? aflGameFilters : undefined}
+                        setAflGameFilters={aflPropsMode === 'player' ? setAflGameFilters : undefined}
+                        perGameFilterData={aflPropsMode === 'player' ? perGameFilterData : null}
+                        playerPositionForFilters={aflPropsMode === 'player' && selectedPlayer?.position ? String(selectedPlayer.position) : null}
+                        slotLeftOfLine={aflPropsMode === 'player' ? (
+                          <AflLineSelector
+                            books={aflPlayerPropsBooks}
+                            selectedStat="total_goals"
+                            selectedBookIndex={selectedAflBookIndex}
+                            onSelectBookIndex={setSelectedAflBookIndex}
+                            oddsFormat={oddsFormat}
+                            isDark={!!mounted && isDark}
+                            homeTeam={aflOddsHomeTeam}
+                            awayTeam={aflOddsAwayTeam}
+                            playerPropColumn={CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat]}
+                            selectedDisposalsColumn={mainChartStat === 'disposals' ? selectedAflDisposalsColumn : undefined}
+                            onSelectDisposalsOption={mainChartStat === 'disposals' ? (bookIndex: number, column: 'Disposals' | 'DisposalsOver') => {
+                              setSelectedAflBookIndex(bookIndex);
+                              setSelectedAflDisposalsColumn(column);
+                            } : undefined}
+                            onSelectGoalsOption={mainChartStat === 'goals' ? (bookIndex: number, lineValue: number) => {
+                              setSelectedAflBookIndex(bookIndex);
+                              ignoreNextTransientLineRef.current = true;
+                              setAflCurrentLineValue(lineValue);
+                            } : undefined}
+                            currentLineValue={aflCurrentLineValue}
+                          />
+                        ) : aflPropsMode === 'team' ? (
+                          aflOddsLoading ? (
+                            <div className={`h-8 w-[100px] sm:w-[110px] md:w-[120px] rounded-lg animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                          ) : (
+                            <AflLineSelector
+                              books={aflOddsBooks}
+                              selectedStat={
+                                mainChartStat === 'moneyline' || mainChartStat === 'spread' || mainChartStat === 'total_goals'
+                                  ? mainChartStat
+                                  : 'moneyline'
+                              }
+                              selectedBookIndex={selectedAflBookIndex}
+                              onSelectBookIndex={setSelectedAflBookIndex}
+                              oddsFormat={oddsFormat}
+                              isDark={!!mounted && isDark}
+                              homeTeam={aflOddsHomeTeam}
+                              awayTeam={aflOddsAwayTeam}
+                              disabled={!selectedPlayer}
+                            />
+                          )
+                        ) : undefined}
+                        externalLineValue={(() => {
+                          if (aflPropsMode !== 'player') return undefined;
+                          const col = effectivePlayerPropColumn;
+                          if (!col) return undefined;
+                          const book = aflPlayerPropsBooks[selectedAflBookIndex];
+                          if (mainChartStat === 'goals' && aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue)) {
+                            return aflCurrentLineValue;
+                          }
+                          const lineStr = col === 'GoalsOver' && book ? getGoalsMarketLineOver(book)?.line : (book?.[col] as { line?: string } | undefined)?.line;
+                          if (!lineStr || lineStr === 'N/A') return 0.5;
+                          const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+                          return Number.isFinite(n) ? n : 0.5;
+                        })()}
+                      />
+                    </>
                   )}
                 </div>
                 {/* 4. Supporting stats - percent played bars */}
@@ -1431,6 +1867,7 @@ export default function AFLPage() {
                       isDark={!!mounted && isDark}
                       selectedPlayer={selectedPlayer}
                       isLoading={statsLoadingForPlayer}
+                      resolveTeamLogo={(teamName) => resolveTeamLogo(teamName, logoByTeam)}
                     />
                   </div>
                 )}

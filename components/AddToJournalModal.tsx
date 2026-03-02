@@ -384,23 +384,16 @@ export default function AddToJournalModal({
         let data: any;
         let props: BookmakerOdds[] = [];
 
-        // AFL: no odds API yet; use manual entry only
-        if (sport === 'afl') {
-          setAvailableOdds([]);
-          setIsManualMode(true);
-          setOddsLoading(false);
-          return;
-        }
-
         if (currentIsGameProp) {
           // Fetch game props odds (moneyline, spread, total, etc.)
           if (!team.trim() || !statType.trim()) {
             throw new Error('Team and stat type are required for game props');
           }
 
-        const response = await fetch(
-            `/api/odds?team=${encodeURIComponent(team.trim())}&opponent=${encodeURIComponent((opponent || '').trim())}&game_date=${encodeURIComponent((gameDate || '').trim())}`
-          );
+          const oddsUrl = sport === 'afl'
+            ? `/api/afl/odds?team=${encodeURIComponent(team.trim())}&opponent=${encodeURIComponent((opponent || '').trim())}&game_date=${encodeURIComponent((gameDate || '').trim())}`
+            : `/api/odds?team=${encodeURIComponent(team.trim())}&opponent=${encodeURIComponent((opponent || '').trim())}&game_date=${encodeURIComponent((gameDate || '').trim())}`;
+        const response = await fetch(oddsUrl);
           
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -413,12 +406,13 @@ export default function AddToJournalModal({
           const actualHomeTeam = data.homeTeam || team;
           const actualAwayTeam = data.awayTeam || opponent;
 
-          // Map game stat types to API keys
+          // Map game stat types to API keys (NBA + AFL)
           const statToKey: Record<string, string> = {
             'moneyline': 'H2H',
             'spread': 'Spread',
             'total_pts': 'Total',
-            'home_total': 'Total', // These might need special handling
+            'total_goals': 'Total',
+            'home_total': 'Total',
             'away_total': 'Total',
             'first_half_total': 'Total',
             'second_half_total': 'Total',
@@ -496,8 +490,8 @@ export default function AddToJournalModal({
                   favoriteOdds: americanToDecimal(favoriteOdds),
                   underdogOdds: americanToDecimal(underdogOdds),
                 });
-              } else if (statType === 'total_pts') {
-                // Total: have line, over, under
+              } else if (statType === 'total_pts' || statType === 'total_goals') {
+                // Total: have line, over, under (NBA total_pts, AFL total_goals)
                 const lineValue = parseFloat(String(gameData.line).replace(/[^0-9.+-]/g, ''));
                 if (isNaN(lineValue)) continue;
 
@@ -522,14 +516,15 @@ export default function AddToJournalModal({
             }
           }
         } else {
-          // Fetch player props odds (existing logic)
+          // Fetch player props odds (NBA: /api/player-props; AFL: /api/afl/player-props)
           if (!playerName.trim() || !statType.trim()) {
             throw new Error('Player name and stat type are required');
           }
 
-          const response = await fetch(
-            `/api/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`
-          );
+          const playerPropsUrl = sport === 'afl'
+            ? `/api/afl/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`
+            : `/api/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`;
+          const response = await fetch(playerPropsUrl);
           
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -571,7 +566,7 @@ export default function AddToJournalModal({
     };
 
     fetchOdds();
-  }, [isOpen, playerName, statType, currentIsGameProp, team, sport]);
+  }, [isOpen, playerName, statType, currentIsGameProp, team, opponent, gameDate, sport]);
 
   // Game search (left side) - fetch games from odds API
   useEffect(() => {
@@ -586,30 +581,31 @@ export default function AddToJournalModal({
       }
 
       try {
-        const response = await fetch('/api/odds');
+        const oddsUrl = sport === 'afl' ? '/api/afl/odds' : '/api/odds';
+        const response = await fetch(oddsUrl);
         if (!response.ok) return;
         
         const data = await response.json();
         if (!data.data || !Array.isArray(data.data)) return;
 
-        // Get unique games from odds data
+        // Get unique games from odds data (data.data is games for AFL, games for NBA)
         const games = new Map<string, { homeTeam: string; awayTeam: string; gameDate: string }>();
         
-        // Try to find games that match the search query
         const queryLower = query.toLowerCase();
-        for (const bookmaker of data.data) {
-          // Check if bookmaker has game info
-          if (bookmaker.homeTeam && bookmaker.awayTeam) {
-            const homeTeam = bookmaker.homeTeam.toLowerCase();
-            const awayTeam = bookmaker.awayTeam.toLowerCase();
-            const gameKey = `${bookmaker.homeTeam}-${bookmaker.awayTeam}`;
+        for (const item of data.data) {
+          const homeTeam = item.homeTeam;
+          const awayTeam = item.awayTeam;
+          if (homeTeam && awayTeam) {
+            const homeLower = homeTeam.toLowerCase();
+            const awayLower = awayTeam.toLowerCase();
+            const gameKey = `${homeTeam}-${awayTeam}`;
             
             if (!games.has(gameKey) && 
-                (homeTeam.includes(queryLower) || awayTeam.includes(queryLower))) {
+                (homeLower.includes(queryLower) || awayLower.includes(queryLower))) {
               games.set(gameKey, {
-                homeTeam: bookmaker.homeTeam,
-                awayTeam: bookmaker.awayTeam,
-                gameDate: bookmaker.gameDate || gameDate,
+                homeTeam,
+                awayTeam,
+                gameDate: item.gameDate || item.commenceTime?.slice(0, 10) || gameDate,
               });
             }
           }
@@ -624,7 +620,7 @@ export default function AddToJournalModal({
 
     timeout = setTimeout(searchGames, 300);
     return () => clearTimeout(timeout);
-  }, [gameSearchQuery, isParlayMode, isOpen, gameDate]);
+  }, [gameSearchQuery, isParlayMode, isOpen, gameDate, sport]);
 
   // Player search (right side) - fetch players from BDL API
   useEffect(() => {
@@ -699,9 +695,10 @@ export default function AddToJournalModal({
       setGameManualOdds('');
 
       try {
-        const response = await fetch(
-          `/api/odds?team=${encodeURIComponent(selectedGame.homeTeam)}&opponent=${encodeURIComponent(selectedGame.awayTeam)}&game_date=${encodeURIComponent(selectedGame.gameDate || '')}`
-        );
+        const gameOddsUrl = sport === 'afl'
+          ? `/api/afl/odds?team=${encodeURIComponent(selectedGame.homeTeam)}&opponent=${encodeURIComponent(selectedGame.awayTeam)}&game_date=${encodeURIComponent(selectedGame.gameDate || '')}`
+          : `/api/odds?team=${encodeURIComponent(selectedGame.homeTeam)}&opponent=${encodeURIComponent(selectedGame.awayTeam)}&game_date=${encodeURIComponent(selectedGame.gameDate || '')}`;
+        const response = await fetch(gameOddsUrl);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -712,7 +709,6 @@ export default function AddToJournalModal({
         const actualHomeTeam = data.homeTeam || selectedGame.homeTeam;
         const actualAwayTeam = data.awayTeam || selectedGame.awayTeam;
         
-        // Update search query with correct team names from API if available
         if (data.homeTeam && data.awayTeam) {
           setGameSearchQuery(`${getTeamNameOnly(data.homeTeam)} vs ${getTeamNameOnly(data.awayTeam)}`);
         }
@@ -721,6 +717,7 @@ export default function AddToJournalModal({
           'moneyline': 'H2H',
           'spread': 'Spread',
           'total_pts': 'Total',
+          'total_goals': 'Total',
         };
 
         const apiKey = statToKey[gameStatType] || 'H2H';
@@ -781,7 +778,7 @@ export default function AddToJournalModal({
                 favoriteOdds: americanToDecimal(favoriteOdds),
                 underdogOdds: americanToDecimal(underdogOdds),
               });
-            } else if (gameStatType === 'total_pts') {
+            } else if (gameStatType === 'total_pts' || gameStatType === 'total_goals') {
               const lineValue = parseFloat(String(gameData.line).replace(/[^0-9.+-]/g, ''));
               if (isNaN(lineValue)) continue;
 
@@ -822,7 +819,7 @@ export default function AddToJournalModal({
     };
 
     fetchGameOdds();
-  }, [isParlayMode, isOpen, selectedGame, gameStatType]);
+  }, [isParlayMode, isOpen, selectedGame, gameStatType, sport]);
 
   // Fetch odds for player props (right side)
   useEffect(() => {
@@ -845,10 +842,10 @@ export default function AddToJournalModal({
       try {
         const playerName = selectedPlayer.full.trim();
         const stat = playerStatType.trim();
-        
-        const response = await fetch(
-          `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`
-        );
+        const playerPropsUrl = sport === 'afl'
+          ? `/api/afl/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`
+          : `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`;
+        const response = await fetch(playerPropsUrl);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -891,7 +888,7 @@ export default function AddToJournalModal({
     };
 
     fetchPlayerOdds();
-  }, [isParlayMode, isOpen, selectedPlayer, playerStatType]);
+  }, [isParlayMode, isOpen, selectedPlayer, playerStatType, sport]);
 
   // Convert odds to decimal for parlay calculation
   const toDecimalOdds = (odds: number, format: 'american' | 'decimal'): number => {

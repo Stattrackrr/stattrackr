@@ -297,6 +297,10 @@ interface AflStatsChartProps {
   setAflGameFilters?: (f: import('@/app/afl/components/AflGameFilters').AflGameFiltersState) => void;
   perGameFilterData?: import('@/app/afl/components/AflGameFilters').AflGameFilterDataItem[] | null;
   playerPositionForFilters?: string | null;
+  /** Renders to the left of the "Line" label (e.g. bookmaker selector). */
+  slotLeftOfLine?: React.ReactNode;
+  /** When set, syncs the chart line to this value (e.g. from selected bookmaker's line). */
+  externalLineValue?: number | null;
 }
 
 export function AflStatsChart({
@@ -322,6 +326,8 @@ export function AflStatsChart({
   setAflGameFilters,
   perGameFilterData = null,
   playerPositionForFilters = null,
+  slotLeftOfLine = null,
+  externalLineValue = null,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
@@ -723,6 +729,18 @@ export function AflStatsChart({
     if (input) input.value = String(next);
   }, [selectedStat, selectedTimeframe, statAverage, hasDecimalValues, emitTransientLine]);
 
+  // When external line (e.g. from selected bookmaker) is provided, sync chart line to it.
+  useEffect(() => {
+    if (externalLineValue == null || !Number.isFinite(externalLineValue)) return;
+    const [min, max] = yAxisConfig.domain;
+    const clamped = Math.max(min, Math.min(max, externalLineValue));
+    const next = hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2;
+    setLineValue(next);
+    emitTransientLine(next);
+    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+    if (input) input.value = String(next);
+  }, [externalLineValue, yAxisConfig.domain, hasDecimalValues, emitTransientLine]);
+
   const timeframeLabels: Record<(typeof TIMEFRAME_OPTIONS)[number], string> = {
     last5: 'L5',
     last10: 'L10',
@@ -864,6 +882,7 @@ export function AflStatsChart({
       {/* One row: Line input + Timeframe dropdown next to each other */}
       <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-2 sm:ml-6">
+          {slotLeftOfLine}
           <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
           <input
             id="betting-line-input"

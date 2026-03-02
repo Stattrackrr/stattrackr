@@ -116,7 +116,13 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'pointsbet': {
     name: 'PointsBet',
     logo: 'PB',
-    logoUrl: getLogoUrl('pointsbet.com'),
+    logoUrl: '/images/pointsbet.png',
+    color: '#EE3124',
+  },
+  'pointsbet (au)': {
+    name: 'PointsBet',
+    logo: 'PB',
+    logoUrl: '/images/pointsbet.png',
     color: '#EE3124',
   },
   'bet365': {
@@ -190,6 +196,61 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logo: 'RB',
     logoUrl: '/images/rebet.png',
     color: '#6B7280',
+  },
+  // AFL / AU bookmakers (The Odds API region=au)
+  'neds': {
+    name: 'Neds',
+    logo: 'Neds',
+    logoUrl: getLogoUrl('neds.com.au'),
+    color: '#E31837',
+  },
+  'ladbrokes': {
+    name: 'Ladbrokes',
+    logo: 'Lad',
+    logoUrl: getLogoUrl('ladbrokes.com.au'),
+    color: '#006B3F',
+  },
+  'sportsbet': {
+    name: 'Sportsbet',
+    logo: 'SB',
+    logoUrl: getLogoUrl('sportsbet.com.au'),
+    color: '#FFD700',
+  },
+  'tab': {
+    name: 'TAB',
+    logo: 'TAB',
+    logoUrl: getLogoUrl('tab.com.au'),
+    color: '#00843D',
+  },
+  'betr': {
+    name: 'Betr',
+    logo: 'BETR',
+    logoUrl: '/images/betr.png',
+    color: '#6B7280',
+  },
+  'betright': {
+    name: 'Bet Right',
+    logo: 'BR',
+    logoUrl: '/images/betright.jpg',
+    color: '#6B7280',
+  },
+  'bet right': {
+    name: 'Bet Right',
+    logo: 'BR',
+    logoUrl: '/images/betright.jpg',
+    color: '#6B7280',
+  },
+  'betfair': {
+    name: 'Betfair',
+    logo: 'BF',
+    logoUrl: getLogoUrl('betfair.com.au'),
+    color: '#FFB81C',
+  },
+  'unibet_au': {
+    name: 'Unibet',
+    logo: 'UB',
+    logoUrl: getLogoUrl('unibet.com.au'),
+    color: '#43B649',
   },
 };
 

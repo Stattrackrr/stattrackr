@@ -32,11 +32,14 @@ export const AflBoxScore = memo(function AflBoxScore({
   isDark,
   selectedPlayer = null,
   isLoading = false,
+  resolveTeamLogo,
 }: {
   gameLogs: Array<Record<string, unknown>>;
   isDark: boolean;
   selectedPlayer?: { name?: string } | null;
   isLoading?: boolean;
+  /** Resolve team name to logo URL for display next to opponent in game log */
+  resolveTeamLogo?: (teamName: string) => string | null;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -185,7 +188,18 @@ export const AflBoxScore = memo(function AflBoxScore({
                   className={isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}
                 >
                   <td className="py-1.5 px-2 text-gray-900 dark:text-white font-medium">{formatDate(date, round, toNum(game.season) ?? undefined)}</td>
-                  <td className="py-1.5 px-2 text-gray-900 dark:text-white">{opp}</td>
+                  <td className="py-1.5 px-2 text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-1.5">
+                      {resolveTeamLogo?.(opp) ? (
+                        <img
+                          src={resolveTeamLogo(opp)!}
+                          alt=""
+                          className="w-5 h-5 object-contain flex-shrink-0"
+                        />
+                      ) : null}
+                      <span>{opp}</span>
+                    </div>
+                  </td>
                   <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300">{round}</td>
                   <td className="py-1.5 px-2 text-center text-gray-700 dark:text-gray-300">{result}</td>
                   <td className="py-1.5 px-2 text-center text-gray-900 dark:text-white font-medium">{toNum(game.disposals) ?? '—'}</td>
