@@ -74,18 +74,20 @@ export async function GET(request: NextRequest) {
     const dvpMaps = await loadDvpMaps(baseUrl);
     const statsByKey = new Map<string, Awaited<ReturnType<typeof getAflPropStats>>>();
     await Promise.all(
-      Array.from(uniqueKeys).map(async (k) => {
-        const parts = k.split('|');
+      Array.from(uniqueKeys).map(async (rowKey) => {
+        const parts = rowKey.split('|');
         if (parts.length < 5) return;
         const lineStr = parts.pop()!;
         const statType = parts.pop()!;
-        const opponent = parts.pop()!;
-        const team = parts.pop()!;
+        const awayTeam = parts.pop()!;
+        const homeTeam = parts.pop()!;
         const playerName = parts.join('|');
         const line = Number(lineStr);
-        const dvp = getDvpLookup(opponent, statType, dvpMaps);
-        const stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
-        if (stats) statsByKey.set(k, stats);
+        const dvpHome = getDvpLookup(awayTeam, statType, dvpMaps);
+        const dvpAway = getDvpLookup(homeTeam, statType, dvpMaps);
+        let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvpHome, true);
+        if (!stats) stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvpAway, true);
+        if (stats) statsByKey.set(rowKey, stats);
       })
     );
 

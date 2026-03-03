@@ -64,14 +64,14 @@ export async function GET(request: NextRequest) {
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
       await Promise.all(
-        batch.map(async (p) => {
-          try {
-            await getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, null);
-            warmed++;
-          } catch {
-            // skip
-          }
-        })
+        batch.flatMap((p) => [
+          getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, null).then((r) => {
+            if (r) warmed++;
+          }).catch(() => {}),
+          getAflPropStats(p.playerName, p.opponent, p.team, p.statType, p.line, baseUrl, null).then((r) => {
+            if (r) warmed++;
+          }).catch(() => {}),
+        ])
       );
     }
 
