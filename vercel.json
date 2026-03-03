@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/cleanup-odds-snapshots",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/afl/odds/refresh",
+      "schedule": "0 * * * *"
     }
   ],
   "functions": {
@@ -53,6 +57,9 @@
     },
     "app/api/cron/prefetch-daily-advanced-stats/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/afl/odds/refresh/route.ts": {
+      "maxDuration": 120
     }
   },
   "rewrites": [

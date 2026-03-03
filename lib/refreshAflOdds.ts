@@ -1,15 +1,17 @@
 /**
  * AFL odds refresh using The Odds API (v4).
- * Fetches game odds (H2H, spreads, totals) for aussierules_afl, region au.
- * Cache is in-memory only; use ODDS_API_KEY in .env.local.
+ * Game odds (H2H, spreads, totals) are cached for 90 minutes so we don't spam the API.
+ * Run refresh every 90 min (cron or /api/afl/odds/refresh) to keep cache full.
  */
 
-import cache from '@/lib/cache';
-import { CACHE_TTL } from '@/lib/cache';
+import sharedCache from '@/lib/sharedCache';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const AFL_SPORT_KEY = 'aussierules_afl';
-const AFL_CACHE_KEY = 'all_afl_odds_v1';
+
+/** Cache key and TTL: 90 minutes so one refresh covers all users. */
+export const AFL_ODDS_CACHE_KEY = 'afl_game_odds_v2';
+export const AFL_ODDS_CACHE_TTL_SECONDS = 90 * 60;
 
 // Same bookmaker shape the NBA dashboard expects (game odds only)
 export interface AflBookRow {
@@ -159,15 +161,21 @@ function parseOutcomesToBookRow(
   };
 }
 
-export async function refreshAflOddsData(): Promise<{ success: boolean; gamesCount: number; lastUpdated: string; nextUpdate: string; error?: string }> {
+export async function refreshAflOddsData(): Promise<{
+  success: boolean;
+  gamesCount: number;
+  lastUpdated: string;
+  nextUpdate: string;
+  games?: AflGameOdds[];
+  error?: string;
+}> {
   const apiKey = process.env.ODDS_API_KEY?.trim();
   if (!apiKey) {
     return { success: false, gamesCount: 0, lastUpdated: '', nextUpdate: '', error: 'ODDS_API_KEY not set' };
   }
 
-  const ttlMinutes = CACHE_TTL.ODDS;
   const now = new Date();
-  const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
+  const nextUpdate = new Date(now.getTime() + AFL_ODDS_CACHE_TTL_SECONDS * 1000);
 
   const url = `${ODDS_API_BASE}/sports/${AFL_SPORT_KEY}/odds?regions=au&oddsFormat=american&markets=h2h,spreads,totals&apiKey=${encodeURIComponent(apiKey)}`;
 
@@ -214,13 +222,14 @@ export async function refreshAflOddsData(): Promise<{ success: boolean; gamesCou
       lastUpdated: now.toISOString(),
       nextUpdate: nextUpdate.toISOString(),
     };
-    cache.set(AFL_CACHE_KEY, cachePayload, ttlMinutes);
+    await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, cachePayload, AFL_ODDS_CACHE_TTL_SECONDS);
 
     return {
       success: true,
       gamesCount: games.length,
       lastUpdated: cachePayload.lastUpdated,
       nextUpdate: cachePayload.nextUpdate,
+      games,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -234,19 +243,21 @@ export async function refreshAflOddsData(): Promise<{ success: boolean; gamesCou
   }
 }
 
-export function getAflOddsCache(): AflOddsCache | null {
-  return cache.get<AflOddsCache>(AFL_CACHE_KEY);
+/** Read game odds from 90-min cache (populated by refresh every 90 min). */
+export async function getAflOddsCache(): Promise<AflOddsCache | null> {
+  const raw = await sharedCache.getJSON<AflOddsCache>(AFL_ODDS_CACHE_KEY);
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.games)) return null;
+  return raw;
 }
 
-/** Find event ID for a matchup from cached games (for player-props event-level fetch). */
-export function getAflEventIdForMatchup(team: string, opponent: string, gameDate?: string | null): string | null {
-  const c = getAflOddsCache();
-  if (!c?.games?.length) return null;
+/** Find event ID for a matchup from games list (for player-props event-level fetch). */
+export function getAflEventIdForMatchup(games: AflGameOdds[], team: string, opponent: string, gameDate?: string | null): string | null {
+  if (!games?.length) return null;
   const n = (s: string) => String(s ?? '').trim().toLowerCase();
   const dateKey = (s: string) => (s || '').slice(0, 10);
   const t = n(team);
   const o = n(opponent);
-  for (const g of c.games) {
+  for (const g of games) {
     const h = n(g.homeTeam);
     const a = n(g.awayTeam);
     if (!t || (!h && !a)) continue;
@@ -258,5 +269,3 @@ export function getAflEventIdForMatchup(team: string, opponent: string, gameDate
   }
   return null;
 }
-
-export const AFL_ODDS_CACHE_KEY = AFL_CACHE_KEY;

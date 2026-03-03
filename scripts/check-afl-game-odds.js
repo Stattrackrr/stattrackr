@@ -48,6 +48,8 @@ async function main() {
       process.exit(1);
     }
     console.log('Refresh OK. Games in cache:', refreshData?.gamesCount ?? refreshData?.count ?? '?');
+    if (refreshData?.eventsRefreshed != null) console.log('Player props events refreshed:', refreshData.eventsRefreshed);
+    if (refreshData?.playerPropsOk === false) console.log('Player props warning:', refreshData?.playerPropsError ?? 'unknown');
     console.log('');
   }
 

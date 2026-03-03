@@ -24,9 +24,6 @@ const CHART_STAT_TO_PLAYER_PROP_COLUMN: Partial<Record<string, keyof Pick<AflBoo
   tackles: 'TacklesOver',
 };
 
-/** In-memory cache for AFL player props (key = playerName-team-opponent). Survives refetches in same session; cleared on full page reload. */
-const aflPlayerPropsMemoryCache = new Map<string, AflBookRow[]>();
-
 import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -292,6 +289,9 @@ export default function AFLPage() {
   const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
   const lastPlayerPropsKeyRef = useRef<string | null>(null);
   const ignoreNextTransientLineRef = useRef(false);
+  /** Short delay before showing chart so odds have time to load and auto-select inline with chart. */
+  const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
+  const CHART_DISPLAY_DELAY_MS = 500;
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
@@ -300,6 +300,18 @@ export default function AFLPage() {
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
   useEffect(() => setMounted(true), []);
+
+  // Reset chart delay when player changes so we show skeleton then brief delay again (keeps odds in sync with chart)
+  useEffect(() => {
+    setChartDelayElapsed(false);
+  }, [selectedPlayer?.id, selectedPlayer?.name]);
+
+  // After stats load, wait a short moment before showing chart so odds can load and auto-select
+  useEffect(() => {
+    if (!selectedPlayer || statsLoadingForPlayer) return;
+    const t = setTimeout(() => setChartDelayElapsed(true), CHART_DISPLAY_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [selectedPlayer, statsLoadingForPlayer]);
 
   // Refetch player props when tab becomes visible so all bookmakers (e.g. PointsBet) show without full page refresh
   useEffect(() => {
@@ -713,9 +725,13 @@ export default function AFLPage() {
       setAflPlayerPropsBooks([]);
       return;
     }
-    // Wait for game odds request to finish first when we have an opponent, so the event-ID cache is warm and player-props API gets all bookmakers (e.g. PointsBet) on first call
-    if (aflOddsOpponent && aflOddsLoading) return;
     const playerKey = `${playerName}-${teamRaw}`;
+    // Clear previous player's odds immediately so we never show stale data when switching players
+    if (lastPlayerPropsKeyRef.current !== null && lastPlayerPropsKeyRef.current !== playerKey) {
+      setAflPlayerPropsBooks([]);
+    }
+    // Wait for game odds request to finish first when we have an opponent, so player-props API can resolve event ID from the same fresh odds data
+    if (aflOddsOpponent && aflOddsLoading) return;
     const teamForProps = rosterTeamToInjuryTeam(String(teamRaw)) || String(teamRaw);
     const lastRound =
       (typeof selectedPlayer?.last_round === 'string' && selectedPlayer.last_round.trim()
@@ -756,13 +772,6 @@ export default function AFLPage() {
           setAflPlayerPropsBooks([]);
           return null;
         }
-        const cacheKey = `${playerName}-${teamRaw}-${opponent}`;
-        const cached = aflPlayerPropsMemoryCache.get(cacheKey);
-        if (cached?.length) {
-          setAflPlayerPropsBooks(cached);
-          setAflPlayerPropsLoading(false);
-          return null;
-        }
         const teamOpp = [
           `team=${encodeURIComponent(teamForProps)}`,
           `opponent=${encodeURIComponent(opponent)}`,
@@ -770,24 +779,18 @@ export default function AFLPage() {
         ]
           .filter(Boolean)
           .join('&');
-        const base = `/api/afl/player-props?player=${encodeURIComponent(playerName)}`;
-        return Promise.all(
-          AFL_PLAYER_PROP_FETCH.map(({ stat }) =>
-            fetch(`${base}&stat=${encodeURIComponent(stat)}&${teamOpp}`).then((r) =>
-              r.json().then((dataInner: { props?: PropItem[] }) => ({ stat, data: dataInner }))
-            )
-          )
-        ).then((results) => ({ results, cacheKey }));
+        const url = `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1&${teamOpp}`;
+        return fetch(url)
+          .then((r) => r.json().then((data: { all?: Record<string, PropItem[]>; error?: string; message?: string }) => ({ ok: r.ok, data })))
+          .catch(() => ({ ok: false, data: { all: {} } }));
       })
-      .then((data) => {
-        if (cancelled || !data) return;
-        const { results, cacheKey } = data as { results: { stat: string; data: { props?: PropItem[] } }[]; cacheKey: string };
-        if (!results?.length) return;
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        const { data } = payload as { ok: boolean; data: { all?: Record<string, PropItem[]> } };
+        const all = data?.all != null && typeof data.all === 'object' ? data.all : {};
         const bookMap = new Map<string, AflBookRow>();
-        results.forEach(({ data: dataInner }, i) => {
-          const config = AFL_PLAYER_PROP_FETCH[i];
-          if (!config) return;
-          const props = dataInner?.props ?? [];
+        AFL_PLAYER_PROP_FETCH.forEach((config) => {
+          const props = Array.isArray(all[config.stat]) ? (all[config.stat] as PropItem[]) : [];
           const col = config.column;
           for (const p of props) {
             const name = (p.bookmaker || '').trim() || 'Unknown';
@@ -812,18 +815,8 @@ export default function AFLPage() {
           }
         });
         const nextBooks = Array.from(bookMap.values());
-        setAflPlayerPropsBooks((prev) => {
-          const isSamePlayer = lastPlayerPropsKeyRef.current === playerKey;
-          const final =
-            prev.length === 0 || !isSamePlayer
-              ? (() => {
-                  lastPlayerPropsKeyRef.current = playerKey;
-                  return nextBooks;
-                })()
-              : mergePlayerPropsBooks(prev, nextBooks);
-          aflPlayerPropsMemoryCache.set(cacheKey, final);
-          return final;
-        });
+        lastPlayerPropsKeyRef.current = playerKey;
+        setAflPlayerPropsBooks(nextBooks);
       })
       .catch(() => {
         if (!cancelled) setAflPlayerPropsBooks([]);
@@ -1446,7 +1439,7 @@ export default function AFLPage() {
 
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
   const showEmptyShell = !selectedPlayer;
-  const showStatsLoadingShell = !!selectedPlayer && statsLoadingForPlayer;
+  const showStatsLoadingShell = !!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed);
 
   // Single source of truth for opponent: same value for Team vs Team header and Opponent Breakdown.
   const displayOpponent = selectedPlayer?.team

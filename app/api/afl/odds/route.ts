@@ -42,12 +42,12 @@ function gameMatchesOpponent(home: string, away: string, opponent: string): bool
 /**
  * GET /api/afl/odds?team=...&opponent=...&game_date=...
  * Returns game odds (H2H, Spread, Total) for the matching AFL game.
- * Uses The Odds API (ODDS_API_KEY); data is cached after /api/afl/odds/refresh.
+ * Reads from 90-min cache; if cache empty, triggers one refresh then serves from cache.
  */
 export async function GET(request: NextRequest) {
   try {
-    let cache = getAflOddsCache();
-    if (!cache) {
+    let cache = await getAflOddsCache();
+    if (!cache?.games?.length) {
       const result = await refreshAflOddsData();
       if (!result.success) {
         return NextResponse.json(
@@ -59,17 +59,21 @@ export async function GET(request: NextRequest) {
           { status: 503 }
         );
       }
-      cache = getAflOddsCache();
+      cache = await getAflOddsCache();
     }
-    if (!cache || !cache.games?.length) {
+    const games = cache?.games ?? [];
+    const lastUpdated = cache?.lastUpdated ?? '';
+    const nextUpdate = cache?.nextUpdate ?? '';
+
+    if (!games.length) {
       return NextResponse.json({
         success: true,
         data: [],
         homeTeam: undefined,
         awayTeam: undefined,
-        lastUpdated: undefined,
-        nextUpdate: undefined,
-        message: 'No AFL games in cache',
+        lastUpdated,
+        nextUpdate,
+        message: 'No AFL games available',
       });
     }
 
@@ -81,26 +85,26 @@ export async function GET(request: NextRequest) {
 
     if (!team) {
       // Return all games (e.g. for parlay game search) with gameDate for UI
-      const gamesWithDate = cache.games.map((g) => ({
+      const gamesWithDate = games.map((g) => ({
         ...g,
         gameDate: g.commenceTime.slice(0, 10),
       }));
       return NextResponse.json({
         success: true,
         data: gamesWithDate,
-        lastUpdated: cache.lastUpdated,
-        nextUpdate: cache.nextUpdate,
+        lastUpdated,
+        nextUpdate,
       });
     }
 
-    let candidates = cache.games.filter((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
+    let candidates = games.filter((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
     if (opponent) {
       candidates = candidates.filter((g) => gameMatchesOpponent(g.homeTeam, g.awayTeam, opponent));
     }
     if (requestedDateKey) {
       candidates = candidates.filter((g) => dateKey(g.commenceTime) === requestedDateKey);
     }
-    const game = candidates[0] ?? cache.games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
+    const game = candidates[0] ?? games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
 
     if (!game) {
       return NextResponse.json({
@@ -108,8 +112,8 @@ export async function GET(request: NextRequest) {
         data: [],
         homeTeam: undefined,
         awayTeam: undefined,
-        lastUpdated: cache.lastUpdated,
-        nextUpdate: cache.nextUpdate,
+        lastUpdated,
+        nextUpdate,
         message: 'No matching AFL game',
       });
     }
@@ -120,8 +124,8 @@ export async function GET(request: NextRequest) {
       data: bookmakers,
       homeTeam: game.homeTeam,
       awayTeam: game.awayTeam,
-      lastUpdated: cache.lastUpdated,
-      nextUpdate: cache.nextUpdate,
+      lastUpdated,
+      nextUpdate,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
