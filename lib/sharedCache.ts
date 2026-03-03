@@ -69,15 +69,21 @@ export const sharedCache = {
   async clearKeysByPrefix(prefix: string): Promise<number> {
     const match = prefix.endsWith('*') ? prefix : `${prefix}*`;
     if (HAS_UPSTASH) {
-      let cursor = 0;
+      let cursor: number | string = 0;
       const keys: string[] = [];
+      const maxScans = 200;
+      let scans = 0;
       do {
         const raw = await upstash(['SCAN', String(cursor), 'MATCH', match, 'COUNT', 500]);
-        const arr = Array.isArray(raw) ? raw : [];
+        const res = raw != null && typeof raw === 'object' && 'result' in raw ? (raw as { result: unknown }).result : raw;
+        const arr = Array.isArray(res) ? res : [];
         const next = arr[0];
         const keyList = arr[1];
-        cursor = typeof next === 'string' ? parseInt(next, 10) : Number(next) ?? 0;
+        cursor = typeof next === 'string' ? next : next;
+        const nextNum = typeof cursor === 'string' ? parseInt(cursor, 10) : Number(cursor);
+        cursor = Number.isFinite(nextNum) ? nextNum : 0;
         if (Array.isArray(keyList)) keys.push(...keyList.filter((k): k is string => typeof k === 'string'));
+        if (++scans >= maxScans) break;
       } while (cursor !== 0);
       let deleted = 0;
       for (let i = 0; i < keys.length; i += 100) {
