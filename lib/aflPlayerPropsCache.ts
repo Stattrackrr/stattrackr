@@ -257,6 +257,24 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
   return { success: true, eventsRefreshed, playersWithProps };
 }
 
+/** Same set of name tokens (handles "errol gulden" vs "gulden errol" from API "Gulden, Errol"). */
+function sameNameTokens(a: string, b: string): boolean {
+  const ta = normalizeName(a).split(/\s+/).filter(Boolean).sort();
+  const tb = normalizeName(b).split(/\s+/).filter(Boolean).sort();
+  if (ta.length !== tb.length) return false;
+  return ta.every((t, i) => t === tb[i]);
+}
+
+/** Find cache key for player: exact normalized first, then same tokens, then namesMatch. */
+function findPlayerKeyInCache(eventCache: EventPlayerPropsCache, playerName: string): string | null {
+  const exact = normalizeName(playerName);
+  if (exact && eventCache[exact]) return exact;
+  for (const cachedKey of Object.keys(eventCache)) {
+    if (sameNameTokens(playerName, cachedKey) || namesMatch(playerName, cachedKey)) return cachedKey;
+  }
+  return null;
+}
+
 /** Read cached player props for one event+player. Returns null if not in cache. */
 export async function getAflPlayerPropsFromCache(
   eventId: string,
@@ -267,7 +285,8 @@ export async function getAflPlayerPropsFromCache(
   const key = `${AFL_PP_CACHE_KEY_PREFIX}:${eventId}`;
   const eventCache = await sharedCache.getJSON<EventPlayerPropsCache>(key);
   if (!eventCache || typeof eventCache !== 'object') return null;
-  const playerKey = normalizeName(playerName);
+  const playerKey = findPlayerKeyInCache(eventCache, playerName);
+  if (!playerKey) return null;
   const playerData = eventCache[playerKey];
   if (!playerData || typeof playerData !== 'object') return null;
   const props = playerData[stat];
@@ -282,7 +301,8 @@ export async function getAflPlayerPropsAllFromCache(
   const key = `${AFL_PP_CACHE_KEY_PREFIX}:${eventId}`;
   const eventCache = await sharedCache.getJSON<EventPlayerPropsCache>(key);
   if (!eventCache || typeof eventCache !== 'object') return null;
-  const playerKey = normalizeName(playerName);
+  const playerKey = findPlayerKeyInCache(eventCache, playerName);
+  if (!playerKey) return null;
   const playerData = eventCache[playerKey];
   if (!playerData || typeof playerData !== 'object') return null;
   return playerData;
