@@ -55,11 +55,11 @@ export function computeAflPropStatsFromGames(
     const opp = (g.opponent as string) || '';
     if (v !== null) gamesWithValue.push({ value: v, opponent: opp });
   }
-  const newestFirst = [...gamesWithValue].reverse();
-  const last5 = newestFirst.slice(0, 5).map((x) => x.value);
-  const last10 = newestFirst.slice(0, 10).map((x) => x.value);
-  const seasonValues = newestFirst.map((x) => x.value);
-  const h2hValues = newestFirst
+  // API returns games most-recent first (FootyWire table order). Use first N = last N games.
+  const last5 = gamesWithValue.slice(0, 5).map((x) => x.value);
+  const last10 = gamesWithValue.slice(0, 10).map((x) => x.value);
+  const seasonValues = gamesWithValue.map((x) => x.value);
+  const h2hValues = gamesWithValue
     .filter((x) => {
       const oppNorm = opponentToFootywireTeam(x.opponent) || x.opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
       return (
@@ -75,9 +75,9 @@ export function computeAflPropStatsFromGames(
   const seasonAvg = seasonValues.length > 0 ? seasonValues.reduce((a, b) => a + b, 0) / seasonValues.length : null;
   const h2hAvg = h2hValues.length > 0 ? h2hValues.reduce((a, b) => a + b, 0) / h2hValues.length : null;
   let streak: number | null = null;
-  if (Number.isFinite(line) && newestFirst.length > 0) {
+  if (Number.isFinite(line) && gamesWithValue.length > 0) {
     streak = 0;
-    for (const x of newestFirst) {
+    for (const x of gamesWithValue) {
       if (x.value > line) streak++;
       else break;
     }

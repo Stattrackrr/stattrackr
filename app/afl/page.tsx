@@ -519,11 +519,15 @@ export default function AFLPage() {
   }, []);
 
   // When landing with ?player=Name (e.g. from AFL props page click), fetch and select that player.
+  // Clear current player immediately so we don't flash the previous player's chart before the new one loads.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const playerParam = url.searchParams.get('player')?.trim();
     if (!playerParam) return;
+    setSelectedPlayer(null);
+    setSelectedPlayerGameLogs([]);
+    setSelectedPlayerGameLogsWithQuarters([]);
     let cancelled = false;
     (async () => {
       try {
@@ -560,12 +564,15 @@ export default function AFLPage() {
   }, []);
 
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
+  // When URL has ?player= we are coming from props with a specific player — do not restore old selectedPlayer so we don't flash the previous player's chart.
   useEffect(() => {
     try {
+      const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+      const hasPlayerParam = url?.searchParams.get('player')?.trim() ?? '';
       const raw = localStorage.getItem(AFL_PAGE_STATE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Partial<PersistedAflPageState>;
-      if (parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
+      if (!hasPlayerParam && parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
         setSelectedPlayer(parsed.selectedPlayer as AflPlayerRecord);
       }
       if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
@@ -1619,7 +1626,7 @@ export default function AFLPage() {
                                 type="button"
                                 onClick={() => {
                                   try {
-                                    sessionStorage.removeItem('aflPageState:v1');
+                                    localStorage.removeItem(AFL_PAGE_STATE_KEY);
                                     sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                   } catch {}
                                   router.push('/props?sport=afl');
@@ -1755,7 +1762,7 @@ export default function AFLPage() {
                                 type="button"
                                 onClick={() => {
                                   try {
-                                    sessionStorage.removeItem('aflPageState:v1');
+                                    localStorage.removeItem(AFL_PAGE_STATE_KEY);
                                     sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                   } catch {}
                                   router.push('/props?sport=afl');

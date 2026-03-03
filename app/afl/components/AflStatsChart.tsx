@@ -596,7 +596,8 @@ export function AflStatsChart({
           if (!rowOpp || typeof rowOpp !== 'string') return false;
           return resolveOpp(rowOpp) === targetOfficial || rowOpp.trim() === targetOpponent;
         });
-        data = h2hData.length ? h2hData : baseChartData;
+        // When no H2H games, show empty so we can display "No recent H2H found" instead of falling back to all games
+        data = h2hData;
       }
     } else {
       const lastN = parseInt(selectedTimeframe.replace('last', ''), 10);
@@ -1105,7 +1106,11 @@ export function AflStatsChart({
       )}
 
       <div className="flex-1 min-h-0 relative">
-        {gameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
+        {chartData.length === 0 && selectedTimeframe === 'h2h' ? (
+          <div className="h-full w-full flex items-center justify-center p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">No recent H2H found</p>
+          </div>
+        ) : gameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
           <div className="h-full w-full flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
           </div>

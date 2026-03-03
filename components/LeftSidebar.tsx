@@ -259,26 +259,21 @@ export default function LeftSidebar({
     }
   };
 
-  // Sport icons: emoji for NBA; AFL logo from local file (public/images/afl-logo.png)
-  const SportLogo = ({ sport }: { sport: "nba" | "afl" }) => {
-    if (sport === "nba") {
-      return (
-        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-lg leading-none select-none" aria-hidden>
-          🏀
-        </span>
-      );
-    }
-    return (
-      <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center" aria-hidden>
-        <img src="/images/afl-logo.png" alt="" className="w-5 h-5 object-contain" />
-      </span>
-    );
-  };
+  // Sport icons: NBA and AFL logos from public/images
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" }) => (
+    <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center" aria-hidden>
+      <img
+        src={sport === "nba" ? "/images/nba-logo.png" : "/images/afl-logo.png"}
+        alt=""
+        className="w-5 h-5 object-contain"
+      />
+    </span>
+  );
 
-  type SportEntry = { name: string; href: string; logo: React.ReactNode; comingSoon?: boolean; comingSoonText?: string };
+  type SportEntry = { name: string; href: string; logo: React.ReactNode; comingSoon?: boolean; comingSoonText?: string; beta?: boolean };
   const sports: SportEntry[] = [
     { name: "NBA", href: "/props", logo: <SportLogo sport="nba" /> },
-    { name: "AFL", href: "#", comingSoon: true, comingSoonText: "EST 1st March", logo: <SportLogo sport="afl" /> },
+    { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" />, beta: true },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
@@ -379,10 +374,17 @@ export default function LeftSidebar({
                     <Link
                       href={sport.href}
                       onClick={() => setShowSportsDropdown(false)}
-                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center gap-2"
+                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
                     >
-                      {sport.logo}
-                      <span>{sport.name}</span>
+                      <span className="flex items-center gap-2">
+                        {sport.logo}
+                        <span>{sport.name}</span>
+                      </span>
+                      {sport.beta && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
+                          Beta
+                        </span>
+                      )}
                     </Link>
                   )}
                 </li>

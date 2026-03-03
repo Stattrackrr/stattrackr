@@ -2538,12 +2538,67 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     });
   }, [aflProps, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, getStatLabel]);
 
+  // AFL: same "best to worst" default sort as NBA (DvP best first, then L10%, L5%, prob); column sort when active
   const displaySortedAflProps = useMemo(() => {
+    const percent = (hitRate?: { hits: number; total: number } | null) =>
+      hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
     const out = [...filteredAflProps];
-    if (propLineSort === 'high') out.sort((a, b) => b.line - a.line);
-    else if (propLineSort === 'low') out.sort((a, b) => a.line - b.line);
+    if (propLineSort === 'high') {
+      out.sort((a, b) => b.line - a.line);
+      return out;
+    }
+    if (propLineSort === 'low') {
+      out.sort((a, b) => a.line - b.line);
+      return out;
+    }
+    const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
+    if (activeColumnSort) {
+      const [column, direction] = activeColumnSort;
+      out.sort((a, b) => {
+        let aVal: number | null = null;
+        let bVal: number | null = null;
+        if (column === 'dvp') {
+          aVal = a.dvpRating ?? null;
+          bVal = b.dvpRating ?? null;
+          if (aVal === null && bVal === null) return 0;
+          if (aVal === null) return 1;
+          if (bVal === null) return -1;
+          return direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
+        else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
+        else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
+        else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
+        else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
+        else if (column === 'ip') { aVal = a.impliedOverProb ?? null; bVal = b.impliedOverProb ?? null; }
+        if (aVal === null && bVal === null) return 0;
+        if (aVal === null) return 1;
+        if (bVal === null) return -1;
+        return direction === 'asc' ? bVal - aVal : aVal - bVal;
+      });
+      return out;
+    }
+    // Default: best to worst — DvP (best first), then L10%, L5%, then implied prob
+    out.sort((a, b) => {
+      const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
+      const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
+      if (aDvp !== null || bDvp !== null) {
+        const aR = aDvp ?? 999;
+        const bR = bDvp ?? 999;
+        if (aR !== bR) return aR - bR;
+      }
+      const aL10 = percent(a.last10HitRate);
+      const bL10 = percent(b.last10HitRate);
+      if (aL10 !== null || bL10 !== null) return (bL10 ?? -1) - (aL10 ?? -1);
+      const aL5 = percent(a.last5HitRate);
+      const bL5 = percent(b.last5HitRate);
+      if (aL5 !== null || bL5 !== null) return (bL5 ?? -1) - (aL5 ?? -1);
+      const aP = Math.max(a.overProb ?? 0, a.underProb ?? 0);
+      const bP = Math.max(b.overProb ?? 0, b.underProb ?? 0);
+      return bP - aP;
+    });
     return out;
-  }, [filteredAflProps, propLineSort]);
+  }, [filteredAflProps, propLineSort, columnSort]);
 
   const ITEMS_PER_PAGE = 20;
   const aflTotalPages = Math.max(1, Math.ceil(displaySortedAflProps.length / ITEMS_PER_PAGE));
@@ -3261,6 +3316,34 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               }}
             >
           <div className={`h-full pb-12 lg:pr-0 px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
+            {/* Sport toggle: NBA | AFL - above search */}
+            <div className={`flex gap-1.5 mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+              <button
+                type="button"
+                onClick={() => setPropsSport('nba')}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                  propsSport === 'nba'
+                    ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-label="NBA"
+              >
+                <img src="/images/nba-logo.png" alt="" className="w-10 h-10 object-contain" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPropsSport('afl')}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                  propsSport === 'afl'
+                    ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-label="AFL"
+              >
+                <img src="/images/afl-logo.png" alt="" className="w-10 h-10 object-contain" />
+              </button>
+            </div>
+
             {/* Search Bar */}
             <div className={`mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
@@ -3287,32 +3370,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   </svg>
                 </div>
               </form>
-
-              {/* Sport toggle: NBA | AFL */}
-              <div className={`flex gap-1.5 mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
-                <button
-                  type="button"
-                  onClick={() => setPropsSport('nba')}
-                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                    propsSport === 'nba'
-                      ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
-                      : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  NBA
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPropsSport('afl')}
-                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                    propsSport === 'afl'
-                      ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
-                      : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  AFL
-                </button>
-              </div>
 
               {/* Filters Section */}
               <div 

@@ -16,10 +16,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log('[AFL props-stats/clear] Clearing prop stats cache...');
     const deleted = await clearAflPropStatsCache();
+    console.log('[AFL props-stats/clear] Done. Deleted', deleted, 'cache keys. Reload the props page to refetch stats.');
     return NextResponse.json({ success: true, deleted });
   } catch (e) {
-    console.error('[afl/props-stats/clear]', e);
+    console.error('[AFL props-stats/clear]', e);
     return NextResponse.json({ success: false, error: 'Failed to clear cache' }, { status: 500 });
   }
 }
