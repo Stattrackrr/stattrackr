@@ -16,9 +16,9 @@ const AFL_ADVANCED_FILTER_OPTIONS: { key: AflAdvancedFilterKey; label: string }[
 
 const STAT_PRIORITY = [
   'moneyline',
-  'total_goals',
   'spread',
   'total_points',
+  'total_goals',
   'q1_total',
   'q1_spread',
   'q1_total_goals',

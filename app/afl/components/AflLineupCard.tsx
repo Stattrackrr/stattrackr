@@ -449,20 +449,22 @@ const AflLineupCard = memo(function AflLineupCard({
               {hasMatchUrl ? 'No lineup data for this match.' : 'Match link not available for this game.'}
             </p>
           ) : hasLegacyOnly ? (
-            <TeamLineupList players={legacyPlayers} isDark={isDark} prefix="legacy-" highlightPlayerName={selectedPlayerName} />
+            <div className={`rounded-lg border p-2 xl:p-2.5 min-w-0 ${isDark ? 'border-gray-600 bg-gray-800/40' : 'border-gray-200 bg-gray-50/80'}`}>
+              <TeamLineupList players={legacyPlayers} isDark={isDark} prefix="legacy-" highlightPlayerName={selectedPlayerName} />
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 xl:gap-4 min-w-0">
               {team1Players.length > 0 && (
-                <div className="min-w-0 flex flex-col">
-                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`min-w-0 flex flex-col rounded-lg border p-2 xl:p-2.5 ${isDark ? 'border-gray-600 bg-gray-800/40' : 'border-gray-200 bg-gray-50/80'}`}>
+                  <h4 className={`text-sm font-semibold mb-1.5 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {team1Label}
                   </h4>
                   <TeamLineupList players={team1Players} isDark={isDark} prefix="1-" highlightPlayerName={selectedPlayerName} />
                 </div>
               )}
               {team2Players.length > 0 && (
-                <div className="min-w-0 flex flex-col">
-                  <h4 className={`text-sm font-semibold mb-1 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`min-w-0 flex flex-col rounded-lg border p-2 xl:p-2.5 ${isDark ? 'border-gray-600 bg-gray-800/40' : 'border-gray-200 bg-gray-50/80'}`}>
+                  <h4 className={`text-sm font-semibold mb-1.5 flex-shrink-0 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {team2Label}
                   </h4>
                   <TeamLineupList players={team2Players} isDark={isDark} prefix="2-" highlightPlayerName={selectedPlayerName} />
