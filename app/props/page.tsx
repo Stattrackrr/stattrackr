@@ -76,6 +76,21 @@ interface AflGameForProps {
   commenceTime: string;
 }
 
+/** AFL calculated stats for props table (L5, L10, H2H, Season, Streak, DvP). */
+interface AflPropStats {
+  last5Avg?: number | null;
+  last10Avg?: number | null;
+  h2hAvg?: number | null;
+  seasonAvg?: number | null;
+  streak?: number | null;
+  last5HitRate?: { hits: number; total: number } | null;
+  last10HitRate?: { hits: number; total: number } | null;
+  h2hHitRate?: { hits: number; total: number } | null;
+  seasonHitRate?: { hits: number; total: number } | null;
+  dvpRating?: number | null;
+  dvpStatValue?: number | null;
+}
+
 // Tipoff Countdown Component
 function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean }) {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
@@ -426,6 +441,10 @@ export default function NBALandingPage() {
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+  // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
+  const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
+  // AFL calculated stats (L5, L10, H2H, Season, Streak, DvP) keyed by "playerName|statType|team|opponent|line"
+  const [aflCalculatedStats, setAflCalculatedStats] = useState<Record<string, AflPropStats>>({});
 
   // Mobile bottom nav dropdown state
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
@@ -791,22 +810,26 @@ export default function NBALandingPage() {
     fetchTodaysGames();
   }, []);
 
-  // Fetch AFL games + player props list when sport is AFL
+  // Fetch AFL games + player props list when sport is AFL (and refetch when empty so first load or failed load can recover)
   useEffect(() => {
     if (propsSport !== 'afl') return;
     let cancelled = false;
     setAflPropsLoading(true);
     (async () => {
       try {
-        const listRes = await fetch('/api/afl/player-props/list');
+        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
         if (cancelled) return;
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         setAflGames(games);
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
+        // Only include rows that have both over and under odds (no only-over or only-under)
+        const hasOver = (o: string) => o != null && String(o).trim() !== '' && String(o) !== 'N/A';
+        const hasUnder = (u: string) => u != null && String(u).trim() !== '' && String(u) !== 'N/A';
+        const rowsWithBoth = rows.filter((r) => hasOver(r.overOdds) && hasUnder(r.underOdds));
         // Aggregate: group by (playerName, gameId, homeTeam, awayTeam, statType, line) -> bookmakerLines[]
         const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> }>();
-        for (const r of rows) {
+        for (const r of rowsWithBoth) {
           const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
           const existing = keyToRow.get(key);
           const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
@@ -846,8 +869,8 @@ export default function NBALandingPage() {
           gameId: a.gameId,
         }));
         setAflProps(aggregated);
-        if (games.length > 0 && selectedAflGames.size === 0) {
-          setSelectedAflGames(new Set(games.map((g) => g.gameId)));
+        if (games.length > 0) {
+          setSelectedAflGames((prev) => (prev.size === 0 ? new Set(games.map((g) => g.gameId)) : prev));
         }
       } catch (e) {
         if (!cancelled) {
@@ -860,6 +883,29 @@ export default function NBALandingPage() {
     })();
     return () => { cancelled = true; };
   }, [propsSport]);
+
+  // Fetch AFL league player stats for jumper numbers (for circle placeholder)
+  useEffect(() => {
+    if (propsSport !== 'afl' || aflProps.length === 0) return;
+    const season = new Date().getFullYear();
+    Promise.all([
+      fetch(`/api/afl/league-player-stats?season=${season}`).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/afl/league-player-stats?season=${season - 1}`).then((r) => r.ok ? r.json() : null),
+    ]).then(([curr, prev]) => {
+      const map: Record<string, number> = {};
+      const add = (data: { players?: Array<{ name?: string; number?: number }> } | null) => {
+        if (!data?.players) return;
+        for (const p of data.players) {
+          const name = (p?.name ?? '').trim();
+          const num = typeof p?.number === 'number' && Number.isFinite(p.number) ? p.number : null;
+          if (name && num != null) map[name] = num;
+        }
+      };
+      add(prev);
+      add(curr);
+      setAflPlayerNumbers(map);
+    }).catch(() => {});
+  }, [propsSport, aflProps.length]);
 
   // Helper to check if a bookmaker is a pick'em/DFS-only bookmaker
   const isPickemBookmaker = (name: string): boolean => {
@@ -2093,6 +2139,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return labels[statType] || statType;
   }, []);
 
+  const getAflInitials = (name: string): string => {
+    const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0]! + parts[parts.length - 1]![0]).toUpperCase();
+    if (parts.length === 1) return (parts[0]!.slice(0, 2) || '?').toUpperCase();
+    return '?';
+  };
+
+  const aflStatKey = (p: PlayerProp) => `${p.playerName}|${p.statType}|${p.team}|${p.opponent}|${p.line}`;
+
   // Extract unique bookmakers and prop types from playerProps
   const availableBookmakers = useMemo(() => {
     const bookmakers = new Set<string>();
@@ -2347,6 +2402,52 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return displaySortedAflProps.slice(start, start + ITEMS_PER_PAGE);
   }, [displaySortedAflProps, currentPage, ITEMS_PER_PAGE]);
+
+  // Fetch AFL stats in one batch (server-cached); use sessionStorage for same-session repeat loads
+  const AFL_STATS_BATCH_CACHE_KEY = 'afl_props_stats_batch';
+  const AFL_STATS_BATCH_TTL_MS = 5 * 60 * 1000; // 5 min
+  useEffect(() => {
+    if (propsSport !== 'afl' || finalPaginatedAflProps.length === 0) return;
+    const keys = finalPaginatedAflProps.map((p) => aflStatKey(p));
+    try {
+      const stored = typeof window !== 'undefined' ? sessionStorage.getItem(AFL_STATS_BATCH_CACHE_KEY) : null;
+      if (stored) {
+        const parsed = JSON.parse(stored) as { at?: number; stats?: Record<string, AflPropStats> };
+        if (parsed?.at && Date.now() - parsed.at < AFL_STATS_BATCH_TTL_MS && parsed.stats) {
+          const hasAll = keys.every((k) => parsed.stats![k] != null);
+          if (hasAll) {
+            setAflCalculatedStats((prev) => ({ ...prev, ...parsed.stats }));
+            return;
+          }
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    const payload = { props: finalPaginatedAflProps.map((p) => ({ playerName: p.playerName, team: p.team, opponent: p.opponent, statType: p.statType, line: p.line })) };
+    fetch('/api/afl/props-stats/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    })
+      .then((r) => r.json())
+      .then((data: { stats?: Record<string, AflPropStats> }) => {
+        const stats = data?.stats ?? {};
+        setAflCalculatedStats((prev) => ({ ...prev, ...stats }));
+        try {
+          if (typeof window !== 'undefined' && Object.keys(stats).length > 0) {
+            sessionStorage.setItem(
+              AFL_STATS_BATCH_CACHE_KEY,
+              JSON.stringify({ at: Date.now(), stats })
+            );
+          }
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => {});
+  }, [propsSport, finalPaginatedAflProps]);
 
   // Track explicitly deselected games (games user clicked to deselect)
   const [deselectedGames, setDeselectedGames] = useState<Set<number>>(() => {
@@ -3736,8 +3837,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       <div className={`flex items-center justify-center py-16 ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Loading AFL props…</div>
                     ) : propsSport === 'afl' ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium mb-2">No AFL props in cache</p>
-                        <p className="text-sm">Run /api/afl/odds/refresh or try again later.</p>
+                        <p className="text-lg font-medium mb-2">No odds for AFL</p>
+                        <p className="text-sm">{aflProps.length === 0 ? 'Run /api/afl/odds/refresh or try again later.' : 'Select games or filters above.'}</p>
                       </div>
                     ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
@@ -4113,6 +4214,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             const bdlId = propsSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
                             const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
+                            const displayProp = propsSport === 'afl' ? { ...prop, ...aflCalculatedStats[aflStatKey(prop)] } : prop;
                             // Normalize team names to abbreviations for logo lookup
                             // Handle both full names and abbreviations
                             const normalizeTeam = (team: string): string => {
@@ -4229,6 +4331,20 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         }}
                                       />
                                     )}
+                                    {propsSport === 'afl' && (
+                                      <div
+                                        className="w-12 h-12 rounded-full flex-shrink-0 border-2 flex items-center justify-center font-semibold text-sm select-none bg-transparent"
+                                        style={{
+                                          borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
+                                          color: mounted && isDark ? '#a78bfa' : '#9333ea',
+                                        }}
+                                        aria-hidden
+                                      >
+                                        {aflPlayerNumbers[prop.playerName] != null
+                                          ? aflPlayerNumbers[prop.playerName]
+                                          : getAflInitials(prop.playerName)}
+                                      </div>
+                                    )}
                                     <div>
                                       <div className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                         {prop.playerName}
@@ -4313,8 +4429,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       )}
                                                       <div className={`text-xs flex flex-col gap-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                                         {(() => {
-                                                          // Format odds based on user preference
+                                                          // Format odds based on user preference; show — for N/A
                                                           const formatOddsValue = (oddsStr: string): string => {
+                                                            if (!oddsStr || oddsStr === 'N/A') return '—';
                                                             if (oddsFormat === 'decimal') {
                                                               const parsed = parseAmericanOdds(oddsStr);
                                                               if (parsed !== null) {
@@ -4429,8 +4546,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                 )}
                                                                 <div className={`text-xs flex flex-col gap-0.5 text-white`}>
                                                                   {(() => {
-                                                                    // Format odds based on user preference
+                                                                    // Format odds based on user preference; show — for N/A
                                                                     const formatOddsValue = (oddsStr: string): string => {
+                                                                      if (!oddsStr || oddsStr === 'N/A') return '—';
                                                                       if (oddsFormat === 'decimal') {
                                                                         const parsed = parseAmericanOdds(oddsStr);
                                                                         if (parsed !== null) {
@@ -4438,7 +4556,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                           return decimal.toFixed(2);
                                                                         }
                                                                       }
-                                                                      return oddsStr; // Return as-is for American format
+                                                                      return oddsStr;
                                                                     };
                                                                     return (
                                                                       <>
@@ -4479,8 +4597,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               />
                                             )}
                                             <div className={`text-sm ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                              <div>Over: {prop.overOdds}</div>
-                                              <div>Under: {prop.underOdds}</div>
+                                              <div>Over: {prop.overOdds && prop.overOdds !== 'N/A' ? prop.overOdds : '—'}</div>
+                                              <div>Under: {prop.underOdds && prop.underOdds !== 'N/A' ? prop.underOdds : '—'}</div>
                                             </div>
                                           </div>
                                         );
@@ -4499,17 +4617,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                       <div className="flex flex-col gap-0.5">
                                         {(() => {
-                                          // Calculate implied probabilities on-the-fly from odds (not from cache)
                                           const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
-                                          const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? 50);
-                                          const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? 50);
+                                          const overAmerican = parseAmericanOdds(prop.overOdds);
+                                          const underAmerican = parseAmericanOdds(prop.underOdds);
+                                          let overProb: number | null = implied ? implied.overImpliedProb : (overAmerican !== null ? americanToImpliedProb(overAmerican) : null);
+                                          let underProb: number | null = implied ? implied.underImpliedProb : (underAmerican !== null ? americanToImpliedProb(underAmerican) : null);
+                                          if (overProb === null && underProb === null) {
+                                            overProb = prop.impliedOverProb ?? null;
+                                            underProb = prop.impliedUnderProb ?? null;
+                                          }
                                           return (
                                             <>
-                                              <div className={`text-sm font-semibold ${overProb >= underProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                Over {overProb.toFixed(1)}%
+                                              <div className={`text-sm font-semibold ${overProb != null ? (overProb >= (underProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
+                                                Over {overProb != null ? `${overProb.toFixed(1)}%` : '—'}
                                               </div>
-                                              <div className={`text-sm font-semibold ${underProb >= overProb ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                Under {underProb.toFixed(1)}%
+                                              <div className={`text-sm font-semibold ${underProb != null ? (underProb >= (overProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
+                                                Under {underProb != null ? `${underProb.toFixed(1)}%` : '—'}
                                               </div>
                                             </>
                                           );
@@ -4521,9 +4644,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* DvP Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.dvpRating !== null && prop.dvpRating !== undefined && typeof prop.dvpRating === 'number' && prop.dvpRating > 0 ? (
+                                  {displayProp.dvpRating !== null && displayProp.dvpRating !== undefined && typeof displayProp.dvpRating === 'number' && displayProp.dvpRating > 0 ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4532,23 +4653,23 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         
                                         // Color coding based on rank (same as dashboard)
                                         // Higher rank = worse defense = better for player (green)
-                                        if (prop.dvpRating >= 26) {
+                                        if (displayProp.dvpRating! >= 26) {
                                           bgColor = mounted && isDark ? '#166534' : '#dcfce7'; // green-800 / green-100
                                           borderColor = '#22c55e';
                                           glowColor = '#22c55e';
-                                        } else if (prop.dvpRating >= 21) {
+                                        } else if (displayProp.dvpRating! >= 21) {
                                           bgColor = mounted && isDark ? '#166534' : '#dcfce7'; // green-800 / green-100
                                           borderColor = '#22c55e';
                                           glowColor = '#22c55e';
-                                        } else if (prop.dvpRating >= 16) {
+                                        } else if (displayProp.dvpRating! >= 16) {
                                           bgColor = mounted && isDark ? '#9a3412' : '#fed7aa'; // orange-800 / orange-100
                                           borderColor = '#f97316';
                                           glowColor = '#f97316';
-                                        } else if (prop.dvpRating >= 11) {
+                                        } else if (displayProp.dvpRating! >= 11) {
                                           bgColor = mounted && isDark ? '#9a3412' : '#fed7aa'; // orange-900 / orange-200
                                           borderColor = '#f97316';
                                           glowColor = '#f97316';
-                                        } else if (prop.dvpRating >= 6) {
+                                        } else if (displayProp.dvpRating! >= 6) {
                                           bgColor = mounted && isDark ? '#991b1b' : '#fee2e2'; // red-800 / red-100
                                           borderColor = '#ef4444';
                                           glowColor = '#ef4444';
@@ -4569,15 +4690,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       })()}>
                                       <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
                                         <div className="text-sm font-semibold text-white leading-tight">
-                                          #{prop.dvpRating}
+                                          #{displayProp.dvpRating}
                                         </div>
-                                        {prop.dvpStatValue !== null && prop.dvpStatValue !== undefined && (
+                                        {displayProp.dvpStatValue !== null && displayProp.dvpStatValue !== undefined && (
                                           <div className="text-xs font-medium text-white leading-tight">
-                                            {prop.dvpStatValue.toFixed(1)}
+                                            {displayProp.dvpStatValue.toFixed(1)}
                                           </div>
                                         )}
                                       </div>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -4595,29 +4718,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* L5 Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.last5Avg !== null && prop.last5Avg !== undefined ? (
+                                  {(displayProp.last5Avg !== null && displayProp.last5Avg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                         let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                         let glowColor = '';
                                         
-                                        if (prop.last5HitRate) {
-                                          const hitRate = (prop.last5HitRate.hits / prop.last5HitRate.total) * 100;
+                                        if (displayProp.last5HitRate) {
+                                          const hitRate = (displayProp.last5HitRate.hits / displayProp.last5HitRate.total) * 100;
                                           if (hitRate < 30) {
-                                            // red - bad: fade out at top
                                             bgColor = '#B03A3A';
                                             borderColor = '#ef4444';
                                             glowColor = '#ef4444';
                                           } else if (hitRate < 70) {
-                                            // orange - mid: fade out at top
                                             bgColor = '#E88A3B';
                                             borderColor = '#f97316';
                                             glowColor = '#f97316';
                                           } else {
-                                            // green - good: fade out at top
                                             bgColor = '#22c55e';
                                             borderColor = '#22c55e';
                                             glowColor = '#22c55e';
@@ -4635,20 +4753,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       })()}>
                                       <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
                                         <div className="text-sm font-semibold text-white leading-tight">
-                                          {prop.last5Avg.toFixed(1)}
+                                          {displayProp.last5Avg!.toFixed(1)}
                                         </div>
-                                        {prop.last5HitRate && (
+                                        {displayProp.last5HitRate && (
                                           <>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {prop.last5HitRate.hits}/{prop.last5HitRate.total}
+                                              {displayProp.last5HitRate.hits}/{displayProp.last5HitRate.total}
                                             </div>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {((prop.last5HitRate.hits / prop.last5HitRate.total) * 100).toFixed(0)}%
+                                              {((displayProp.last5HitRate.hits / displayProp.last5HitRate.total) * 100).toFixed(0)}%
                                             </div>
                                           </>
                                         )}
                                       </div>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -4666,29 +4786,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* L10 Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.last10Avg !== null && prop.last10Avg !== undefined ? (
+                                  {(displayProp.last10Avg !== null && displayProp.last10Avg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                         let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                         let glowColor = '';
                                         
-                                        if (prop.last10HitRate) {
-                                          const hitRate = (prop.last10HitRate.hits / prop.last10HitRate.total) * 100;
+                                        if (displayProp.last10HitRate) {
+                                          const hitRate = (displayProp.last10HitRate.hits / displayProp.last10HitRate.total) * 100;
                                           if (hitRate < 30) {
-                                            // red - bad: fade out at top
                                             bgColor = '#B03A3A';
                                             borderColor = '#ef4444';
                                             glowColor = '#ef4444';
                                           } else if (hitRate < 70) {
-                                            // orange - mid: fade out at top
                                             bgColor = '#E88A3B';
                                             borderColor = '#f97316';
                                             glowColor = '#f97316';
                                           } else {
-                                            // green - good: fade out at top
                                             bgColor = '#22c55e';
                                             borderColor = '#22c55e';
                                             glowColor = '#22c55e';
@@ -4706,20 +4821,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       })()}>
                                       <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
                                         <div className="text-sm font-semibold text-white leading-tight">
-                                          {prop.last10Avg.toFixed(1)}
+                                          {displayProp.last10Avg!.toFixed(1)}
                                         </div>
-                                        {prop.last10HitRate && (
+                                        {displayProp.last10HitRate && (
                                           <>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {prop.last10HitRate.hits}/{prop.last10HitRate.total}
+                                              {displayProp.last10HitRate.hits}/{displayProp.last10HitRate.total}
                                             </div>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {((prop.last10HitRate.hits / prop.last10HitRate.total) * 100).toFixed(0)}%
+                                              {((displayProp.last10HitRate.hits / displayProp.last10HitRate.total) * 100).toFixed(0)}%
                                             </div>
                                           </>
                                         )}
                                       </div>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -4737,29 +4854,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* H2H Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.h2hAvg !== null && prop.h2hAvg !== undefined ? (
+                                  {(displayProp.h2hAvg !== null && displayProp.h2hAvg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                         let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                         let glowColor = '';
                                         
-                                        if (prop.h2hHitRate) {
-                                          const hitRate = (prop.h2hHitRate.hits / prop.h2hHitRate.total) * 100;
+                                        if (displayProp.h2hHitRate) {
+                                          const hitRate = (displayProp.h2hHitRate.hits / displayProp.h2hHitRate.total) * 100;
                                           if (hitRate < 30) {
-                                            // red - bad: fade out at top
                                             bgColor = '#B03A3A';
                                             borderColor = '#ef4444';
                                             glowColor = '#ef4444';
                                           } else if (hitRate < 70) {
-                                            // orange - mid: fade out at top
                                             bgColor = '#E88A3B';
                                             borderColor = '#f97316';
                                             glowColor = '#f97316';
                                           } else {
-                                            // green - good: fade out at top
                                             bgColor = '#22c55e';
                                             borderColor = '#22c55e';
                                             glowColor = '#22c55e';
@@ -4777,20 +4889,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       })()}>
                                       <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
                                         <div className="text-sm font-semibold text-white leading-tight">
-                                          {prop.h2hAvg.toFixed(1)}
+                                          {displayProp.h2hAvg!.toFixed(1)}
                                         </div>
-                                        {prop.h2hHitRate && (
+                                        {displayProp.h2hHitRate && (
                                           <>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {prop.h2hHitRate.hits}/{prop.h2hHitRate.total}
+                                              {displayProp.h2hHitRate.hits}/{displayProp.h2hHitRate.total}
                                             </div>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {((prop.h2hHitRate.hits / prop.h2hHitRate.total) * 100).toFixed(0)}%
+                                              {((displayProp.h2hHitRate.hits / displayProp.h2hHitRate.total) * 100).toFixed(0)}%
                                             </div>
                                           </>
                                         )}
                                       </div>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -4808,29 +4922,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* Season Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.seasonAvg !== null && prop.seasonAvg !== undefined ? (
+                                  {(displayProp.seasonAvg !== null && displayProp.seasonAvg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                         let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                         let glowColor = '';
                                         
-                                        if (prop.seasonHitRate) {
-                                          const hitRate = (prop.seasonHitRate.hits / prop.seasonHitRate.total) * 100;
+                                        if (displayProp.seasonHitRate) {
+                                          const hitRate = (displayProp.seasonHitRate.hits / displayProp.seasonHitRate.total) * 100;
                                           if (hitRate < 30) {
-                                            // red - bad: fade out at top
                                             bgColor = '#B03A3A';
                                             borderColor = '#ef4444';
                                             glowColor = '#ef4444';
                                           } else if (hitRate < 70) {
-                                            // orange - mid: fade out at top
                                             bgColor = '#E88A3B';
                                             borderColor = '#f97316';
                                             glowColor = '#f97316';
                                           } else {
-                                            // green - good: fade out at top
                                             bgColor = '#22c55e';
                                             borderColor = '#22c55e';
                                             glowColor = '#22c55e';
@@ -4848,20 +4957,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       })()}>
                                       <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
                                         <div className="text-sm font-semibold text-white leading-tight">
-                                          {prop.seasonAvg.toFixed(1)}
+                                          {displayProp.seasonAvg!.toFixed(1)}
                                         </div>
-                                        {prop.seasonHitRate && (
+                                        {displayProp.seasonHitRate && (
                                           <>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {prop.seasonHitRate.hits}/{prop.seasonHitRate.total}
+                                              {displayProp.seasonHitRate.hits}/{displayProp.seasonHitRate.total}
                                             </div>
                                             <div className="text-xs font-medium text-white leading-tight">
-                                              {((prop.seasonHitRate.hits / prop.seasonHitRate.total) * 100).toFixed(0)}%
+                                              {((displayProp.seasonHitRate.hits / displayProp.seasonHitRate.total) * 100).toFixed(0)}%
                                             </div>
                                           </>
                                         )}
                                       </div>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -4879,27 +4990,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* Streak Column */}
                                 <td className="py-3 px-2">
-                                  {propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
-                                  ) : prop.streak !== null && prop.streak !== undefined ? (
+                                  {(displayProp.streak !== null && displayProp.streak !== undefined) ? (
                                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = '';
                                         let borderColor = '';
                                         let glowColor = '';
                                         
-                                        if (prop.streak >= 2) {
-                                          // green - good
+                                        if (displayProp.streak! >= 2) {
                                           bgColor = '#22c55e';
                                           borderColor = '#22c55e';
                                           glowColor = '#22c55e';
-                                        } else if (prop.streak === 1) {
-                                          // orange - mid
+                                        } else if (displayProp.streak === 1) {
                                           bgColor = '#E88A3B';
                                           borderColor = '#f97316';
                                           glowColor = '#f97316';
                                         } else {
-                                          // red - bad
                                           bgColor = '#B03A3A';
                                           borderColor = '#ef4444';
                                           glowColor = '#ef4444';
@@ -4913,9 +5019,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         };
                                       })()}>
                                       <span className="text-sm font-semibold text-white">
-                                        {prop.streak === 0 ? '0' : `${prop.streak} 🔥`}
+                                        {displayProp.streak === 0 ? '0' : `${displayProp.streak} 🔥`}
                                       </span>
                                     </div>
+                                  ) : propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
                                   ) : (
                                     <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
                                   )}
@@ -5257,8 +5365,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             };
                           };
                           
-                          // Format odds helper
+                          // Format odds helper; show — for N/A
                           const formatOddsValue = (oddsStr: string): string => {
+                            if (!oddsStr || oddsStr === 'N/A') return '—';
                             if (oddsFormat === 'decimal') {
                               const parsed = parseAmericanOdds(oddsStr);
                               if (parsed !== null) {
@@ -5304,7 +5413,20 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <div className="mb-1.5">
                                 {/* Player Name and Headshot Row */}
                                 <div className="flex items-center gap-2.5 mb-2">
-                                  {headshotUrl && (
+                                  {propsSport === 'afl' ? (
+                                    <div
+                                      className="w-10 h-10 rounded-full flex-shrink-0 border-2 flex items-center justify-center font-semibold text-xs select-none bg-transparent"
+                                      style={{
+                                        borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
+                                        color: mounted && isDark ? '#a78bfa' : '#9333ea',
+                                      }}
+                                      aria-hidden
+                                    >
+                                      {aflPlayerNumbers[prop.playerName] != null
+                                        ? aflPlayerNumbers[prop.playerName]
+                                        : getAflInitials(prop.playerName)}
+                                    </div>
+                                  ) : headshotUrl ? (
                                     <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 overflow-hidden relative" style={{ borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' }}>
                                       <Image
                                         src={headshotUrl}
@@ -5319,7 +5441,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         }}
                                       />
                                     </div>
-                                  )}
+                                  ) : null}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className={`font-bold text-base truncate ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
