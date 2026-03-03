@@ -20,6 +20,14 @@
     {
       "path": "/api/afl/odds/refresh",
       "schedule": "30 1,4,7,10,13,16,19,22 * * *"
+    },
+    {
+      "path": "/api/afl/player-props/refresh",
+      "schedule": "5 0,3,6,9,12,15,18,21 * * *"
+    },
+    {
+      "path": "/api/afl/player-props/refresh",
+      "schedule": "35 1,4,7,10,13,16,19,22 * * *"
     }
   ],
   "functions": {
@@ -63,6 +71,9 @@
       "maxDuration": 300
     },
     "app/api/afl/odds/refresh/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/afl/player-props/refresh/route.ts": {
       "maxDuration": 120
     }
   },
