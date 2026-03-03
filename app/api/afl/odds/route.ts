@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAflOddsCache, refreshAflOddsData } from '@/lib/refreshAflOdds';
+import { getAflOddsCache } from '@/lib/refreshAflOdds';
 
 const AFL_ODDS_EXCLUDED_BOOKMAKERS = ['tabtouch', 'playup', 'betrivers', 'bet rivers'];
 
@@ -42,25 +42,11 @@ function gameMatchesOpponent(home: string, away: string, opponent: string): bool
 /**
  * GET /api/afl/odds?team=...&opponent=...&game_date=...
  * Returns game odds (H2H, Spread, Total) for the matching AFL game.
- * Reads from 90-min cache; if cache empty, triggers one refresh then serves from cache.
+ * Read-only: serves from cache only. Never calls The Odds API (refresh is cron/manual only).
  */
 export async function GET(request: NextRequest) {
   try {
-    let cache = await getAflOddsCache();
-    if (!cache?.games?.length) {
-      const result = await refreshAflOddsData();
-      if (!result.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: result.error ?? 'Failed to load AFL odds',
-            data: [],
-          },
-          { status: 503 }
-        );
-      }
-      cache = await getAflOddsCache();
-    }
+    const cache = await getAflOddsCache();
     const games = cache?.games ?? [];
     const lastUpdated = cache?.lastUpdated ?? '';
     const nextUpdate = cache?.nextUpdate ?? '';
@@ -73,7 +59,7 @@ export async function GET(request: NextRequest) {
         awayTeam: undefined,
         lastUpdated,
         nextUpdate,
-        message: 'No AFL games available',
+        message: 'No AFL games in cache. Odds refresh runs every 90 min (cron or /api/afl/odds/refresh).',
       });
     }
 
