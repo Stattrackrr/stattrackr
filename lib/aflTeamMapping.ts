@@ -122,6 +122,49 @@ export function rosterTeamToInjuryTeam(team: string): string | null {
   return null;
 }
 
+/** League stats team name (e.g. from data/afl-league-player-stats-*.json) -> official full name for APIs. */
+export const LEAGUE_TEAM_TO_OFFICIAL: Record<string, string> = {
+  Adelaide: 'Adelaide Crows',
+  Brisbane: 'Brisbane Lions',
+  Carlton: 'Carlton Blues',
+  Collingwood: 'Collingwood Magpies',
+  Essendon: 'Essendon Bombers',
+  Fremantle: 'Fremantle Dockers',
+  Geelong: 'Geelong Cats',
+  'Gold Coast': 'Gold Coast Suns',
+  GWS: 'GWS Giants',
+  Hawthorn: 'Hawthorn Hawks',
+  Melbourne: 'Melbourne Demons',
+  'North Melbourne': 'North Melbourne Kangaroos',
+  'Port Adelaide': 'Port Adelaide Power',
+  Richmond: 'Richmond Tigers',
+  'St Kilda': 'St Kilda Saints',
+  Sydney: 'Sydney Swans',
+  'Western Bulldogs': 'Western Bulldogs',
+  'West Coast': 'West Coast Eagles',
+};
+
+/** Convert league stats team name to official full name (for game logs API etc). */
+export function leagueTeamToOfficial(leagueTeam: string): string | null {
+  if (!leagueTeam || typeof leagueTeam !== 'string') return null;
+  const t = leagueTeam.trim();
+  if (LEAGUE_TEAM_TO_OFFICIAL[t]) return LEAGUE_TEAM_TO_OFFICIAL[t];
+  const lower = t.toLowerCase();
+  const entry = Object.entries(LEAGUE_TEAM_TO_OFFICIAL).find(([k]) => k.toLowerCase() === lower);
+  return entry ? entry[1] : null;
+}
+
+/** Return true if game team string (from Odds API) matches the league team name. */
+export function gameTeamMatchesLeagueTeam(gameTeam: string, leagueTeam: string): boolean {
+  if (!gameTeam || !leagueTeam) return false;
+  const g = gameTeam.trim();
+  const official = leagueTeamToOfficial(leagueTeam);
+  if (official && g === official) return true;
+  if (g === leagueTeam.trim()) return true;
+  if (g.toLowerCase().startsWith(leagueTeam.trim().toLowerCase())) return true;
+  return false;
+}
+
 /** Official AFL API team names (same as ROSTER_TEAM_TO_INJURY_TEAM values). */
 const OFFICIAL_TEAM_NAMES = new Set(Object.values(ROSTER_TEAM_TO_INJURY_TEAM));
 

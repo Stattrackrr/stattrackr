@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats } from '@/lib/aflPropStatsCache';
+import { getAflPlayerTeamMap, resolveTeamAndOpponent } from '@/lib/aflPlayerTeamResolver';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -71,7 +72,10 @@ export async function GET(request: NextRequest) {
     for (const r of rows) {
       uniqueKeys.add(`${r.playerName}|${r.homeTeam}|${r.awayTeam}|${r.statType}|${r.line}`);
     }
-    const dvpMaps = await loadDvpMaps(baseUrl);
+    const [dvpMaps, playerTeamMap] = await Promise.all([
+      loadDvpMaps(baseUrl),
+      getAflPlayerTeamMap(baseUrl),
+    ]);
     const statsByKey = new Map<string, Awaited<ReturnType<typeof getAflPropStats>>>();
     await Promise.all(
       Array.from(uniqueKeys).map(async (rowKey) => {
@@ -83,10 +87,24 @@ export async function GET(request: NextRequest) {
         const homeTeam = parts.pop()!;
         const playerName = parts.join('|');
         const line = Number(lineStr);
-        const dvpHome = getDvpLookup(awayTeam, statType, dvpMaps);
-        const dvpAway = getDvpLookup(homeTeam, statType, dvpMaps);
-        let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvpHome, true);
-        if (!stats) stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvpAway, true);
+        const resolved = resolveTeamAndOpponent(playerName, homeTeam, awayTeam, playerTeamMap);
+        let team: string;
+        let opponent: string;
+        let dvp: ReturnType<typeof getDvpLookup>;
+        if (resolved) {
+          team = resolved.team;
+          opponent = resolved.opponent;
+          dvp = getDvpLookup(opponent, statType, dvpMaps);
+          const stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
+          if (stats) statsByKey.set(rowKey, stats);
+          return;
+        }
+        dvp = getDvpLookup(awayTeam, statType, dvpMaps);
+        let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, true);
+        if (!stats) {
+          dvp = getDvpLookup(homeTeam, statType, dvpMaps);
+          stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, true);
+        }
         if (stats) statsByKey.set(rowKey, stats);
       })
     );

@@ -34,6 +34,28 @@ function htmlToText(v) {
     .trim();
 }
 
+// FootyWire ft_players page uses current team in player links. Nickname -> our league short name.
+const FOOTYWIRE_NICKNAME_TO_LEAGUE = {
+  Crows: 'Adelaide',
+  Lions: 'Brisbane',
+  Blues: 'Carlton',
+  Magpies: 'Collingwood',
+  Bombers: 'Essendon',
+  Dockers: 'Fremantle',
+  Cats: 'Geelong',
+  Suns: 'Gold Coast',
+  Giants: 'GWS',
+  Hawks: 'Hawthorn',
+  Demons: 'Melbourne',
+  Kangaroos: 'North Melbourne',
+  Power: 'Port Adelaide',
+  Tigers: 'Richmond',
+  Saints: 'St Kilda',
+  Swans: 'Sydney',
+  Bulldogs: 'Western Bulldogs',
+  Eagles: 'West Coast',
+};
+
 // FootyWire ft_player_rankings: rt=LA (League Averages), st= stat code, year= season
 // Player links use pp-[team]--[player], not tp-. Stat codes: GO=Goals, HB=Handballs, etc.
 const STAT_PAGES = [
@@ -154,6 +176,49 @@ async function fetchOne(season, st) {
   return { ok: res.ok, html: await res.text(), url };
 }
 
+/**
+ * Fetch ft_players page (current squad list) and parse player -> current team from links.
+ * Links are like pp-suns--christian-petracca or pg-gold-coast-suns--christian-petracca.
+ * Returns Map of normalized "first last" name -> league team short name (e.g. "Gold Coast").
+ */
+async function fetchFtPlayersTeamMap() {
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_players`;
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml',
+      'Accept-Language': 'en-AU,en;q=0.9',
+      Referer: 'https://www.footywire.com/',
+    },
+  });
+  if (!res.ok) return new Map();
+  const html = await res.text();
+  const map = new Map();
+  // Match full link: href="pp-{team}--{player}" ...>Link text</a> so we get team, player slug, and optional "Surname, First" text
+  const linkRe = /href=["'](?:pp|pg)-([^"'\-]+(?:-[^"'\-]+)*)--([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
+  let m;
+  while ((m = linkRe.exec(html)) !== null) {
+    const teamSlug = (m[1] || '').trim().toLowerCase();
+    const playerSlug = (m[2] || '').trim().toLowerCase().replace(/-/g, ' ');
+    const linkText = (m[3] || '').trim();
+    if (!teamSlug) continue;
+    const lastPart = teamSlug.split('-').pop() || '';
+    const nickname = lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
+    const leagueTeam = FOOTYWIRE_NICKNAME_TO_LEAGUE[nickname] || null;
+    if (!leagueTeam) continue;
+    const norm = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (playerSlug) {
+      const nameFromSlug = playerSlug.replace(/\b\w/g, (c) => c.toUpperCase());
+      map.set(norm(nameFromSlug), leagueTeam);
+    }
+    if (linkText && linkText.includes(',')) {
+      const [surname, first] = linkText.split(',').map((x) => x.trim());
+      if (surname && first) map.set(norm(`${first} ${surname}`), leagueTeam);
+    }
+  }
+  return map;
+}
+
 const DEBUG_HTML = process.argv.includes('--debug-html');
 
 async function fetchSeason(season) {
@@ -197,9 +262,23 @@ async function main() {
     allStats = await fetchSeason(season);
   }
 
-  const players = mergeByPlayer(allStats);
+  let players = mergeByPlayer(allStats);
   const minGames = 1;
-  const filtered = players.filter((p) => p.games >= minGames && (p.disposals > 0 || p.kicks > 0 || p.handballs > 0));
+  let filtered = players.filter((p) => p.games >= minGames && (p.disposals > 0 || p.kicks > 0 || p.handballs > 0));
+
+  console.log('Fetching current teams from ft_players...');
+  const ftPlayersTeamMap = await fetchFtPlayersTeamMap();
+  const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  let teamsOverridden = 0;
+  for (const p of filtered) {
+    const key = norm(p.name);
+    const currentTeam = ftPlayersTeamMap.get(key);
+    if (currentTeam) {
+      p.team = currentTeam;
+      teamsOverridden++;
+    }
+  }
+  if (ftPlayersTeamMap.size) console.log(`  Applied current team from ft_players for ${teamsOverridden} players (source: ${ftPlayersTeamMap.size} entries)`);
 
   const out = {
     season,

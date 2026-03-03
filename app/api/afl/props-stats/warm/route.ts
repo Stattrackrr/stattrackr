@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, buildAflPropStatKey } from '@/lib/aflPropStatsCache';
+import { getAflPlayerTeamMap, resolveTeamAndOpponent } from '@/lib/aflPlayerTeamResolver';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -43,17 +44,21 @@ export async function GET(request: NextRequest) {
       return o && u;
     };
 
+    const playerTeamMap = await getAflPlayerTeamMap(baseUrl);
     const seen = new Set<string>();
     const toWarm: PropToWarm[] = [];
     for (const r of result.props) {
       if (!hasBoth(r)) continue;
-      const key = buildAflPropStatKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
+      const resolved = resolveTeamAndOpponent(r.playerName, r.homeTeam, r.awayTeam, playerTeamMap);
+      const team = resolved?.team ?? r.homeTeam;
+      const opponent = resolved?.opponent ?? r.awayTeam;
+      const key = buildAflPropStatKey(r.playerName, team, opponent, r.statType, r.line);
       if (seen.has(key)) continue;
       seen.add(key);
       toWarm.push({
         playerName: r.playerName,
-        team: r.homeTeam,
-        opponent: r.awayTeam,
+        team,
+        opponent,
         statType: r.statType,
         line: r.line,
       });
@@ -64,14 +69,11 @@ export async function GET(request: NextRequest) {
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
       await Promise.all(
-        batch.flatMap((p) => [
+        batch.map((p) =>
           getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, null).then((r) => {
             if (r) warmed++;
-          }).catch(() => {}),
-          getAflPropStats(p.playerName, p.opponent, p.team, p.statType, p.line, baseUrl, null).then((r) => {
-            if (r) warmed++;
-          }).catch(() => {}),
-        ])
+          }).catch(() => {})
+        )
       );
     }
 

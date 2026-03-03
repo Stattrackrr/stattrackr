@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-03-03T07:26:28.024Z",
+  "generatedAt": "2026-03-03T15:28:23.384Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 667,
@@ -532,7 +532,7 @@
     },
     {
       "name": "Clayton Oliver",
-      "team": "Melbourne",
+      "team": "GWS",
       "games": 22,
       "number": 36,
       "disposals": 25.55,
@@ -547,7 +547,7 @@
     },
     {
       "name": "Christian Petracca",
-      "team": "Melbourne",
+      "team": "Gold Coast",
       "games": 23,
       "number": 37,
       "disposals": 25.43,
@@ -1312,7 +1312,7 @@
     },
     {
       "name": "Brayden Fiorini",
-      "team": "Gold Coast",
+      "team": "Essendon",
       "games": 18,
       "number": 88,
       "disposals": 20.94,
@@ -1372,7 +1372,7 @@
     },
     {
       "name": "Jack Steele",
-      "team": "St Kilda",
+      "team": "Melbourne",
       "games": 21,
       "number": 92,
       "disposals": 20.86,
@@ -1537,7 +1537,7 @@
     },
     {
       "name": "James Worpel",
-      "team": "Hawthorn",
+      "team": "Geelong",
       "games": 21,
       "number": 74,
       "disposals": 20.05,
@@ -1927,7 +1927,7 @@
     },
     {
       "name": "Sam Flanders",
-      "team": "Gold Coast",
+      "team": "St Kilda",
       "games": 23,
       "number": 64,
       "disposals": 18.7,
@@ -2452,7 +2452,7 @@
     },
     {
       "name": "Tom De Koning",
-      "team": "Carlton",
+      "team": "St Kilda",
       "games": 22,
       "number": 51,
       "disposals": 17.32,
@@ -2692,7 +2692,7 @@
     },
     {
       "name": "Campbell Chesser",
-      "team": "West Coast",
+      "team": "Carlton",
       "games": 4,
       "number": null,
       "disposals": 16.75,
@@ -3172,7 +3172,7 @@
     },
     {
       "name": "Jayden Laverde",
-      "team": "Essendon",
+      "team": "GWS",
       "games": 14,
       "number": 14,
       "disposals": 15.43,
@@ -3352,7 +3352,7 @@
     },
     {
       "name": "Oliver Florent",
-      "team": "Sydney",
+      "team": "Carlton",
       "games": 16,
       "number": null,
       "disposals": 15.19,
@@ -3757,7 +3757,7 @@
     },
     {
       "name": "Judd McVee",
-      "team": "Melbourne",
+      "team": "Fremantle",
       "games": 17,
       "number": null,
       "disposals": 14.35,
@@ -4027,7 +4027,7 @@
     },
     {
       "name": "Tylar Young",
-      "team": "Richmond",
+      "team": "West Coast",
       "games": 7,
       "number": 18,
       "disposals": 14,
@@ -4192,7 +4192,7 @@
     },
     {
       "name": "Changkuoth Jiath",
-      "team": "Hawthorn",
+      "team": "Melbourne",
       "games": 20,
       "number": null,
       "disposals": 13.8,
@@ -4207,7 +4207,7 @@
     },
     {
       "name": "Jack Silvagni",
-      "team": "Carlton",
+      "team": "St Kilda",
       "games": 13,
       "number": 51,
       "disposals": 13.77,
@@ -4417,7 +4417,7 @@
     },
     {
       "name": "Callum Ah Chee",
-      "team": "Brisbane",
+      "team": "Adelaide",
       "games": 26,
       "number": 83,
       "disposals": 13.42,
@@ -4432,7 +4432,7 @@
     },
     {
       "name": "Ben Ainsworth",
-      "team": "Gold Coast",
+      "team": "Carlton",
       "games": 24,
       "number": null,
       "disposals": 13.42,
@@ -4462,7 +4462,7 @@
     },
     {
       "name": "Sam Draper",
-      "team": "Essendon",
+      "team": "Brisbane",
       "games": 5,
       "number": 55,
       "disposals": 13.4,
@@ -4507,7 +4507,7 @@
     },
     {
       "name": "Jacob Wehr",
-      "team": "GWS",
+      "team": "Port Adelaide",
       "games": 14,
       "number": null,
       "disposals": 13.36,
@@ -5632,7 +5632,7 @@
     },
     {
       "name": "Charlie Curnow",
-      "team": "Carlton",
+      "team": "Sydney",
       "games": 18,
       "number": 46,
       "disposals": 11.78,
@@ -5707,7 +5707,7 @@
     },
     {
       "name": "Connor Budarick",
-      "team": "Gold Coast",
+      "team": "Western Bulldogs",
       "games": 19,
       "number": null,
       "disposals": 11.68,
@@ -6037,7 +6037,7 @@
     },
     {
       "name": "Will Hayward",
-      "team": "Sydney",
+      "team": "Carlton",
       "games": 21,
       "number": 58,
       "disposals": 11.29,
@@ -6082,7 +6082,7 @@
     },
     {
       "name": "Liam Ryan",
-      "team": "West Coast",
+      "team": "St Kilda",
       "games": 20,
       "number": 92,
       "disposals": 11.25,
@@ -6772,7 +6772,7 @@
     },
     {
       "name": "Brandon Starcevich",
-      "team": "Brisbane",
+      "team": "West Coast",
       "games": 14,
       "number": null,
       "disposals": 10.36,
@@ -7327,7 +7327,7 @@
     },
     {
       "name": "Charlie Spargo",
-      "team": "Melbourne",
+      "team": "North Melbourne",
       "games": 10,
       "number": null,
       "disposals": 9.6,
@@ -7357,7 +7357,7 @@
     },
     {
       "name": "Brody Mihocek",
-      "team": "Collingwood",
+      "team": "Melbourne",
       "games": 22,
       "number": 37,
       "disposals": 9.59,
@@ -7627,7 +7627,7 @@
     },
     {
       "name": "Jack Buller",
-      "team": "Sydney",
+      "team": "Collingwood",
       "games": 9,
       "number": 74,
       "disposals": 9.11,
@@ -7897,7 +7897,7 @@
     },
     {
       "name": "Oscar Allen",
-      "team": "West Coast",
+      "team": "Brisbane",
       "games": 12,
       "number": 99,
       "disposals": 8.83,
@@ -8287,7 +8287,7 @@
     },
     {
       "name": "Corey Durdin",
-      "team": "Carlton",
+      "team": "Port Adelaide",
       "games": 16,
       "number": null,
       "disposals": 8,
@@ -9007,7 +9007,7 @@
     },
     {
       "name": "Mason Cox",
-      "team": "Collingwood",
+      "team": "Fremantle",
       "games": 10,
       "number": null,
       "disposals": 6.9,
@@ -9112,7 +9112,7 @@
     },
     {
       "name": "Max Heath",
-      "team": "St Kilda",
+      "team": "Melbourne",
       "games": 4,
       "number": null,
       "disposals": 6.75,
@@ -9172,7 +9172,7 @@
     },
     {
       "name": "Finnbar Maley",
-      "team": "North Melbourne",
+      "team": "Adelaide",
       "games": 7,
       "number": null,
       "disposals": 6.57,
@@ -9442,7 +9442,7 @@
     },
     {
       "name": "Liam Reidy",
-      "team": "Fremantle",
+      "team": "Carlton",
       "games": 1,
       "number": null,
       "disposals": 6,
@@ -9457,7 +9457,7 @@
     },
     {
       "name": "Malcolm Rosas",
-      "team": "Gold Coast",
+      "team": "Sydney",
       "games": 4,
       "number": null,
       "disposals": 5.75,
@@ -9742,7 +9742,7 @@
     },
     {
       "name": "Harry Schoenberg",
-      "team": "Adelaide",
+      "team": "West Coast",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9907,7 +9907,7 @@
     },
     {
       "name": "Deven Robertson",
-      "team": "Brisbane",
+      "team": "West Coast",
       "games": 4,
       "number": null,
       "disposals": 3.5,
