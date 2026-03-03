@@ -4,21 +4,19 @@ type CronAuthResult =
   | { authorized: true }
   | { authorized: false; response: NextResponse };
 
+function normalizeSecret(s: string): string {
+  return (s ?? '').replace(/\r\n|\r|\n/g, '').trim();
+}
+
 /**
  * Validate that a request is authorized to trigger cron endpoints.
- * Requires the CRON_SECRET environment variable and checks either:
- * - Authorization: Bearer <secret>
- * - X-Cron-Secret: <secret>
- * - X-Vercel-Cron: 1 (automatic Vercel cron calls)
+ * Checks: x-vercel-cron: 1, Authorization: Bearer <CRON_SECRET>, X-Cron-Secret, or ?secret=
+ * Comparison is normalized (trim, strip newlines) so env var newlines don't cause 401.
  */
 export function authorizeCronRequest(request: Request): CronAuthResult {
-  const cronSecret = (process.env.CRON_SECRET ?? '').trim();
+  const cronSecret = normalizeSecret(process.env.CRON_SECRET ?? '');
 
-  // Check if this is a Vercel Cron call (they send x-vercel-cron header)
-  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
-  
-  // Vercel Cron calls are automatically authenticated by Vercel
-  if (isVercelCron) {
+  if (request.headers.get('x-vercel-cron') === '1') {
     return { authorized: true };
   }
 
@@ -26,32 +24,29 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
     throw new Error('CRON_SECRET environment variable is required for cron endpoints');
   }
 
-  const headerSecret = (request.headers.get('x-cron-secret') ?? '').trim();
+  const headerSecret = normalizeSecret(request.headers.get('x-cron-secret') ?? '');
   const authHeader = request.headers.get('authorization');
+  const bearerSecret =
+    authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+  const authSecret = normalizeSecret(bearerSecret ?? '');
 
-  const bearerSecret = authHeader?.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : null;
-
-  // Also check query parameter for easier manual testing
-  let querySecret = null;
+  let querySecret = '';
   try {
-    const url = new URL(request.url);
-    const q = url.searchParams.get('secret');
-    querySecret = q != null ? q.trim() : null;
-  } catch (e) {
-    // Ignore URL parsing errors
+    const q = new URL(request.url).searchParams.get('secret');
+    querySecret = normalizeSecret(q ?? '');
+  } catch {
+    // ignore
   }
 
-  const providedSecret = (querySecret ?? headerSecret ?? bearerSecret ?? '').trim();
+  const provided = normalizeSecret(querySecret || headerSecret || authSecret);
 
-  if (!providedSecret || providedSecret !== cronSecret) {
+  if (!provided || provided !== cronSecret) {
+    const reason = !provided ? 'no secret in request (check Vercel sends Authorization: Bearer CRON_SECRET)' : 'secret mismatch (check CRON_SECRET has no extra spaces/newlines in Vercel)';
+    console.warn('[Cron auth] 401:', reason);
     return {
       authorized: false,
       response: NextResponse.json(
-        {
-          error: 'Unauthorized cron access',
-        },
+        { error: 'Unauthorized cron access', hint: reason },
         { status: 401 }
       ),
     };
