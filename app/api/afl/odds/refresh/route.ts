@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const ppResult = await refreshAflPlayerPropsCache();
+    const ppResult = await refreshAflPlayerPropsCache(result.games);
 
     return NextResponse.json({
       success: true,

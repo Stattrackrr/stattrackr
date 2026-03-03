@@ -3,7 +3,7 @@
  * Refreshed every 90 min with game odds; one fetch per event (4 markets) so we never spam the API.
  */
 
-import { getAflOddsCache } from '@/lib/refreshAflOdds';
+import { getAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache from '@/lib/sharedCache';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
@@ -211,9 +211,10 @@ function buildEventCacheFromBookmakers(bookmakers: OddsApiBookmaker[]): EventPla
 
 /**
  * Refresh player props cache for all events (goals + disposals only).
- * Call after refreshAflOddsData() so game odds cache has event IDs.
+ * Pass `games` from the same request's refreshAflOddsData() so we don't rely on cache read (avoids Redis/instance timing).
+ * If `games` not provided, falls back to getAflOddsCache().
  */
-export async function refreshAflPlayerPropsCache(): Promise<{
+export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]): Promise<{
   success: boolean;
   eventsRefreshed: number;
   error?: string;
@@ -223,8 +224,7 @@ export async function refreshAflPlayerPropsCache(): Promise<{
     return { success: false, eventsRefreshed: 0, error: 'ODDS_API_KEY not set' };
   }
 
-  const gamesCache = await getAflOddsCache();
-  const games = gamesCache?.games ?? [];
+  let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
     return { success: false, eventsRefreshed: 0, error: 'No games in odds cache. Run game odds refresh first.' };
   }
