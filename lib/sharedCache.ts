@@ -30,8 +30,16 @@ export const sharedCache = {
     if (HAS_UPSTASH) {
       try {
         const r = await upstash(['GET', key]);
-        const val = r && Array.isArray(r) ? r[1] : null;
-        if (val == null) return null;
+        // Upstash REST returns { result: value }; pipeline may also return raw value or [_, value]
+        const val =
+          r != null && typeof r === 'object' && 'result' in r
+            ? (r as { result: string | null }).result
+            : Array.isArray(r)
+              ? r[1]
+              : typeof r === 'string'
+                ? r
+                : null;
+        if (val == null || val === '') return null;
         try { return JSON.parse(val as string) as T; } catch { return null; }
       } catch {
         // fall back to memory on error
