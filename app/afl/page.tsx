@@ -2186,7 +2186,7 @@ export default function AFLPage() {
                         Supporting stats
                       </h3>
                       <AflSupportingStats
-                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : chartGameLogsForPlayer}
+                        gameLogs={chartGameLogsForPlayer}
                         timeframe={aflChartTimeframe}
                         season={season}
                         mainChartStat={mainChartStat}

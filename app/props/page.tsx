@@ -255,6 +255,8 @@ const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
 const AFL_POPUP_DISMISSED_KEY = 'afl_launch_popup_dismissed_v1';
 const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
 const AFL_NOTIFICATION_ID = 'afl-launch-update-2026';
+const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v1';
+const AFL_PROPS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min – show cached list instantly when returning, refresh in background
 
 export default function NBALandingPage() {
   const router = useRouter();
@@ -806,13 +808,117 @@ export default function NBALandingPage() {
     };
 
     fetchTodaysGames();
+
+    // Preload AFL props in parallel so switching to AFL tab is instant (writes to sessionStorage only)
+    (async () => {
+      try {
+        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+        const listData = await listRes.json();
+        const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
+        const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+        for (const r of rows) {
+          const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
+          const existing = keyToRow.get(key);
+          const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
+          if (existing) {
+            existing.bookmakerLines.push(bl);
+          } else {
+            keyToRow.set(key, {
+              playerName: r.playerName,
+              gameId: r.gameId,
+              homeTeam: r.homeTeam,
+              awayTeam: r.awayTeam,
+              statType: r.statType,
+              line: r.line,
+              commenceTime: r.commenceTime || '',
+              bookmakerLines: [bl],
+              last5Avg: r.last5Avg,
+              last10Avg: r.last10Avg,
+              h2hAvg: r.h2hAvg,
+              seasonAvg: r.seasonAvg,
+              streak: r.streak,
+              last5HitRate: r.last5HitRate,
+              last10HitRate: r.last10HitRate,
+              h2hHitRate: r.h2hHitRate,
+              seasonHitRate: r.seasonHitRate,
+              dvpRating: r.dvpRating,
+              dvpStatValue: r.dvpStatValue,
+            });
+          }
+        }
+        const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
+          playerName: a.playerName,
+          playerId: '',
+          team: a.homeTeam,
+          opponent: a.awayTeam,
+          statType: a.statType,
+          line: a.line,
+          overProb: 0,
+          underProb: 0,
+          overOdds: a.bookmakerLines[0]?.overOdds ?? 'N/A',
+          underOdds: a.bookmakerLines[0]?.underOdds ?? 'N/A',
+          impliedOverProb: 0,
+          impliedUnderProb: 0,
+          bestLine: a.line,
+          bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
+          confidence: 'Medium',
+          gameDate: a.commenceTime,
+          bookmakerLines: a.bookmakerLines,
+          gameId: a.gameId,
+          last5Avg: a.last5Avg,
+          last10Avg: a.last10Avg,
+          h2hAvg: a.h2hAvg,
+          seasonAvg: a.seasonAvg,
+          streak: a.streak,
+          last5HitRate: a.last5HitRate,
+          last10HitRate: a.last10HitRate,
+          h2hHitRate: a.h2hHitRate,
+          seasonHitRate: a.seasonHitRate,
+          dvpRating: a.dvpRating,
+          dvpStatValue: a.dvpStatValue,
+        }));
+        if (aggregated.length > 0 || games.length > 0) {
+          const toCache = {
+            props: aggregated,
+            games,
+            selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
+            timestamp: Date.now(),
+          };
+          sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+        }
+      } catch {
+        // Ignore; AFL tab will fetch when selected
+      }
+    })();
   }, []);
 
-  // Fetch AFL games + player props list when sport is AFL (and refetch when empty so first load or failed load can recover)
+  // Fetch AFL games + player props list when sport is AFL. Restore from sessionStorage first so returning from dashboard is instant (stale-while-revalidate).
   useEffect(() => {
     if (propsSport !== 'afl') return;
     let cancelled = false;
-    setAflPropsLoading(true);
+    let hadCache = false;
+    try {
+      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(AFL_PROPS_CACHE_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { props?: PlayerProp[]; games?: AflGameForProps[]; selectedGameIds?: string[]; timestamp?: number };
+        const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+        if (age < AFL_PROPS_CACHE_TTL_MS && Array.isArray(parsed?.props)) {
+          setAflProps(parsed.props);
+          if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
+            setAflGames(parsed.games);
+            if (Array.isArray(parsed?.selectedGameIds)) {
+              setSelectedAflGames(new Set(parsed.selectedGameIds));
+            }
+          }
+          setAflPropsLoading(false);
+          hadCache = true;
+        }
+      }
+    } catch {
+      // Ignore cache read errors
+    }
+    if (!hadCache) setAflPropsLoading(true);
     (async () => {
       try {
         const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
@@ -888,6 +994,19 @@ export default function NBALandingPage() {
         if (games.length > 0) {
           setSelectedAflGames((prev) => (prev.size === 0 ? new Set(games.map((g) => g.gameId)) : prev));
         }
+        if (!cancelled) {
+          try {
+            const toCache = {
+              props: aggregated,
+              games,
+              selectedGameIds: games.length > 0 ? Array.from(new Set(games.map((g) => g.gameId))) : [],
+              timestamp: Date.now(),
+            };
+            sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+          } catch {
+            // Ignore cache write (quota, etc.)
+          }
+        }
       } catch (e) {
         if (!cancelled) {
           setAflGames([]);
@@ -899,6 +1018,22 @@ export default function NBALandingPage() {
     })();
     return () => { cancelled = true; };
   }, [propsSport]);
+
+  // Persist AFL props + game filter to sessionStorage when user changes selection (so returning from dashboard restores filter)
+  useEffect(() => {
+    if (propsSport !== 'afl' || aflProps.length === 0 || aflGames.length === 0) return;
+    try {
+      const toCache = {
+        props: aflProps,
+        games: aflGames,
+        selectedGameIds: Array.from(selectedAflGames),
+        timestamp: Date.now(),
+      };
+      sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+    } catch {
+      // Ignore quota etc.
+    }
+  }, [propsSport, aflProps, aflGames, selectedAflGames]);
 
   // Fetch AFL league player stats for jumper numbers (for circle placeholder)
   useEffect(() => {
@@ -2712,8 +2847,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       return sorted;
     }
 
-    // Default: sort by L10% (fallback to L5% then overall prob)
+    // Default: sort by best DvP first (top 10 matchups = lowest rank), then L10%, then L5%, then prob
     return [...propsToSort].sort((a, b) => {
+      const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
+      const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
+      if (aDvp !== null || bDvp !== null) {
+        // Lower rank = better; nulls go to end
+        const aRank = aDvp ?? 999;
+        const bRank = bDvp ?? 999;
+        if (aRank !== bRank) return aRank - bRank;
+      }
       const aL10 = percent(a.last10HitRate);
       const bL10 = percent(b.last10HitRate);
       if (aL10 !== null || bL10 !== null) {

@@ -13,6 +13,34 @@ function hasUnder(u: string) {
   return u != null && String(u).trim() !== '' && String(u) !== 'N/A';
 }
 
+// Map odds/props team names to DvP file opponent keys (afl-dvp-*.json uses short names)
+const OPPONENT_TO_DVP_KEY: Record<string, string> = {
+  'adelaide crows': 'adelaide', 'adelaide': 'adelaide',
+  'brisbane lions': 'brisbane', 'brisbane': 'brisbane',
+  'carlton blues': 'carlton', 'carlton': 'carlton',
+  'collingwood magpies': 'collingwood', 'collingwood': 'collingwood',
+  'essendon bombers': 'essendon', 'essendon': 'essendon',
+  'fremantle dockers': 'fremantle', 'fremantle': 'fremantle',
+  'geelong cats': 'geelong', 'geelong': 'geelong',
+  'gold coast suns': 'gold coast', 'gold coast': 'gold coast',
+  'gws giants': 'gws', 'greater western sydney giants': 'gws', 'gws': 'gws',
+  'hawthorn hawks': 'hawthorn', 'hawthorn': 'hawthorn',
+  'melbourne demons': 'melbourne', 'melbourne': 'melbourne',
+  'north melbourne kangaroos': 'north melbourne', 'north melbourne': 'north melbourne',
+  'port adelaide power': 'port adelaide', 'port adelaide': 'port adelaide',
+  'richmond tigers': 'richmond', 'richmond': 'richmond',
+  'st kilda saints': 'st kilda', 'st kilda': 'st kilda',
+  'sydney swans': 'sydney', 'sydney': 'sydney',
+  'west coast eagles': 'west coast', 'west coast': 'west coast',
+  'western bulldogs': 'western bulldogs', 'footscray': 'western bulldogs',
+};
+
+function normalizeOpponentForDvp(opponent: string): string {
+  const s = (opponent || '').trim().toLowerCase();
+  if (!s) return s;
+  return OPPONENT_TO_DVP_KEY[s] ?? s.split(/\s+/)[0] ?? s;
+}
+
 async function loadDvpMaps(origin: string): Promise<{ disposals: Map<string, { rank: number; value: number }>; goals: Map<string, { rank: number; value: number }> }> {
   const season = new Date().getFullYear();
   const build = (data: { rows?: Array<{ opponent?: string; rank?: number; value?: number }> } | null) => {
@@ -24,7 +52,13 @@ async function loadDvpMaps(origin: string): Promise<{ disposals: Map<string, { r
       const rank = typeof row.rank === 'number' ? row.rank : 0;
       const value = typeof row.value === 'number' ? row.value : 0;
       const existing = map.get(key);
-      if (!existing || rank < existing.rank) map.set(key, { rank, value });
+      if (!existing || rank < existing.rank) {
+        const entry = { rank, value };
+        map.set(key, entry);
+        // Add full-name keys so odds names like "Adelaide Crows" resolve
+        for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY))
+          if (short === key) map.set(full, entry);
+      }
     }
     return map;
   };
@@ -42,8 +76,11 @@ function getDvpLookup(
 ): { rank: number; value: number } | null {
   const opp = (opponent || '').trim().toLowerCase();
   const m = statType === 'goals_over' ? maps.goals : maps.disposals;
-  const exact = m.get(opp);
-  if (exact) return exact;
+  let out = m.get(opp);
+  if (out) return out;
+  const normalized = normalizeOpponentForDvp(opponent);
+  if (normalized) out = m.get(normalized);
+  if (out) return out;
   const entry = Array.from(m.entries()).find(([team]) => team.includes(opp) || opp.includes(team));
   return entry ? entry[1] : null;
 }
