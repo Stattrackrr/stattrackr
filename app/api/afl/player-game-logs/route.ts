@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl, footywireNicknameToOfficial } from '@/lib/aflTeamMapping';
+import path from 'path';
+import fs from 'fs';
+import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl, footywireNicknameToOfficial, leagueTeamToOfficial } from '@/lib/aflTeamMapping';
 import {
   buildAflPlayerLogsCacheKey,
   getAflPlayerLogsCache,
@@ -7,6 +9,23 @@ import {
   isAflPlayerLogsCacheEnabled,
   type AflPlayerLogsCachePayload,
 } from '@/lib/cache/aflPlayerLogsCache';
+
+/** Resolve player's team for a given season from league stats (for players who changed teams). */
+function getPlayerTeamForSeason(season: number, playerName: string): string | null {
+  const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw) as { players?: { name: string; team: string }[] };
+    if (!Array.isArray(data?.players)) return null;
+    const normalized = playerName.trim().toLowerCase();
+    const row = data.players.find((p) => p.name?.trim().toLowerCase() === normalized);
+    if (!row?.team) return null;
+    const official = leagueTeamToOfficial(row.team.trim()) ?? footywireNicknameToOfficial(row.team.trim());
+    return official ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -598,10 +617,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
   }
 
-  // Resolve team to full name so FootyWire URL and cache key are consistent (warm script sends nickname e.g. "Cats", frontend may send "Geelong Cats").
-  const teamFull = teamParam?.trim()
+  // For the requested season, use the team the player actually played for (from league stats) so players who changed teams get correct game logs.
+  const teamForRequestedSeason = getPlayerTeamForSeason(season, playerNameParam.trim());
+  const teamFull = teamForRequestedSeason ?? (teamParam?.trim()
     ? (rosterTeamToInjuryTeam(teamParam.trim()) || footywireNicknameToOfficial(teamParam.trim()) || teamParam.trim())
-    : null;
+    : null);
   const teamForFootyWire = teamFull ? getFootyWireTeamNameForPlayerUrl(teamFull) : null;
   const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true' || includeBoth;
   const responseCacheKey = buildAflPlayerLogsCacheKey({
@@ -634,12 +654,14 @@ export async function GET(request: NextRequest) {
     }
     // Cache-only: prod only reads cache; warm job is allowed to fetch and fill.
     if (cacheOnly) {
-      // 2026 often not warmed or empty; try 2025 from cache so UI can show last season.
-      const keyBase2025 = season === 2026 && teamForFootyWire
-        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: false })
+      // 2026 often not warmed or empty; try 2025 from cache so UI can show last season (use 2025 team for players who changed teams).
+      const teamFor2025 = season === 2026 ? getPlayerTeamForSeason(2025, playerNameParam.trim()) : null;
+      const teamForFootyWire2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : teamForFootyWire;
+      const keyBase2025 = season === 2026 && teamForFootyWire2025
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire2025, includeQuarters: false })
         : null;
-      const keyQuarters2025 = season === 2026 && teamForFootyWire
-        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: true })
+      const keyQuarters2025 = season === 2026 && teamForFootyWire2025
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire2025, includeQuarters: true })
         : null;
       if (keyBase2025 && keyQuarters2025) {
         const [cachedBase2025, cachedQuarters2025] = await Promise.all([getAflPlayerLogsCache(keyBase2025), getAflPlayerLogsCache(keyQuarters2025)]);
@@ -665,9 +687,11 @@ export async function GET(request: NextRequest) {
       fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, true),
     ]);
     if (season === 2026 && (!fwBase || fwBase.games.length === 0)) {
+      const teamFor2025 = getPlayerTeamForSeason(2025, playerNameParam.trim());
+      const teamFw2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : teamForFootyWire;
       const [fw2025Base, fw2025Q] = await Promise.all([
-        fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), 2025, false),
-        fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), 2025, true),
+        fetchFootyWireGameLogs(teamFw2025, playerNameParam.trim(), 2025, false),
+        fetchFootyWireGameLogs(teamFw2025, playerNameParam.trim(), 2025, true),
       ]);
       if (fw2025Base?.games.length) {
         const actualSeason = fw2025Base.games[0]?.season ?? 2025;
@@ -712,13 +736,15 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Cache-only: only read from cache. On 2026 miss, try 2025 so UI can show last season.
+  // Cache-only: only read from cache. On 2026 miss, try 2025 so UI can show last season (use 2025 team for players who changed teams).
   if (cacheOnly) {
-    if (season === 2026 && teamForFootyWire) {
+    const teamFor2025Fallback = season === 2026 ? getPlayerTeamForSeason(2025, playerNameParam.trim()) : null;
+    const teamFw2025Fallback = teamFor2025Fallback ? getFootyWireTeamNameForPlayerUrl(teamFor2025Fallback) : teamForFootyWire;
+    if (season === 2026 && teamFw2025Fallback) {
       const key2025 = buildAflPlayerLogsCacheKey({
         season: 2025,
         playerName: playerNameParam.trim(),
-        teamForRequest: teamForFootyWire,
+        teamForRequest: teamFw2025Fallback,
         includeQuarters: includeQuarterEnrichment,
       });
       const cached2025 = await getAflPlayerLogsCache(key2025);
@@ -745,7 +771,9 @@ export async function GET(request: NextRequest) {
   try {
     let fw = await fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, includeQuarterEnrichment);
     if (season === 2026 && (!fw || fw.games.length === 0)) {
-      const fw2025 = await fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), 2025, includeQuarterEnrichment);
+      const teamFor2025Single = getPlayerTeamForSeason(2025, playerNameParam.trim());
+      const teamFw2025Single = teamFor2025Single ? getFootyWireTeamNameForPlayerUrl(teamFor2025Single) : teamForFootyWire;
+      const fw2025 = await fetchFootyWireGameLogs(teamFw2025Single, playerNameParam.trim(), 2025, includeQuarterEnrichment);
       if (fw2025 && fw2025.games.length > 0) fw = fw2025;
     }
     if (fw && fw.games.length > 0) {

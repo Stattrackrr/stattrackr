@@ -182,9 +182,10 @@ export const AflBoxScore = memo(function AflBoxScore({
               const round = String(game.round ?? '').trim() || '—';
               const result = String(game.result ?? '').trim() || '—';
               const date = game.date as string | undefined;
+              const season = (game as Record<string, unknown>).season;
               return (
                 <tr
-                  key={`${date ?? index}-${opp}`}
+                  key={`${season ?? ''}-${date ?? ''}-${round}-${opp}-${index}`}
                   className={isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}
                 >
                   <td className="py-1.5 px-2 text-gray-900 dark:text-white font-medium">{formatDate(date, round, toNum(game.season) ?? undefined)}</td>
