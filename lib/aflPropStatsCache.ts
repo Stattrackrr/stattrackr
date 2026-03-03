@@ -4,6 +4,7 @@
  */
 
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
 const CACHE_PREFIX = 'afl_prop_stats_v1';
@@ -24,7 +25,8 @@ export type AflPropStatsPayload = {
 };
 
 function cacheKey(playerName: string, team: string, opponent: string, statType: string, line: number): string {
-  const s = `${playerName}|${team}|${opponent}|${statType}|${line}`;
+  const normalizedName = normalizeAflPlayerNameForMatch(playerName);
+  const s = `${normalizedName}|${team}|${opponent}|${statType}|${line}`;
   return `${CACHE_PREFIX}:${Buffer.from(s, 'utf8').toString('base64url')}`;
 }
 

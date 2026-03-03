@@ -490,12 +490,27 @@ export default function NBALandingPage() {
     // This ensures a clean state when navigating back from dashboard
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      const hasPlayerParams = url.searchParams.has('player') || 
-                              url.searchParams.has('pid') || 
+      const sportParam = url.searchParams.get('sport');
+      if (sportParam === 'afl') {
+        setPropsSport('afl');
+        url.searchParams.delete('sport');
+        window.history.replaceState({}, '', url.toString());
+      }
+      // When coming back from AFL dashboard "Back to Player Props", clear the search filter
+      // and debounced value so the next search (e.g. same player name) runs correctly.
+      try {
+        if (sessionStorage.getItem('afl_back_to_props_clear_search') === '1') {
+          sessionStorage.removeItem('afl_back_to_props_clear_search');
+          setSearchQuery('');
+          setDebouncedSearchQuery('');
+        }
+      } catch {}
+      const hasPlayerParams = url.searchParams.has('player') ||
+                              url.searchParams.has('pid') ||
                               url.searchParams.has('name') ||
                               url.searchParams.has('stat') ||
                               url.searchParams.has('line');
-      
+
       if (hasPlayerParams) {
         // Clear player-related parameters to ensure clean state
         url.searchParams.delete('player');
@@ -505,12 +520,12 @@ export default function NBALandingPage() {
         url.searchParams.delete('line');
         url.searchParams.delete('tf');
         url.searchParams.delete('mode');
-        
+
         // Update URL without page reload
         window.history.replaceState({}, '', url.toString());
         // Debug logging removed('[NBA Landing] 🧹 Cleared player-related URL parameters');
       }
-      
+
       // Also clear any dashboard session storage to prevent stale state
       try {
         sessionStorage.removeItem('nba_dashboard_session_v1');

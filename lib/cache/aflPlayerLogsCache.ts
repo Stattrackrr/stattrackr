@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 const AFL_CACHE_SCHEMA = 'v1';
 const AFL_CACHE_PREFIX = `afl:player-logs:${AFL_CACHE_SCHEMA}`;
@@ -42,8 +43,7 @@ export function buildAflPlayerLogsCacheKey(params: {
   teamForRequest: string | null;
   includeQuarters: boolean;
 }): string {
-  const player = params.playerName.trim().toLowerCase().replace(/\s+/g, ' ');
-  // Normalize team to lowercase + single space so keys match warm script and legacy entries (e.g. "geelong cats").
+  const player = normalizeAflPlayerNameForMatch(params.playerName);
   const team = (params.teamForRequest || 'none').trim().toLowerCase().replace(/\s+/g, ' ');
   const quarters = params.includeQuarters ? '1' : '0';
   return `${AFL_CACHE_PREFIX}:${params.season}:${team}:${player}:q${quarters}`;

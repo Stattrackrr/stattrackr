@@ -6,6 +6,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
+import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 type AflAdvancedFilterKey = 'dvp_rank' | 'opponent_rank' | 'tog' | null;
 const AFL_ADVANCED_FILTER_OPTIONS: { key: AflAdvancedFilterKey; label: string }[] = [
@@ -299,8 +300,12 @@ interface AflStatsChartProps {
   playerPositionForFilters?: string | null;
   /** Renders to the left of the "Line" label (e.g. bookmaker selector). */
   slotLeftOfLine?: React.ReactNode;
+  /** Renders on the far right of the controls row (e.g. Team filter). */
+  slotRightOfControls?: React.ReactNode;
   /** When set, syncs the chart line to this value (e.g. from selected bookmaker's line). */
   externalLineValue?: number | null;
+  /** Upcoming opponent (official name). When H2H is selected, chart shows only games vs this opponent. */
+  nextOpponent?: string | null;
 }
 
 export function AflStatsChart({
@@ -327,7 +332,9 @@ export function AflStatsChart({
   perGameFilterData = null,
   playerPositionForFilters = null,
   slotLeftOfLine = null,
+  slotRightOfControls = null,
   externalLineValue = null,
+  nextOpponent = null,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
@@ -577,10 +584,18 @@ export function AflStatsChart({
     } else if (selectedTimeframe === 'lastseason') {
       data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === lastSeasonYear);
     } else if (selectedTimeframe === 'h2h') {
-      const latestOpponent = baseChartData[baseChartData.length - 1]?.opponent;
-      if (!latestOpponent) data = baseChartData;
+      // Use upcoming opponent when provided; otherwise fall back to last game's opponent
+      const targetOpponent = nextOpponent?.trim() || baseChartData[baseChartData.length - 1]?.opponent;
+      if (!targetOpponent) data = baseChartData;
       else {
-        const h2hData = baseChartData.filter((row) => row.opponent === latestOpponent);
+        const resolveOpp = (opp: string | undefined) =>
+          opp ? (opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim()) : '';
+        const targetOfficial = resolveOpp(targetOpponent);
+        const h2hData = baseChartData.filter((row) => {
+          const rowOpp = row.opponent;
+          if (!rowOpp || typeof rowOpp !== 'string') return false;
+          return resolveOpp(rowOpp) === targetOfficial || rowOpp.trim() === targetOpponent;
+        });
         data = h2hData.length ? h2hData : baseChartData;
       }
     } else {
@@ -599,7 +614,7 @@ export function AflStatsChart({
       return 0;
     });
     return ordered;
-  }, [baseChartData, selectedTimeframe, season]);
+  }, [baseChartData, selectedTimeframe, season, nextOpponent]);
 
   const secondAxisData = useMemo(() => {
     if (!showAdvancedFilters || !selectedAdvancedFilter || !perGameFilterData?.length) return null;
@@ -957,6 +972,11 @@ export function AflStatsChart({
             >
               Advanced
             </button>
+          )}
+          {slotRightOfControls != null && (
+            <div className="ml-auto flex items-center flex-shrink-0">
+              {slotRightOfControls}
+            </div>
           )}
         </div>
       </div>

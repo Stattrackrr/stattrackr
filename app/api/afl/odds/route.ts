@@ -55,19 +55,9 @@ function gameMatchesOpponent(home: string, away: string, opponent: string): bool
   return aliases.some((alias) => alias && (h.includes(alias) || a.includes(alias) || alias.includes(h) || alias.includes(a)));
 }
 
-/** True if game's commence date is on requested date or ±1 day (timezone-safe). */
-function dateMatches(requestedDateKey: string, commenceTime: string): boolean {
-  const gameDate = dateKey(commenceTime);
-  if (gameDate === requestedDateKey) return true;
-  if (!requestedDateKey || requestedDateKey.length < 10) return true;
-  try {
-    const req = new Date(requestedDateKey + 'T12:00:00Z').getTime();
-    const game = new Date(gameDate + 'T12:00:00Z').getTime();
-    const oneDay = 24 * 60 * 60 * 1000;
-    return Math.abs(req - game) <= oneDay;
-  } catch {
-    return false;
-  }
+/** No date filter: show odds for any game in cache matching team+opponent (unlimited). */
+function dateMatches(_requestedDateKey: string, _commenceTime: string): boolean {
+  return true;
 }
 
 /**
@@ -121,7 +111,7 @@ export async function GET(request: NextRequest) {
     if (requestedDateKey) {
       candidates = candidates.filter((g) => dateMatches(requestedDateKey, g.commenceTime));
     }
-    const game =
+    let game =
       candidates[0] ??
       games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team) && (!opponent || gameMatchesOpponent(g.homeTeam, g.awayTeam, opponent))) ??
       games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
@@ -137,6 +127,13 @@ export async function GET(request: NextRequest) {
         message: 'No matching AFL game',
       });
     }
+
+    const allMatching =
+      candidates.length > 0
+        ? candidates
+        : games.filter((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team) && (!opponent || gameMatchesOpponent(g.homeTeam, g.awayTeam, opponent)));
+    const withBooks = allMatching.find((g) => filterExcludedBookmakers(g.bookmakers ?? []).length > 0);
+    if (withBooks) game = withBooks;
 
     const bookmakers = filterExcludedBookmakers(game.bookmakers ?? []);
     return NextResponse.json({

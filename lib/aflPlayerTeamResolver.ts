@@ -4,12 +4,9 @@
  */
 
 import { leagueTeamToOfficial } from '@/lib/aflTeamMapping';
+import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 const CURRENT_SEASON = new Date().getFullYear();
-
-function normalizeName(name: string): string {
-  return (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-}
 
 export type PlayerTeamMap = Map<string, string>;
 
@@ -30,7 +27,7 @@ export async function getAflPlayerTeamMap(baseUrl: string, season: number = CURR
       const leagueTeam = (p?.team ?? '').trim();
       if (!name || !leagueTeam) continue;
       const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
-      map.set(normalizeName(name), official);
+      map.set(normalizeAflPlayerNameForMatch(name), official);
     }
     return map;
   } catch {
@@ -58,7 +55,7 @@ export function resolveTeamAndOpponent(
   awayTeam: string,
   playerTeamMap: PlayerTeamMap
 ): { team: string; opponent: string } | null {
-  const key = normalizeName(playerName);
+  const key = normalizeAflPlayerNameForMatch(playerName);
   const officialTeam = playerTeamMap.get(key);
   if (!officialTeam) return null;
   const h = (homeTeam || '').trim();

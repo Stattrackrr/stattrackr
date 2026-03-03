@@ -24,7 +24,7 @@ const CHART_STAT_TO_PLAYER_PROP_COLUMN: Partial<Record<string, keyof Pick<AflBoo
   tackles: 'TacklesOver',
 };
 
-import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { rosterTeamToInjuryTeam, footywireNicknameToOfficial, opponentToOfficialTeamName, opponentToFootywireTeam, ROSTER_TEAM_TO_INJURY_TEAM } from '@/lib/aflTeamMapping';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense, lazy } from 'react';
@@ -65,6 +65,7 @@ const CHART_STAT_TO_OA_CODE: Record<string, string> = {
 type PersistedAflPageState = {
   selectedPlayer: AflPlayerRecord | null;
   aflPropsMode: 'player' | 'team';
+  aflTeamFilter?: string;
   aflRightTab: 'breakdown' | 'dvp' | 'rank';
   aflLowerTab: 'lineup' | 'injuries';
   aflChartTimeframe: AflChartTimeframe;
@@ -236,6 +237,7 @@ export default function AFLPage() {
   /** Tracks which lower tabs (Team list / Injuries) have been opened so we keep content mounted and don't re-fetch. */
   const [aflLowerTabsVisited, setAflLowerTabsVisited] = useState<Set<'lineup' | 'injuries'>>(() => new Set(['lineup']));
   const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
+  const [aflTeamFilter, setAflTeamFilter] = useState<string>('All');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
   const [mainChartStat, setMainChartStat] = useState<string>('');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
@@ -516,6 +518,47 @@ export default function AFLPage() {
     }
   }, []);
 
+  // When landing with ?player=Name (e.g. from AFL props page click), fetch and select that player.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const playerParam = url.searchParams.get('player')?.trim();
+    if (!playerParam) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/afl/players?query=${encodeURIComponent(playerParam)}&limit=30`);
+        const data = await res.json();
+        if (cancelled || !res.ok) return;
+        const list = Array.isArray(data?.players) ? data.players : [];
+        const match = list.find((p: Record<string, unknown>) => {
+          const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
+          return name.toLowerCase() === playerParam.toLowerCase();
+        }) ?? list[0];
+        if (cancelled || !match) return;
+        const record: AflPlayerRecord = {
+          name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
+          ...(typeof match.team === 'string' ? { team: match.team } : {}),
+          ...(typeof match.number === 'number' && Number.isFinite(match.number) ? { guernsey: match.number } : {}),
+          ...(match.id != null ? { id: match.id } : {}),
+        };
+        setSelectedPlayer(record);
+        setSelectedPlayerGameLogs([]);
+        setSelectedPlayerGameLogsWithQuarters([]);
+        setStatsLoadingForPlayer(true);
+        setSearchQuery('');
+        url.searchParams.delete('player');
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        if (!cancelled) {
+          url.searchParams.delete('player');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
   useEffect(() => {
     try {
@@ -527,6 +570,10 @@ export default function AFLPage() {
       }
       if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
         setAflPropsMode(parsed.aflPropsMode);
+      }
+      if (typeof parsed.aflTeamFilter === 'string' && parsed.aflTeamFilter.trim() !== '') {
+        const validTeams = new Set(['All', ...Object.values(ROSTER_TEAM_TO_INJURY_TEAM)]);
+        if (validTeams.has(parsed.aflTeamFilter)) setAflTeamFilter(parsed.aflTeamFilter);
       }
       if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'rank') {
         setAflRightTab(parsed.aflRightTab);
@@ -572,6 +619,7 @@ export default function AFLPage() {
     const payload: PersistedAflPageState = {
       selectedPlayer,
       aflPropsMode,
+      aflTeamFilter,
       aflRightTab,
       aflLowerTab,
       aflChartTimeframe,
@@ -583,7 +631,7 @@ export default function AFLPage() {
     } catch {
       // Ignore localStorage write failures.
     }
-  }, [selectedPlayer, aflPropsMode, aflRightTab, aflLowerTab, aflChartTimeframe, withWithoutMode, aflGameFilters]);
+  }, [selectedPlayer, aflPropsMode, aflTeamFilter, aflRightTab, aflLowerTab, aflChartTimeframe, withWithoutMode, aflGameFilters]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -646,23 +694,43 @@ export default function AFLPage() {
     let cancelled = false;
     setAflOddsLoading(true);
     setAflOddsError(null);
-    fetch(
-      `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}&game_date=${encodeURIComponent(aflOddsGameDate)}`
-    )
+    const urlWithDate = `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}&game_date=${encodeURIComponent(aflOddsGameDate)}`;
+    const urlNoDate = `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}`;
+    const apply = (data: { success?: boolean; data?: unknown[]; homeTeam?: string; awayTeam?: string; error?: string | null }) => {
+      if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+        setAflOddsBooks(data.data as AflBookRow[]);
+        setAflOddsHomeTeam(data.homeTeam || aflOddsTeam);
+        setAflOddsAwayTeam(data.awayTeam || aflOddsOpponent);
+        setSelectedAflBookIndex((i) => (i >= (data.data?.length ?? 0) ? 0 : i));
+        setAflOddsError(null);
+        return true;
+      }
+      return false;
+    };
+    fetch(urlWithDate)
       .then((r) => r.json())
-      .then((data) => {
+      .then(async (data) => {
         if (cancelled) return;
-        if (data?.success && Array.isArray(data.data)) {
-          setAflOddsBooks(data.data);
-          setAflOddsHomeTeam(data.homeTeam || aflOddsTeam);
-          setAflOddsAwayTeam(data.awayTeam || aflOddsOpponent);
-          setSelectedAflBookIndex((i) => (i >= data.data.length ? 0 : i));
-        } else {
+        if (apply(data)) {
+          setAflOddsLoading(false);
+          return;
+        }
+        if (aflOddsGameDate) {
+          const fallback = await fetch(urlNoDate).then((r) => r.json());
+          if (!cancelled && apply(fallback)) {
+            setAflOddsError(null);
+          } else if (!cancelled) {
+            setAflOddsBooks([]);
+            setAflOddsHomeTeam('');
+            setAflOddsAwayTeam('');
+            setAflOddsError(fallback?.error || data?.error || null);
+          }
+        } else if (!cancelled) {
           setAflOddsBooks([]);
           setAflOddsHomeTeam('');
           setAflOddsAwayTeam('');
+          setAflOddsError(data?.error || null);
         }
-        setAflOddsError(data?.error || null);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -831,14 +899,18 @@ export default function AFLPage() {
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
-  const fetchPlayers = useCallback(async (query: string) => {
+  const fetchPlayers = useCallback(async (query: string, teamFilter?: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
     setPlayersLoading(true);
     try {
-      const res = await fetch(`/api/afl/players?query=${encodeURIComponent(query)}&limit=30`);
+      const params = new URLSearchParams({ query: query.trim(), limit: '30' });
+      if (teamFilter && teamFilter !== 'All' && teamFilter.trim() !== '') {
+        params.set('team', teamFilter.trim());
+      }
+      const res = await fetch(`/api/afl/players?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || 'Failed to load players';
@@ -857,7 +929,7 @@ export default function AFLPage() {
     }
   }, []);
 
-  // Show search dropdown when typing
+  // Show search dropdown when typing; re-fetch when team filter changes so results match selected team
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q || q.length < 2) {
@@ -867,24 +939,37 @@ export default function AFLPage() {
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchPlayers(q);
+      fetchPlayers(q, aflTeamFilter);
       setShowSearchDropdown(true);
       debounceRef.current = null;
     }, 250);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchQuery, fetchPlayers]);
+  }, [searchQuery, aflTeamFilter, fetchPlayers]);
+
+  const AFL_TEAM_FILTER_OPTIONS = useMemo(() => ['All', ...Object.values(ROSTER_TEAM_TO_INJURY_TEAM).sort()], []);
 
   const filteredPlayers = (() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return searchResults.filter((p) => {
-      const name = String(
-        p?.name ?? p?.player_name ?? p?.full_name ?? ''
-      ).toLowerCase();
-      return name.includes(q);
-    }).slice(0, 12);
+    let list = searchResults;
+    if (q) {
+      list = list.filter((p) => {
+        const name = String(
+          p?.name ?? p?.player_name ?? p?.full_name ?? ''
+        ).toLowerCase();
+        return name.includes(q);
+      });
+    }
+    if (aflTeamFilter !== 'All' && aflTeamFilter !== '') {
+      list = list.filter((p) => {
+        const teamRaw = p?.team;
+        if (!teamRaw || typeof teamRaw !== 'string') return false;
+        const resolved = rosterTeamToInjuryTeam(teamRaw) || teamRaw.trim();
+        return resolved === aflTeamFilter;
+      });
+    }
+    return list.slice(0, 12);
   })();
 
   useEffect(() => {
@@ -1389,6 +1474,19 @@ export default function AFLPage() {
     return filtered;
   }, [aflPropsMode, selectedPlayerGameLogs, perGameFilterData, aflGameFilters]);
 
+  // When a team is selected in the Team dropdown, filter the chart to only games vs that opponent (so the dropdown visibly updates the chart).
+  const chartGameLogsForPlayer = useMemo(() => {
+    if (aflPropsMode !== 'player') return filteredPlayerGameLogs;
+    if (!aflTeamFilter || aflTeamFilter === 'All' || aflTeamFilter.trim() === '') return filteredPlayerGameLogs;
+    const officialTarget = aflTeamFilter.trim();
+    return filteredPlayerGameLogs.filter((g) => {
+      const opp = (g as Record<string, unknown>)?.opponent;
+      if (opp == null || typeof opp !== 'string') return false;
+      const resolved = opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim();
+      return resolved === officialTarget;
+    });
+  }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
+
   // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
   useEffect(() => {
     const team = selectedPlayer?.team;
@@ -1516,6 +1614,24 @@ export default function AFLPage() {
                       <div className="flex-1 min-w-0">
                         {selectedPlayer ? (
                           <div>
+                            {aflPropsMode === 'player' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  try {
+                                    sessionStorage.removeItem('aflPageState:v1');
+                                    sessionStorage.setItem('afl_back_to_props_clear_search', '1');
+                                  } catch {}
+                                  router.push('/props?sport=afl');
+                                }}
+                                className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>Back to Player Props</span>
+                              </button>
+                            )}
                             <div className="flex items-baseline gap-3 mb-1">
                               <h1 className="text-lg font-bold text-gray-900 dark:text-white">{String(selectedPlayer.name ?? '—')}</h1>
                               {(() => {
@@ -1634,6 +1750,24 @@ export default function AFLPage() {
                       <div className="flex-shrink-0 min-w-0">
                         {selectedPlayer ? (
                           <div>
+                            {aflPropsMode === 'player' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  try {
+                                    sessionStorage.removeItem('aflPageState:v1');
+                                    sessionStorage.setItem('afl_back_to_props_clear_search', '1');
+                                  } catch {}
+                                  router.push('/props?sport=afl');
+                                }}
+                                className="flex items-center gap-1.5 mb-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                              >
+                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>Back to Player Props</span>
+                              </button>
+                            )}
                             <div className="flex items-baseline gap-3">
                               <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{String(selectedPlayer.name ?? '—')}</h1>
                               {(() => {
@@ -1900,7 +2034,7 @@ export default function AFLPage() {
                     <>
                       <AflStatsChart
                         stats={selectedPlayer ?? {}}
-                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : filteredPlayerGameLogs}
+                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : chartGameLogsForPlayer}
                         allGameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
                         isDark={!!mounted && isDark}
                         logoByTeam={logoByTeam}
@@ -1908,6 +2042,7 @@ export default function AFLPage() {
                         hasSelectedPlayer={!!selectedPlayer}
                         apiErrorHint={lastStatsError}
                         teammateFilterName={aflPropsMode === 'team' ? null : teammateFilterName}
+                        nextOpponent={aflPropsMode === 'player' && displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : null}
                         withWithoutMode={aflPropsMode === 'team' ? 'with' : withWithoutMode}
                         season={season}
                         clearTeammateFilter={aflPropsMode === 'team' ? undefined : () => {
@@ -1924,6 +2059,20 @@ export default function AFLPage() {
                         setAflGameFilters={aflPropsMode === 'player' ? setAflGameFilters : undefined}
                         perGameFilterData={aflPropsMode === 'player' ? perGameFilterData : null}
                         playerPositionForFilters={aflPropsMode === 'player' && selectedPlayer?.position ? String(selectedPlayer.position) : null}
+                        slotRightOfControls={
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'} whitespace-nowrap`}>Team</span>
+                            <select
+                              value={aflTeamFilter}
+                              onChange={(e) => setAflTeamFilter(e.target.value)}
+                              className={`h-[32px] min-w-[120px] max-w-[160px] rounded-xl border px-2 py-1.5 text-xs font-medium bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
+                            >
+                              {AFL_TEAM_FILTER_OPTIONS.map((team) => (
+                                <option key={team} value={team}>{team}</option>
+                              ))}
+                            </select>
+                          </div>
+                        }
                         slotLeftOfLine={aflPropsMode === 'player' ? (
                           <AflLineSelector
                             books={aflPlayerPropsBooks}
@@ -2037,7 +2186,7 @@ export default function AFLPage() {
                         Supporting stats
                       </h3>
                       <AflSupportingStats
-                        gameLogs={filteredPlayerGameLogs}
+                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : chartGameLogsForPlayer}
                         timeframe={aflChartTimeframe}
                         season={season}
                         mainChartStat={mainChartStat}

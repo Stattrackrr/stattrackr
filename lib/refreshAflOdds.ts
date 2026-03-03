@@ -252,11 +252,10 @@ export async function getAflOddsCache(): Promise<AflOddsCache | null> {
   return raw;
 }
 
-/** Find event ID for a matchup from games list (for player-props event-level fetch). */
-export function getAflEventIdForMatchup(games: AflGameOdds[], team: string, opponent: string, gameDate?: string | null): string | null {
+/** Find event ID for a matchup from games list (for player-props event-level fetch). No date filter: match any game with team+opponent. */
+export function getAflEventIdForMatchup(games: AflGameOdds[], team: string, opponent: string, _gameDate?: string | null): string | null {
   if (!games?.length) return null;
   const n = (s: string) => String(s ?? '').trim().toLowerCase();
-  const dateKey = (s: string) => (s || '').slice(0, 10);
   const t = n(team);
   const o = n(opponent);
   for (const g of games) {
@@ -266,8 +265,40 @@ export function getAflEventIdForMatchup(games: AflGameOdds[], team: string, oppo
     const teamMatch = h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a);
     const oppMatch = !o || h.includes(o) || a.includes(o) || o.includes(h) || o.includes(a);
     if (!teamMatch || !oppMatch) continue;
-    if (gameDate && dateKey(g.commenceTime) !== dateKey(gameDate)) continue;
     return g.gameId;
   }
   return null;
+}
+
+const nTeam = (s: string) => String(s ?? '').trim().toLowerCase();
+function gameHasTeam(g: AflGameOdds, team: string): boolean {
+  const t = nTeam(team);
+  if (!t) return false;
+  const h = nTeam(g.homeTeam);
+  const a = nTeam(g.awayTeam);
+  return h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a);
+}
+
+/** Next game for a team from odds cache: earliest future commence time, or latest past. Used so dashboard shows the same matchup as props/odds. */
+export function getNextAflGameFromGames(
+  games: AflGameOdds[],
+  team: string
+): { opponent: string; commenceTime: string; gameId: string; homeTeam: string; awayTeam: string } | null {
+  if (!games?.length) return null;
+  const matching = games.filter((g) => gameHasTeam(g, team));
+  if (matching.length === 0) return null;
+  const now = Date.now();
+  matching.sort((a, b) => Date.parse(a.commenceTime) - Date.parse(b.commenceTime));
+  const nextUpcoming = matching.find((g) => Date.parse(g.commenceTime) >= now);
+  const game = nextUpcoming ?? matching[matching.length - 1];
+  const t = nTeam(team);
+  const isHome = nTeam(game.homeTeam).includes(t) || t.includes(nTeam(game.homeTeam));
+  const opponent = isHome ? game.awayTeam : game.homeTeam;
+  return {
+    opponent,
+    commenceTime: game.commenceTime,
+    gameId: game.gameId,
+    homeTeam: game.homeTeam,
+    awayTeam: game.awayTeam,
+  };
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
+import { rosterTeamToInjuryTeam, leagueTeamToOfficial, footywireNicknameToOfficial } from '@/lib/aflTeamMapping';
+import { normalizeAflPlayerName } from '@/lib/aflPlayerNameUtils';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
@@ -18,12 +20,9 @@ type PlayerListEntry = { name: string; team?: string; number?: number | null };
 
 let playersIndexCache: { expiresAt: number; data: PlayerIndexEntry[] } | null = null;
 
+/** Normalize for search/key matching; keeps apostrophe and hyphen, normalizes unicode variants. */
 function normalizeName(v: string): string {
-  return v
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return normalizeAflPlayerName(v);
 }
 
 function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
@@ -168,10 +167,21 @@ async function fetchPlayersIndex(): Promise<PlayerIndexEntry[]> {
   return deduped;
 }
 
+/** Resolve player team string (league or roster format) to official full name for comparison. */
+function resolveToOfficialTeam(teamRaw: string | undefined): string | null {
+  if (!teamRaw || typeof teamRaw !== 'string') return null;
+  const t = teamRaw.trim();
+  if (!t) return null;
+  return leagueTeamToOfficial(t) || footywireNicknameToOfficial(t) || rosterTeamToInjuryTeam(t) || t;
+}
+
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('query')?.trim() ?? '';
+  const teamParam = request.nextUrl.searchParams.get('team')?.trim();
   const limitRaw = parseInt(request.nextUrl.searchParams.get('limit') ?? '20', 10);
   const limit = Math.max(1, Math.min(100, Number.isNaN(limitRaw) ? 20 : limitRaw));
+  const filterByOfficialTeam =
+    teamParam && teamParam !== 'All' && teamParam.length > 0 ? teamParam : null;
 
   try {
     const q = normalizeName(query);
@@ -183,6 +193,9 @@ export async function GET(request: NextRequest) {
       let pool = propsList;
       if (q) {
         pool = pool.filter((p) => nameMatchesQuery(p.name, q));
+      }
+      if (filterByOfficialTeam) {
+        pool = pool.filter((p) => resolveToOfficialTeam(p.team) === filterByOfficialTeam);
       }
       pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
       const players = pool.slice(0, effectiveLimit).map((p) => ({
@@ -206,6 +219,9 @@ export async function GET(request: NextRequest) {
       let pool = roster;
       if (q) {
         pool = pool.filter((p) => nameMatchesQuery(p.name, q));
+      }
+      if (filterByOfficialTeam) {
+        pool = pool.filter((p) => resolveToOfficialTeam(p.team) === filterByOfficialTeam);
       }
       pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
       const players = pool.slice(0, effectiveLimit).map((p) => ({

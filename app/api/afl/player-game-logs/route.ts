@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl, footywireNicknameToOfficial, leagueTeamToOfficial } from '@/lib/aflTeamMapping';
+import { normalizeAflPlayerName, normalizeAflPlayerNameForLookup, normalizeAflPlayerNameForMatch, toCanonicalAflPlayerName } from '@/lib/aflPlayerNameUtils';
 import {
   buildAflPlayerLogsCacheKey,
   getAflPlayerLogsCache,
@@ -17,8 +18,8 @@ function getPlayerTeamForSeason(season: number, playerName: string): string | nu
     const raw = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw) as { players?: { name: string; team: string }[] };
     if (!Array.isArray(data?.players)) return null;
-    const normalized = playerName.trim().toLowerCase();
-    const row = data.players.find((p) => p.name?.trim().toLowerCase() === normalized);
+    const normalized = normalizeAflPlayerNameForMatch(playerName);
+    const row = data.players.find((p) => normalizeAflPlayerNameForMatch(p.name ?? '') === normalized);
     if (!row?.team) return null;
     const official = leagueTeamToOfficial(row.team.trim()) ?? footywireNicknameToOfficial(row.team.trim());
     return official ?? null;
@@ -154,13 +155,153 @@ function descriptionToRound(description: string): string {
   return t || '—';
 }
 
+/** Extract each <table>...</table> content with correct nesting (so we get full table, not truncated by inner tables). */
+function extractTableContents(html: string): string[] {
+  const contents: string[] = [];
+  const lower = html.toLowerCase();
+  let pos = 0;
+  while (pos < html.length) {
+    const openIdx = lower.indexOf('<table', pos);
+    if (openIdx < 0) break;
+    const tagEnd = html.indexOf('>', openIdx);
+    if (tagEnd < 0) {
+      pos = openIdx + 1;
+      continue;
+    }
+    const contentStart = tagEnd + 1;
+    let depth = 1;
+    let searchStart = contentStart;
+    while (depth > 0) {
+      const nextOpen = lower.indexOf('<table', searchStart);
+      const nextClose = lower.indexOf('</table>', searchStart);
+      if (nextClose < 0) break;
+      const useOpen = nextOpen >= 0 && nextOpen < nextClose;
+      if (useOpen) {
+        depth++;
+        searchStart = nextOpen + 6;
+      } else {
+        depth--;
+        if (depth === 0) {
+          contents.push(html.substring(contentStart, nextClose));
+          pos = nextClose + 8;
+          break;
+        }
+        searchStart = nextClose + 8;
+      }
+    }
+    if (depth !== 0) break;
+  }
+  return contents;
+}
+
 function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: FootyWireTableRow[] } {
   const result = { headers: [] as string[], rows: [] as FootyWireTableRow[] };
   if (!html || !html.includes('footywire')) return result;
-  const gamesLogBlock = html.match(/Games Log for[\s\S]*?<table[^>]*>([\s\S]*?)<\/table>/i);
-  const tableContent = gamesLogBlock ? gamesLogBlock[1] : html;
-  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const lower = html.toLowerCase();
+  // Extract each table with correct nesting, then pick the one with game log header and most data rows.
+  const tableContents = extractTableContents(html);
+  let best: { headers: string[]; rows: FootyWireTableRow[] } | null = null;
+  for (const tableContent of tableContents) {
+    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    const rows: FootyWireTableRow[] = [];
+    let trm: RegExpExecArray | null;
+    while ((trm = trRegex.exec(tableContent)) !== null) {
+      const cells: string[] = [];
+      const rawCells: string[] = [];
+      const tdRegex = /<t[dh][^>]*>([\s\S]*?)(?=<t[dh]\b|$)/gi;
+      let cm: RegExpExecArray | null;
+      while ((cm = tdRegex.exec(trm[1])) !== null) {
+        rawCells.push(cm[1]);
+        cells.push(htmlToText(cm[1]).trim());
+      }
+      if (cells.length >= 5) {
+        let matchId: number | null = null;
+        for (const raw of rawCells) {
+          const mid = raw.match(/ft_match_statistics\?mid=(\d+)/i);
+          if (mid?.[1]) {
+            const n = parseInt(mid[1], 10);
+            if (Number.isFinite(n)) {
+              matchId = n;
+              break;
+            }
+          }
+        }
+        rows.push({ cells, matchId });
+      }
+    }
+    const headerIdx = rows.findIndex(
+      (r) =>
+        (r.cells.some((c) => /^Description$/i.test(c)) || r.cells.some((c) => /^Round$/i.test(c)) || r.cells.some((c) => /^Rnd$/i.test(c))) &&
+        r.cells.some((c) => /^Opponent$/i.test(c)) &&
+        r.cells.some((c) => /^Result$/i.test(c)) &&
+        (r.cells.some((c) => /^K$/i.test(c)) || r.cells.some((c) => /^D$/i.test(c)) || r.cells.some((c) => /^CP$/i.test(c)) || r.cells.some((c) => /^Kicks$/i.test(c)) || r.cells.some((c) => /^Disposals$/i.test(c)))
+    );
+    if (headerIdx >= 0) {
+      const dataRows = rows.slice(headerIdx + 1).filter((r) => {
+        const first = (r.cells[0] || '').trim();
+        if (!first) return false;
+        const hasRound = /Round|Final|Semi|Qualifying|Preliminary|Grand|Description/i.test(first) || /^R\d+$/i.test(first);
+        const hasNumbers = r.cells.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
+        return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.cells.length >= 10);
+      });
+      if (dataRows.length > 0 && (!best || dataRows.length > best.rows.length)) {
+        best = { headers: rows[headerIdx].cells, rows: dataRows };
+      }
+    }
+  }
+  if (best) {
+    result.headers = best.headers;
+    result.rows = best.rows;
+    return result;
+  }
+  // Fallback: FootyWire may put the game log in a table right after "Games Log for" / "Game Log for"
+  const gamesLogMarker = /Games?\s*Log\s+for/i;
+  const markerMatch = html.match(gamesLogMarker);
+  if (markerMatch && markerMatch.index != null) {
+    const afterMarker = html.slice(markerMatch.index + markerMatch[0].length);
+    const tableOpenIdx = lower.slice(markerMatch.index + markerMatch[0].length).indexOf('<table');
+    if (tableOpenIdx >= 0) {
+      const tableStart = (markerMatch.index + markerMatch[0].length) + tableOpenIdx;
+      const tagEnd = html.indexOf('>', tableStart);
+      if (tagEnd >= 0) {
+        const contentStart = tagEnd + 1;
+        let depth = 1;
+        let searchStart = contentStart;
+        const lowerFrom = lower.slice(tableStart);
+        while (depth > 0) {
+          const nextOpen = lowerFrom.indexOf('<table', searchStart - tableStart);
+          const nextClose = lowerFrom.indexOf('</table>', searchStart - tableStart);
+          const nextOpenAbs = nextOpen >= 0 ? tableStart + nextOpen : -1;
+          const nextCloseAbs = nextClose >= 0 ? tableStart + nextClose : -1;
+          if (nextCloseAbs < 0) break;
+          const useOpen = nextOpenAbs >= 0 && nextOpenAbs < nextCloseAbs;
+          if (useOpen) {
+            depth++;
+            searchStart = nextOpenAbs + 6;
+          } else {
+            depth--;
+            if (depth === 0) {
+              const tableContent = html.substring(contentStart, nextCloseAbs);
+              const parsed = parseOneTableToRows(tableContent);
+              if (parsed.headerIdx >= 0 && parsed.dataRows.length > 0) {
+                result.headers = parsed.rows[parsed.headerIdx].cells;
+                result.rows = parsed.dataRows;
+                return result;
+              }
+              break;
+            }
+            searchStart = nextCloseAbs + 8;
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function parseOneTableToRows(tableContent: string): { rows: FootyWireTableRow[]; headerIdx: number; dataRows: FootyWireTableRow[] } {
   const rows: FootyWireTableRow[] = [];
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let trm: RegExpExecArray | null;
   while ((trm = trRegex.exec(tableContent)) !== null) {
     const cells: string[] = [];
@@ -188,26 +329,57 @@ function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: Fo
   }
   const headerIdx = rows.findIndex(
     (r) =>
-      r.cells.some((c) => /^Description$/i.test(c)) &&
+      (r.cells.some((c) => /^Description$/i.test(c)) || r.cells.some((c) => /^Round$/i.test(c)) || r.cells.some((c) => /^Rnd$/i.test(c))) &&
       r.cells.some((c) => /^Opponent$/i.test(c)) &&
       r.cells.some((c) => /^Result$/i.test(c)) &&
-      (r.cells.some((c) => /^K$/i.test(c)) || r.cells.some((c) => /^CP$/i.test(c)))
+      (r.cells.some((c) => /^K$/i.test(c)) || r.cells.some((c) => /^D$/i.test(c)) || r.cells.some((c) => /^CP$/i.test(c)) || r.cells.some((c) => /^Kicks$/i.test(c)) || r.cells.some((c) => /^Disposals$/i.test(c)))
   );
-  if (headerIdx < 0) return result;
-  result.headers = rows[headerIdx].cells;
-  result.rows = rows.slice(headerIdx + 1).filter((r) => {
-    const first = (r.cells[0] || '').trim();
-    if (!first) return false;
-    const hasRound = /Round|Final|Semi|Qualifying|Preliminary|Grand|Description/i.test(first) || /^R\d+$/i.test(first);
-    const hasNumbers = r.cells.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
-    return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.cells.length >= 10);
-  });
-  return result;
+  const dataRows =
+    headerIdx >= 0
+      ? rows.slice(headerIdx + 1).filter((r) => {
+          const first = (r.cells[0] || '').trim();
+          if (!first) return false;
+          const hasRound = /Round|Final|Semi|Qualifying|Preliminary|Grand|Description/i.test(first) || /^R\d+$/i.test(first);
+          const hasNumbers = r.cells.some((c, i) => i >= 4 && /^\d+$/.test(String(c)));
+          return hasRound && !/^Date$/i.test(first) && (hasNumbers || r.cells.length >= 10);
+        })
+      : [];
+  return { rows, headerIdx, dataRows };
 }
 
+const COL_ALIASES: Record<string, string[]> = {
+  Description: ['Round', 'Rnd', 'Desc'],
+  Opponent: ['Vs', 'VS', 'Opp'],
+  Result: ['Res', 'W/L'],
+  K: ['Kicks'],
+  D: ['Disposals'],
+  M: ['Marks'],
+  HB: ['Handballs'],
+  G: ['Goals'],
+  B: ['Behinds'],
+  HO: ['Hit Outs', 'Hitouts'],
+  T: ['Tackles'],
+  R50: ['Rebound 50s', 'Rebounds'],
+  I50: ['Inside 50s', 'Inside 50'],
+  CL: ['Clearances'],
+  CG: ['Clangers'],
+  FF: ['Free Kicks For', 'Frees For'],
+  FA: ['Free Kicks Against', 'Frees Against'],
+  GA: ['Goal Assists'],
+  Date: ['Date Played'],
+};
+
 function colIndex(headers: string[], name: string): number {
-  const i = headers.findIndex((h) => h.toUpperCase() === name.toUpperCase());
-  return i >= 0 ? i : -1;
+  let i = headers.findIndex((h) => h.toUpperCase() === name.toUpperCase());
+  if (i >= 0) return i;
+  const aliases = COL_ALIASES[name];
+  if (aliases) {
+    for (const alt of aliases) {
+      i = headers.findIndex((h) => h.toUpperCase() === alt.toUpperCase());
+      if (i >= 0) return i;
+    }
+  }
+  return -1;
 }
 
 function footyWireRowToGameLogRow(row: string[], headers: string[], season: number): GameLogRow {
@@ -533,13 +705,38 @@ async function fetchFootyWireGameLogs(
   const url = footyWireGameLogUrl(teamName, playerName, season);
   const advUrl = footyWireGameLogUrl(teamName, playerName, season, true);
   const fetchOpts = { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } as RequestInit['next'] };
-  const [res, advResInitial] = await Promise.all([
-    fetch(url, fetchOpts),
-    fetch(advUrl, fetchOpts),
-  ]);
+  let res = await fetch(url, fetchOpts);
+  let advResInitial = await fetch(advUrl, fetchOpts);
   if (!res.ok) return null;
-  const html = await res.text();
-  const { headers, rows } = parseFootyWireGameLogTable(html);
+  let html = await res.text();
+  let { headers, rows } = parseFootyWireGameLogTable(html);
+  // Fallback: if year filter returns empty table, try URL without year (FootyWire may serve full log only without ?year=)
+  if ((headers.length === 0 || rows.length === 0) && teamName && playerName) {
+    const urlNoYear = `${FOOTYWIRE_BASE}/afl/footy/pg-${teamName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}--${playerName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+    const resNoYear = await fetch(urlNoYear, fetchOpts);
+    if (resNoYear.ok) {
+      const htmlNoYear = await resNoYear.text();
+      const parsed = parseFootyWireGameLogTable(htmlNoYear);
+      if (parsed.headers.length > 0 && parsed.rows.length > 0) {
+        html = htmlNoYear;
+        headers = parsed.headers;
+        rows = parsed.rows.filter((r) => {
+          const seasonCol = parsed.headers.findIndex((h) => /^Season$/i.test(h));
+          const dateCol = parsed.headers.findIndex((h) => /^Date$/i.test(h.trim()) || /^Date\s+Played$/i.test(h.trim()));
+          if (seasonCol >= 0 && r.cells[seasonCol] !== undefined) {
+            const y = parseInt(String(r.cells[seasonCol]).trim(), 10);
+            return Number.isFinite(y) && y === season;
+          }
+          if (dateCol >= 0 && r.cells[dateCol] !== undefined) {
+            const dateStr = String(r.cells[dateCol]).trim();
+            const year = dateStr.length >= 4 ? parseInt(dateStr.slice(-4), 10) : NaN;
+            return Number.isFinite(year) && year === season;
+          }
+          return true;
+        });
+      }
+    }
+  }
   if (headers.length === 0 || rows.length === 0) return null;
   const games: GameLogRow[] = rows.map((row, idx) => {
     const g = footyWireRowToGameLogRow(row.cells, headers, season);
@@ -617,8 +814,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
   }
 
+  const canonicalName = toCanonicalAflPlayerName(playerNameParam.trim());
+
   // For the requested season, use the team the player actually played for (from league stats) so players who changed teams get correct game logs.
-  const teamForRequestedSeason = getPlayerTeamForSeason(season, playerNameParam.trim());
+  const teamForRequestedSeason = getPlayerTeamForSeason(season, canonicalName);
   const teamFull = teamForRequestedSeason ?? (teamParam?.trim()
     ? (rosterTeamToInjuryTeam(teamParam.trim()) || footywireNicknameToOfficial(teamParam.trim()) || teamParam.trim())
     : null);
@@ -626,7 +825,7 @@ export async function GET(request: NextRequest) {
   const includeQuarterEnrichment = includeQuartersParam === '1' || includeQuartersParam === 'true' || includeBoth;
   const responseCacheKey = buildAflPlayerLogsCacheKey({
     season,
-    playerName: playerNameParam.trim(),
+    playerName: canonicalName,
     teamForRequest: teamForFootyWire,
     includeQuarters: includeQuarterEnrichment,
   });
@@ -641,8 +840,8 @@ export async function GET(request: NextRequest) {
 
   // include_both=1: one request returns games + gamesWithQuarters (2 cache lookups in parallel). When cacheOnly we only serve from cache.
   if (includeBoth && teamForFootyWire) {
-    const keyBase = buildAflPlayerLogsCacheKey({ season, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: false });
-    const keyQuarters = buildAflPlayerLogsCacheKey({ season, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire, includeQuarters: true });
+    const keyBase = buildAflPlayerLogsCacheKey({ season, playerName: canonicalName, teamForRequest: teamForFootyWire, includeQuarters: false });
+    const keyQuarters = buildAflPlayerLogsCacheKey({ season, playerName: canonicalName, teamForRequest: teamForFootyWire, includeQuarters: true });
     const [cachedBase, cachedQuarters] = cacheEnabled
       ? await Promise.all([getAflPlayerLogsCache(keyBase), getAflPlayerLogsCache(keyQuarters)])
       : [null, null];
@@ -655,13 +854,13 @@ export async function GET(request: NextRequest) {
     // Cache-only: prod only reads cache; warm job is allowed to fetch and fill.
     if (cacheOnly) {
       // 2026 often not warmed or empty; try 2025 from cache so UI can show last season (use 2025 team for players who changed teams).
-      const teamFor2025 = season === 2026 ? getPlayerTeamForSeason(2025, playerNameParam.trim()) : null;
+      const teamFor2025 = season === 2026 ? getPlayerTeamForSeason(2025, canonicalName) : null;
       const teamForFootyWire2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : teamForFootyWire;
       const keyBase2025 = season === 2026 && teamForFootyWire2025
-        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire2025, includeQuarters: false })
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: canonicalName, teamForRequest: teamForFootyWire2025, includeQuarters: false })
         : null;
       const keyQuarters2025 = season === 2026 && teamForFootyWire2025
-        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: playerNameParam.trim(), teamForRequest: teamForFootyWire2025, includeQuarters: true })
+        ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: canonicalName, teamForRequest: teamForFootyWire2025, includeQuarters: true })
         : null;
       if (keyBase2025 && keyQuarters2025) {
         const [cachedBase2025, cachedQuarters2025] = await Promise.all([getAflPlayerLogsCache(keyBase2025), getAflPlayerLogsCache(keyQuarters2025)]);
@@ -671,7 +870,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
         }
       }
-      const empty = { season, source: 'cache-miss', player_name: playerNameParam.trim(), games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
+      const empty = { season, source: 'cache-miss', player_name: canonicalName, games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
       const missHeaders: Record<string, string> = {
         ...sourceHeaders,
         'X-AFL-Player-Logs-Source': 'cache-miss',
@@ -683,15 +882,15 @@ export async function GET(request: NextRequest) {
     }
     // Warm job or no cache: fetch from FootyWire
     const [fwBase, fwQuarters] = await Promise.all([
-      fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, false),
-      fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, true),
+      fetchFootyWireGameLogs(teamForFootyWire, canonicalName, season, false),
+      fetchFootyWireGameLogs(teamForFootyWire, canonicalName, season, true),
     ]);
     if (season === 2026 && (!fwBase || fwBase.games.length === 0)) {
-      const teamFor2025 = getPlayerTeamForSeason(2025, playerNameParam.trim());
+      const teamFor2025 = getPlayerTeamForSeason(2025, canonicalName);
       const teamFw2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : teamForFootyWire;
       const [fw2025Base, fw2025Q] = await Promise.all([
-        fetchFootyWireGameLogs(teamFw2025, playerNameParam.trim(), 2025, false),
-        fetchFootyWireGameLogs(teamFw2025, playerNameParam.trim(), 2025, true),
+        fetchFootyWireGameLogs(teamFw2025, canonicalName, 2025, false),
+        fetchFootyWireGameLogs(teamFw2025, canonicalName, 2025, true),
       ]);
       if (fw2025Base?.games.length) {
         const actualSeason = fw2025Base.games[0]?.season ?? 2025;
@@ -738,12 +937,12 @@ export async function GET(request: NextRequest) {
 
   // Cache-only: only read from cache. On 2026 miss, try 2025 so UI can show last season (use 2025 team for players who changed teams).
   if (cacheOnly) {
-    const teamFor2025Fallback = season === 2026 ? getPlayerTeamForSeason(2025, playerNameParam.trim()) : null;
+    const teamFor2025Fallback = season === 2026 ? getPlayerTeamForSeason(2025, canonicalName) : null;
     const teamFw2025Fallback = teamFor2025Fallback ? getFootyWireTeamNameForPlayerUrl(teamFor2025Fallback) : teamForFootyWire;
     if (season === 2026 && teamFw2025Fallback) {
       const key2025 = buildAflPlayerLogsCacheKey({
         season: 2025,
-        playerName: playerNameParam.trim(),
+        playerName: canonicalName,
         teamForRequest: teamFw2025Fallback,
         includeQuarters: includeQuarterEnrichment,
       });
@@ -755,7 +954,7 @@ export async function GET(request: NextRequest) {
         });
       }
     }
-    const empty = { season, source: 'cache-miss', player_name: playerNameParam.trim(), games: [], game_count: 0 };
+    const empty = { season, source: 'cache-miss', player_name: canonicalName, games: [], game_count: 0 };
     return NextResponse.json(empty, {
       headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss', 'X-AFL-Cache-Key': responseCacheKey },
     });
@@ -764,16 +963,16 @@ export async function GET(request: NextRequest) {
   // Warm job: FootyWire only to fill cache. No AFLTables. Users get data from cache only.
   if (!teamForFootyWire) {
     return NextResponse.json(
-      { season, source: 'footywire.com', player_name: playerNameParam.trim(), games: [], game_count: 0 },
+      { season, source: 'footywire.com', player_name: canonicalName, games: [], game_count: 0 },
       { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } }
     );
   }
   try {
-    let fw = await fetchFootyWireGameLogs(teamForFootyWire, playerNameParam.trim(), season, includeQuarterEnrichment);
+    let fw = await fetchFootyWireGameLogs(teamForFootyWire, canonicalName, season, includeQuarterEnrichment);
     if (season === 2026 && (!fw || fw.games.length === 0)) {
-      const teamFor2025Single = getPlayerTeamForSeason(2025, playerNameParam.trim());
+      const teamFor2025Single = getPlayerTeamForSeason(2025, canonicalName);
       const teamFw2025Single = teamFor2025Single ? getFootyWireTeamNameForPlayerUrl(teamFor2025Single) : teamForFootyWire;
-      const fw2025 = await fetchFootyWireGameLogs(teamFw2025Single, playerNameParam.trim(), 2025, includeQuarterEnrichment);
+      const fw2025 = await fetchFootyWireGameLogs(teamFw2025Single, canonicalName, 2025, includeQuarterEnrichment);
       if (fw2025 && fw2025.games.length > 0) fw = fw2025;
     }
     if (fw && fw.games.length > 0) {
@@ -797,7 +996,7 @@ export async function GET(request: NextRequest) {
     );
   }
   return NextResponse.json(
-    { season, source: 'footywire.com', player_name: playerNameParam.trim(), games: [], game_count: 0 },
+    { season, source: 'footywire.com', player_name: canonicalName, games: [], game_count: 0 },
     { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } }
   );
 }

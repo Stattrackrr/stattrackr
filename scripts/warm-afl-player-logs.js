@@ -11,6 +11,7 @@
  *   AFL_WARM_CONCURRENCY=6
  *   AFL_WARM_LIMIT=0 (0 = no limit)
  *   AFL_WARM_MAX_FAILURES=100 (workflow succeeds if failed count < this; default 100)
+ *   AFL_WARM_PLAYER=Nasiah  (only warm players whose name contains this string, case-insensitive)
  *   CRON_SECRET=... (sent as Bearer + X-Cron-Secret)
  */
 
@@ -25,6 +26,7 @@ const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026,2025')
 const concurrency = Math.max(1, parseInt(process.env.AFL_WARM_CONCURRENCY || '6', 10));
 const warmLimit = Math.max(0, parseInt(process.env.AFL_WARM_LIMIT || '0', 10));
 const maxFailures = Math.max(0, parseInt(process.env.AFL_WARM_MAX_FAILURES || '100', 10));
+const warmPlayerFilter = (process.env.AFL_WARM_PLAYER || '').trim().toLowerCase();
 const cronSecret = (process.env.CRON_SECRET || '').trim();
 
 if (!prodUrl) {
@@ -138,7 +140,11 @@ async function runPool(jobs, worker, size) {
 }
 
 async function main() {
-  const players = loadActiveAflPlayers();
+  let players = loadActiveAflPlayers();
+  if (warmPlayerFilter) {
+    players = players.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
+    console.log(`[AFL Warm] 🎯 Filter: only players matching "${process.env.AFL_WARM_PLAYER}" → ${players.length} player(s)`);
+  }
   const selectedPlayers = warmLimit > 0 ? players.slice(0, warmLimit) : players;
   if (!selectedPlayers.length) {
     console.log('No active AFL players found to warm.');

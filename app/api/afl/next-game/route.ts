@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAflOddsCache, getNextAflGameFromGames } from '@/lib/refreshAflOdds';
 import { fetchSeasonMatches, type SeasonMatch } from '../match-lineup/route';
 import {
   rosterTeamToInjuryTeam,
@@ -41,7 +42,7 @@ async function fetchFootyWireFixture(season: number): Promise<FootyWireMatch[]> 
   const html = await res.text();
 
   const matches: FootyWireMatch[] = [];
-  // Round headings: "Round 1", "Round 2", or links with round number
+  // Round headings: "Round 1", "Round 2", "R0", or "Opening Round" (2026 Round 0)
   const roundRegex = /Round\s*(\d+)|(?:^|[\s>"])R(\d+)(?:[\s<"]|$)/gi;
   const roundStarts: { index: number; round: string }[] = [];
   let rm: RegExpExecArray | null = null;
@@ -49,6 +50,11 @@ async function fetchFootyWireFixture(season: number): Promise<FootyWireMatch[]> 
     const num = rm[1] || rm[2];
     if (num) roundStarts.push({ index: rm.index, round: 'R' + num });
   }
+  const openingRoundRegex = /Opening\s*Round/gi;
+  while ((rm = openingRoundRegex.exec(html)) !== null) {
+    if (!roundStarts.some((r) => r.index === rm!.index)) roundStarts.push({ index: rm.index, round: 'R0' });
+  }
+  roundStarts.sort((a, b) => a.index - b.index);
   // Team links: href="th-..." or href="/afl/footy/th-...", link text = nickname (Blues, Eagles)
   const teamLinkRegex = /<a[^>]+href=['"](?:\/afl\/footy\/)?(th-[^'"]+)['"][^>]*>([^<]+)<\/a>/gi;
   const allLinks: { index: number; nickname: string }[] = [];
@@ -351,7 +357,24 @@ export async function GET(request: NextRequest) {
         source,
       });
 
-    // Prefer FootyWire fixture (shows upcoming games; AFLTables often only after completion).
+    // Prefer odds cache so "next game" matches the matchup that has odds/props (e.g. Gold Coast v Geelong).
+    const oddsCache = await getAflOddsCache();
+    if (oddsCache?.games?.length) {
+      const nextFromOdds = getNextAflGameFromGames(oddsCache.games, teamFull);
+      if (nextFromOdds) {
+        return NextResponse.json({
+          season,
+          team: teamFull,
+          next_opponent: nextFromOdds.opponent,
+          next_round: null,
+          next_game_tipoff: nextFromOdds.commenceTime,
+          match_url: null,
+          source: 'odds_cache',
+        });
+      }
+    }
+
+    // Fallback: FootyWire fixture (shows upcoming games; AFLTables often only after completion).
     const fwMatches = await fetchFootyWireFixture(season);
     if (fwMatches.length > 0 && teamNickname) {
       const nextMatch = findNextMatchFootyWire(fwMatches, teamNickname, teamFull, nextRoundStart);
