@@ -1132,6 +1132,7 @@ export function AflStatsChart({
             withWithoutMode={withWithoutMode}
             clearTeammateFilter={clearTeammateFilter}
             centerAverageOverlay={true}
+            averageOverlayLowerOnMobile={true}
           />
         )}
       </div>

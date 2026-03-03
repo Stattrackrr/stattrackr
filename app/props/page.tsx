@@ -428,6 +428,7 @@ export default function NBALandingPage() {
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+  const aflFiltersAutoSelectedRef = useRef(false); // so we auto-select all bookmakers/prop types once when AFL loads
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
 
@@ -907,9 +908,7 @@ export default function NBALandingPage() {
           setAflProps(parsed.props);
           if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
             setAflGames(parsed.games);
-            if (Array.isArray(parsed?.selectedGameIds)) {
-              setSelectedAflGames(new Set(parsed.selectedGameIds));
-            }
+            setSelectedAflGames(new Set(parsed.games.map((g: { gameId: string }) => g.gameId)));
           }
           setAflPropsLoading(false);
           hadCache = true;
@@ -992,14 +991,14 @@ export default function NBALandingPage() {
         }));
         setAflProps(aggregated);
         if (games.length > 0) {
-          setSelectedAflGames((prev) => (prev.size === 0 ? new Set(games.map((g) => g.gameId)) : prev));
+          setSelectedAflGames(new Set(games.map((g) => g.gameId)));
         }
         if (!cancelled) {
           try {
             const toCache = {
               props: aggregated,
               games,
-              selectedGameIds: games.length > 0 ? Array.from(new Set(games.map((g) => g.gameId))) : [],
+              selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
               timestamp: Date.now(),
             };
             sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
@@ -2519,6 +2518,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   const effectiveBookmakers = propsSport === 'afl' ? availableAflBookmakers : availableBookmakers;
   const effectivePropTypes = propsSport === 'afl' ? availableAflPropTypes : availablePropTypes;
+
+  // AFL: auto-select all bookmakers, prop types (and all games already set when data loads) so everything is selected by default
+  useEffect(() => {
+    if (propsSport !== 'afl') {
+      aflFiltersAutoSelectedRef.current = false;
+      return;
+    }
+    if (aflProps.length === 0 || availableAflBookmakers.length === 0) return;
+    if (aflFiltersAutoSelectedRef.current) return;
+    aflFiltersAutoSelectedRef.current = true;
+    setSelectedBookmakers(new Set(availableAflBookmakers));
+    setSelectedPropTypes(new Set(availableAflPropTypes));
+  }, [propsSport, aflProps.length, availableAflBookmakers, availableAflPropTypes]);
 
   const filteredAflProps = useMemo(() => {
     return aflProps.filter((prop) => {

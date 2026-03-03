@@ -44,6 +44,8 @@ interface SimpleChartProps {
   hideAverageOverlay?: boolean;
   /** When true, position the Avg + Hit overlay in the center (e.g. when AFL Advanced is open, like NBA second axis) */
   centerAverageOverlay?: boolean;
+  /** When true, on mobile position the Avg + Hit overlay lower so it doesn't sit on the Team/controls row (AFL). */
+  averageOverlayLowerOnMobile?: boolean;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
   [key: string]: any; // Accept other props for compatibility
@@ -74,6 +76,7 @@ const SimpleChart = memo(function SimpleChart({
   yAxisTickFormatter,
   hideAverageOverlay = false,
   centerAverageOverlay = false,
+  averageOverlayLowerOnMobile = false,
   secondaryRankAxisMax,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
@@ -764,10 +767,10 @@ const SimpleChart = memo(function SimpleChart({
         />
       )}
       
-      {/* In-chart average + hit rate - center when second axis visible, else top right (z-[1] so dropdowns appear on top) */}
+      {/* In-chart average + hit rate - center when second axis visible, else top right; mobile: can sit lower to clear Team/controls (AFL) */}
       {averageDisplay && !hideAverageOverlay && (
         <div
-          className={`absolute -top-5 pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${averageOverlayLowerOnMobile ? 'top-1 sm:-top-5' : '-top-5'} ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -917,7 +920,7 @@ const SimpleChart = memo(function SimpleChart({
             key={`chart-${selectedStat}-${mergedChartData.length}-${hasSecondAxis ? 'secondaxis' : 'single'}`}
             data={mergedChartData}
             margin={{ 
-              top: 22, 
+              top: isMobile ? 44 : 22,
               right: isMobile ? 0 : (hasSecondAxis ? 5 : 14), 
               left: 0, 
               bottom: 19 

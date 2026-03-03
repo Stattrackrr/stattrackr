@@ -225,6 +225,16 @@ export default function AFLPage() {
   const [searchResults, setSearchResults] = useState<AflPlayerRecord[]>([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<AflPlayerRecord | null>(null);
+  /** True when we have ?player= in URL and are still fetching — show skeleton so containers are never blank */
+  const [loadingPlayerFromUrl, setLoadingPlayerFromUrl] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const u = new URL(window.location.href);
+      return !!u.searchParams.get('player')?.trim();
+    } catch {
+      return false;
+    }
+  });
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<AflGameLogRecord[]>([]);
   const [selectedPlayerGameLogsWithQuarters, setSelectedPlayerGameLogsWithQuarters] = useState<AflGameLogRecord[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
@@ -525,6 +535,7 @@ export default function AFLPage() {
     const url = new URL(window.location.href);
     const playerParam = url.searchParams.get('player')?.trim();
     if (!playerParam) return;
+    setLoadingPlayerFromUrl(true);
     setSelectedPlayer(null);
     setSelectedPlayerGameLogs([]);
     setSelectedPlayerGameLogsWithQuarters([]);
@@ -533,13 +544,19 @@ export default function AFLPage() {
       try {
         const res = await fetch(`/api/afl/players?query=${encodeURIComponent(playerParam)}&limit=30`);
         const data = await res.json();
-        if (cancelled || !res.ok) return;
+        if (cancelled || !res.ok) {
+          if (!cancelled) setLoadingPlayerFromUrl(false);
+          return;
+        }
         const list = Array.isArray(data?.players) ? data.players : [];
         const match = list.find((p: Record<string, unknown>) => {
           const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
           return name.toLowerCase() === playerParam.toLowerCase();
         }) ?? list[0];
-        if (cancelled || !match) return;
+        if (cancelled || !match) {
+          if (!cancelled) setLoadingPlayerFromUrl(false);
+          return;
+        }
         const record: AflPlayerRecord = {
           name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
           ...(typeof match.team === 'string' ? { team: match.team } : {}),
@@ -551,16 +568,21 @@ export default function AFLPage() {
         setSelectedPlayerGameLogsWithQuarters([]);
         setStatsLoadingForPlayer(true);
         setSearchQuery('');
+        setLoadingPlayerFromUrl(false);
         url.searchParams.delete('player');
         window.history.replaceState({}, '', url.toString());
       } catch {
         if (!cancelled) {
+          setLoadingPlayerFromUrl(false);
           url.searchParams.delete('player');
           window.history.replaceState({}, '', url.toString());
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      setLoadingPlayerFromUrl(false);
+    };
   }, []);
 
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
@@ -1545,8 +1567,8 @@ export default function AFLPage() {
   }, [nextGameTipoff]);
 
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
-  const showEmptyShell = !selectedPlayer;
-  const showStatsLoadingShell = !!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed);
+  const showEmptyShell = !selectedPlayer && !loadingPlayerFromUrl;
+  const showStatsLoadingShell = loadingPlayerFromUrl || (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
 
   // Single source of truth for opponent: same value for Team vs Team header and Opponent Breakdown.
   const displayOpponent = selectedPlayer?.team
@@ -1668,6 +1690,11 @@ export default function AFLPage() {
                               </div>
                             ) : null}
                           </div>
+                        ) : loadingPlayerFromUrl ? (
+                          <div className="min-w-0">
+                            <div className="h-6 w-40 rounded animate-pulse bg-gray-300 dark:bg-gray-600 mb-1" />
+                            <div className="h-3 w-24 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                          </div>
                         ) : (
                           <div>
                             <div className="flex items-baseline gap-3 mb-1">
@@ -1744,7 +1771,9 @@ export default function AFLPage() {
                               </div>
                             </div>
                           );
-                        })() : (
+                        })() : loadingPlayerFromUrl ? (
+                          <div className="h-10 w-48 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
+                        ) : (
                           <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
                             <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
                           </div>
@@ -1752,126 +1781,146 @@ export default function AFLPage() {
                       </div>
                       <div className="flex-1 min-w-0" aria-hidden />
                     </div>
-                    {/* Mobile: two-row layout like NBA - Row 1: Player name + number, Row 2: Team/position/height (left) | Team vs Opponent (right) */}
-                    <div className="lg:hidden flex items-center justify-between">
-                      <div className="flex-shrink-0 min-w-0">
-                        {selectedPlayer ? (
-                          <div>
-                            {aflPropsMode === 'player' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  try {
-                                    localStorage.removeItem(AFL_PAGE_STATE_KEY);
-                                    sessionStorage.setItem('afl_back_to_props_clear_search', '1');
-                                  } catch {}
-                                  router.push('/props?sport=afl');
-                                }}
-                                className="flex items-center gap-1.5 mb-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                              >
-                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                                <span>Back to Player Props</span>
-                              </button>
-                            )}
-                            <div className="flex items-baseline gap-3">
-                              <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{String(selectedPlayer.name ?? '—')}</h1>
-                              {(() => {
-                                const num = selectedPlayer.guernsey != null && selectedPlayer.guernsey !== ''
-                                  ? selectedPlayer.guernsey
-                                  : selectedPlayerGameLogs.length > 0
-                                    ? (selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.guernsey
-                                    : null;
-                                return num != null && num !== '' ? (
-                                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex-shrink-0">#{String(num)}</span>
-                                ) : null;
-                              })()}
-                            </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Player</h1>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="lg:hidden flex items-center justify-between gap-2 mt-1">
-                      <div className="flex-shrink-0 min-w-0">
-                        {selectedPlayer ? (
-                          <div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {selectedPlayer.team ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team)) : '—'}
-                            </div>
-                            {selectedPlayer.position && (
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                    {/* Mobile: Row 1 = Back + Player name | Tipoff (top right); Row 2 = Team/position | Team vs Opponent */}
+                    <div className="lg:hidden flex flex-col gap-1">
+                      <div className="flex items-start justify-between gap-2 w-full">
+                        <div className="flex-shrink-0 min-w-0">
+                          {selectedPlayer ? (
+                            <div>
+                              {aflPropsMode === 'player' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    try {
+                                      localStorage.removeItem(AFL_PAGE_STATE_KEY);
+                                      sessionStorage.setItem('afl_back_to_props_clear_search', '1');
+                                    } catch {}
+                                    router.push('/props?sport=afl');
+                                  }}
+                                  className="flex items-center gap-1.5 mb-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                >
+                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                  </svg>
+                                  <span>Back to Player Props</span>
+                                </button>
+                              )}
+                              <div className="flex items-baseline gap-3">
+                                <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{String(selectedPlayer.name ?? '—')}</h1>
+                                {(() => {
+                                  const num = selectedPlayer.guernsey != null && selectedPlayer.guernsey !== ''
+                                    ? selectedPlayer.guernsey
+                                    : selectedPlayerGameLogs.length > 0
+                                      ? (selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.guernsey
+                                      : null;
+                                  return num != null && num !== '' ? (
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex-shrink-0">#{String(num)}</span>
+                                  ) : null;
+                                })()}
                               </div>
-                            )}
-                            {selectedPlayer.height && (
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-600 dark:text-gray-400">Search for a player below</div>
-                        )}
-                      </div>
-                      <div className="flex-shrink-0 min-w-0">
-                        {selectedPlayer?.team ? (
-                          (() => {
-                            const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
-                            const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
-                            const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
-                            const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
-                            return (
-                              <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
-                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                                  <div className="flex items-center gap-1 min-w-0">
-                                    {teamLogo ? (
-                                      <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
-                                    ) : null}
-                                    <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamFull}</span>
-                                  </div>
-                                  <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
-                                  <div className="flex items-center gap-1 min-w-0">
-                                    {displayOpponent && opponentFull !== '—' ? (
-                                      <>
-                                        {opponentLogo ? (
-                                          <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
-                                        ) : null}
-                                        <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentFull}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
-                                    )}
+                            </div>
+                          ) : loadingPlayerFromUrl ? (
+                            <div className="min-w-0 flex-1">
+                              <div className="h-6 w-36 rounded animate-pulse bg-gray-300 dark:bg-gray-600" />
+                            </div>
+                          ) : (
+                            <div>
+                              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select a Player</h1>
+                            </div>
+                          )}
+                        </div>
+                        {/* Mobile: tipoff in top right, faint box, stays inside container */}
+                        {selectedPlayer && displayOpponent && (
+                          <div className="flex-shrink-0 min-w-0 max-w-[45%] overflow-hidden">
+                            <div className={`rounded-lg border px-2 py-1.5 text-right ${
+                              isDark
+                                ? 'bg-gray-800/40 border-gray-600/60'
+                                : 'bg-gray-100/80 border-gray-300/70'
+                            }`}>
+                              {countdown && !isGameInProgress ? (
+                                <div className="flex flex-col items-end">
+                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Bounce in</div>
+                                  <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+                                    {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
                                   </div>
                                 </div>
-                                {displayOpponent && countdown && !isGameInProgress ? (
-                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                    <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
-                                    <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                                      {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
-                                    </div>
-                                  </div>
-                                ) : displayOpponent && isGameInProgress ? (
-                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                    <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
-                                  </div>
-                                ) : displayOpponent && nextGameTipoff ? (
-                                  <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                    <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })()
-                        ) : (
-                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
-                            <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                              ) : isGameInProgress ? (
+                                <div className="text-xs font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                              ) : nextGameTipoff ? (
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
+                              ) : null}
+                            </div>
                           </div>
                         )}
+                      </div>
+                      <div className="lg:hidden flex items-center justify-between gap-2">
+                        <div className="flex-shrink-0 min-w-0">
+                          {selectedPlayer ? (
+                            <div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {selectedPlayer.team ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team)) : '—'}
+                              </div>
+                              {selectedPlayer.position && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                                </div>
+                              )}
+                              {selectedPlayer.height && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
+                                </div>
+                              )}
+                            </div>
+                          ) : loadingPlayerFromUrl ? (
+                            <div className="space-y-1">
+                              <div className="h-3 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                              <div className="h-3 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-600 dark:text-gray-400">Search for a player below</div>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 min-w-0">
+                          {selectedPlayer?.team ? (
+                            (() => {
+                              const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
+                              const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                              const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
+                              const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
+                              return (
+                                <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      {teamLogo ? (
+                                        <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                      ) : null}
+                                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamFull}</span>
+                                    </div>
+                                    <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      {displayOpponent && opponentFull !== '—' ? (
+                                        <>
+                                          {opponentLogo ? (
+                                            <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                          ) : null}
+                                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentFull}</span>
+                                        </>
+                                      ) : (
+                                        <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          ) : loadingPlayerFromUrl ? (
+                            <div className="h-9 w-32 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
+                          ) : (
+                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
+                              <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Search row - full width on mobile, below title on desktop */}
@@ -2167,95 +2216,100 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
-                {/* 4. Supporting stats - no horizontal padding on mobile (full-width bars); desktop: padding restored */}
-                <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 border border-gray-200 dark:border-gray-700">
-                  {showEmptyShell ? (
-                    <div className="min-h-[220px]" />
-                  ) : showStatsLoadingShell ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="space-y-3 w-full max-w-md">
-                        <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
-                          <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                {/* 4. Supporting stats - no gap, flush with chart; hidden in Game Props (mobile shows Opponent Breakdown only below) */}
+                {aflPropsMode === 'player' && (
+                  <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 border border-gray-200 dark:border-gray-700">
+                    {showEmptyShell ? (
+                      <div className="min-h-[220px]" />
+                    ) : showStatsLoadingShell ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="space-y-3 w-full max-w-md">
+                          <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`}></div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.1s' }}></div>
+                            <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: '0.2s' }}></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : aflPropsMode === 'team' ? (
-                    <div className="flex items-center justify-center py-8 min-h-[220px] text-center">
-                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Supporting player stats are hidden in Game Props mode.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                        Supporting stats
-                      </h3>
-                      <AflSupportingStats
-                        gameLogs={chartGameLogsForPlayer}
-                        timeframe={aflChartTimeframe}
-                        season={season}
-                        mainChartStat={mainChartStat}
-                        supportingStatKind={supportingStatKind}
-                        onSupportingStatKindChange={setSupportingStatKind}
-                        isDark={!!mounted && isDark}
-                      />
-                    </>
-                  )}
-                </div>
-                {/* 4.5. DVP | Opponent Breakdown | Compare - mobile only; desktop uses right panel */}
-                {aflPropsMode === 'player' && (
+                    ) : (
+                      <>
+                        <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                          Supporting stats
+                        </h3>
+                        <AflSupportingStats
+                          gameLogs={chartGameLogsForPlayer}
+                          timeframe={aflChartTimeframe}
+                          season={season}
+                          mainChartStat={mainChartStat}
+                          supportingStatKind={supportingStatKind}
+                          onSupportingStatKindChange={setSupportingStatKind}
+                          isDark={!!mounted && isDark}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+                {/* 4.5. DVP | Opponent Breakdown | Compare - mobile only; same container for Player and Game Props (desktop uses right panel) */}
+                {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
                   <div className="lg:hidden w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-4 border border-gray-200 dark:border-gray-700 max-h-[60vh] min-h-0">
                     <div className="flex gap-2 sm:gap-2 mb-3 flex-shrink-0">
-                      <button
-                        onClick={() => {
-                          setAflRightTab('dvp');
-                          setAflRightTabsVisited((prev) => new Set(prev).add('dvp'));
-                        }}
-                        className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                          aflRightTab === 'dvp'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        DVP
-                        <span
-                          className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
-                            isDark ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                          }`}
-                        >
-                          90% accuracy
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setAflRightTab('breakdown');
-                          setAflRightTabsVisited((prev) => new Set(prev).add('breakdown'));
-                        }}
-                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                          aflRightTab === 'breakdown'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Opponent Breakdown
-                      </button>
-                      <button
-                        onClick={() => {
-                          setAflRightTab('rank');
-                          setAflRightTabsVisited((prev) => new Set(prev).add('rank'));
-                        }}
-                        className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                          aflRightTab === 'rank'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Compare
-                      </button>
+                      {aflPropsMode === 'player' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setAflRightTab('dvp');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('dvp'));
+                            }}
+                            className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'dvp'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            DVP
+                            <span
+                              className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
+                                isDark ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                              }`}
+                            >
+                              90% accuracy
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAflRightTab('breakdown');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('breakdown'));
+                            }}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'breakdown'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Opponent Breakdown
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAflRightTab('rank');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('rank'));
+                            }}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'rank'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Compare
+                          </button>
+                        </>
+                      )}
+                      {aflPropsMode === 'team' && (
+                        <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                          Opponent Breakdown
+                        </h3>
+                      )}
                     </div>
-                    {showEmptyShell || showStatsLoadingShell ? (
+                    {(showEmptyShell || showStatsLoadingShell) && aflPropsMode === 'player' ? (
                       <div className="flex-1 min-h-0 flex items-center justify-center">
                         <div className={`text-sm ${emptyText}`}>Select a player to view</div>
                       </div>
@@ -2272,7 +2326,7 @@ export default function AFLPage() {
                             />
                           </div>
                         )}
-                        {aflRightTab === 'rank' && (
+                        {aflPropsMode === 'player' && aflRightTab === 'rank' && (
                           <div className="flex flex-col min-h-0">
                             <AflLeagueRankingCard
                               isDark={!!mounted && isDark}
@@ -2283,7 +2337,7 @@ export default function AFLPage() {
                             />
                           </div>
                         )}
-                        {aflRightTab === 'dvp' && (
+                        {aflPropsMode === 'player' && aflRightTab === 'dvp' && (
                           <div className="flex flex-col min-h-0 overflow-y-auto">
                             <AflDvpCard
                               isDark={!!mounted && isDark}
