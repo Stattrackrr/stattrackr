@@ -3316,31 +3316,31 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               }}
             >
           <div className={`h-full pb-12 lg:pr-0 px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
-            {/* Sport toggle: NBA | AFL - above search */}
-            <div className={`flex gap-1.5 mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+            {/* Sport toggle: NBA | AFL - above search; desktop: wider buttons */}
+            <div className={`flex gap-1.5 mb-2 lg:gap-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <button
                 type="button"
                 onClick={() => setPropsSport('nba')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'nba'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
                     : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="NBA"
               >
-                <img src="/images/nba-logo.png" alt="" className="w-10 h-10 object-contain" />
+                <img src="/images/nba-logo.png" alt="" className="w-10 h-10 lg:w-12 lg:h-12 object-contain" />
               </button>
               <button
                 type="button"
                 onClick={() => setPropsSport('afl')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'afl'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
                     : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="AFL"
               >
-                <img src="/images/afl-logo.png" alt="" className="w-10 h-10 object-contain" />
+                <img src="/images/afl-logo.png" alt="" className="w-10 h-10 lg:w-12 lg:h-12 object-contain" />
               </button>
             </div>
 
