@@ -1,7 +1,7 @@
 /**
  * AFL odds refresh using The Odds API (v4).
- * Game odds (H2H, spreads, totals) are cached for 90 minutes so we don't spam the API.
- * Run refresh every 90 min (cron or /api/afl/odds/refresh) to keep cache full.
+ * Game odds (H2H, spreads, totals) are cached for 90 minutes (~30 API credits per refresh).
+ * Cron runs every 90 min; 16/day × 30 ≈ 480 credits/day, ~14.4k/month.
  */
 
 import sharedCache from '@/lib/sharedCache';
@@ -9,7 +9,7 @@ import sharedCache from '@/lib/sharedCache';
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const AFL_SPORT_KEY = 'aussierules_afl';
 
-/** Cache key and TTL: 90 minutes so one refresh covers all users. */
+/** Cache key and TTL: 90 minutes. ~30 API credits per refresh; cron every 90 min = 16/day, ~14.4k/month. */
 export const AFL_ODDS_CACHE_KEY = 'afl_game_odds_v2';
 export const AFL_ODDS_CACHE_TTL_SECONDS = 90 * 60;
 
@@ -243,7 +243,7 @@ export async function refreshAflOddsData(): Promise<{
   }
 }
 
-/** Read game odds from 90-min cache (populated by refresh every 90 min). */
+/** Read game odds from 90-min cache (populated by cron every 90 min). */
 export async function getAflOddsCache(): Promise<AflOddsCache | null> {
   const raw = await sharedCache.getJSON<AflOddsCache>(AFL_ODDS_CACHE_KEY);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.games)) return null;

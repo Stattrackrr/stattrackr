@@ -15,7 +15,11 @@
     },
     {
       "path": "/api/afl/odds/refresh",
-      "schedule": "0 * * * *"
+      "schedule": "0 0,3,6,9,12,15,18,21 * * *"
+    },
+    {
+      "path": "/api/afl/odds/refresh",
+      "schedule": "30 1,4,7,10,13,16,19,22 * * *"
     }
   ],
   "functions": {

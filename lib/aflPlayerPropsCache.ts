@@ -1,6 +1,6 @@
 /**
  * AFL player props cache: goals and disposals only.
- * Refreshed every 90 min with game odds; one fetch per event (4 markets) so we never spam the API.
+ * Refreshed every 90 min with game odds; one fetch per event (4 markets). ~30 API credits per full refresh.
  */
 
 import { getAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';

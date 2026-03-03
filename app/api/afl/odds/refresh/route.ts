@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/afl/odds/refresh
- * Fetches AFL game odds + player props (goals & disposals only) and writes 90-min cache.
+ * Fetches AFL game odds + player props (goals & disposals only) and writes 90-min cache. ~30 API credits per run.
  * Called by Vercel cron every hour; also allowed with CRON_SECRET for manual runs.
  */
 export async function GET(request: NextRequest) {
