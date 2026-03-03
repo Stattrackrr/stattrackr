@@ -12,7 +12,7 @@ type CronAuthResult =
  * - X-Vercel-Cron: 1 (automatic Vercel cron calls)
  */
 export function authorizeCronRequest(request: Request): CronAuthResult {
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = (process.env.CRON_SECRET ?? '').trim();
 
   // Check if this is a Vercel Cron call (they send x-vercel-cron header)
   const isVercelCron = request.headers.get('x-vercel-cron') === '1';
@@ -26,7 +26,7 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
     throw new Error('CRON_SECRET environment variable is required for cron endpoints');
   }
 
-  const headerSecret = request.headers.get('x-cron-secret');
+  const headerSecret = (request.headers.get('x-cron-secret') ?? '').trim();
   const authHeader = request.headers.get('authorization');
 
   const bearerSecret = authHeader?.startsWith('Bearer ')
@@ -37,12 +37,13 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
   let querySecret = null;
   try {
     const url = new URL(request.url);
-    querySecret = url.searchParams.get('secret');
+    const q = url.searchParams.get('secret');
+    querySecret = q != null ? q.trim() : null;
   } catch (e) {
     // Ignore URL parsing errors
   }
 
-  const providedSecret = querySecret || headerSecret || bearerSecret;
+  const providedSecret = (querySecret ?? headerSecret ?? bearerSecret ?? '').trim();
 
   if (!providedSecret || providedSecret !== cronSecret) {
     return {
