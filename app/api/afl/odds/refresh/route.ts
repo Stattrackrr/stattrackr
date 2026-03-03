@@ -8,8 +8,9 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/afl/odds/refresh
- * Fetches AFL game odds + player props (goals & disposals only) and writes 90-min cache. ~30 API credits per run.
- * Called by Vercel cron every hour; also allowed with CRON_SECRET for manual runs.
+ * Single cron: fetches AFL game odds then immediately refreshes player props. Writes cache only on success
+ * so the old cache stays visible until new data is ready (~30 API credits per run).
+ * Vercel cron runs this; old cache is shown until this run completes successfully.
  */
 export async function GET(request: NextRequest) {
   // In production require cron auth (Vercel cron or CRON_SECRET); in dev allow for easy local testing

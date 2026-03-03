@@ -93,6 +93,8 @@ export function getStatValue(stats: BallDontLieStats, key: string): number {
     case 'fg3m': return stats.fg3m;
     case 'fg3a': return stats.fg3a;
     case 'fg3_pct': return (stats.fg3_pct || 0) * 100;
+    // Q1 stats: only available via statUtils getStatValue with q1StatsByGameId; here return 0
+    case 'q1_pts': case 'q1_reb': case 'q1_ast': return 0;
     case 'fgm': return stats.fgm;
     case 'fga': return stats.fga;
     case 'fg_pct': return (stats.fg_pct || 0) * 100;

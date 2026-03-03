@@ -2,18 +2,20 @@
 
 import { memo, useState, useEffect } from 'react';
 import { BallDontLieStats } from '../types';
+import type { Q1StatsByGameId } from '../hooks/useQ1StatsFetch';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getEspnLogoCandidates, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '../utils/teamUtils';
 import { currentNbaSeason, parseMinutes } from '../utils/playerUtils';
 
-
 const PlayerBoxScore = memo(function PlayerBoxScore({
   selectedPlayer,
   playerStats,
+  q1StatsByGameId = {},
   isDark
 }: {
   selectedPlayer: any;
   playerStats: BallDontLieStats[];
+  q1StatsByGameId?: Q1StatsByGameId;
   isDark: boolean;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
@@ -147,6 +149,9 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">PTS</th>
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">REB</th>
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">AST</th>
+              <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300" title="1st quarter">Q1 PTS</th>
+              <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300" title="1st quarter">Q1 REB</th>
+              <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300" title="1st quarter">Q1 AST</th>
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">STL</th>
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">BLK</th>
               <th className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">FGM</th>
@@ -292,6 +297,23 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
                       game.ast || 0
                     )}
                   </td>
+                  {(() => {
+                    const gameId = game.game?.id;
+                    const q1 = typeof gameId === 'number' ? q1StatsByGameId[gameId] : undefined;
+                    return (
+                      <>
+                        <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                          {q1 ? q1.pts : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                        </td>
+                        <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                          {q1 ? q1.reb : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                        </td>
+                        <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
+                          {q1 ? q1.ast : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                        </td>
+                      </>
+                    );
+                  })()}
                   <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">
                     {game.stl == null ? (
                       <span className="text-gray-400 dark:text-gray-500">N/A</span>
@@ -387,6 +409,7 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
 }, (prev, next) => (
   prev.selectedPlayer === next.selectedPlayer &&
   prev.playerStats === next.playerStats &&
+  prev.q1StatsByGameId === next.q1StatsByGameId &&
   prev.isDark === next.isDark
 ));
 

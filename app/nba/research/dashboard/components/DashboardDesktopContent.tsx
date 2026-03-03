@@ -64,6 +64,7 @@ interface DashboardDesktopContentProps {
   
   // Player Box Score props
   playerStats: BallDontLieStats[];
+  q1StatsByGameId: Record<number, { pts: number; reb: number; ast: number }>;
 }
 
 export function DashboardDesktopContent({
@@ -101,6 +102,7 @@ export function DashboardDesktopContent({
   allTeamRosters,
   rosterCacheLoading,
   playerStats,
+  q1StatsByGameId,
 }: DashboardDesktopContentProps) {
   return (
     <>
@@ -276,11 +278,12 @@ export function DashboardDesktopContent({
             <PlayerBoxScore
               selectedPlayer={selectedPlayer}
               playerStats={playerStats}
+              q1StatsByGameId={q1StatsByGameId}
               isDark={isDark}
             />
           </div>
         );
-      }, [propsMode, selectedPlayer, playerStats, isDark])}
+      }, [propsMode, selectedPlayer, playerStats, q1StatsByGameId, isDark])}
     </>
   );
 }

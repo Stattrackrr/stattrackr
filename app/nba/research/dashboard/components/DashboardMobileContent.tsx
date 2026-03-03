@@ -70,6 +70,7 @@ interface DashboardMobileContentProps {
   
   // Player Box Score props
   playerStats: BallDontLieStats[];
+  q1StatsByGameId: Record<number, { pts: number; reb: number; ast: number }>;
 }
 
 export function DashboardMobileContent({
@@ -108,6 +109,7 @@ export function DashboardMobileContent({
   allTeamRosters,
   rosterCacheLoading,
   playerStats,
+  q1StatsByGameId,
 }: DashboardMobileContentProps) {
   return (
     <>
@@ -298,11 +300,12 @@ export function DashboardMobileContent({
             <PlayerBoxScore
               selectedPlayer={selectedPlayer}
               playerStats={playerStats}
+              q1StatsByGameId={q1StatsByGameId}
               isDark={isDark}
             />
           </div>
         );
-      }, [propsMode, selectedPlayer, playerStats, isDark])}
+      }, [propsMode, selectedPlayer, playerStats, q1StatsByGameId, isDark])}
     </>
   );
 }

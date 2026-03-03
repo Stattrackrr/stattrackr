@@ -2,8 +2,24 @@ import { BallDontLieStats } from '../types';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { parseMinutes } from './playerUtils';
 
+export type Q1StatsByGameId = Record<number, { pts: number; reb: number; ast: number }>;
+
 // Player stats from BallDontLie stats API
-export function getStatValue(stats: BallDontLieStats, key: string): number {
+// Optional q1StatsByGameId: when key is q1_pts/q1_reb/q1_ast, value is looked up by stats.game.id
+export function getStatValue(stats: BallDontLieStats, key: string, q1StatsByGameId?: Q1StatsByGameId): number {
+  // 1st quarter stats (from BDL period=1, completed games only)
+  if (q1StatsByGameId && (key === 'q1_pts' || key === 'q1_reb' || key === 'q1_ast')) {
+    const gameId = stats?.game?.id;
+    if (typeof gameId === 'number' && !isNaN(gameId)) {
+      const q1 = q1StatsByGameId[gameId];
+      if (q1) {
+        if (key === 'q1_pts') return q1.pts;
+        if (key === 'q1_reb') return q1.reb;
+        if (key === 'q1_ast') return q1.ast;
+      }
+    }
+    return 0;
+  }
   switch (key) {
     case 'min': return parseMinutes(stats.min);
     case 'pts': return stats.pts;

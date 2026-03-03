@@ -107,6 +107,7 @@ import { useNextGameCalculation } from './hooks/useNextGameCalculation';
 import { useLastSeasonStatsFetch } from './hooks/useLastSeasonStatsFetch';
 import { useTeamLogos } from './hooks/useTeamLogos';
 import { useTeamMatchupStats } from './hooks/useTeamMatchupStats';
+import { useQ1StatsFetch } from './hooks/useQ1StatsFetch';
 import { useOpponentUpdate } from './hooks/useOpponentUpdate';
 import { useGamesLoading } from './hooks/useGamesLoading';
 import { useH2hOpponentSelection } from './hooks/useH2hOpponentSelection';
@@ -334,6 +335,8 @@ export function NBADashboardContent() {
     setResolvedPlayerId,
     playerStats,
     setPlayerStats,
+    q1StatsByGameId,
+    setQ1StatsByGameId,
     isLoading,
     setIsLoading,
     coreDataReady,
@@ -603,6 +606,14 @@ export function NBADashboardContent() {
     setTeamMatchupLoading,
   });
 
+  // 1st quarter pts/reb/ast for Game Log (BDL period=1, completed games only)
+  useQ1StatsFetch({
+    propsMode,
+    resolvedPlayerId,
+    playerStats,
+    setQ1StatsByGameId,
+  });
+
   // Function to fetch a single team's depth chart (with caching to prevent rate limits)
 
   // Prefetch rosters for current teams (specific to current mode)
@@ -822,6 +833,7 @@ export function NBADashboardContent() {
     manualOpponent,
     advancedStatsPerGame,
     dvpRanksPerGame,
+    q1StatsByGameId,
   });
 
   // Load teammate participation for current base games when filter is active
@@ -1299,6 +1311,7 @@ export function NBADashboardContent() {
               allTeamRosters={allTeamRosters}
               rosterCacheLoading={rosterCacheLoading}
                     playerStats={playerStats}
+              q1StatsByGameId={q1StatsByGameId}
             />
 
             {/* Desktop Content - Extracted to DashboardDesktopContent component */}
@@ -1337,6 +1350,7 @@ export function NBADashboardContent() {
               allTeamRosters={allTeamRosters}
               rosterCacheLoading={rosterCacheLoading}
                     playerStats={playerStats}
+              q1StatsByGameId={q1StatsByGameId}
                   />
 
           </div>

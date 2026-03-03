@@ -71,6 +71,9 @@ export interface GameOdds {
         PR?: PlayerPropLineEntry[];
         PA?: PlayerPropLineEntry[];
         RA?: PlayerPropLineEntry[];
+        PTS_1Q?: PlayerPropLineEntry[];
+        REB_1Q?: PlayerPropLineEntry[];
+        AST_1Q?: PlayerPropLineEntry[];
         FIRST_BASKET?: { yes: string; no: string };
       };
     };

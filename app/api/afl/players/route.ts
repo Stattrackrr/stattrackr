@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
+import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 
 const AFL_TABLES_BASE = 'https://afltables.com';
 const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
@@ -58,6 +59,36 @@ function readCachedLeaguePlayerList(): Array<PlayerListEntry> | null {
     }
   }
   return null;
+}
+
+/**
+ * Build unique player list from the same cache as the props page — by player name only (all games).
+ * Optionally attach team/number from league stats when available.
+ */
+async function playersFromPropsCache(): Promise<Array<PlayerListEntry> | null> {
+  const result = await listAflPlayerPropsFromCache();
+  if (!result?.props?.length) return null;
+
+  const leagueList = readCachedLeaguePlayerList();
+  const byNormalName = new Map<string, { name: string; team?: string; number?: number | null }>();
+  for (const row of result.props) {
+    const name = String(row.playerName ?? '').trim();
+    if (!name) continue;
+    const key = normalizeName(name);
+    if (byNormalName.has(key)) continue;
+    const fromLeague = leagueList?.find((p) => normalizeName(p.name) === key);
+    byNormalName.set(key, {
+      name,
+      team: fromLeague?.team ?? undefined,
+      number: fromLeague?.number ?? null,
+    });
+  }
+  const list = Array.from(byNormalName.values()).map((p) => ({
+    name: p.name,
+    team: p.team,
+    number: p.number ?? undefined,
+  }));
+  return list.length > 0 ? list : null;
 }
 
 /** Read roster from cached file. Tries current year then previous year (e.g. 2026 then 2025). Run scripts/fetch-afl-roster.js to refresh. */
@@ -146,7 +177,29 @@ export async function GET(request: NextRequest) {
     const q = normalizeName(query);
     const effectiveLimit = q && !q.includes(' ') ? Math.min(100, Math.max(limit, 60)) : limit;
 
-    // Prefer league player stats (FootyWire) so search uses same list as warm workflow; no external API. Then fall back to roster.
+    // Prefer players from the same props cache as the props page so dashboard search matches all players with props (all games).
+    const propsList = await playersFromPropsCache();
+    if (propsList && propsList.length > 0) {
+      let pool = propsList;
+      if (q) {
+        pool = pool.filter((p) => nameMatchesQuery(p.name, q));
+      }
+      pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
+      const players = pool.slice(0, effectiveLimit).map((p) => ({
+        name: p.name,
+        team: p.team,
+        ...(p.number != null ? { number: p.number } : {}),
+      }));
+
+      return NextResponse.json({
+        source: 'player-props-cache',
+        query,
+        count: players.length,
+        players,
+      });
+    }
+
+    // Fallback: league player stats (FootyWire) then roster so search works when props cache is empty.
     const leagueList = readCachedLeaguePlayerList();
     const roster = leagueList && leagueList.length > 0 ? leagueList : readCachedRoster();
     if (roster && roster.length > 0) {

@@ -23,6 +23,7 @@ export interface UseChartDataProcessingParams {
   manualOpponent: string;
   advancedStatsPerGame: Record<number, { pace?: number; usage_percentage?: number }>;
   dvpRanksPerGame: Record<string, number | null>;
+  q1StatsByGameId?: Record<number, { pts: number; reb: number; ast: number }>;
 }
 
 export function useChartDataProcessing({
@@ -42,6 +43,7 @@ export function useChartDataProcessing({
   manualOpponent,
   advancedStatsPerGame,
   dvpRanksPerGame,
+  q1StatsByGameId,
 }: UseChartDataProcessingParams) {
   /* -------- Chart data with current stat values ----------
      Only recalculate values when selectedStat changes */
@@ -58,8 +60,9 @@ export function useChartDataProcessing({
       propsMode,
       gamePropsTeam,
       todaysGames,
+      q1StatsByGameId,
     });
-  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames]);
+  }, [baseGameData, filteredGameData, selectedStat, propsMode, propsMode === 'team' ? gamePropsTeam : selectedTeam, todaysGames, q1StatsByGameId]);
 
   // For spread we now use the signed margin directly (wins down, losses up)
   const adjustedChartData = useMemo(() => chartData, [chartData]);
@@ -88,8 +91,9 @@ export function useChartDataProcessing({
       selectedPlayer,
       opponentTeam,
       manualOpponent: manualOpponent || 'ALL',
+      q1StatsByGameId,
     });
-  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, playerId, opponentTeam, manualOpponent]);
+  }, [adjustedChartData, selectedFilterForAxis, allGamesSecondAxisData, sliderRange, propsMode, selectedStat, selectedTimeframe, playerId, opponentTeam, manualOpponent, q1StatsByGameId]);
 
   // Calculate second axis data for display (from filteredChartData to match what's actually displayed)
   const secondAxisData = useMemo(() => {

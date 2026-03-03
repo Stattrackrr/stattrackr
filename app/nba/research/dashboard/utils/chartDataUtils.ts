@@ -7,6 +7,7 @@
 
 import { getStatValue } from './statUtils';
 import { getGameStatValue } from './statUtils';
+import type { Q1StatsByGameId } from './statUtils';
 import { BaseGameDataItem } from './baseGameDataUtils';
 
 export interface ChartDataItem extends BaseGameDataItem {
@@ -20,6 +21,7 @@ export interface ChartDataParams {
   propsMode: 'player' | 'team';
   gamePropsTeam?: string;
   todaysGames?: any[];
+  q1StatsByGameId?: Q1StatsByGameId;
 }
 
 /**
@@ -32,11 +34,12 @@ export function processChartData({
   propsMode,
   gamePropsTeam,
   todaysGames,
+  q1StatsByGameId,
 }: ChartDataParams): ChartDataItem[] {
   const mapped = source.map(game => {
     const statValue = propsMode === 'team' 
       ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam || '') 
-      : (game as any).stats ? getStatValue((game as any).stats, selectedStat) : 0;
+      : (game as any).stats ? getStatValue((game as any).stats, selectedStat, q1StatsByGameId) : 0;
     
     // For steals/blocks, ensure we return 0 instead of null/undefined
     // This is important because these stats can legitimately be 0

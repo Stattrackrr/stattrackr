@@ -263,6 +263,9 @@ export async function GET(request: NextRequest) {
                 PR: getPrimaryProp(bookmakerProps.PR),
                 PA: getPrimaryProp(bookmakerProps.PA),
                 RA: getPrimaryProp(bookmakerProps.RA),
+                PTS_1Q: getPrimaryProp(bookmakerProps.PTS_1Q),
+                REB_1Q: getPrimaryProp(bookmakerProps.REB_1Q),
+                AST_1Q: getPrimaryProp(bookmakerProps.AST_1Q),
                 DD: bookmakerProps.DD || { yes: 'N/A', no: 'N/A' },
                 TD: bookmakerProps.TD || { yes: 'N/A', no: 'N/A' },
               });

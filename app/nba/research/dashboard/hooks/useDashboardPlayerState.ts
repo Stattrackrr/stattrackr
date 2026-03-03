@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { NBAPlayer } from '@/lib/nbaPlayers';
 import { BallDontLieStats, AdvancedStats, BdlSearchResult } from '../types';
+import type { Q1StatsByGameId } from './useQ1StatsFetch';
 
 export function useDashboardPlayerState() {
   const [selectedPlayer, setSelectedPlayer] = useState<NBAPlayer | null>(null);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
   const [playerStats, setPlayerStats] = useState<BallDontLieStats[]>([]);
+  const [q1StatsByGameId, setQ1StatsByGameId] = useState<Q1StatsByGameId>({});
   const [isLoading, setIsLoading] = useState(false);
   const [coreDataReady, setCoreDataReady] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export function useDashboardPlayerState() {
     setResolvedPlayerId,
     playerStats,
     setPlayerStats,
+    q1StatsByGameId,
+    setQ1StatsByGameId,
     isLoading,
     setIsLoading,
     coreDataReady,

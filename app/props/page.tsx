@@ -3790,8 +3790,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       <div className={`flex items-center justify-center py-16 ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Loading AFL props…</div>
                     ) : propsSport === 'afl' ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium mb-2">No odds for AFL</p>
-                        <p className="text-sm">{aflProps.length === 0 ? 'Run /api/afl/odds/refresh or try again later.' : 'Select games or filters above.'}</p>
+                        <p className="text-lg font-medium">No odds for AFL</p>
                       </div>
                     ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${

@@ -223,7 +223,9 @@ export const PLAYER_STAT_OPTIONS = [
   { key: "pa", label: "PA" },
   { key: "ra", label: "RA" },
   { key: "fg3m", label: "3PM/A" },
-  { key: "fg3_pct", label: "3P%" }, { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
+  { key: "fg3_pct", label: "3P%" },
+  { key: "q1_pts", label: "Q1 PTS" }, { key: "q1_reb", label: "Q1 REB" }, { key: "q1_ast", label: "Q1 AST" },
+  { key: "fgm", label: "FGM" }, { key: "fga", label: "FGA" },
   // After FGA: STL, BLK, OREB, DREB (then remaining)
   { key: "stl", label: "STL" }, { key: "blk", label: "BLK" },
   { key: "oreb", label: "OREB" }, { key: "dreb", label: "DREB" },

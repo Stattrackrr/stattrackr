@@ -8,6 +8,7 @@
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from './teamUtils';
 import { getStatValue } from './statUtils';
+import type { Q1StatsByGameId } from './statUtils';
 import { getStableGameId } from './allGamesSecondAxisDataUtils';
 import { currentNbaSeason } from './playerUtils';
 import { BaseGameDataItem } from './baseGameDataUtils';
@@ -29,6 +30,7 @@ export interface FilteredChartDataParams {
   opponentTeam: string | null;
   /** When set (e.g. user picked a team in the selector), restrict chart to only games vs this opponent */
   manualOpponent: string;
+  q1StatsByGameId?: Q1StatsByGameId;
 }
 
 /**
@@ -47,6 +49,7 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
     selectedPlayer,
     opponentTeam,
     manualOpponent,
+    q1StatsByGameId,
   } = params;
 
   /** Restrict to games vs manualOpponent when user has selected a specific team (only for chart; matchup stays auto). */
@@ -172,7 +175,7 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
         xKey: getStableGameId(stats),
         tickLabel: opponent || "",
       };
-      const statValue = getStatValue(stats, selectedStat);
+      const statValue = getStatValue(stats, selectedStat, q1StatsByGameId);
       const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
       return {
         ...gameData,
@@ -329,7 +332,7 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
       tickLabel: opponent || "",
     };
 
-    const statValue = getStatValue(stats, selectedStat);
+    const statValue = getStatValue(stats, selectedStat, q1StatsByGameId);
     const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
     
     return {

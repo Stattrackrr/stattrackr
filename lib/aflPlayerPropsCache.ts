@@ -10,7 +10,8 @@ const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const AFL_SPORT = 'aussierules_afl';
 
 export const AFL_PP_CACHE_KEY_PREFIX = 'afl_pp_v3';
-export const AFL_PP_CACHE_TTL_SECONDS = 90 * 60;
+/** 2.5 hours so props refresh sooner if a player is ruled out; old cache displayed until new refresh succeeds. */
+export const AFL_PP_CACHE_TTL_SECONDS = 2.5 * 60 * 60;
 
 /** Only these stats are cached (goals + disposals); fewer API calls. */
 export const CACHED_PP_STATS = ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'] as const;
@@ -245,6 +246,7 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
       if (!bookmakers.length) continue;
 
       const eventCache = buildEventCacheFromBookmakers(bookmakers);
+      if (Object.keys(eventCache).length === 0) continue;
       const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
       await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
       eventsRefreshed++;

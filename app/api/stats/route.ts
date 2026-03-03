@@ -93,8 +93,9 @@ function metricToField(metric: string): string {
 /**
  * Builds a BallDon'tLie URL for stats
  * BDL uses page-based pagination
+ * period: 0 = full game (default), 1-4 = quarters, 5+ = overtime. Only for completed games.
  */
-function buildStatsUrl(playerId: string, season: number, page: number = 1, perPage = 40, postseason?: boolean, gameIds?: number[]) {
+function buildStatsUrl(playerId: string, season: number, page: number = 1, perPage = 40, postseason?: boolean, gameIds?: number[], period?: number) {
   const url = new URL(`${BDL_BASE}/stats`);
   url.searchParams.set("per_page", String(perPage));
   url.searchParams.append("player_ids[]", String(playerId));
@@ -110,6 +111,10 @@ function buildStatsUrl(playerId: string, season: number, page: number = 1, perPa
   // Note: BDL docs say "posteason" (typo) but we use "postseason" which works
   if (postseason !== undefined) {
     url.searchParams.set("postseason", postseason ? "true" : "false");
+  }
+  // Period: 0 = full game, 1-4 = quarters, 5+ = OT. Only accepted for completed games.
+  if (period !== undefined && period !== null && period > 0) {
+    url.searchParams.set("period", String(period));
   }
   // Use page for pagination
   if (page > 1) {
@@ -177,6 +182,10 @@ export async function GET(req: NextRequest) {
     // Support game_ids parameter for querying specific games (useful for players who changed teams)
     const gameIdsParam = searchParams.get("game_ids");
     const gameIds = gameIdsParam ? gameIdsParam.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id)) : undefined;
+    // Period: 0 = full game, 1-4 = quarters, 5+ = OT. Only for completed games (BDL).
+    const periodParam = searchParams.get("period");
+    const period = periodParam !== null ? parseInt(periodParam || "0", 10) : undefined;
+    const usePeriod = period !== undefined && !isNaN(period) && period > 0;
 
     if (!playerId) {
       return NextResponse.json(
@@ -188,12 +197,12 @@ export async function GET(req: NextRequest) {
     // Default to a safe recent season if not provided
     const season = Number(seasonParam || 2023);
 
-    // Check cache first (before rate limiting) - include postseason and gameIds in cache key
-    // This ensures regular season and postseason stats are cached separately
-    // If gameIds are provided, use a different cache key
+    // Check cache first (before rate limiting) - include postseason, gameIds, and period in cache key
+    // This ensures regular season, postseason, and period-specific (e.g. Q1) stats are cached separately
+    const periodSuffix = usePeriod ? `_period${period}` : '';
     const cacheKey = gameIds && gameIds.length > 0
-      ? `${getCacheKey.playerStats(playerId, season)}_games_${gameIds.sort((a, b) => a - b).join('_')}`
-      : `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
+      ? `${getCacheKey.playerStats(playerId, season)}_games_${gameIds.sort((a, b) => a - b).join('_')}${periodSuffix}`
+      : `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}${periodSuffix}`;
     
     // Try in-memory cache first (fastest)
     let cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
@@ -235,8 +244,8 @@ export async function GET(req: NextRequest) {
       // Cache hit but empty array, fetching fresh data
     }
 
-    // Check if a request for this player/season/postseason is already in flight
-    const requestKey = `${playerId}-${season}-${postseason ? 'po' : 'reg'}`;
+    // Check if a request for this player/season/postseason/period is already in flight
+    const requestKey = `${playerId}-${season}-${postseason ? 'po' : 'reg'}${usePeriod ? `-p${period}` : ''}`;
     if (inFlightRequests.has(requestKey)) {
       // Request already in flight, waiting
       try {
@@ -274,7 +283,7 @@ export async function GET(req: NextRequest) {
       let stampedPosition: string | null = null;
 
       while (page <= maxPages) {
-        const url = buildStatsUrl(playerId, season, page, perPageParam, postseason, gameIds);
+        const url = buildStatsUrl(playerId, season, page, perPageParam, postseason, gameIds, usePeriod ? period : undefined);
         
         if (gameIds && gameIds.length > 0 && page === 1) {
           console.log(`[Stats API] 🔍 Fetching stats by game_ids: ${gameIds.join(',')} for player ${playerId}, URL: ${url.toString()}`);

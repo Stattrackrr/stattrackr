@@ -7,9 +7,8 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/afl/player-props/refresh
- * Refreshes AFL player props cache only (reads games from existing odds cache).
- * Called by Vercel cron 5 min after /api/afl/odds/refresh so props run "just after" odds.
- * Uses ~20–30 API credits (player props only; game odds not re-fetched).
+ * Refreshes AFL player props only (reads games from existing odds cache). Optional manual endpoint.
+ * The main cron is /api/afl/odds/refresh, which does odds + props in one run; use this only to re-fetch props without re-fetching odds.
  */
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {

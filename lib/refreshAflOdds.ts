@@ -9,9 +9,9 @@ import sharedCache from '@/lib/sharedCache';
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const AFL_SPORT_KEY = 'aussierules_afl';
 
-/** Cache key and TTL: 90 minutes. ~30 API credits per refresh; cron every 90 min = 16/day, ~14.4k/month. */
+/** Cache key and TTL: 2.5 hours so odds/props refresh sooner if a player is ruled out; old data stays until new refresh succeeds. */
 export const AFL_ODDS_CACHE_KEY = 'afl_game_odds_v2';
-export const AFL_ODDS_CACHE_TTL_SECONDS = 90 * 60;
+export const AFL_ODDS_CACHE_TTL_SECONDS = 2.5 * 60 * 60;
 
 // Same bookmaker shape the NBA dashboard expects (game odds only)
 export interface AflBookRow {
@@ -222,7 +222,9 @@ export async function refreshAflOddsData(): Promise<{
       lastUpdated: now.toISOString(),
       nextUpdate: nextUpdate.toISOString(),
     };
-    await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, cachePayload, AFL_ODDS_CACHE_TTL_SECONDS);
+    if (games.length > 0) {
+      await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, cachePayload, AFL_ODDS_CACHE_TTL_SECONDS);
+    }
 
     return {
       success: true,

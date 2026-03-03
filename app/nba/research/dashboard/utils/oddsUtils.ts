@@ -19,6 +19,9 @@ export function getBookRowKey(stat: string | null | undefined): string | null {
     'pts': 'PTS',
     'reb': 'REB',
     'ast': 'AST',
+    'q1_pts': 'PTS_1Q',
+    'q1_reb': 'REB_1Q',
+    'q1_ast': 'AST_1Q',
     'fg3m': 'THREES',
     'stl': 'STL',
     'blk': 'BLK',
@@ -46,6 +49,9 @@ export function cloneBookRow(book: any): any {
   if (book.PTS) clone.PTS = { ...book.PTS };
   if (book.REB) clone.REB = { ...book.REB };
   if (book.AST) clone.AST = { ...book.AST };
+  if (book.PTS_1Q) clone.PTS_1Q = { ...book.PTS_1Q };
+  if (book.REB_1Q) clone.REB_1Q = { ...book.REB_1Q };
+  if (book.AST_1Q) clone.AST_1Q = { ...book.AST_1Q };
   if (book.THREES) clone.THREES = { ...book.THREES };
   if (book.PRA) clone.PRA = { ...book.PRA };
   if (book.PR) clone.PR = { ...book.PR };
@@ -63,7 +69,7 @@ export function cloneBookRow(book: any): any {
   for (const key in book) {
     if (book[key] && typeof book[key] === 'object' && !Array.isArray(book[key]) && 
         !clone[key] && key !== 'meta' && 
-        !['H2H', 'Spread', 'Total', 'PTS', 'REB', 'AST', 'THREES', 'PRA', 'PR', 'PA', 'RA', 'BLK', 'STL', 'TO', 'DD', 'TD', 'FIRST_BASKET'].includes(key)) {
+        !['H2H', 'Spread', 'Total', 'PTS', 'REB', 'AST', 'PTS_1Q', 'REB_1Q', 'AST_1Q', 'THREES', 'PRA', 'PR', 'PA', 'RA', 'BLK', 'STL', 'TO', 'DD', 'TD', 'FIRST_BASKET'].includes(key)) {
       clone[key] = { ...book[key] };
     }
   }
@@ -80,6 +86,9 @@ export function mergeBookRowsByBaseName(books: any[], skipMerge = false): any[] 
     'PTS',
     'REB',
     'AST',
+    'PTS_1Q',
+    'REB_1Q',
+    'AST_1Q',
     'THREES',
     'BLK',
     'STL',

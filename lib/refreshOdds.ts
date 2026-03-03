@@ -305,6 +305,9 @@ async function saveOddsSnapshots(games: GameOdds[]) {
           'PTS': 'player_points',
           'REB': 'player_rebounds',
           'AST': 'player_assists',
+          'PTS_1Q': 'player_points_1q',
+          'REB_1Q': 'player_rebounds_1q',
+          'AST_1Q': 'player_assists_1q',
           'THREES': 'player_threes',
           'BLK': 'player_blocks',
           'STL': 'player_steals',
@@ -609,9 +612,9 @@ function mapPropTypeToStatKey(propType: string): string | null {
     points_first3min: 'PTS', // best-effort mapping
     rebounds_first3min: 'REB',
     assists_first3min: 'AST',
-    points_1q: 'PTS',
-    rebounds_1q: 'REB',
-    assists_1q: 'AST',
+    points_1q: 'PTS_1Q',
+    rebounds_1q: 'REB_1Q',
+    assists_1q: 'AST_1Q',
   };
   return map[propType] || null;
 }
@@ -1435,6 +1438,9 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
             'player_points': 'PTS',
             'player_rebounds': 'REB',
             'player_assists': 'AST',
+            'player_points_1q': 'PTS_1Q',
+            'player_rebounds_1q': 'REB_1Q',
+            'player_assists_1q': 'AST_1Q',
             'player_threes': 'THREES',
             'player_blocks': 'BLK',
             'player_steals': 'STL',
@@ -1469,7 +1475,7 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
           const isPickemBook = isPickemBookmaker(baseBookmakerName);
 
           // Handle over/under markets (most props)
-          if (['PTS', 'REB', 'AST', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
+          if (['PTS', 'REB', 'AST', 'PTS_1Q', 'REB_1Q', 'AST_1Q', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
             // Skip straight entries for pick'em-only books
             if (isPickemBook && !isAlternateMarket) continue;
 
