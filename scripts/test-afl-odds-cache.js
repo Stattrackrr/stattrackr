@@ -43,6 +43,7 @@ async function main() {
   } else {
     console.log('   OK. Games:', refreshData.gamesCount ?? 0);
     console.log('   Player props events refreshed:', refreshData.eventsRefreshed ?? 0);
+    if (refreshData.playersWithProps != null) console.log('   Players with props (cached):', refreshData.playersWithProps);
     if (refreshData.playerPropsError) console.log('   Player props note:', refreshData.playerPropsError);
     console.log('   lastUpdated:', refreshData.lastUpdated ?? '—');
   }

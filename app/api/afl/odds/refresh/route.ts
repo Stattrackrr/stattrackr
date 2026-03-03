@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const result = await refreshAflOddsData();
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.error, gamesCount: 0, eventsRefreshed: 0 },
+        { success: false, error: result.error, gamesCount: 0, eventsRefreshed: 0, playersWithProps: 0 },
         { status: result.error?.includes('ODDS_API_KEY') ? 503 : 502 }
       );
     }
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       lastUpdated: result.lastUpdated,
       nextUpdate: result.nextUpdate,
       eventsRefreshed: ppResult.eventsRefreshed,
+      playersWithProps: ppResult.playersWithProps,
       playerPropsOk: ppResult.success,
       playerPropsError: ppResult.error ?? undefined,
     });

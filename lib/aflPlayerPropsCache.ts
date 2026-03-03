@@ -217,22 +217,24 @@ function buildEventCacheFromBookmakers(bookmakers: OddsApiBookmaker[]): EventPla
 export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]): Promise<{
   success: boolean;
   eventsRefreshed: number;
+  playersWithProps: number;
   error?: string;
 }> {
   const apiKey = process.env.ODDS_API_KEY?.trim();
   if (!apiKey) {
-    return { success: false, eventsRefreshed: 0, error: 'ODDS_API_KEY not set' };
+    return { success: false, eventsRefreshed: 0, playersWithProps: 0, error: 'ODDS_API_KEY not set' };
   }
 
   let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
-    return { success: false, eventsRefreshed: 0, error: 'No games in odds cache. Run game odds refresh first.' };
+    return { success: false, eventsRefreshed: 0, playersWithProps: 0, error: 'No games in odds cache. Run game odds refresh first.' };
   }
 
   const apiKeyEnc = encodeURIComponent(apiKey);
   const marketsParam = CACHED_PP_STATS.map((s) => STAT_TO_MARKET[s] ?? s).join(',');
 
   let eventsRefreshed = 0;
+  let playersWithProps = 0;
   for (const game of games) {
     try {
       const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
@@ -246,12 +248,13 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
       const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
       await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
       eventsRefreshed++;
+      playersWithProps += Object.keys(eventCache).length;
     } catch {
       // skip this event, continue with others
     }
   }
 
-  return { success: true, eventsRefreshed };
+  return { success: true, eventsRefreshed, playersWithProps };
 }
 
 /** Read cached player props for one event+player. Returns null if not in cache. */
