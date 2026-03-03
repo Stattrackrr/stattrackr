@@ -44,7 +44,7 @@ type AflGameStat =
 const STAT_TO_KEY: Partial<Record<AflGameStat, keyof AflBookRow>> = {
   moneyline: 'H2H',
   spread: 'Spread',
-  total_goals: 'Total',
+  total_goals: undefined, // bookmaker "Total" is total points, not goals — we show "Line N/A"
   total_points: 'Total',
   // Quarter stats have no bookmaker column → selector shows skeleton
 };

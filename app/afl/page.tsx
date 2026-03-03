@@ -386,7 +386,7 @@ export default function AFLPage() {
         return;
       }
 
-      if (aflPropsMode === 'team' && aflOddsBooks.length && (mainChartStat === 'spread' || mainChartStat === 'total_goals' || mainChartStat === 'total_points')) {
+      if (aflPropsMode === 'team' && aflOddsBooks.length && (mainChartStat === 'spread' || mainChartStat === 'total_points')) {
         setAflGameLineValue(value);
         const idx = aflOddsBooks.findIndex((book) => {
           const lineStr = mainChartStat === 'spread' ? book.Spread?.line : book.Total?.line;
@@ -396,6 +396,7 @@ export default function AFLPage() {
         });
         if (idx >= 0) setSelectedAflBookIndex(idx);
       }
+      // total_goals: bookmaker "Total" is total points, not goals — don't sync line or book
     };
     window.addEventListener('transient-line', onTransientLine);
     return () => window.removeEventListener('transient-line', onTransientLine);
@@ -457,10 +458,11 @@ export default function AFLPage() {
     }
   }, [aflPropsMode, mainChartStat, selectedAflDisposalsColumn, aflPlayerPropsBooks]);
 
-  // When game props stat changes (spread / total_goals / total_points): pick a book that has a line for that stat; if current has none, switch to first that does. Ignore next transient-line so chart's initial emit doesn't overwrite. Sync aflGameLineValue to the selected book's line.
+  // When game props stat changes (spread / total_points): pick a book that has a line for that stat. For total_goals we don't use book Total (that's points); chart shows goals only, no odds line.
   useEffect(() => {
     if (aflPropsMode !== 'team' || !aflOddsBooks.length) return;
-    if (mainChartStat !== 'spread' && mainChartStat !== 'total_goals' && mainChartStat !== 'total_points') return;
+    if (mainChartStat === 'total_goals') return; // no bookmaker line for total goals
+    if (mainChartStat !== 'spread' && mainChartStat !== 'total_points') return;
     const getLineStr = (book: AflBookRow) =>
       mainChartStat === 'spread' ? book.Spread?.line : book.Total?.line;
     const book = aflOddsBooks[selectedAflBookIndex];
@@ -1964,7 +1966,7 @@ export default function AFLPage() {
                               awayTeam={aflOddsAwayTeam}
                               disabled={!selectedPlayer}
                               currentLineValue={
-                                mainChartStat === 'spread' || mainChartStat === 'total_goals' || mainChartStat === 'total_points'
+                                mainChartStat === 'spread' || mainChartStat === 'total_points'
                                   ? aflGameLineValue ?? undefined
                                   : undefined
                               }
@@ -1994,12 +1996,13 @@ export default function AFLPage() {
                               const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
                               return Number.isFinite(n) ? n : 0.5;
                             }
-                            if (mainChartStat === 'total_goals' || mainChartStat === 'total_points') {
+                            if (mainChartStat === 'total_points') {
                               const lineStr = book.Total?.line;
                               if (!lineStr || lineStr === 'N/A') return 0.5;
                               const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
                               return Number.isFinite(n) ? n : 0.5;
                             }
+                            if (mainChartStat === 'total_goals') return undefined; // book Total is points, not goals — no odds line
                             return 0.5;
                           }
                           return undefined;
