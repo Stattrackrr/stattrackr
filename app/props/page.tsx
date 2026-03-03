@@ -28,6 +28,8 @@ interface Game {
   visitor_team: { id: number; abbreviation: string };
   home_team_score?: number;
   visitor_team_score?: number;
+  /** ISO datetime for tipoff countdown (e.g. AFL from cache) */
+  datetime?: string;
 }
 
 interface PlayerProp {
@@ -62,6 +64,16 @@ interface PlayerProp {
   dvpRating?: number | null;
   dvpStatValue?: number | null;
   bookmakerLines?: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>;
+  // AFL: link to game for filtering
+  gameId?: string;
+}
+
+/** AFL game from list API (for props page games filter). */
+interface AflGameForProps {
+  gameId: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: string;
 }
 
 // Tipoff Countdown Component
@@ -408,6 +420,13 @@ export default function NBALandingPage() {
   // Odds format state - load from localStorage or default to 'american'
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
 
+  // Props page sport: NBA (default) | AFL
+  const [propsSport, setPropsSport] = useState<'nba' | 'afl'>('nba');
+  const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
+  const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
+  const [aflPropsLoading, setAflPropsLoading] = useState(false);
+  const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+
   // Mobile bottom nav dropdown state
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -518,11 +537,11 @@ export default function NBALandingPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Reset to first page and close popups whenever filters or sorting change
+  // Reset to first page and close popups whenever filters or sorting change (or sport)
   useEffect(() => {
     setCurrentPage(1);
     setOpenPopup(null); // Close any open popups
-  }, [propLineSort, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, columnSort]);
+  }, [propLineSort, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, columnSort, propsSport]);
   
   // Helper function to cycle column sort: none -> asc -> desc -> none
   // When a column is clicked, clear all other column sorts (only one column sorted at a time)
@@ -771,6 +790,76 @@ export default function NBALandingPage() {
 
     fetchTodaysGames();
   }, []);
+
+  // Fetch AFL games + player props list when sport is AFL
+  useEffect(() => {
+    if (propsSport !== 'afl') return;
+    let cancelled = false;
+    setAflPropsLoading(true);
+    (async () => {
+      try {
+        const listRes = await fetch('/api/afl/player-props/list');
+        if (cancelled) return;
+        const listData = await listRes.json();
+        const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
+        setAflGames(games);
+        const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
+        // Aggregate: group by (playerName, gameId, homeTeam, awayTeam, statType, line) -> bookmakerLines[]
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> }>();
+        for (const r of rows) {
+          const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
+          const existing = keyToRow.get(key);
+          const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
+          if (existing) {
+            existing.bookmakerLines.push(bl);
+          } else {
+            keyToRow.set(key, {
+              playerName: r.playerName,
+              gameId: r.gameId,
+              homeTeam: r.homeTeam,
+              awayTeam: r.awayTeam,
+              statType: r.statType,
+              line: r.line,
+              commenceTime: r.commenceTime || '',
+              bookmakerLines: [bl],
+            });
+          }
+        }
+        const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
+          playerName: a.playerName,
+          playerId: '',
+          team: a.homeTeam,
+          opponent: a.awayTeam,
+          statType: a.statType,
+          line: a.line,
+          overProb: 0,
+          underProb: 0,
+          overOdds: a.bookmakerLines[0]?.overOdds ?? 'N/A',
+          underOdds: a.bookmakerLines[0]?.underOdds ?? 'N/A',
+          impliedOverProb: 0,
+          impliedUnderProb: 0,
+          bestLine: a.line,
+          bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
+          confidence: 'Medium',
+          gameDate: a.commenceTime,
+          bookmakerLines: a.bookmakerLines,
+          gameId: a.gameId,
+        }));
+        setAflProps(aggregated);
+        if (games.length > 0 && selectedAflGames.size === 0) {
+          setSelectedAflGames(new Set(games.map((g) => g.gameId)));
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setAflGames([]);
+          setAflProps([]);
+        }
+      } finally {
+        if (!cancelled) setAflPropsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [propsSport]);
 
   // Helper to check if a bookmaker is a pick'em/DFS-only bookmaker
   const isPickemBookmaker = (name: string): boolean => {
@@ -1995,6 +2084,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       'PR': 'Points + Rebounds',
       'PA': 'Points + Assists',
       'RA': 'Rebounds + Assists',
+      // AFL
+      'disposals': 'Disposals',
+      'disposals_over': 'Disposals Over',
+      'anytime_goal_scorer': 'Anytime Goal Scorer',
+      'goals_over': 'Goals Over',
     };
     return labels[statType] || statType;
   }, []);
@@ -2192,6 +2286,67 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     });
     return todaysGames.filter((game) => idsWithProps.has(game.id));
   }, [playerProps, todaysGames, getGameForProp]);
+
+  // AFL: games that have at least one prop, and filtered AFL props
+  const aflGamesWithProps = useMemo(() => {
+    if (aflProps.length === 0 || aflGames.length === 0) return [];
+    const ids = new Set<string>();
+    aflProps.forEach((p) => {
+      if (p.gameId) ids.add(p.gameId);
+    });
+    return aflGames.filter((g) => ids.has(g.gameId));
+  }, [aflProps, aflGames]);
+
+  const availableAflBookmakers = useMemo(() => {
+    const bookmakers = new Set<string>();
+    aflProps.forEach((prop) => {
+      prop.bookmakerLines?.forEach((l) => l.bookmaker && bookmakers.add(l.bookmaker));
+      if (prop.bookmaker) bookmakers.add(prop.bookmaker);
+    });
+    return Array.from(bookmakers).sort();
+  }, [aflProps]);
+
+  const availableAflPropTypes = useMemo(() => {
+    const types = new Set<string>();
+    aflProps.forEach((p) => p.statType && types.add(p.statType));
+    const order = ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'];
+    return Array.from(types).sort((a, b) => order.indexOf(a) - order.indexOf(b) || a.localeCompare(b));
+  }, [aflProps]);
+
+  const effectiveBookmakers = propsSport === 'afl' ? availableAflBookmakers : availableBookmakers;
+  const effectivePropTypes = propsSport === 'afl' ? availableAflPropTypes : availablePropTypes;
+
+  const filteredAflProps = useMemo(() => {
+    return aflProps.filter((prop) => {
+      if (debouncedSearchQuery.trim()) {
+        const q = debouncedSearchQuery.toLowerCase();
+        if (!prop.playerName.toLowerCase().includes(q) && !getStatLabel(prop.statType).toLowerCase().includes(q)) return false;
+      }
+      if (selectedPropTypes.size > 0 && !selectedPropTypes.has(prop.statType)) return false;
+      if (selectedBookmakers.size > 0) {
+        const bms = new Set<string>();
+        prop.bookmakerLines?.forEach((l) => l.bookmaker && bms.add(l.bookmaker));
+        if (prop.bookmaker) bms.add(prop.bookmaker);
+        if (!Array.from(bms).some((bm) => selectedBookmakers.has(bm))) return false;
+      }
+      if (selectedAflGames.size > 0 && prop.gameId && !selectedAflGames.has(prop.gameId)) return false;
+      return true;
+    });
+  }, [aflProps, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, getStatLabel]);
+
+  const displaySortedAflProps = useMemo(() => {
+    const out = [...filteredAflProps];
+    if (propLineSort === 'high') out.sort((a, b) => b.line - a.line);
+    else if (propLineSort === 'low') out.sort((a, b) => a.line - b.line);
+    return out;
+  }, [filteredAflProps, propLineSort]);
+
+  const ITEMS_PER_PAGE = 20;
+  const aflTotalPages = Math.max(1, Math.ceil(displaySortedAflProps.length / ITEMS_PER_PAGE));
+  const finalPaginatedAflProps = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return displaySortedAflProps.slice(start, start + ITEMS_PER_PAGE);
+  }, [displaySortedAflProps, currentPage, ITEMS_PER_PAGE]);
 
   // Track explicitly deselected games (games user clicked to deselect)
   const [deselectedGames, setDeselectedGames] = useState<Set<number>>(() => {
@@ -2749,6 +2904,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     saveFiltersToStorage(selectedBookmakers, selectedPropTypes, allIds);
   };
 
+  const toggleAflGame = (gameId: string) => {
+    setSelectedAflGames((prev) => {
+      const next = new Set(prev);
+      if (next.has(gameId)) next.delete(gameId);
+      else next.add(gameId);
+      return next;
+    });
+  };
+  const selectAllAflGames = () => setSelectedAflGames(new Set(aflGamesWithProps.map((g) => g.gameId)));
+  const clearAllAflGames = () => setSelectedAflGames(new Set());
+
   const getConfidenceColor = (confidence: string) => {
     if (confidence === 'High') return mounted && isDark ? 'text-green-400' : 'text-green-600';
     if (confidence === 'Medium') return mounted && isDark ? 'text-yellow-400' : 'text-yellow-600';
@@ -2910,6 +3076,32 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 </div>
               </form>
 
+              {/* Sport toggle: NBA | AFL */}
+              <div className={`flex gap-1.5 mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setPropsSport('nba')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                    propsSport === 'nba'
+                      ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  NBA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropsSport('afl')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                    propsSport === 'afl'
+                      ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  AFL
+                </button>
+              </div>
+
               {/* Filters Section */}
               <div 
                 ref={filtersSectionRef}
@@ -2975,7 +3167,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }}
                           >
                           <div className="p-2 space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
-                            {gamesWithProps.map(game => {
+                            {propsSport === 'afl'
+                              ? aflGamesWithProps.map((game) => {
+                                  const isSelected = selectedAflGames.has(game.gameId);
+                                  return (
+                                    <label
+                                      key={game.gameId}
+                                      className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                        isSelected ? (mounted && isDark ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-900') : (mounted && isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700')
+                                      }`}
+                                    >
+                                      <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
+                                      <span className="text-xs font-medium truncate">{game.awayTeam} vs {game.homeTeam}</span>
+                                    </label>
+                                  );
+                                })
+                              : gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
                               const awayTeam = game.visitor_team?.abbreviation || '';
@@ -3023,7 +3230,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div className="flex pt-0.5">
                               <button
                                 type="button"
-                                onClick={clearAllGames}
+                                onClick={propsSport === 'afl' ? clearAllAflGames : clearAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -3035,7 +3242,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
                               <button
                                 type="button"
-                                onClick={selectAllGames}
+                                onClick={propsSport === 'afl' ? selectAllAflGames : selectAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
@@ -3064,7 +3271,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           }`}
                         >
                           <div className="p-2 space-y-1">
-                            {gamesWithProps.map(game => {
+                            {propsSport === 'afl'
+                              ? aflGamesWithProps.map((game) => {
+                                  const isSelected = selectedAflGames.has(game.gameId);
+                                  return (
+                                    <label
+                                      key={game.gameId}
+                                      className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all whitespace-nowrap ${
+                                        isSelected ? (mounted && isDark ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-900') : (mounted && isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700')
+                                      }`}
+                                    >
+                                      <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
+                                      <span className="text-sm font-medium truncate">{game.awayTeam} vs {game.homeTeam}</span>
+                                    </label>
+                                  );
+                                })
+                              : gamesWithProps.map(game => {
                               const isSelected = selectedGames.has(game.id);
                               const homeTeam = game.home_team?.abbreviation || '';
                               const awayTeam = game.visitor_team?.abbreviation || '';
@@ -3114,7 +3336,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div className="flex pt-0.5">
                               <button
                                 type="button"
-                                onClick={clearAllGames}
+                                onClick={propsSport === 'afl' ? clearAllAflGames : clearAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -3126,7 +3348,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
                               <button
                                 type="button"
-                                onClick={selectAllGames}
+                                onClick={propsSport === 'afl' ? selectAllAflGames : selectAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
@@ -3201,7 +3423,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }}
                           >
                           <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
-                            {availablePropTypes.map(propType => {
+                            {effectivePropTypes.map(propType => {
                               const isSelected = selectedPropTypes.has(propType);
                               return (
                                 <label
@@ -3278,7 +3500,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         }`}
                       >
                         <div className="p-2 space-y-1">
-                          {availablePropTypes.map(propType => {
+                          {effectivePropTypes.map(propType => {
                             const isSelected = selectedPropTypes.has(propType);
                             return (
                               <label
@@ -3402,7 +3624,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }}
                           >
                             <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
-                              {availableBookmakers.map(bookmaker => {
+                              {effectiveBookmakers.map(bookmaker => {
                                 const bookmakerKey = bookmaker.toLowerCase();
                                 const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
                                 const isSelected = selectedBookmakers.has(bookmaker);
@@ -3455,7 +3677,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           }`}
                         >
                           <div className="p-2 space-y-1">
-                            {availableBookmakers.map(bookmaker => {
+                            {effectiveBookmakers.map(bookmaker => {
                               const bookmakerKey = bookmaker.toLowerCase();
                               const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
                               const isSelected = selectedBookmakers.has(bookmaker);
@@ -3509,8 +3731,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   Top Player Props
                 </h2>
                 
-                {filteredPlayerProps.length === 0 ? (
-                    showNoPropsMessage ? (
+                {(propsSport === 'nba' ? filteredPlayerProps.length === 0 : filteredAflProps.length === 0) ? (
+                    (propsSport === 'afl' && aflPropsLoading) ? (
+                      <div className={`flex items-center justify-center py-16 ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Loading AFL props…</div>
+                    ) : propsSport === 'afl' ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-lg font-medium mb-2">No AFL props in cache</p>
+                        <p className="text-sm">Run /api/afl/odds/refresh or try again later.</p>
+                      </div>
+                    ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
                         mounted && isDark ? 'text-gray-400' : 'text-gray-500'
                       }`}>
@@ -3634,7 +3863,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                     </>
                     )
-                  ) : filteredPlayerProps.length > 0 ? (
+                  ) : (propsSport === 'nba' ? filteredPlayerProps.length > 0 : filteredAflProps.length > 0) ? (
                     <>
                       {/* Desktop Table View - Hidden on mobile */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -3880,8 +4109,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           </tr>
                         </thead>
                         <tbody>
-                          {finalPaginatedProps.map((prop, idx) => {
-                            const bdlId = getPlayerIdFromName(prop.playerName); // BDL ID for stats API
+                          {(propsSport === 'nba' ? finalPaginatedProps : finalPaginatedAflProps).map((prop, idx) => {
+                            const bdlId = propsSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
                             const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
                             // Normalize team names to abbreviations for logo lookup
@@ -3917,8 +4146,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 key={idx}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onMouseEnter={() => {
-                                  // Prefetch stats on hover (non-blocking) to warm up server cache
-                                  // This makes the dashboard load instantly when clicked
+                                  if (propsSport === 'afl') return;
                                   const playerId = getPlayerIdFromName(prop.playerName);
                                   if (playerId && typeof window !== 'undefined') {
                                     const currentSeason = new Date().getFullYear();
@@ -3945,49 +4173,40 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   if (navigatingRef.current) return;
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
-                                  
+                                  if (propsSport === 'afl') {
+                                    const url = `/afl?player=${encodeURIComponent(prop.playerName)}`;
+                                    router.push(url);
+                                    setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                    return;
+                                  }
                                   const clickData = {
                                     player: prop.playerName,
                                     statType: prop.statType,
                                     line: prop.line,
                                     timestamp: Date.now(),
                                   };
-                                  // Debug logging removed('🔵 [PropClick] CLICKED!', clickData);
-                                  
-                                  // Store in sessionStorage so it persists even if console is cleared
                                   if (typeof window !== 'undefined') {
                                     safeSetSessionStorage('last_prop_click', JSON.stringify(clickData));
                                   }
-                                  
                                   const normalizedStat = normalizeStatForDashboard(prop.statType);
-                                  // Set timeframe to "thisseason" to show current season data when clicking from player props
                                   const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=last10`;
-                                  
-                                  // Debug logging removed
-                                  
-                                  // Store final URL for debugging
                                   if (typeof window !== 'undefined') {
                                     safeSetSessionStorage('last_prop_url', finalUrl);
                                   }
-                                  
-                                  // Clear saved dashboard session to avoid flashing previous player/stat on navigation
                                   if (typeof window !== 'undefined') {
                                     try {
                                       window.sessionStorage.removeItem('nba_dashboard_session_v1');
-                                    } catch (e) {
-                                      console.warn('Failed to clear dashboard session storage', e);
+                                    } catch (err) {
+                                      console.warn('Failed to clear dashboard session storage', err);
                                     }
                                   }
-                                  
-                                  // Mark that we're coming from props page (for dashboard)
                                   if (typeof window !== 'undefined') {
                                     try {
                                       sessionStorage.setItem('from_props_page', 'true');
-                                    } catch (e) {
-                                      // Ignore storage errors
+                                    } catch (err) {
+                                      // Ignore
                                     }
                                   }
-                                  
                                   router.push(finalUrl);
                                   setTimeout(() => {
                                     navigatingRef.current = false;
@@ -3998,7 +4217,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 {/* Player Column */}
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-3">
-                                    {headshotUrl && (
+                                    {propsSport === 'nba' && headshotUrl && (
                                       <img
                                         src={headshotUrl}
                                         alt={prop.playerName}
@@ -4018,22 +4237,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
-                                        <img
-                                          src={teamLogoUrl}
-                                          alt={prop.team}
-                                          className="w-5 h-5 object-contain"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
-                                        <img
-                                          src={opponentLogoUrl}
-                                          alt={prop.opponent}
-                                          className="w-5 h-5 object-contain"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
+                                        {propsSport === 'afl' ? (
+                                          <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>{prop.opponent} vs {prop.team}</span>
+                                        ) : (
+                                          <>
+                                            <img src={teamLogoUrl} alt={prop.team} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                            <img src={opponentLogoUrl} alt={prop.opponent} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                          </>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -4310,7 +4521,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* DvP Column */}
                                 <td className="py-3 px-2">
-                                  {prop.dvpRating !== null && prop.dvpRating !== undefined && typeof prop.dvpRating === 'number' && prop.dvpRating > 0 ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.dvpRating !== null && prop.dvpRating !== undefined && typeof prop.dvpRating === 'number' && prop.dvpRating > 0 ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4382,7 +4595,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* L5 Column */}
                                 <td className="py-3 px-2">
-                                  {prop.last5Avg !== null && prop.last5Avg !== undefined ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.last5Avg !== null && prop.last5Avg !== undefined ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4451,7 +4666,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* L10 Column */}
                                 <td className="py-3 px-2">
-                                  {prop.last10Avg !== null && prop.last10Avg !== undefined ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.last10Avg !== null && prop.last10Avg !== undefined ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4520,7 +4737,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* H2H Column */}
                                 <td className="py-3 px-2">
-                                  {prop.h2hAvg !== null && prop.h2hAvg !== undefined ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.h2hAvg !== null && prop.h2hAvg !== undefined ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4589,7 +4808,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* Season Column */}
                                 <td className="py-3 px-2">
-                                  {prop.seasonAvg !== null && prop.seasonAvg !== undefined ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.seasonAvg !== null && prop.seasonAvg !== undefined ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -4658,7 +4879,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* Streak Column */}
                                 <td className="py-3 px-2">
-                                  {prop.streak !== null && prop.streak !== undefined ? (
+                                  {propsSport === 'afl' ? (
+                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                  ) : prop.streak !== null && prop.streak !== undefined ? (
                                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = '';
@@ -4700,7 +4923,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 
                                 {/* Tipoff Countdown Column */}
                                 <td className="py-3 px-2">
-                                  <TipoffCountdown game={getGameForProp(prop)} isDark={mounted && isDark} />
+                                  <TipoffCountdown
+                                    game={propsSport === 'afl' && prop.gameDate
+                                      ? { id: 0, date: prop.gameDate.slice(0, 10), status: prop.gameDate, home_team: { id: 0, abbreviation: '' }, visitor_team: { id: 0, abbreviation: '' }, datetime: prop.gameDate }
+                                      : getGameForProp(prop)}
+                                    isDark={mounted && isDark}
+                                  />
                                 </td>
                                 
                               </tr>
@@ -4930,8 +5158,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       
                       {/* Mobile Card View - Hidden on desktop */}
                       <div className={`lg:hidden space-y-4 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
-                        {paginatedPlayerProps.map((prop, idx) => {
-                          const bdlId = getPlayerIdFromName(prop.playerName);
+                        {(propsSport === 'nba' ? paginatedPlayerProps : finalPaginatedAflProps).map((prop, idx) => {
+                          const bdlId = propsSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
                           const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
                           const normalizeTeam = (team: string): string => {
@@ -4943,7 +5171,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           const opponentAbbr = normalizeTeam(prop.opponent);
                           const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                           const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
-                          const game = getGameForProp(prop);
+                          const game = propsSport === 'afl' && prop.gameDate
+                            ? { id: 0, date: prop.gameDate.slice(0, 10), status: prop.gameDate, home_team: { id: 0, abbreviation: '' }, visitor_team: { id: 0, abbreviation: '' }, datetime: prop.gameDate }
+                            : getGameForProp(prop);
                           
                           // Format game date/time
                           const formatGameDateTime = (game: Game | null): string => {
@@ -5049,6 +5279,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 if (navigatingRef.current) return;
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
+                                if (propsSport === 'afl') {
+                                  router.push(`/afl?player=${encodeURIComponent(prop.playerName)}`);
+                                  setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                  return;
+                                }
                                 try {
                                   sessionStorage.removeItem('nba_dashboard_session_v1');
                                   sessionStorage.setItem('from_props_page', 'true');
@@ -5445,14 +5680,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       {/* Pagination controls - Shared for desktop and mobile */}
                       <div className="flex items-center justify-between mt-6 px-2 pb-24 sm:pb-4">
                         <div className={`text-sm ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          Showing {(currentPageSafe - 1) * pageSize + 1} - {Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of {totalPropsCount}
+                          {propsSport === 'afl'
+                            ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(currentPage * ITEMS_PER_PAGE, displaySortedAflProps.length)} of ${displaySortedAflProps.length}`
+                            : `Showing ${(currentPageSafe - 1) * pageSize + 1} - ${Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of ${totalPropsCount}`}
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setCurrentPage(Math.max(1, currentPageSafe - 1))}
-                            disabled={currentPageSafe === 1}
+                            onClick={() => setCurrentPage(Math.max(1, (propsSport === 'afl' ? currentPage : currentPageSafe) - 1))}
+                            disabled={propsSport === 'afl' ? currentPage === 1 : currentPageSafe === 1}
                             className={`px-3 py-1 rounded border text-sm ${
-                              currentPageSafe === 1
+                              (propsSport === 'afl' ? currentPage === 1 : currentPageSafe === 1)
                                 ? mounted && isDark ? 'text-gray-500 border-gray-700 cursor-not-allowed' : 'text-gray-400 border-gray-200 cursor-not-allowed'
                                 : mounted && isDark ? 'text-gray-200 border-gray-600 hover:bg-gray-700' : 'text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
@@ -5460,13 +5697,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             Prev
                           </button>
                           <span className={`text-sm ${mounted && isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                            Page {currentPageSafe} / {totalPages}
+                            Page {propsSport === 'afl' ? currentPage : currentPageSafe} / {propsSport === 'afl' ? aflTotalPages : totalPages}
                           </span>
                           <button
-                            onClick={() => setCurrentPage(Math.min(totalPages, currentPageSafe + 1))}
-                            disabled={currentPageSafe === totalPages}
+                            onClick={() => setCurrentPage(Math.min(propsSport === 'afl' ? aflTotalPages : totalPages, (propsSport === 'afl' ? currentPage : currentPageSafe) + 1))}
+                            disabled={propsSport === 'afl' ? currentPage === aflTotalPages : currentPageSafe === totalPages}
                             className={`px-3 py-1 rounded border text-sm ${
-                              currentPageSafe === totalPages
+                              (propsSport === 'afl' ? currentPage === aflTotalPages : currentPageSafe === totalPages)
                                 ? mounted && isDark ? 'text-gray-500 border-gray-700 cursor-not-allowed' : 'text-gray-400 border-gray-200 cursor-not-allowed'
                                 : mounted && isDark ? 'text-gray-200 border-gray-600 hover:bg-gray-700' : 'text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
