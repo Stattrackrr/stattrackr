@@ -2424,7 +2424,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     } catch {
       /* ignore */
     }
-    const payload = { props: finalPaginatedAflProps.map((p) => ({ playerName: p.playerName, team: p.team, opponent: p.opponent, statType: p.statType, line: p.line })) };
+    const payload = {
+      props: finalPaginatedAflProps.map((p) => ({ playerName: p.playerName, team: p.team, opponent: p.opponent, statType: p.statType, line: p.line })),
+      cacheOnly: true,
+    };
     fetch('/api/afl/props-stats/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

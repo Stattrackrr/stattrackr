@@ -102,6 +102,9 @@ async function fetchGameLogs(baseUrl: string, playerName: string, team: string, 
   return Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
 }
 
+/**
+ * Get AFL prop stats from cache or compute. When cacheOnly is true, returns null on cache miss (no computation).
+ */
 export async function getAflPropStats(
   playerName: string,
   team: string,
@@ -109,8 +112,9 @@ export async function getAflPropStats(
   statType: string,
   line: number,
   baseUrl: string,
-  dvpLookup?: { rank: number; value: number } | null
-): Promise<AflPropStatsPayload> {
+  dvpLookup?: { rank: number; value: number } | null,
+  cacheOnly?: boolean
+): Promise<AflPropStatsPayload | null> {
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
   if (cached && typeof cached === 'object') {
@@ -119,6 +123,7 @@ export async function getAflPropStats(
     }
     return cached;
   }
+  if (cacheOnly) return null;
   const season = new Date().getFullYear();
   let games = await fetchGameLogs(baseUrl, playerName, team, season);
   if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season);
@@ -134,4 +139,9 @@ export async function getAflPropStats(
 
 export function buildAflPropStatKey(playerName: string, team: string, opponent: string, statType: string, line: number): string {
   return `${playerName}|${statType}|${team}|${opponent}|${line}`;
+}
+
+/** Clear all AFL prop stats cache entries. Returns number of keys deleted. */
+export async function clearAflPropStatsCache(): Promise<number> {
+  return sharedCache.clearKeysByPrefix(CACHE_PREFIX);
 }

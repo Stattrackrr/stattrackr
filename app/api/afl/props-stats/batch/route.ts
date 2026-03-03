@@ -44,8 +44,9 @@ function getDvpLookup(
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { props?: PropInput[] };
+    const body = (await request.json()) as { props?: PropInput[]; cacheOnly?: boolean };
     const props = Array.isArray(body?.props) ? body.props : [];
+    const cacheOnly = body?.cacheOnly === true;
     if (props.length === 0) {
       return NextResponse.json({ stats: {} });
     }
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
       props.map(async (p) => {
         const key = buildAflPropStatKey(p.playerName, p.team, p.opponent, p.statType, p.line);
         const dvp = getDvpLookup(p.opponent, p.statType, dvpMaps);
-        const result = await getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp);
-        stats[key] = result;
+        const result = await getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp, cacheOnly);
+        if (result) stats[key] = result;
       })
     );
     return NextResponse.json({ stats });

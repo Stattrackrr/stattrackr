@@ -11,7 +11,7 @@ const HAS_UPSTASH = !!(REST_URL && REST_TOKEN);
 // Simple per-process fallback
 const memory = new Map<string, { v: any; exp: number }>();
 
-async function upstash(command: any[]) {
+async function upstash(command: unknown[]): Promise<unknown> {
   const res = await fetch(`${REST_URL}/pipeline`, {
     method: 'POST',
     headers: {
@@ -64,6 +64,38 @@ export const sharedCache = {
     }
     const exp = ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
     memory.set(key, { v: value, exp });
+  },
+  /** Delete all keys whose string key starts with prefix (e.g. "afl_prop_stats_v1"). */
+  async clearKeysByPrefix(prefix: string): Promise<number> {
+    const match = prefix.endsWith('*') ? prefix : `${prefix}*`;
+    if (HAS_UPSTASH) {
+      let cursor = 0;
+      const keys: string[] = [];
+      do {
+        const raw = await upstash(['SCAN', String(cursor), 'MATCH', match, 'COUNT', 500]);
+        const arr = Array.isArray(raw) ? raw : [];
+        const next = arr[0];
+        const keyList = arr[1];
+        cursor = typeof next === 'string' ? parseInt(next, 10) : Number(next) ?? 0;
+        if (Array.isArray(keyList)) keys.push(...keyList.filter((k): k is string => typeof k === 'string'));
+      } while (cursor !== 0);
+      let deleted = 0;
+      for (let i = 0; i < keys.length; i += 100) {
+        const batch = keys.slice(i, i + 100);
+        if (batch.length === 0) continue;
+        await upstash(['DEL', ...batch]);
+        deleted += batch.length;
+      }
+      return deleted;
+    }
+    let deleted = 0;
+    for (const key of memory.keys()) {
+      if (key.startsWith(prefix)) {
+        memory.delete(key);
+        deleted++;
+      }
+    }
+    return deleted;
   },
 };
 
