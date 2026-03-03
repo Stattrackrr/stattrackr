@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const withDvp = enrichedRows.filter((r) => r.dvpRating != null && r.dvpRating > 0).length;
+    const withDvp = enrichedRows.filter((r) => typeof r.dvpRating === 'number' && r.dvpRating > 0).length;
     console.log('[AFL player-props/list] Enriched', enrichedRows.length, 'rows,', withDvp, 'with DvP');
     return NextResponse.json({
       success: true,
