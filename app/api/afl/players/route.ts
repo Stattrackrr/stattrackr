@@ -219,10 +219,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Prefer players from the same props cache as the props page so dashboard search matches all players with props (all games).
+    // Prefer players from props cache, merged with league/roster so symbol-name and all league players appear in dashboard search.
     const propsList = await playersFromPropsCache();
+    const leagueList = readCachedLeaguePlayerList();
+    const rosterOnly = leagueList && leagueList.length > 0 ? null : readCachedRoster();
+    const fallbackList = leagueList && leagueList.length > 0 ? leagueList : rosterOnly;
+    const byNormalName = new Map<string, PlayerListEntry>();
+    if (fallbackList && fallbackList.length > 0) {
+      for (const p of fallbackList) {
+        const key = normalizeName(p.name);
+        if (!byNormalName.has(key)) byNormalName.set(key, { name: p.name, team: p.team, number: p.number ?? undefined });
+      }
+    }
     if (propsList && propsList.length > 0) {
-      let pool = propsList;
+      for (const p of propsList) {
+        const key = normalizeName(p.name);
+        byNormalName.set(key, { name: p.name, team: p.team, number: p.number ?? undefined });
+      }
+    }
+    if (byNormalName.size > 0) {
+      let pool = Array.from(byNormalName.values());
       if (q) {
         pool = pool.filter((p) => nameMatchesQuery(p.name, q));
       }
@@ -245,8 +261,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback: league player stats (FootyWire) then roster so search works when props cache is empty.
-    const leagueList = readCachedLeaguePlayerList();
-    const roster = leagueList && leagueList.length > 0 ? leagueList : readCachedRoster();
+    const fallbackLeague = readCachedLeaguePlayerList();
+    const roster = fallbackLeague && fallbackLeague.length > 0 ? fallbackLeague : readCachedRoster();
     if (roster && roster.length > 0) {
       let pool = roster;
       if (q) {
@@ -263,7 +279,7 @@ export async function GET(request: NextRequest) {
       }));
 
       return NextResponse.json({
-        source: leagueList && leagueList.length > 0 ? 'footywire.com' : 'afltables.com',
+        source: fallbackLeague && fallbackLeague.length > 0 ? 'footywire.com' : 'afltables.com',
         query,
         count: players.length,
         players,

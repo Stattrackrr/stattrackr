@@ -24,6 +24,8 @@
     "fetch:footywire-ladder": "node scripts/fetch-footywire-ladder.js",
     "fix:afl-player-names-with-symbols": "node scripts/fix-afl-player-names-with-symbols.js",
     "warm:afl:player-logs": "node scripts/warm-afl-player-logs.js",
+    "test:afl:massimo": "node scripts/test-afl-player-massimo.js",
+    "test:afl:symbols": "node scripts/test-afl-symbol-players.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
     "check:prediction-data": "node scripts/check-prediction-data-sources.mjs",
     "apply:prediction-tables": "node scripts/apply-prediction-engine-tables.mjs",

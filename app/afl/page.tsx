@@ -84,6 +84,13 @@ function getAflPlayerLogsCacheKey(season: number, playerName: string, team: stri
   return `${AFL_PLAYER_LOGS_CACHE_PREFIX}:${season}:${playerName.trim().toLowerCase()}:${team.trim().toLowerCase()}`;
 }
 
+/** True if player name has apostrophe, hyphen, or Irish-style "D Ambrosio" / "O Meara" — these use AFL Tables only; we must not use stale localStorage. */
+function playerNameHasSymbol(name: string): boolean {
+  if (!name || typeof name !== 'string') return false;
+  const t = name.trim();
+  return /['\u2018\u2019]/.test(t) || /\b[OD]'/i.test(t) || /\b[OD] [A-Z]/.test(t) || /-/.test(t);
+}
+
 function normalizeTeamNameForLogo(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -1083,36 +1090,51 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || footywireNicknameToOfficial(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
-    const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
-    if (prefetched) {
-      prefetchedLogsRef.current.delete(logsCacheKey);
-      setSelectedPlayerGameLogs(prefetched.games);
-      setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
-      if (Object.keys(prefetched.mergedStats).length) {
-        setSelectedPlayer((prev) => (prev ? ({ ...prev, ...prefetched.mergedStats } as AflPlayerRecord) : prev));
-        playerStatsCacheRef.current.set(cacheKey, prefetched.mergedStats as AflPlayerRecord);
-      }
-      setStatsLoadingForPlayer(false);
-      return;
-    }
-    try {
-      const raw = localStorage.getItem(logsCacheKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as CachedAflPlayerLogs;
-        const isFresh = Number.isFinite(parsed?.createdAt) && (Date.now() - Number(parsed.createdAt) <= AFL_PLAYER_LOGS_CACHE_TTL_MS);
-        if (isFresh && Array.isArray(parsed.games)) {
-          setSelectedPlayerGameLogs(parsed.games);
-          setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
-          if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
-            setSelectedPlayer((prev) => (prev ? { ...prev, ...parsed.mergedStats } : prev));
-            playerStatsCacheRef.current.set(cacheKey, parsed.mergedStats);
-          }
-          setStatsLoadingForPlayer(false);
-          return;
+    // Symbol-name players: never use prefetched or localStorage — always fetch fresh (AFL Tables).
+    const isSymbolPlayer = playerNameHasSymbol(String(playerName));
+    if (!isSymbolPlayer) {
+      const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
+      if (prefetched) {
+        prefetchedLogsRef.current.delete(logsCacheKey);
+        setSelectedPlayerGameLogs(prefetched.games);
+        setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
+        if (Object.keys(prefetched.mergedStats).length) {
+          setSelectedPlayer((prev) => (prev ? ({ ...prev, ...prefetched.mergedStats } as AflPlayerRecord) : prev));
+          playerStatsCacheRef.current.set(cacheKey, prefetched.mergedStats as AflPlayerRecord);
         }
+        setStatsLoadingForPlayer(false);
+        return;
       }
-    } catch {
-      // Ignore malformed local cache.
+    } else {
+      prefetchedLogsRef.current.delete(logsCacheKey);
+    }
+    if (isSymbolPlayer) {
+      try {
+        localStorage.removeItem(logsCacheKey);
+      } catch {
+        // Ignore.
+      }
+    }
+    if (!isSymbolPlayer) {
+      try {
+        const raw = localStorage.getItem(logsCacheKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as CachedAflPlayerLogs;
+          const isFresh = Number.isFinite(parsed?.createdAt) && (Date.now() - Number(parsed.createdAt) <= AFL_PLAYER_LOGS_CACHE_TTL_MS);
+          if (isFresh && Array.isArray(parsed.games)) {
+            setSelectedPlayerGameLogs(parsed.games);
+            setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
+            if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
+              setSelectedPlayer((prev) => (prev ? { ...prev, ...parsed.mergedStats } : prev));
+              playerStatsCacheRef.current.set(cacheKey, parsed.mergedStats);
+            }
+            setStatsLoadingForPlayer(false);
+            return;
+          }
+        }
+      } catch {
+        // Ignore malformed local cache.
+      }
     }
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
     const url = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_both=1`;
@@ -1183,16 +1205,19 @@ export default function AFLPage() {
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
-        try {
-          const cachePayload: CachedAflPlayerLogs = {
-            createdAt: Date.now(),
-            games,
-            gamesWithQuarters,
-            mergedStats: toMerge,
-          };
-          localStorage.setItem(logsCacheKey, JSON.stringify(cachePayload));
-        } catch {
-          // Ignore localStorage write failures.
+        // Don't cache symbol-name players in localStorage — we always fetch fresh (AFL Tables) for them.
+        if (!isSymbolPlayer) {
+          try {
+            const cachePayload: CachedAflPlayerLogs = {
+              createdAt: Date.now(),
+              games,
+              gamesWithQuarters,
+              mergedStats: toMerge,
+            };
+            localStorage.setItem(logsCacheKey, JSON.stringify(cachePayload));
+          } catch {
+            // Ignore localStorage write failures.
+          }
         }
       } catch (e) {
         if (!cancelled) {

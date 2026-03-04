@@ -18,7 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const prodUrl = (process.env.PROD_URL || '').trim().replace(/\/+$/, '');
+const prodUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
 const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026,2025')
   .split(',')
   .map((v) => parseInt(v.trim(), 10))
@@ -86,6 +86,7 @@ async function warmOne(player, season) {
     player_name: player.name,
     team,
     include_both: '1',
+    force_fetch: '1',
   });
 
   const headers = { Accept: 'application/json' };
@@ -168,9 +169,11 @@ async function main() {
 
   let success = 0;
   let failed = 0;
+  let noData = 0;
   let warmedGames = 0;
   let done = 0;
   const failedPlayers = [];
+  const noDataPlayers = [];
   const progressInterval = Math.max(1, Math.floor(jobs.length / 20)); // ~20 progress lines
 
   await runPool(
@@ -180,10 +183,13 @@ async function main() {
       if (result.ok) {
         success += 1;
         warmedGames += Number(result.count || 0);
+        if (Number(result.count || 0) === 0) {
+          noData += 1;
+          noDataPlayers.push(`${job.player.name} (${teamForRequest(job.player.team)}) ${job.season}`);
+        }
       } else {
         failed += 1;
-        const key = `${job.player.name} (${job.player.team}) ${job.season}`;
-        if (failedPlayers.length < 50) failedPlayers.push(key);
+        failedPlayers.push(`${job.player.name} (${job.player.team}) ${job.season} — HTTP ${result.status || 'error'}`);
       }
       done += 1;
       if (done % progressInterval === 0 || done === jobs.length) {
@@ -193,9 +199,14 @@ async function main() {
     concurrency
   );
 
-  console.log(`[AFL Warm] ✅ Warm complete. success=${success} failed=${failed} warmedGames=${warmedGames}`);
+  console.log(`[AFL Warm] ✅ Warm complete. success=${success} failed=${failed} noData=${noData} warmedGames=${warmedGames}`);
   if (failedPlayers.length > 0) {
-    console.log(`[AFL Warm] ❌ Failed (sample): ${failedPlayers.slice(0, 15).join('; ')}${failedPlayers.length > 15 ? ` ... +${failedPlayers.length - 15} more` : ''}`);
+    console.log(`[AFL Warm] ❌ Failed requests (${failedPlayers.length}):`);
+    failedPlayers.forEach((key) => console.log(`   ${key}`));
+  }
+  if (noDataPlayers.length > 0) {
+    console.log(`[AFL Warm] ⚠️ No data / 0 games (${noDataPlayers.length}):`);
+    noDataPlayers.forEach((key) => console.log(`   ${key}`));
   }
 
   // Cache health check: GET without cron secret (same as a user). Fail workflow if we warmed but prod returns cache-miss.

@@ -108,6 +108,37 @@ export function getFootyWireTeamNameForPlayerUrl(officialTeamName: string): stri
   return override ?? officialTeamName.trim();
 }
 
+/** Official team name -> AFL Tables URL slug for team stats (e.g. .../teams/hawthorn/2025_gbg.html). */
+export const OFFICIAL_TO_AFLTABLES_TEAM_SLUG: Record<string, string> = {
+  'Adelaide Crows': 'adelaide',
+  'Brisbane Lions': 'brisbane',
+  'Carlton Blues': 'carlton',
+  'Collingwood Magpies': 'collingwood',
+  'Essendon Bombers': 'essendon',
+  'Fremantle Dockers': 'fremantle',
+  'Geelong Cats': 'geelong',
+  'Gold Coast Suns': 'goldcoast',
+  'GWS Giants': 'gws',
+  'Hawthorn Hawks': 'hawthorn',
+  'Melbourne Demons': 'melbourne',
+  'North Melbourne Kangaroos': 'kangaroos',
+  'Port Adelaide Power': 'portadelaide',
+  'Richmond Tigers': 'richmond',
+  'St Kilda Saints': 'stkilda',
+  'Sydney Swans': 'sydney',
+  'West Coast Eagles': 'westcoast',
+  'Western Bulldogs': 'bulldogs',
+};
+
+export function getAflTablesTeamSlug(officialTeamName: string): string | null {
+  if (!officialTeamName || typeof officialTeamName !== 'string') return null;
+  const t = officialTeamName.trim();
+  if (OFFICIAL_TO_AFLTABLES_TEAM_SLUG[t]) return OFFICIAL_TO_AFLTABLES_TEAM_SLUG[t];
+  const lower = t.toLowerCase();
+  const entry = Object.entries(OFFICIAL_TO_AFLTABLES_TEAM_SLUG).find(([k]) => k.toLowerCase() === lower);
+  return entry ? entry[1] : null;
+}
+
 export function rosterTeamToInjuryTeam(team: string): string | null {
   if (!team || typeof team !== 'string') return null;
   const t = team.trim();
