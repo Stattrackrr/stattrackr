@@ -1086,7 +1086,8 @@ async function fetchFootyWireGameLogs(
   const altSlugWithHyphen = insertHyphenAfterOOrD(primarySlug) !== primarySlug ? insertHyphenAfterOOrD(primarySlug) : (altSlug && altSlug !== primarySlug ? insertHyphenAfterOOrD(altSlug) : null);
   const slugNoMiddle = footyWirePlayerSlugNoMiddleInitial(playerName);
   const overrides = getFootyWireSlugOverrides(playerName);
-  const slugSet = new Set<string>([primarySlug, altSlug, altSlugWithHyphen, slugNoMiddle, ...overrides].filter(Boolean));
+  const slugCandidates: string[] = [primarySlug, altSlug, altSlugWithHyphen, slugNoMiddle, ...overrides].filter((s): s is string => Boolean(s));
+  const slugSet = new Set<string>(slugCandidates);
   const slugsToTry = Array.from(slugSet);
 
   for (const playerSlug of slugsToTry) {
